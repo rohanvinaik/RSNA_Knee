@@ -14,16 +14,20 @@ macro-averaged ROC-AUC. **There is no machine learning in the architecture.**
 - Lenses, each measuring one thing, read the deviation and the patient's own anatomy.
 - A society of agencies decides each finding by concurrence, or abstains.
 
-The build plan is the book: [`docs/book/`](docs/book/README.md). The design canon is
-`docs/THEORY_OF_THE_CASE.md` and `docs/KNEE_ARCHITECTURE.md`. `docs/book/THE_KNEE.md` names exactly which canon
-passages the 2026-10-02 accord amends.
+The design is the founder's: `docs/THEORY_OF_THE_CASE.md` and `docs/KNEE_ARCHITECTURE.md`. The book,
+[`docs/book/`](docs/book/README.md), plans how it is built. `docs/book/THE_KNEE.md` lists the canon passages that
+the 2026-10-02 accord and revision 1 amend. Each amendment stands only if it is provably correct or warranted by
+the founder's explicit words (law 9). Until `docs/book/provenance/build/audit_against_original.md` has classified
+it, it is unverified.
 
 ## Where truth lives
 
 **Intent** (what the system should do). Highest first; the higher wins:
 1. the founder's words: `docs/FOUNDING_RECORD.md`, `docs/book/FOUNDING_PROMPTS.md`;
-2. the book: `docs/book/CONSTRAINT_BLOCK.md`, `THE_KNEE.md`, the chapter specs;
-3. the canon: THEORY (its Laws 1–8 bind) and KNEE_ARCHITECTURE as amended by the book, plus `docs/canon/`;
+2. the founder's design: THEORY (its Laws 1–8 bind), KNEE_ARCHITECTURE, and `docs/canon/`;
+3. the book: `docs/book/CONSTRAINT_BLOCK.md`, `THE_KNEE.md`, the chapter specs. The book implements the design.
+   Where it departs from the design, the departure stands only if it is provably correct or warranted by the
+   founder's explicit words (law 9); otherwise the design wins;
 4. logs (`decisions/`, `docs/book/provenance/`, git history), never read as status.
 
 **State** (what the system does and how far the build has gone) is **computed, never written as prose**:
@@ -88,6 +92,21 @@ Code is evidence of behaviour, never authority over intent: a bug is not a speci
    - *Reason:* "This is a demonstration, a BOLD claim about classical AI, I want it to be clothed as
      professionally and impressively as possible". The final design is unknown and will change as we
      experiment (founder, 2026-10-02).
+9. **The design is the founder's.**
+   - No agent changes the original design (THEORY, KNEE_ARCHITECTURE, the founder's words) unless the change is
+     provably correct, or warranted by his explicit words, quoted with their source.
+   - "Provably correct" means logic, arithmetic, an internal contradiction shown by quoting both passages, an
+     order that cannot execute, or a checkable external fact (the competition's data and definitions, a file
+     format).
+   - Everything else returns to the original design, or goes to him as a question with the argument beside it.
+   - A second reader's critique (Codex, Antigravity) is never warrant. It may report a provable error with its
+     proof, or ask a question. It never proposes the design.
+   - Nothing is built. No codebase meets the design and there is no evidence of what works, so nothing is judged
+     by how it looks: something that looks wrong may be critically important.
+   - *Reason:* the founder, 2026-10-02: "*I* am the authority on what works or doesn't … You do not have the
+     authority to change the design *I* built based on a random guess, when you don't know the intent"; "Make
+     SURE you are not changing anything other than that which is definitevely/provably correct, or warranted by
+     my explicit words"; "Not just this session--EVERY change to the original design".
 
 ## Project overrides and decisions (the global doctrine applies; these are additional)
 
