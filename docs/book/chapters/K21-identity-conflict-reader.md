@@ -20,7 +20,15 @@ abnormal". The two observables are measured separately and honestly.
 
 **Produced** (`knee.run.reader`):
 - **D, per structure window:** `Q = ‖z‖² / p̂_S` over the structure's most deviant window. p̂_S is the mean of ‖z‖²
-  over `null`-role normals, and the null distribution of the window maximum is measured on the same normals.
+  over `null`-role normals.
+  - **The null matches the statistic.** It is the same *maximum-window* statistic, over the same window size and
+    shape, zone and plane, on the same normals (ARCH §4.5 l.3080–3084: "the null of that maximum is measured on
+    true normals").
+  - **Degenerate cases,** following ARCH l.2998 and l.3007–3016:
+    - E = ‖z‖² = 0 gives λ* = 1 through the clip, which reads `MONO_UP` ("every ‖z‖² ≤ p̂_S … reads so");
+    - a p̂_S that cannot be measured, or measures 0, is `insufficient`, and the word is `AMBIGUOUS` with that
+      cause ("a window's count cannot bound its statistic");
+    - a window whose places are all silent is silent and takes no word.
 - **The \|z\| survival profile:** `N(λ) = #{|z_v| > t/(1−λ)}` over the structure's places, for the declared λ
   grid. It is a monotone distributional reading in its own right: a few large deviations against many moderate
   ones. It contains no anatomical identity and no spatial arrangement.
@@ -39,7 +47,10 @@ abnormal". The two observables are measured separately and honestly.
   - the SURE remark holds only under its stated assumptions (zero-mean nuisance whose trace persists under
     pathology; fixed λ).
 
-**Consumers:** K16, K22, K23, K12.
+- **The layout extension:** the word and λ* are written as the context bank's trajectory byte (ARCH Table 3.1, bits
+  20–27; "metadata, never a verdict", l.3103–3105). This makes a new layout version, v2.1.
+
+**Consumers:** K16, K22, K23, K12 (the layout version).
 
 ## 3. Mechanism
 
@@ -66,7 +77,9 @@ abnormal". The two observables are measured separately and honestly.
 - **Hypothesis:**
   - Q is invariant under voxel permutation within a window;
   - the survival profile is monotone in λ;
-  - the closed-form identities hold (recomputed on generated E and p̂).
+  - the closed-form identities hold (recomputed on generated E and p̂);
+  - E = 0 reads `MONO_UP`; an unmeasurable p̂ reads `AMBIGUOUS:insufficient`; a silent window takes no word;
+  - the null's window size, shape, zone and plane equal the study's.
 - **Phantoms:** lesions give `PEAK_DROP` with Q rising in amplitude; ligament gaps give `PEAK_DROP` (identified,
   damaged); complete absence with good placement gives `MONO_DOWN`; misregistration gives `unverifiable` or
   `AMBIGUOUS`, **never** `PEAK_DROP`.
@@ -77,12 +90,13 @@ Words and readings join the kept record and the context bank. Re-run `just first
 
 ## 8. Acceptance
 
-- **Behavioural correctness:** the decisions are pinned; the phantom words are as specified; first light is
-  re-run.
+Written first: `acceptance/K21.toml`.
+- **Behavioural correctness:** the decisions are pinned; the phantom words are as specified; first light is re-run,
+  and its decision diff is read against this chapter's behaviour-change record.
 - **Representation fidelity:** p̂_S and the nulls come only from `null`-role normals (a provenance test).
 - **Domain validity:** the word rates on `checking` normals: `MONO_UP` dominant, `PEAK_DROP` at its null rate,
   `AMBIGUOUS` rare. E10's 62% AMBIGUOUS is the precedent this must not repeat unexamined.
-- **Performance evidence:** milliseconds per structure.
+- **Performance evidence:** windows and places counted per structure; seconds as information.
 - **Evidence scope:** the K19 identity outcomes and the null-role normals.
 - **Invalidation:** a change to K19, the references, the windows, or the null roles.
 
@@ -99,3 +113,5 @@ Words and readings join the kept record and the context bank. Re-run `just first
   - the Codex review rounds (C5–C6; round 3 acceptance);
   - THE_KNEE §2 (change 5).
 - **2026-10-02:** specified in K00.
+- **2026-10-02, revision 1** (F50; ARCH §4.5): the null matched to the window statistic; the degenerate cases;
+  the trajectory byte as layout v2.1.

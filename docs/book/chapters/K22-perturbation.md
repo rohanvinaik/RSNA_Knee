@@ -48,7 +48,10 @@ A static knee has no time. Its anchors are steps in frame and encoding instead.
     disagreement.
   - The quantizer steps are fractions of a level.
 - **Cheap families** (R1–R3, QZ1–QZ3) run inside candidate and structure crops. **Expensive families** (R4–R5) run
-  on escalation only: a placement alarm, a committed object that flips under R1 or R2, or a hard zone.
+  on escalation only: a placement alarm, a committed object that flips under R1 or R2, or a hard zone (ARCH §4.3,
+  l.2759–2764).
+- **In DEPLOY** (internet off; the 9-hour budget), an escalation runs inside the kernel's own budget, or is skipped
+  and recorded `escalation_unavailable`. The Mac Pro serves build time only, and no kernel path reaches it.
 - **Perturbations are never votes.** s measures robustness; it is never a witness (K14).
 
 ## 4. Contracts
@@ -60,7 +63,8 @@ A static knee has no time. Its anchors are steps in frame and encoding instead.
 
 - **Python orchestration** re-uses the lens and reader kernels on perturbed crops.
 - **Threads with `nogil`** across perturbations, with ownership declared against the Numba and ITK threads.
-- **R4 and R5** on the Mac Pro as batch jobs where escalations accumulate.
+- **R4 and R5** on the Mac Pro as batch jobs where escalations accumulate at build time, the node identified first
+  (K01).
 - **Prior art:** KNEE_ARCHITECTURE §4.3. **Decision:** adopted, with the magnitude rule amended per Codex (a stated
   limitation instead of capping below uncertainty).
 
@@ -75,25 +79,38 @@ A static knee has no time. Its anchors are steps in frame and encoding instead.
 
 ## 7. Integration
 
-s and the flip axis join the kept record. K17 may use s only after its information test passes: where the keys
-above it tie, s must order planted phantoms above `checking` normals. Re-run `just firstlight`.
+s and the flip axis join the kept record, and K17 places s as its second key on ARCH's structural argument
+(l.4427–4430). s is read against phantoms of its size and zone (ARCH l.2779–2781).
+
+Two measurements are **reported** and **never admit or bar s**:
+- whether s orders P above `checking` normals where the keys above it tie;
+- whether s is a function of |z| (ARCH l.2784: "quantizer flips that only track |z|, so that s restates
+  magnitude").
+
+ARCH §6.1.4's admission test is admission by discrimination on one query, which the No Popery law forbids. The
+conflict is put to the founder (`provenance/build/revision_1.md`, §F24). Re-run `just firstlight`, and read its
+diff against this chapter's behaviour-change record.
 
 ## 8. Acceptance
 
-- **Behavioural correctness:** the decisions are pinned; QZ4 invariance holds; first light is re-run.
+Written first: `acceptance/K22.toml`.
+- **Behavioural correctness:** the decisions are pinned; QZ4 invariance holds; first light is re-run; no kernel path
+  reaches a remote node.
 - **Representation fidelity:** the limitation is recorded wherever uncertainty exceeds lesion scale. The count of
   such zones is reported.
-- **Domain validity:**
+- **Domain validity (discovery):**
   - stable false readings on `checking` normals, reported (K23's input);
-  - the phantom response of s;
-  - the information test's result.
-- **Performance evidence:** perturbations per study by family; escalation rate.
+  - the phantom response of s, per phantom family;
+  - the two reported measurements of s above.
+- **Performance evidence:** perturbations counted per study by family; escalations counted, and those skipped in
+  DEPLOY; seconds as information.
 - **Evidence scope:** the reading set of K13, K20 and K21, at the measured uncertainties.
 - **Invalidation:** a change to registration uncertainty, to a reader, or to the quantizer edges.
 
 ## 9. Open matters
 
-- **Facts:** whether s adds order beyond the magnitude readings (its information test).
+- **Facts:** whether s adds order beyond the magnitude readings. This is measured and reported, never gating.
+- **Policy (founder):** the conflict between ARCH §6.1.4's admission test and the No Popery law (K17, §F24).
 
 ## 10. Provenance and status log
 
@@ -103,3 +120,7 @@ above it tie, s must order planted phantoms above `checking` normals. Re-run `ju
   - Codex design round 1 (item 7);
   - founder ruling 5 (SESSION_BRIEF §3).
 - **2026-10-02:** specified in K00.
+- **2026-10-02, revision 1:**
+  - no admission of s by discrimination, its measurements reported only (F24);
+  - escalations in DEPLOY stay inside the kernel or are skipped (F38; ARCH §4.3);
+  - work counted (F39).
