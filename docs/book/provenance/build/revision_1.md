@@ -66,8 +66,8 @@ Grounding is filled in only from first-hand reading of the cited lines.
 | F24 | K22 admits the stability key by discrimination (phantoms above `checking` normals) | K22 | ARCH §6.1.4 l.4403–4406 and §4.3 l.2792–2793 prescribe the phantom-ordering admission; the No Popery law (founder, global) forbids seating by discrimination; ARCH l.4427–4430, l.2779–2781 (notes §F24) | s takes its place in ARCH's key order on ARCH's structural argument, read against phantoms of its size and zone; phantom ordering and |z|-redundancy reported, never gating; the conflict is reported to the founder | grounded |
 | F25 | K25's null claims "no shared answer by construction" across studies, which is false | K25 | ARCH §5.5 l.3639–3654, l.3735–3736, l.3783–3786; THESIS §7.1 l.1411–1413, §7.4 l.1518–1521, §7.6; THE_KNEE §2 change 6 (notes §F25) | null = bank-wise exchange within (zone class, regime, visibility pattern): preserves each bank's marginals, breaks co-occurrence; label-free; hard negatives → near-miss censors | grounded |
 | F50 | K21: window and null matching; zero-energy cases; layout extension | K21 | | | open |
-| F53 | K26: evaluation feedback kept apart from teaching; censor construction and chance tests | K26 | | | open |
-| F21 | unowned: suppression-failure readings, MCL fluid and thickening, variant recognition, agency warrants, censor chance tests, Tier-0 header machinery | several | | | open |
+| F53 | K26: evaluation feedback kept apart from teaching; censor construction and chance tests | K26 | ARCH §5.6 l.3839–3850 (near miss, four steps), l.3887–3893 (a noisy oracle writes censors slowly); §5.7 l.4036–4045 (teach on one fold, judge on the other); THESIS §7.6 l.1551–1560 (notes §F53) | a censor needs its named difference to mark the failures beyond chance and not the K-line's successes, with counts and bounds; folds rotate, and no study is judged by a case or censor its own fold wrote; R never writes | grounded |
+| F21 | unowned: suppression-failure readings, MCL fluid and thickening, variant recognition, agency warrants, censor chance tests, Tier-0 header machinery | several | ARCH §2.5 l.1092 (MCL law: fluid around the band; band thickened); lens 5 (Tables 2.8a/b row 5) and Table 5.10 row 2; §5.9 step 3 l.4182–4184 (variant laws); §5.2 Table 5.2 (agency checks); §3.2.4–§3.2.6 (tag header, zone word, Tier 0) (notes §F21) | owners: lens 5 (suppression map) → K10; MCL shell volume → K13, band thickness lens → K20 (a law term with no lens in ARCH); variant laws → K14 step 3, readings in K13/K20, pseudotear zones in K08; agency warrants from Table 5.2 → K16; tag header K05, zone word K12 (+K21/K22 pairs), Tier 0 → K27 behind its skip-miss rate | grounded |
 | F22 | unowned: K19's displaced-fragment phantoms; K24's reference builder | K11, K19, K24 | | | open |
 | F48 | K19: surface extraction, damaged configurations, independent placement validation | K19 | | | open |
 | F49 | K20: the missing injury measurements | K20 | | | open |
@@ -87,7 +87,7 @@ Grounding is filled in only from first-hand reading of the cited lines.
 | F10 | acceptance is prose, with no commands, fixture digests or numeric expectations | all | | | open |
 | F11 | replay: backend equivalence vs an authorized behaviour change; recursive staleness; selected versions; K27 skips an unselected K24 | K02, K18, K27 | | | open |
 | F12–F15 | false properties: hashed folds "balanced within one"; tercile ties; longest gap not additive; binomial bounds not monotone | K03, K12, K20 | | | open |
-| F41 | K06: report-negative coverage; independent adjudication of parser errors | K06 | | | open |
+| F41 | K06: report-negative coverage; independent adjudication of parser errors | K06 | ARCH §5.7 Table 5.12 (true normals 'establish absent only as far as their reports do'), l.3938, l.3946–3949 (three states), l.3974–3983 (parser miss vs report–gold disagreement, told apart by reading the sentence) (notes §F41) | per study and finding: asserted, negated or silent; N is absent only where negated or covered by a normal statement; parser errors adjudicated by a reader of the sentence (the lead, the founder for soft cases), never by the parser | grounded |
 | F45 | K13: acquisition-specific evidence; uncertainty propagation | K13 | | | open |
 | F47 | K17: comparable evidence ordering | K17 | ARCH §6.1.4 l.4388 ('each key is compared only with itself across studies'), Table 6.1 keys l.4399–4425; THE_KNEE §2 change 9 | keys compared only like with like; a study lacking a key is ordered only by the keys it shares (K17, to edit) | grounded |
 | F54 | K27: version-aware replay; conditional score estimates | K27 | ARCH §6.1.5 facts 1–3 l.4470–4486 | K27 reports the score as ARCH's conditional identities: the open shares and the decided accuracy per finding, never one number | grounded |
@@ -125,6 +125,7 @@ delegated (R4).
 | 2026-10-02 | ARCH | 2661–2795, 4300–4517 | §4.3; §6.1 |
 | 2026-10-02 | ARCH | 1016–1081, 2795–2929 | §2.4; §4.4 |
 | 2026-10-02 | ARCH | 802–875, 1433–1520, 1594–1765 | §2.2; §2.10–§2.11; §3.2 |
+| 2026-10-02 | ARCH | 3796–4060 | §5.6–§5.7 |
 </content>
 </invoke>
 <invoke name="Bash">
@@ -453,3 +454,50 @@ git log --oneline -2
   DETERMINISTIC_SICP §7–§8 say the same.
 - **Disposition (all performance-evidence fields).** Work and bytes are counted per unit (places, rows,
   perturbations, bytes scanned). Seconds are recorded beside them as information.
+
+### §F53 — censors decided against chance, and evaluation kept apart from teaching
+- **The near miss.** ARCH §5.6 l.3839–3850 runs it in four steps. A failure is contradicted by the agency's own
+  oracle. Its K-line is read beside it. The difference is named by the exact decode. It is "decided against
+  chance" in one of three forms: a censor, a split K-line, or nothing.
+- **A noisy oracle writes censors slowly** (l.3887–3893). A report-confirmed censor needs its difference to "mark
+  several such failures beyond chance, and not the K-line's report-confirmed successes". On a soft finding only
+  gold or the founder can confirm one. Refusals never write one.
+- **Folds rotate.** §5.7 l.4036–4045: teach on one fold, judge on the other, rotating. "No study is judged by a
+  case or censor its own fold wrote."
+- **Disposition (K26).**
+  - The chance test compares the difference's rate among confirmed failures with its rate among the K-line's
+    confirmed successes. Each rate carries its count and bound, and the test reads `insufficient` where the
+    counts cannot bound it.
+  - Evaluation is never teaching. A failure seen on the judging fold writes nothing for that fold. R writes
+    nothing at all (§F20).
+
+### §F41 — what a report-negative covers, and who adjudicates the parser
+- **True normals.** ARCH Table 5.12: they are "chosen by the parser from text alone" and "establish "absent" only
+  as far as their reports do".
+- **The parser's states.** l.3946–3949 keeps three states (asserted, negated, absent), and "an unmentioned
+  effusion is no evidence". l.3938: a report with no terms is "reported, not folded into negatives blindly".
+- **Two kinds of error.** l.3974–3983 tells a parser miss from a report–gold disagreement "by reading the hit
+  sentence".
+- **Disposition (K06).**
+  - Per study and finding, the call is asserted, negated or silent.
+  - An N member is `absent` for a finding only where its report negates the finding or states the structure
+    normal. Elsewhere it is `silent`, and it serves only as a no-mention normal.
+  - A parser disagreement is adjudicated by a reader of the sentence: the lead, and the founder for soft
+    findings. It is never adjudicated by the parser.
+
+### §F21 — owners for what no chapter held
+- **The suppression map.** Lens 5 is "the share of fat voxels left FS-bright and T1-bright" (Table 2.8a row 5).
+  The failed-suppression censor is Table 5.10 row 2. It belongs to K10, beside the signature, and K14 and K20
+  consume it.
+- **The MCL.** The law is §2.5 l.1092: "fluid around an intact band (sprain); the band thickened, interrupted or
+  absent (tear)".
+  - The shell's fluid volume is lens 12, in K13.
+  - Band thickness is named by the law, but Table 2.8a has no lens for it ("one per law term", recipe step 2).
+    K20 adds it as a questionless lens: the MCL band's thickness, coronal.
+- **Variant laws.** §5.9 step 3 (l.4182–4184) names red marrow, the physeal scar, physiological fluid, pad
+  clefts and the pseudotear sites. Their readings live in K13 and K20, the pseudotear zones in K08, and the test
+  in K14's split.
+- **Agency warrants.** They come from Table 5.2's "Its check (supports only)" column and are listed per agency
+  in K16.
+- **Headers and Tier 0** (§3.2.4–§3.2.6). The tag header is K05's. The zone word is K12's, with K21 and K22
+  adding their pairs. Tier 0 lives in K27, switched on only when its skip-miss rate is near zero (l.1749–1751).
