@@ -173,6 +173,52 @@ sub-agents launched at 16:33Z. They were stopped before reporting, and nothing o
 > overt failure on your part. On your readings, yes, my warrant was general and high-level, not open authority. And
 > the competition's literal data and framing is acceptable, not implicit warrants on design or conception.
 
+## 2026-10-02 — the lens principle
+
+> **23:50:20Z** When I say that no single lens is allowed to have a warrant, complete unilateral authority on a
+> decision, I am saying something very explicitly grounded in information theory. This is a thesis based on the work
+> I did in the "what is an <object>" thesis on computer vision. Specifically, lenses that are intentionally lossy,
+> that do not encode a specific 1:1 relationship to a specific element of "truth", do not have authority to warrant
+> a decision unilaterally. A lens is an instrument, an artifact of observation. It does not say "this is the purpose
+> of <X>". It simply measures, says things like "the intensity is <X>" or "the variance of the signal in this
+> location is increasing with a directional vector of <x,y>". The interpretation is a construction on top of them.
+> If the *meaning* of what they observe is definable, then it is encoded as such. So, the answer to question 1 is
+> dependent on what you define as "direction", "exclusion", and "lenses". A measurement is different from a
+> statement of truth. Properly-designed lenses are never wrong, by definition. They only measure something, a
+> specific and objective fact of the problem space. The reason why this is described as "computer vision" is because
+> we assign an interpretation of what these signals mean. The "<object>" thesis really goes into depth about this
+> with the worked example of cell microscopy
+>
+> On "the halo", again, this is where the information-theoretic concept here is really important to understand. A
+> halo can be both. Are you trying to see if there's an active fracture? Well, fractures have concomitant edema when
+> they're relatively fresh, no? So in that case, it's actually *part* of what assigns meaning to other lenses that
+> see something that looks kind of like a fracture but can't fully warrant. But when it comes to the question of
+> "what are the specific <x,y> coordinates of the line-drawing process that traces the exact fracture, then edema is
+> noise to remove. The point here isn't to find some clean metric that hands you the perfect and complete answer.
+> This is the core part of why and how this is a deterministic and classical AI computer vision approach. Meaning is
+> derived from structure, not computed from some magical metric that solves everything.
+>
+> This should also address "independence classes". The answer to "A ≇ B", "B ≇ C", and "A ≠ C" is "yes". That's not
+> a contradiction, it's a finding. The epistemology of deterministic approaches to machine intelligence is
+> principled abstention--you know what you know, you know what you don't know, and those are both complete and
+> correct assertions of the process of reasoning
+>
+> I think this is rather enough to get started. Think about it, think through the theory this is based on and how it
+> informs your understanding of the whole project, and take it to codex too to work it out. Then, we see what we
+> need to change about the project design to properly adhere to this load-bearing principle
+
+## 2026-10-02 — what a Codex consultation is
+
+> **23:56:22Z** No, not the full thesis. Codex is meant to be a minimal common-sense check, not a dump. The whole
+> point is that you can drift in understanding by having an overloaded context window, but a fresh look assigns
+> significance differently, so can catch you if you're missing something important and/or obvious
+>
+> You are only supposed to include your question/understanding and my literal words, to maintain maximal semantic
+> purity for the reasoning operation
+
+(A first send at 23:55:42Z, the first paragraph alone, was interrupted; the 23:56:22Z text stands. It answered a
+plan to send Codex the whole thesis with the lead's reading.)
+
 ## The engineering intent, in the founder's earlier words (2026-08-31, DETERMINISTIC_SICP §1.1)
 
 > "I see this as a resource optimization problem. We want to optimize several 'independent' systems at the same
