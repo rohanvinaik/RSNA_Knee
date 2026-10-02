@@ -23,8 +23,8 @@ actually are.
 - **Produced:**
   - `docs/book/records/K01-capabilities.toml`: tools, runtimes and machines only, with no
     competition-derived content; dated, with how each fact was measured.
-  - `data/records/K01/`, gitignored: the local data census (transfer syntaxes, tags), which is
-    competition-derived.
+  - the local data census (transfer syntaxes, tag presence, counts): a derived record, which may enter git
+    (AGENTS override 7). Its raw logs stay in `data/records/K01/`.
 - **Consumers:**
   - K02 picks the VERIFY Python and builds DEPLOY from the measured Kaggle versions.
   - K05 chooses decoders.
@@ -47,6 +47,10 @@ Five measurements, each recorded with its date, its method and its raw output lo
      - one `diagnose` on a legacy pure function (`src/RSNA_Knee/scoring.py::auc_status`), read whole.
    - The project interpreter it runs under is recorded. The current venv is conda-based, and EP-C4 warns
      against that.
+   - **Before K02's wrapper exists,** these runs use the module form directly. Each run's complete stdout and
+     stderr is captured to `data/records/K01/detective/<stamp>-<verb>.log` with its exit status, and read whole
+     (the house protocol). The filter hook does not see the module form, which is why the capture matters. K02
+     re-runs this probe through `just detective`.
 2. **The Kaggle runtime** — a **private dry-run kernel**, never a submission.
    - The push follows `../../CLAUDE.md`'s Kaggle protocol: a push dir with `kernel-metadata.json` and
      `competition_sources`, the CLI authenticated from `KAGGLE_API_TOKEN` loaded from
@@ -59,7 +63,9 @@ Five measurements, each recorded with its date, its method and its raw output lo
        pandas;
      - the decode of every public test sample slice, grouped by transfer-syntax UID.
 3. **The Mac Pro** (`squishhub`), through SquishOS only.
-   - `squishos-fleet card squishhub`, then `verify squishhub`; the card says its last verification is stale.
+   - **Identify the node first:** `squishos-fleet profile squishhub` (no network), then `card` and
+     `verify squishhub`; the card says its last verification is stale. The compute runbook says it plainly:
+     "Measure what that environment actually has before trusting a workload to it".
    - A probe job via `squishos-compute run squishhub -- '<probe>'`, measuring:
      - the Python versions, uv's presence, free disk and cores;
      - Docker's presence;
@@ -98,6 +104,7 @@ K02's configuration and every language decision cite `K01-capabilities.toml` by 
 
 ## 8. Acceptance
 
+Written first: `acceptance/K01.toml`.
 - **Behavioural correctness:**
   - each of the five measurements is recorded, or carries a named "unknown";
   - the dry-run kernel's status is `COMPLETE` and its log is read whole;
@@ -124,8 +131,11 @@ K02's configuration and every language decision cite `K01-capabilities.toml` by 
 ## 10. Provenance and status log
 
 - **Sources:**
-  - SquishOS `docs/runbooks/fleet.md` and `compute.md`;
+  - SquishOS `docs/runbooks/compute.md`, the operative path for jobs. `docs/runbooks/fleet.md` still says that
+    offloading is NOT-BUILT (its l.52–53). That stale line belongs to SquishOS, to be fixed there;
   - `../../CLAUDE.md` (the Kaggle protocol);
   - Detective `ARCHITECTURE.md` §11;
   - `THE_KNEE.md` §3.6 and §4.
 - **2026-10-02:** specified in K00.
+- **2026-10-02, revision 1:** the pre-K02 Detective capture (F29); the node identified before any job (F37);
+  the compute runbook cited as operative (F36); the census as a derived record (R2).

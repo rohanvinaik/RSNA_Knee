@@ -27,18 +27,28 @@ all-questions recognition table, plus an authored corpus of known answers and kn
   - series classes (plane × contrast family × suppression);
   - tissue words, object classes, roles, decision words and causes. Object classes include lesion-object kinds,
     structures, input error, instrument, variant, unclaimed and overlapping material.
-- **Panels:**
-  - **G**: the 58 gold studies, study-level labels only, in deterministic rotation folds.
-  - **N**: report-negative candidates. Membership is filled by K06. Roles come from a deterministic partition
-    by study-UID digest and declared proportions: `reference`, `null`, `chance`, `host`, `checking`,
-    `template_build`, `template_check`.
-  - **T**: report-labeled *teaching* studies, the only report-labeled studies that build anything (cases in K25,
-    quantizer edges in K12).
-  - **R**: report-labeled studies held out of every store, T included, and used only to judge. T and R are
-    disjoint, by a deterministic partition of the report-labeled studies.
-  - **P**: phantoms (K11).
-- **The recognition table:** per object class × role: identified, abstained, wrong. Each count carries an exact
-  binomial bound, or reads `insufficient`.
+- **Panels.** The training studies are G and the report-labeled rest. The rest is first split, by a deterministic
+  partition, into T and R, and N is drawn from T's side only. So R is held out of everything (ARCH Table 6.3:
+  "held out of every store"; rule 1, "One role per study per measurement").
+  - **G**: the 58 gold studies, study-level labels only, in deterministic rotation folds. No gold study is
+    all-negative, so none is in N.
+  - **T**: report-labeled *teaching* studies, the only report-labeled studies that build anything: cases in K25,
+    and the quantizer edges set once readings exist (K12, K13).
+  - **N** ⊂ T: report-negative candidates. Membership is filled by K06, with its coverage per finding: negated,
+    or silent (§F41). Roles come from a deterministic partition by study-UID digest and declared proportions:
+    `reference`, `null`, `chance`, `host`, `checking`, `hardness_build`, `hardness_check`, `template_build`,
+    `template_check`.
+  - **R**: report-labeled studies held out of every store: references, templates, quantizers, nulls, maps and
+    case memory. They are used only to judge.
+    - Only R's triples are read, to replicate a direction (ARCH §6.3). Its objects are never inspected to design
+      a change, or R would become development evidence.
+    - R's report-negatives serve only as R's own clean negatives.
+  - **P**: phantoms (K11), with their stated assumptions.
+- **The recognition table:** every question of every object, per object class × role × question: identified,
+  abstained, wrong, or `oracle_unavailable`.
+  - Each cell names its oracle and the truth it asserts.
+  - Each count carries an exact binomial bound over its *independent unit*, the study, never voxels or objects
+    within one study, or reads `insufficient`.
 - **The authored acceptance corpus** (`tests/corpus/`, in git): synthetic kept records and decisions, written
   independently of any data, each with its expected table, **expected abstentions included**.
 - **The scorer and writer:**
@@ -51,17 +61,27 @@ all-questions recognition table, plus an authored corpus of known answers and kn
 
 - **The partition** is `role_of(study_digest, proportions) -> role`: a pure, total function with declared
   proportions. It is written down before any run and versioned.
-- **Rotation** is `fold_of(study_digest, k) -> int`, likewise.
+- **Rotation** is `fold_of(sorted_digests, k) -> {digest: fold}`. Studies are dealt round-robin over their sorted
+  digests, which is deterministic and balanced within one by construction. A hash alone guarantees no balance
+  (§F12).
 - **The recognition table** is computed from kept records (K14's schema; its v0 is defined here and extended
-  there) against the oracle each role allows: gold at study level; phantom truth; report calls, marked noisy.
+  there). Each cell's oracle is one of four:
+  - `G_study`: gold, study-level only. It never grades where an object is;
+  - `report_localized`: a localized report call, marked noisy (K06);
+  - `phantom`: truth by construction;
+  - `none`, where the cell reads `oracle_unavailable`, never wrong.
+
+  Report silence is `oracle_unavailable` for that question, never a negative. Localization is graded only by
+  `phantom` or `report_localized` (ARCH §5.3, l.3417–3419).
 - No sum across classes is ever computed.
 
 ## 4. Contracts
 
-- Study lists and memberships are competition-derived. They live in `data/panels/` (gitignored) with a manifest
-  whose digest is committed.
-- The table's schema: `{object_class, role, oracle, identified, abstained, wrong, n, bound_low, bound_high,
-  status: measured|insufficient}`.
+- **Where the records live.** Panel memberships, role assignments and their manifest digests are derived
+  records, and they enter git (AGENTS override 7; founder, 2026-10-02). The pixels and report text never do.
+- **The table's schema:** `{object_class, role, question, oracle: G_study|report_localized|phantom|none,
+  truth: positive|negative|none, identified, abstained, wrong, oracle_unavailable, n_studies, bound_low,
+  bound_high, status: measured|insufficient}`.
 
 ## 5. Implementation choice
 
@@ -77,9 +97,11 @@ all-questions recognition table, plus an authored corpus of known answers and kn
   converged.
 - **Hypothesis laws:**
   - each class's counts sum to its n;
-  - the bounds are monotone in n;
+  - every bound contains its rate, and no monotone claim is made (§F15);
   - the partition is stable under re-ordering of input;
-  - the fold sizes are balanced within one.
+  - the fold sizes are balanced within one, which holds by construction of the round-robin;
+  - no R study holds any building role;
+  - N ⊂ T.
 - **The scorer:** SAME against the legacy scorer on toy columns (exact equality), plus §6.1.5 of KNEE_ARCHITECTURE
   (AUC facts 1–3) reproduced on authored columns.
 - **The validator, adversarially:** a missing column, an extra ID, NaN, inf, an out-of-range value, a duplicate
@@ -92,6 +114,7 @@ all-questions recognition table, plus an authored corpus of known answers and kn
 
 ## 8. Acceptance
 
+Written first: `acceptance/K03.toml`.
 - **Behavioural correctness:**
   - the authored corpus passes: answers **and abstentions** as expected;
   - the validator rejects every malformed case.
@@ -104,8 +127,14 @@ all-questions recognition table, plus an authored corpus of known answers and kn
 
 ## 9. Open matters
 
-- **Policy:** the role proportions of the N pool. Proposed: reference 40%, null 15%, chance 15%, host 10%,
-  checking 10%, template_build 5%, template_check 5%. The founder may amend before K08 builds templates.
+- **Policy:** the role proportions of the N pool. Proposed:
+  - reference 35%;
+  - null 10%, chance 10%, host 10%, checking 10%;
+  - hardness_build 10%, hardness_check 5%;
+  - template_build 5%, template_check 5%.
+
+  The founder may amend them before K08 builds templates. The T : R split of the report-labeled rest is proposed
+  at 1 : 1.
 
 ## 10. Provenance and status log
 
@@ -114,3 +143,9 @@ all-questions recognition table, plus an authored corpus of known answers and kn
   - KNEE_ARCHITECTURE §6.2.5 (panels) and §6.1.5 (AUC facts);
   - the global `no-popery.md`.
 - **2026-10-02:** specified in K00.
+- **2026-10-02, revision 1:**
+  - the oracle contract, `oracle_unavailable` and bounds over studies (F19);
+  - R held out of every store, with N ⊂ T and the hardness roles named (F20);
+  - round-robin folds (F12);
+  - no monotone bound (F15);
+  - panel records in git (F33, R2).
