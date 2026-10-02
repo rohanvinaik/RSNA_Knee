@@ -41,14 +41,26 @@ study's inventory, regime key and identifiable sets.
    disagreements are kept as findings.
 3. **Decoding.** `decoder_for(transfer_syntax_uid, available) -> code`. Stored values are kept as int16 or uint16
    per bits stored and signedness. Rescale is applied only where a consumer declares it.
-4. **Geometry.** A patient-space affine per series from IPP, IOP and spacing. Slices are ordered along the normal.
-   Enhanced multi-frame series are handled when present.
+4. **Geometry, validated across slices** (ARCH §2.4 consequences 3–5 and its failure modes).
+   - Each slice keeps its own ImagePositionPatient (IPP). Slices are ordered along the normal.
+   - `geometry_check(per_slice_iop, per_slice_ipp, slice_thickness, spacing_between_slices) -> regular |
+     irregular:<cause> | inconsistent:<cause>`. It checks four things:
+     - the orientation is constant across slices;
+     - the positions are monotone along the normal, with no duplicates;
+     - the gaps agree with SpacingBetweenSlices within a stated tolerance;
+     - the plane flag agrees with ImageOrientationPatient.
+   - A `regular` series is described by one affine.
+   - An `irregular` series (variable gaps, a missing slice) is placed by its per-slice positions, never by one
+     assumed affine.
+   - An `inconsistent` series (orientation changing within it) is silent for every reading that needs a frame.
+   - Enhanced multi-frame series are handled when present.
 5. **Inventory and regime.**
    - The inventory is the set of (plane, family, suppression).
    - The regime key is (field, vendor, family per series), with a fallback chain (field → vendor → family)
      declared for K09.
-6. **Identifiable sets.** `identifiable(inventory_timings) -> {within_plane: [...], cross_plane: [...]}` names
-   which contrasts a study offers:
+6. **Identifiable sets.** These are kept apart from the inventory, which is the contrasts *available*. ARCH §3.2.4
+   gives them separate words. `identifiable(inventory_timings) -> {within_plane: [...], cross_plane: [...]}`
+   names which law terms the available contrasts *identify*:
    - a TE contrast at the same fat state;
    - a TR contrast at the same fat state;
    - a fat pair at comparable TR and TE.
@@ -61,9 +73,11 @@ study's inventory, regime key and identifiable sets.
 ## 4. Contracts
 
 - **`SeriesHeader`:** typed fields; each absent tag reads `absent`; no guessing.
-- **Stored-value arrays:** shape (slices, rows, cols), dtype per bits stored, C order, the patient-space affine
-  beside it (float64, mm), slice order.
-- **Records** are JSONL in `data/store/ingest/<version>/`. Competition-derived, so never in git.
+- **Stored-value arrays:** shape (slices, rows, cols), dtype per bits stored, C order. Beside them sit the
+  per-slice positions and the geometry code, the patient-space affine for a `regular` series (float64, mm), and
+  the slice order.
+- **Records.** The header records and stored values live in `data/store/ingest/<version>/`. The census tables
+  and the inventory and identifiable-set counts are derived records, and they may enter git (AGENTS override 7).
 
 ## 5. Implementation choice
 
@@ -79,8 +93,15 @@ study's inventory, regime key and identifiable sets.
 
 ## 6. Verification
 
-- **Detective:** `sequence_family`, `decoder_for`, `identifiable` and `shard_of` are converged.
-- **Intent tests** (authored synthetic headers): every family, missing tags, malformed values.
+- **Detective:** `sequence_family`, `decoder_for`, `identifiable`, `geometry_check` and `shard_of` are converged.
+- **Intent tests** (authored synthetic headers):
+  - every family;
+  - missing tags;
+  - malformed values;
+  - irregular gaps;
+  - a missing slice;
+  - an orientation change within a series;
+  - a plane flag that contradicts IOP.
 - **Hypothesis:** the geometry's slice order is invariant under shuffled input order.
 - **SAME:** decoded values are equal across the M1 Max and the Mac Pro on a sample of each transfer syntax.
 
@@ -92,16 +113,19 @@ study's inventory, regime key and identifiable sets.
 
 ## 8. Acceptance
 
+Written first: `acceptance/K05.toml`.
 - **Behavioural correctness:**
   - every series has a header record or a named failure;
   - every observed transfer syntax decodes, or is named unsupported;
   - the pure decisions stand pinned.
 - **Representation fidelity:** the inventory reproduces `train_series.csv`'s plane and flags, with disagreements
   listed.
-- **Domain validity:** the identifiable-set distribution, within and across planes, is recorded (in `data/`);
-  Q6 and the "T1-like means PD?" question are answered with counts.
-- **Performance evidence:** series headers per second and slices decoded per second, per node, scoped as
-  "headers only" or "decode only".
+- **Domain validity (discovery):** recorded, never gating:
+  - the identifiable-set distribution, within and across planes;
+  - the geometry codes per class;
+  - Q6 and the "T1-like means PD?" question, answered with counts.
+- **Performance evidence:** series headers and slices decoded, counted per node, with bytes read; seconds as
+  information. Scoped as "headers only" or "decode only".
 - **Evidence scope:** the training corpus at fetch time, and the nodes named.
 - **Invalidation:** a change to a decoder or codec version, to the pydicom version, or to the competition data.
 
@@ -120,3 +144,6 @@ study's inventory, regime key and identifiable sets.
   - `provenance/review/reading_claude.md` §3 (the 45-series tag probe; the inventory from flags);
   - THE_KNEE §3.5 and §4.
 - **2026-10-02:** specified in K00.
+- **2026-10-02, revision 1:** geometry validated across slices, with per-slice placement for irregular series
+  (F40, F17; ARCH §2.4); the available contrasts kept apart from the identifiable set (F40; ARCH §3.2.4); work
+  counted (F39); census records in git (R2).

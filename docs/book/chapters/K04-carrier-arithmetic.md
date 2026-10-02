@@ -20,11 +20,13 @@ To build the one language's arithmetic: domain-independent, exact, and fast.
 ## 2. Dependencies and consumers
 
 **Produced (`knee.core.ledger`):**
-- `CarrierSpec`: banks, rows per bank (512), the declared limits R, C, |a| and |b|.
+- `CarrierSpec`: banks, rows per bank (512), and the declared limits: C (the largest count per coordinate), R
+  (every allocated coordinate of every bank a question names), and |a|, |b|.
 - `row_sign(bank_row, j)`: the Sylvester–Hadamard entry `(-1)**popcount(i & j)` by index arithmetic. The matrix
   is never materialized.
 - `bundle(rows)` → count table; `unbundle` by subtraction.
-- `level(u_counts, v_counts, mask, a, b)` → `reaches | short | silent`.
+- `level(u_counts, v_counts, read_banks_u, read_banks_v, question_banks, a, b)` → `reaches | short | silent`, or a
+  refusal (`limit_exceeded:<which>`, `level_out_of_domain`).
 - `decode_difference(u, v, layout)` → named rows with count deltas.
 - `pack_signs(counts)` → two uint64 bit-planes per bank, plus `hamming_order(...)` (ordering only).
 
@@ -32,16 +34,28 @@ To build the one language's arithmetic: domain-independent, exact, and fast.
 
 ## 3. Mechanism
 
-- **Profiles are count tables**, int32, one row per coordinate. Because the rows are exactly orthogonal, the
-  vector's cosine **equals** the count table's cosine. The vector is therefore never built: "For one comparison,
-  then, the vector adds nothing a count table lacks" (THESIS §12.1).
-- **The level test.** For a question's mask M (the coordinates of the banks both sides speak in; the same mask
-  for the dot product and both norms):
-  - dot = Σ_M u·v, computed in binary64. This is exact, because the limits are checked first:
-    C ≤ 2^20 per coordinate and R ≤ 2^9 coordinates give dot ≤ 2^49 < 2^53.
-  - Then `reaches ⟺ b²·dot² ≥ a²·‖u‖²_M·‖v‖²_M`, evaluated in i128 or Python int (≤ 2^118 for
-    |a|, |b| ≤ 2^10).
-  - `silent` means either side has no coordinate in M.
+- **Profiles are count tables**, int32, one row per coordinate.
+  - The rows are exactly orthogonal (H Hᵀ = 512 I), so the materialized vectors' dot product and squared norms
+    are exactly 512 times the tables' whole-number ones.
+  - The cosines are therefore equal *algebraically*. A float cosine, through square roots, is never compared
+    bitwise and never decides.
+  - The vector is never built: "For one comparison, then, the vector adds nothing a count table lacks" (THESIS
+    §12.1).
+- **Silence is a bank, read off the coverage record** (THESIS §6.3: "The informational zero is a silent bank").
+  The question's mask M is every coordinate of the banks the question names that *both* sides read (ARCH §3.5.2).
+  It is never inferred from zero counts. The same M feeds the dot product and both norms.
+- **The level test** (THESIS §12.2: "Counts are never negative, so a cosine reaches the level a/b exactly when
+  b² · dot² ≥ a² · ‖u‖² · ‖v‖²"):
+  - **The level's domain:** integers 0 ≤ a ≤ b, b ≥ 1, written before the run. Anything else refuses
+    (`level_out_of_domain`). Counts are non-negative, so dot ≥ 0 and squaring loses no sign.
+  - **dot = Σ_M u·v** is computed in whole numbers. The limits are checked on the integer inputs first.
+    Binary64 BLAS is admitted for a batch only when R·C² < 2^53, where R counts every allocated coordinate of
+    every named bank; with C ≤ 2^20, that allows R ≤ 2^12, eight banks. Beyond that, int64 carries the dot (exact
+    while R·C² < 2^63), and Python int beyond that.
+  - **The decision:** `reaches ⟺ b²·dot² ≥ a²·‖u‖²_M·‖v‖²_M`, in i128 or Python int.
+  - **`silent`** when M is empty, *or* when either side's norm over M is zero (every read row unlit: ARCH
+    §3.5.3's *orthogonal*). "A pair with nothing to compare abstains" (THESIS §12.2). It never reaches, which
+    the squared test would otherwise give at 0 ≥ 0.
 - **The decode** is `v − u` per coordinate. A difference is named as (bank, row, Δcount). THESIS §6.6: "this bank,
   this metric, so many more places below the middle".
 - **Packed signs order a scan's candidates.** A case is dropped only on a proved bound: sign agreement bounds
@@ -51,8 +65,9 @@ To build the one language's arithmetic: domain-independent, exact, and fast.
 
 - Counts are non-negative int32.
 - A limit violation refuses with `limit_exceeded:<which>` **before** any float conversion.
-- Masks are boolean over coordinates; the same mask feeds the dot product and both norms.
-- Levels are ratios of whole numbers written before the run.
+- A side's read banks come from its coverage record. The mask is their intersection over the question's banks,
+  and the same mask feeds the dot product and both norms.
+- Levels are ratios of whole numbers in [0, 1], written before the run.
 - The layout version travels with every table. Comparing tables of different layouts refuses with
   `layout_mismatch`.
 
@@ -82,7 +97,10 @@ To build the one language's arithmetic: domain-independent, exact, and fast.
   - re-seeding the row order changes no count and no cosine (QZ4: a seed change that moves anything is a fault);
   - rows are orthogonal, checked by index arithmetic on sampled pairs;
   - the level test agrees with exact rational arithmetic on every generated case, boundary cases included;
-  - over-limit inputs refuse;
+  - a zero norm over M answers `silent`, never `reaches`;
+  - a bank read on one side only is out of M on both;
+  - a level outside its domain refuses;
+  - over-limit inputs refuse, and the backend choice (BLAS, int64, Python int) follows R·C²;
   - packed-sign ordering never drops a case.
 - **Detective:** `level` and the limit and mask decisions are converged (literal and bounded-array inputs).
 - **SAME** for every Numba twin: equal counts, equal codes.
@@ -93,14 +111,17 @@ To build the one language's arithmetic: domain-independent, exact, and fast.
 
 ## 8. Acceptance
 
+Written first: `acceptance/K04.toml`.
 - **Behavioural correctness:** the laws hold; the refusals are named; standing is pinned for the decisions.
-- **Representation fidelity:** cosine(count tables) equals the materialized-vector cosine, exactly, on
-  generated cases. A test-only materialization serves as the twin.
+- **Representation fidelity:** on generated cases, the tables' whole-number dot and norms equal 1/512 of the
+  materialized vectors', exactly, and the level decision agrees. A test-only materialization serves as the twin.
+  The float cosines are reported within a stated tolerance, and they decide nothing.
 - **Domain validity:** not applicable.
-- **Performance evidence:**
-  - comparisons per second for one profile against 10^5 cases, in both the reference and the Numba backend;
-  - bytes scanned per comparison;
-  - scope: "M1 Max, float64 BLAS, R = 512".
+- **Performance evidence** (work counted; ARCH §3.2.6):
+  - comparisons, coordinates and bytes scanned per comparison, for one profile against 10^5 cases, in each
+    backend;
+  - seconds as information;
+  - scope: "M1 Max, the backend the R·C² rule chose".
 - **Evidence scope:** the generated inputs within the declared limits.
 - **Invalidation:** a change to the limits, the mask semantics, the level arithmetic, or the BLAS or backend
   semantics.
@@ -119,3 +140,6 @@ To build the one language's arithmetic: domain-independent, exact, and fast.
   - Codex design round 2 (A5);
   - cell-tracking `hdc/banks.py` (prior art).
 - **2026-10-02:** specified in K00.
+- **2026-10-02, revision 1** (F16): silence read from coverage; the level's domain; a zero norm is silent; R over
+  every named bank, with the backend chosen from R·C²; algebraic, not bitwise, equality of cosines (THESIS §6.3,
+  §12.2; ARCH §3.5.2–§3.5.3).
