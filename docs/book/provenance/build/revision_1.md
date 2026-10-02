@@ -46,10 +46,10 @@ Grounding is filled in only from first-hand reading of the cited lines.
 | F02 | tissue identity vs change: deviation signs cannot name healthy tissue, which K19 and K20 need | K10, K19, K20 | ARCH Table 2.3a, §2.3.2, lens 3, §3.4.3, l.3866 (notes §F02) | the word is a tissue level within the series against muscle; change = word against the zone's normal word, beside z | grounded |
 | F03 | witness provenance: a joint multi-series signature is counted as several per-series witnesses | K10, K13, K14 | ARCH §5.3 l.3408–3413 (independence classes), l.3487–3490 (the sandwich), l.3499–3503 (the record per series); §2.3 consequence 3 l.906–908; Table 5.1 rule 3 (notes §F03) | every reading carries its complete source set; voices are per acquisition; the joint signature is a law check that supports, never a voice | grounded |
 | F16 | K04 edge contracts: sign conditions of the squared level test; zero-norm tables; silence at bank level; R allocated vs active; float sqrt equality | K04 | | | open |
-| F17 | K07 geometry: domains, pullback direction, inverse construction; B-spline invertibility; laterality proof; irregular slices; uncertain chirality | K07 | | | open |
+| F17 | K07 geometry: domains, pullback direction, inverse construction; B-spline invertibility; laterality proof; irregular slices; uncertain chirality | K07 | ARCH §2.2 consequence 3 l.820–824 (patient-x sign, tag fallback, 97.8%); §1.8 l.581 (chirality is a constraint reading); §2.10 l.1470 (fibular-head landmark); §3.1 l.1583–1588 (one kept transform) (notes §F17) | chirality has three witnesses (patient-x, tag, fibular head once built); disagreement → chirality_uncertain on the constraint axis, never a guessed mirror; transforms map template→study, with the inverse used only where a Jacobian check holds; per-slice positions, not one affine | grounded |
 | F18 | K15: `hole` after masking is undefined; headers give no slice profile; subtraction needs an observation model or abstains | K15 | ARCH §4.4 l.2832–2836 (the take removes the law's contribution), l.2850–2865 (post-take check), l.2914–2916; §2.4 consequences 2–3 l.1041–1046; THESIS §4.5 l.793–795; THE_KNEE §2 change 4 (notes §F18) | mask mode (default): ring and lobe only, hole and impossible recorded not_applicable; contribution mode only under a stated law (Table 4.6 halos), with all four checks; the slice profile is a declared rectangular assumption of SliceThickness, measured on phantoms | grounded |
-| F40 | K05: geometry validated across slices; available contrasts vs identifiable quantities | K05 | | | open |
-| F42 | K08: independent landmark truth; common coordinates across plane templates | K08 | | | open |
+| F40 | K05: geometry validated across slices; available contrasts vs identifiable quantities | K05 | ARCH §2.4 consequences 3–5 l.1044–1058 and how it fails l.1075–1079; §3.2.4 l.1667–1672 | K05 validates per-slice geometry (orientation constant, positions monotone, spacing against the tag, plane flag against ImageOrientationPatient); irregular → geometry_irregular, read by per-slice positions or silent; contrasts available vs identifiable set kept apart (§3.2.4) | grounded |
+| F42 | K08: independent landmark truth; common coordinates across plane templates | K08 | ARCH §2.2 checkable output l.860–862; §2.10 l.1481–1492 (per-plane atlases must agree); §1.8 measured-by l.604–608 (deliberate misregistration) | landmark truth from known-transform tests and the founder's landmark sheet, never the registration's own output; cross-plane zone agreement measured as an L1/L3 check | grounded |
 | F43 | K09: the actual biological-variance estimator | K09 | | | open |
 | F44 | K11: independent physical assumptions; damaged-structure fixtures | K11 | | | open |
 | F52 | K24: nuisance gains and offsets in identifiability; physics-space references and their builder | K24 | | | open |
@@ -107,7 +107,7 @@ Grounding is filled in only from first-hand reading of the cited lines.
 | F36 | the fleet runbook says offloading is NOT-BUILT; the compute runbook supplies it | THE_KNEE §4, K01 | | | open |
 | F37 | identify the node before any remote action | K01 | | | open |
 | F38 | K22's escalation cannot reach the Mac Pro from offline Kaggle | K22 | ARCH §4.3 l.2759–2764 (R4 and R5 only on escalation); THESIS §12.6; AGENTS override 6 | in the kernel an escalation runs inside the kernel's own budget or is skipped as escalation_unavailable; the Mac Pro is build-time only | grounded |
-| F39 | performance evidence needs work and byte accounting, not seconds alone | several | | | open |
+| F39 | performance evidence needs work and byte accounting, not seconds alone | several | ARCH §3.2.6 l.1752–1757 ('Seconds … are informational only and never a go/no-go'; work counted per study); house performance.md | performance evidence = work and bytes counted per unit (with seconds as information), per DETERMINISTIC_SICP and ARCH | grounded |
 | F55 | K00: reconcile the authorities; executable acceptance | K00 | | | open |
 | F56 | K02: acceptance manifests, dependency-freshness checks, explicit layer contracts | K02 | | | open |
 
@@ -124,6 +124,7 @@ delegated (R4).
 | 2026-10-02 | THESIS | 1403–1610 | §7.1–§7.7 |
 | 2026-10-02 | ARCH | 2661–2795, 4300–4517 | §4.3; §6.1 |
 | 2026-10-02 | ARCH | 1016–1081, 2795–2929 | §2.4; §4.4 |
+| 2026-10-02 | ARCH | 802–875, 1433–1520, 1594–1765 | §2.2; §2.10–§2.11; §3.2 |
 </content>
 </invoke>
 <invoke name="Bash">
@@ -417,3 +418,38 @@ git log --oneline -2
   - **The profile assumption:** a rectangle of width SliceThickness, declared and measured on phantoms (ARCH
     l.2920–2923: ring, hole and lobe rates). Where SpacingBetweenSlices ≠ SliceThickness, the halo takes ARCH's
     bound and no subtraction is made.
+
+### §F17, §F42, §F40 — frame, landmarks and slice geometry
+- **Chirality.** ARCH §2.2 consequence 3 (l.820–824): "The side comes from the sign of the image center's
+  patient-x, with the Laterality tag as fallback … 97.8% tag agreement". §1.8 l.581 makes chirality a
+  constraint reading. §2.10 l.1470 names a fibular-head landmark the bone groups still lack.
+  - **Disposition (K07).** Chirality has three witnesses: the patient-x sign, the tag, and the fibular head's
+    side once K08 builds it. When they disagree the study is `chirality_uncertain`, read on the constraint
+    axis, and never mirrored by a guess.
+- **Transforms.** §3.1 l.1583–1588: one transform per study, kept and carried to every series. A B-spline
+  transform is not invertible by construction (a fact of the transform family).
+  - **Disposition.** Zones map template → study by the forward transform, which needs no inverse. The inverse
+    is used only where a Jacobian-determinant check holds over the region, and that check is a constraint
+    code.
+  - Slices are placed by their own ImagePositionPatient, never by one affine assumed for the whole series.
+- **Landmark truth.** §2.2 l.860–862 sets the expectation: "Template-propagated knee landmarks have errors of
+  2.05 ± 1.30 mm". §1.8 l.604–608 measures with deliberate misregistration. §2.10 l.1458: the one human
+  artifact is the founder's eye-check.
+  - **Disposition (K08).** Truth comes from known-transform tests (truth by construction) and from the
+    founder's landmark sheet. It never comes from the registration's own output.
+  - Cross-plane zone agreement is measured as the L1/L3 check of l.1488.
+- **Slice geometry.** §2.4 consequences 3–5 (l.1044–1058) and its failure modes (l.1075–1079): spacing beside
+  every slice count; the plane flag checked against ImageOrientationPatient.
+  - **Disposition (K05).**
+    - Per-slice geometry is validated: orientation constant, positions monotone along the normal, spacing
+      against the tag, and the plane flag against ImageOrientationPatient.
+    - An irregular series is recorded `geometry_irregular`. It is read by per-slice positions, or it is
+      silent.
+    - The available contrasts (the inventory) and the identifiable set (§3.2.4) are kept as separate words.
+
+### §F39 — performance is work counted
+- ARCH §3.2.6 l.1752–1757: "The saving is measured in work counted per study … Seconds on the build machine,
+  if recorded at all, are informational only and never a go/no-go". The house `performance.md` and
+  DETERMINISTIC_SICP §7–§8 say the same.
+- **Disposition (all performance-evidence fields).** Work and bytes are counted per unit (places, rows,
+  perturbations, bytes scanned). Seconds are recorded beside them as information.
