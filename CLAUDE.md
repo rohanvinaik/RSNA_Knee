@@ -4,10 +4,19 @@
 
 ## Claude Code specifics
 
-- **Serena** is activated on this directory by path. Sub-agents orient with `aider-map` and `Read`, never their
-  own Serena.
+- **Do the reading yourself.** Grounding is the lead's own work, and it is never delegated to a sub-agent, which
+  carries none of this context. Grounding means reading:
+  - the canon and the book;
+  - the founder's words;
+  - the sources a chapter cites.
+
+  Launch a sub-agent only when the founder asks for one. Founder, 2026-10-02 16:35:20Z: "I want YOU to do this
+  … We are lITERALLY establishing the persistent, post-compact stable context grounding." If he does ask, it
+  orients with `aider-map` and `Read`, never its own Serena.
+- **Serena** is activated on this directory by path.
 - **The filter hooks do not see `python -m Detective.cli`** (verified 2026-10-02). Use `just detective …`, which
-  logs every run and refuses a pipe. For a long run, read the `.detective/runs/` log whole.
+  keeps every run's complete output in `.detective/runs/` and preserves its exit status. It does not refuse pipes
+  (`THE_KNEE.md` §3.7, D5). Read each run whole.
 - **Probe scripts** go in the scratchpad and are written with `Write`, not a heredoc. Hooks refuse `cat`, `sed`
   and `grep` on Python source; structural questions go to Serena or an AST query.
 - **Codex transcripts** of each design and review round go in `docs/book/provenance/`, with your own reading
