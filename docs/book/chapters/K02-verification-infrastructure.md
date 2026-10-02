@@ -36,7 +36,10 @@ To build the machinery every chapter is verified with, before anything it verifi
     `PYTHONPATH=$HOME/tools/Detective:$HOME/tools/Wesker <VERIFY python> -m Detective.cli <args>`, records both
     checkouts' revisions, tees complete stdout and stderr to `.detective/runs/<stamp>-<verb>.log`, preserves the
     exit status, and appends nothing the verb's grammar does not take;
-  - `accept <K>`;
+  - `accept <K>`: runs the chapter's acceptance manifest `acceptance/<K>.toml`, reports pass, fail or recorded
+    per kind, and computes staleness recursively over the book's table (a stale dependency makes its consumers
+    stale). It replays the versions `SELECTION.toml` selects, and skips an unselected optional chapter
+    explicitly;
   - `book-check` (manifest plus links);
   - `deploy-check` (production imports and smoke in DEPLOY);
   - `trace`, `bench`, and `same <kernel>`.
@@ -52,12 +55,19 @@ To build the machinery every chapter is verified with, before anything it verifi
   - a pure decision `backend_disposition(requested, numba_available, required) -> code`;
   - the requested and effective backend stamped in provenance;
   - a declared warm-up.
-- **`knee.verify.same`, the SAME harness:**
+- **`knee.verify.same`, the SAME harness** (THESIS §12.5: "A speed-up changes how an answer is computed, never
+  the answer"):
   - runs a kernel's reference and twin over Hypothesis-generated inputs and recorded frames;
-  - compares codes, assignments and decisions exactly;
-  - applies each kernel's declared float tolerance to intermediate values only;
+  - compares by the kernel's contract:
+    - codes, assignments, decisions and whole-number results exactly;
+    - floats within the declared tolerance, on intermediate values only;
+    - declared nonfinite values by position;
   - routes threshold-boundary cases to the reference;
+  - holds within one environment, never across two;
   - writes a SAME record that names its evidence scope.
+- **The behaviour-change record** (THESIS §12.6, "each drop names its cause"). A chapter that changes decisions
+  on purpose records the prior and new reference digests and its intent. Its first-light run is read as a diff
+  against the prior first-light record, never as SAME.
 - **`knee.core.events`:** local structured JSONL events carrying finding IDs.
 - **`knee.core.store`:** content-addressed keys, manifests, atomic publish, interrupted-write detection; key
   derivation as a pure decision.
@@ -70,13 +80,20 @@ To build the machinery every chapter is verified with, before anything it verifi
 - **The gate** runs in this order: ruff check, ruff format --check, pytest (legacy and `knee`, generated suites
   collected), lint-imports, deptry; ty is advisory. It stops at the first failure and prints which step failed.
   `cargo fmt --check`, `clippy -D warnings` and `test` are added once `native/` exists.
-- **`just accept <K>`** runs the acceptance commands listed in that chapter's spec, verbatim, and reports pass or
-  fail per kind.
+- **`just accept <K>`** runs the chapter's acceptance manifest. Engineering kinds pass or fail. Domain readings
+  are recorded against their pre-written expectations and never gate (`CONSTRAINT_BLOCK.md` law 12). Staleness
+  is computed recursively over the table.
 
 ## 4. Contracts
 
-- **SAME record:** `{kernel, reference_digest, twin_digest, backend, inputs: {generated_n, frames: [ids]},
-  exact_fields_equal, float_fields_max_ulp, boundary_routed_n, verdict: same|different|invalid_measurement}`.
+- **SAME record:** `{kernel, reference_digest, twin_digest, backend, environment, inputs: {generated_n, frames:
+  [ids]}, exact_fields_equal, float_fields_max_ulp, nonfinite_positions_equal, boundary_routed_n, verdict:
+  same|different|invalid_measurement}`. An undeclared nonfinite value is `invalid_measurement`; a declared one
+  compares by position.
+- **Behaviour-change record:** `{chapter, kernel, prior_reference_digest, new_reference_digest, intent,
+  firstlight_diff}`.
+- **Acceptance manifest** (`acceptance/<K>.toml`): commands; fixtures with digests; expected answers and
+  abstentions; engineering checks; domain readings, each with its expectation and its class breakdown.
 - **Events:** `{run_id, stage, finding_id?, code, at}`, with no competition-derived payloads.
 - **Store keys:** a digest over (input digests, parameters, versions, code digest, environment and node, seed).
 
@@ -92,8 +109,13 @@ To build the machinery every chapter is verified with, before anything it verifi
 
 - **Intent tests** for the wrapper: it logs complete output, preserves the exit code, never truncates.
 - **Backend registry:** every refusal path is tested, and `backend_disposition` is converged.
-- **SAME harness self-test:** a toy kernel with a deliberately divergent twin must read `different`; a faithful
-  twin must read `same`; a NaN-producing twin must read `invalid_measurement`.
+- **SAME harness self-test:**
+  - a toy kernel with a deliberately divergent twin must read `different`;
+  - a faithful twin must read `same`;
+  - a twin producing an undeclared NaN must read `invalid_measurement`;
+  - a declared nonfinite output, at the same positions, must read `same`.
+- **The wrapper re-runs K01's Detective probe** (K01 ran the module form directly, before this wrapper existed).
+- **`just accept`'s staleness:** a stale fixture dependency makes its consumers stale, recursively.
 - **The Import Linter contracts must bite:** a seeded violating import in a test fixture fails lint-imports.
 - **Store:** Hypothesis stateful tests for atomic publish and interrupted writes.
 
@@ -129,3 +151,8 @@ To build the machinery every chapter is verified with, before anything it verifi
   - SquishOS `docs/home/TOOLKIT.md`;
   - Detective `ARCHITECTURE.md` §11.
 - **2026-10-02:** specified in K00.
+- **2026-10-02, revision 1** (`provenance/build/revision_1.md`):
+  - acceptance manifests and recursive staleness (F10, F11, F56);
+  - SAME by contract, with declared nonfinite values and one environment (F32; THESIS §12.5);
+  - the behaviour-change record (F11; THESIS §12.6);
+  - the wrapper re-runs K01's probe (F29).
