@@ -9,8 +9,11 @@
 
 ## 1. Purpose and authority
 
-To fix, before any consumer, how every reading is written in the one language: which banks, which rows, which
-quantizer edges, which limits.
+To fix, before any consumer, how every reading is written in the one language. That means the schema (which
+banks, which rows), the edge *rule* and the limits. The edges themselves are computed only once a metric's readings
+exist: K13 for the zone lenses, giving layout v1.1; K20 and K21 for theirs, giving v2. A metric cannot be
+calibrated before it is computed (`provenance/build/revision_1.md`, §F04; ARCH §3.5.6: "A change of rung is a new
+layout version").
 - **THESIS §6.2:** "The static middle … is set once … It never moves per movie or per plate, and is never chosen
   to separate confirmed cases."
 - **Codex** (design round 2, D6): the measurement layout comes before K12–K16, is extended for the structure
@@ -23,14 +26,19 @@ quantizer edges, which limits.
   - tissue signature;
   - deviation (licensed, bright 1..m, dark 1..m, per series class);
   - zone-lens values (filled by K13);
-  - questions (present, excluded) per agency question, the exclusion banks written only from observation-qualified
-    exclusions (K14);
+  - questions (present, excluded) per agency question. The rows are declared here. They are written later, by
+    the agencies (K16), only from concurring readings and observation-qualified exclusions;
   - orientation;
   - coverage (read, per series class, per question);
   - context (zone, regime, route words).
-- **Quantizers:** edges per metric at the **terciles over residual cells of the teaching roles** (the N pool's
-  `reference` role and the T panel; never G, never R, never `checking`), so the three digits are equally likely.
-  Finer levels exist only where measured as needed.
+- **The question → banks map:** which banks each question reads, declared here, before any run (ARCH §3.5.4:
+  "The banks a question reads are named before the run"). It is a layout fact, so K12 needs no rule from K14.
+- **The edge rule:** per metric, a low and a high edge at the **terciles over residual cells of the teaching
+  roles** (the N pool's `reference` role and T; never G, never R, never `checking`).
+  - The digit is −1 strictly below the low edge, +1 strictly above the high edge, and 0 between (THESIS §6.2).
+  - Tied mass at an edge falls in the middle, so the three digits are equal only up to ties. The achieved shares
+    are reported.
+  - Finer levels exist only where measured as needed.
 - **Declared limits** per question, for K04's proofs: the coordinates R in the comparison mask, the count limit C,
   and the level bounds |a|, |b|.
 - **`write(readings, layout) -> CountTable`,** with the footprint kept beside it (THESIS §6.5).
@@ -45,11 +53,11 @@ quantizer edges, which limits.
 - *orthogonal* writes only the coverage bank's "read" row, never a question row.
 
 Further rules:
-- **Questions carry signs; lenses do not.** A question bank is written by K14's agency rules from lens values.
+- **Questions carry signs; lenses do not.** Question banks are declared here and written by the agencies (K16).
   Lenses write their own value banks, unsigned.
 - **Versioning.** Every table carries its layout ID. A comparison across layouts refuses (`layout_mismatch`, K04).
 - **Quantizer edges** are versioned with the teaching studies' manifest digest and fixed before the runs they
-  serve.
+  serve. Edges computed for a new metric make a new layout version.
 
 ## 4. Contracts
 
@@ -68,7 +76,8 @@ Further rules:
 
 - **Detective:** quantizer assignment and the three-zero writing rules are converged.
 - **Hypothesis:**
-  - the terciles split the teaching residual into thirds within ±1 count;
+  - the digit rule is strict at both edges, and tied mass at an edge reads 0;
+  - the achieved shares are reported, never asserted (§F13);
   - writing is order-invariant;
   - silence never appears in a mask.
 - **Provenance:** the edges are computed only from the declared teaching roles. A test injects a G study and
@@ -81,10 +90,13 @@ Every reader writes through `knee.core.layout.write`. K22 perturbs `quantizers` 
 
 ## 8. Acceptance
 
+Written first: `acceptance/K12.toml`.
 - **Behavioural correctness:** the three zeros are pinned; mismatched layouts refuse; the decisions are pinned.
 - **Representation fidelity:** decoding a written table recovers the per-row counts exactly (K04).
-- **Domain validity:** the residual-tercile edges are recorded per metric, with their teaching provenance.
-- **Performance evidence:** places written per second, Numba against reference.
+- **Domain validity (discovery):** each metric's edges (recorded as they land in later layout versions) with their
+  achieved shares and teaching provenance.
+- **Performance evidence:** places and rows written, counted for Numba and for the reference; seconds as
+  information.
 - **Evidence scope:** layout v1 and the teaching manifest.
 - **Invalidation:** a new metric, a changed teaching manifest, or changed limits. Any of these makes a new layout
   version, never an edit in place.
@@ -102,3 +114,7 @@ Every reader writes through `knee.core.layout.write`. K22 perturbs `quantizers` 
   - Codex design round 2 (D6);
   - THE_KNEE §2 (changes 3, 6).
 - **2026-10-02:** specified in K00.
+- **2026-10-02, revision 1:**
+  - the schema and the edge rule here, the edges landing as readings exist (F04; ARCH §3.5.4, §3.5.6);
+  - the question → banks map declared here (F05);
+  - strict edges, with ties falling in the middle (F13; THESIS §6.2).
