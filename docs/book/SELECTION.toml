@@ -4,7 +4,11 @@
 [optional_chapters]
 # K24 (the quantitative law) is selected only if K05's identifiable-set measurement shows a useful share of
 # studies with a same-fat-state TE contrast or a fat pair. Not yet measured.
+# K24 also depends on K18 (first light), which its acceptance re-runs.
 K24 = { selected = false, reason = "not yet measured (K05 identifiable sets)" }
+# K02a (the typist) is selected only on the founder's word, with its qualification table beside it, and once
+# SquishOS's executable-witness slot (DESIGN_LEDGER H10, proposed) is built at its source.
+K02a = { selected = false, reason = "not yet qualified; SquishOS H10 proposed, not built" }
 
 [emission]
 # Q4 is the founder's. Until he rules, the open register is exactly 0.5 (THEORY Law 7).

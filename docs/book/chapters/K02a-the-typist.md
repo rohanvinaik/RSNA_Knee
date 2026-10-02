@@ -175,7 +175,9 @@ judgment: the design, the decomposition, the contracts, the intent and the profe
   - the harness, never the model, writes the `def` line and the imports.
 
   The loop is driven by a fake model, so no model is needed.
-- **Detective** converges `admission` and `next_move`.
+- **Detective** converges `admission` and `next_move`, and **CrossHair** looks for counterexamples to their
+  contracts. Finding nothing is not a proof (the house toolkit: a pure decision gets a Detective pin plus
+  CrossHair).
 - **Grammar fuzzing:** everything the grammar generates, the AST allowlist admits.
 - **SAME** for twins comes from K02. The mutation report for decision bodies is a Detective run, read whole.
 
@@ -191,7 +193,8 @@ Written first: `acceptance/K02a.toml`.
 - **Representation fidelity:** every certificate is bound to its body and test set, and every call is recorded
   raw.
 - **Domain validity (discovery):** the qualification run (CONSTRAINED M1–M3).
-  - **The fixture:** knee-shaped units on a measured complexity gradient (radon), twins and decision bodies,
+  - **The fixture:** knee-shaped units on a complexity gradient read by Detective's parsimony lenses (the house
+    toolkit skips Radon: "Detective's parsimony lenses and LintGate cover complexity"), twins and decision bodies,
     with planted traps:
     - a decision whose held-out case contradicts the plausible reading;
     - a twin with a boundary case;
