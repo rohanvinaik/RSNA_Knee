@@ -42,8 +42,8 @@ Grounding is filled in only from first-hand reading of the cited lines.
 
 | id | the finding | chapters | grounding | disposition | status |
 |---|---|---|---|---|---|
-| F01 | intensity comparability: K07 retires N4 and normalization, K09 takes cross-patient medians of stored values, and no gain or bias contract exists | K07, K09, K10 | | | open |
-| F02 | tissue identity vs change: deviation signs cannot name healthy tissue, which K19 and K20 need | K10, K19, K20 | | | open |
+| F01 | intensity comparability: K07 retires N4 and normalization, K09 takes cross-patient medians of stored values, and no gain or bias contract exists | K07, K09, K10 | ARCH §2.3, §3.1, §3.3.3, §3.3.9, §3.4.1; THEORY II.1 (notes §F01) | γ_s on reference tissue for every series; N4 per THEORY II.1; no p2–p98, no histogram match; stored values kept for K24 | grounded |
+| F02 | tissue identity vs change: deviation signs cannot name healthy tissue, which K19 and K20 need | K10, K19, K20 | ARCH Table 2.3a, §2.3.2, lens 3, §3.4.3, l.3866 (notes §F02) | the word is a tissue level within the series against muscle; change = word against the zone's normal word, beside z | grounded |
 | F03 | witness provenance: a joint multi-series signature is counted as several per-series witnesses | K10, K13, K14 | | | open |
 | F16 | K04 edge contracts: sign conditions of the squared level test; zero-norm tables; silence at bank level; R allocated vs active; float sqrt equality | K04 | | | open |
 | F17 | K07 geometry: domains, pullback direction, inverse construction; B-spline invertibility; laterality proof; irregular slices; uncertain chirality | K07 | | | open |
@@ -62,7 +62,7 @@ Grounding is filled in only from first-hand reading of the cited lines.
 | F06 | confirmation needs measured independence (K23), so before K23 it is impossible, not "rare" | K15, K16, K23 | | | open |
 | F46 | K14: complete the outcome table; unknown dependence is not `SINGLE` | K14 | | | open |
 | F26 | K14's split labels the residual `pathology`: pathology by elimination | K14 | | | open |
-| F27 | K20 searches lines only inside confirmed edema, so a fracture without detected edema is unreachable; OA marrow-lesion scope stays unresolved | K20 | | | open |
+| F27 | K20 searches lines only inside confirmed edema, so a fracture without detected edema is unreachable; OA marrow-lesion scope stays unresolved | K20 | ARCH lens 15 (Tables 2.8a/b); THE_KNEE §2 change 3; ARCH l.1096 (notes §F27) | line lens questionless over bone, with edema context as a field; OA marrow-lesion scope to the founder | grounded |
 | F24 | K22 admits the stability key by discrimination (phantoms above `checking` normals) | K22 | | | open |
 | F25 | K25's null claims "no shared answer by construction" across studies, which is false | K25 | | | open |
 | F50 | K21: window and null matching; zero-energy cases; layout extension | K21 | | | open |
