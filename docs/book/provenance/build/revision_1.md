@@ -50,7 +50,7 @@ Grounding is filled in only from first-hand reading of the cited lines.
 | F18 | K15: `hole` after masking is undefined; headers give no slice profile; subtraction needs an observation model or abstains | K15 | ARCH §4.4 l.2832–2836 (the take removes the law's contribution), l.2850–2865 (post-take check), l.2914–2916; §2.4 consequences 2–3 l.1041–1046; THESIS §4.5 l.793–795; THE_KNEE §2 change 4 (notes §F18) | mask mode (default): ring and lobe only, hole and impossible recorded not_applicable; contribution mode only under a stated law (Table 4.6 halos), with all four checks; the slice profile is a declared rectangular assumption of SliceThickness, measured on phantoms | grounded |
 | F40 | K05: geometry validated across slices; available contrasts vs identifiable quantities | K05 | ARCH §2.4 consequences 3–5 l.1044–1058 and how it fails l.1075–1079; §3.2.4 l.1667–1672 | K05 validates per-slice geometry (orientation constant, positions monotone, spacing against the tag, plane flag against ImageOrientationPatient); irregular → geometry_irregular, read by per-slice positions or silent; contrasts available vs identifiable set kept apart (§3.2.4) | grounded |
 | F42 | K08: independent landmark truth; common coordinates across plane templates | K08 | ARCH §2.2 checkable output l.860–862; §2.10 l.1481–1492 (per-plane atlases must agree); §1.8 measured-by l.604–608 (deliberate misregistration) | landmark truth from known-transform tests and the founder's landmark sheet, never the registration's own output; cross-plane zone agreement measured as an L1/L3 check | grounded |
-| F43 | K09: the actual biological-variance estimator | K09 | | | open |
+| F43 | K09: the actual biological-variance estimator | K09 | ARCH §3.4.2 l.2122–2130 (σ²_bio = max(s_p² − mean σ²_meas, floor²); 'the floor becomes physical'); THE_KNEE §2 change 10 (the centre's uncertainty) | σ²_bio = max((1.4826·MAD)² − median σ²_meas, 0); var(μ̂) = (π/2)(σ²_bio + mean σ²_meas)/n; z's denominator √(σ²_bio + σ²_meas,study + var(μ̂)); n < n_min silent or falls back | grounded |
 | F44 | K11: independent physical assumptions; damaged-structure fixtures | K11 | ARCH §5.8 phantom library l.4106–4123; §3.3.10 l.2053–2066 ('A phantom the law built is always explained by the law'); VERDICT 'WIRING and response only' (notes §F44) | phantoms built by the forward equation with the host's measured γ_s and noise (no inversion needed); each kind states its physical assumptions and what it cannot test | grounded |
 | F52 | K24: nuisance gains and offsets in identifiability; physics-space references and their builder | K24 | | | open |
 
@@ -65,13 +65,13 @@ Grounding is filled in only from first-hand reading of the cited lines.
 | F27 | K20 searches lines only inside confirmed edema, so a fracture without detected edema is unreachable; OA marrow-lesion scope stays unresolved | K20 | ARCH lens 15 (Tables 2.8a/b); THE_KNEE §2 change 3; ARCH l.1096 (notes §F27) | line lens questionless over bone, with edema context as a field; OA marrow-lesion scope to the founder | grounded |
 | F24 | K22 admits the stability key by discrimination (phantoms above `checking` normals) | K22 | ARCH §6.1.4 l.4403–4406 and §4.3 l.2792–2793 prescribe the phantom-ordering admission; the No Popery law (founder, global) forbids seating by discrimination; ARCH l.4427–4430, l.2779–2781 (notes §F24) | s takes its place in ARCH's key order on ARCH's structural argument, read against phantoms of its size and zone; phantom ordering and |z|-redundancy reported, never gating; the conflict is reported to the founder | grounded |
 | F25 | K25's null claims "no shared answer by construction" across studies, which is false | K25 | ARCH §5.5 l.3639–3654, l.3735–3736, l.3783–3786; THESIS §7.1 l.1411–1413, §7.4 l.1518–1521, §7.6; THE_KNEE §2 change 6 (notes §F25) | null = bank-wise exchange within (zone class, regime, visibility pattern): preserves each bank's marginals, breaks co-occurrence; label-free; hard negatives → near-miss censors | grounded |
-| F50 | K21: window and null matching; zero-energy cases; layout extension | K21 | | | open |
+| F50 | K21: window and null matching; zero-energy cases; layout extension | K21 | ARCH §4.5 l.3080–3084 (windows; the null of the maximum on true normals), l.2998, l.3007–3016 (clip; ‖z‖² ≤ p̂_S reads MONO_UP; AMBIGUOUS when a count cannot bound), l.3103–3105 (the word and λ* as a header) | the null is the same window statistic (size, shape, zone, plane) on held-out normals; ‖z‖² = 0 reads MONO_UP via the clip; p̂_S unmeasurable → insufficient; a silent window is silent; the trajectory byte lands as a new layout version | grounded |
 | F53 | K26: evaluation feedback kept apart from teaching; censor construction and chance tests | K26 | ARCH §5.6 l.3839–3850 (near miss, four steps), l.3887–3893 (a noisy oracle writes censors slowly); §5.7 l.4036–4045 (teach on one fold, judge on the other); THESIS §7.6 l.1551–1560 (notes §F53) | a censor needs its named difference to mark the failures beyond chance and not the K-line's successes, with counts and bounds; folds rotate, and no study is judged by a case or censor its own fold wrote; R never writes | grounded |
 | F21 | unowned: suppression-failure readings, MCL fluid and thickening, variant recognition, agency warrants, censor chance tests, Tier-0 header machinery | several | ARCH §2.5 l.1092 (MCL law: fluid around the band; band thickened); lens 5 (Tables 2.8a/b row 5) and Table 5.10 row 2; §5.9 step 3 l.4182–4184 (variant laws); §5.2 Table 5.2 (agency checks); §3.2.4–§3.2.6 (tag header, zone word, Tier 0) (notes §F21) | owners: lens 5 (suppression map) → K10; MCL shell volume → K13, band thickness lens → K20 (a law term with no lens in ARCH); variant laws → K14 step 3, readings in K13/K20, pseudotear zones in K08; agency warrants from Table 5.2 → K16; tag header K05, zone word K12 (+K21/K22 pairs), Tier 0 → K27 behind its skip-miss rate | grounded |
 | F22 | unowned: K19's displaced-fragment phantoms; K24's reference builder | K11, K19, K24 | ARCH lens 8 (Tables 2.8a/b: 'a displaced bucket-handle fragment'), §2.5 l.1090 ('abnormal shape (no bow tie; a displaced fragment)'); §5.8 library l.4110–4115; §3.4.2 (physics-space reference) | K11 adds displaced-fragment and other damaged-structure phantoms; K24 owns its physics-space reference builder with its own N-role allocation | grounded |
 | F48 | K19: surface extraction, damaged configurations, independent placement validation | K19 | ARCH §1.5 l.410–438 (structures vs lesion-objects), §1.8 l.610–615 (a falling structure: misplaced or absent), §2.2 consequence 2 l.815–819; THE_KNEE §2 change 2 | K19 delineates in the patient's anatomy, with damaged configurations (absent, displaced) as readings, never a forced fit; placement is validated on the constraint reference (NCC, placement margin), never by the delineation's own fit | grounded |
 | F49 | K20: the missing injury measurements | K20 | | | open |
-| F51 | K23: the evidence of statistical independence, and when it applies | K23 | | | open |
+| F51 | K23: the evidence of statistical independence, and when it applies | K23 | ARCH §4.2 construction l.2559–2604 (building and checking halves; counts; κ; the admission test), l.2651–2652 (κ needs two independent series); §6.2.2; §5.3 gate | the gate's table applies per (question, pair of series families, regime cell) with counts over studies where both spoke; insufficient where unbounded; κ against reports read as an upper bound, against gold as the small honest panel | grounded |
 
 ### C. Measurement, order, acceptance
 
@@ -88,7 +88,7 @@ Grounding is filled in only from first-hand reading of the cited lines.
 | F11 | replay: backend equivalence vs an authorized behaviour change; recursive staleness; selected versions; K27 skips an unselected K24 | K02, K18, K27 | THESIS §12.5 (twin vs specification), §12.6 l.2539–2543 (kept values keyed by producer and version; each drop names its cause); ARCH §6.3 l.4730–4734 (the structure-alone run kept), §6.6.3 l.4961–4965 (bars before runs) (notes §F11) | SAME = a twin against its reference at one revision in one environment; a behaviour change = a new reference version with an intent record, read as a diff against the prior first-light record, never as SAME; staleness recursive over dependencies; acceptance replays the selected versions (SELECTION.toml); K27 skips an unselected K24 | grounded |
 | F12–F15 | false properties: hashed folds "balanced within one"; tercile ties; longest gap not additive; binomial bounds not monotone | K03, K12, K20 | THESIS §6.2 l.1238–1241 (strict edges at terciles), §12.3 l.2448–2455 (running sums give counts); ARCH §6.2.5 rules 1, 3, 4; lens 10 l.1300 (notes §F12–F15) | folds dealt round-robin over sorted digests (balanced within one by construction); strict digit edges, achieved shares reported; longest gap by a run scan carrying prefix and suffix runs across segments; bounds recomputed per step, no monotone claim | grounded |
 | F41 | K06: report-negative coverage; independent adjudication of parser errors | K06 | ARCH §5.7 Table 5.12 (true normals 'establish absent only as far as their reports do'), l.3938, l.3946–3949 (three states), l.3974–3983 (parser miss vs report–gold disagreement, told apart by reading the sentence) (notes §F41) | per study and finding: asserted, negated or silent; N is absent only where negated or covered by a normal statement; parser errors adjudicated by a reader of the sentence (the lead, the founder for soft cases), never by the parser | grounded |
-| F45 | K13: acquisition-specific evidence; uncertainty propagation | K13 | | | open |
+| F45 | K13: acquisition-specific evidence; uncertainty propagation | K13 | ARCH §3.3.7 l.1967–1978 (σ to z, MISFIT, emission; below_noise_floor), §4.3 (QZ families); K09's noise model | every lens value carries its inputs' σ (through z's denominator), its silences with causes, and later its stability (K22); no σ is invented | grounded |
 | F47 | K17: comparable evidence ordering | K17 | ARCH §6.1.4 l.4388 ('each key is compared only with itself across studies'), Table 6.1 keys l.4399–4425; THE_KNEE §2 change 9 | keys compared only like with like; a study lacking a key is ordered only by the keys it shares (K17, to edit) | grounded |
 | F54 | K27: version-aware replay; conditional score estimates | K27 | ARCH §6.1.5 facts 1–3 l.4470–4486 | K27 reports the score as ARCH's conditional identities: the open shares and the decided accuracy per finding, never one number | grounded |
 
@@ -100,12 +100,12 @@ Grounding is filled in only from first-hand reading of the cited lines.
 | F35 | THE_KNEE says THEORY Laws 1–8 are unchanged, while AGENTS forbade what Law 3 sanctions | AGENTS, THE_KNEE | THEORY Law 3 (l. 281–282): "One sanctioned bounded-ML utility: registration/normalization (II.1) … Nothing else learns." FOUNDING_RECORD (l. 16–17): "Maybe I'll end up using some small model somewhere for some reason, but NO, the architecture is NOT NOT NOT ML." | AGENTS restates Law 3 and the founder's reservation; THE_KNEE states what the book builds classically | AGENTS done (this commit); THE_KNEE open |
 | F33 | K03 commits a corpus digest despite "nothing derived enters git" | K03 | founder, 16:29:22Z | allowed (R2) | open (K03 wording) |
 | F34 | saved reviews, receipts and generated tests need a stated destination when they hold derived material | K02, K03 | R2; AGENTS override 7 | git for records; `data/` for bulk | open |
-| F29 | K01 needs the wrapper before K02 builds it | K01, K02 | | | open |
-| F30 | some acceptances demand that every function be pinned; Detective §11 allows honest unpinnability | several | | | open |
+| F29 | K01 needs the wrapper before K02 builds it | K01, K02 | house detective-protocol (read whole); AGENTS override 1 (the hook gap) | K01 runs the module form directly, its output captured complete to a log and read whole (the pre-K02 exception); K02 builds the wrapper and re-runs K01's Detective probe through it | grounded |
+| F30 | some acceptances demand that every function be pinned; Detective §11 allows honest unpinnability | several | Detective ARCHITECTURE §11 ('A function that cannot be pinned … is guarded by ordinary unit tests, and says so'; 'Extract the pure decision, then pin it') | acceptance requires each function's standing recorded, never every function pinned; an unpinnable function is guarded by unit tests and says so; a branch unreachable by synthesis is answered by extracting the pure decision (behaviour-preserving), never by bending the design to the tool | grounded |
 | F31 | K09's reference is NumPy's median, not plain Python | K09 | THESIS §12.5 l.2525–2527 ('a plain Python or NumPy function behind the same contract') | the reference may be plain Python or NumPy (AGENTS override 2 and THE_KNEE corrected to THESIS); K09's NumPy median stands as reference | grounded |
 | F32 | SAME must carry declared nonfinite behaviour | K02 | THESIS §12.5 l.2521–2533 (contracts name the encodings; same answer within an environment, never across two; whole numbers exact) | SAME compares by contract: codes exactly; whole-number ops exactly; floats within the declared tolerance, with boundary cases routed to the reference; declared nonfinite values by position; never across environments | grounded |
-| F36 | the fleet runbook says offloading is NOT-BUILT; the compute runbook supplies it | THE_KNEE §4, K01 | | | open |
-| F37 | identify the node before any remote action | K01 | | | open |
+| F36 | the fleet runbook says offloading is NOT-BUILT; the compute runbook supplies it | THE_KNEE §4, K01 | SquishOS fleet runbook l.52–53 ('Offloading compute … NOT-BUILT'); compute runbook l.13–17, l.59–61 (squishos-compute run/jobs/logs/status/wake; 'Measure what that environment actually has') | the book cites the compute runbook as the operative path; the fleet runbook's line is a stale statement in SquishOS, offered to the founder to fix at its source | grounded |
+| F37 | identify the node before any remote action | K01 | compute runbook l.61; fleet runbook l.15 (squishos-fleet profile <node>, no network) | K01 identifies the node by its SquishOS profile (no network) and measures its environment before any job | grounded |
 | F38 | K22's escalation cannot reach the Mac Pro from offline Kaggle | K22 | ARCH §4.3 l.2759–2764 (R4 and R5 only on escalation); THESIS §12.6; AGENTS override 6 | in the kernel an escalation runs inside the kernel's own budget or is skipped as escalation_unavailable; the Mac Pro is build-time only | grounded |
 | F39 | performance evidence needs work and byte accounting, not seconds alone | several | ARCH §3.2.6 l.1752–1757 ('Seconds … are informational only and never a go/no-go'; work counted per study); house performance.md | performance evidence = work and bytes counted per unit (with seconds as information), per DETERMINISTIC_SICP and ARCH | grounded |
 | F55 | K00: reconcile the authorities; executable acceptance | K00 | | | open |
@@ -129,6 +129,9 @@ delegated (R4).
 | 2026-10-02 | ARCH | 408–466, 1081–1127, 4060–4145, 4958–5081 | §1.5; §2.5; §5.8; §6.6.3 |
 | 2026-10-02 | ARCH | 2206–2399 | §3.5 |
 | 2026-10-02 | THESIS | 1230–1279, 2416–2555 | §6.2–§6.3; §12.2–§12.6 |
+| 2026-10-02 | ARCH | 1954–1982, 2455–2661, 2929–3141 | §3.3.7; §4.1–§4.2; §4.5 |
+| 2026-10-02 | Detective | ARCHITECTURE.md 798–831 | §11 |
+| 2026-10-02 | SquishOS | runbooks/fleet.md, runbooks/compute.md | offload lines |
 </content>
 </invoke>
 <invoke name="Bash">
@@ -600,3 +603,63 @@ git log --oneline -2
     record, never as SAME.
   - **Staleness** is recursive over the dependency graph.
   - **Acceptance** replays the versions SELECTION.toml selects, and K27 skips an unselected K24.
+
+### §F50 — the trajectory's windows, nulls and degenerate cases
+- **Windows.** ARCH §4.5 l.3080–3084: "the closed form runs per window inside each structure … The structure's
+  reading is its most deviant window, and the null of that maximum is measured on true normals". So the null
+  is the same maximum-window statistic, over the same window size and shape, zone and plane, on held-out
+  normals.
+- **Degenerate cases.**
+  - l.2998: λ\* = p̂_S/‖z‖² is "clipped to [0, 1]".
+  - l.3007–3008: "every ‖z‖² ≤ p̂_S (where λ\* = 1) reads so", meaning MONO_UP. So ‖z‖² = 0 reads MONO_UP through
+    the clip.
+  - A p̂_S that cannot be measured (too few normals) is `insufficient` (§6.2.5 rule 4).
+  - A window whose places are silent is silent.
+  - l.3014–3016: AMBIGUOUS "when … a window's count cannot bound its statistic".
+- **The layout.** l.3103–3105: the word and λ\* are written "as a header on the structure's vector" (Table 3.1
+  bits 20–27). Adding them is a new layout version (§3.5.6).
+
+### §F51 — what the gate's evidence is, and where it applies
+- **The hardness map.** ARCH §4.2 l.2559–2604 builds it from held-out true normals split into building and
+  checking halves. Counts are kept per place, lens, series type and regime, and rates carry bounds. κ is "the
+  joint false-for rate across independent series, divided by the product of their marginal rates". A failure
+  is admitted only with a law-named predictor.
+- **What κ needs.** l.2651–2652: "κ needs at least two independent series".
+- **What the gate is measured on.** §6.2.2: φ and κ per pair of series types and finding, over studies where
+  both spoke. "κ against reports is an upper bound on joint view error, inflated by the report error rate";
+  against gold it "rests on 58 studies".
+- **Disposition (K13a, K23).**
+  - The gate table applies to one (question, pair of series families, regime cell).
+  - Every entry carries its counts and bounds, and reads `insufficient` where they cannot bound it.
+  - Both oracles' readings are reported side by side, each with its bias named.
+
+### §F45 and §F43 — uncertainty carried, and the variance stated
+- **σ is carried, not invented.** ARCH §3.3.7 l.1975–1978: σ goes "into layer 2's z", "into the MISFIT pair" and
+  "into the emission". l.1971–1973: below the noise floor a reading is silent with the cause
+  `below_noise_floor`.
+  - On the raw path σ_meas is K09's (homogeneous tissue and background, under the stated noise model). A lens
+    value carries its inputs' σ through z's denominator, its silences with their causes, and later its
+    stability (§4.3, K22).
+- **The variance estimator.** ARCH §3.4.2 l.2122–2126: "σ²_bio = max(s_p² − mean σ²_meas, floor²)", with s_p
+  equal to 1.4826 × MAD, and "the floor becomes physical" (l.2129). THE_KNEE §2 change 10 adds the centre's
+  uncertainty. Stated exactly (K09):
+  - σ²_bio = max((1.4826·MAD)² − median σ²_meas, 0). A negative estimate means measurement noise explains the
+    spread.
+  - var(μ̂) = (π/2)·(σ²_bio + mean σ²_meas)/n.
+  - z = (x − μ̂)/√(σ²_bio + σ²_meas,study + var(μ̂)).
+  - A cell with n < n_min is silent or falls back to its parent key.
+
+### §F30, §F29, §F36, §F37 — the house tools and the nodes
+- **Detective §11.** "A function that cannot be pinned (engine-core, integration, AST-object parameters — §10) is
+  guarded by ordinary unit tests, and says so in its test module." And: "Extract the pure decision, then pin
+  it."
+  - Acceptance asks for each function's *standing*, never for every function pinned.
+  - Extracting a pure decision preserves behaviour and is prescribed. Bending the design to the tool is not.
+- **Pre-K02 Detective.** K01 runs the module form directly, captures its output complete and reads it whole
+  (the house protocol). K02 builds the wrapper and re-runs K01's probe through it.
+- **The nodes.** SquishOS's fleet runbook (l.52–53) still says "Offloading compute to a node … NOT-BUILT". Its
+  compute runbook (l.13–17) provides `squishos-compute run|jobs|logs|status|wake` and adds "Measure what that
+  environment actually has before trusting a workload to it" (l.61).
+  - The book cites the compute runbook.
+  - K01 identifies the node by `squishos-fleet profile <node>` (no network) before any job.
+  - The fleet runbook's line is offered to the founder, to be fixed at its source.
