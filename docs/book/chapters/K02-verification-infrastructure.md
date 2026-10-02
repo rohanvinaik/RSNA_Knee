@@ -24,19 +24,30 @@ To build the machinery every chapter is verified with, before anything it verifi
   (runners). Plus `knee/verify` (the SAME harness and test support), never imported by `run`.
 - **`pyproject.toml`** for `knee`:
   - runtime dependencies per K01;
-  - dependency groups, following the house toolkit (SquishOS `docs/home/TOOLKIT.md`, "one owner per role";
-    the global `code-verification.md` → *The toolkit*):
-    - `dev`: pytest, hypothesis, pinned ruff, import-linter, deptry, crosshair-tool, pyperf, and icontract
-      (optional);
-    - `tools`: the investigators py-spy, memray, viztracer and scalene, plus IPython;
+  - dependency groups, following the two house references read from the global pointers: the global
+    `performance.md` (organization, tracing and performance) and `code-verification.md` → *The toolkit* with
+    SquishOS `docs/home/TOOLKIT.md` (correctness and design; "one owner per role"):
+    - `dev`: pytest, hypothesis, pinned ruff, import-linter, deptry, crosshair-tool, pyperf, radon, icontract
+      (optional), beartype and jaxtyping (shape and dtype contracts at the graph's boundaries,
+      `performance.md`);
+    - `tools`, dev-only and never on the kernel path:
+      - apache-hamilton (wiring and lineage, drawn with Graphviz);
+      - viztracer;
+      - scalene (Python against native time: "whether compiling pays or NumPy already does the work");
+      - memray;
+      - py-spy;
+      - pyinstrument and line_profiler;
+      - codeflash and `cython -a` (optimization advisors, each kept only under SAME);
+      - IPython;
     - `accel`: numba;
-  - **Tools the toolkit does not list are vetted here before adoption,** each against "one owner per role". Three
-    are proposed:
-    - apache-hamilton, to draw the run's graph dev-side;
-    - beartype and jaxtyping, for runtime array shape and dtype contracts.
-
-    pyinstrument is dropped, because it duplicates the investigators' role. Radon is never added: the toolkit
-    skips it, since "Detective's parsimony lenses and LintGate cover complexity".
+    - the native toolchains (rustup with clippy and rust-analyzer; maturin; Apple clang with lldb, clang-tidy and
+      clang-format; CMake and Ninja) are K02b's.
+  - **Radon** is an independent complexity instrument (founder, 2026-10-02: "We don't have to abandon Radon. It's
+    just an independent tool to use"; "LintGate is over-engineered and super bloated--ironically enough--so
+    Randon is probably better").
+    - Its cyclomatic and maintainability reads are information, never a target.
+    - It is read beside Detective's parsimony lenses as a second, independent channel.
+    - SquishOS TOOLKIT.md's "skip Radon" line predates this ruling. It is offered to be corrected at its source.
   - a separately pinned **DEPLOY** requirements file built from K01's Kaggle versions.
 - **The VERIFY environment:** a uv-managed CPython of Kaggle's minor version if that is ≥ 3.12, else 3.12, with
   `.python-version`. It replaces the conda-based `.venv`.

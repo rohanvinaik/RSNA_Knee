@@ -193,8 +193,9 @@ Written first: `acceptance/K02a.toml`.
 - **Representation fidelity:** every certificate is bound to its body and test set, and every call is recorded
   raw.
 - **Domain validity (discovery):** the qualification run (CONSTRAINED M1–M3).
-  - **The fixture:** knee-shaped units on a complexity gradient read by Detective's parsimony lenses (the house
-    toolkit skips Radon: "Detective's parsimony lenses and LintGate cover complexity"), twins and decision bodies,
+  - **The fixture:** knee-shaped units on a measured complexity gradient, twins and decision bodies. The
+    gradient is read by Radon (cyclomatic, as the bake-off measured it: CONSTRAINED M1, "measured with radon, not
+    eyeballed") and by Detective's parsimony lenses, two independent channels,
     with planted traps:
     - a decision whose held-out case contradicts the plausible reading;
     - a twin with a boundary case;
