@@ -44,10 +44,10 @@ Grounding is filled in only from first-hand reading of the cited lines.
 |---|---|---|---|---|---|
 | F01 | intensity comparability: K07 retires N4 and normalization, K09 takes cross-patient medians of stored values, and no gain or bias contract exists | K07, K09, K10 | ARCH §2.3, §3.1, §3.3.3, §3.3.9, §3.4.1; THEORY II.1 (notes §F01) | γ_s on reference tissue for every series; N4 per THEORY II.1; no p2–p98, no histogram match; stored values kept for K24 | grounded |
 | F02 | tissue identity vs change: deviation signs cannot name healthy tissue, which K19 and K20 need | K10, K19, K20 | ARCH Table 2.3a, §2.3.2, lens 3, §3.4.3, l.3866 (notes §F02) | the word is a tissue level within the series against muscle; change = word against the zone's normal word, beside z | grounded |
-| F03 | witness provenance: a joint multi-series signature is counted as several per-series witnesses | K10, K13, K14 | | | open |
+| F03 | witness provenance: a joint multi-series signature is counted as several per-series witnesses | K10, K13, K14 | ARCH §5.3 l.3408–3413 (independence classes), l.3487–3490 (the sandwich), l.3499–3503 (the record per series); §2.3 consequence 3 l.906–908; Table 5.1 rule 3 (notes §F03) | every reading carries its complete source set; voices are per acquisition; the joint signature is a law check that supports, never a voice | grounded |
 | F16 | K04 edge contracts: sign conditions of the squared level test; zero-norm tables; silence at bank level; R allocated vs active; float sqrt equality | K04 | | | open |
 | F17 | K07 geometry: domains, pullback direction, inverse construction; B-spline invertibility; laterality proof; irregular slices; uncertain chirality | K07 | | | open |
-| F18 | K15: `hole` after masking is undefined; headers give no slice profile; subtraction needs an observation model or abstains | K15 | | | open |
+| F18 | K15: `hole` after masking is undefined; headers give no slice profile; subtraction needs an observation model or abstains | K15 | THESIS §4.5 l.793–795 (ring, hole and lobe are the optics' check after a take); THE_KNEE §2 change 4 (masks, subtraction only under a contribution law) | ring and hole only where a contribution law subtracts; under a mask: residual ring and lobe only; the slice profile is a declared assumption or abstains (with ARCH §2.4 and §4.4, still to read) | open |
 | F40 | K05: geometry validated across slices; available contrasts vs identifiable quantities | K05 | | | open |
 | F42 | K08: independent landmark truth; common coordinates across plane templates | K08 | | | open |
 | F43 | K09: the actual biological-variance estimator | K09 | | | open |
@@ -58,9 +58,9 @@ Grounding is filled in only from first-hand reading of the cited lines.
 
 | id | the finding | chapters | grounding | disposition | status |
 |---|---|---|---|---|---|
-| F23 | No Popery: PRESENT from a `SINGLE` provisional take | K16 | | | open |
-| F06 | confirmation needs measured independence (K23), so before K23 it is impossible, not "rare" | K15, K16, K23 | | | open |
-| F46 | K14: complete the outcome table; unknown dependence is not `SINGLE` | K14 | | | open |
+| F23 | No Popery: PRESENT from a `SINGLE` provisional take | K16 | ARCH Glossary 'Concurrence' l.5233–5234; Table 5.5 l.3449; Table 5.1 rule 2 l.3236; THESIS §4.4 l.741–748, §4.5 l.778–781 (notes §F23) | SINGLE yields a provisional take only; no PRESENT or ABSENT rests on one voice; the word is ABSTAIN (single_voice) | grounded |
+| F06 | confirmation needs measured independence (K23), so before K23 it is impossible, not "rare" | K15, K16, K23 | ARCH §6.2 l.4517–4521 (step 7: independence measured before anything is taught), §6.2.2 l.4585–4623, §5.3 gate l.3415–3425, §6.7 item 8 l.5109–5110; THE_KNEE §2 change 7 (notes §F06) | move the gate before the society (after K13), re-run as structure lenses arrive; the bar is the founder's (ARCH §6.7 item 8) | founder |
+| F46 | K14: complete the outcome table; unknown dependence is not `SINGLE` | K14 | ARCH Table 5.5 l.3444–3451; §6.2.5 rule 4 l.4706–4707; THE_KNEE §2 change 7 ('insufficient') | add INSUFFICIENT: voices speak but independence is not established; SINGLE stays 'one class can speak' | grounded |
 | F26 | K14's split labels the residual `pathology`: pathology by elimination | K14 | | | open |
 | F27 | K20 searches lines only inside confirmed edema, so a fracture without detected edema is unreachable; OA marrow-lesion scope stays unresolved | K20 | ARCH lens 15 (Tables 2.8a/b); THE_KNEE §2 change 3; ARCH l.1096 (notes §F27) | line lens questionless over bone, with edema context as a field; OA marrow-lesion scope to the founder | grounded |
 | F24 | K22 admits the stability key by discrimination (phantoms above `checking` normals) | K22 | | | open |
@@ -77,8 +77,8 @@ Grounding is filled in only from first-hand reading of the cited lines.
 
 | id | the finding | chapters | grounding | disposition | status |
 |---|---|---|---|---|---|
-| F19 | K03's oracle contract: a question field and truth polarity; localization vs study-level gold; report silence; `oracle_unavailable`; clustered bounds | K03 | | | open |
-| F20 | panels: N's relation to T/R/G; R held out of every store; K23's building role; R used for design becomes development evidence | K03, THE_KNEE §5 | | | open |
+| F19 | K03's oracle contract: a question field and truth polarity; localization vs study-level gold; report silence; `oracle_unavailable`; clustered bounds | K03 | ARCH §6.2.5 Table 6.3 l.4685–4692 and rules 1–5 l.4697–4709; §6.3 l.4713–4724; §5.3 l.3417–3419 (notes §F19) | a recognition table cell per (object or study, question, oracle); oracle_unavailable; G grades study-level only; bounds over studies, the independent unit | grounded |
+| F20 | panels: N's relation to T/R/G; R held out of every store; K23's building role; R used for design becomes development evidence | K03, THE_KNEE §5 | ARCH Table 6.3 (R 'held out of every store'), rule 1 l.4698–4700; §6.3 l.4722–4744 (R replicates direction) (notes §F20) | R out of every store, references to maps included; R's objects are never inspected to design a change, only its triples read | grounded |
 | F04 | K12 calibrates lens metrics before K13 computes them | K12, K13 | | | open |
 | F05 | K12 consumes K14's question rules without depending on K14 | K12, K14 | | | open |
 | F07 | K20 needs confirmed edema while K23 depends on K20 | K20, K22, K23 | | | open |
@@ -118,6 +118,8 @@ delegated (R4).
 
 | when | source | lines | sections |
 |---|---|---|---|
+| 2026-10-02 | ARCH | 490–617, 875–1016, 1237–1354, 1521–1595, 2024–2206, 3187–3527, 4517–4746, 5226–5285 | §1.7–§1.8; §2.3; §2.8; §3.1; §3.3.9–§3.4; §5.1–§5.3; §6.2–§6.3; Glossary C–L |
+| 2026-10-02 | THESIS | 739–797 | §4.4–§4.5 |
 </content>
 </invoke>
 <invoke name="Bash">
@@ -224,3 +226,78 @@ git log --oneline -2
 - **The OA marrow-lesion scope.** l.1096 lists "An OA marrow lesion: under cartilage loss, in a narrowed
   compartment" as a confounder of Contusion. Whether the official Contusion label includes such lesions is
   label scope, a founder matter under AGENTS law 6. The book keeps it unresolved and measures how G treats it.
+
+### §F23 — no answer rests on one voice
+- **The Glossary is the rule.** ARCH l.5233–5234: "Concurrence. Agreement among independent voices: the only way
+  a lesion-object is committed or an answer assigned; refused on disagreement (THESIS §4.4–§4.5; Part 5 §5.3)."
+- **SINGLE yields a take, not an answer.** Table 5.5 l.3449: "SINGLE | one class can speak | a take carrying
+  "single voice" (Part 4 §4.4), only where the reading passes its own persistence test". That take is the loop's
+  object.
+- **"So does every answer built on them" (l.3505–3507)** describes the one-series build of that day ("Today.
+  With one series per study…"). It is not a licence: Table 5.1 rule 2 (l.3236) and the Glossary forbid an answer
+  from one voice.
+- THESIS §4.4 l.741–742: truth is "assigned where independent readings agree, refused where they disagree,
+  never by one tuned pipeline or one voice". l.747: "A lens alone at its depth keeps every body". It keeps them;
+  it does not decide them.
+- **Disposition (K16).** PRESENT needs a concurring object. ABSENT needs concurring exclusions (Table 5.5:
+  CONCUR, "the exclusion stands"). A SINGLE take keeps the object and writes the word ABSTAIN with cause
+  `single_voice`. First light abstains widely, and that is its honest finding (R1).
+
+### §F06 — independence is measured before agreement counts
+- **ARCH puts the gate at recipe step 7.** §6.2 l.4517–4521: "*Measure the substrate* on the domain's own data
+  before anything is taught: … and whether the views' errors are independent" (THESIS §13.1, step 7).
+- §6.2.2 defines the gate. It reads each series' reading of a finding's host zone on studies with an oracle,
+  and computes φ and κ per pair of series types, each with its count and bound. It emits the gate table and the
+  κ map. §5.3 l.3415–3425 gives the same, over three measuring sets: phantoms, held-out true normals and gold.
+- **The bar is the founder's.** ARCH §6.7 item 8 (l.5109–5110): "GenomeVault's max φ < 0.25 … is adopted
+  provisionally until the founder sets the knee's own bar, written before the run". THE_KNEE §2 change 7
+  dropped the imported bar ("no imported bar; "insufficient" where independence is not established"). So until
+  the founder writes a bar, no pair counts as two voices, and no answer is assigned.
+- **Disposition.**
+  - The gate runs as soon as per-series readings exist (after K13), on P, N and G. It is re-run when K20 adds
+    the structure questions.
+  - It is no longer deferred to K23. K23 keeps the hardness map and the κ map as a lens (§6.2.2, "a failed pair
+    is not discarded").
+  - This breaks the K15/K16/K20 ↔ K23 bootstraps.
+  - **Founder:** the bar (ARCH §6.7 item 8).
+
+### §F03 — witnesses by acquisition, with their sources
+- ARCH §5.3 l.3408–3413: "Independence is therefore per question … series whose errors the gate cannot
+  separate count as one voice."
+- l.3487–3490: "Readings concur only where they land one lesion in one patient-space place."
+- l.3499–3503: the record keeps "each series' entitlement … its word".
+- The joint signature is a law check. §2.3 consequence 3 (l.906–908): "*Cross-contrast consistency is a
+  check.* All the series covering a place must name one tissue change." Table 5.1 rule 3: law checks support
+  and never establish.
+- **Disposition (K10, K13, K14).**
+  - Every reading carries its complete source set (series ids).
+  - Voices are per-acquisition readings: each series' tissue level and z.
+  - A reading computed from several series is one dependent reading, whose sources are all of them. It can
+    never concur with its own sources.
+  - The joint signature word is a consistency check: it supports, never votes.
+
+### §F19 — the judge's oracle contract
+- **The panels.** ARCH Table 6.3 l.4685–4692: G "establishes", N gives negatives and nulls, R is "a large,
+  noisy second oracle", and P is "label-free tests".
+- **The rules.** Rules 1–5, l.4697–4709: one role per study per measurement; no self-comparison; gold only in
+  rotation; "Every rate with its count and bound. A count that cannot bound a rate reads "insufficient", never
+  zero"; bars before runs.
+- **The read.** §6.3 l.4722–4724: per finding, the triple identified, abstained and wrong, "with its bounds and
+  never summed".
+- **Localization.** §5.3 l.3417–3419 grades a localization only by "gold, where a localized call fixes the
+  place". The competition's G is study-level, so localization is graded only by P (truth by construction) or by
+  a localized report call (R, T).
+- **Disposition (K03).**
+  - A cell is keyed (study or object, question, oracle kind). The oracle is one of `G_study`,
+    `report_localized`, `phantom`, `none`. With `none` the cell reads `oracle_unavailable`, never wrong.
+  - Report silence is `oracle_unavailable` for that question, never a negative.
+  - Every bound counts studies (the independent unit), never voxels or objects within one study.
+
+### §F20 — R is held out of everything
+- Table 6.3 says R is "held out of every store", and rule 1 says "One role per study per measurement".
+- §6.3 l.4744: R is used to replicate a triple's direction ("replicated on R").
+- **Disposition (K03, THE_KNEE §5).**
+  - R is excluded from every store: references, templates, quantizers, nulls, maps and case memory.
+  - Its objects are never inspected to design a change; only its triples are read.
+  - Changes are designed from T and from G read in rotation (§5.6, §6.2.5 rule 3).
+  - K23's building role is named.
