@@ -36,9 +36,15 @@ where to look.
     *candidate* absent or destroyed structure, decided by an agency;
   - `insufficient`: visibility is not adequate;
   - `inconsistent`: the evidence conflicts across series.
-- **Admissible damaged configurations** are named, so an injured structure can still read `identified`: a gap
-  along the course; a displaced fragment within the joint (a bucket-handle in the notch); altered signal inside an
-  intact container.
+- **Admissible damaged configurations** are named, so an injured structure can still read `identified` (ARCH
+  §1.8 l.610–615: a structure that falls "may be misplaced, an input error, or absent, as after a complete tear"):
+  - a gap along the course;
+  - an absent segment;
+  - a displaced fragment within the joint (a bucket-handle in the notch);
+  - a flipped meniscal fragment;
+  - altered signal inside an intact container.
+
+  A damaged configuration is a *reading*, never forced into the healthy shape.
 - **Visibility certificates** per structure, question and series: the effective slices along the question's axis
   (in the plane for continuity; along the normal for a cross-section); slice spacing against structure thickness;
   obliquity.
@@ -49,13 +55,18 @@ where to look.
 
 ## 3. Mechanism
 
-- **Surfaces** are found by signature edges (fibrous against fluid or fat; cortex against marrow) inside the
-  search region, with geodesic paths for centerlines between the attachments.
+- **Surfaces** are extracted per series, in its own plane, from K10's *identity* readings, never from deviation
+  (`provenance/build/revision_1.md`, §F02). A surface is the boundary between two tissue words inside the search
+  region, for example fibrous against fluid or fat, or cortex against marrow. It is located at the transition of
+  the per-series tissue level along the region's normal, with its sub-voxel interpolation declared.
+- **Centerlines** are minimal-cost paths between the attachment sites through places reading the structure's
+  tissue word. The cost function is declared, and no weight is fitted.
 - **Each container** is a deterministic geometric construction from those surfaces.
 - **I** is read from the container's contents and the relations the structure's law names. A healthy signal is
   never required for `identified` when an admissible damaged configuration holds.
-- A failure of identity routes to the placement check: a K07 constraint failure makes the reading `unverifiable`,
-  never a finding.
+- A failure of identity routes to the placement check, which is *independent of this chapter's own fit*: the
+  constraint reference (NCC, the placement margin, the check registration; ARCH §1.8). A constraint failure makes
+  the reading `unverifiable`, never a finding.
 
 ## 4. Contracts
 
@@ -74,9 +85,9 @@ where to look.
 
 - **Detective:** the outcome decisions, the relation tests and the certificate rules are converged.
 - **Hypothesis:** container construction is deterministic and mirror-consistent.
-- **Phantoms (K11):** ligament gaps, displaced fragments and altered signal must read `identified` with the right
-  relation flags. Misregistration phantoms must read `unverifiable` or `insufficient`, never `identified` at a
-  wrong place.
+- **Phantoms (K11):** ligament gaps, absent segments, displaced and flipped fragments, and altered signal must read
+  `identified` with the right relation flags. Misregistration phantoms must read `unverifiable` or `insufficient`,
+  never `identified` at a wrong place.
 
 ## 7. Integration
 
@@ -85,14 +96,19 @@ agency still abstains until K20.
 
 ## 8. Acceptance
 
-- **Behavioural correctness:** the decisions are pinned; the phantom outcomes are as specified; first light is
-  re-run and its SAME and decision checks pass.
-- **Representation fidelity:** container placement against the atlas landmarks on `checking` normals, with error
-  bounds.
+Written first: `acceptance/K19.toml`.
+- **Behavioural correctness:**
+  - the decisions are pinned, and the phantom outcomes are as specified;
+  - first light is re-run, SAME holds, and its decision diff is read against this chapter's behaviour-change
+    record.
+- **Representation fidelity:** container placement on `checking` normals, against K08's independent truths
+  (known-transform tests; the founder's landmark sheet), with error bounds. It is never measured against the
+  registration's own output.
 - **Domain validity:** the `identified` rate on `checking` normals per structure, with bounds; the
   `not_found_adequate_visibility` rate on normals, which should be near 0 and is reported; visibility certificate
   distributions.
-- **Performance evidence:** milliseconds per study per structure.
+- **Performance evidence:** places scanned and paths searched, counted per study per structure; seconds as
+  information.
 - **Evidence scope:** the atlas version and the series classes present.
 - **Invalidation:** a change to the atlas, the signatures, the registration, or the admissible configurations.
 
@@ -110,3 +126,8 @@ agency still abstains until K20.
   - Codex design round 2 (C2 amendment);
   - THE_KNEE §2 (change 2).
 - **2026-10-02:** specified in K00.
+- **2026-10-02, revision 1:**
+  - surfaces from identity readings (F02);
+  - absent and flipped configurations (F22, F48);
+  - placement validated on the constraint reference and against K08's independent truths (F48, F42);
+  - the first-light diff read against intent (F11).
