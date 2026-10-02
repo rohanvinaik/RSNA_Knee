@@ -1,0 +1,22 @@
+# LintGate configuration for rsna-knee-abnormality-detection
+# See ../../README.md "LintGate Integration Protocol" for usage.
+
+controlplane:
+  enabled: true
+  inquiry:
+    theory_grounded_signals: true
+    prediction_tracking: true
+    theory_coherence_check: true
+    living_context: true
+    session_gate: true
+
+lint:
+  enabled: true
+  python:
+    enabled: true
+
+# Add project-specific constraints as they become stable:
+# exemptions:
+#   - file: "src/RSNA_Knee/legacy_module.py"
+#     codes: ["C901"]
+#     reason: "Legacy complexity — ticket XYZ"

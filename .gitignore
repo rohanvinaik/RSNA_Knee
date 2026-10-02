@@ -1,0 +1,30 @@
+# Competition data (21 GB, Kaggle-licensed — never redistribute)
+data/
+submission/*.csv
+
+# Python
+.venv/
+__pycache__/
+*.py[cod]
+*.egg-info/
+.pytest_cache/
+.ruff_cache/
+.coverage
+htmlcov/
+
+# Local tool state / caches (pins + equivalents are kept)
+.detective/verdict_cache.json
+.detective/reports/
+.lintgate/
+.wesker/
+.claude/settings.local.json
+
+# OS
+.DS_Store
+
+# Secrets / tool state flagged by Prism; coverage artifacts
+.env
+.env.*
+.prism/
+coverage.xml
+.serena/

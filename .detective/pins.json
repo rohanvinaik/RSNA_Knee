@@ -1,0 +1,301 @@
+{
+  "src/RSNA_Knee/anatomy.py::classify_bone_groups::038ac3c73ed1eb75": [
+    {
+      "assertion_code": "result = classify_bone_groups([(10, 30, 120), (22, 87, 132), (6, 100, 118), (24, 111, 69)])\nassert result == {'patella': [0], 'tibia': [3], 'femur': [2, 1]}",
+      "category": "VALUE",
+      "confidence": 0.9,
+      "function_key": "",
+      "golden_case": [
+        "([(10, 30, 120), (22, 87, 132), (6, 100, 118), (24, 111, 69)],)",
+        "{'patella': [0], 'tibia': [3], 'femur': [2, 1]}"
+      ],
+      "mutant_id": "",
+      "needs_oracle": false,
+      "preconditions": [
+        "golden capture (pure + deterministic)"
+      ],
+      "setup_code": "from RSNA_Knee.anatomy import classify_bone_groups",
+      "source_lenses": [
+        "golden_capture"
+      ]
+    },
+    {
+      "assertion_code": "try:\n    _result = classify_bone_groups(centroids=[1], min_gap=-1.0)\nexcept ValueError as _exc:\n    assert str(_exc) == 'need at least 3 bone centroids'\nexcept BaseException as _exc:\n    pytest.fail(f\"expected ValueError, got {type(_exc).__name__}: {_exc!r}\")\nelse:\n    pytest.fail(f\"expected ValueError, but the call returned {_result!r}\")",
+      "category": "VALUE",
+      "confidence": 0.95,
+      "function_key": "",
+      "golden_case": null,
+      "mutant_id": "",
+      "needs_oracle": false,
+      "preconditions": [
+        "distinguishing witness (original raises ValueError: need at least 3 bone centroids)"
+      ],
+      "setup_code": "from RSNA_Knee.anatomy import classify_bone_groups\nimport pytest",
+      "source_lenses": [
+        "witness"
+      ]
+    },
+    {
+      "assertion_code": "try:\n    _result = classify_bone_groups([(10, 30, 120), (22, 87, 100), (24, 111, 95)])\nexcept ValueError as _exc:\n    assert str(_exc) == 'largest S-I gap 5.0 < 10.0 \u2014 no clean split'\nexcept BaseException as _exc:\n    pytest.fail(f\"expected ValueError, got {type(_exc).__name__}: {_exc!r}\")\nelse:\n    pytest.fail(f\"expected ValueError, but the call returned {_result!r}\")",
+      "category": "VALUE",
+      "confidence": 0.95,
+      "function_key": "",
+      "golden_case": null,
+      "mutant_id": "",
+      "needs_oracle": false,
+      "preconditions": [
+        "distinguishing witness (original raises ValueError: largest S-I gap 5.0 < 10.0 \u2014 no clean split)"
+      ],
+      "setup_code": "from RSNA_Knee.anatomy import classify_bone_groups\nimport pytest",
+      "source_lenses": [
+        "witness"
+      ]
+    }
+  ],
+  "src/RSNA_Knee/anatomy.py::classify_bone_roles::f16644d054cc3764": [
+    {
+      "assertion_code": "result = classify_bone_roles(centroids=[(10, 30, 120), (16, 90, 160), (16, 90, 60)])\nassert result == {'patella': 0, 'femur': 1, 'tibia': 2}",
+      "category": "VALUE",
+      "confidence": 0.9,
+      "function_key": "",
+      "golden_case": [
+        "([(10, 30, 120), (16, 90, 160), (16, 90, 60)],)",
+        "{'patella': 0, 'femur': 1, 'tibia': 2}"
+      ],
+      "mutant_id": "",
+      "needs_oracle": false,
+      "preconditions": [
+        "golden capture (pure + deterministic)"
+      ],
+      "setup_code": "from RSNA_Knee.anatomy import classify_bone_roles",
+      "source_lenses": [
+        "golden_capture"
+      ]
+    },
+    {
+      "assertion_code": "result = classify_bone_roles(centroids=[(16, 90, 60), (10, 30, 120), (16, 90, 160)])\nassert result == {'patella': 1, 'femur': 2, 'tibia': 0}",
+      "category": "VALUE",
+      "confidence": 0.9,
+      "function_key": "",
+      "golden_case": [
+        "([(16, 90, 60), (10, 30, 120), (16, 90, 160)],)",
+        "{'patella': 1, 'femur': 2, 'tibia': 0}"
+      ],
+      "mutant_id": "",
+      "needs_oracle": false,
+      "preconditions": [
+        "golden capture (pure + deterministic)"
+      ],
+      "setup_code": "from RSNA_Knee.anatomy import classify_bone_roles",
+      "source_lenses": [
+        "golden_capture"
+      ]
+    },
+    {
+      "assertion_code": "try:\n    _result = classify_bone_roles(centroids=[1])\nexcept ValueError as _exc:\n    assert str(_exc) == 'exactly 3 bone centroids required'\nexcept BaseException as _exc:\n    pytest.fail(f\"expected ValueError, got {type(_exc).__name__}: {_exc!r}\")\nelse:\n    pytest.fail(f\"expected ValueError, but the call returned {_result!r}\")",
+      "category": "VALUE",
+      "confidence": 0.95,
+      "function_key": "",
+      "golden_case": null,
+      "mutant_id": "",
+      "needs_oracle": false,
+      "preconditions": [
+        "distinguishing witness (original raises ValueError: exactly 3 bone centroids required)"
+      ],
+      "setup_code": "from RSNA_Knee.anatomy import classify_bone_roles\nimport pytest",
+      "source_lenses": [
+        "witness"
+      ]
+    }
+  ],
+  "src/RSNA_Knee/hdc_encoder.py::ternary_cell::b3287af94eba3bf0": [
+    {
+      "assertion_code": "result = ternary_cell(z=1.0625, thresh=1.0625)\nassert result == 1",
+      "category": "VALUE",
+      "confidence": 0.9,
+      "function_key": "",
+      "golden_case": [
+        "(1.0625, 1.0625)",
+        "1"
+      ],
+      "mutant_id": "",
+      "needs_oracle": false,
+      "preconditions": [
+        "golden capture (pure + deterministic)"
+      ],
+      "setup_code": "from RSNA_Knee.hdc_encoder import ternary_cell",
+      "source_lenses": [
+        "golden_capture"
+      ]
+    },
+    {
+      "assertion_code": "result = ternary_cell(z=-1.0, thresh=2.5)\nassert result == 0",
+      "category": "VALUE",
+      "confidence": 0.95,
+      "function_key": "",
+      "golden_case": null,
+      "mutant_id": "",
+      "needs_oracle": false,
+      "preconditions": [
+        "distinguishing witness (equivalence search)"
+      ],
+      "setup_code": "from RSNA_Knee.hdc_encoder import ternary_cell",
+      "source_lenses": [
+        "witness"
+      ]
+    },
+    {
+      "assertion_code": "result = ternary_cell(z=-1.0, thresh=0.0)\nassert result == -1",
+      "category": "VALUE",
+      "confidence": 0.95,
+      "function_key": "",
+      "golden_case": null,
+      "mutant_id": "",
+      "needs_oracle": false,
+      "preconditions": [
+        "distinguishing witness (equivalence search)"
+      ],
+      "setup_code": "from RSNA_Knee.hdc_encoder import ternary_cell",
+      "source_lenses": [
+        "witness"
+      ]
+    },
+    {
+      "assertion_code": "result = ternary_cell(z=0.0, thresh=-1.0)\nassert result == 1",
+      "category": "VALUE",
+      "confidence": 0.95,
+      "function_key": "",
+      "golden_case": null,
+      "mutant_id": "",
+      "needs_oracle": false,
+      "preconditions": [
+        "distinguishing witness (equivalence search)"
+      ],
+      "setup_code": "from RSNA_Knee.hdc_encoder import ternary_cell",
+      "source_lenses": [
+        "witness"
+      ]
+    },
+    {
+      "assertion_code": "result = ternary_cell(z=-1.0, thresh=1.0)\nassert result == -1",
+      "category": "VALUE",
+      "confidence": 0.95,
+      "function_key": "",
+      "golden_case": null,
+      "mutant_id": "",
+      "needs_oracle": false,
+      "preconditions": [
+        "distinguishing witness (equivalence search)"
+      ],
+      "setup_code": "from RSNA_Knee.hdc_encoder import ternary_cell",
+      "source_lenses": [
+        "witness"
+      ]
+    }
+  ],
+  "src/RSNA_Knee/kneediff.py::classify_cell::13e2be11ab2143dc": [],
+  "src/RSNA_Knee/kneediff.py::make_or_break_verdict::ebb1ac1c668045bb": [
+    {
+      "assertion_code": "result = make_or_break_verdict(auc=-1.0, n_normal=-1, n_abnormal=-1, min_studies=-1, absorb_bar=-1.0, signal_bar=-1.0)\nassert result == 'reference_absorbs'",
+      "category": "VALUE",
+      "confidence": 0.95,
+      "function_key": "",
+      "golden_case": null,
+      "mutant_id": "",
+      "needs_oracle": false,
+      "preconditions": [
+        "distinguishing witness (equivalence search)"
+      ],
+      "setup_code": "from RSNA_Knee.kneediff import make_or_break_verdict",
+      "source_lenses": [
+        "witness"
+      ]
+    }
+  ],
+  "src/RSNA_Knee/kneediff.py::residual_z::452bf841828b97ca": [
+    {
+      "assertion_code": "result = residual_z(value=1.0625, mu=1.0625, sigma=1.0625, sigma_floor=1.0625)\nassert result == 0.0",
+      "category": "VALUE",
+      "confidence": 0.9,
+      "function_key": "",
+      "golden_case": [
+        "(1.0625, 1.0625, 1.0625, 1.0625)",
+        "0.0"
+      ],
+      "mutant_id": "",
+      "needs_oracle": false,
+      "preconditions": [
+        "golden capture (pure + deterministic)"
+      ],
+      "setup_code": "from RSNA_Knee.kneediff import residual_z",
+      "source_lenses": [
+        "golden_capture"
+      ]
+    }
+  ],
+  "src/RSNA_Knee/kneediff.py::survival_fraction::7a70f36388d68eb8": [
+    {
+      "assertion_code": "result = survival_fraction(zs=[1], z_thresh=1.0625)\nassert result == 0.0",
+      "category": "VALUE",
+      "confidence": 0.9,
+      "function_key": "",
+      "golden_case": [
+        "([1], 1.0625)",
+        "0.0"
+      ],
+      "mutant_id": "",
+      "needs_oracle": false,
+      "preconditions": [
+        "golden capture (pure + deterministic)"
+      ],
+      "setup_code": "from RSNA_Knee.kneediff import survival_fraction",
+      "source_lenses": [
+        "golden_capture"
+      ]
+    }
+  ],
+  "src/RSNA_Knee/scoring.py::auc_status::03ab83c4a50be7ea": [
+    {
+      "assertion_code": "result = auc_status(labels=[1])\nassert result == 'no_negatives'",
+      "category": "VALUE",
+      "confidence": 0.9,
+      "function_key": "",
+      "golden_case": [
+        "([1],)",
+        "'no_negatives'"
+      ],
+      "mutant_id": "",
+      "needs_oracle": false,
+      "preconditions": [
+        "golden capture (pure + deterministic)"
+      ],
+      "setup_code": "from RSNA_Knee.scoring import auc_status",
+      "source_lenses": [
+        "golden_capture"
+      ]
+    }
+  ],
+  "src/RSNA_Knee/scoring.py::average_ranks::1e83c5906788e483": [],
+  "src/RSNA_Knee/scoring.py::macro_auc::fe9bf72e84d34310": [
+    {
+      "assertion_code": "result = macro_auc(labels_by_finding={'acl': []}, scores_by_finding={'acl': []})\nassert result == {'score': 0.0, 'per_finding': {}, 'skipped': {'acl': 'empty'}, 'n_scored': 0}",
+      "category": "VALUE",
+      "confidence": 0.9,
+      "function_key": "",
+      "golden_case": [
+        "({'acl': []}, {'acl': []})",
+        "{'score': 0.0, 'per_finding': {}, 'skipped': {'acl': 'empty'}, 'n_scored': 0}"
+      ],
+      "mutant_id": "",
+      "needs_oracle": false,
+      "preconditions": [
+        "golden capture (pure + deterministic)"
+      ],
+      "setup_code": "from RSNA_Knee.scoring import macro_auc",
+      "source_lenses": [
+        "golden_capture"
+      ]
+    }
+  ],
+  "src/RSNA_Knee/scoring.py::roc_auc::e41cc328aeca9809": []
+}

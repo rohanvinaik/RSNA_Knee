@@ -1,0 +1,84 @@
+# The canonical reference corpus for RSNA_Knee, machine-checkable.
+# These files live in sibling projects (not bundled here); the sha256 pins the
+# version this design was derived against. Re-hash to detect drift:
+#   shasum -a 256 <path>   (compare to the value below)
+# Roles map each source to the data-layer / intelligence-layer part it grounds.
+
+- id: law-as-architecture
+  path: ~/Projects/rohan-vinaik.github.io/papers/Core Documents/AI_architecture_papers/law_as_architecture.md
+  role: the intelligence layer (Part III) — law-as-topology, Society-of-Mind specialists, recollective SDM, near-miss censors, regime stratification, delta-method confidence; names medical-imaging-from-sparse-views as a target (§11)
+  sha256: c6b441edffa984537665bb8f5a14df25e6df7c0ddf202b866a006b67592aecbc
+  cited_by: [docs/THEORY_OF_THE_CASE.md]
+
+- id: gdiff-rationale
+  path: ~/Projects/genomevault/docs/GDIFF_RATIONALE.md
+  role: differential encoding semantics + population-aware template (data layer II.3)
+  sha256: 074298e379840ca2aba8913b4b084ae096de3801045d04cf31297184788f0fbf
+  cited_by: [docs/THEORY_OF_THE_CASE.md]
+
+- id: gdiff-template-encoding
+  path: ~/Projects/genomevault/docs/GDIFF_TEMPLATE_ENCODING_ARCHITECTURE.md
+  role: template-based reference + O(1) lookup (data layer II.2)
+  sha256: 85a22eb89ef06c849b65b111c72ee3e5780d3f6a9f672f2f393c5d89e3804092
+  cited_by: [docs/THEORY_OF_THE_CASE.md]
+
+- id: hdc-conceptual-architecture-v8
+  path: ~/Projects/genomevault/genomevault/hdv_validation/hdc_experimentation/HDC_CONCEPTUAL_ARCHITECTURE_V8.md
+  role: OTP two-lens ternary, sparse-Hadamard accumulation, margin=confidence decode, adaptive-k (data layer II.4)
+  sha256: fd9535308a553e9cdb95656fb4887b1b7b7ac69a9a461bd1177756d47fffe05e
+  cited_by: [docs/THEORY_OF_THE_CASE.md]
+
+- id: multi-modal-lens-strategy
+  path: ~/Projects/genomevault/genomevault/hdv_validation/hdc_experimentation/docs/MULTI_MODAL_LENS_STRATEGY.md
+  role: the finding-detector — lens library + λ-trajectory (peak-then-drop = deviation) (data layer II.5)
+  sha256: b803b3cede646277397ec77e6dcd8747881387a82959e8f6de387ae103d27624
+  cited_by: [docs/THEORY_OF_THE_CASE.md]
+
+- id: e16-margin-as-signal
+  path: ~/Projects/genomevault/genomevault/hdv_validation/hdc_experimentation/experiments/E16_variant_analysis/output/E16_STRATEGIC_ANALYSIS.md
+  role: margin-as-signal reframe + clinical tier stratification -> the 12 AUC scores (data layer II.6)
+  sha256: 6a32a22da883401028c35c2f15f277f1ae19ebf17e7f665a5924bf223b366eb3
+  cited_by: [docs/THEORY_OF_THE_CASE.md]
+
+- id: gse-theory
+  path: ~/Projects/gse/docs/THEORY.md
+  role: multi-scale compositional semantics (word->sentence->text) — the "more than a bag of pixels" concept (data layer II.4)
+  sha256: 2c1abab6bdf4e91f4f728fb475fdd2f8b25352a415a1a1f525696fc63825e96d
+  cited_by: [docs/THEORY_OF_THE_CASE.md]
+
+- id: gse-otp-genomevault-synthesis
+  path: ~/Projects/gse/gse_otp_genomevault_synthesis.md
+  role: the shared OTP substrate — banks, binding=bank×role intersection, bundle, 3D (concept,bank,dim) storage (data layer II.4)
+  sha256: c1bb3f85212d769ce96b9e4c03003e682d13bf26a70a55208d3b31fcfea854c7
+  cited_by: [docs/THEORY_OF_THE_CASE.md]
+
+- id: som-training-analysis
+  path: ~/Projects/rohan-vinaik.github.io/papers/Core Documents/LLM_WORKFLOW/SOM_TRAINING_ANALYSIS copy.md
+  role: navigation-over-precomputed-features; signal-quality ceiling; specialist decomposition (intelligence layer III, Law 5)
+  sha256: 8b31cf687fc6c013fc91ec002d6213069b6708666cfb588fe0472a58cd56f09f
+  cited_by: [docs/THEORY_OF_THE_CASE.md]
+
+- id: balanced-sashimi
+  path: ~/Projects/ShortcutForge/research/docs/BALANCED_SASHIMI_RESEARCH.md
+  role: balanced-ternary structural decoder; constrained output over a formal space (intelligence layer III candidate realization)
+  sha256: b4b9e423b1aaae93e90868a61aecffe310cf7011b71de12d5150ef119a41ece9
+  cited_by: [docs/THEORY_OF_THE_CASE.md]
+
+- id: sparse-wiki-vision
+  path: ~/resume/Communication/vision/sparse_wiki_vision.md
+  role: probability-space collapse framing (NOTE - founder clarified the KneeDiff collapse is GDiff, NOT sparse-wiki; kept for the collapse/abstain discipline only)
+  sha256: a8b283c2319f60b57d65e85203069704ae43d8b3ed522e20fe4d3d107aeae41c
+  cited_by: [docs/THEORY_OF_THE_CASE.md]
+
+# Code (referenced by path, not hashed here — read via Serena, never grep as text):
+#   ~/Projects/genomevault/genomevault/reference/byzantine_consensus_builder.py
+#   ~/Projects/genomevault/genomevault/reference/superposition_consensus_builder.py
+#   ~/Projects/genomevault/genomevault/differential_encoding/differences.py
+#   ~/Projects/genomevault/genomevault/differential_encoding/gdiff/schema.py
+#   ~/Projects/genomevault/genomevault/differential_encoding/gdiff/selective_hdv_encoder.py
+#   ~/Projects/genomevault/genomevault/hdv_validation/hdc_experimentation/encoders/production_adaptive_encoder.py
+# Registration front-end (data layer II.1):
+#   ~/MentalAtlas/biodata/neuroimaging/   (N4 / mask / MNI-registration analogues)
+# Still-to-read (founder flagged; close the data layer):
+#   tests/hypervector/test_single_position_reconstruction.py ; experiments/E16h_hinge_reconstruction/ ;
+#   full_genome_reconstruction_validation ; 3d-h5 metadata processing ; dedicated oncogene predictor
