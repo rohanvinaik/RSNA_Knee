@@ -24,9 +24,19 @@ To build the machinery every chapter is verified with, before anything it verifi
   (runners). Plus `knee/verify` (the SAME harness and test support), never imported by `run`.
 - **`pyproject.toml`** for `knee`:
   - runtime dependencies per K01;
-  - dependency groups `dev` (pytest, hypothesis, pinned ruff, import-linter, deptry, crosshair-tool, pyperf),
-    `tools` (memray, py-spy, viztracer, pyinstrument, apache-hamilton[visualization], beartype, jaxtyping) and
-    `accel` (numba);
+  - dependency groups, following the house toolkit (SquishOS `docs/home/TOOLKIT.md`, "one owner per role";
+    the global `code-verification.md` → *The toolkit*):
+    - `dev`: pytest, hypothesis, pinned ruff, import-linter, deptry, crosshair-tool, pyperf, and icontract
+      (optional);
+    - `tools`: the investigators py-spy, memray, viztracer and scalene, plus IPython;
+    - `accel`: numba;
+  - **Tools the toolkit does not list are vetted here before adoption,** each against "one owner per role". Three
+    are proposed:
+    - apache-hamilton, to draw the run's graph dev-side;
+    - beartype and jaxtyping, for runtime array shape and dtype contracts.
+
+    pyinstrument is dropped, because it duplicates the investigators' role. Radon is never added: the toolkit
+    skips it, since "Detective's parsimony lenses and LintGate cover complexity".
   - a separately pinned **DEPLOY** requirements file built from K01's Kaggle versions.
 - **The VERIFY environment:** a uv-managed CPython of Kaggle's minor version if that is ≥ 3.12, else 3.12, with
   `.python-version`. It replaces the conda-based `.venv`.
