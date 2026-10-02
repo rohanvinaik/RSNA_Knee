@@ -61,10 +61,10 @@ Grounding is filled in only from first-hand reading of the cited lines.
 | F23 | No Popery: PRESENT from a `SINGLE` provisional take | K16 | ARCH Glossary 'Concurrence' l.5233–5234; Table 5.5 l.3449; Table 5.1 rule 2 l.3236; THESIS §4.4 l.741–748, §4.5 l.778–781 (notes §F23) | SINGLE yields a provisional take only; no PRESENT or ABSENT rests on one voice; the word is ABSTAIN (single_voice) | grounded |
 | F06 | confirmation needs measured independence (K23), so before K23 it is impossible, not "rare" | K15, K16, K23 | ARCH §6.2 l.4517–4521 (step 7: independence measured before anything is taught), §6.2.2 l.4585–4623, §5.3 gate l.3415–3425, §6.7 item 8 l.5109–5110; THE_KNEE §2 change 7 (notes §F06) | move the gate before the society (after K13), re-run as structure lenses arrive; the bar is the founder's (ARCH §6.7 item 8) | founder |
 | F46 | K14: complete the outcome table; unknown dependence is not `SINGLE` | K14 | ARCH Table 5.5 l.3444–3451; §6.2.5 rule 4 l.4706–4707; THE_KNEE §2 change 7 ('insufficient') | add INSUFFICIENT: voices speak but independence is not established; SINGLE stays 'one class can speak' | grounded |
-| F26 | K14's split labels the residual `pathology`: pathology by elimination | K14 | | | open |
+| F26 | K14's split labels the residual `pathology`: pathology by elimination | K14 | ARCH §5.9 Table 5.14 l.4172, order l.4174–4185, mechanism l.4222–4223; THEORY Law 4 (notes §F26) | pathology only when Table 5.14's positive conditions all hold, else undetermined; the class routes to recall and establishes nothing | grounded |
 | F27 | K20 searches lines only inside confirmed edema, so a fracture without detected edema is unreachable; OA marrow-lesion scope stays unresolved | K20 | ARCH lens 15 (Tables 2.8a/b); THE_KNEE §2 change 3; ARCH l.1096 (notes §F27) | line lens questionless over bone, with edema context as a field; OA marrow-lesion scope to the founder | grounded |
 | F24 | K22 admits the stability key by discrimination (phantoms above `checking` normals) | K22 | | | open |
-| F25 | K25's null claims "no shared answer by construction" across studies, which is false | K25 | | | open |
+| F25 | K25's null claims "no shared answer by construction" across studies, which is false | K25 | ARCH §5.5 l.3639–3654, l.3735–3736, l.3783–3786; THESIS §7.1 l.1411–1413, §7.4 l.1518–1521, §7.6; THE_KNEE §2 change 6 (notes §F25) | null = bank-wise exchange within (zone class, regime, visibility pattern): preserves each bank's marginals, breaks co-occurrence; label-free; hard negatives → near-miss censors | grounded |
 | F50 | K21: window and null matching; zero-energy cases; layout extension | K21 | | | open |
 | F53 | K26: evaluation feedback kept apart from teaching; censor construction and chance tests | K26 | | | open |
 | F21 | unowned: suppression-failure readings, MCL fluid and thickening, variant recognition, agency warrants, censor chance tests, Tier-0 header machinery | several | | | open |
@@ -120,6 +120,8 @@ delegated (R4).
 |---|---|---|---|
 | 2026-10-02 | ARCH | 490–617, 875–1016, 1237–1354, 1521–1595, 2024–2206, 3187–3527, 4517–4746, 5226–5285 | §1.7–§1.8; §2.3; §2.8; §3.1; §3.3.9–§3.4; §5.1–§5.3; §6.2–§6.3; Glossary C–L |
 | 2026-10-02 | THESIS | 739–797 | §4.4–§4.5 |
+| 2026-10-02 | ARCH | 3600–3796, 4145–4234 | §5.5; §5.9 |
+| 2026-10-02 | THESIS | 1403–1610 | §7.1–§7.7 |
 </content>
 </invoke>
 <invoke name="Bash">
@@ -301,3 +303,50 @@ git log --oneline -2
   - Its objects are never inspected to design a change; only its triples are read.
   - Changes are designed from T and from G read in rotation (§5.6, §6.2.5 rule 3).
   - K23's building role is named.
+
+### §F26 — the split's `pathology` is positive and routes only
+- ARCH Table 5.14 (l.4172) gives Pathology positive conditions: "a lawful signature, constraints holding, a
+  deviation where the population is tight, and no variant law explaining it". It goes to "its agency's
+  recall".
+- The order (l.4174–4185) is constraint, then consistency, then variant, then "*Pathology.* What remains goes to
+  its agency."
+- The mechanism (l.4222–4223): "Only pathology bears on a finding". It bears on one; under Law 4 only an agency
+  decides.
+- **Disposition (K14).**
+  - `split` returns `pathology` only when all four of Table 5.14's conditions are read positively.
+  - An object that clears steps 1–3 without them is `undetermined`. This is the "unexplained" type of Table
+    1.7, kept as a finding.
+  - Neither class establishes anything. Both route to recall and the agency, and the cause travels with them.
+
+### §F25 — the trust radius's null
+- **ARCH as written.** §5.5 l.3644–3651: "The chance population: profiles … that cannot carry the bucket's
+  answer, by construction. For a bucket of a finding, these are held-out true normals". "The statistic: each
+  member's cosine with its *nearest* case". "The radius: the least level no member reaches, written … before
+  any run it judges". l.3652–3654 charges the bucket for its size. l.3735–3736: "Levels are set against chance,
+  on populations that cannot carry the answer, before the run." l.3785–3786 admits the failure: "A "normal" with
+  an unreported lesion raises a radius".
+- **The accord amended this.** THE_KNEE §2 change 6 amends §5.5's "trust radius set to exclude every
+  opposite-answer example". Its replacement: "a specified null mechanism (what it preserves, conditioned on
+  visibility and context, with bucket size accounted for); hard negatives become near-miss censors".
+- **The book's K25 replacement was false.** Cross-study pairs "with no shared answer by construction" share
+  answers at the prevalence rate (Codex).
+- **THESIS grounds a label-free null.**
+  - §7.1 l.1411–1413: cases are "compared one by one, never summed …, since a sum would lose which readings
+    occurred together in each case". What a case carries is the co-occurrence of its readings.
+  - §7.4 l.1518–1521: the radius "lies where the resemblances chance alone produces end, and it is set on real
+    data. It says when a resemblance is not an accident".
+  - §7.6: a confirmed failure that resembles a case is a near miss, and writes a censor.
+- **Disposition (K25).**
+  - **The null mechanism.** Within a stratum (zone class × regime × visibility pattern, meaning the set of
+    non-silent banks), each bank's row is exchanged at random among real objects of that stratum.
+    - It preserves each bank's marginal distribution and the visibility pattern.
+    - It breaks the co-occurrence of readings within one object.
+    - So no null profile can carry any answer, by construction, without a label.
+  - **What chance reach bounds.** The statistic is each null profile's cosine to its nearest case, which
+    charges the bucket's size. The radius is the least level at which the chance-reach rate is at most a
+    rate written before the run, computed on one half of the null draws and checked on the other.
+  - **Opposite-answer examples** are never the null. A true normal that reaches a case is a near miss for
+    THESIS §7.6, and so a censor candidate or a founder's sheet (ARCH l.3785–3786).
+  - **Its calibration is measured, not tuned.** The rate at which real `null`-role normals reach cases is
+    reported beside the shuffle's rate. An excess names structure the shuffle broke, which belongs in the
+    stratum key (Law 5), and it never moves the radius.
