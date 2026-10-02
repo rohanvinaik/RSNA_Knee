@@ -28,7 +28,7 @@ from this file alone.
 
 | ruling | carried by | status |
 |---|---|---|
-| R1 · acceptance is discovery: "the 'bars' might not look so good for a long time, and fixing it is a problem to solve, not a design to discard or work around" | `CONSTRAINT_BLOCK.md`; `chapters/_TEMPLATE.md` §8; each chapter's §8 | open |
+| R1 · acceptance is discovery: "the 'bars' might not look so good for a long time, and fixing it is a problem to solve, not a design to discard or work around" | `CONSTRAINT_BLOCK.md`; `chapters/_TEMPLATE.md` §8; each chapter's §8 (grounded: ARCH §6.6.3 l.4961–4965, notes §R1) | grounded |
 | R2 · derived records may enter git | `AGENTS.md` override 7 | done (this commit) |
 | R3 · the typist goes into the book before the next Codex read | the typist chapter; `AGENTS.md`; `CONSTRAINT_BLOCK.md`; the manifest | open |
 | R4 · the lead reads everything; no sub-agents for grounding | `CLAUDE.md`; `AGENTS.md` → *How a session runs* | done (this commit) |
@@ -52,7 +52,7 @@ Grounding is filled in only from first-hand reading of the cited lines.
 | F42 | K08: independent landmark truth; common coordinates across plane templates | K08 | ARCH §2.2 checkable output l.860–862; §2.10 l.1481–1492 (per-plane atlases must agree); §1.8 measured-by l.604–608 (deliberate misregistration) | landmark truth from known-transform tests and the founder's landmark sheet, never the registration's own output; cross-plane zone agreement measured as an L1/L3 check | grounded |
 | F43 | K09: the actual biological-variance estimator | K09 | ARCH §3.4.2 l.2122–2130 (σ²_bio = max(s_p² − mean σ²_meas, floor²); 'the floor becomes physical'); THE_KNEE §2 change 10 (the centre's uncertainty) | σ²_bio = max((1.4826·MAD)² − median σ²_meas, 0); var(μ̂) = (π/2)(σ²_bio + mean σ²_meas)/n; z's denominator √(σ²_bio + σ²_meas,study + var(μ̂)); n < n_min silent or falls back | grounded |
 | F44 | K11: independent physical assumptions; damaged-structure fixtures | K11 | ARCH §5.8 phantom library l.4106–4123; §3.3.10 l.2053–2066 ('A phantom the law built is always explained by the law'); VERDICT 'WIRING and response only' (notes §F44) | phantoms built by the forward equation with the host's measured γ_s and noise (no inversion needed); each kind states its physical assumptions and what it cannot test | grounded |
-| F52 | K24: nuisance gains and offsets in identifiability; physics-space references and their builder | K24 | | | open |
+| F52 | K24: nuisance gains and offsets in identifiability; physics-space references and their builder | K24 | ARCH §3.3.9 Table 3.5 rows 1–2 l.2030–2031 (gain; per-series filters c), §3.3.3 l.1853 (the gain specialist), §3.4.2 (the physics-space reference), §3.3.10 l.2053–2066 | K24 identifiability includes each series gain γ_s and any per-series filter c; it builds its own physics-space references with its own N-role allocation; with K24 unselected the raw path of §F01 stands | grounded |
 
 ### B. The society and the house laws
 
@@ -109,7 +109,7 @@ Grounding is filled in only from first-hand reading of the cited lines.
 | F38 | K22's escalation cannot reach the Mac Pro from offline Kaggle | K22 | ARCH §4.3 l.2759–2764 (R4 and R5 only on escalation); THESIS §12.6; AGENTS override 6 | in the kernel an escalation runs inside the kernel's own budget or is skipped as escalation_unavailable; the Mac Pro is build-time only | grounded |
 | F39 | performance evidence needs work and byte accounting, not seconds alone | several | ARCH §3.2.6 l.1752–1757 ('Seconds … are informational only and never a go/no-go'; work counted per study); house performance.md | performance evidence = work and bytes counted per unit (with seconds as information), per DETERMINISTIC_SICP and ARCH | grounded |
 | F55 | K00: reconcile the authorities; executable acceptance | K00 | §F35, §R1, the authority order in AGENTS | K00 records the reconciled authorities and the acceptance-first rule | grounded |
-| F56 | K02: acceptance manifests, dependency-freshness checks, explicit layer contracts | K02 | §R1, §F11; THE_KNEE §3 (Import Linter layers); THESIS §12.5 (contracts as data) | K02 builds  over per-chapter manifests, recursive staleness over the table, and the layer contracts as Import Linter rules | grounded |
+| F56 | K02: acceptance manifests, dependency-freshness checks, explicit layer contracts | K02 | §R1, §F11; THE_KNEE §3 (Import Linter layers); THESIS §12.5 (contracts as data) | K02 builds `just accept` over per-chapter manifests, recursive staleness over the table, and the layer contracts as Import Linter rules | grounded |
 
 ## Reading log
 
