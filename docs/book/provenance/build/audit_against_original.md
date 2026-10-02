@@ -33,12 +33,16 @@ Also part of it:
   - logic or arithmetic;
   - an internal contradiction in the original, with both passages quoted;
   - an order of work that cannot execute, with the dependency named;
-  - a checkable external fact: the competition's data or its official definitions, or a file format's semantics.
+  - a checkable external fact: the competition's literal data and framing, or a file format's semantics. It is
+    admissible as a fact and never as a warrant on design. The founder (23:22:50Z): "the competition's literal
+    data and framing is acceptable, not implicit warrants on design or conception". So a fact can correct a
+    statement of fact, and a design inferred from that fact is N.
 
   A judgment that something works better, or a prediction of how it will behave, is not proof.
 - **W, warranted by his explicit words.** The row quotes them, with their source and time. His 15:24:53Z "your
-  recommendations are generally in line with the intent" is general. Under "EVERY change", it warrants no specific
-  change. *(My reading; he may correct it.)*
+  recommendations are generally in line with the intent" warrants no specific change. He confirmed this at
+  23:22:50Z: "my warrant was general and high-level, not open authority". Codex had his "implicit authority on
+  design … It was provisional", and a provisional authority is not run with.
 - **N, neither.** The book returns to the original design's text. Where I see a problem in the original, it goes
   to him as a question with the argument beside it, and Codex's point too if there is one. It is never made as a
   change.

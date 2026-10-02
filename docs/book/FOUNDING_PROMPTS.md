@@ -161,6 +161,18 @@ sub-agents launched at 16:33Z. They were stopped before reporting, and nothing o
 > **23:09:14Z** Make SURE you are not changing anything other than that which is definitevely/provably correct, or
 > warranted by my explicit words
 
+> **23:12:14Z** (mid-turn) Not just this session--EVERY change to the original design
+
+> **23:14:44Z** (mid-turn) And make sure you bonk codex, next time you engage with it. It was a key part of why this
+> happened, and it's VERY bad. It's a complete artifcact of hallucination. For the most part, the code *doesn't
+> exist*. Forget a warrant of intent that I didn't give, there is LITERALLY not an actual functional codebase that
+> meets the design intent
+
+> **23:22:50Z** That doesn't deserve/need feedback. You were within tolerable parameters. I gave codex implicit
+> authority on design. It was provisional, you should have been conservative about running with it, but it's not an
+> overt failure on your part. On your readings, yes, my warrant was general and high-level, not open authority. And
+> the competition's literal data and framing is acceptable, not implicit warrants on design or conception.
+
 ## The engineering intent, in the founder's earlier words (2026-08-31, DETERMINISTIC_SICP §1.1)
 
 > "I see this as a resource optimization problem. We want to optimize several 'independent' systems at the same

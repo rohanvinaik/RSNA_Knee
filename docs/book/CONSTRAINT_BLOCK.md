@@ -67,7 +67,9 @@ Each kernel carries a compute contract and a reference, and answers to SAME.
     as professionally and impressively as possible"; the final design is unknown and will change as we
     experiment.)*
 15. **The design is the founder's.** A change to it stands only if provably correct (logic, arithmetic, a quoted
-    contradiction, an order that cannot execute, a checkable external fact) or warranted by his explicit words.
+    contradiction, an order that cannot execute, the competition's literal data and framing as fact, never as a
+    warrant on design) or warranted by his explicit words, which are specific: a general approval is "not open
+    authority" (23:22:50Z).
     Everything else returns to the original or goes to him as a question. A second reader's critique is never
     warrant. Nothing is built and nothing is evidenced. *(Founder, 2026-10-02 23:08Z: "*I* am the authority on
     what works or doesn't"; 23:09Z: "Make SURE you are not changing anything other than that which is
