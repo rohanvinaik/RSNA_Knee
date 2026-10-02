@@ -15,6 +15,17 @@ To persist the build so that no session can lose it.
   out cleanly and persistently. I'd like us to use that."
 - **Also:** "write the key/useful rules … in a robust CLAUDE.md file in this project level", and "get Codex to
   read your "chapters" and grounding context".
+- **And** (16:29:22Z): "Make sure that the re-write is formally grounded in some section of the architecture
+  document, and where under-specified, from the original thesis document on computer vision ("what_an_object_is"),
+  or the reference manifest". (16:35:20Z) "I want YOU to do this."
+- **The authorities, reconciled** (the fresh read's K00 finding). The order is AGENTS → *Where truth lives*:
+  - the founder's words;
+  - the book;
+  - the canon (THEORY's Laws 1–8 bind; KNEE_ARCHITECTURE as the book amends it);
+  - logs.
+
+  Where the canon conflicts with the founder's own law, the law wins and the conflict is put to him. The case in
+  point: ARCH §6.1.4's s-key admission against the No Popery law (`THE_KNEE.md` §2.1 R1.8).
 - **Non-goals:** no production code; no data fetched.
 
 ## 2. Dependencies and consumers
@@ -57,7 +68,8 @@ words verbatim, and a checksummed source manifest.
 - **The fresh-reader check.** A Codex thread with no memory of the design reads only this book and its grounding,
   reconstructs the build, and is asked whether it agrees.
   - Its transcript lives in `provenance/build/`.
-  - Each disagreement gets a recorded disposition: fixed in the book, or carried as an open matter.
+  - Each disagreement gets a recorded disposition, grounded first-hand: fixed in the book, or carried as an open
+    matter. The working record is `provenance/build/revision_1.md`.
 
 ## 7. Integration
 
@@ -66,6 +78,7 @@ structure" is the book's chapter table (`CLAUDE.md`).
 
 ## 8. Acceptance
 
+Written first. For K00 the manifest is this section, since K02's `acceptance/` does not yet exist.
 - **Behavioural correctness:**
   - the manifest verifies;
   - every book link resolves;
