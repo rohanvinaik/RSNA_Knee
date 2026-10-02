@@ -19,12 +19,22 @@ founder beside the structure-alone score and the floor of confident joint errors
 
 **Produced:**
 - **The validated selection:**
-  - `SELECTION.toml` is checked: whether K24 is selected and accepted, or its absence recorded; the emission
-    variant (literal unless the founder has ruled on Q4); the artifact versions;
-  - every dependency's acceptance re-run (`just accept` for K01–K26) to detect staleness.
+  - `SELECTION.toml` is checked:
+    - whether K24 and K02a are selected and accepted, or their absence recorded explicitly. An unselected
+      optional chapter is *skipped*, never run;
+    - the emission variant (literal unless the founder has ruled on Q4);
+    - the artifact versions;
+  - every dependency's acceptance is re-run (`just accept` over the table), *version-aware*. It replays the
+    versions the selection names, computes staleness recursively, and reads each chapter's recorded
+    behaviour-change diffs against their intent records (`provenance/build/revision_1.md`, §F11).
+- **Tier 0** (ARCH §3.2.5, Table 3.2). The zone word may skip quiet zones only once its skip-miss rate, on gold
+  finding-bearing zones and on planted phantoms, is near zero (ARCH l.1749–1751: "Tier 0 is switched on only when
+  the rate is near zero"). Otherwise it stays off, and that is recorded.
 - **The full DEPLOY run** on the local panels.
 - **The private Kaggle dry run,** read whole.
-- **The expected-score report:**
+- **The expected-score report, stated conditionally** (ARCH §6.1.5), never as one number:
+  - per finding: the open shares o₊/n₊ and o₋/n₋, and the decided accuracy with bounds. If every decision is
+    right, AUC = 1 − ½·(o₊/n₊)·(o₋/n₋) (fact 1), and fact 3 holds: abstention after a wrong decision never costs;
   - per-finding AUC on G (rotation) and R, with bounds;
   - the structure-alone score beside it;
   - the recognition table;
@@ -51,7 +61,8 @@ The K18 machinery, unchanged.
 ## 6. Verification
 
 - Every chapter's acceptance re-runs green at HEAD.
-- DEPLOY and VERIFY are SAME on the local sample.
+- DEPLOY and VERIFY agree on the local sample: decisions equal, with boundary cases listed (THESIS §12.5: the same
+  answer within an environment, never across two).
 - The Kaggle dry run reaches `COMPLETE`.
 
 ## 7. Integration
@@ -61,6 +72,7 @@ The submit step follows `../../CLAUDE.md`: `create_code_competition_submission` 
 
 ## 8. Acceptance
 
+Written first: `acceptance/K27.toml`.
 - **Behavioural correctness:** all re-run acceptances are green; the selection is validated; the dry run reaches
   `COMPLETE`; **no submission is made without the founder's go.**
 - **Representation fidelity:** the report's numbers trace to the recorded runs.
@@ -80,3 +92,8 @@ The submit step follows `../../CLAUDE.md`: `create_code_competition_submission` 
   - `../../CLAUDE.md`;
   - THE_KNEE §5.
 - **2026-10-02:** specified in K00.
+- **2026-10-02, revision 1:**
+  - version-aware replay, with unselected optional chapters skipped (F11, F54);
+  - the score stated through ARCH §6.1.5's identities (F54);
+  - Tier 0 behind its skip-miss rate (F21; ARCH §3.2.6);
+  - DEPLOY against VERIFY within environments (F11).
