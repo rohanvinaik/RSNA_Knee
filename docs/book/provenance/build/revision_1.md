@@ -141,3 +141,86 @@ knee/K00: record the founder's rulings; open revision 1; the lead reads
   survives a compaction.
 EOF
 git log --oneline -2
+## Grounding notes (first-hand; line numbers are `docs/KNEE_ARCHITECTURE.md` unless named)
+
+### §F01 — intensity units
+- **The unknown is named in the law.** §2.3 l.880–882: "S ≈ g · PD · (1 − e^(−TR/T1)) · e^(−TE/T2), where g is
+  the series' unknown receiver gain." Consequence 4 (l.909–910) claims "Signs survive the unknown gain, since
+  each series is read against the reference for its own series type". That holds only if the deviation is
+  computed in gain-free units, which nothing in the raw path supplies. Codex's counterexample stands: a series
+  at twice the typical gain deviates bright everywhere.
+- **ARCH's own remedy is a per-series gain pinned on reference tissue.** Table 3.5 (§3.3.9, l.2030): "Unknown
+  receiver gain | absolute intensity means nothing across series | ratios; one γ per series, pinned on
+  reference tissue". The gain specialist is §3.3.3, l.1853: "γ_s | a reference tissue read in the series,
+  against its recalled regime value: muscle everywhere, marrow fat where unsuppressed | … | γ_s with its spread;
+  whether two reference tissues agree | no normal reference tissue in the field". Its zones: l.1859 ("muscle
+  and subcutaneous fat. These are …") and §2.10 l.1478.
+- **Where the law does not run, ARCH falls back to the BUILT raw path.** §3.3.9 l.2041–2042: "Where the law
+  cannot run, a series is read as today: KneeDiff on raw intensity against its series type's reference
+  (BUILT). The header records each series' path." Since the accord made the law optional (K24), the raw path
+  is now the default, and it needs the same gain contract.
+- **Per-series normalizers.** §3.1 l.1574–1592: `n4_correct`, `normalize_intensity` and `histogram_match`
+  each multiply one series by its own factor field, which "destroys what layer 1 reads, the ratio of two
+  series at one place". So layer 1 reads stored values, and "N4 is applied, if at all, only to the
+  proton-density map after the solve". §3.4.1 l.2093–2110, LADDER as ARCH quotes it: v2's N4 and p2–p98 left
+  "regional intensity offsets 4–6σ", a "contrast-ratio mismatch that p2–p98 scaling cannot reconcile";
+  histogram matching was "blind to which tissue was where". §3.4.2 l.2135: "Histogram matching should become
+  unnecessary".
+- **THEORY II.1 (binds):** N4 is "the prerequisite for a clean subtract across the diverse international
+  scanner/protocol mix".
+- **Disposition.** Two representations per series, never merged:
+  - the stored values (RescaleSlope and Intercept, plus any vendor scale), kept for K24's law;
+  - the comparison representation for the population axis: stored ÷ (N4 field × γ_s).
+
+  The rules:
+  - γ_s is ARCH's gain specialist, lifted out of the law and run on every series. It reads muscle everywhere and
+    marrow fat where unsuppressed, against the recalled regime value. Two reference tissues are compared, and a
+    series with no normal reference tissue in the field is silent on the population axis
+    (`gain_unpinned`).
+  - There is no p2–p98 scaling and no histogram matching (§3.4.1).
+  - The detrend stays a measured question (§3.4.2).
+  - Each series records its path (§3.3.9).
+  - Reference-tissue zones (muscle, subcutaneous fat) join K08's atlas, per §2.10 l.1478.
+  - Chapters: K07 (the N4 field as a measured nuisance; stored values kept), K08 (the reference-tissue zones),
+    K09 (references in γ-normalized units), K10 (z in the same units).
+
+### §F02 — tissue identity against change
+- **The signature is a tissue-level pattern, not a deviation.** Table 2.3a (§2.3) names tissues by each
+  contrast's sign "from the equation", and §2.3.2 l.989 says "The Signature lens … reads only signs. It needs
+  co-registration and does not need g." Only a level read within the series, against that series' own
+  reference tissue, needs no g. The tissue level is named against muscle: l.3866 "T1 brighter than muscle (the
+  T1 tissue level; lens 3's signature)", and l.1096 likewise.
+- Table 2.8a lens 3: "the pattern of contrast digits, named by the equation's signs for each series' TR, TE and
+  TI". Its open quantity is the correspondence radius.
+- **Change is a different reading.** §3.4.3 l.2158–2160: "A place is black when every identified parameter lies
+  within the licence (|z_p| below the threshold) and its signature word is its zone's normal one." There are
+  three readings: the place's tissue word, the zone's normal word (measured on normals) and the population z.
+  §2.3 consequence 1 (l.900–901), "A meniscus turning + on FS holds fluid", is a change of *word*.
+- **The book's error.** K10 computed the word "from the deviation signs across the co-registered series",
+  which merges identity and change. A healthy ligament then never reads `fibrous` (Codex).
+- **Disposition (K10).**
+  - The tissue level per series is a three-way digit of the γ-normalized signal against the series' own
+    reference tissue. Its middle is set once per the template's middle rule (THESIS §6.2).
+  - The tissue word comes from Table 2.3a's expected signs per timing class.
+  - The change reading has two parts: (a) the word against the zone's normal word, measured on normals; and
+    (b) z per series.
+  - K19 and K20 read the tissue word (identity). K13 and the agencies read change.
+
+### §F27 — the line lens and edema
+- **ARCH reads lines in committed edema.** Table 2.8a lens 15 (l.1305): "Line | L4 fracture | committed edema,
+  with its halo out (layer 6; Part 4 §4.4); T1, FS | the length of a linear dark component reaching cortex".
+  Table 2.8b row 15 (l.1331): "for only (an unseen line in dense edema at 3–4 mm is not "no fracture") |
+  nothing on its own; "a fracture lies within edema" censors lines outside edema | no committed edema".
+- **But the accord amended that censor.** THE_KNEE §2 change 3 lists Table 5.10's "a fracture lies within
+  edema" as one of the passages it amends: only physical impossibility is absolute.
+- **So:**
+  - The line lens measures linear dark components reaching cortex over the bone subregions. It knows no
+    question.
+  - It records each line's edema context (inside a committed edema object, inside a provisional one, or
+    outside) as a separate field.
+  - The Monty Hall reading inside committed edema (§4.4; THESIS §4.6) is kept as context. It is no longer a
+    gate.
+  - The marrow agency holds the sign.
+- **The OA marrow-lesion scope.** l.1096 lists "An OA marrow lesion: under cartilage loss, in a narrowed
+  compartment" as a confounder of Contusion. Whether the official Contusion label includes such lesions is
+  label scope, a founder matter under AGENTS law 6. The book keeps it unresolved and measures how G treats it.
