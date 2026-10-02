@@ -40,6 +40,8 @@ manifest fields.
 - **Prior art and reuse:** what exists, and whether it is reused, rewritten or retired. Each reuse carries its
   argument (Law 5) and a migration-ledger row.
 - **Memory and access layout:** scratch bytes, bytes scanned, block rationale.
+- **Typist eligibility** (K02a): which units are twins of pinned references, and which are pure decisions with a
+  finite named-code return. Only these may be typed by the typist, and only with a certificate.
 - **Concurrency:** process × thread ownership, and nested library threads.
 - **Cache lifecycle:** keys and invalidation; immutable artifacts kept apart from writable caches.
 
@@ -49,9 +51,17 @@ manifest fields.
   characterization is read.
 - **Detective scope and standing:** the functions, their pinning route (synthesized literal or bounded-array
   inputs, or captured real arguments) and their current-digest standing.
+  - A function that cannot be pinned is guarded by ordinary unit tests, and says so (Detective
+    ARCHITECTURE §11).
+  - A branch that synthesis cannot reach is answered by extracting its pure decision, which preserves behaviour.
+    The design is never bent to suit the tool.
 - **Properties:** the Hypothesis laws, stateful tests where the chapter has a store or cache, and CrossHair
   where its contracts are supported.
-- **SAME obligations** for each accelerated twin: what must match exactly, and how boundary cases are routed.
+- **SAME obligations** for each accelerated twin, by contract (THESIS §12.5):
+  - codes and whole-number results match exactly;
+  - floats match within the declared tolerance, with boundary cases routed to the reference;
+  - declared nonfinite values match by position;
+  - one environment at a time, never across two.
 - **The unverified residual,** named.
 
 ## 7. Integration
@@ -63,15 +73,27 @@ manifest fields.
 
 ## 8. Acceptance
 
-Executable commands, with fixture IDs and digests. Expected answers **and expected abstentions**.
-Malformed, empty and boundary cases. Dependency enforcement. Execution in the DEPLOY environment where the
-kernel imports this chapter. The location of the evidence.
+**Written first.** The chapter's first act writes its acceptance manifest (`acceptance/Kxx.toml`), before
+anything is built. It holds:
+- the executable commands, with fixture IDs and digests;
+- the expected answers **and expected abstentions**;
+- the malformed, empty and boundary cases;
+- dependency enforcement;
+- execution in the DEPLOY environment where the kernel imports this chapter;
+- for every domain reading, its expectation, written before the run (ARCH §6.2.5 rule 5).
 
 Reported in four kinds. None substitutes for another:
-- **behavioural correctness;**
-- **representation fidelity;**
-- **domain validity;**
-- **performance evidence** (each budget names its scope).
+- **behavioural correctness** (gates the tag);
+- **representation fidelity** (gates the tag);
+- **domain validity** (*discovery*: recorded and never gating). It is read per class as identified, abstained or
+  wrong, with counts and bounds, against the expectation written before the run.
+  - A miss "names a disease" (ARCH §6.6.3). It opens a problem in §9, and Law 5 says where to look.
+  - It is never a reason to discard the design or route around it, and it is never retuned to meet the
+    expectation (founder, 2026-10-02 16:29:22Z).
+- **performance evidence** (gates only its own claims). It is work and bytes counted per unit, with seconds
+  beside them as information (ARCH §3.2.6). Each budget names its scope.
+
+The tag says the chapter is built, verified and measured. It never says its numbers are good.
 
 ## 9. Open matters
 
