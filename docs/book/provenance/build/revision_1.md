@@ -51,7 +51,7 @@ Grounding is filled in only from first-hand reading of the cited lines.
 | F40 | K05: geometry validated across slices; available contrasts vs identifiable quantities | K05 | ARCH §2.4 consequences 3–5 l.1044–1058 and how it fails l.1075–1079; §3.2.4 l.1667–1672 | K05 validates per-slice geometry (orientation constant, positions monotone, spacing against the tag, plane flag against ImageOrientationPatient); irregular → geometry_irregular, read by per-slice positions or silent; contrasts available vs identifiable set kept apart (§3.2.4) | grounded |
 | F42 | K08: independent landmark truth; common coordinates across plane templates | K08 | ARCH §2.2 checkable output l.860–862; §2.10 l.1481–1492 (per-plane atlases must agree); §1.8 measured-by l.604–608 (deliberate misregistration) | landmark truth from known-transform tests and the founder's landmark sheet, never the registration's own output; cross-plane zone agreement measured as an L1/L3 check | grounded |
 | F43 | K09: the actual biological-variance estimator | K09 | | | open |
-| F44 | K11: independent physical assumptions; damaged-structure fixtures | K11 | | | open |
+| F44 | K11: independent physical assumptions; damaged-structure fixtures | K11 | ARCH §5.8 phantom library l.4106–4123; §3.3.10 l.2053–2066 ('A phantom the law built is always explained by the law'); VERDICT 'WIRING and response only' (notes §F44) | phantoms built by the forward equation with the host's measured γ_s and noise (no inversion needed); each kind states its physical assumptions and what it cannot test | grounded |
 | F52 | K24: nuisance gains and offsets in identifiability; physics-space references and their builder | K24 | | | open |
 
 ### B. The society and the house laws
@@ -59,7 +59,7 @@ Grounding is filled in only from first-hand reading of the cited lines.
 | id | the finding | chapters | grounding | disposition | status |
 |---|---|---|---|---|---|
 | F23 | No Popery: PRESENT from a `SINGLE` provisional take | K16 | ARCH Glossary 'Concurrence' l.5233–5234; Table 5.5 l.3449; Table 5.1 rule 2 l.3236; THESIS §4.4 l.741–748, §4.5 l.778–781 (notes §F23) | SINGLE yields a provisional take only; no PRESENT or ABSENT rests on one voice; the word is ABSTAIN (single_voice) | grounded |
-| F06 | confirmation needs measured independence (K23), so before K23 it is impossible, not "rare" | K15, K16, K23 | ARCH §6.2 l.4517–4521 (step 7: independence measured before anything is taught), §6.2.2 l.4585–4623, §5.3 gate l.3415–3425, §6.7 item 8 l.5109–5110; THE_KNEE §2 change 7 (notes §F06) | move the gate before the society (after K13), re-run as structure lenses arrive; the bar is the founder's (ARCH §6.7 item 8) | founder |
+| F06 | confirmation needs measured independence (K23), so before K23 it is impossible, not "rare" | K15, K16, K23 | ARCH §6.2 l.4517–4521 (step 7), §6.2.2, §5.3 gate l.3415–3425, §6.6.3 Phase 6 go/no-go 'the independence gate' l.5047 before Phase 7 'commit by gated concurrence' l.5054; §6.7 item 8 l.5109–5110; THE_KNEE §2 change 7 (notes §F06, §ORDER) | new K13a (gate + hardness map for the zone-lens questions) after K13, before K14–K16; K23 extends both to the structure questions after K20/K22; the bar is the founder's (ARCH §6.7 item 8) | founder |
 | F46 | K14: complete the outcome table; unknown dependence is not `SINGLE` | K14 | ARCH Table 5.5 l.3444–3451; §6.2.5 rule 4 l.4706–4707; THE_KNEE §2 change 7 ('insufficient') | add INSUFFICIENT: voices speak but independence is not established; SINGLE stays 'one class can speak' | grounded |
 | F26 | K14's split labels the residual `pathology`: pathology by elimination | K14 | ARCH §5.9 Table 5.14 l.4172, order l.4174–4185, mechanism l.4222–4223; THEORY Law 4 (notes §F26) | pathology only when Table 5.14's positive conditions all hold, else undetermined; the class routes to recall and establishes nothing | grounded |
 | F27 | K20 searches lines only inside confirmed edema, so a fracture without detected edema is unreachable; OA marrow-lesion scope stays unresolved | K20 | ARCH lens 15 (Tables 2.8a/b); THE_KNEE §2 change 3; ARCH l.1096 (notes §F27) | line lens questionless over bone, with edema context as a field; OA marrow-lesion scope to the founder | grounded |
@@ -68,8 +68,8 @@ Grounding is filled in only from first-hand reading of the cited lines.
 | F50 | K21: window and null matching; zero-energy cases; layout extension | K21 | | | open |
 | F53 | K26: evaluation feedback kept apart from teaching; censor construction and chance tests | K26 | ARCH §5.6 l.3839–3850 (near miss, four steps), l.3887–3893 (a noisy oracle writes censors slowly); §5.7 l.4036–4045 (teach on one fold, judge on the other); THESIS §7.6 l.1551–1560 (notes §F53) | a censor needs its named difference to mark the failures beyond chance and not the K-line's successes, with counts and bounds; folds rotate, and no study is judged by a case or censor its own fold wrote; R never writes | grounded |
 | F21 | unowned: suppression-failure readings, MCL fluid and thickening, variant recognition, agency warrants, censor chance tests, Tier-0 header machinery | several | ARCH §2.5 l.1092 (MCL law: fluid around the band; band thickened); lens 5 (Tables 2.8a/b row 5) and Table 5.10 row 2; §5.9 step 3 l.4182–4184 (variant laws); §5.2 Table 5.2 (agency checks); §3.2.4–§3.2.6 (tag header, zone word, Tier 0) (notes §F21) | owners: lens 5 (suppression map) → K10; MCL shell volume → K13, band thickness lens → K20 (a law term with no lens in ARCH); variant laws → K14 step 3, readings in K13/K20, pseudotear zones in K08; agency warrants from Table 5.2 → K16; tag header K05, zone word K12 (+K21/K22 pairs), Tier 0 → K27 behind its skip-miss rate | grounded |
-| F22 | unowned: K19's displaced-fragment phantoms; K24's reference builder | K11, K19, K24 | | | open |
-| F48 | K19: surface extraction, damaged configurations, independent placement validation | K19 | | | open |
+| F22 | unowned: K19's displaced-fragment phantoms; K24's reference builder | K11, K19, K24 | ARCH lens 8 (Tables 2.8a/b: 'a displaced bucket-handle fragment'), §2.5 l.1090 ('abnormal shape (no bow tie; a displaced fragment)'); §5.8 library l.4110–4115; §3.4.2 (physics-space reference) | K11 adds displaced-fragment and other damaged-structure phantoms; K24 owns its physics-space reference builder with its own N-role allocation | grounded |
+| F48 | K19: surface extraction, damaged configurations, independent placement validation | K19 | ARCH §1.5 l.410–438 (structures vs lesion-objects), §1.8 l.610–615 (a falling structure: misplaced or absent), §2.2 consequence 2 l.815–819; THE_KNEE §2 change 2 | K19 delineates in the patient's anatomy, with damaged configurations (absent, displaced) as readings, never a forced fit; placement is validated on the constraint reference (NCC, placement margin), never by the delineation's own fit | grounded |
 | F49 | K20: the missing injury measurements | K20 | | | open |
 | F51 | K23: the evidence of statistical independence, and when it applies | K23 | | | open |
 
@@ -81,9 +81,9 @@ Grounding is filled in only from first-hand reading of the cited lines.
 | F20 | panels: N's relation to T/R/G; R held out of every store; K23's building role; R used for design becomes development evidence | K03, THE_KNEE §5 | ARCH Table 6.3 (R 'held out of every store'), rule 1 l.4698–4700; §6.3 l.4722–4744 (R replicates direction) (notes §F20) | R out of every store, references to maps included; R's objects are never inspected to design a change, only its triples read | grounded |
 | F04 | K12 calibrates lens metrics before K13 computes them | K12, K13 | | | open |
 | F05 | K12 consumes K14's question rules without depending on K14 | K12, K14 | | | open |
-| F07 | K20 needs confirmed edema while K23 depends on K20 | K20, K22, K23 | | | open |
+| F07 | K20 needs confirmed edema while K23 depends on K20 | K20, K22, K23 | ARCH §6.6.3 Phases 6→7 l.5039–5057; with §F27 (line lens no longer gated) and K13a | the cycle dissolves: edema commits are possible after K13a (once the bar is set), and the line lens no longer needs a commit | grounded |
 | F08 | K17 needs keys built in K21 and K22; an early emission schema with explicit unavailable keys | K17 | ARCH §6.1.3 l.4337–4373; §6.1.4 l.4406 ('Until then the sequence skips it') | K17 declares every key early; an unbuilt key is skipped with key_unavailable:<name>, never filled | grounded |
-| F09 | K24 is selectable after K11 but needs first light (K18) | K24, README | | | open |
+| F09 | K24 is selectable after K11 but needs first light (K18) | K24, README | ARCH §6.6.3 Phase 4 (the law; a no-go falls back to the raw path) l.5022–5028; K24 compares against first light | K24 depends on K18 in the table and in SELECTION.toml | grounded |
 | F10 | acceptance is prose, with no commands, fixture digests or numeric expectations | all | | | open |
 | F11 | replay: backend equivalence vs an authorized behaviour change; recursive staleness; selected versions; K27 skips an unselected K24 | K02, K18, K27 | | | open |
 | F12–F15 | false properties: hashed folds "balanced within one"; tercile ties; longest gap not additive; binomial bounds not monotone | K03, K12, K20 | | | open |
@@ -126,6 +126,7 @@ delegated (R4).
 | 2026-10-02 | ARCH | 1016–1081, 2795–2929 | §2.4; §4.4 |
 | 2026-10-02 | ARCH | 802–875, 1433–1520, 1594–1765 | §2.2; §2.10–§2.11; §3.2 |
 | 2026-10-02 | ARCH | 3796–4060 | §5.6–§5.7 |
+| 2026-10-02 | ARCH | 408–466, 1081–1127, 4060–4145, 4958–5081 | §1.5; §2.5; §5.8; §6.6.3 |
 </content>
 </invoke>
 <invoke name="Bash">
@@ -501,3 +502,54 @@ git log --oneline -2
   in K16.
 - **Headers and Tier 0** (§3.2.4–§3.2.6). The tag header is K05's. The zone word is K12's, with K21 and K22
   adding their pairs. Tier 0 lives in K27, switched on only when its skip-miss rate is near zero (l.1749–1751).
+
+### §ORDER — ARCH's phases and the book's order (F04, F05, F06, F07, F09)
+- **ARCH's phases** (§6.6.3 l.4958–5079). Each phase is "measured before the next begins". Phase 6, "The lenses
+  speak (layers 3, 5, 7)", builds the lenses, the hardness map, the perturbations, λ and the phantoms. Its
+  go/no-go starts with "the independence gate (§6.2.2)" (l.5047). Only then does Phase 7 begin, "commit by gated
+  concurrence" (l.5054).
+- **The accord kept the order and changed its shape.** THE_KNEE §2 change 10 builds chapters in dependency order
+  with first light early.
+- **The dependency the book got wrong.** The commit consumes entitlement (§5.3: coverage, the hardness map,
+  censors, measured series, the entitlement table) and the gate (independence classes). So for every question
+  whose lenses exist, the gate and the hardness map precede the loop.
+- **The SquishOS book's own convention allows a lettered sibling** (its `M05a`–`M05j`).
+- **Disposition.**
+  - **New K13a, "Hardness map and independence gate, for the zone questions".** It comes after K13 and before
+    K14. It reads K13's per-series readings on P, N and G (K03, K09, K11), and emits the gate table, the κ map
+    and the hardness map for the zone lenses.
+  - **K23** becomes their extension to the structure questions, after K20 and K22.
+  - **K24** depends on K18.
+  - **The typist** is K02a.
+  - The numbers stay stable. The table's order is the build order.
+
+### §F44 and §F22 — what phantoms assume, and what they cannot show
+- **ARCH's library.** §5.8 l.4106–4123: every phantom is "built through the signal equation, so that it is
+  consistent across every series of its host".
+- **What a phantom cannot show.** §3.3.10 l.2065–2066: "A phantom the law built is always explained by the law,
+  so phantoms test recovery and σ." VERDICT, quoted at l.4119–4120: "It validates WIRING and response only".
+- **No inversion is needed.** The forward equation is S = g·PD·(1 − e^(−TR/T1))·e^(−TE/T2) (§2.3 l.880). With
+  the host's measured γ_s (§F01) and the noise read in homogeneous tissue (§3.3.9 row 10), it plants a lesion
+  without the inversion K24 makes optional.
+- **Damaged structures.** ARCH lists "tears by plane, slice count and orientation; ligament gaps" (l.4112–4113).
+  The displaced fragment is named by the law (§2.5 l.1090: "abnormal shape (no bow tie; a displaced fragment)")
+  and by lens 8 ("a displaced bucket-handle fragment"), but not by the library.
+- **Disposition.**
+  - **K11.** Each phantom kind states its physical assumptions (the forward law, γ_s, the noise model, the
+    slice profile of §F18) and the claims it cannot support.
+  - K11 adds the damaged configurations K19 reads: a displaced bucket-handle fragment, an absent ligament
+    segment and a flipped meniscal fragment.
+  - **K24.** It owns its physics-space reference builder and its own allocation of N roles.
+
+### §F48 — delineation where the structure may be damaged
+- **The two kinds of object.** ARCH §1.5 l.410–438: a structure is always present, "Its only question is whether
+  it is abnormal".
+- **A falling structure.** §1.8 l.610–615: one "whose trajectory falls steadily may be misplaced, an input error,
+  or absent, as after a complete tear". The constraint reference decides which.
+- **The accord's amendment.** THE_KNEE §2 change 2 amends §2.2 consequence 2 ("Structures are found for free"):
+  identity evidence comes from patient data.
+- **Disposition (K19).**
+  - A delineation reports a damaged configuration (absent, displaced, discontinuous) as a reading. It is never
+    a forced fit.
+  - Placement is validated on the constraint reference (NCC, the placement margin, the check registration),
+    never by the delineation's own fit.
