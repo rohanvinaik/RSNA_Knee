@@ -205,7 +205,8 @@ book had departed from the canon, and the change returns to it.
 - **Decisions** live in cohesive named modules, beside the code they serve. Each is a total function over
   literals, returning a named code.
 - **Functions are named for the value they return** and take the values they consume, so the run's graph can be
-  drawn dev-side (Hamilton plus Graphviz) without production importing Hamilton.
+  drawn dev-side (Hamilton plus Graphviz) without production importing Hamilton. Hamilton is not in the house
+  toolkit, so K02 vets it against "one owner per role" before adoption.
 
 ### 3.2 The best language per operation
 
@@ -337,7 +338,8 @@ exists. Before a push, the global supply-chain checks also run.
 ### 3.8 Instruments
 
 - **To investigate:** py-spy, memray, viztracer (its thread and filter blind spots acknowledged; cProfile where
-  it cannot see), and pyinstrument. They live in a dev-only extra.
+  it cannot see) and scalene: the house toolkit's investigators (SquishOS `docs/home/TOOLKIT.md`). They live in a
+  dev-only extra.
 - **To claim:** Detective's deterministic budgets, paired against the incumbent at behaviour delta 0, with
   pyperf as the complement. A budget names its scope: Python opcode counts miss native work, so it also records
   deterministic work and byte counts, or says "unmeasured".
