@@ -32,6 +32,12 @@ and the wiring of every reader.
     - meniscal signal touching a surface on k slices;
     - ligament gaps;
     - lining thickening behind an effusion;
+    - fluid around the MCL band, and the band thickened (ARCH §2.5, MCL);
+  - **damaged structures**, which K19 must read rather than force-fit (ARCH §2.5 l.1090: "abnormal shape (no bow
+    tie; a displaced fragment)"; lens 8: "a displaced bucket-handle fragment"):
+    - a displaced bucket-handle fragment, the body moved into the notch;
+    - a flipped meniscal fragment;
+    - an absent ligament segment;
   - **near misses:**
     - intrasubstance meniscal signal without contact;
     - a line without edema;
@@ -49,12 +55,25 @@ and the wiring of every reader.
 - **Hosts** come from the `host` role (K03), the report-negative candidates held out of the references.
 - **Planting** happens only where the host's own readings (K10) are quiet. Each host's pre-existing deviations are
   recorded.
-- **Consistency across series without the law.** A lesion is planted through **per-series signature templates**:
-  the tissue's expected sign and a declared amplitude per series class, scaled by each series' measured local
-  intensity statistics. So the phantom is consistent across contrasts by construction, without inverting the
-  signal equation. K24 may later upgrade selected generators to forward-model through the law, where the law
-  holds.
-- **Partial volume** at the phantom's border follows each series' slice profile, from the header geometry.
+- **Two generator families, each with its physical assumptions stated** (a reader's response is reported per
+  family, so no claim rests on one set of assumptions):
+  - **Forward-law phantoms,** as ARCH prescribes: "Each is built through the signal equation, so that it is
+    consistent across every series of its host" (§5.8; §3.3.10).
+    - The *forward* equation S = g·PD·(1 − e^(−TR/T1))·e^(−TE/T2) (§2.3) needs no inversion, so this family
+      does not depend on K24.
+    - It reads three things: the lesion tissue's PD, T1 and T2 (declared literature constants per field
+      strength, law-given and never fitted); the host series' timing (K05); and the host's γ_s and noise model
+      (K09).
+    - Its stated limits are ARCH §3.3.9's: fast spin echo's effective TE, bright J-coupled fat, and suppression
+      residuals.
+  - **Signature-template phantoms:** the tissue's expected level per series class against the host's own muscle
+    (K10's tissue level), at a declared amplitude. They are simpler, with different assumptions.
+- **What no phantom can show** (ARCH §3.3.10: "A phantom the law built is always explained by the law, so
+  phantoms test recovery and σ"; VERDICT, "WIRING and response only"): that a reader finds real lesions, or that
+  the law is complete.
+- **Partial volume** at the phantom's border assumes a rectangular slice profile of width SliceThickness, a
+  declared assumption (the headers carry no profile). Where SpacingBetweenSlices ≠ SliceThickness, that is
+  recorded with the phantom.
 - **Amplitude sweeps** give each reader its response curve: the response must rise with amplitude, and the
   no-lesion control must sit at chance (VERDICT, Decision 3).
 
@@ -88,11 +107,12 @@ judged on.
 
 ## 8. Acceptance
 
+Written first: `acceptance/K11.toml`.
 - **Behavioural correctness:** the generator's laws hold; SAME; the decisions are pinned.
 - **Representation fidelity:** the truth records match the planted volumes exactly.
-- **Domain validity:** reported, not gated. K10's response on each lesion generator over amplitude: it rises,
-  with controls at chance. Signature consistency is **not** a claim of clinical realism.
-- **Performance evidence:** phantoms per second, informational.
+- **Domain validity (discovery):** reported, never gated. K10's response on each lesion generator over amplitude,
+  per family: it rises, with controls at chance. Neither family is a claim of clinical realism.
+- **Performance evidence:** phantoms and voxels planted, counted; seconds as information.
 - **Evidence scope:** the generators at this version.
 - **Invalidation:** a change to a generator, to the host roles, or to the series classes.
 
@@ -110,3 +130,8 @@ judged on.
   - Codex design round 2 (D3);
   - THE_KNEE §5.
 - **2026-10-02:** specified in K00.
+- **2026-10-02, revision 1:**
+  - two generator families, with physical assumptions stated, the forward law needing no inversion (F44; ARCH
+    §5.8, §3.3.10);
+  - damaged structures and the MCL lesions (F22, F49);
+  - the slice profile as a declared assumption (F18).
