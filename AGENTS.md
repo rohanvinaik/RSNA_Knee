@@ -38,7 +38,8 @@ Code is evidence of behaviour, never authority over intent: a bug is not a speci
 
 1. Read `docs/book/CONSTRAINT_BLOCK.md`.
 2. Run `git tag -l 'knee-*'`. Take the first chapter in the book's table whose dependencies are all accepted and
-   which is not. Read it in full, with its substrate.
+   which is not. Read it in full, with its substrate. Do this reading yourself: grounding is never delegated to a
+   helper that lacks this context (founder, 2026-10-02).
 3. Before changing anything the design derives, restate the chapter's mechanism at data-flow level. A fluent
    paraphrase is not the test; the data flow is.
 4. Build the whole chapter to its acceptance. A chapter is never a demo slice. Commit messages start
@@ -48,8 +49,11 @@ Code is evidence of behaviour, never authority over intent: a bug is not a speci
 ## Project laws, each with its reason
 
 1. **Not ML.**
-   - No CNN, transformer, fitted weight, learned embedding or "small learned component", anywhere.
-   - Registration, an optimizer over a known transform family, is the one bounded utility (THEORY Law 3).
+   - The architecture holds no CNN, transformer, fitted weight, learned embedding or "small learned component".
+   - THEORY Law 3 sanctions exactly one bounded utility: registration and normalization (II.1). The book builds it
+     classically, as an optimizer over a known transform family plus deterministic nuisance measurements.
+   - Only the founder places a learned model, there or anywhere: "Maybe I'll end up using some small model
+     somewhere for some reason, but NO, the architecture is NOT NOT NOT ML" (FOUNDING_RECORD).
    - *Reason:* it is the thesis. ML substitution is this project's recorded failure mode (THEORY Part V).
 2. **No Popery.** The build is a conclave, not one tuned pipeline:
    - a lens (member) measures one thing about an object and knows no question;
@@ -83,8 +87,10 @@ Code is evidence of behaviour, never authority over intent: a bug is not a speci
      `PYTHONPATH=$HOME/tools/Detective:$HOME/tools/Wesker python -m Detective.cli …` in the VERIFY environment
      and records the checkout's identity.
    - Never use the `detective` on PATH.
-   - The SquishOS filter hook does not see the module form (verified 2026-10-02). So the wrapper writes every run
-     to `.detective/runs/` and refuses when its output is piped. Read each run whole.
+   - The SquishOS filter hook does not see the module form (verified 2026-10-02). So the wrapper keeps every run's
+     complete output in `.detective/runs/` and preserves its exit status.
+   - It does not refuse pipes, because agent tools capture through them (`docs/book/THE_KNEE.md` §3.7, D5).
+     Logging is not proof of reading: each run is read whole.
    - Its scope, stated truthfully:
      - input synthesis renders literals and bounded arrays (rank 1–2, ≤ 16 elements, finite bool/int/uint/float);
      - functions over domain objects are reachable only through real arguments captured from tests.
@@ -121,8 +127,12 @@ Code is evidence of behaviour, never authority over intent: a bug is not a speci
    - Competition data may be used for any purpose under the RSNA MIRA license, but never made available to a
      non-participant, and nothing is shared privately outside the team (the competition rules, 4.a–4.b and
      Private Sharing).
-   - So nothing derived from it ever enters git. Derived artifacts (references, atlas, maps, case memory) live in
-     `data/` and in private Kaggle datasets attached to our own kernels, each with its lineage and checksums.
+   - The data itself (pixels, report text) and bulk derived artifacts (references, atlas, maps, case memory) live
+     in `data/` and in private Kaggle datasets attached to our own kernels, each with its lineage and checksums.
+   - Derived records may enter git (founder, 2026-10-02: "I'm fine adding stuff to git"). These are digests,
+     manifests, panel and role assignments, and measurement tables. The GitHub repository is private (checked
+     2026-10-02), and it stays private while it holds them, since the rules forbid making competition data
+     available to non-participants.
    - The Kaggle token is `KAGGLE_API_TOKEN` in `~/Projects/Kaggle_Killer/.env`. Load it into the environment;
      never print, copy or commit it.
 

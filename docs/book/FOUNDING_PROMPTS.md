@@ -64,6 +64,40 @@ Four more messages arrived mid-turn, while the work was under way:
 > **15:47:57Z** Oh right, aslo, for heavy compute, I have the Mac Pro sitting around. SquishOS has it registered,
 > including how to access and use
 
+## 2026-10-02 — after the compaction: the typist, the fresh read, the revision
+
+> **16:08:14Z** (mid-turn) Nuts, hit the compact. Well, hope you did it well, and it's truly persistent past the
+> session context, lol
+>
+> What do you think about starting up a small local model--"Uroboros" project-style--with a contract/intent tests
+> and a specific, gated scope of operation and constrained output to do the mechanical work/code for a large chunk
+> of the actual codebase? Then you can come in and professionalize it, make the thing actually work and work well.
+> But do you think the literal typing can be handed off to Qwen 3.5B? You tell it what it should type, what
+> language/design/etc, detective constrains it output to what the CLI mandates, Qwen (with an Uroboros-style
+> harness) types only that which is explicitly authorized by you and detective, mandated by contract and
+> constrained output?
+
+> **16:18:17Z** (mid-turn) That's a lot of changes for a fresh-context agent to make. Can you go over what codex
+> said, so we can think it through properly?
+
+> **16:19:48Z** (mid-turn) Agree with your "uroboros" claims/ideas, worth working them un
+
+> **16:29:22Z** I take it back--Codex really landed a good one here. Agree with your "acceptance bars", though note
+> this is a process of discovery and development, so the "bars" might not look so good for a long time, and fixing
+> it is a problem to solve, not a design to discard or work around
+>
+> Make sure that the re-write is formally grounded in some section of the architecture document, and where
+> under-specified, from the original thesis document on computer vision ("what_an_object_is"), or the reference
+> manifest. I'm fine adding stuff to git, and make sure the new design sent to codex includes the typist additions
+
+> **16:35:20Z** I did NOT tell you to launch sub-agents. I want YOU to do this. This is CRITICAL. Why would you
+> think that was okay?? We are lITERALLY establishing the persistent, post-compact stable context grounding. Why
+> would you do that WITH agents that have no prior crounding or global context? That's a FUNDAMENTAL violation of
+> the entire POINT of this whole task
+
+(A first send at 16:35:05Z was cut off by an interruption; the 16:35:20Z text stands. It answered three grounding
+sub-agents launched at 16:33Z. They were stopped before reporting, and nothing of theirs was used.)
+
 ## The engineering intent, in the founder's earlier words (2026-08-31, DETERMINISTIC_SICP §1.1)
 
 > "I see this as a resource optimization problem. We want to optimize several 'independent' systems at the same
@@ -95,3 +129,8 @@ Four more messages arrived mid-turn, while the work was under way:
 | design fresh; reuse only when genuinely best | `CONSTRAINT_BLOCK.md` law 5; each chapter's *Prior art and reuse* section |
 | cell tracking: a good start, not perfect | each reuse from it is argued in its chapter, never assumed |
 | a different agent should agree from the chapters alone | `provenance/build/` — the fresh-reader check, run on the finished book |
+| a small local model types under an Uroboros-style harness | the typist chapter, and its design read by Codex with the revised book |
+| acceptance bars are discovery: a poor reading is a problem to solve, never a reason to discard or work around the design | `CONSTRAINT_BLOCK.md`; the chapter template's acceptance field |
+| the rewrite grounded in KNEE_ARCHITECTURE, else `what_an_object_is`, else the manifest | `provenance/build/revision_1.md`: each finding with its grounding, read first-hand |
+| derived records may enter git | `AGENTS.md` → *Project overrides* 7 |
+| the lead does the reading; no sub-agents for grounding | `CLAUDE.md`; `AGENTS.md` → *How a session runs* |
