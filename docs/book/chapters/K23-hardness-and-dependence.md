@@ -4,7 +4,7 @@
 |---|---|
 | **Status** | computed: `git tag -l 'knee-K23'` |
 | **Depends on** | K13a (the builders, the zone questions' map and gate), K22 (flips), K20 and K21 (structure readings), K09 (normals by role), K11 (phantoms, damaged structures included) |
-| **Consumed by** | K14's contracts (the structure questions' entitlement and independence classes), K16 (the fibrous and compartment agencies can concur), K26 (soft places), K17 |
+| **Consumed by** | K14's contracts (the structure questions' entitlement and pair statuses; every set's multiway status), K16 (the fibrous and compartment agencies can concur), K26 (soft places), K17 |
 | **Commit label / tag** | `knee/K23` · `knee-K23` |
 
 ## 1. Purpose and authority
@@ -80,8 +80,9 @@ before the loop, as ARCH §6.6.3 orders Phase 6 before Phase 7 (`provenance/buil
 
 ## 7. Integration
 
-- K14's `committee_outcome` now receives the structure questions' independence classes, so `CONCUR` becomes
-  possible for them where a pair is `independent_measured`.
+- K14's `committee_outcome` now receives the structure questions' pair statuses, so `CONCUR` becomes possible
+  for them where a pair is `independent_measured`, and the multiway status of every concurring set larger than a
+  pair (`independent | dependent | unmeasured`), which sets c (K14).
 - K16 is re-run.
 - `just firstlight` is re-run. The change in decisions is a behaviour change, recorded with its intent (K02's
   behaviour-change record) and read as a diff, never as SAME.

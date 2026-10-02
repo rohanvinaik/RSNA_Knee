@@ -24,7 +24,7 @@ run, early. The result is the structure-alone run: scoped, measured and kept.
   2. registration;
   3. γ_s, deviation, and tissue identity and change;
   4. the zone lenses;
-  5. explanation, gated by K13a's independence classes and entitlement;
+  5. explanation, gated by K13a's pair statuses and entitlement;
   6. the case-free decisions;
   7. emission (literal, with unavailable keys skipped);
   8. the writer.

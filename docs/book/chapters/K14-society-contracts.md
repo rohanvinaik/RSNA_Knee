@@ -27,20 +27,32 @@ These are fixed early, so the explanation loop and first light integrate against
 - **Dependence graph schema:** nodes are series and named shared causes (plane geometry, fat-suppression method,
   short TE, motion, registration, reference cell). Edges are "shares cause X". Each pair has a status, as K13a and
   K23 measure it: `independent_measured | dependent_measured | insufficient | bar_unset | unknown`.
-- **`committee_outcome(witnesses, dependence) -> CONCUR | SINGLE | INSUFFICIENT | DISAGREE | ALL_SILENT`**, over
-  entitled independence classes (ARCH Table 5.5):
-  - **CONCUR:** at least two entitled classes, pairwise and multiway `independent_measured`, agree, and none
-    dissents;
-  - **SINGLE:** exactly one entitled class can speak;
-  - **INSUFFICIENT:** two or more entitled voices speak, but their independence is not established
-    (`unknown`, `insufficient` or `bar_unset`). This is not SINGLE: several voices spoke (the accord's
-    "insufficient" where independence is not established);
-  - **DISAGREE:** entitled, independent classes stand on both sides;
-  - **ALL_SILENT:** no class is entitled.
+- **`committee_outcome(witnesses, dependence) -> outcome`**, over one finding's question at one place (ARCH Table
+  5.5, as change 7 amends it). Dependence is a graph of shared causes, and pairwise dependence is not transitive,
+  so no independence classes are formed. Concurrence is a *set*, as ARCH defines it: c₊ and c₋ are "The size of the
+  largest set of pairwise-independent acquired series that concur for a finding … or write exclusion marks
+  against it" (Glossary). The outcomes are total and exclusive, decided in this order:
+  1. **ALL_SILENT:** no witness is entitled (Table 5.5). This is Tier 2, "a question every series is blind to"
+     (§5.1, §5.4).
+  2. **DISAGREE:** entitled witnesses read both for and against. A dissent is set aside only by entitlement, never
+     by dependence: "A majority stands only when its dissenter is set aside so. A tie between entitled voices stays
+     a disagreement" (§5.3).
+  3. **ALL_ORTHOGONAL:** entitled witnesses read, and none bears for or against. This is not silence: "the place
+     was read, and the reading bears neither for nor against the question" (§3.5.3, the third zero). The question
+     stays open, with its reads counted. *(A deduction: Table 5.5 has no row for it, and the function must be
+     total.)*
+  4. **CONCUR:** a set S of at least two entitled witnesses reads one sign, and every pair in S is
+     `independent_measured`. The outcome carries the sign and c, the size of the largest such S whose multiway
+     status is not `dependent`. That status is measured by K23 (`independent | dependent | unmeasured`; change 7:
+     "a graph of shared causes with multiway checks"). A pair is its own multiway check.
+  5. **INSUFFICIENT:** two or more entitled witnesses read one sign, and no qualifying S exists, because a pair
+     reads `dependent_measured`, `insufficient`, `bar_unset` or `unknown`. Several voices spoke, so this is not
+     SINGLE (change 7: "insufficient" where independence is not established).
+  6. **SINGLE:** exactly one entitled witness reads a sign ("one class can speak", Table 5.5).
 
-  Only CONCUR commits an object or lets an exclusion stand. SINGLE and INSUFFICIENT give a *provisional take*,
-  which is kept, never an answer (ARCH Glossary, "Concurrence … the only way a lesion-object is committed or an
-  answer assigned").
+  Only CONCUR commits an object or lets an exclusion stand. SINGLE, INSUFFICIENT and ALL_ORTHOGONAL leave a
+  *provisional take*, which is kept and is never an answer (ARCH Glossary, "Concurrence … the only way a
+  lesion-object is committed or an answer assigned").
 - **Negative knowledge, three tiers:**
   - `impossibility(law) -> veto`: absolute, physical only (P > 0, f ∈ [0, 1], a place outside the body);
   - `observation_exclusion(reading, certificate) -> exclusion`, valid only with a coverage certificate and a
@@ -91,7 +103,14 @@ These are fixed early, so the explanation loop and first light integrate against
 - **Detective:** every function is converged to a terminal certificate.
 - **CrossHair** on the contracts it supports.
 - **The authored corpus** (synthetic witness sets with expected outcomes).
+- **Totality, by enumeration.** Every committee of up to four witnesses is enumerated: each witness is not
+  entitled, or entitled and reading for, against, orthogonal or silent; each pair has one of the five statuses.
+  Exactly one outcome must hold for each committee.
 - **Hypothesis laws:**
+  - an entitled dissent yields DISAGREE, whatever its dependence on the other side;
+  - ALL_SILENT arises only when no witness is entitled; an all-orthogonal committee is never ALL_SILENT;
+  - c never exceeds the number of entitled witnesses reading that sign, and adding an entitled witness of the same
+    sign never lowers it;
   - DISAGREE never becomes PRESENT;
   - unknown, insufficient or bar-unset dependence never yields CONCUR;
   - SINGLE and INSUFFICIENT never yield PRESENT or ABSENT;
@@ -128,6 +147,9 @@ Written first: `acceptance/K14.toml`.
   - KNEE_ARCHITECTURE §5.1–§5.3, §5.6, §5.9;
   - THE_KNEE §2 (changes 3, 7, 10).
 - **2026-10-02:** specified in K00.
+- **2026-10-02, revision 2:** the committee's outcomes made total and set-based (G05). Grounds, read whole: ARCH
+  Table 5.5; §5.3 (only entitlement sets a dissenter aside); the Glossary's c₊ and c₋ (the largest pairwise-
+  independent concurring set); §3.5.3 (orthogonal is read, not silent); change 7 (shared causes, multiway checks).
 - **2026-10-02, revision 1:**
   - INSUFFICIENT, distinct from SINGLE, with neither ever answering (F46, F23; ARCH Table 5.5, Glossary);
   - per-acquisition witnesses (F03);

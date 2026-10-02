@@ -43,17 +43,18 @@ session scratchpad as `K14_struck_edit.diff`. The reasons, each from a section r
    at a fixed detection rate of planted phantoms" (ARCH §2.8 rule 2), and on those normals "any 'for' reading is
    false" (rule 8). The edit's own first bullet ("at which sane value") contradicts its function signature.
    `conflicting_definitions`.
-2. **It keyed the rules to "the twelve findings' questions".** ARCH's committee and gate are per question at a
-   zone. The committee record is kept "for each study, zone and question", and the examples are measurements:
-   "Two sagittal series fail together on surface contact. Two fat-suppressed series fail together on edema"
-   (§5.3). K13a gates "every question the zone lenses can speak to" (K13a §1). The twelve findings are the
-   agencies' decisions (§5.2), not the gate's questions.
-3. **It moved body content ahead of the gate the body reads.** ARCH puts the reading of a lens as for or against
-   in the commit: "Only the commit reads a lens as for or against" (§2.8 rule 1). THESIS §4.5 says the same of
-   cells: "only the commit reads a reading as for or against". The accord gives the signs to the agencies
-   (THE_KNEE §2 change 6). The edit placed finding-level signs before K13a, without making K13a depend on K14, and
-   then fed the gate's own measurements back into the rules (K13a, K23). That is the circularity Codex warned
-   against: "those rules must not consume the gate they help measure".
+2. *(Withdrawn, 22:5xZ.)* A first version of this record said the edit was wrong to key the rules to the findings'
+   questions. That was written from §5.3 alone, before §6.2.2 and the Glossary had been read whole, and it is
+   false. ARCH's gate "*Reads:* per series type and finding, each series' reading of F's host zone (for, against or
+   silent)" (§6.2.2). An exclusion mark is "A −1 on one finding's question at one place" (Glossary). c₊ and c₋ are
+   "The size of the largest set of pairwise-independent acquired series that concur for a finding … or write
+   exclusion marks against it" (Glossary). The questions are the findings' questions, at their host zones.
+3. **It fed the gate back into the rules, and left the order unbuilt.** The *premise* is grounded: the gate reads
+   signed per-finding readings (§6.2.2), and the accord gives the signs to the agencies (change 6). So the
+   agencies' sign rules must exist before K13a, and Codex's G01 stands. The edit's execution did not hold:
+   - its "healthy interval" was to be produced by K13a and K23, so the rules consumed the gate they feed. That is
+     the circularity Codex warned against: "those rules must not consume the gate they help measure";
+   - it named K13a as a consumer without making K13a depend on K14.
 4. **It merged orthogonal with silence in the outcome.** ARCH Table 5.5's ALL SILENT is "no class is entitled",
    routed to Tier 2, the residue type "a question every series is blind to" (§5.1). An entitled reading that bears
    neither way is orthogonal, "not silence: the coverage bank records the read" (§3.5.3, "Three zeros, kept
@@ -61,7 +62,9 @@ session scratchpad as `K14_struck_edit.diff`. The reasons, each from a section r
 5. **Smaller defects.** "ABSENT needs CONCUR on concurring … exclusions" is garbled, and its "(K26)" names the
    wrong home for recall, which is K25. Its sources were cited before any of them had been read this session.
 
-What survives as a question for re-derivation: Codex's G01 and G05 points themselves, below.
+What survives: the revert (reasons 1, 3, 4 and 5), and Codex's G01 and G05 points themselves, re-derived below. The
+lesson is the global rule (H1) applied to this very record: a line read without its enclosing definition, here
+§5.3 without §6.2.2, produced a confident and false reason.
 
 ### The global changes (SquishOS `0cd3f4c`…`d94d04a`, 2026-10-02), and what they change here
 
@@ -93,8 +96,8 @@ What survives as a question for re-derivation: Codex's G01 and G05 points themse
 | G01 | the measurement-to-decision bridge is missing: K13a needs signed per-question error indicators, but the signs arrive in K16 | K14, K13a, K16 | ARCH §5.3 (the committee is per question); Table 2.8b ("Counts", "Rules out" per lens); Table 2.5 (the law term per finding); §4.1 (an exclusion's four conditions); THE_KNEE §2 change 6 (agencies hold the signs) | **struck** (see *The K14 edit, struck*). Was: K14 defines each finding question's signed-reading rules, "for" meaning beyond a healthy interval, consumed by K13a | open: re-derive |
 | G02 | K16 DISAGREE: "a confirmed pathological object in a finding's zone" is no finding-specific warrant; Table 5.2's column is "Its check (supports only)" | K16 | ARCH Table 5.16 (the agency's word per study and finding), §5.3, Table 5.2 | PRESENT for F = CONCUR of entitled independent acquisitions' signed readings on F's own question (G01), the object being pathology under the split. ABSENT = concurring observation-qualified exclusions on F's question. Checks support only | open: re-derive |
 | G03 | K25 DISAGREE: the bank exchange does not build profiles that cannot carry an answer (one informative bank survives) | K25 | ARCH §5.5 l.3644–3651 (the chance population: held-out true normals for a finding's bucket); change 6 ("what it preserves … with bucket size accounted for"); THESIS §7.4 ("set on real data") | return to ARCH's population: N's `chance` role, profiles of the same zone class, regime and visibility pattern. The radius is the least level at which the nearest-case chance-reach rate is at most a rate written before the run, never "the least level no member reaches", so one normal cannot set it. Split halves; the population's impurity (K09's founder sample) stated beside it; normals that reach become near-miss candidates | open: re-derive |
-| G04 | K13a reinstated "κ against reports is an upper bound", which change 7 amended | K13a | THE_KNEE §2 change 7 (it amends §6.2.2's "κ against reports is an upper bound") | removed: report-based κ is reported with its bias named, both directions possible, never as a bound | open: re-derive |
-| G05 | K14's outcome function is not total; pairwise dependence is no equivalence relation; dissent must not vanish | K14 | ARCH Table 5.5; §5.3 ("series whose errors the gate cannot separate count as one voice") | outcomes over *sets*: CONCUR needs a set of at least two entitled voices agreeing, every pair `independent_measured` (and multiway once K23 measures it), with no entitled dissent anywhere, dependent or not; an exhaustive table over for, against, orthogonal and silent × dependence status | open: re-derive |
+| G04 | K13a reinstated "κ against reports is an upper bound", which change 7 amended | K13a | read whole this session: ARCH §6.2.2 (the two oracles "bias it in opposite directions"; its report argument; "Measured by: the gap between κ against reports and κ against gold, per finding"); THE_KNEE §2 change 7; Codex §3 item 7 ("Noisy reports can create or hide joint errors. κ also divides by changed marginal error rates") | K13a reads κ against report-localized calls with the oracle's error named and its direction not assumed, never as a bound; ARCH's measured gap is kept as the reading | done |
+| G05 | K14's outcome function is not total; pairwise dependence is no equivalence relation; dissent must not vanish | K14 | read whole this session: ARCH Table 5.5; §5.3, the departure paragraph ("A majority stands only when its dissenter is set aside so. A tie between entitled voices stays a disagreement"); Glossary c₊ and c₋ ("the largest set of pairwise-independent acquired series that concur"), *Orthogonal*, *Three zeros*; §3.5.3; THE_KNEE §2 change 7 | K14: six outcomes, total and exclusive, in order: ALL_SILENT (none entitled); DISAGREE (entitled for and against, whatever their dependence); ALL_ORTHOGONAL (read, no sign; a deduction for totality); CONCUR (a set of ≥ 2 pairwise `independent_measured` witnesses of one sign; c the largest such set not multiway-dependent, K23); INSUFFICIENT; SINGLE. Totality checked by enumeration. Independence classes replaced by pair statuses in K13, K13a, K15, K18 and K23 | done |
 | G06 | intensity contract open: the recalled regime value's gauge; γ as log or divisor; the variance mixes median and mean σ²_meas; the zero denominator | K09, K10 | ARCH §3.3.3 Table 3.3 (gain "against its recalled regime value"); Table 5.9 (regime values: "the median of the regime's cases at read time"); §3.3.9 Table 3.5; §3.4.2 | γ_s multiplicative (ARCH's log gain is its log); regime value = the median of the `reference` members' muscle levels on N4-corrected stored values; x̃ = stored ÷ (N4 × γ_s); one σ²_meas statistic throughout (the median); a zero denominator reads `silent:zero_variance` | open: re-derive |
 | G07 | identity collisions: free fluid and marrow edema share (+, −); cortex and fibrous tissue are both dark; spatial bias between a voxel and distant muscle | K10, K19, K20 | ARCH Table 2.3a ("Marrow edema … + (in bone)"): the zone is part of the signature; THE_KNEE §2 change 2 (identity from patient anatomy) | the tissue word is matched *with its zone class* (bone versus soft tissue; cortex shell versus band), so fluid and edema separate by place, as the table itself does. Levels are read on x̃ (N4-corrected), never on stored values against distant muscle | open: re-derive |
 | G08 | acceptance reaches forward (K09 on P and z; K10's test deferred to K14; K15 needs line, neck and lining before their readers) | K09, K10, K15, K20 | ARCH §6.6.3 ("Each phase is measured before the next begins") | each acceptance uses only its dependencies' outputs: K09 on synthetic gain and bias; K10's contract test owned by K14; K15's line, neck and lining recovery moved to K20 | open: re-derive |

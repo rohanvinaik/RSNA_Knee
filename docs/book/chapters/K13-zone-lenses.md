@@ -19,8 +19,8 @@ To measure what the atlas's zones can support without patient-specific boundarie
 
 **Produced** (`knee.run.lens.zone`): one lens per law term that zones support. Each returns `LensReading`s in two
 forms, kept apart (`provenance/build/revision_1.md`, §F03):
-- **per acquisition:** read on one series from its own tissue level and z (K10). This is a *voice*, counted by
-  K13a's independence classes;
+- **per acquisition:** read on one series from its own tissue level and z (K10). This is a *voice*, counted with the
+  pairs' dependence statuses K13a measures (K14's set-based concurrence);
 - **joint:** read from the tissue word, whose sources are all its series. This is one dependent reading of all
   its sources, a law check that supports and never votes (ARCH §2.3 consequence 3; §5.3, "the committee is the
   series").
