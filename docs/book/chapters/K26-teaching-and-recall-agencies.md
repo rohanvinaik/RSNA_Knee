@@ -31,13 +31,24 @@ judged by the course of its learning.
   status. His calls stand beside the report's, never over it.
 - **Near-miss censors.** A confirmed failure of an agency's answer, by its own oracle, is read against the K-line
   that answered, and its **named difference** (K04's decode: bank, row, Δcount) is decided against chance. The
-  outcome is a censor of the failed answer, a split K-line, or nothing (the failures wait).
+  outcome is a censor of the failed answer, a split K-line, or nothing, in which case the failures wait (ARCH §5.6,
+  l.3839–3850).
+  - **The chance test** (ARCH l.3887–3893: the difference must "mark several such failures beyond chance, and not
+    the K-line's report-confirmed successes"). The difference's rate among the confirmed failures is compared with
+    its rate among the K-line's confirmed successes. Each rate carries its count and bound, over studies. Where the
+    counts cannot bound the comparison, it reads `insufficient` and nothing is written.
 - **The noisy-oracle rule:** censors on soft findings need gold or the founder. A refusal teaches nothing.
 - **Agencies with recall:** the case-free path first (K16), then recall (K25), then censors, then the decision
   word (K14's order).
 - **Trajectories:** after each teaching step, per agency and finding, on G (in rotation, untaught folds) and R:
   identified, abstained and wrong, with bounds; the bank-by-bank tally of new named differences; the
   structure-alone run beside it. One end-to-end macro-AUC is recorded per step and **chooses nothing**.
+- **Evaluation is never teaching** (ARCH §5.7 l.4036–4045: "No study is judged by a case or censor its own fold
+  wrote").
+  - A failure seen on a judging fold writes nothing for that fold.
+  - R writes nothing at all. Its objects are never inspected to design a change; only its triples are read
+    (K03).
+  - Changes are designed from T and from G's teaching folds.
 - **H2's bridge** on the hard pairs (KNEE_ARCHITECTURE Table 6.2): kept, kept by a confound, or lost.
 
 **Consumers:** K17 (re-run), K27.
@@ -66,7 +77,12 @@ judged by the course of its learning.
 ## 6. Verification
 
 - **Detective:** successor resolution, censor decision and trajectory arithmetic are converged.
-- **Hypothesis:** no case confirms itself; rotation exclusion holds; a censor never vetoes outside its radius.
+- **Hypothesis:**
+  - no case confirms itself;
+  - rotation exclusion holds;
+  - a censor never vetoes outside its radius;
+  - no censor is written from a judging fold or from R;
+  - no censor is written without its chance test.
 - **An audit of every case's source** (falsifier 2).
 
 ## 7. Integration
@@ -76,6 +92,7 @@ every step.
 
 ## 8. Acceptance
 
+Written first: `acceptance/K26.toml`.
 - **Behavioural correctness:** the decisions are pinned; the audit is clean; first light is re-run.
 - **Representation fidelity:** every case and censor traces to its source.
 - **Domain validity:**
@@ -83,7 +100,8 @@ every step.
     is put to the founder;
   - H2's bridge results per hard pair;
   - the softness table consulted for every censor.
-- **Performance evidence:** cost per study as teaching proceeds (falsifier 6: full analyses should grow fewer).
+- **Performance evidence:** work counted per study as teaching proceeds (falsifier 6: full analyses should grow
+  fewer).
 - **Evidence scope:** the teaching steps taken, and their oracles.
 - **Invalidation:** any new teaching step (each is a recorded revision), and any change to K25 or K23.
 
@@ -100,3 +118,5 @@ every step.
   - the Codex review rounds 2–3;
   - THE_KNEE §2 (changes 6, 8).
 - **2026-10-02:** specified in K00.
+- **2026-10-02, revision 1** (F53; ARCH §5.6–§5.7): the censor's chance test stated; evaluation kept apart from
+  teaching, with R writing nothing.
