@@ -1,0 +1,248 @@
+# The book's source corpus, machine-checkable.
+#
+# Verify (from the RSNA_Knee root):
+#   python3 ~/Projects/SquishOS/scripts/check_reference_manifest.py docs/book/REFERENCE_MANIFEST.toml
+#
+# Priors are HASHED IN PLACE, never copied. A prior that changes under a claim fails loudly; re-read what
+# changed and re-check the claims that cite it before updating a digest. Never re-hash to silence a drift.
+# `cited_by` is omitted: the SquishOS checker resolves it against SquishOS's own root (K00 §5).
+
+[[ref]]
+id = "thesis"
+path = "docs/canon/what_an_object_is.md"
+role = "THESIS: What an <Object> Is — H1-H4, the loop, the one language, K-lines and censors, the society, the recipe and falsifiers"
+sha256 = "93c7438d9532dd3ea88f77250b3c148c4a35f371d3103025774a95b86d95ad7d"
+
+[[ref]]
+id = "laa"
+path = "docs/canon/law_as_architecture.md"
+role = "LAA: law as topology, recollective memory, censors, regimes, replicates, delta-method uncertainty"
+sha256 = "c6b441edffa984537665bb8f5a14df25e6df7c0ddf202b866a006b67592aecbc"
+
+[[ref]]
+id = "hdcsub"
+path = "docs/canon/HDC_SUBSTRATE.md"
+role = "HDCSUB: the GenomeVault HDC mechanisms; header ruling F.0; corrections F.4"
+sha256 = "0fd0df63eeed1a7d546ef86b0a14bb507f764193edacf05fe28a7e8897ea15b4"
+
+[[ref]]
+id = "lens"
+path = "docs/canon/MULTI_MODAL_LENS_STRATEGY.md"
+role = "LENS: lens families, edge cases, λ-trajectory profiling"
+sha256 = "b803b3cede646277397ec77e6dcd8747881387a82959e8f6de387ae103d27624"
+
+[[ref]]
+id = "synth"
+path = "docs/canon/ACCURACY_OPTIMIZATION_SYNTHESIS.md"
+role = "SYNTH: correction layers, the three-way distinction, complementary sparsity, E10"
+sha256 = "6af156e1c522eae1fdce763d78a34a572bf4c15cfaf67ecc40b21fed94f7faad"
+
+[[ref]]
+id = "committee"
+path = "docs/canon/CLINICAL_COMMITTEE_ERROR_CORRECTION_ARCHITECTURE.md"
+role = "COMMITTEE: encoders as committee, joint-error clustering"
+sha256 = "3f4c9b0bb6ee016768457c0eab131a9bdd9775cd21ac9e3c6603f85dd63ac00e"
+
+[[ref]]
+id = "tiered"
+path = "docs/canon/TIERED_UNCERTAINTY_AWARE_ARCHITECTURE.md"
+role = "TIERED: tiers, the writes-per-dimension law, margin-0 predictability"
+sha256 = "a08f6f68a3ca6a6be91206aa4dba62c5c439a48cf03f86127139ff1af9ad203c"
+
+[[ref]]
+id = "brief"
+path = "docs/canon/SESSION_BRIEF_2026-10-02.md"
+role = "BRIEF: the founder's 2026-10-02 morning rulings (§3) and the layers 0-9 sketch"
+sha256 = "6215967be99e02ec2b72363bbff360476ea0811afba00d5f697b45ffb31d03b6"
+
+[[ref]]
+id = "theory"
+path = "docs/THEORY_OF_THE_CASE.md"
+role = "THEORY: Laws 1-8 (binding), the data layer, the pathology record"
+sha256 = "59e916c5400d3cba59a2c08b97edc94ebeeb21b0215e0c6de4fd1a950a4d590f"
+
+[[ref]]
+id = "knee-architecture"
+path = "docs/KNEE_ARCHITECTURE.md"
+role = "KNEE_ARCHITECTURE: the deep design, amended by THE_KNEE §2"
+sha256 = "d913777da4425a3d994a85adf9e5cc03c842de033379b9ccd60c51722732ced1"
+
+[[ref]]
+id = "knee-recipe"
+path = "docs/KNEE_RECIPE.md"
+role = "RECIPE: the first working of the recipe (superseded)"
+sha256 = "a017ab5ec2b86309bfa3e2f6be9e2a8fb58381fcb15ab43f202feba57d319c65"
+
+[[ref]]
+id = "founding-record"
+path = "docs/FOUNDING_RECORD.md"
+role = "the founder's verbatim canon, 2026-08-18"
+sha256 = "46fdec436d11d567fe362f0af546ab98636edafe916e39418f347e72a40ef835"
+
+[[ref]]
+id = "prior-art"
+path = "docs/LANDMARK_PRIOR_ART.md"
+role = "PRIORART: landmark and atlas methods"
+sha256 = "3f3fbe413bf3816b7c5cf0d6fc1e80e9868236f1c8a40aa5cd99a445b678dd9a"
+
+[[ref]]
+id = "noml"
+path = "decisions/2026-08-18-classical-ai-no-ml-data-layer.md"
+role = "NOML: the founding decision"
+sha256 = "edbe0dd7713b70feab2c270f72124a6145872594f6a894d77372aae96f37efbc"
+
+[[ref]]
+id = "verdict"
+path = "decisions/2026-08-28-make-or-break-verdict-is-auc-based.md"
+role = "VERDICT: the fixed make-or-break instrument"
+sha256 = "b9cb6a1da107a7f9647894c5a33992adde206a3fdbc5f6a2a3d62671732fffec"
+
+[[ref]]
+id = "ladder"
+path = "decisions/2026-08-29-encoder-iteration-ladder.md"
+role = "LADDER: the encoder ladder, the v5 reset, the first v5 readings"
+sha256 = "338fc583591eba9c8a6f92a873c9852538a6b52169d911382fe5dba2e26b78a6"
+
+[[ref]]
+id = "zones"
+path = "decisions/2026-08-30-anatomical-zone-architecture.md"
+role = "ZONES: template-space zones, NCC gate, multi-atlas, unbiased template"
+sha256 = "74aaed8db09fe02a1047957cbed77a9d4c3e2bed0aa0bb1f4b23637072b339b5"
+
+[[ref]]
+id = "kaggle-protocol"
+path = "~/Projects/Kaggle_Killer/CLAUDE.md"
+role = "the Kaggle submission protocol (push via CLI with competition_sources; submit only on the founder's go)"
+sha256 = "5a54f7e8f53a285f353f3d4435bf1de04f4aefc4f54e06066d42d3d93a3eb806"
+
+[[ref]]
+id = "house-code-verification"
+path = "~/Projects/SquishOS/ops/agents/reference/code-verification.md"
+role = "the two-step, ty, the toolkit (Hypothesis, CrossHair, Import Linter, deptry, profilers, Rust/C, SICP)"
+sha256 = "fd5c94c2de2f11db2e172cd0a515d5c1af260d6f15260dade13e0d31533d973d"
+
+[[ref]]
+id = "house-performance"
+path = "~/Projects/SquishOS/ops/agents/reference/performance.md"
+role = "organization as named values; tracing and performance instruments; Numba as a probe; SAME"
+sha256 = "38a8279a2d5edec6c8f152be6be536e81f6515a5a68f54324a559188381ff8bb"
+
+[[ref]]
+id = "house-detective-protocol"
+path = "~/Projects/SquishOS/ops/agents/reference/detective-protocol.md"
+role = "driving Detective: hands not head; extract the pure decision; characterization vs intent"
+sha256 = "315880d3a99a3c2de170a07a296f24451709b64dcd43065608a37d0cb0cd7f1b"
+
+[[ref]]
+id = "house-verification-gates"
+path = "~/Projects/SquishOS/ops/agents/reference/verification-gates.md"
+role = "the pre-commit gate; Detective and coverage"
+sha256 = "d282e0da56695242553facf133c9f9d7c4fe361d69d3d96ecf5adec7ac217f9d"
+
+[[ref]]
+id = "house-repo-hygiene"
+path = "~/Projects/SquishOS/ops/agents/reference/repo-hygiene.md"
+role = "supply-chain checks by cadence"
+sha256 = "01c35a0e7ab97adf4a950a60b8f240ad36dbac8587e2628280fbe20b61f5f7d7"
+
+[[ref]]
+id = "house-context-maintenance"
+path = "~/Projects/SquishOS/ops/agents/reference/context-maintenance.md"
+role = "AGENTS.md canonical; CLAUDE.md imports it; never restate global rules"
+sha256 = "e37e7de8a48d70a0e1d6c47994c33dc873e341e60477537e0b65bb3ab90952d4"
+
+[[ref]]
+id = "house-no-popery"
+path = "~/Projects/SquishOS/ops/agents/reference/no-popery.md"
+role = "No Popery: members questionless, bodies hold signs, the all-questions harness"
+sha256 = "c773a339edc4fc5c8af69f46004ce90bcbe976c7a7ca49424b984f79548cadd5"
+
+[[ref]]
+id = "house-codex-consultation"
+path = "~/Projects/SquishOS/ops/agents/reference/codex-consultation.md"
+role = "Codex model-only consultation protocol"
+sha256 = "076fbb43b3df906a7f545f0c008cf0855c2f3049fe92806838922db3068711ba"
+
+[[ref]]
+id = "squishos-book-readme"
+path = "~/Projects/SquishOS/docs/home/README.md"
+role = "the book format: module table, conventions, tags, session protocol"
+sha256 = "b692d85aabedcd289deb02f0f587df60791a3dd163e12b8226ea4995929b8346"
+
+[[ref]]
+id = "squishos-book-constraint-block"
+path = "~/Projects/SquishOS/docs/home/CONSTRAINT_BLOCK.md"
+role = "the constraint-block format and its Remove-X check"
+sha256 = "274a209ab15678f91486e3abec2de753737f07f70f313eb6934174b88a88ff6c"
+
+[[ref]]
+id = "squishos-toolkit"
+path = "~/Projects/SquishOS/docs/home/TOOLKIT.md"
+role = "the vetted toolkit; one owner per role; SICP reading"
+sha256 = "7dd79f8b717dde8c3c1f1c4c1ff095242a4b7743fc89e074fdf2070671b010ab"
+
+[[ref]]
+id = "squishos-fleet-runbook"
+path = "~/Projects/SquishOS/docs/runbooks/fleet.md"
+role = "how the Mac Pro (squishhub) is engaged: card, verify, run, put, get"
+sha256 = "7a5b4f822c7a619605ba009cca765f8c53159e8b95508e1f239291a0833ad495"
+
+[[ref]]
+id = "squishos-compute-runbook"
+path = "~/Projects/SquishOS/docs/runbooks/compute.md"
+role = "offloading a detached job to one node (squishos-compute)"
+sha256 = "a722e84862c2a0a100bb37d8722fb9361fa503effa964308c845628d68608f7b"
+
+[[ref]]
+id = "squishos-distributed-compute"
+path = "~/Projects/SquishOS/docs/spine/07-distributed-compute.md"
+role = "the compute layer; orchestration NOT-BUILT"
+sha256 = "05f47760c7a705c8e5dceda6bfafded486b4ab41ceaf953de5a3972bbe9cc765"
+
+[[ref]]
+id = "squishos-manifest-checker"
+path = "~/Projects/SquishOS/scripts/check_reference_manifest.py"
+role = "the manifest checker this book reuses by path (resolves cited_by against SquishOS's root, so this manifest omits cited_by)"
+sha256 = "6b08d8bcaae12c03778b47e82a43ae35d2a22a913cd35f2089a5fee07810d9d9"
+
+[[ref]]
+id = "detective-readme"
+path = "~/tools/Detective/README.md"
+role = "Detective: what a pinned function is; where it stops"
+sha256 = "df97330c94c453c8b5f051c59ab9c58679cfd302ed415d245efd4e31a7a70eb0"
+
+[[ref]]
+id = "detective-architecture"
+path = "~/tools/Detective/ARCHITECTURE.md"
+role = "§11: run the local pair through PYTHONPATH; converge first; extract the pure decision"
+sha256 = "1b0d10896dca39a3e2dec8276b23e534dfa9ef2aec960e7e9e612549b6fc375b"
+
+[[ref]]
+id = "detective-deterministic-sicp"
+path = "~/tools/Detective/docs/theory/deterministic_sicp/DETERMINISTIC_SICP.md"
+role = "the founder's SICP statement (§1.1); budgets (§7); actuators and the cross-language gate (§8, Wave 5)"
+sha256 = "4fab807c75e0c39343acabdf82e1c9f945f064b44c90e8754d77773a6cbc8d45"
+
+[[ref]]
+id = "detective-deterministic-sicp-block"
+path = "~/tools/Detective/docs/theory/deterministic_sicp/CONSTRAINT_BLOCK.md"
+role = "style after behaviour, strictly; behaviour statuses"
+sha256 = "f58c24b623270d08adc1bbc3c44a71dfbff80529621ce4c89e789a760dcb4bdd"
+
+[[ref]]
+id = "detective-array-inputs"
+path = "~/tools/Detective/Detective/array_inputs.py"
+role = "the bounded array domain (rank 1-2, <=16 elements, finite b/i/u/f)"
+sha256 = "620df75f821798aa7ab739698ccf8c31ccd3d39754fac5cddce70ef6a89ea114"
+
+[[ref]]
+id = "cell-accel"
+path = "~/Projects/Kaggle_Killer/competitions/cell_tracking/src/cell_tracking/accel.py"
+role = "prior art: reference|jit mode (defects noted in THE_KNEE §3.3)"
+sha256 = "39118c82ccd966b6907c68e29f0da0807f5f31865d25941a86bf89864bbc9707"
+
+[[ref]]
+id = "cell-banks"
+path = "~/Projects/Kaggle_Killer/competitions/cell_tracking/src/cell_tracking/hdc/banks.py"
+role = "prior art: the bank-partitioned Hadamard carrier (Q16: not shared; K04)"
+sha256 = "3e8a7404094b3ee1bb4b567fa4db20a427cfd7fe3bc507590326481e06c97280"

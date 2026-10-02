@@ -1,0 +1,12 @@
+# The build's recorded selections. Read by the next-chapter rule (README) and validated by K27.
+# A selection is changed only with its measurement or the founder's ruling cited beside it.
+
+[optional_chapters]
+# K24 (the quantitative law) is selected only if K05's identifiable-set measurement shows a useful share of
+# studies with a same-fat-state TE contrast or a fat pair. Not yet measured.
+K24 = { selected = false, reason = "not yet measured (K05 identifiable sets)" }
+
+[emission]
+# Q4 is the founder's. Until he rules, the open register is exactly 0.5 (THEORY Law 7).
+variant = "literal"
+reason = "Law 7 default; Q4 open"

@@ -1,151 +1,130 @@
 # RSNA_Knee — agent entry point
 
 Canonical and tool-neutral: `CLAUDE.md` imports this file, and other agents (Codex) read it directly. The
-global rules (`~/.claude/CLAUDE.md` and the SquishOS reference docs it routes to) apply in full. This file
-extends or overrides them for this project and never restates them. Read it once, top to bottom.
+global rules apply in full: `~/.claude/CLAUDE.md` and the SquishOS reference docs it routes to (code
+verification, the Detective protocol, the gates, repo hygiene, performance). This file never restates them. It
+carries only what is specific to this project: its overrides and its decisions.
 
 ## What this is
 
-A classical-AI data-geometry entry for RSNA Knee Abnormality Detection: 12 findings per knee MRI study,
-scored by macro-averaged ROC-AUC. **There is no machine learning in the architecture.**
+A classical-AI data-geometry entry for RSNA Knee Abnormality Detection: 12 findings per knee MRI study, scored by
+macro-averaged ROC-AUC. **There is no machine learning in the architecture.**
 - Each study is registered into a platonic knee's frame and compared, place by place, against a population of
   normal knees.
 - Lenses, each measuring one thing, read the deviation and the patient's own anatomy.
 - A society of agencies decides each finding by concurrence, or abstains.
 
-The build plan is the book, [`docs/book/`](docs/book/README.md). The design canon is
-`docs/THEORY_OF_THE_CASE.md` and `docs/KNEE_ARCHITECTURE.md`, **as amended by the book**.
+The build plan is the book: [`docs/book/`](docs/book/README.md). The design canon is
+`docs/THEORY_OF_THE_CASE.md` and `docs/KNEE_ARCHITECTURE.md`. `docs/book/THE_KNEE.md` names exactly which canon
+passages the 2026-10-02 accord amends.
 
 ## Where truth lives
 
-Highest first. When two disagree, the higher wins and the lower is stale: fix it.
-1. **The founder's words:** `docs/FOUNDING_RECORD.md` and `docs/book/FOUNDING_PROMPTS.md`.
-2. **Code, tests and data on disk:** what they compute. `git tag -l 'knee-*'` is the build's progress record.
-3. **The book:** `docs/book/CONSTRAINT_BLOCK.md`, `docs/book/THE_KNEE.md`, and the chapter specs.
-4. **The design canon:** THEORY (its Laws 1–8 bind), KNEE_ARCHITECTURE as the book amends it, `docs/canon/`.
-5. **Logs:** `decisions/`, git history, `docs/book/provenance/`. Never read them as status.
+**Intent** (what the system should do). Highest first; the higher wins:
+1. the founder's words: `docs/FOUNDING_RECORD.md`, `docs/book/FOUNDING_PROMPTS.md`;
+2. the book: `docs/book/CONSTRAINT_BLOCK.md`, `THE_KNEE.md`, the chapter specs;
+3. the canon: THEORY (its Laws 1–8 bind) and KNEE_ARCHITECTURE as amended by the book, plus `docs/canon/`;
+4. logs (`decisions/`, `docs/book/provenance/`, git history), never read as status.
+
+**State** (what the system does and how far the build has gone) is **computed, never written as prose**:
+- from code, tests, data and their outputs;
+- from `git tag -l 'knee-*'` for accepted chapters;
+- from `just accept Kxx`, which re-runs a chapter's acceptance at HEAD. A tag attests acceptance at one revision,
+  and staleness is computed.
+
+Code is evidence of behaviour, never authority over intent: a bug is not a specification.
 
 ## How a session runs
 
 1. Read `docs/book/CONSTRAINT_BLOCK.md`.
-2. Run `git tag -l 'knee-*'`. Take the first chapter in the book's table whose dependencies are all tagged and
-   which is not tagged itself. Read it in full, with its substrate.
-3. Before changing anything the design derives, restate the chapter's mechanism at data-flow level in your own
-   words. A fluent paraphrase is not the test; the data flow is. This check caught every drift that mattered.
-4. Build to the chapter's acceptance. Each commit message starts `knee/Kxx:`.
-5. Close: run the gate, get a Codex review (model-only), add a dated status note to the chapter, then
-   `git tag knee-Kxx`.
+2. Run `git tag -l 'knee-*'`. Take the first chapter in the book's table whose dependencies are all accepted and
+   which is not. Read it in full, with its substrate.
+3. Before changing anything the design derives, restate the chapter's mechanism at data-flow level. A fluent
+   paraphrase is not the test; the data flow is.
+4. Build the whole chapter to its acceptance. A chapter is never a demo slice. Commit messages start
+   `knee/Kxx:`.
+5. Close: run the gate, get a Codex review (model-only), add a dated status note, then `git tag knee-Kxx`.
 
 ## Project laws, each with its reason
 
-1. **Not ML.** No CNN, transformer, fitted weight, learned embedding or "small learned component", anywhere.
+1. **Not ML.**
+   - No CNN, transformer, fitted weight, learned embedding or "small learned component", anywhere.
    - Registration, an optimizer over a known transform family, is the one bounded utility (THEORY Law 3).
    - *Reason:* it is the thesis. ML substitution is this project's recorded failure mode (THEORY Part V).
-2. **No Popery.** The shape of the build is a conclave, not one tuned pipeline:
+2. **No Popery.** The build is a conclave, not one tuned pipeline:
    - a lens (member) measures one thing about an object and knows no question;
    - an agency (body) holds the signs;
    - truth is assigned by concurrence and refused on disagreement;
-   - the harness asks every question of every object and reports identified / abstained / wrong per class of
-     object and role.
+   - the harness asks every question of every object, including unclaimed and overlapping material, and reports
+     identified / abstained / wrong per class of object and role.
    - *Reason:* one pipeline tuned to one verdict is the ML prior returning as the build's shape.
 3. **Decide or abstain; unknown is not false.**
-   - A decision returns a named string code.
+   - A decision returns a named code.
    - A missing reading is silence, never a negative.
    - A refusal is a verdict.
-   - *Reason:* a confident partial answer is a law; a guessed one is noise.
 4. **Score is information, never a target.**
-   - No level, threshold, radius or configuration is chosen to separate gold, match a prevalence, or move the
-     leaderboard.
+   - No level, threshold, radius or configuration is chosen to separate gold, to match a prevalence, or to move
+     the leaderboard.
    - Every bar is written down before the run it judges.
-   - *Reason:* fitting to a number reintroduces the fitting the design refuses.
 5. **Design fresh.** Existing code is reused only where a chapter argues it is the best approach, and the
-   argument is recorded in that chapter. "Existing" means this repo's, the cell-tracking project's, and
-   GenomeVault's. *Reason:* founder ruling 2026-10-02.
-6. **Questions are resolved by building and observing.** Every open question names the measurement that answers
-   it and the chapter that makes it. None is settled by argument. *Reason:* founder ruling 2026-10-02; measured
-   state is computed, never written as prose.
+   argument is recorded in the chapter. "Existing" covers this repo's legacy `RSNA_Knee`, the cell-tracking
+   project and GenomeVault. *Reason:* founder ruling, 2026-10-02.
+6. **Facts are settled by building and observing; policy is the founder's.**
+   - A question of fact names the measurement that answers it and the chapter that makes it.
+   - A question of policy or meaning is put to the founder with the measurements beside it. Examples are the
+     emission rule (Q4) and what a label's scope intends.
 7. **Never auto-submit.** Build, validate, dry-run the kernel and surface the expected score; submit only on the
    founder's explicit go (THEORY Law 8).
 
-## Engineering laws: the house doctrine, applied here
+## Project overrides and decisions (the global doctrine applies; these are additional)
 
-1. **Organization, SICP-style.**
-   - Each value is computed once, where it becomes known, by a function named for the value, and handed to its
-     consumers.
-   - Layers meet only through declared interfaces, enforced by Import Linter contracts in `pyproject.toml`.
-   - Each concept and each vocabulary has one owner.
-   - Functions are small and disentangled.
-   - *Reason:* "Being organized about what is computed and propagated out and used where IS the big thing"
-     (founder).
-2. **Pure decisions, thin shell.**
-   - Every decision is a total function over str/bool/int/float/list/dict that returns a named string code.
-   - It lives in a `decisions.py` beside the impure code it serves.
-   - The I/O shell only dispatches on the codes.
-   - *Reason:* only a literal-typed function can be pinned by Detective.
-3. **Reference first, kernel second. Behaviour before speed, strictly.**
-   - Every numeric kernel exists first as a plain Python reference with an explicit operation order. Its cores
-     take rank-1 or rank-2 `np.ndarray` arguments, which Detective's bounded array domain can pin; volume
-     wrappers stay thin loops over the cores.
-   - The reference is pinned: Detective for its decisions and cores, Hypothesis properties for its laws.
-   - An accelerated version (Numba JIT, Rust, C) is admitted only when it reproduces the reference *exactly*
-     under the differential SAME harness: property-generated inputs plus recorded real frames. Integer and
-     ordinal outputs must be equal. Float outputs must be bit-equal, or within a stated ULP bound written before
-     the run.
-   - The reference stays in the repo as the twin.
-   - *Reason:* a speed-up changes how an answer is computed, never the answer.
-4. **The best language for each operation.** Decided per kernel and recorded in its chapter with the
-   measurement that chose it.
-   - **Python:** orchestration, decisions, records, the I/O shell.
-   - **NumPy/SciPy:** whole-array math with no custom loop.
-   - **Numba JIT** (`njit`, `nogil`, `cache`, `fastmath=False`): every custom numeric loop. That covers voxel
-     lenses, component laws, windowed statistics, fused per-voxel passes, and the ledger's per-study kernels. It
-     is the default for a hot loop, and required for hypervector and ledger work. It compiles on the Kaggle
-     image, so no binary ships.
-   - **Rust** (PyO3 + maturin, abi3): long-lived indexed stores and scans, admitted where a measured budget shows
-     that bit-level SIMD, exact 128-bit integer arithmetic, GIL-free threads or explicit memory layout matter.
-     It ships to Kaggle as a prebuilt manylinux x86_64 wheel in an attached dataset.
-   - **C/C++:** the native libraries already in use, ITK through SimpleITK and the DICOM codecs.
-   - *Reason:* founder, 2026-08-31 ("written in the proper language and paradigm that appropriately executes the
-     operation") and 2026-10-02 (JIT is required; cache and memory operations matter).
-5. **Memory and cache are designed, not hoped for.**
-   - Contiguous structure-of-arrays layouts with stated dtypes.
-   - Whole-number count tables and bit-packed sign planes.
-   - Fused passes that make no temporaries; work in cache-sized blocks; memory-mapped volumes.
-   - *Reason:* in hypervector work the memory traffic is the cost.
-6. **Measure with the instruments.**
-   - To investigate: py-spy, memray, viztracer or scalene, from a dev-only extra.
-   - To claim: Detective's deterministic budgets plus pyperf, paired against the incumbent with a behaviour delta
-     of 0.
-   - Never an informal timing; never a one-off profile script.
-   - *Reason:* determinism is the product; wall-clock is noise.
-7. **Detective is the local checkout, never the PyPI build.**
-   - Run it as `just detective <verb> …`, which expands to
-     `PYTHONPATH=$HOME/tools/Detective:$HOME/tools/Wesker python -m Detective.cli … --project-root .` in this
-     project's environment. Never use the `detective` on PATH.
-   - Drive it by the global protocol: run the command it names, read its whole output, apply a refusal's repair
-     verbatim.
-   - Converge every extracted decision in isolation before wiring it.
-   - Keep a hand-written intent test beside each generated suite.
-   - Run Detective with acceleration in reference mode. The JIT path answers to the SAME harness.
-   - *Reason:* founder ruling 2026-10-02. The local pair is the maintained engine (Detective ARCHITECTURE §11).
-8. **Determinism and provenance.**
-   - Caches are content-addressed by input digest and stage version.
-   - Randomness is seeded and declared.
-   - Every artifact records what produced it, and every case keeps its source.
-   - *Reason:* a number whose provenance is lost cannot be audited.
-9. **The gate.**
-   - Run `just gate` before every commit: ruff check, ruff format --check, pytest (including Detective's suites),
-     and lint-imports, with ty advisory.
-   - Run `cargo fmt --check`, `cargo clippy -D warnings` and `cargo test` when `native/` exists.
-   - Before a push, also run the supply-chain checks (global repo-hygiene).
-
-## Data, secrets, kernel
-
-- **Data:** `data/` is gitignored; the data is Kaggle-licensed and never redistributed.
-- **Secrets:** the Kaggle token is `KAGGLE_API_TOKEN` in `~/Projects/Kaggle_Killer/.env`. Load it into the
-  environment; never print, copy or commit it.
-- **The kernel:** the submission is a Kaggle notebook: Linux x86_64, internet off, at most 9 hours, data under
-  `/kaggle/input/`. Everything the kernel imports must exist there. Dev-only tools never enter its import path.
+1. **Detective is the local checkout, never the PyPI build** (founder ruling, 2026-10-02).
+   - Run it as `just detective <verb> …`. The wrapper runs
+     `PYTHONPATH=$HOME/tools/Detective:$HOME/tools/Wesker python -m Detective.cli …` in the VERIFY environment
+     and records the checkout's identity.
+   - Never use the `detective` on PATH.
+   - The SquishOS filter hook does not see the module form (verified 2026-10-02). So the wrapper writes every run
+     to `.detective/runs/` and refuses when its output is piped. Read each run whole.
+   - Its scope, stated truthfully:
+     - input synthesis renders literals and bounded arrays (rank 1–2, ≤ 16 elements, finite bool/int/uint/float);
+     - functions over domain objects are reachable only through real arguments captured from tests.
+   - "Fully mutant-pinned" means each function's current-digest standing is recorded: complete, incomplete,
+     refused, stale, unverified or unpinned. Never a blanket claim.
+2. **A reference first, then an accelerated twin that answers to SAME.**
+   - Every numeric kernel exists first as a plain Python reference, pinned and property-tested.
+   - An accelerated twin (Numba, Rust, C/C++) is admitted only by the decision-preserving SAME harness: codes,
+     assignments, memberships, ties and decisions must match, and boundary cases go to the reference.
+   - The backend registry configures before any kernel binds, records the requested and the effective backend,
+     and refuses an unavailable backend that is required. It never falls back silently.
+3. **Language by operation, chosen by measurement and recorded in the chapter.**
+   - Python orchestrates and decides.
+   - NumPy, SciPy and SimpleITK where their contracts fit.
+   - Numba JIT for custom repeated numeric loops; required for hypervector, ledger and voxel work (founder,
+     2026-10-02: "JIT is basically a requirment").
+   - Rust or custom C/C++ is admitted per component by evidence. Wheels are built for Linux x86_64 and tested in
+     the target environment.
+4. **Two environments.**
+   - VERIFY: a uv-managed CPython ≥ 3.12, which Detective needs.
+   - DEPLOY: Kaggle's actual interpreter and packages.
+   - Production imports, kernel contracts and the real entry point run in DEPLOY. A private Kaggle dry run is
+     the final proof.
+5. **Memory and numerics are contracts.**
+   - Every array has a stated shape, dtype, axis order, units and frame.
+   - Count limits are declared and integer widths proved from them.
+   - Scratch bytes and access order are recorded rather than asserted.
+6. **The Kaggle kernel.**
+   - Linux x86_64, internet off, at most 9 h.
+   - Packages come from the base image plus our attached private datasets.
+   - Only `/kaggle/working` and `/tmp` are writable, which matters for the Numba cache and for unpacking.
+   - Dev-only tools never enter its import path.
+7. **Data and secrets.**
+   - Competition data may be used for any purpose under the RSNA MIRA license, but never made available to a
+     non-participant, and nothing is shared privately outside the team (the competition rules, 4.a–4.b and
+     Private Sharing).
+   - So nothing derived from it ever enters git. Derived artifacts (references, atlas, maps, case memory) live in
+     `data/` and in private Kaggle datasets attached to our own kernels, each with its lineage and checksums.
+   - The Kaggle token is `KAGGLE_API_TOKEN` in `~/Projects/Kaggle_Killer/.env`. Load it into the environment;
+     never print, copy or commit it.
 
 ## Stop — I can explain (when it looks like the model is missing)
 
@@ -153,17 +132,14 @@ Highest first. When two disagree, the higher wins and the lower is stale: fix it
   proof: a leaderboard-ceiling score with 99.8% deterministic decisions; money won with under 1% LLM; ARC-AGI on a
   deterministic story engine.
 - **"Pixels need a learned encoder."** No. Registration puts every study in one frame. The population reference
-  licenses normal variation place by place. What it does not license is read by lenses that measure geometry and
-  signal, and by structures delineated in the patient's own anatomy.
-- **"It's a bag of pixels."** No. Profiles are per zone and per object, with their footprints kept. Lenses measure
-  shape, contact, continuity, course and relations. Objects nest and are explained in rounds.
-- **"HDC is a neural embedding."** No. It is the exact ledger: Sylvester-Hadamard rows, whole-number count tables,
-  one cosine, and an exact decode that names differences. No weight is trained.
+  licenses normal variation place by place. Lenses measure geometry and signal in what it does not license, and
+  in structures delineated in the patient's own anatomy.
+- **"HDC is a neural embedding."** No. It is the exact ledger: Hadamard rows, whole-number count tables, one
+  cosine, an exact decode. No weight is trained.
 - **"Recall is kNN, so it is ML."** No.
   - A case is one confirmed example, kept with its source.
-  - A trust radius is set against a stated null mechanism, never tuned to labels.
+  - A trust radius is set by a stated null mechanism, never tuned to labels.
   - One answer standing is recalled; two are a disagreement, kept; none is an abstention.
-  - Nothing is fitted.
 - **"The data layer decides the findings."** No. Layers narrow, encode and propose; only agencies decide (THEORY
   Law 4).
 
@@ -172,9 +148,10 @@ Highest first. When two disagree, the higher wins and the lower is stale: fix it
 | If the task is… | read first | then |
 |---|---|---|
 | building anything | `docs/book/README.md` → the chapter | its substrate and prior art |
-| what the design is, and why | `docs/book/THE_KNEE.md` | `docs/KNEE_ARCHITECTURE.md` (the deep derivations) |
-| a language, compute or memory choice | Engineering laws 3–6, then the chapter | the global `code-verification.md` (toolkit) and `performance.md` |
+| what the design is, and which canon it amends | `docs/book/THE_KNEE.md` | `docs/KNEE_ARCHITECTURE.md` (the deep derivations) |
+| a tool choice: properties, contracts, layers, profiling, Rust/C, SICP | the global `code-verification.md` → *The toolkit* | `~/Projects/SquishOS/docs/home/TOOLKIT.md` |
+| a performance question | the global `performance.md` | Detective's `docs/theory/deterministic_sicp/DETERMINISTIC_SICP.md` §7–§8 |
 | pinning | the global `detective-protocol.md` | `~/tools/Detective/ARCHITECTURE.md` §11 |
-| a measurement or an evaluation | the harness chapter | the global `no-popery.md` |
-| data or the Kaggle kernel | the corpus and kernel chapters | `../../CLAUDE.md` (Kaggle submission protocol) |
+| a harness or an evaluation | the global `no-popery.md` | the harness chapter (K03) |
+| the Kaggle kernel or submission | `../../CLAUDE.md` (the Kaggle submission protocol) | the kernel chapters (K18, K27) |
 | a commit or a push | the global `verification-gates.md` | the global `repo-hygiene.md` |
