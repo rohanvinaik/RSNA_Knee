@@ -96,13 +96,16 @@ Code is evidence of behaviour, never authority over intent: a bug is not a speci
    - No agent changes the original design (THEORY, KNEE_ARCHITECTURE, the founder's words) unless the change is
      provably correct, or warranted by his explicit words, quoted with their source.
    - "Provably correct" means logic, arithmetic, an internal contradiction shown by quoting both passages, an
-     order that cannot execute, or a checkable external fact (the competition's data and definitions, a file
-     format).
+     order that cannot execute, or a checkable external fact. An external fact means the competition's literal
+     data and framing, or a file format. It is admissible as a fact, and never as an implicit warrant on design
+     or conception (founder, 23:22:50Z).
    - Everything else returns to the original design, or goes to him as a question with the argument beside it.
    - A second reader's critique (Codex, Antigravity) is never warrant. It may report a provable error with its
      proof, or ask a question. It never proposes the design.
    - Nothing is built. No codebase meets the design and there is no evidence of what works, so nothing is judged
      by how it looks: something that looks wrong may be critically important.
+   - His general approval is not open authority: "my warrant was general and high-level, not open authority"
+     (23:22:50Z).
    - *Reason:* the founder, 2026-10-02: "*I* am the authority on what works or doesn't … You do not have the
      authority to change the design *I* built based on a random guess, when you don't know the intent"; "Make
      SURE you are not changing anything other than that which is definitevely/provably correct, or warranted by
