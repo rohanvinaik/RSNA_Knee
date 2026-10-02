@@ -3,7 +3,7 @@
 | | |
 |---|---|
 | **Status** | computed: `git tag -l 'knee-K24'`. **Optional:** skipped by the next-chapter rule unless selected in `docs/book/SELECTION.toml` |
-| **Depends on** | K10 (deviation and signatures), K05 (timings, identifiable sets), K11 (phantoms, to upgrade) |
+| **Depends on** | K18 (first light, which its acceptance re-runs), K10 (deviation and identity), K05 (timings, identifiable sets), K11 (phantoms), K09 (γ_s and the N roles) |
 | **Consumed by** | K10 (physics-space z where identified), K11 (law-forward phantoms), K14 (typed misfit enters the constraint axis) |
 | **Commit label / tag** | `knee/K24` · `knee-K24` |
 
@@ -22,8 +22,11 @@ misfit is typed as instrument or input-error information.
 ## 2. Dependencies and consumers
 
 **Produced** (`knee.run.law`):
-- **`identifiability(series_timings, places) -> rank, condition, code`:** per study and place, at the plane-group
-  and region scales.
+- **`identifiability(series_timings, gains, filters, places) -> rank, condition, code`:** per study and place, at
+  the plane-group and region scales. The unknowns include each series' gain γ_s and any per-series intensity
+  filter c, as nuisances (ARCH §3.3.9 Table 3.5, rows 1–2: "one γ per series, pinned on reference tissue"; "a
+  vendor's normalization filter makes c differ between series"). A quantity is `identified` only if it stays
+  identified with those nuisances free, or pinned by K09's γ_s with its σ carried.
 - **Where identified,** a quantity with its delta-method σ: T2-ish from a TE contrast at the same fat state;
   f(1−ε)-type combinations from fat pairs, never f and ε separately without a stated model for ε; T1-ish only
   where a TR contrast exists.
@@ -31,9 +34,11 @@ misfit is typed as instrument or input-error information.
 - **The typed misfit:** a motion dipole, ghosting, a magic-angle signature, suppression failure, partial volume,
   the noise floor, susceptibility, `unexplained`. Each goes to the constraint axis or the hardness map, never to a
   finding.
-- **The law-forward phantom generator:** upgrades K11 where identified.
+- **The physics-space references:** K24 builds its own, per identified quantity, from N roles allocated to it in K03,
+  never the raw path's members re-used silently (ARCH §3.4.2). With K24 unselected, K09's raw path (x̃) stands.
+- **K11's forward-law phantoms** need no inversion and do not wait on this chapter.
 
-**Consumers:** K10, K11, K14.
+**Consumers:** K10, K14.
 
 ## 3. Mechanism
 
@@ -72,14 +77,16 @@ Where selected: K10's z gains a physics-space variant per identified quantity, a
 
 ## 8. Acceptance (if selected)
 
-- **Behavioural correctness:** the decisions are pinned; SAME; first light is re-run.
+Written first: `acceptance/K24.toml`.
+- **Behavioural correctness:** the decisions are pinned; SAME holds; first light is re-run, and its diff is read
+  against this chapter's behaviour-change record.
 - **Representation fidelity:** the identified share per regime is reported. Nothing is emitted where not
   identified.
 - **Domain validity:**
   - LOSO calibration;
   - the offsets are stable across disjoint halves of normals within a regime (falsifier 7, reworded);
   - σ is calibrated (falsifier 9).
-- **Performance evidence:** places solved per second.
+- **Performance evidence:** places and solve iterations counted; seconds as information.
 - **Evidence scope:** the identified studies only.
 - **Invalidation:** a change to the timing classes, the forward law, or the regimes.
 
@@ -97,3 +104,8 @@ Where selected: K10's z gains a physics-space variant per identified quantity, a
   - the Codex review rounds (C1–C2) and design round 1;
   - THE_KNEE §2 (change 1).
 - **2026-10-02:** specified in K00.
+- **2026-10-02, revision 1:**
+  - depends on K18 (F09);
+  - gains and filters as nuisances in identifiability (F52; ARCH §3.3.9);
+  - its own physics-space references and N roles (F22, F52);
+  - forward-law phantoms moved to K11 (F44).

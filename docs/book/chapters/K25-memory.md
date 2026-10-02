@@ -30,15 +30,25 @@ that chance cannot reach.
   - its **source**: the sentence verbatim, the gold row, or the founder's words, with study, step and parser
     version.
 - **Buckets:** cases of one answer, per agency, question, zone class and regime.
-- **The null mechanism for trust radii,** specified:
-  - **what it preserves:** pairs of profiles from *unrelated* objects of the **same zone class, regime and
-    visibility class**, drawn from different studies, with no shared answer by construction (different zone
-    instance, cross-study pairing). This keeps marginal profile statistics and acquisition context, and breaks
-    object identity;
-  - the radius is the least level whose chance-reach rate, over the null population's nearest-case statistic
-    charged for bucket size, is below a bound written before the run;
-  - it is computed on one half of the null population and checked on the other;
-  - **hard negatives** (opposite answers) are **not** the null. They become near-miss evidence for K26's censors.
+- **The null mechanism for trust radii,** specified (`provenance/build/revision_1.md`, §F25). An earlier
+  cross-study pairing claimed "no shared answer by construction". That was false: two unrelated knees both carry
+  effusion at its prevalence.
+  - **The hypothesis:** a resemblance is chance when it arises from what each bank says *alone*, without the
+    co-occurrence of readings that a case carries. THESIS §7.1: cases are "compared one by one, never summed …,
+    since a sum would lose which readings occurred together in each case".
+  - **The exchange mechanism.** Within a stratum (zone class × regime × visibility pattern, the set of non-silent
+    banks), each bank's row is exchanged at random among the stratum's real objects.
+    - It preserves each bank's marginal distribution and the visibility pattern ("set on real data", THESIS §7.4).
+    - It breaks the co-occurrence within an object.
+    - So a null profile carries no answer by construction, and no label is used.
+  - **What chance reach bounds.** The statistic is each null profile's cosine with its *nearest* case, which
+    charges the bucket for its size (ARCH §5.5). The radius is the least level at which the chance-reach rate is
+    at most a rate written before the run. It is computed on one half of the null draws and checked on the other.
+  - **Hard negatives** (opposite answers) are **not** the null. A true normal that reaches a case is a near miss
+    (THESIS §7.6): evidence for K26's censors, or a founder's sheet (ARCH l.3785–3786).
+  - **Its calibration is measured, never tuned.** The rate at which `null`-role normals reach cases is reported
+    beside the exchange's rate. An excess names correlated structure the exchange broke, which belongs in the
+    stratum key (Law 5), and it never moves the radius.
 - **Recall:** `recall(profile, bucket_set, censors) -> one | disagreement | none`, with the voices' counts and
   sources. "One answer standing is recalled; two or more are a disagreement, kept …; none is an abstention"
   (THESIS §10.2).
@@ -64,7 +74,8 @@ that chance cannot reach.
 
 ## 5. Implementation choice
 
-- **Recall in Python** over BLAS float64 dot products (exact under K04's proof), with exact integer level tests.
+- **Recall in Python.** Dot products run on the backend K04's R·C² rule admits: BLAS float64 where R·C² < 2^53,
+  else int64 or Python int. Level tests use exact integers.
 - **Rust (PyO3, maturin)** is admitted only if the measured budget at the memory's real size shows it is needed:
   bit-plane popcount prefilter scans, exact wide-integer tests, GIL-free threads. The decision is recorded here
   with the measurement. If admitted, the Linux x86_64 wheel is built in Docker, inspected with auditwheel, and
@@ -74,8 +85,10 @@ that chance cannot reach.
 
 ## 6. Verification
 
-- **Detective:** the recall outcome, the bucket keying, the null-pair admissibility and the provenance decisions
-  are converged.
+- **Detective:** the recall outcome, the bucket keying, the stratum and exchange admissibility, and the provenance
+  decisions are converged.
+- **Hypothesis:** the exchange preserves every bank's marginal counts within its stratum, and never moves a row
+  across strata.
 - **Hypothesis stateful tests** of the store: insert, recall, no self-recall, rotation exclusion.
 - **SAME** for any native twin: equal outcomes, voices and counts.
 - **H3's bridge:** recall against shuffled calls, within and across regimes, on G in rotation and on R.
@@ -87,15 +100,17 @@ Re-run `just firstlight`.
 
 ## 8. Acceptance
 
+Written first: `acceptance/K25.toml`.
 - **Behavioural correctness:** the decisions are pinned; the stateful tests pass; no self-recall; first light is
   re-run.
 - **Representation fidelity:** the case metadata carries complete context, or flags its incompleteness.
-- **Domain validity:**
-  - the chance-reach rate on the null checking half is within its bound;
-  - H3's bridge is reported (recall against shuffled calls);
+- **Domain validity (discovery):**
+  - the chance-reach rate on the exchange's checking half, against its bound;
+  - the `null`-role normals' reach rate, reported beside it;
+  - H3's bridge, reported (recall against shuffled calls);
   - disagreement and abstention rates per finding.
-- **Performance evidence:** recalls per second at the memory's real size, Python against any native twin; bytes
-  scanned.
+- **Performance evidence:** recalls and coordinates scanned, counted at the memory's real size, for Python and for
+  any native twin; bytes scanned; seconds as information.
 - **Evidence scope:** the T-panel calls, gold teaching folds and founder sheets at this version.
 - **Invalidation:** a change to the layout, to the calls, to the null mechanism, or to the bucket keys.
 
@@ -113,3 +128,7 @@ Re-run `just firstlight`.
   - the Codex review (C8) and design round 2 (D7);
   - THE_KNEE §2 (change 6).
 - **2026-10-02:** specified in K00.
+- **2026-10-02, revision 1:**
+  - the trust radius's null restated as a label-free exchange of bank rows within strata (F25; ARCH §5.5; THESIS
+    §7.1, §7.4, §7.6; THE_KNEE §2 change 6);
+  - the backend from K04's rule (F16).
