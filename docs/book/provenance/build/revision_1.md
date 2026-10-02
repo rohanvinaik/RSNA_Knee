@@ -63,7 +63,7 @@ Grounding is filled in only from first-hand reading of the cited lines.
 | F46 | K14: complete the outcome table; unknown dependence is not `SINGLE` | K14 | ARCH Table 5.5 l.3444–3451; §6.2.5 rule 4 l.4706–4707; THE_KNEE §2 change 7 ('insufficient') | add INSUFFICIENT: voices speak but independence is not established; SINGLE stays 'one class can speak' | grounded |
 | F26 | K14's split labels the residual `pathology`: pathology by elimination | K14 | ARCH §5.9 Table 5.14 l.4172, order l.4174–4185, mechanism l.4222–4223; THEORY Law 4 (notes §F26) | pathology only when Table 5.14's positive conditions all hold, else undetermined; the class routes to recall and establishes nothing | grounded |
 | F27 | K20 searches lines only inside confirmed edema, so a fracture without detected edema is unreachable; OA marrow-lesion scope stays unresolved | K20 | ARCH lens 15 (Tables 2.8a/b); THE_KNEE §2 change 3; ARCH l.1096 (notes §F27) | line lens questionless over bone, with edema context as a field; OA marrow-lesion scope to the founder | grounded |
-| F24 | K22 admits the stability key by discrimination (phantoms above `checking` normals) | K22 | | | open |
+| F24 | K22 admits the stability key by discrimination (phantoms above `checking` normals) | K22 | ARCH §6.1.4 l.4403–4406 and §4.3 l.2792–2793 prescribe the phantom-ordering admission; the No Popery law (founder, global) forbids seating by discrimination; ARCH l.4427–4430, l.2779–2781 (notes §F24) | s takes its place in ARCH's key order on ARCH's structural argument, read against phantoms of its size and zone; phantom ordering and |z|-redundancy reported, never gating; the conflict is reported to the founder | grounded |
 | F25 | K25's null claims "no shared answer by construction" across studies, which is false | K25 | ARCH §5.5 l.3639–3654, l.3735–3736, l.3783–3786; THESIS §7.1 l.1411–1413, §7.4 l.1518–1521, §7.6; THE_KNEE §2 change 6 (notes §F25) | null = bank-wise exchange within (zone class, regime, visibility pattern): preserves each bank's marginals, breaks co-occurrence; label-free; hard negatives → near-miss censors | grounded |
 | F50 | K21: window and null matching; zero-energy cases; layout extension | K21 | | | open |
 | F53 | K26: evaluation feedback kept apart from teaching; censor construction and chance tests | K26 | | | open |
@@ -82,15 +82,15 @@ Grounding is filled in only from first-hand reading of the cited lines.
 | F04 | K12 calibrates lens metrics before K13 computes them | K12, K13 | | | open |
 | F05 | K12 consumes K14's question rules without depending on K14 | K12, K14 | | | open |
 | F07 | K20 needs confirmed edema while K23 depends on K20 | K20, K22, K23 | | | open |
-| F08 | K17 needs keys built in K21 and K22; an early emission schema with explicit unavailable keys | K17 | | | open |
+| F08 | K17 needs keys built in K21 and K22; an early emission schema with explicit unavailable keys | K17 | ARCH §6.1.3 l.4337–4373; §6.1.4 l.4406 ('Until then the sequence skips it') | K17 declares every key early; an unbuilt key is skipped with key_unavailable:<name>, never filled | grounded |
 | F09 | K24 is selectable after K11 but needs first light (K18) | K24, README | | | open |
 | F10 | acceptance is prose, with no commands, fixture digests or numeric expectations | all | | | open |
 | F11 | replay: backend equivalence vs an authorized behaviour change; recursive staleness; selected versions; K27 skips an unselected K24 | K02, K18, K27 | | | open |
 | F12–F15 | false properties: hashed folds "balanced within one"; tercile ties; longest gap not additive; binomial bounds not monotone | K03, K12, K20 | | | open |
 | F41 | K06: report-negative coverage; independent adjudication of parser errors | K06 | | | open |
 | F45 | K13: acquisition-specific evidence; uncertainty propagation | K13 | | | open |
-| F47 | K17: comparable evidence ordering | K17 | | | open |
-| F54 | K27: version-aware replay; conditional score estimates | K27 | | | open |
+| F47 | K17: comparable evidence ordering | K17 | ARCH §6.1.4 l.4388 ('each key is compared only with itself across studies'), Table 6.1 keys l.4399–4425; THE_KNEE §2 change 9 | keys compared only like with like; a study lacking a key is ordered only by the keys it shares (K17, to edit) | grounded |
+| F54 | K27: version-aware replay; conditional score estimates | K27 | ARCH §6.1.5 facts 1–3 l.4470–4486 | K27 reports the score as ARCH's conditional identities: the open shares and the decided accuracy per finding, never one number | grounded |
 
 ### D. Governance and the house tools
 
@@ -106,7 +106,7 @@ Grounding is filled in only from first-hand reading of the cited lines.
 | F32 | SAME must carry declared nonfinite behaviour | K02 | | | open |
 | F36 | the fleet runbook says offloading is NOT-BUILT; the compute runbook supplies it | THE_KNEE §4, K01 | | | open |
 | F37 | identify the node before any remote action | K01 | | | open |
-| F38 | K22's escalation cannot reach the Mac Pro from offline Kaggle | K22 | | | open |
+| F38 | K22's escalation cannot reach the Mac Pro from offline Kaggle | K22 | ARCH §4.3 l.2759–2764 (R4 and R5 only on escalation); THESIS §12.6; AGENTS override 6 | in the kernel an escalation runs inside the kernel's own budget or is skipped as escalation_unavailable; the Mac Pro is build-time only | grounded |
 | F39 | performance evidence needs work and byte accounting, not seconds alone | several | | | open |
 | F55 | K00: reconcile the authorities; executable acceptance | K00 | | | open |
 | F56 | K02: acceptance manifests, dependency-freshness checks, explicit layer contracts | K02 | | | open |
@@ -122,6 +122,7 @@ delegated (R4).
 | 2026-10-02 | THESIS | 739–797 | §4.4–§4.5 |
 | 2026-10-02 | ARCH | 3600–3796, 4145–4234 | §5.5; §5.9 |
 | 2026-10-02 | THESIS | 1403–1610 | §7.1–§7.7 |
+| 2026-10-02 | ARCH | 2661–2795, 4300–4517 | §4.3; §6.1 |
 </content>
 </invoke>
 <invoke name="Bash">
@@ -350,3 +351,47 @@ git log --oneline -2
   - **Its calibration is measured, not tuned.** The rate at which real `null`-role normals reach cases is
     reported beside the shuffle's rate. An excess names structure the shuffle broke, which belongs in the
     stratum key (Law 5), and it never moves the radius.
+
+### §F24 — stability's admission into emission (ARCH against the No Popery law)
+- **ARCH prescribes the admission test Codex rejects.** §6.1.4 l.4403–4406: "s becomes a key only once it passes
+  the information test … The test is run here without labels: where the keys above s tie, s must order planted
+  phantoms above true normals. Until then the sequence skips it." §4.3 l.2792–2793 has the same: "s enters
+  emission only if it adds to the rank already given by |z|".
+- **The founder's law forbids it.** No Popery (global CLAUDE.md, 2026-09-17; house `no-popery.md`) names
+  "seating decided by a member's discrimination on one query" as a tell. Ordering planted phantoms above normals
+  is discrimination on one query (lesion or none). By AGENTS → *Where truth lives*, the founder's words outrank a
+  derived canon document. Book K13 §9 already follows the law ("each sane value reported, none selected").
+- **ARCH's structural argument places s anyway.** l.4427–4430: "The keys run from the evidence least likely to
+  be jointly wrong to the most likely: independent series are different evidence; stability is the same
+  evidence surviving a step either way; H is one statistic of one reading." The same section names the known
+  inversion: s inverts for thin lesions, which is why s is read "against phantoms of the same size and zone,
+  never as an absolute" (l.2779–2781).
+- **Disposition (K17, K22).**
+  - s holds the second key on that structural argument.
+  - Its digit's middle is set once on the teaching studies' committed readings (THESIS §6.2), and s is read
+    against phantoms of its size and zone.
+  - Two things are *reported* and never gate: whether s orders P above N where the keys above tie, and whether s
+    is a function of |z| (the redundancy ARCH l.2784 names).
+  - **Reported to the founder:** ARCH and the No Popery law conflict here, and the book follows the law.
+
+### §F08 and §F47 — early keys, and comparison only like with like
+- ARCH §6.1.3 lists what emission reads: the decision word, the voices, s, H and σ. H comes from §4.5 (K21) and
+  s from §4.3 (K22), both built after K17.
+- ARCH already has the skip semantics, l.4406: "Until then the sequence skips it".
+- **Disposition (K17).** Every key is declared at K17. A key whose chapter is not yet accepted is skipped and
+  recorded as `key_unavailable:<name>`, never filled with a default.
+- Under §6.1.4 l.4388, "each key is compared only with itself across studies". So a study is ordered by a key
+  only against studies that carry it. With THE_KNEE §2 change 9 (witness-set comparability), a key whose
+  witness sets differ is not compared.
+
+### §F54 — the score, stated conditionally
+- ARCH §6.1.5 gives exact identities. Fact 1: AUC = 1 − ½·(o₊/n₊)·(o₋/n₋) when every decision is right. Fact 2
+  gives Q4's stake. Fact 3: abstention after a wrong decision never costs.
+- **Disposition (K27).** The expected score is reported through these identities: per finding, the open shares
+  and the decided accuracy with bounds. It is never one number.
+
+### §F38 — the kernel cannot reach the Mac Pro
+- ARCH §4.3 l.2759–2764 runs the expensive families R4 and R5 "only on escalation". The kernel has no internet
+  (AGENTS override 6).
+- **Disposition (K22).** In DEPLOY an escalation runs inside the kernel's own budget, or is skipped and recorded
+  as `escalation_unavailable`. The Mac Pro serves build time only.
