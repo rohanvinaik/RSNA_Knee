@@ -1,16 +1,17 @@
-# K23 — The hardness map and dependence
+# K23 — The hardness map and the gate, extended to the structure questions
 
 | | |
 |---|---|
 | **Status** | computed: `git tag -l 'knee-K23'` |
-| **Depends on** | K22 (flips), K09 (normals by role), K11 (phantoms), K13/K20/K21 (raw readings) |
-| **Consumed by** | K14's contracts (entitlement and dependence data plug in), K16 (concurrence becomes possible), K26 (soft places), K17 |
+| **Depends on** | K13a (the builders, the zone questions' map and gate), K22 (flips), K20 and K21 (structure readings), K09 (normals by role), K11 (phantoms, damaged structures included) |
+| **Consumed by** | K14's contracts (the structure questions' entitlement and independence classes), K16 (the fibrous and compartment agencies can concur), K26 (soft places), K17 |
 | **Commit label / tag** | `knee/K23` · `knee-K23` |
 
 ## 1. Purpose and authority
 
-To learn, from observation, where each view goes blind or reads falsely in health, and which acquisitions fail
-together.
+To extend K13a's hardness map and independence gate to the structure questions, once their lenses (K20, K21) and
+flips (K22) exist. It adds multiway dependence and the κ map as a lens. The zone questions were gated in K13a,
+before the loop, as ARCH §6.6.3 orders Phase 6 before Phase 7 (`provenance/build/revision_1.md`, §ORDER).
 - **The founder:** "a lens that is NEVER able to resolve the signal you want...well, isn't that a *perfect* lens
   for where your signal is *not*?? That IS information!"
 - **The accord** (change 7): dependence is a graph of shared causes; no imported bar; "insufficient" where
@@ -73,15 +74,17 @@ together.
 - **Detective:** admission, status, entitlement and the dependence-status decisions are converged.
 - **Hypothesis:**
   - rates lie in [0, 1];
-  - bounds shrink with n;
+  - every bound contains its rate, and no bound is claimed to shrink monotonically (§F15);
   - the merge is order-invariant.
 - **Replication:** the building half against the checking half, within bounds.
 
 ## 7. Integration
 
-- K14's `committee_outcome` now receives measured dependence, so `CONCUR` becomes possible.
+- K14's `committee_outcome` now receives the structure questions' independence classes, so `CONCUR` becomes
+  possible for them where a pair is `independent_measured`.
 - K16 is re-run.
-- `just firstlight` is re-run; the change in decisions is recorded as this chapter's effect.
+- `just firstlight` is re-run. The change in decisions is a behaviour change, recorded with its intent (K02's
+  behaviour-change record) and read as a diff, never as SAME.
 
 ## 8. Acceptance
 
@@ -90,15 +93,15 @@ together.
 - **Representation fidelity:** the map replicates on the checking half.
 - **Domain validity:** κ peaks at named pitfalls; the evidence domains (healthy against lesion) are reported
   separately; `insufficient` is used where counts cannot bound.
-- **Performance evidence:** normals per hour per node.
+- **Performance evidence:** places, normals and perturbations counted per shard, with bytes scanned; seconds only
+  as information (ARCH §3.2.6).
 - **Evidence scope:** the normals at their roles and their measured impurity; the phantoms of K11.
 - **Invalidation:** a change to the readers, the normals, the template or the layout.
 
 ## 9. Open matters
 
-- **Policy:** the dependence levels (what φ, κ and multiway statistics count as independent), written before the
-  run by the founder or by an argued default recorded here. The genomic numbers are not inherited (Codex design
-  round 2, Q8).
+- **Policy (founder; ARCH §6.7 item 8):** the independence bar, as in K13a, extended to multiway statistics and
+  written before the run. The genomic numbers are not inherited (Codex design round 2, Q8; the accord).
 
 ## 10. Provenance and status log
 
@@ -109,3 +112,5 @@ together.
   - TIERED;
   - THE_KNEE §2 (change 7).
 - **2026-10-02:** specified in K00.
+- **2026-10-02, revision 1:** scoped to the structure questions; the zone questions moved to K13a (F06, F07, F51);
+  no monotone-bound claim (F15); work counted (F39).
