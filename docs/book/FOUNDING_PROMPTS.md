@@ -123,6 +123,31 @@ sub-agents launched at 16:33Z. They were stopped before reporting, and nothing o
 
 > **17:32:17Z** (mid-turn) Suit and tie, not just "not naked"
 
+## 2026-10-02 — after the second compaction: when Codex stops, the global changes, K14
+
+> **17:36:57Z** (mid-turn) Damn, hit the compact AGAIN. Before we continue, a pause for re-grounding? Don't do
+> anything specific, just tell me what you think we are doing right now, and what's left for us to complete in this
+> whole project setup process. I think we're almost done with setup, I'd like to know what you think is left to do
+
+> **22:42:24Z** Good stuff! The Codex should stop when it should stop. That seems circular, but it should be pretty
+> obvious. Codex is for stress-testing your ideas/understanding. When it no longer tells you anything substantially
+> useful, or when you know how to properly and completely address what it is saying, or the answer is something
+> that's best left to operator intent (me), then we stop.
+>
+> Take a quick look back into the global context files. I've made some changes/additions that are worth looking
+> into/seeing how they might impact your process here.
+>
+> Then it's time to think through the build. First, REALLY think about that change you made to K14. It's VERY likely
+> that it wasn't warranted by the actual theory/design and you'll need to revert, but confirm properly. Then we can
+> go through and finish codex's revision 2 (make sure you've actually read it, directly, in this post-compact
+> session). THEN, we can get to the real project
+
+> **22:52:11Z** (mid-turn) Yes, now that you're reading the full thesis, I think you can see why I find post-compact
+> summaries rather insufficient for design work
+
+(Between 17:36Z and 22:42Z the founder changed the global context at its source, SquishOS `ops/agents/`, commits
+`0cd3f4c`…`d94d04a`. What they change here is recorded in `provenance/build/revision_2.md` → *The global changes*.)
+
 ## The engineering intent, in the founder's earlier words (2026-08-31, DETERMINISTIC_SICP §1.1)
 
 > "I see this as a resource optimization problem. We want to optimize several 'independent' systems at the same
