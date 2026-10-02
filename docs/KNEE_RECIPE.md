@@ -1,5 +1,7 @@
 # The Knee by the Recipe: Laws, Lenses and Agencies
 
+> **Superseded** by `docs/KNEE_ARCHITECTURE.md` (2026-10-02), which expands this draft; kept as the first working of the recipe.
+
 **Status:** DRAFT for founder sign-off (2026-10-02). Not a build spec until signed. This works the
 recipe of *What an \<Object> Is* (Vinaik and Claude, 2026-10-01, §13.1) for RSNA Knee Abnormality
 Detection. It fills in the intelligence layer that `THEORY_OF_THE_CASE.md` Part III left as a sketch,
