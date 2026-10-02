@@ -47,7 +47,7 @@ Grounding is filled in only from first-hand reading of the cited lines.
 | F03 | witness provenance: a joint multi-series signature is counted as several per-series witnesses | K10, K13, K14 | ARCH §5.3 l.3408–3413 (independence classes), l.3487–3490 (the sandwich), l.3499–3503 (the record per series); §2.3 consequence 3 l.906–908; Table 5.1 rule 3 (notes §F03) | every reading carries its complete source set; voices are per acquisition; the joint signature is a law check that supports, never a voice | grounded |
 | F16 | K04 edge contracts: sign conditions of the squared level test; zero-norm tables; silence at bank level; R allocated vs active; float sqrt equality | K04 | | | open |
 | F17 | K07 geometry: domains, pullback direction, inverse construction; B-spline invertibility; laterality proof; irregular slices; uncertain chirality | K07 | | | open |
-| F18 | K15: `hole` after masking is undefined; headers give no slice profile; subtraction needs an observation model or abstains | K15 | THESIS §4.5 l.793–795 (ring, hole and lobe are the optics' check after a take); THE_KNEE §2 change 4 (masks, subtraction only under a contribution law) | ring and hole only where a contribution law subtracts; under a mask: residual ring and lobe only; the slice profile is a declared assumption or abstains (with ARCH §2.4 and §4.4, still to read) | open |
+| F18 | K15: `hole` after masking is undefined; headers give no slice profile; subtraction needs an observation model or abstains | K15 | ARCH §4.4 l.2832–2836 (the take removes the law's contribution), l.2850–2865 (post-take check), l.2914–2916; §2.4 consequences 2–3 l.1041–1046; THESIS §4.5 l.793–795; THE_KNEE §2 change 4 (notes §F18) | mask mode (default): ring and lobe only, hole and impossible recorded not_applicable; contribution mode only under a stated law (Table 4.6 halos), with all four checks; the slice profile is a declared rectangular assumption of SliceThickness, measured on phantoms | grounded |
 | F40 | K05: geometry validated across slices; available contrasts vs identifiable quantities | K05 | | | open |
 | F42 | K08: independent landmark truth; common coordinates across plane templates | K08 | | | open |
 | F43 | K09: the actual biological-variance estimator | K09 | | | open |
@@ -123,6 +123,7 @@ delegated (R4).
 | 2026-10-02 | ARCH | 3600–3796, 4145–4234 | §5.5; §5.9 |
 | 2026-10-02 | THESIS | 1403–1610 | §7.1–§7.7 |
 | 2026-10-02 | ARCH | 2661–2795, 4300–4517 | §4.3; §6.1 |
+| 2026-10-02 | ARCH | 1016–1081, 2795–2929 | §2.4; §4.4 |
 </content>
 </invoke>
 <invoke name="Bash">
@@ -395,3 +396,24 @@ git log --oneline -2
   (AGENTS override 6).
 - **Disposition (K22).** In DEPLOY an escalation runs inside the kernel's own budget, or is skipped and recorded
   as `escalation_unavailable`. The Mac Pro serves build time only.
+
+### §F18 — post-checks under masks
+- **ARCH's take subtracts the law's contribution.** §4.4 l.2832–2836: "The knee's take removes what the object's
+  law says the object contributes. It leaves the population's expected value". The post-take check (l.2850–2861)
+  then reads a ring as "a same-sign deviation hugging the take's border", a hole as "an opposite-sign deviation
+  inside the footprint", a lobe and an impossible patch.
+- **The accord replaced default subtraction with masks.** THE_KNEE §2 change 4: reversible masks; "subtraction
+  only under a stated contribution law". Under a mask nothing inside the footprint changes, so a hole cannot
+  form, and an impossible patch is a property of a subtraction (Codex).
+- **The slice profile.** §2.4 consequences 2–3 (l.1041–1046) give partial volume and the header's SliceThickness
+  and SpacingBetweenSlices. The headers carry no profile shape. ARCH bounds the halo "no wider than the slice
+  profile through-plane" (l.2915–2916), and "the slice geometry in the headers sets the partial-volume rim"
+  (l.2863–2864).
+- **Disposition (K15).**
+  - **Mask mode (default):** ring (outside the footprint and halo) and lobe. Hole and impossible are recorded
+    `not_applicable:mask`.
+  - **Contribution mode:** only where Table 4.6 states the law (an effusion's partial-volume rim; a Baker's
+    wall). The contribution is subtracted inside the halo, and all four checks run as ARCH writes them.
+  - **The profile assumption:** a rectangle of width SliceThickness, declared and measured on phantoms (ARCH
+    l.2920–2923: ring, hole and lobe rates). Where SpacingBetweenSlices ≠ SliceThickness, the halo takes ARCH's
+    bound and no subtraction is made.
