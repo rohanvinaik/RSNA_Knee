@@ -1,0 +1,211 @@
+diff --git a/docs/book/chapters/K09-population-references.md b/docs/book/chapters/K09-population-references.md
+index 55d0c1a..a88c077 100644
+--- a/docs/book/chapters/K09-population-references.md
++++ b/docs/book/chapters/K09-population-references.md
+@@ -21,14 +21,33 @@ and a count. The pool is report-negative candidates, split by role.
+ ## 2. Dependencies and consumers
+ 
+ **Produced** (`knee.build.reference`; `knee.core.reference` for the loader):
+-- **`gain(series, reference_tissue_zones, regime_value) -> γ_s | gain_unpinned | gain_disagree`.** This is ARCH
++- **`gain(series, reference_tissue_zones, regime_cases) -> γ_s | gain_unpinned | gain_disagree`.** This is ARCH
+   §3.3.3's gain specialist, lifted out of the law and run on every series: "a reference tissue read in the
+-  series, against its recalled regime value: muscle everywhere, marrow fat where unsuppressed". The two tissues
+-  are compared. A series with no normal reference tissue in the field is silent on the population axis (ARCH
+-  l.1853: "no normal reference tissue in the field").
+-- **The comparison representation:** x̃ = stored ÷ (N4 field × γ_s), which is invariant to a global gain and to a
+-  smooth multiplicative field (THEORY II.1; ARCH §3.3.9 Table 3.5, row 1). There is no p2–p98 scaling and no
+-  histogram matching (ARCH §3.4.1). The stored values stay untouched for K24.
++  series, against its recalled regime value: muscle everywhere, marrow fat where unsuppressed". A series with no
++  normal reference tissue in the field is silent on the population axis (ARCH Table 3.3: "no normal reference
++  tissue in the field").
++  - **The gauge, in one formula.** Every value is first made physical by its DICOM rescale (K05): s = stored ×
++    slope + intercept. It is then divided by the series' N4 field b, which K07 measures on the native grid and
++    keeps. s and b are resampled onto the plane grid by the one interpolator K07 states.
++  - **The regime value** m_R is the median, over the regime's `reference` normals, of each normal's median muscle
++    level in s/b, with their spread as its σ, taken at read time and never stored. *(A deduction. ARCH Table 3.3
++    reads the gain "against its recalled regime value" without defining it. This applies ARCH's recall rule for
++    regime values, "the recalled cases' median, and its σ is their spread" (§3.3.5; Table 5.9), to the muscle
++    level.)* Because m_R is defined in s/b, it needs no gain, and no bootstrap loop arises here. ARCH §3.3.3's
++    iteration belongs to the law's joint solve (K24).
++  - **γ_s = m_s / m_R,** where m_s is the series' own median muscle level in s/b. γ_s is a multiplicative gain;
++    ARCH's law carries its logarithm, ln γ_s (§3.3.7). Marrow fat, where unsuppressed, gives a second gain against
++    its own regime value, and the two are compared ("whether two reference tissues agree", Table 3.3).
++  - **Its uncertainty:** σ²(ln γ_s) = σ²(ln m_s) + σ²(ln m_R), by the delta method (ARCH §3.3.7), from the muscle
++    sample's spread and the regime cases' spread.
++- **The comparison representation:** x̃ = s ÷ (b × γ_s). There is no p2–p98 scaling and no histogram matching (ARCH
++  §3.4.1). The stored values stay untouched for K24.
++  - By construction it does not depend on a global gain, which cancels in γ_s. This is algebra, not a finding,
++    and the design response is ARCH Table 3.5 row 1's "ratios; one γ per series, pinned on reference tissue".
++  - Removing a smooth multiplicative field is N4's task (THEORY II.1: N4 is to "remove scanner intensity
++    inhomogeneity, the prerequisite for a clean subtract"). How much of a field it removes is unknown until it
++    is measured. K09 measures N4's residual on normals, as the spread of muscle levels across places. No
++    invariance to a field is claimed.
+ - **References** per (series class, regime key, place), in that representation: `centre` (median), `spread`
+   (1.4826·MAD), `n`, and `centre_var` (the centre's variance).
+ - **The regime fallback map:** which cells fell back to which parent key.
+@@ -53,16 +72,18 @@ and a count. The pool is report-negative candidates, split by role.
+ 4. **Fallback.** A cell with n below the declared minimum (n_min, written before the run) falls back along
+    field → vendor → sequence family. Cells whose per-place distributions are measured indistinguishable are merged.
+ 5. **Variance decomposition**, stated exactly. This is ARCH §3.4.2's estimator, with THE_KNEE §2 change 10's
+-   centre uncertainty added:
++   centre uncertainty added. One statistic of the members' measurement noise is used, once.
+    - **σ²_meas** is estimated per study and series from homogeneous reference tissue (muscle) and background,
+-     under a stated noise model, in the same units as x̃. Magnitude images are Rician, and below the noise floor
+-     a place is silent with `below_noise_floor` (ARCH §3.3.7).
+-   - **σ²_bio(v) = max((1.4826·MAD(v))² − median over members of σ²_meas, 0).** This is ARCH's "max(s_p² − mean
+-     σ²_meas, floor²)" with the floor at zero: a negative estimate means measurement noise explains the
+-     spread.
+-   - **var(μ̂)(v) = (π/2)·(σ²_bio(v) + mean σ²_meas)/n**, the median's variance under the Gaussian
+-     decomposition. It is bootstrapped where the model is doubted.
+-   - All three enter K10's denominator. A cell with n < n_min is silent, or falls back to its parent key.
++     under a stated noise model, in x̃'s units: the noise variance of s/b divided by γ_s², plus x̃² × σ²(ln γ_s)
++     (the delta method, ARCH §3.3.7). Magnitude images are Rician, and below the noise floor a place is silent
++     with `below_noise_floor` (ARCH §3.3.7).
++   - **σ²_bio(v) = max(s(v)² − mean over members of σ²_meas, 0),** with s(v) = 1.4826·MAD(v). This is ARCH's own
++     "max(s_p² − mean σ²_meas, floor²)", ARCH's *mean* included, with the floor at zero: a negative estimate means
++     measurement noise explains the spread.
++   - **var(μ̂)(v) = (π/2)·s(v)²/n(v),** the median's variance taken from the members' total spread directly, so no
++     second noise statistic enters. It is bootstrapped where the Gaussian model is doubted.
++   - K10's denominator is σ²_bio + the study's own σ²_meas + var(μ̂). Where it is zero, K10 reads
++     `silent:zero_variance` and never divides. A cell with n < n_min is silent, or falls back to its parent key.
+ 6. **The historical make-or-break.** The fixed instrument (`tools/make_or_break.py`, unchanged) is run per series
+    class on the v-current layout for comparison with LADDER's v5 readings. It is a historical diagnostic, not the
+    authority.
+@@ -92,8 +113,8 @@ and a count. The pool is report-negative candidates, split by role.
+ - **Detective:** the fallback decision, the cell-status codes and n_min handling are converged.
+ - **Hypothesis:**
+   - the median and MAD are invariant under member permutation;
+-  - z is invariant, within its stated tolerance, under a synthetic global gain and a smooth multiplicative field
+-    applied to a series and to its reference tissue together;
++  - x̃ is unchanged by a synthetic global gain applied to a real normal's series and its reference tissue
++    together (exact, by construction);
+   - `gain` reads `gain_unpinned` when the reference tissue is absent, and `gain_disagree` when the two tissues
+     disagree beyond the stated tolerance;
+   - the spread is non-negative;
+@@ -112,12 +133,13 @@ Written first: `acceptance/K09.toml`.
+ - **Behavioural correctness:** SAME is exact; the decisions are pinned; the fallback map is complete.
+ - **Representation fidelity:**
+   - no NaN, and every cell has a status;
+-  - gain and bias invariance holds on synthetic inputs and on P.
++  - x̃ is unchanged by synthetic global gains applied to real normals. P is not used here, since it is built in K11
++    (ARCH §6.6.3: "each phase is measured before the next begins").
+ - **Domain validity (discovery):**
+   - γ_s's distribution per regime, and the two tissues' agreement, by regime and age band where known (muscle
+     can carry fat in older knees);
+-  - the false-survival rate on `checking` members at the declared z threshold is within its stated bound, per
+-    class and regime;
++  - N4's residual: the spread of muscle levels across places on `checking` normals, per regime, and on synthetic
++    smooth fields applied to real normals. It is reported, and no tolerance is claimed in advance;
+   - the founder's sample is called, and the impurity is reported;
+   - the historical make-or-break readings are recorded beside LADDER's.
+ - **Performance evidence:** slabs, members and bytes scanned, counted per node; seconds as information. Scope:
+@@ -144,6 +166,13 @@ Written first: `acceptance/K09.toml`.
+   - LADDER;
+   - THE_KNEE §2 (changes 1, 8, 10).
+ - **2026-10-02:** specified in K00.
++- **2026-10-02, revision 2** (G06, G08; ARCH §3.3.3–§3.3.7 and §3.4.1–§3.4.2 read whole):
++  - the gain's gauge and producer: the regime value as the median of `reference` normals' muscle levels in s/b,
++    taken at read time; γ_s multiplicative, its log in the law;
++  - one formula, from the DICOM rescale through N4 to x̃, with its uncertainty;
++  - ARCH's mean noise statistic used once, with the centre's variance from the total spread;
++  - a zero denominator named; gain independence by construction, and no field invariance claimed;
++  - acceptance without P or z, which K11 and K10 own; false survival moved to K10.
+ - **2026-10-02, revision 1:**
+   - γ_s on reference tissue for every series, references in x̃, and invariance as a fidelity check (F01; ARCH
+     §3.3.3, §3.3.9; THEORY II.1);
+diff --git a/docs/book/chapters/K10-deviation-and-signatures.md b/docs/book/chapters/K10-deviation-and-signatures.md
+index 8564d25..1afeefe 100644
+--- a/docs/book/chapters/K10-deviation-and-signatures.md
++++ b/docs/book/chapters/K10-deviation-and-signatures.md
+@@ -22,23 +22,44 @@ KneeDiff. Each place gets three readings, never merged:
+ 
+ **Produced** (`knee.core.deviation`, `knee.run.deviation`, `knee.core.signature`):
+ - **z per place,** per series, on the comparison representation x̃ (K09): `z = (x̃ − centre) / sqrt(σ²_bio +
+-  σ²_meas + centre_var)`. A series K09 marks `gain_unpinned` is silent here.
++  σ²_meas + centre_var)`. A series K09 marks `gain_unpinned` is silent here. Where the denominator is zero, the
++  place reads `silent:zero_variance` and nothing is divided.
+ - **The licensed record,** uint8 per place:
+   - `licensed` (|z| < t, compatible with the reference);
+   - `deviant_bright` and `deviant_dark`;
+-  - `silent:<cause>` for out of field, a reference cell that is silent, below the noise floor, or an absent
+-    series.
++  - `silent:<cause>` for out of field, a reference cell that is silent, below the noise floor, an absent series,
++    or zero variance.
+ - **The residual:** the deviant places, with their z.
+ - **Windowed densities:** the share of deviant places in every window of declared size, per zone, by running sums.
+ - **`tissue_level(place, series) -> + | 0 | − | silent:<cause>`**, per acquisition. It is the place's signal in
+-  that series against the series' *own* reference tissue (muscle): "T1 brighter than muscle (the T1 tissue
+-  level; lens 3's signature)" (ARCH l.3866). It needs no gain, as ARCH §2.3.2 says of the Signature lens ("does
+-  not need g"). Its middle is set once (THESIS §6.2).
+-- **`tissue_word(place) -> code`**, the *identity* reading. The per-series tissue levels are matched against
+-  Table 2.3a's expected signs for each series' timing class. The codes: `fluid`, `fat`, `fibrous`, `edema_like`,
+-  `intermediate`, `unsuppressed_fat`, `unnamed`, `void`, `insufficient_contrasts`. It is one joint reading,
+-  whose sources are all the series it used. It is a law check, "Cross-contrast consistency is a check" (ARCH
+-  §2.3 consequence 3). It supports and never votes.
++  that series against the series' *own* reference tissue, muscle. ARCH names it in its red-marrow near miss:
++  "T1 brighter than muscle (the T1 tissue level; lens 3's signature)" (Table 5.11).
++  - Both are read on N4-corrected values, s/b (K09), so the receiver gain cancels in the ratio, as ARCH §2.3.2
++    says of the Signature lens ("does not need g").
++  - A gain that varies in space does not cancel in a ratio between a place and distant muscle (Codex, second
++    read). Removing it is N4's task, and how much remains is K09's measured N4 residual, carried as the level's
++    uncertainty. Nothing more is claimed.
++  - Its middle is set once (THESIS §6.2).
++  - It is read at ARCH §3.3.4's two scales. At the **region scale**, every series is blurred to the coarsest slice
++    spacing among them; this scale serves "geographic findings: edema, effusion, the fat pad". The **plane-group
++    scale** uses only the series of one plane, and serves "thin structures read in-plane: menisci, ligaments".
++    Every level keeps its scale.
++- **`tissue_word(place) -> code`**, the *identity* reading: a signature read **together with its zone class**.
++  The per-series tissue levels are matched against Table 2.3a's expected signs for each series' timing class.
++  Table 2.3a itself places two of its rows: marrow edema is "+ (in bone)", and cortex sits in the fibrous row.
++  ARCH §2.3, consequence 1: "A finding is a zone together with a change of signature … Bone turning +,− holds
++  edema."
++  - The same signs name different tissues by place:
++    - (+, −) is `edema_like` in a bone zone, and `fluid` elsewhere. Table 5.10's "Edema lies in bone" routes an edema
++      signature outside bone to soft-tissue edema or unexplained, never Contusion.
++    - (−, −) is `fibrous` in a ligament, tendon or meniscus zone, and `cortex` in the cortical shell, "derived from
++      the bone masks" (Table 5.10).
++  - Where the atlas zones cannot yet tell a place's class, before K19's delineation, the word reads
++    `zone_unresolved`, with its signs kept.
++  - The other codes: `fat`, `intermediate`, `unsuppressed_fat`, `unnamed` (a tie within one zone class), `void`,
++    `insufficient_contrasts`.
++  - It is one joint reading, whose sources are all the series it used. It is a law check, "Cross-contrast
++    consistency is a check" (ARCH §2.3 consequence 3). It supports and never votes.
+ - **`change(place) -> word_normal | word_changed:<from>→<to> | silent`**, the tissue word against the zone's
+   normal word, which is measured on N's `reference` role. ARCH §3.4.3: "A place is black when every identified
+   parameter lies within the licence … and its signature word is its zone's normal one." §2.3 consequence 1: "A
+@@ -107,6 +128,9 @@ KneeDiff. Each place gets three readings, never merged:
+ - **SAME:** the Numba z and record against the reference, with exact record codes and threshold-boundary routing
+   exercised by generated cases.
+ - **Authored identity and change cases:**
++  - one (+, −) signature reads `edema_like` in a bone zone and `fluid` in a recess;
++  - one (−, −) signature reads `fibrous` in a ligament zone and `cortex` in the cortical shell;
++  - a zero denominator reads `silent:zero_variance`;
+   - a healthy ligament (every series darker than muscle) reads `fibrous`, with its change `word_normal`;
+   - a meniscus that turns FS-bright reads `word_changed:fibrous→fluid`;
+   - fat on T1 with failed suppression reads `unsuppressed_fat`, and the suppression map rises.
+@@ -119,8 +143,9 @@ KneeDiff. Each place gets three readings, never merged:
+ ## 8. Acceptance
+ 
+ Written first: `acceptance/K10.toml`.
+-- **Behavioural correctness:** SAME, including boundary routing; pinned decisions; licensed is never consumed as
+-  excluded (a K14 contract test, added when K14 lands).
++- **Behavioural correctness:** SAME, including boundary routing; pinned decisions; the record's `licensed` code is
++  distinct from every exclusion code. That no consumer reads `licensed` as an exclusion is K14's own contract,
++  tested there on synthetic records, so this acceptance needs nothing downstream (ARCH §6.6.3).
+ - **Representation fidelity:** every place has a record code; no NaN.
+ - **Domain validity:**
+   - false-deviant rates on `checking` normals, per class and zone, with bounds;
+@@ -148,6 +173,13 @@ Written first: `acceptance/K10.toml`.
+   - LADDER;
+   - THE_KNEE §2 (changes 1, 3).
+ - **2026-10-02:** specified in K00.
++- **2026-10-02, revision 2** (G06, G07, G08; ARCH §2.3, §3.3.3–§3.3.7, §3.4, §5.6 read whole):
++  - the tissue word read with its zone class, so fluid and edema, and cortex and fibrous tissue, separate by place,
++    as Table 2.3a and Table 5.10 place them;
++  - levels read on s/b, with what N4 leaves carried as uncertainty and nothing more claimed, at ARCH §3.3.4's two
++    scales;
++  - `silent:zero_variance`;
++  - the "licensed is not excluded" test owned by K14.
+ - **2026-10-02, revision 1:**
+   - identity read within the series against muscle, and change kept apart from deviation (F02; ARCH Table 2.3a,
+     §2.3.2, §3.4.3, l.3866);

@@ -66,11 +66,19 @@ Each kernel carries a compute contract and a reference, and answers to SAME.
     *(Founder, 2026-10-02 17:32: "This is a demonstration, a BOLD claim about classical AI, I want it to be clothed
     as professionally and impressively as possible"; the final design is unknown and will change as we
     experiment.)*
+15. **The design is the founder's.** A change to it stands only if provably correct (logic, arithmetic, a quoted
+    contradiction, an order that cannot execute, a checkable external fact) or warranted by his explicit words.
+    Everything else returns to the original or goes to him as a question. A second reader's critique is never
+    warrant. Nothing is built and nothing is evidenced. *(Founder, 2026-10-02 23:08Z: "*I* am the authority on
+    what works or doesn't"; 23:09Z: "Make SURE you are not changing anything other than that which is
+    definitevely/provably correct, or warranted by my explicit words"; "EVERY change to the original design".)*
 
 ## Resolved, stated AS RESOLVED, never as open
 
-- **Architecture:** the review accord's ten changes, mapped to the canon passages they amend (`THE_KNEE.md` §2).
-  The rest of the canon stands.
+- **Architecture:** the founder's design, THEORY and KNEE_ARCHITECTURE. The review accord's ten changes and
+  revision 1's are **not** resolved. Each stands only once `provenance/build/audit_against_original.md` finds it
+  provably correct or warranted by his explicit words (law 15). Otherwise it returns to the original, or goes to
+  him as a question.
 - **Label scope:** Meniscus means **tear** (degeneration alone is negative); ACL and MCL mean **injury**;
   Contusion means **bone contusion / bone bruise** (official, 2026-10-02). The column names are bound. Whether
   gold counts a degenerative marrow lesion as Contusion is measured on G before any censor is written. It is
@@ -106,6 +114,8 @@ Each kernel carries a compute contract and a reference, and answers to SAME.
   read.
 - Admitting any configuration, key or value by its discrimination of one question (No Popery). Measurements of
   discrimination are reported, never gating.
+- Changing the founder's design on any ground but proof or his explicit words; treating a second reader's critique,
+  or one's own judgment of what works, as warrant.
 - Delegating the reading that grounds a chapter.
 - Copying a secret to a node without the founder's word at that moment.
 - A demo slice standing in for a chapter; acceptance postponed to a downstream chapter.
@@ -114,17 +124,20 @@ Each kernel carries a compute contract and a reference, and answers to SAME.
 
 ## Next action: ONE imperative
 
-Run `git tag -l 'knee-*'`. Then build the first chapter in `docs/book/README.md`'s table that is not optional,
-whose dependencies are all accepted, and which is not itself accepted, to its acceptance.
+Finish the audit of every change the book makes to the founder's design
+(`provenance/build/audit_against_original.md`). Classify each change as provably correct, warranted by his words,
+or neither. Return each "neither" to the original, and put his questions to him.
 
-As of K00 that chapter is **K01 (characterization)**.
+Only then run `git tag -l 'knee-*'` and build the first chapter in `docs/book/README.md`'s table that is not
+optional, whose dependencies are all accepted, and which is not itself accepted, to its acceptance. As of K00 that
+chapter is **K01 (characterization)**.
 
 ## Sources that can contradict this block: THEY WIN
 
 - `docs/book/FOUNDING_PROMPTS.md` and `docs/FOUNDING_RECORD.md` (the founder's words);
-- `docs/book/THE_KNEE.md` (the founding design), then the chapter specs;
-- `docs/THEORY_OF_THE_CASE.md` (Laws 1–8 bind), and `docs/KNEE_ARCHITECTURE.md` except where `THE_KNEE.md` §2
-  amends it;
+- the founder's design: `docs/THEORY_OF_THE_CASE.md` (Laws 1–8 bind) and `docs/KNEE_ARCHITECTURE.md`. An amendment
+  in `THE_KNEE.md` overrides them only where the audit finds it provably correct or warranted by his words;
+- `docs/book/THE_KNEE.md` and the chapter specs, which implement the design;
 - the checksummed sources (`docs/book/REFERENCE_MANIFEST.toml`);
 - git log and tags.
 

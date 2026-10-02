@@ -1,0 +1,93 @@
+diff --git a/docs/book/chapters/K14-society-contracts.md b/docs/book/chapters/K14-society-contracts.md
+index 30837e2..2e96d54 100644
+--- a/docs/book/chapters/K14-society-contracts.md
++++ b/docs/book/chapters/K14-society-contracts.md
+@@ -19,6 +19,20 @@ These are fixed early, so the explanation loop and first light integrate against
+ ## 2. Dependencies and consumers
+ 
+ **Produced** (`knee.core.society`, all pure, literal-typed):
++- **The signed-reading rules, per finding question.** These are the bridge from measurement to decision, and the
++  agencies hold them, as the body holds the signs (THE_KNEE §2 change 6). They are defined here because K13a's
++  error indicators and K16's decisions both consume them (`provenance/build/revision_2.md`, G01).
++  - For each of the twelve findings' questions, a rule lists, from ARCH Table 2.5's law term and Table 2.8b's
++    "Counts" and "Rules out" columns:
++    - which lens readings, at which sane value, count *for* the question;
++    - which count *against* it (an exclusion mark under §4.1's four conditions);
++    - which are *orthogonal*.
++  - `signed_reading(question, lens_reading, healthy_interval, certificates) -> for | against | orthogonal | silent`.
++    - "For" means the per-acquisition reading lies beyond its healthy interval. The interval is measured on N's
++      `hardness_build` normals, at a coverage level written before the run (K13a, K23).
++    - "Against" requires an entitled excluder.
++    - A reading the rule does not name is `orthogonal`, and no reading means `silent`.
++  - The rules are pure, versioned and Detective-pinned. A rule changes only by a recorded revision, never per run.
+ - **Witness record:** one per acquired series per question per place: `{series_id, series_class, reading_code:
+   for|against|orthogonal|silent, cause?, entitlement: entitled|not_entitled:<reason>|unknown}`.
+   - A witness is a *per-acquisition* reading, with exactly one source.
+@@ -27,16 +41,19 @@ These are fixed early, so the explanation loop and first light integrate against
+ - **Dependence graph schema:** nodes are series and named shared causes (plane geometry, fat-suppression method,
+   short TE, motion, registration, reference cell). Edges are "shares cause X". Each pair has a status, as K13a and
+   K23 measure it: `independent_measured | dependent_measured | insufficient | bar_unset | unknown`.
+-- **`committee_outcome(witnesses, dependence) -> CONCUR | SINGLE | INSUFFICIENT | DISAGREE | ALL_SILENT`**, over
+-  entitled independence classes (ARCH Table 5.5):
+-  - **CONCUR:** at least two entitled classes, pairwise and multiway `independent_measured`, agree, and none
+-    dissents;
+-  - **SINGLE:** exactly one entitled class can speak;
+-  - **INSUFFICIENT:** two or more entitled voices speak, but their independence is not established
+-    (`unknown`, `insufficient` or `bar_unset`). This is not SINGLE: several voices spoke (the accord's
+-    "insufficient" where independence is not established);
+-  - **DISAGREE:** entitled, independent classes stand on both sides;
+-  - **ALL_SILENT:** no class is entitled.
++- **`committee_outcome(witnesses, dependence) -> CONCUR | SINGLE | INSUFFICIENT | DISAGREE | ALL_SILENT`.** It is
++  computed over *sets* of entitled voices (ARCH Table 5.5). Pairwise dependence is not an equivalence relation, so
++  no "classes" are formed by grouping pairs (G05). The table is exhaustive, evaluated in this order:
++  1. **ALL_SILENT:** no entitled voice reads `for` or `against`. Orthogonal and silent readings do not vote.
++  2. **DISAGREE:** at least one entitled voice reads `for`, and at least one reads `against`, whatever their
++     dependence. A dissent never vanishes inside a dependent group.
++  3. **CONCUR:** a set S of at least two entitled voices all read the same sign, every pair in S is
++     `independent_measured`, multiway independence is measured where |S| > 2 (K23), and no entitled voice
++     dissents. The largest such S is recorded, as c₊ or c₋.
++  4. **INSUFFICIENT:** two or more entitled voices read the same sign, but no qualifying S exists, because a pair
++     reads `unknown`, `insufficient` or `bar_unset`. Several voices spoke, so this is not SINGLE (the accord's
++     "insufficient").
++  5. **SINGLE:** exactly one entitled voice reads `for` or `against`.
+ 
+   Only CONCUR commits an object or lets an exclusion stand. SINGLE and INSUFFICIENT give a *provisional take*,
+   which is kept, never an answer (ARCH Glossary, "Concurrence … the only way a lesion-object is committed or an
+@@ -55,8 +72,10 @@ These are fixed early, so the explanation loop and first light integrate against
+     (ARCH Table 1.7).
+   - Neither class establishes anything. Both route to recall and the agency, with their causes (Law 4; ARCH
+     l.4223: "Only pathology bears on a finding").
+-- **Decision words:** `PRESENT | ABSENT | DISAGREE | ABSTAIN`, each with its cause. ABSENT requires
+-  observation-qualified exclusions over the finding's zones, or recalled ABSENT cases. Never a missing positive.
++- **Decision words:** `PRESENT | ABSENT | DISAGREE | ABSTAIN`, each with its cause, always *per finding*.
++  - PRESENT needs CONCUR on that finding's own question, from its signed-reading rule.
++  - ABSENT needs CONCUR on concurring observation-qualified exclusions over the finding's zones, or recalled
++    ABSENT cases that themselves meet concurrence (K26). Never a missing positive.
+ - **The kept-record schema v1:** objects (with stable IDs, nesting links and footprints), readings, witnesses,
+   outcomes, decisions, and the provenance of each.
+ 
+@@ -91,8 +110,12 @@ These are fixed early, so the explanation loop and first light integrate against
+ - **Detective:** every function is converged to a terminal certificate.
+ - **CrossHair** on the contracts it supports.
+ - **The authored corpus** (synthetic witness sets with expected outcomes).
++- **The outcome table is exhaustive:** a property enumerates every combination of up to four voices × {for,
++  against, orthogonal, silent} × each pair's five dependence statuses, and checks that exactly one outcome holds.
+ - **Hypothesis laws:**
+   - DISAGREE never becomes PRESENT;
++  - a dissent inside a dependent pair still yields DISAGREE;
++  - an unnamed reading is `orthogonal` and never votes;
+   - unknown, insufficient or bar-unset dependence never yields CONCUR;
+   - SINGLE and INSUFFICIENT never yield PRESENT or ABSENT;
+   - a joint reading is never counted as a witness;
+@@ -128,6 +151,11 @@ Written first: `acceptance/K14.toml`.
+   - KNEE_ARCHITECTURE §5.1–§5.3, §5.6, §5.9;
+   - THE_KNEE §2 (changes 3, 7, 10).
+ - **2026-10-02:** specified in K00.
++- **2026-10-02, revision 2:**
++  - the signed-reading rules per finding question, the bridge K13a and K16 consume (G01; ARCH Tables 2.5 and
++    2.8b, §4.1, §5.3);
++  - outcomes over sets, exhaustive, and dissent never vanishes (G05; ARCH Table 5.5);
++  - decisions per finding (G02).
+ - **2026-10-02, revision 1:**
+   - INSUFFICIENT, distinct from SINGLE, with neither ever answering (F46, F23; ARCH Table 5.5, Glossary);
+   - per-acquisition witnesses (F03);
