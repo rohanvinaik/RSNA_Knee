@@ -4,7 +4,7 @@
 |---|---|
 | **Status** | computed: `git tag -l 'knee-K13a'` |
 | **Depends on** | K13 (per-acquisition zone-lens readings), K10 (per-series deviation and tissue level), K09 (normals by role), K11 (phantoms), K03 (panels, oracle kinds, the recognition table) |
-| **Consumed by** | K14 (`committee_outcome` receives independence classes and entitlement), K15 (confirmation becomes possible), K16, K17 (c₊ and c₋), K18 (first light), K23 (extends both to the structure questions) |
+| **Consumed by** | K14 (`committee_outcome` receives the pairs' statuses and entitlement), K15 (confirmation becomes possible), K16, K17 (c₊ and c₋), K18 (first light), K23 (extends both to the structure questions) |
 | **Commit label / tag** | `knee/K13a` · `knee-K13a` |
 
 ## 1. Purpose and authority
@@ -20,8 +20,8 @@ acquisitions fail together. This covers every question the zone lenses can speak
 - **Why it is lettered here.** The fresh read found that the book deferred dependence to K23, after first light.
   That left the loop's confirmations impossible and made its K15/K16/K20 ↔ K23 bootstraps circular
   (`provenance/build/revision_1.md`, §ORDER and §F06). The commit consumes entitlement (ARCH §5.3: coverage, the
-  hardness map, censors, measured series, the entitlement table) and independence classes, so both come first
-  for every question whose lenses exist.
+  hardness map, censors, measured series, the entitlement table) and the pairs' dependence statuses, so both come
+  first for every question whose lenses exist.
 - **The accord** (THE_KNEE §2 change 7): dependence is a graph of shared causes, with no imported bar, and
   "insufficient" where independence is not established.
 - **The founder:** "a lens that is NEVER able to resolve the signal you want...well, isn't that a *perfect* lens
@@ -47,8 +47,10 @@ acquisitions fail together. This covers every question the zone lenses can speak
   and its bound. It is read on three measuring sets, kept apart:
   - P, with truth by construction (misses and false readings);
   - N, where any "for" is false as far as its reports attest;
-  - report-localized calls, read as an upper bound ("κ against reports is an upper bound on joint view error,
-    inflated by the report error rate", ARCH §6.2.2).
+  - report-localized calls, with the oracle's error named and its direction not assumed. A report error can create
+    joint errors or hide them, and it changes the marginal rates κ divides by. So κ against reports is never read as
+    a bound: the accord amends ARCH §6.2.2's "κ against reports is an upper bound" (THE_KNEE §2 change 7). What
+    ARCH measures stays: "the gap between κ against reports and κ against gold, per finding" (§6.2.2).
 
   Gold, at 58 study-level labels, is read where a study-level reading suffices, with its count stated.
 - **The pair status:**
@@ -110,8 +112,8 @@ acquisitions fail together. This covers every question the zone lenses can speak
 
 ## 7. Integration
 
-- K14's `committee_outcome` receives independence classes and entitlement, so `CONCUR` becomes possible
-  wherever a pair is `independent_measured`.
+- K14's `committee_outcome` receives the pairs' statuses and entitlement, so `CONCUR` becomes possible wherever
+  a pair is `independent_measured`.
 - K18 runs with them. Until the founder writes the bar, every pair reads `bar_unset`, no answer is assigned by
   concurrence, and first light records that as its finding.
 
@@ -154,3 +156,5 @@ Written first: `acceptance/K13a.toml`.
   - THE_KNEE §2 (change 7).
 - **2026-10-02:** specified in revision 1 (`provenance/build/revision_1.md`, F06, F07, F51), split from K23 and
   placed before the loop as ARCH orders it.
+- **2026-10-02, revision 2:** report-based κ is no longer called an upper bound, as change 7 requires (G04; ARCH
+  §6.2.2 read whole). The pairs' statuses replace independence classes, as K14's set-based outcomes need (G05).
