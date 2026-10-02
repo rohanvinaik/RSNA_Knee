@@ -34,16 +34,27 @@ multi-atlas votes. Then to re-register the corpus against it.
 
 1. **Subjects.** `template_build` subjects (K03 roles, drawn from K06's report-negative candidates) build the
    template. `template_check` subjects judge it. No subject is both.
-2. **The unbiased template, per plane.** Starting from the bootstrap template, iterate:
+2. **The unbiased template, per plane, in one frame.** Every plane's template is defined over K07's one physical box,
+   in the same template mm frame, so the plane grids share coordinates by construction. ARCH §2.10 leaves two
+   routes open:
+   - (a) paint each plane's zones from its own template's bone masks, by the same rules;
+   - (b) paint once on a fine atlas and resample to every grid.
+
+   Route (b) is tried first, because it gives one set of boundaries. The cross-plane agreement decides it, and
+   that agreement is itself an L1/L3 check (ARCH l.1488). Starting from the bootstrap template, iterate:
    - register every building subject to the current template (K07's procedure);
    - average in template space;
    - re-centre so that the mean deformation is ~0.
 
    The stop criterion is declared before the run (a change of mean intensity and of mean deformation below
    stated levels), and so is the guard on the number of iterations.
-3. **Checks on the template:**
-   - **anatomical correspondence:** landmark positions on checking subjects, after registration, against their
-     template positions;
+3. **Checks on the template, against truth independent of the registration** (ARCH §1.8 l.604–608 measures with
+   deliberate misregistration; §2.10 l.1458 names the founder's eye-check):
+   - **known transforms:** checking subjects warped by known transforms. The recovery error at the landmarks is
+     truth by construction;
+   - **the founder's landmark sheet:** a sample of checking subjects whose landmarks he marks, without the
+     registration's output shown. These positions are the operator's truth;
+   - the registration's own output is never its truth;
    - **chirality preserved:** no mirrored subject enters;
    - **deformation:** the Jacobian determinant is > 0 everywhere, with no folding, and its distribution is
      recorded.
@@ -59,7 +70,7 @@ multi-atlas votes. Then to re-register the corpus against it.
    - the Baker's region and the medial gastrocnemius and semimembranosus tendons;
    - marrow subregions, including the L5 sites;
    - pseudotear sites;
-   - reference tissues (muscle, subcutaneous fat);
+   - reference tissues (muscle, subcutaneous fat), for the gain specialist's γ_s (ARCH §2.10 l.1478, §3.3.3);
    - a cortical shell.
 5. **Multi-atlas votes.** Labels propagated from several checked templates, or from leave-one-out subject atlases,
    are fused. Each voxel keeps every zone's vote numerator and the denominator; the fraction is never rounded
@@ -103,17 +114,19 @@ multi-atlas votes. Then to re-register the corpus against it.
 
 ## 8. Acceptance
 
+Written first: `acceptance/K08.toml`.
 - **Behavioural correctness:**
   - the stop criterion was met, or the run is reported as having hit its guard;
   - there is no folding;
   - the decisions are pinned.
 - **Representation fidelity:** votes are kept as numerators and denominators; cross-plane zone agreement is within
   tolerance.
-- **Domain validity:**
-  - the landmark error on checking subjects is reported with bounds, against the prior figure of 2.05 ± 1.30 mm
-    (ZONES);
-  - the founder's eye-check is recorded.
-- **Performance evidence:** template iterations, and seconds per iteration per node.
+- **Domain validity (discovery):**
+  - the landmark error on checking subjects, against both independent truths, with bounds, beside the prior
+    figure of 2.05 ± 1.30 mm (ZONES);
+  - the cross-plane agreement per structure, and the route it chose;
+  - the founder's eye-check, recorded.
+- **Performance evidence:** template iterations and registrations counted per node; seconds as information.
 - **Evidence scope:** the building and checking subjects at this version.
 - **Invalidation:** a change to the subject roles, the registration procedure, the zone rules, or the pool (K06).
 
@@ -132,3 +145,8 @@ multi-atlas votes. Then to re-register the corpus against it.
   - LADDER;
   - THE_KNEE §2 (change 2).
 - **2026-10-02:** specified in K00.
+- **2026-10-02, revision 1:**
+  - landmark truth from known transforms and the founder's sheet, never the registration's own output (F42);
+  - one template frame for every plane, with ARCH §2.10's routes decided by cross-plane agreement (F42);
+  - the reference-tissue zones serve γ_s (F01);
+  - work counted (F39).
