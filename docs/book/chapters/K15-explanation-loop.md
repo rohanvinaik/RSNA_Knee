@@ -3,7 +3,7 @@
 | | |
 |---|---|
 | **Status** | computed: `git tag -l 'knee-K15'` |
-| **Depends on** | K13 (zone lenses), K14 (contracts) |
+| **Depends on** | K13a (independence classes, entitlement, the hardness map), K13 (zone lenses), K14 (contracts) |
 | **Consumed by** | K16 (decisions from the kept record), K19–K21 (later readings join the loop), K25 (objects become cases), K18 (kernel) |
 | **Commit label / tag** | `knee/K15` · `knee-K15` |
 
@@ -20,13 +20,22 @@ H1's third move for the knee is elimination under law, adapted to MRI by the acc
 **Produced** (`knee.run.explain`):
 - **Bodies:** contiguous same-sign deviant regions per zone. Specks below the lesion law's minimum extent are
   cleared, and the clearing is recorded.
-- **Provisional takes:** a body read by at least one witness, with a lawful signature and shape.
-- **Confirmed objects:** provisional takes whose committee outcome is `CONCUR` (K14).
+- **Provisional takes:** a body read by at least one witness, with a lawful tissue word and shape. A take whose
+  outcome is SINGLE or INSUFFICIENT stays provisional, kept with its cause, and is read again next round (THESIS
+  §4.5).
+- **Confirmed objects:** provisional takes whose committee outcome is `CONCUR` over K13a's measured independence
+  classes. "Commit by gated concurrence" is ARCH §6.6.3's Phase 7, and it follows the gate.
 - **Finding decisions** are *not* made here. They are K16's.
 - **Explanation records:** reversible masks over the **original** data, `{object_id, footprint, explained_places,
   contribution_model?, nested_in?, overlaps?}`.
-- **Post-checks** against the population on the explained region, after masking: `ring` (too little explained),
-  `hole` (too much), `lobe` (a second object), `impossible` (a value no tissue gives).
+- **Post-checks**, by mode (ARCH §4.4 l.2850–2865; THE_KNEE §2 change 4):
+  - **mask mode** (the default; nothing inside the footprint changes):
+    - `ring`: a same-sign deviation hugging the mask's border outside the footprint and halo;
+    - `lobe`: a same-sign residual with its own centre, joined to the mask;
+    - `hole` and `impossible` are recorded `not_applicable:mask`. Neither can form without a subtraction.
+  - **contribution mode** (only under a stated contribution law): all four, as ARCH writes them. `hole` is an
+    opposite-sign deviation inside the footprint after the modelled contribution is removed; `impossible` is a
+    value no tissue gives.
 - **The site search** where the residual's composite shows a bounded deviation that no lens claims.
 - **Reaching inside** a confirmed object for a nested object of another kind: a line inside edema; lining behind
   an effusion.
@@ -42,9 +51,15 @@ H1's third move for the knee is elimination under law, adapted to MRI by the acc
 
 - **No subtraction by default.** An explained region is *masked* for later reads, and its values are kept for any
   reader of the original data.
-- **The one lawful contribution model is partial volume.** At a structure's border, along a series' thick axis,
-  the voxel mixes tissues in proportions given by the slice profile, from header geometry. There, and only there,
-  an object's expected contribution may be removed numerically, with the before and after both kept.
+- **The one lawful contribution model is partial volume** (ARCH Table 4.6's halos). At a border, along a series'
+  thick axis, the voxel mixes tissues in proportions given by the slice profile.
+  - The headers give SliceThickness and SpacingBetweenSlices, not the profile's shape (ARCH §2.4). So the profile
+    is a declared assumption, a rectangle of width SliceThickness, and its sensitivity is measured on K11's
+    phantoms.
+  - There, and only there, an object's expected contribution may be removed numerically, with the before and
+    after both kept.
+  - Where SpacingBetweenSlices ≠ SliceThickness, the halo takes ARCH's bound, "no wider than the slice profile
+    through-plane" (l.2915–2916), and nothing is subtracted.
 - **Edema is not a halo of a fracture line.** The line is a nested object read inside the edema's footprint on
   the original data.
 - **Order is by consumption,** per THESIS §10.3 and KNEE_ARCHITECTURE §5.2:
@@ -72,8 +87,8 @@ H1's third move for the knee is elimination under law, adapted to MRI by the acc
 
 ## 6. Verification
 
-- **Detective:** each pure decision is converged: speck clearing, the post-check codes, last-look words, route
-  codes, nesting admissibility.
+- **Detective:** each pure decision is converged: speck clearing, the post-check codes per mode, last-look words,
+  route codes, nesting admissibility.
 - **Hypothesis:**
   - explanation is reversible (unmasking restores the input exactly);
   - masks never overlap without a recorded nesting or overlap link;
@@ -91,13 +106,17 @@ H1's third move for the knee is elimination under law, adapted to MRI by the acc
 
 ## 8. Acceptance
 
-- **Behavioural correctness:** reversibility; pinned decisions; termination.
+Written first: `acceptance/K15.toml`.
+- **Behavioural correctness:** reversibility; pinned decisions; termination; no confirmation without CONCUR.
 - **Representation fidelity:** the phantoms' planted objects map to confirmed or provisional objects with correct
   nesting; post-check rates are reported.
-- **Domain validity:** takes on `checking` normals, recorded by zone (healthy false takes, with bounds).
-- **Performance evidence:** rounds per study and milliseconds per round, with the scope stated.
-- **Evidence scope:** the lens set of K13; dependence still `unknown` (K14), so confirmed objects stay rare until
-  K23.
+- **Domain validity (discovery):**
+  - takes on `checking` normals, recorded by zone (healthy false takes, with bounds);
+  - the shares of provisional and confirmed objects;
+  - post-check rates per mode on phantoms.
+- **Performance evidence:** rounds per study, and places re-read per round, counted; seconds as information.
+- **Evidence scope:** the lens set of K13 and K13a's gate. Until the founder writes the bar (ARCH §6.7 item 8),
+  every pair reads `bar_unset` and nothing is confirmed. That is a finding, recorded, never routed around.
 - **Invalidation:** a change to the lens set, to the contracts, or to the partial-volume model.
 
 ## 9. Open matters
@@ -112,3 +131,7 @@ H1's third move for the knee is elimination under law, adapted to MRI by the acc
   - Codex review round 1 (C4);
   - THE_KNEE §2 (change 4).
 - **2026-10-02:** specified in K00.
+- **2026-10-02, revision 1:**
+  - confirmation follows K13a's gate (F06; ARCH §6.6.3);
+  - post-checks by mode, with hole and impossible only under a contribution law (F18; ARCH §4.4; THESIS §4.5);
+  - the slice profile as a declared assumption (F18; ARCH §2.4).
