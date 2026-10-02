@@ -28,10 +28,17 @@ sentence.
   - morphology (tear planes) and size words (trace, small, moderate, large);
   - the source sentence verbatim, its language, and the parser version.
 - **`report_negative(report) -> code`**, one of `negative | positive | no_terms | hedged_only`. Only `negative`
-  enters the N pool.
+  enters the N pool, and only from T's side (K03).
+- **`coverage(report, finding) -> negated | normal_stated | silent`**, per finding. A report-negative is `absent`
+  for a finding only where its report negates the finding or states the structure normal. Elsewhere it is
+  `silent`, and serves only as a no-mention normal (ARCH Table 5.12: true normals "establish "absent" only as far
+  as their reports do"; l.3948: "an unmentioned effusion is no evidence").
 - **The softness table:** per finding, report against gold, splitting **parser misses** (the report says it; the
   parser did not read it) from **report–gold disagreements** (the original read and the expert re-read differ).
-  Each with a rate, a direction and a bound.
+  Each comes with a rate, a direction and a bound.
+  - The split is adjudicated by a reader of the hit sentence (ARCH l.3974–3983, "told apart by reading the hit
+    sentence"): the lead, and the founder for soft findings.
+  - It is never adjudicated by the parser itself, whose rules gold shaped.
 - **L5 co-occurrence** in text: mechanism patterns as found in the reports.
 - **The Q3 residue:** how reports word OA marrow lesions against bruises, and how Baker's size is described.
 
@@ -50,7 +57,10 @@ sentence.
 
 - `Call`: `{study_id, finding, digit: +1|-1|0, hedge: none|possible|exclude_not|suspicious, zone?, morphology?,
   size?, sentence, language, parser_version}`.
-- Calls, sentences and pools are **competition-derived**: they stay in `data/text/`, never in git.
+- `Coverage`: `{study_id, finding, coverage: negated|normal_stated|silent}`.
+- **Where they live.** Calls and their verbatim sentences are report text, so they stay in `data/text/`, never
+  in git. The pool memberships, the coverage codes and the softness table are derived records, and they may
+  enter git (AGENTS override 7).
 - The authored test sentences are synthetic and written independently: they go in git.
 
 ## 5. Implementation choice
@@ -71,7 +81,8 @@ sentence.
 - **SAME:** the migrated parser equals the legacy parser on every report where its behaviour is unchanged.
 - **Intent tests:** authored multilingual synthetic sentences for each state, hedge, location, size and
   morphology.
-- **Detective:** each pure decision (negation window, hedge, location mapping, `report_negative`) is converged.
+- **Detective:** each pure decision (negation window, hedge, location mapping, `report_negative`, `coverage`) is
+  converged.
 - **The softness table** carries counts and bounds. A parser miss is never counted as softness.
 
 ## 7. Integration
@@ -81,6 +92,7 @@ manifest.
 
 ## 8. Acceptance
 
+Written first: `acceptance/K06.toml`.
 - **Behavioural correctness:**
   - the SAME against legacy holds;
   - the authored corpus passes, with hedges giving abstentions;
@@ -89,8 +101,9 @@ manifest.
 - **Domain validity:**
   - per-finding agreement with gold is reported descriptively, with bounds and the gold-dependence label;
   - the softness table is complete;
-  - the size and composition of the N pool are recorded.
-- **Performance evidence:** reports per second, informational.
+  - the size and composition of the N pool are recorded, with its coverage per finding;
+  - the adjudication log of parser misses against report–gold disagreements is kept.
+- **Performance evidence:** reports processed, counted; seconds as information.
 - **Evidence scope:** the training reports at the parser version.
 - **Invalidation:** a lexicon or rule change, or new reports.
 
@@ -109,3 +122,5 @@ manifest.
   - `RSNA_Knee/report_parser.py` and `tools/parser_validate.py` (prior art);
   - THE_KNEE §2 (change 8).
 - **2026-10-02:** specified in K00.
+- **2026-10-02, revision 1** (F41): coverage per finding for the N pool; parser errors adjudicated by a reader of
+  the sentence, never the parser; N drawn from T only (F20); derived records in git, report text never (R2).
