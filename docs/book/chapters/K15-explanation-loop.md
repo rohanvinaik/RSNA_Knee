@@ -3,7 +3,7 @@
 | | |
 |---|---|
 | **Status** | computed: `git tag -l 'knee-K15'` |
-| **Depends on** | K13a (the pairs' dependence statuses, entitlement, the hardness map), K13 (zone lenses), K14 (contracts) |
+| **Depends on** | K13a (independence classes, entitlement, the hardness map), K13 (zone lenses), K14 (contracts) |
 | **Consumed by** | K16 (decisions from the kept record), K19–K21 (later readings join the loop), K25 (objects become cases), K18 (kernel) |
 | **Commit label / tag** | `knee/K15` · `knee-K15` |
 

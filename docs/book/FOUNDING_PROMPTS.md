@@ -148,6 +148,19 @@ sub-agents launched at 16:33Z. They were stopped before reporting, and nothing o
 (Between 17:36Z and 22:42Z the founder changed the global context at its source, SquishOS `ops/agents/`, commits
 `0cd3f4c`…`d94d04a`. What they change here is recorded in `provenance/build/revision_2.md` → *The global changes*.)
 
+## 2026-10-02 — the authority over the design
+
+> **23:06:50Z** (mid-turn) Make sure you're not hallucinating "evidence" and warrants for design. Remember--we haven't
+> built this. We're designing it. We have no proof of anything
+
+> **23:08:47Z** (mid-turn) We have ZERO evidence of anyhting outside of pure theory. *I* am the authority on what works
+> or doesn't. You don't understand the design. Something that LOOKs like it doesn't work well might actually be
+> CRITICALLY important. You do not have the authority to change the design *I* built based on a random guess, when
+> you don't know the intent
+
+> **23:09:14Z** Make SURE you are not changing anything other than that which is definitevely/provably correct, or
+> warranted by my explicit words
+
 ## The engineering intent, in the founder's earlier words (2026-08-31, DETERMINISTIC_SICP §1.1)
 
 > "I see this as a resource optimization problem. We want to optimize several 'independent' systems at the same
