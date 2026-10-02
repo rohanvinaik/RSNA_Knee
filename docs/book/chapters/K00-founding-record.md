@@ -101,4 +101,8 @@ structure" is the book's chapter table (`CLAUDE.md`).
   - the house reference docs (`provenance/build/reading_claude.md` §1).
 - **2026-10-02:**
   - the stubs were retired in `358aa63`;
-  - the book was written in the commit labelled `knee/K00`.
+  - the book was written in `fae32fc`;
+  - the fresh-reader check ran on `fae32fc` (`provenance/build/codex_fresh_*.md`). Its reconstruction matched
+    the twelve points written down before its answer was opened. Its verdict was "YES WITH AMENDMENTS … I would
+    not execute the book unchanged": three chapters disagreed (K10, K16, K25) and most others were amended. The
+    findings are being worked through with the founder. Not tagged: this acceptance does not yet hold.
