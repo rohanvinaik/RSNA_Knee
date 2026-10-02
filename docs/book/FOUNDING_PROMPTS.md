@@ -98,6 +98,23 @@ Four more messages arrived mid-turn, while the work was under way:
 (A first send at 16:35:05Z was cut off by an interruption; the 16:35:20Z text stands. It answered three grounding
 sub-agents launched at 16:33Z. They were stopped before reporting, and nothing of theirs was used.)
 
+## 2026-10-02 — the engineering tools and the language of each module
+
+> **17:14:12Z** (mid-turn) Also, general guidance, anytime you need to use or reference the developer/code
+> understanding/SICP tools, global CLAUDE.md has the pointers you should read, and SquishOS is the home of a lot
+> of useful references
+
+> **17:22:59Z** Can tou read my prompts again? I feel like, if you didn't have those tools written up fully, we
+> didn't properly address the full scope of actual engineering tools we have available, and considerations about
+> language-specific modules (e.g. C/C++ for memory management, cache hot vs cold management, Rust for speed,
+> etc). Those tools should help us build in those considerations and implementations from the start, and it's
+> worth considering properly
+
+> **17:29:45Z** (mid-turn) We don't have to abandon Radon. It's just an independent tool to use
+
+> **17:30:14Z** (mid-turn) LintGate is over-engineered and super bloated--ironically enough--so Randon is probably
+> better
+
 ## The engineering intent, in the founder's earlier words (2026-08-31, DETERMINISTIC_SICP §1.1)
 
 > "I see this as a resource optimization problem. We want to optimize several 'independent' systems at the same
@@ -134,3 +151,6 @@ sub-agents launched at 16:33Z. They were stopped before reporting, and nothing o
 | the rewrite grounded in KNEE_ARCHITECTURE, else `what_an_object_is`, else the manifest | `provenance/build/revision_1.md`: each finding with its grounding, read first-hand |
 | derived records may enter git | `AGENTS.md` → *Project overrides* 7 |
 | the lead does the reading; no sub-agents for grounding | `CLAUDE.md`; `AGENTS.md` → *How a session runs* |
+| the developer and SICP tools read from their pointers; SquishOS as the home of the references | `CLAUDE.md`; chapter K02b's instruments table |
+| language-specific modules (C/C++ for memory and cache, Rust for speed) designed in from the start, guided by the tools | chapter K02b (the compute design and the native layer); `THE_KNEE.md` §3.2 |
+| Radon kept as an independent instrument, preferred to LintGate for complexity | K02 (dev tools), K02a (the fixture's gradient), K02b (the instruments table) |
