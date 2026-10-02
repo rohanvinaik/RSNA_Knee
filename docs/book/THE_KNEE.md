@@ -208,7 +208,23 @@ book had departed from the canon, and the change returns to it.
   drawn dev-side (Hamilton plus Graphviz) without production importing Hamilton (the global `performance.md`:
   "a value made and never consumed shows as dangling").
 
-### 3.2 The best language per operation
+### 3.2 The best language per operation, decided by computation shape (K02b)
+
+K02b holds the full design: the per-operation plan, the compute contract, memory and cache, the kernel's budget,
+and which instrument answers which question. The summary:
+- **The rule.** Each operation's language comes from its recognized *computation shape*, at design time
+  (DETERMINISTIC_SICP §6: performance engineering is "template *recognition* over code … followed by
+  deterministic per-template transform grammars").
+- **The verification.** Deterministic budgets verify each choice (§7: operation counts over a size ladder, paired
+  at behaviour delta 0), and every choice passes its gate (§8).
+- **Native modules from the start** (founder, 17:22:59Z: "C/C++ for memory management, cache hot vs cold
+  management, Rust for speed … build in those considerations and implementations from the start"):
+  - **C** for the build-time, cache-hostile reference statistics: voxel-major tiles sized to L2, with explicit
+    allocation;
+  - **Rust** for the case-memory scan: a popcount prefilter, exact u128 level tests and GIL-free threads;
+  - **Numba** for every custom loop on the kernel path ("JIT is basically a requirment").
+- **Every native module keeps its reference and answers to SAME.** Scalar C emissions can also carry Detective's
+  cross-language receipt.
 
 The founder, 2026-10-02: "the best, most effective compute operation is for a task (e.g. for hypervectors,
 cache/memory operations can really speed stuff up, and JIT is basically a requirment)".
@@ -428,12 +444,15 @@ How the Mac Pro is used, through SquishOS only:
     a complete path at K18.
   - First light establishes integration and the scoped structure-alone behaviour; it never stands in for domain
     acceptance. Codex agreed (design round 2, C).
-- **D3 — Numba is the default for hot loops; native code only by evidence.**
-  - *Because* the founder ruled "JIT is basically a requirment".
-  - *Because* Numba 0.68 runs on Python 3.12–3.14 (measured) and compiles on the Kaggle image, so no binary
-    ships.
+- **D3 — the language by computation shape, decided at design time; native modules from the start (K02b).**
+  - *Because* the founder ruled "JIT is basically a requirment" for the kernel path's loops, and "C/C++ for memory
+    management, cache hot vs cold management, Rust for speed … from the start" (17:22:59Z).
+  - *Because* DETERMINISTIC_SICP makes language fit a recognized template with a deterministic budget, never a
+    vibe (§4.1, §6, §7).
   - *And because* a native wheel brings costs abi3 does not cover: NumPy ABI, glibc, CPU features, offline
-    installation. Those must earn their place by measurement.
+    installation. So K02b builds and packages the native layer early, for every environment, instead of meeting
+    those costs late.
+  - *Supersedes* the earlier "Numba default; native only by evidence" (revision 2).
 - **D4 — two environments.**
   - *Because* Detective needs CPython ≥ 3.12 while the deployment target is whatever Kaggle runs.
   - *Because* `target-version` proves nothing about runtime compatibility.

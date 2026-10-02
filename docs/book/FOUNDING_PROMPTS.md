@@ -115,6 +115,14 @@ sub-agents launched at 16:33Z. They were stopped before reporting, and nothing o
 > **17:30:14Z** (mid-turn) LintGate is over-engineered and super bloated--ironically enough--so Randon is probably
 > better
 
+> **17:32:09Z** (mid-turn) Good targeting, but don't assume too much what is and isn't a "cheap" operation "not
+> worth optimizing". (1) you don't know what the full/final design, since I don't know it myself, things can change
+> a lot as we experiment, and (2) I want this to be AS clean and efficient/professional as possible. This is a
+> demonstration, a BOLD claim about classical AI, I want it to be clothed as professionally and impressively as
+> possible
+
+> **17:32:17Z** (mid-turn) Suit and tie, not just "not naked"
+
 ## The engineering intent, in the founder's earlier words (2026-08-31, DETERMINISTIC_SICP §1.1)
 
 > "I see this as a resource optimization problem. We want to optimize several 'independent' systems at the same
@@ -154,3 +162,4 @@ sub-agents launched at 16:33Z. They were stopped before reporting, and nothing o
 | the developer and SICP tools read from their pointers; SquishOS as the home of the references | `CLAUDE.md`; chapter K02b's instruments table |
 | language-specific modules (C/C++ for memory and cache, Rust for speed) designed in from the start, guided by the tools | chapter K02b (the compute design and the native layer); `THE_KNEE.md` §3.2 |
 | Radon kept as an independent instrument, preferred to LintGate for complexity | K02 (dev tools), K02a (the fixture's gradient), K02b (the instruments table) |
+| no operation exempt from engineering because it looks cheap; "suit and tie, not just "not naked"" | `CONSTRAINT_BLOCK.md` law 14; `AGENTS.md` law 8; K02b §1 and §3.4 |

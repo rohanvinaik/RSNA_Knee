@@ -19,9 +19,15 @@ machine learning anywhere**, it:
 - has a society of agencies decide each of the 12 findings by concurrence of independent acquisitions, or
   abstain.
 
-It is built as one fresh, SICP-organized, Detective-pinned codebase. Each operation is in its best language:
-Python decides; NumPy, SciPy and SimpleITK do whole-array work; Numba JIT runs the hot loops; native code enters
-only by evidence.
+It is built as one fresh, SICP-organized, Detective-pinned codebase. Each operation is in the language its
+computation shape calls for, decided at design time (K02b):
+- Python decides;
+- NumPy, SciPy and SimpleITK do whole-array and library work;
+- Numba JIT runs the kernel path's loops;
+- C runs the cache-hostile build-time statistics;
+- Rust runs the case-memory scan.
+
+Each kernel carries a compute contract and a reference, and answers to SAME.
 
 ## Laws (each with the why that gives it mass)
 
@@ -54,6 +60,12 @@ only by evidence.
     *(Founder, 2026-10-02 16:29:22Z; ARCH §6.6.3: "no phase has a target score".)*
 13. **The lead reads.** Grounding in the canon, the book and the founder's words is never delegated. *(Founder,
     2026-10-02 16:35:20Z.)*
+14. **Suit and tie, not just "not naked."** No operation is exempt from engineering because it measures cheap
+    today. Every operation carries its contract, its language by computation shape, its layout and parallel unit,
+    its gates and its counted budget (K02b). A measured cost orders the work and never excuses a naive path.
+    *(Founder, 2026-10-02 17:32: "This is a demonstration, a BOLD claim about classical AI, I want it to be clothed
+    as professionally and impressively as possible"; the final design is unknown and will change as we
+    experiment.)*
 
 ## Resolved, stated AS RESOLVED, never as open
 
