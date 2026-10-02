@@ -246,3 +246,45 @@ id = "cell-banks"
 path = "~/Projects/Kaggle_Killer/competitions/cell_tracking/src/cell_tracking/hdc/banks.py"
 role = "prior art: the bank-partitioned Hadamard carrier (Q16: not shared; K04)"
 sha256 = "3e8a7404094b3ee1bb4b567fa4db20a427cfd7fe3bc507590326481e06c97280"
+
+[[ref]]
+id = "squishos-the-dyad"
+path = "~/Projects/SquishOS/docs/theory/THE_DYAD.md"
+role = "THE_DYAD: the content category assigns the seat; the typed hole; Law 13 (admitted is not warranted; the declared discharge)"
+sha256 = "9a47f57409474074e1965d3375dc5b612094e93f259b766b842ce7317481c1d2"
+
+[[ref]]
+id = "squishos-constrained-output"
+path = "~/Projects/SquishOS/docs/theory/CONSTRAINED_OUTPUT_AND_REASONING.md"
+role = "CONSTRAINED_OUTPUT: the slot kinds (E2), select never generate (O4), the constraint ladder (O5), syntax belongs to the harness (O8), qualification (M1-M3)"
+sha256 = "b9c5651182705608a278fa9e546c8262a7f723ea35841d05393d18859b773b73"
+
+[[ref]]
+id = "squishos-harness-spine"
+path = "~/Projects/SquishOS/docs/spine/09-the-harness.md"
+role = "the harness as built: the gate, the loop, discharge codes, the bench's wire facts (qwen3.5:4b on llama.cpp b10180)"
+sha256 = "373c6cec60de51476bc8183a65777d06f774a7a573f342ac89bef7ed444a5828"
+
+[[ref]]
+id = "squishos-cassettes"
+path = "~/Projects/SquishOS/cassettes/README.md"
+role = "the cassette format: category, warrant, discharge, slots, the proposal rule"
+sha256 = "411531b65a51e87ad57f52f307c6837b6011cfc477852168a10d58d5e54d916c"
+
+[[ref]]
+id = "uroboros-readme"
+path = "~/tools/Uroboros/README.md"
+role = "Uroboros: the model never drives; the difficulty ladder; what comes back"
+sha256 = "85665305ce8b26b15c58c30f6819ca33a407dd94f7f5e7fa34ce00b4130f6d15"
+
+[[ref]]
+id = "uroboros-architecture"
+path = "~/tools/Uroboros/docs/ARCHITECTURE.md"
+role = "Uroboros: inverted control; synth.py's typed skeleton; cycle.py's guards; nextstep.py"
+sha256 = "d094b5b56ee5beb09767f92c4da9fb06cfdce4654faaa688f555d58d1e71bfdd"
+
+[[ref]]
+id = "uroboros-law"
+path = "~/tools/Uroboros/CLAUDE.md"
+role = "Uroboros's six laws, 'proven or nothing' among them"
+sha256 = "ca1b113ebbb7fc3c9fe6c063c92f092815f5e13562051d84bde052e95d710694"
