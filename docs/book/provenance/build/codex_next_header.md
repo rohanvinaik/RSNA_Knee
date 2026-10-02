@@ -5,9 +5,21 @@ a key part of why this happened, and it's VERY bad. It's a complete artifcact of
 the code *doesn't exist*. Forget a warrant of intent that I didn't give, there is LITERALLY not an actual functional
 codebase that meets the design intent".
 
-The block below goes first in the next prompt to Codex, before any book text. The same block opens a prompt to
-Antigravity, since the protocol is shared (`antigravity-consultation.md`). It is carried verbatim. It is never
-softened, and never dropped because a read looks routine.
+**What a prompt holds.** The founder, 2026-10-02 23:56:22Z: "Codex is meant to be a minimal common-sense check, not
+a dump. The whole point is that you can drift in understanding by having an overloaded context window, but a fresh
+look assigns significance differently, so can catch you if you're missing something important and/or obvious. You
+are only supposed to include your question/understanding and my literal words, to maintain maximal semantic purity
+for the reasoning operation".
+
+So a prompt holds only three things:
+- the lead's question and understanding, in the lead's own words;
+- the founder's literal words;
+- the opening below, in substance.
+
+No document is pasted in: not the book, the canon or the thesis. The earlier "fresh reads", which sent the whole
+book, are not the form. The opening's substance goes first in every prompt to Codex, and to Antigravity, whose
+protocol is shared. It is kept short, and never dropped because a consultation looks routine. A worked example is
+`../theory/codex_lens_principle_prompt.md`.
 
 ---
 
