@@ -40,6 +40,14 @@ admitted only by its gate.
   and the unit it can run beside others in."
 - **THESIS §12.6:** "The system computes a value once, and then measures only the change"; kept values, and a
   lens "not computed" where it cannot speak.
+- **The standard is the professional finish everywhere.** The founder, 17:32:09Z: "don't assume too much what is
+  and isn't a "cheap" operation "not worth optimizing". (1) you don't know what the full/final design, since I
+  don't know it myself, things can change a lot as we experiment, and (2) I want this to be AS clean and
+  efficient/professional as possible. This is a demonstration, a BOLD claim about classical AI". And 17:32:17Z:
+  "Suit and tie, not just "not naked"". So no operation is exempt from engineering because it measures cheap
+  today. Every operation gets the whole treatment: its contract, its shape-derived language, its layout, fusion
+  and parallel unit, its gates and its counted budget. A measured cost orders the work, and it never excuses a
+  naive path.
 - **What this replaces.** The book's earlier D3 was "Numba is the default for hot loops; native code only by
   evidence". That deferred the native layer to a later measurement. Here the language comes from the operation's
   shape at design time. The measurement *verifies* the choice and can refuse it, and it no longer has to
@@ -131,11 +139,17 @@ is never guessed.
 
 - **The budget.** Kaggle allows at most 9 h. With c cores (K01 measures them) and ~1,300 test studies, the budget
   is ≈ 9 · 3600 · c / 1300 core-seconds per study, about 100 at c = 4.
-- **Where it goes.** Library work dominates: registration, N4, decoding. A study's voxel passes cost
-  milliseconds on 1.6 M-voxel grids. So the design spends its care there from the start:
-  - registration is coarse: a pyramid, metric sampling with a fixed seed, declared iteration caps, and one
-    deformable transform per study carried to its series (ARCH §3.1);
-  - N4 runs on a shrunk image, with its field evaluated at full resolution.
+- **The budget is a constraint, never a licence.** Today's sizes (1.6 M-voxel grids, ARCH §2.4) say nothing
+  about tomorrow's: layers, lenses, resolutions, perturbation counts and memory size will change as the design is
+  explored. So every stage is engineered to the same finish whatever its share of the budget:
+  - **registration and N4,** library-shaped: one deformable transform per study carried to its series (ARCH
+    §3.1); a pyramid; metric sampling with a fixed seed; declared iteration caps; N4 on a shrunk image, with its
+    field evaluated at full resolution; ITK's threads declared;
+  - **every custom loop:** fused and one-hit, cache-aware in its layout, parallel over its declared unit,
+    compiled with explicit signatures (eager compilation, no object mode, no reflection), and twinned and
+    counted;
+  - **every native module:** SIMD where its shape allows, with runtime CPU dispatch; sanitized in VERIFY; lint-
+    and format-clean in its own language.
 - **The apportionment** per stage is an expectation written first (R1). It is measured on K01's probe and K18's
   dry run. A stage over budget is redesigned at its chapter, never discovered at K27.
 - **Memory per worker** ≤ RAM / workers.
@@ -183,7 +197,7 @@ Designed here; each row is built and verified in its chapter.
 | components and morphology (K15) | library-shaped | crops | SciPy (C) | per study; kernel |
 | geodesic centerlines (K19) | shortest path | crops | scikit-image's minimum-cost-path (Cython) | per structure; kernel |
 | λ windows (K21) | summed-area tables | structure crops | **Numba**, one pass | per structure; kernel |
-| perturbations (K22) | parallelize-map | K re-reads of crops | **Numba** `nogil` kernels under threads | perturbations; kernel (cheap families) |
+| perturbations (K22) | parallelize-map | K re-reads of crops | **Numba** `nogil` kernels under threads | perturbations; kernel (the R1–R3 and QZ families; R4 and R5 on escalation) |
 | phantom planting (K11) | per-voxel forward model | host crops | **Numba** | phantoms; build |
 | case-memory recall (K25) | batched scan of an indexed store | cases × coordinates int32 (~100 MB for the corpus, ARCH §3.5.5) plus bit planes; planes hot, rows cold | **Rust**: a popcount prefilter over the bit planes, then exact integer dot products and norms with the u128 level test on the survivors; cache-blocked over case blocks; NumPy/Python reference | case blocks (rayon); kernel and build |
 | the level test's scalar core (K04) | exact integer predicate | scalars | Python reference; a C emission certified by Detective's C gate where a C kernel needs it | n/a |

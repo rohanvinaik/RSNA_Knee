@@ -26,6 +26,7 @@ dependency order.
 | [K00](chapters/K00-founding-record.md) | the founding record: this book, the rules, the manifest, the provenance | — |
 | [K01](chapters/K01-characterization.md) | characterization: the local Detective's capabilities; the Kaggle runtime; the Mac Pro's environment; local data census; hook coverage | K00 |
 | [K02](chapters/K02-verification-infrastructure.md) | verification infrastructure: VERIFY/DEPLOY environments, `justfile`, gate config, Import Linter, the backend registry, the SAME harness, acceptance manifests and recursive staleness, events, store skeleton | K01 |
+| [K02b](chapters/K02b-compute-design-and-native-layer.md) | the compute design and the native layer: language by computation shape, the compute contract per kernel, hot/cold and one-hit memory, the kernel's budget, the instruments; the Rust crate and the C library, built and packaged for every environment | K02, K01 |
 | [K02a](chapters/K02a-the-typist.md) *(optional)* | the typist: a small local model types eligible bodies (twins of pinned references; finite-code decisions) under the SquishOS harness, admitted only with a certificate; its qualification run | K02 |
 | [K03](chapters/K03-acceptance-corpus-and-harness.md) | acceptance corpus and harness: vocabulary and the 12 columns; panels and roles; the recognition table; authored cases; the scorer | K02 |
 | [K04](chapters/K04-carrier-arithmetic.md) | carrier arithmetic: the exact ledger's algebra, declared limits, the exact level test, decode, packed signs for ordering | K02 |

@@ -81,6 +81,13 @@ Code is evidence of behaviour, never authority over intent: a bug is not a speci
      emission rule (Q4) and what a label's scope intends.
 7. **Never auto-submit.** Build, validate, dry-run the kernel and surface the expected score; submit only on the
    founder's explicit go (THEORY Law 8).
+8. **Suit and tie, not just "not naked."** Every operation gets the professional finish whatever it costs today:
+   its compute contract, its language by computation shape, its layout, fusion and parallel unit, its gates and
+   its counted budget (`docs/book/chapters/K02b-compute-design-and-native-layer.md`). A cheap path is never an
+   excuse for a naive one.
+   - *Reason:* "This is a demonstration, a BOLD claim about classical AI, I want it to be clothed as
+     professionally and impressively as possible". The final design is unknown and will change as we
+     experiment (founder, 2026-10-02).
 
 ## Project overrides and decisions (the global doctrine applies; these are additional)
 
@@ -107,13 +114,17 @@ Code is evidence of behaviour, never authority over intent: a bug is not a speci
      assignments, memberships, ties and decisions must match, and boundary cases go to the reference.
    - The backend registry configures before any kernel binds, records the requested and the effective backend,
      and refuses an unavailable backend that is required. It never falls back silently.
-3. **Language by operation, chosen by measurement and recorded in the chapter.**
+3. **Language by computation shape, decided at design time and verified by budget**
+   (`docs/book/chapters/K02b-compute-design-and-native-layer.md`; DETERMINISTIC_SICP §6–§8):
    - Python orchestrates and decides.
-   - NumPy, SciPy and SimpleITK where their contracts fit.
-   - Numba JIT for custom repeated numeric loops; required for hypervector, ledger and voxel work (founder,
-     2026-10-02: "JIT is basically a requirment").
-   - Rust or custom C/C++ is admitted per component by evidence. Wheels are built for Linux x86_64 and tested in
-     the target environment.
+   - NumPy for vectorizable maps; SciPy, scikit-image and SimpleITK for library-shaped operations.
+   - Numba JIT for custom repeated loops on the kernel path; required for hypervector, ledger and voxel work
+     (founder, 2026-10-02: "JIT is basically a requirment").
+   - C for cache-hostile, memory-bound build-time kernels, with explicit allocation and tiles sized to L2.
+   - Rust for the case-memory scan: bit-level SIMD, exact wide integers, GIL-free threads. (Founder,
+     17:22:59Z: "C/C++ for memory management, cache hot vs cold management, Rust for speed … from the start".)
+   - Every kernel carries a compute contract (THESIS §12.5) and keeps its reference. Native artifacts are built
+     for every environment, Linux x86_64 included, and tested there.
 4. **Two environments.**
    - VERIFY: a uv-managed CPython ≥ 3.12, which Detective needs.
    - DEPLOY: Kaggle's actual interpreter and packages.
