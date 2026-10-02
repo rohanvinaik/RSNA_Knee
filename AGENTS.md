@@ -54,6 +54,8 @@ Code is evidence of behaviour, never authority over intent: a bug is not a speci
      classically, as an optimizer over a known transform family plus deterministic nuisance measurements.
    - Only the founder places a learned model, there or anywhere: "Maybe I'll end up using some small model
      somewhere for some reason, but NO, the architecture is NOT NOT NOT ML" (FOUNDING_RECORD).
+   - The typist (K02a) is a build tool the founder placed (2026-10-02). It types code that checks certify, and it
+     is not the architecture.
    - *Reason:* it is the thesis. ML substitution is this project's recorded failure mode (THEORY Part V).
 2. **No Popery.** The build is a conclave, not one tuned pipeline:
    - a lens (member) measures one thing about an object and knows no question;
@@ -97,7 +99,10 @@ Code is evidence of behaviour, never authority over intent: a bug is not a speci
    - "Fully mutant-pinned" means each function's current-digest standing is recorded: complete, incomplete,
      refused, stale, unverified or unpinned. Never a blanket claim.
 2. **A reference first, then an accelerated twin that answers to SAME.**
-   - Every numeric kernel exists first as a plain Python reference, pinned and property-tested.
+   - Every numeric kernel exists first as a reference, "a plain Python or NumPy function behind the same contract"
+     (THESIS §12.5), pinned and property-tested.
+   - SAME holds within one environment, never across two. A chapter that changes decisions on purpose records a
+     behaviour change with its intent; that is never a SAME failure.
    - An accelerated twin (Numba, Rust, C/C++) is admitted only by the decision-preserving SAME harness: codes,
      assignments, memberships, ties and decisions must match, and boundary cases go to the reference.
    - The backend registry configures before any kernel binds, records the requested and the effective backend,
@@ -122,7 +127,8 @@ Code is evidence of behaviour, never authority over intent: a bug is not a speci
    - Linux x86_64, internet off, at most 9 h.
    - Packages come from the base image plus our attached private datasets.
    - Only `/kaggle/working` and `/tmp` are writable, which matters for the Numba cache and for unpacking.
-   - Dev-only tools never enter its import path.
+   - Dev-only tools never enter its import path. No kernel path reaches a remote node: an escalation runs inside
+     the kernel's budget, or is skipped and recorded.
 7. **Data and secrets.**
    - Competition data may be used for any purpose under the RSNA MIRA license, but never made available to a
      non-participant, and nothing is shared privately outside the team (the competition rules, 4.a–4.b and
@@ -135,6 +141,19 @@ Code is evidence of behaviour, never authority over intent: a bug is not a speci
      available to non-participants.
    - The Kaggle token is `KAGGLE_API_TOKEN` in `~/Projects/Kaggle_Killer/.env`. Load it into the environment;
      never print, copy or commit it.
+
+8. **The typist (K02a, optional).** A small local model types *eligible* bodies:
+   - twins of pinned references;
+   - pure decisions with a finite named-code return.
+
+   It runs only through `squishos-harness`. It never drives, never chooses what to type, and never types intent,
+   tests, bars, contracts, references or impure code. A body enters the codebase only with its certificate and
+   after the lead has read it. It is selected only on the founder's word, after its qualification run.
+9. **Acceptance is written first and is discovery.**
+   - Each chapter's first act writes `acceptance/<K>.toml`.
+   - Engineering checks gate the tag.
+   - Domain readings never gate. A miss opens a problem to solve, never a reason to discard or work around the
+     design (founder, 2026-10-02 16:29:22Z; ARCH §6.6.3).
 
 ## Stop — I can explain (when it looks like the model is missing)
 
@@ -163,5 +182,6 @@ Code is evidence of behaviour, never authority over intent: a bug is not a speci
 | a performance question | the global `performance.md` | Detective's `docs/theory/deterministic_sicp/DETERMINISTIC_SICP.md` §7–§8 |
 | pinning | the global `detective-protocol.md` | `~/tools/Detective/ARCHITECTURE.md` §11 |
 | a harness or an evaluation | the global `no-popery.md` | the harness chapter (K03) |
+| the typist, or any local-model call | `docs/book/chapters/K02a-the-typist.md` | SquishOS `docs/theory/THE_DYAD.md`, `CONSTRAINED_OUTPUT_AND_REASONING.md`; Uroboros `docs/ARCHITECTURE.md` |
 | the Kaggle kernel or submission | `../../CLAUDE.md` (the Kaggle submission protocol) | the kernel chapters (K18, K27) |
 | a commit or a push | the global `verification-gates.md` | the global `repo-hygiene.md` |
