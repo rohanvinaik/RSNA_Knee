@@ -19,17 +19,26 @@ run, early. The result is the structure-alone run: scoped, measured and kept.
 ## 2. Dependencies and consumers
 
 **Produced:**
-- **`knee.orchestrate.kernel.main(input_dir, artifacts_dir, out_path)`**, which runs, per study: ingest →
-  registration → deviation and signatures → zone lenses → explanation → case-free decisions → emission (literal)
-  → the writer.
+- **`knee.orchestrate.kernel.main(input_dir, artifacts_dir, out_path)`**, which runs, per study:
+  1. ingest;
+  2. registration;
+  3. γ_s, deviation, and tissue identity and change;
+  4. the zone lenses;
+  5. explanation, gated by K13a's independence classes and entitlement;
+  6. the case-free decisions;
+  7. emission (literal, with unavailable keys skipped);
+  8. the writer.
 - **Packaging:**
   - the `knee` package and its pinned runtime dependencies as a private Kaggle dataset (or a utility script), with
     a content inventory;
   - artifacts (atlas, references, phantom-free maps) as private datasets with manifests and checksums;
   - no native wheel yet.
 - **`just firstlight`:** the scoped end-to-end run on a declared panel subset (G in rotation, N `checking`, and a
-  fixed local sample). It writes the recognition table, the AUC (literal) and its SAME and decision checks against
-  the previous first-light record. Every later integration-changing chapter re-runs it.
+  fixed local sample). It writes the recognition table, with each abstention's cause, and the AUC (literal).
+  - The SAME checks are twin against reference, at this revision, in one environment.
+  - The comparison with the previous first-light record is a *diff*, read against the behaviour-change record of
+    the chapter that changed it. It is never SAME (`provenance/build/revision_1.md`, §F11).
+  - Every later integration-changing chapter re-runs it.
 - **The private Kaggle dry run:** `kaggle kernels push` with `competition_sources`, `kernels status`, then
   `kernels output` read whole.
 
@@ -58,8 +67,9 @@ run, early. The result is the structure-alone run: scoped, measured and kept.
 
 ## 6. Verification
 
-- **SAME:** the DEPLOY run against the VERIFY run on the local sample: decisions equal, values within each
-  kernel's spec.
+- **DEPLOY against VERIFY** on the local sample. THESIS §12.5: "we claim the same answer within an environment,
+  never across two". Decisions are equal, except where a value lies within its kernel's declared tolerance of a
+  threshold. Those cases are listed, never hidden. Values agree within each kernel's spec.
 - **Integration tests through the real entry point** on authored synthetic DICOM fixtures, independent of
   competition data, kept in git.
 - **The validator,** adversarially.
@@ -70,17 +80,22 @@ run, early. The result is the structure-alone run: scoped, measured and kept.
 
 ## 8. Acceptance
 
+Written first: `acceptance/K18.toml`.
 - **Behavioural correctness:**
   - the DEPLOY run completes on the local sample;
   - the private Kaggle dry run reaches `COMPLETE`, with its log read whole;
   - `submission.csv` validates;
   - **no submission is made.**
-- **Representation fidelity:** DEPLOY and VERIFY decisions are equal; provenance stamps are present.
-- **Domain validity:** the structure-alone recognition table and literal AUC on G (rotation) and N `checking`,
-  each with its bounds, recorded as **the baseline**. "A score is information about what a module does, never a
-  target."
-- **Performance evidence:** cold JIT seconds; warm seconds per study; peak RSS per worker; the projected wall time
-  for about 1,300 test studies against the 9-hour limit.
+- **Representation fidelity:** DEPLOY and VERIFY decisions are equal, boundary cases listed; provenance stamps
+  are present.
+- **Domain validity (discovery):** the structure-alone recognition table and literal AUC on G (rotation) and N
+  `checking`, each with its bounds, recorded as **the baseline**.
+  - Until the founder writes the independence bar, most findings abstain with `dependence_unknown`. That is the
+    baseline's honest content, a problem named for K13a's bar and never routed around (R1).
+  - "A score is information about what a module does, never a target."
+- **Performance evidence:** places, lenses and rounds counted per study; cold JIT seconds; warm seconds per study;
+  peak RSS per worker. The projected wall time for about 1,300 test studies against the 9-hour limit is the one
+  place where seconds are a deployment constraint, not only information.
 - **Evidence scope:** the exercised environment and inputs only (Codex design round 2, A7): not general
   correctness.
 - **Invalidation:** any change in K03–K17, in the artifacts, or in the Kaggle image (re-checked against K01's
@@ -98,3 +113,8 @@ run, early. The result is the structure-alone run: scoped, measured and kept.
   - THE_KNEE §3.6, §4, §5 and §6 (D2);
   - Codex design rounds 1 and 2.
 - **2026-10-02:** specified in K00.
+- **2026-10-02, revision 1:**
+  - the path gated by K13a (F06);
+  - SAME within one environment, and the first-light diff read against intent (F11; THESIS §12.5);
+  - the baseline's abstentions as its finding (R1);
+  - work counted (F39).
