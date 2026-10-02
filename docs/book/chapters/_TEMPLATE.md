@@ -91,7 +91,9 @@ Reported in four kinds. None substitutes for another:
   - It is never a reason to discard the design or route around it, and it is never retuned to meet the
     expectation (founder, 2026-10-02 16:29:22Z).
 - **performance evidence** (gates only its own claims). It is work and bytes counted per unit, with seconds
-  beside them as information (ARCH §3.2.6). Each budget names its scope.
+  beside them as information (ARCH §3.2.6). A speed claim is Detective's deterministic budget, paired at
+  behaviour delta 0, with pyperf as the complement (THE_KNEE §3.8; the house toolkit). Each budget names its
+  scope.
 
 The tag says the chapter is built, verified and measured. It never says its numbers are good.
 
