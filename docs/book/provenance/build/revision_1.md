@@ -45,7 +45,7 @@ Grounding is filled in only from first-hand reading of the cited lines.
 | F01 | intensity comparability: K07 retires N4 and normalization, K09 takes cross-patient medians of stored values, and no gain or bias contract exists | K07, K09, K10 | ARCH §2.3, §3.1, §3.3.3, §3.3.9, §3.4.1; THEORY II.1 (notes §F01) | γ_s on reference tissue for every series; N4 per THEORY II.1; no p2–p98, no histogram match; stored values kept for K24 | grounded |
 | F02 | tissue identity vs change: deviation signs cannot name healthy tissue, which K19 and K20 need | K10, K19, K20 | ARCH Table 2.3a, §2.3.2, lens 3, §3.4.3, l.3866 (notes §F02) | the word is a tissue level within the series against muscle; change = word against the zone's normal word, beside z | grounded |
 | F03 | witness provenance: a joint multi-series signature is counted as several per-series witnesses | K10, K13, K14 | ARCH §5.3 l.3408–3413 (independence classes), l.3487–3490 (the sandwich), l.3499–3503 (the record per series); §2.3 consequence 3 l.906–908; Table 5.1 rule 3 (notes §F03) | every reading carries its complete source set; voices are per acquisition; the joint signature is a law check that supports, never a voice | grounded |
-| F16 | K04 edge contracts: sign conditions of the squared level test; zero-norm tables; silence at bank level; R allocated vs active; float sqrt equality | K04 | | | open |
+| F16 | K04 edge contracts: sign conditions of the squared level test; zero-norm tables; silence at bank level; R allocated vs active; float sqrt equality | K04 | THESIS §12.2 l.2423–2436 ('Counts are never negative'; 'reaches, short or silent'; 'a pair with nothing to compare abstains'), §6.3 l.1264–1267 (silence is a bank); ARCH §3.5.2 l.2253–2266, §3.5.3 three zeros l.2294–2300 (notes §F16) | levels are integers 0 ≤ a ≤ b, b ≥ 1 (refused otherwise); dot ≥ 0 by construction; a zero norm after silence removal answers silent, never reaches; silence is a bank the coverage bank records as unread, not a zero count; R counts every allocated row of every named bank; decisions in whole numbers, floats only as information | grounded |
 | F17 | K07 geometry: domains, pullback direction, inverse construction; B-spline invertibility; laterality proof; irregular slices; uncertain chirality | K07 | ARCH §2.2 consequence 3 l.820–824 (patient-x sign, tag fallback, 97.8%); §1.8 l.581 (chirality is a constraint reading); §2.10 l.1470 (fibular-head landmark); §3.1 l.1583–1588 (one kept transform) (notes §F17) | chirality has three witnesses (patient-x, tag, fibular head once built); disagreement → chirality_uncertain on the constraint axis, never a guessed mirror; transforms map template→study, with the inverse used only where a Jacobian check holds; per-slice positions, not one affine | grounded |
 | F18 | K15: `hole` after masking is undefined; headers give no slice profile; subtraction needs an observation model or abstains | K15 | ARCH §4.4 l.2832–2836 (the take removes the law's contribution), l.2850–2865 (post-take check), l.2914–2916; §2.4 consequences 2–3 l.1041–1046; THESIS §4.5 l.793–795; THE_KNEE §2 change 4 (notes §F18) | mask mode (default): ring and lobe only, hole and impossible recorded not_applicable; contribution mode only under a stated law (Table 4.6 halos), with all four checks; the slice profile is a declared rectangular assumption of SliceThickness, measured on phantoms | grounded |
 | F40 | K05: geometry validated across slices; available contrasts vs identifiable quantities | K05 | ARCH §2.4 consequences 3–5 l.1044–1058 and how it fails l.1075–1079; §3.2.4 l.1667–1672 | K05 validates per-slice geometry (orientation constant, positions monotone, spacing against the tag, plane flag against ImageOrientationPatient); irregular → geometry_irregular, read by per-slice positions or silent; contrasts available vs identifiable set kept apart (§3.2.4) | grounded |
@@ -79,14 +79,14 @@ Grounding is filled in only from first-hand reading of the cited lines.
 |---|---|---|---|---|---|
 | F19 | K03's oracle contract: a question field and truth polarity; localization vs study-level gold; report silence; `oracle_unavailable`; clustered bounds | K03 | ARCH §6.2.5 Table 6.3 l.4685–4692 and rules 1–5 l.4697–4709; §6.3 l.4713–4724; §5.3 l.3417–3419 (notes §F19) | a recognition table cell per (object or study, question, oracle); oracle_unavailable; G grades study-level only; bounds over studies, the independent unit | grounded |
 | F20 | panels: N's relation to T/R/G; R held out of every store; K23's building role; R used for design becomes development evidence | K03, THE_KNEE §5 | ARCH Table 6.3 (R 'held out of every store'), rule 1 l.4698–4700; §6.3 l.4722–4744 (R replicates direction) (notes §F20) | R out of every store, references to maps included; R's objects are never inspected to design a change, only its triples read | grounded |
-| F04 | K12 calibrates lens metrics before K13 computes them | K12, K13 | | | open |
-| F05 | K12 consumes K14's question rules without depending on K14 | K12, K14 | | | open |
+| F04 | K12 calibrates lens metrics before K13 computes them | K12, K13 | ARCH §3.5.4 l.2326–2348 (layout v1 declared and versioned; banks per question named before the run), §3.5.3 l.2290 (edges at quantiles of the teaching residual), §3.4.4 l.2177–2186, §3.5.6 l.2395–2396 (a new rung is a new layout version) | K12 declares the schema (facets, banks, rows, the edge rule); edges are computed when a metric's readings exist (K13, K20) and land as a new layout version | grounded |
+| F05 | K12 consumes K14's question rules without depending on K14 | K12, K14 | ARCH §3.5.4 l.2345–2348 ('The banks a question reads are named before the run' — a layout fact) | the question → banks map is declared in K12 (the layout); K14 consumes it | grounded |
 | F07 | K20 needs confirmed edema while K23 depends on K20 | K20, K22, K23 | ARCH §6.6.3 Phases 6→7 l.5039–5057; with §F27 (line lens no longer gated) and K13a | the cycle dissolves: edema commits are possible after K13a (once the bar is set), and the line lens no longer needs a commit | grounded |
 | F08 | K17 needs keys built in K21 and K22; an early emission schema with explicit unavailable keys | K17 | ARCH §6.1.3 l.4337–4373; §6.1.4 l.4406 ('Until then the sequence skips it') | K17 declares every key early; an unbuilt key is skipped with key_unavailable:<name>, never filled | grounded |
 | F09 | K24 is selectable after K11 but needs first light (K18) | K24, README | ARCH §6.6.3 Phase 4 (the law; a no-go falls back to the raw path) l.5022–5028; K24 compares against first light | K24 depends on K18 in the table and in SELECTION.toml | grounded |
 | F10 | acceptance is prose, with no commands, fixture digests or numeric expectations | all | | | open |
-| F11 | replay: backend equivalence vs an authorized behaviour change; recursive staleness; selected versions; K27 skips an unselected K24 | K02, K18, K27 | | | open |
-| F12–F15 | false properties: hashed folds "balanced within one"; tercile ties; longest gap not additive; binomial bounds not monotone | K03, K12, K20 | | | open |
+| F11 | replay: backend equivalence vs an authorized behaviour change; recursive staleness; selected versions; K27 skips an unselected K24 | K02, K18, K27 | THESIS §12.5 (twin vs specification), §12.6 l.2539–2543 (kept values keyed by producer and version; each drop names its cause); ARCH §6.3 l.4730–4734 (the structure-alone run kept), §6.6.3 l.4961–4965 (bars before runs) (notes §F11) | SAME = a twin against its reference at one revision in one environment; a behaviour change = a new reference version with an intent record, read as a diff against the prior first-light record, never as SAME; staleness recursive over dependencies; acceptance replays the selected versions (SELECTION.toml); K27 skips an unselected K24 | grounded |
+| F12–F15 | false properties: hashed folds "balanced within one"; tercile ties; longest gap not additive; binomial bounds not monotone | K03, K12, K20 | THESIS §6.2 l.1238–1241 (strict edges at terciles), §12.3 l.2448–2455 (running sums give counts); ARCH §6.2.5 rules 1, 3, 4; lens 10 l.1300 (notes §F12–F15) | folds dealt round-robin over sorted digests (balanced within one by construction); strict digit edges, achieved shares reported; longest gap by a run scan carrying prefix and suffix runs across segments; bounds recomputed per step, no monotone claim | grounded |
 | F41 | K06: report-negative coverage; independent adjudication of parser errors | K06 | ARCH §5.7 Table 5.12 (true normals 'establish absent only as far as their reports do'), l.3938, l.3946–3949 (three states), l.3974–3983 (parser miss vs report–gold disagreement, told apart by reading the sentence) (notes §F41) | per study and finding: asserted, negated or silent; N is absent only where negated or covered by a normal statement; parser errors adjudicated by a reader of the sentence (the lead, the founder for soft cases), never by the parser | grounded |
 | F45 | K13: acquisition-specific evidence; uncertainty propagation | K13 | | | open |
 | F47 | K17: comparable evidence ordering | K17 | ARCH §6.1.4 l.4388 ('each key is compared only with itself across studies'), Table 6.1 keys l.4399–4425; THE_KNEE §2 change 9 | keys compared only like with like; a study lacking a key is ordered only by the keys it shares (K17, to edit) | grounded |
@@ -102,8 +102,8 @@ Grounding is filled in only from first-hand reading of the cited lines.
 | F34 | saved reviews, receipts and generated tests need a stated destination when they hold derived material | K02, K03 | R2; AGENTS override 7 | git for records; `data/` for bulk | open |
 | F29 | K01 needs the wrapper before K02 builds it | K01, K02 | | | open |
 | F30 | some acceptances demand that every function be pinned; Detective §11 allows honest unpinnability | several | | | open |
-| F31 | K09's reference is NumPy's median, not plain Python | K09 | | | open |
-| F32 | SAME must carry declared nonfinite behaviour | K02 | | | open |
+| F31 | K09's reference is NumPy's median, not plain Python | K09 | THESIS §12.5 l.2525–2527 ('a plain Python or NumPy function behind the same contract') | the reference may be plain Python or NumPy (AGENTS override 2 and THE_KNEE corrected to THESIS); K09's NumPy median stands as reference | grounded |
+| F32 | SAME must carry declared nonfinite behaviour | K02 | THESIS §12.5 l.2521–2533 (contracts name the encodings; same answer within an environment, never across two; whole numbers exact) | SAME compares by contract: codes exactly; whole-number ops exactly; floats within the declared tolerance, with boundary cases routed to the reference; declared nonfinite values by position; never across environments | grounded |
 | F36 | the fleet runbook says offloading is NOT-BUILT; the compute runbook supplies it | THE_KNEE §4, K01 | | | open |
 | F37 | identify the node before any remote action | K01 | | | open |
 | F38 | K22's escalation cannot reach the Mac Pro from offline Kaggle | K22 | ARCH §4.3 l.2759–2764 (R4 and R5 only on escalation); THESIS §12.6; AGENTS override 6 | in the kernel an escalation runs inside the kernel's own budget or is skipped as escalation_unavailable; the Mac Pro is build-time only | grounded |
@@ -127,6 +127,8 @@ delegated (R4).
 | 2026-10-02 | ARCH | 802–875, 1433–1520, 1594–1765 | §2.2; §2.10–§2.11; §3.2 |
 | 2026-10-02 | ARCH | 3796–4060 | §5.6–§5.7 |
 | 2026-10-02 | ARCH | 408–466, 1081–1127, 4060–4145, 4958–5081 | §1.5; §2.5; §5.8; §6.6.3 |
+| 2026-10-02 | ARCH | 2206–2399 | §3.5 |
+| 2026-10-02 | THESIS | 1230–1279, 2416–2555 | §6.2–§6.3; §12.2–§12.6 |
 </content>
 </invoke>
 <invoke name="Bash">
@@ -553,3 +555,48 @@ git log --oneline -2
     a forced fit.
   - Placement is validated on the constraint reference (NCC, the placement margin, the check registration),
     never by the delineation's own fit.
+
+### §F16 — the comparison's edges
+- **The test's domain.** THESIS §12.2 l.2430–2431: "Counts are never negative, so a cosine reaches the level a/b
+  exactly when b² · dot² ≥ a² · ‖u‖² · ‖v‖²". So dot ≥ 0 by construction, and squaring loses no sign *for count
+  tables*. The level itself must lie in its domain: integers 0 ≤ a ≤ b, b ≥ 1. The contract refuses anything
+  else.
+- **Nothing to compare.** l.2435–2436: "A comparison answers in words: "reaches", "short" or "silent", so a pair
+  with nothing to compare abstains rather than fails". After silent banks are removed, a zero norm on either side
+  (every read row unlit: ARCH §3.5.3's *orthogonal*) answers `silent`. It never answers `reaches`, which the
+  squared test would otherwise give at 0 ≥ 0.
+- **Silence is a bank.** THESIS §6.3 l.1264–1267: "The informational zero is a silent bank". ARCH §3.5.3
+  l.2297–2300: orthogonal "is not silence: the coverage bank records the read". So silence is read from the
+  coverage bank, per side and bank, never from zero counts.
+- **R and the integer bound.** ARCH §3.5.2: a bank is 512 rows, and counts are "stored in 32 bits and summed in
+  64". The width proof uses R = every allocated row of every bank the question names, and C = the largest
+  count. Where R·C² can leave 2^53 the float GEMM is not admitted, and whole-number arithmetic carries the dot.
+- **Floats never decide.** THESIS §12.2 l.2418–2420: "Whole numbers give a comparison one answer on every
+  machine". A float cosine is information only: it is never compared bitwise, and it never decides.
+
+### §F12–F15 — four false properties, corrected
+- **Folds.** ARCH §6.2.5 rules 1 and 3 (one role per study; rotation). Hashing gives no balance. Dealing studies
+  round-robin over their sorted digests is deterministic and balanced within one by construction.
+- **Terciles with ties.** THESIS §6.2 l.1238–1241 sets the edges at terciles "so the three digits are equally
+  likely". With strict edges (−1 below the low, +1 above the high, 0 between), tied mass at an edge falls in the
+  middle. The achieved shares are reported, and a ±1 claim is never made.
+- **The longest gap.** THESIS §12.3: running sums give counts (l.2448–2455). A longest run is a maximum, not a
+  count. Lens 10 (l.1300) asks for "the longest run". It is computed by a run scan that carries each segment's
+  prefix and suffix runs across segment boundaries.
+- **Bounds.** ARCH §6.2.5 rule 4: "Every rate with its count and bound". A bound is recomputed at each step and
+  reported. No monotone shrinkage is claimed.
+
+### §F11 — replay: a twin's sameness, and a change of behaviour
+- THESIS §12.5: "A speed-up changes how an answer is computed, never the answer … The reference is the
+  specification", and "we claim the same answer within an environment, never across two".
+- THESIS §12.6 l.2539–2543: kept values are keyed by producer, scope and encoding, each versioned, and "each drop
+  names its cause".
+- ARCH §6.3: "The structure-alone run is kept beside every step". §6.6.3: "Each phase is measured before the
+  next begins".
+- **Disposition (K02, K18, K27, README).**
+  - **SAME** compares a twin with its reference at one revision, in one environment.
+  - **A behaviour change** (K08 replacing K07's bootstrap; K20 changing K16's words; K13a changing first light)
+    is a new reference version with an intent record. It is read as a diff against the previous first-light
+    record, never as SAME.
+  - **Staleness** is recursive over the dependency graph.
+  - **Acceptance** replays the versions SELECTION.toml selects, and K27 skips an unselected K24.
