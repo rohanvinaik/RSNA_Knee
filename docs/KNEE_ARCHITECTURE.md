@@ -1,5 +1,11 @@
 # Knee as Law — A Classical-AI Architecture for RSNA Knee Abnormality Detection
 
+> **The rigid oracle supersedes this document** (added 2026-10-03, at the founder's word). He wrote: "Note this
+> principle will even supercede the atchitecture document as well. The concept is the rigid oracle, the design is
+> something we're working on building in session" (2026-10-02 23:59:57Z). The principle, in twelve points with his
+> words, heads `AGENTS.md`, `docs/book/CONSTRAINT_BLOCK.md` and `docs/THEORY_OF_THE_CASE.md`. Where this
+> document conflicts with it, the principle wins.
+
 **Status.** DRAFT for founder sign-off, 2026-10-02. Not a build specification until signed. This document
 supersedes and expands `docs/KNEE_RECIPE.md` (RECIPE), the first working of the recipe for the knee, which
 is kept as that first working. It fills the intelligence layer that `docs/THEORY_OF_THE_CASE.md` (THEORY)

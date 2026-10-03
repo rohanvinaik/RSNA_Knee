@@ -32,6 +32,55 @@ Each chapter in `chapters/` builds one severable module against this document.
 
 ---
 
+## 0. The rigid oracle
+
+The founder's lens principle is the rigid oracle of this project, and it supersedes the architecture document: "The
+concept is the rigid oracle, the design is something we're working on building in session" (2026-10-02 23:59:57Z).
+His words are verbatim in `docs/book/FOUNDING_PROMPTS.md`. The worked reading, checked with Codex, is
+`docs/book/provenance/theory/lens_principle_reading_claude.md`.
+
+1. **A lens measures, and is never wrong.** "A lens is an instrument, an artifact of observation … Properly-designed
+   lenses are never wrong, by definition."
+2. **No lossy lens warrants a decision alone,** unless the statement is inherently what it measured. "A single lens
+   can assign a value (or assign that something is *not* <X>) … only if it is inherently a measurement of truth". A
+   set measured as [3,5,7] warrants "only odd primes", never "always only odd primes".
+3. **A claim beyond one measurement is a conjunction:** "the truth is a CONJUNCTION of both lenses, with an
+   interpretation provided by the structure of the problem space (And me, you with my approval)".
+4. **Readings are balanced ternary, in two senses.**
+   - For a strict warrant they mean "assignment/abstention/rejection".
+   - For a directional reading they mean "evidence for/abstention/evidence against".
+   - An assignment is "an explicitly encoded operation in balanced ternary, a strictly defined subset of the truth
+     table", often with more than one path to truth.
+   - The banks and their arithmetic are "basically a fancy version of a giant truth table".
+5. **We classify definable categories of image, never "lesion" or "normal",** within "*Strict* boundaries of
+   knowability, always". A category's name never outruns its warrant: "not-noise not cell" rejected noise and
+   abstained on cell.
+6. **What a category means is the founder's:** "a question for a fluid-intelligence oracle to rule on". "I ascribe
+   meaning to it when I literally see it in action."
+7. **The committee looks downwards.** It asks "how many violations of which strength signals is enough to cause an
+   assignment to fail?" "a majority *can* be a sufficient contract that decides on a ruling", and it never makes the
+   ruling correct. Refusing on disagreement is "not wrong as a principle, it is wrong as a law". Near-miss learning
+   names part of it.
+8. **Independence is measured and is essential to meaning,** but "correlation isn't damning in and of itself":
+   "dissention between lenses that are otherwise positively correlated can be some of the most *valuable* pieces of
+   data."
+9. **Strict exclusion passes a thorough gate, then is used confidently:** "THOROUGH about what passes the gate … when
+   we find one, we can use it *confidently*". The black and speck filters did this for "cell". The gate's criteria
+   are established by building.
+10. **The enemy is entropy:** "The enemy isn't correctness or noise, it's *entropy*. A thing that is wrong or that is
+    noisy with a legible trace of reasoning behind it *is* information."
+11. **Principled abstention:** "you know what you know, you know what you don't know, and those are both complete and
+    correct assertions of the process of reasoning".
+12. **What must be established is established by building:** "Most important is to make the code actually work, to
+    be built … "what we have to establish" is itself...something we have to establish".
+
+The habit this guards against, in his words: "finding a set of signals that kinda vibe and jumping to assign a label
+to it".
+
+This book's design (§1–§7) is being built in session under the oracle. The accord's changes (§2) and revision 1's
+(§2.1) stand only where `provenance/build/audit_against_original.md` finds them adherent to it, provably correct, or
+warranted by the founder's words.
+
 ## 1. The mechanism, at data-flow level
 
 One study, from its files to its twelve numbers. Each arrow is a named value, computed once where it becomes
