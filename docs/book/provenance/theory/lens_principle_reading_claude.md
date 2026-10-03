@@ -88,3 +88,29 @@ design is something we're working on building in session".
 - Does "A ≇ B" mean what my question meant, that the gate cannot separate A's errors from B's?
 - Can an encoded, definable meaning ever let a single reading decide alone? The thesis's senior filter "decides
   alone" because it is "narrow and knowably correct". Or does no single reading ever warrant a decision?
+
+---
+
+## His answers (2026-10-03 00:10:18Z, verbatim in `../../FOUNDING_PROMPTS.md`), and my restatement for him to check
+
+**On "≇".** "'≇' was meant to imply a statement of truth that some lenses seem to *imply*, but cannot formally
+warrant, and so the mutual exclusivity of those categories as assignments to a particular problem/object is not
+known. "Seems like they're different" is not the same as "these are different"."
+
+**On a single lens.** "A single lens can assign a value (or assign that something is *not* <X>--knowing that
+something is "<not> X" is as much a statement of truth as knowing something *is* X), but only if it is inherently a
+measurement of truth." The example: a lens that measures that a set contains [3,5,7] can warrant "this set only
+contains odd, prime numbers", but not "this set will always contain only odd, prime numbers". That becomes
+warranted only with "ANOTHER lens [that] says that the set is complete as is". Then "the truth is a CONJUNCTION of
+both lenses, with an interpretation provided by the structure of the problem space (And me, you with my
+approval)".
+
+**My restatement, to be confirmed by him.**
+- One lens warrants a statement of truth, "is X" or "is not X", only where that statement is what the lens
+  measured. It warrants nothing beyond its measurement.
+- A claim beyond one lens's measurement is warranted only as a conjunction of lenses that measure what is
+  missing, with the interpretation supplied by the problem's structure and approved by him.
+- "Seems different" (≇, implied by some lenses, not warranted) is not "is different" (≠, warranted). Where only the
+  first is known, whether the two are mutually exclusive is unknown. That is a finding, and what depends on it
+  abstains.
+
