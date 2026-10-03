@@ -156,3 +156,28 @@ It also confirms that his words leave all three of my questions open:
 His "≇" answer concerns whether categories are known to be mutually exclusive, which is not a definition of
 independence between evidence sources. All three questions are his.
 
+---
+
+## The committee and independence (his words, 2026-10-03 00:27:25Z), and my understanding, written before Codex reads it
+
+**My understanding, in my own words.**
+1. **The truth tables are found by building.** Which combinations of readings assign, reject or abstain is not
+   given in advance. Building the project is how it is found: from biology, medicine, physics and mathematics, by
+   establishing what each lens, and the data we are given, actually measures, and what that means for the truth.
+2. **Concurrence is the committee's mechanism, and a committee decides.** It is "Not a democracy. Not a
+   dictatorship." Its valid outputs are a positive decision, a negative decision, an ambiguous one, and a majority
+   decision with a noted dissent that reaches a different conclusion.
+3. **Independence is not required for evidence to count.** Dissent between lenses that are otherwise positively
+   correlated can be among the most valuable data.
+4. **The enemy is entropy, not error and not noise.** A reading that is wrong or noisy, with a legible trace of
+   reasoning behind it, is information. The work is to incorporate the world's noisiness and learn what it means.
+   That is why classical AI is in the loop, and why there is no single "God script".
+
+**Consequences for the design, as I read them.** These are mine, to be checked; nothing changes until he rules.
+- ARCH forbids a majority decision. "A majority stands only when its dissenter is set aside so", and COMMITTEE's
+  3–1 majority is dropped (§5.3). Every disagreement is kept open. Under his words, a majority decision with a noted
+  dissent is a valid output.
+- ARCH counts agreement only between voices whose independence has been measured (§4.4), and seats voices by its
+  gate (§5.3, §6.2.2). Under his words, independence is not a precondition. Measured dependence, and dissent among
+  correlated lenses, are information.
+
