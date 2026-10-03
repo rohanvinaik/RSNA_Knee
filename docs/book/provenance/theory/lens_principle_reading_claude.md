@@ -221,3 +221,58 @@ qualifications:
 6. **The habit to guard against** is finding signals that roughly agree and jumping to a label. The discipline is
    strict knowability: assign only what is known, reject only what is known not to be, and abstain on the rest.
 
+**After Codex's fourth check** (`codex_lens_principle_answer4.md`). "The core epistemology is clear, and the reading
+substantially matches his stated position. It is not yet a complete formal specification". I accept its
+qualifications:
+- A bucket's name is kept apart from its warrant. "Not-noise-not-cell" warrants not-noise only, and abstains on
+  cell. The three names are not three settled, mutually exclusive facts.
+- "Near-miss learning" names part of the committee's reasoning ("That's not the whole thing"). It is not a formal
+  label for every ruling of a majority with a dissent. "ARCH 5.3 is not wrong as a principle" endorses no particular
+  refusal rule.
+- "Compatible" is his word for vector operations, cosine similarity and correlation between lenses. That dependence
+  is read "in the same language as every other reading" was my inference. The Pearson identity is mathematics, valid
+  for non-constant paired vectors.
+- The criteria of the strict-exclusion gate remain to be established; his words set the standard ("THOROUGH"), not
+  the criteria.
+
+---
+
+## The shared epistemology — for his confirmation (2026-10-03)
+
+Stated in his terms, for him to confirm that it is what all three of us hold (him, Codex, the lead). Each line
+cites his words.
+
+1. **A lens measures, and is never wrong.** "A lens is an instrument, an artifact of observation … It simply
+   measures … Properly-designed lenses are never wrong, by definition."
+2. **No lossy lens warrants a decision alone,** unless the statement is inherently what it measured. Lenses "that
+   do not encode a specific 1:1 relationship to a specific element of "truth"" have no unilateral warrant. "A single
+   lens can assign a value (or assign that something is *not* <X>) … only if it is inherently a measurement of
+   truth" ([3,5,7]).
+3. **A claim beyond one measurement is a conjunction:** "the truth is a CONJUNCTION of both lenses, with an
+   interpretation provided by the structure of the problem space (And me, you with my approval)".
+4. **Readings are balanced ternary,** with two meanings. "Assignment/abstention/rejection" for a strict warrant;
+   "evidence for/abstention/evidence against" for a directional reading. An assignment is "an explicitly encoded
+   operation in balanced ternary, a strictly defined subset of the truth table", often with "more than one single
+   path to truth".
+5. **The categories are categories of image, bounded by knowability,** and a name never outruns its warrant. "We
+   classify according to definable categories of image … "not-noise not cell" was only allowed to reject noise as an
+   option, abstained on the question of cell or no. *Strict* boundaries of knowability, always."
+6. **Meaning is his.** "What those categorizations *mean* is a question for a fluid-intelligence oracle to rule on".
+   "I ascribe meaning to it when I literally see it in action."
+7. **The committee looks downwards.** "how many violations of which strength signals is enough to cause an
+   assignment to fail?" "a majority *can* be a sufficient contract that decides on a ruling", and is not what makes
+   it correct. Refusal on disagreement is "not wrong as a principle, it is wrong as a law". Near-miss learning names
+   part of it.
+8. **Independence is measured, and correlation is not damning.** "We measure indepenedence, and that certainly is
+   essential to how we assign meaning to the combined verdicts … but correlation isn't damning in and of itself."
+   "dissention between lenses that are otherwise positively correlated can be some of the most *valuable* pieces of
+   data."
+9. **Strict exclusion: a thorough gate, then confident use.** "THOROUGH about what passes the gate … when we find one,
+   we can use it *confidently*", as the black and speck filters were for "cell".
+10. **The enemy is entropy.** "The enemy isn't correctness or noise, it's *entropy*. A thing that is wrong or that is
+    noisy with a legible trace of reasoning behind it *is* information."
+11. **Principled abstention.** "you know what you know, you know what you don't know, and those are both complete and
+    correct assertions of the process of reasoning".
+12. **What must be established is established by building.** "Most important is to make the code actually work, to be
+    built … So "what we have to establish" is itself...something we have to establish".
+

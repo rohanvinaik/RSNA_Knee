@@ -85,4 +85,32 @@ His words (00:27:25Z), read with Codex's qualifications (`codex_lens_principle_a
 | 2.4 | The book: K13a (the gate before the loop, `bar_unset` means nothing concurs) and K14 (INSUFFICIENT; CONCUR only over `independent_measured` pairs) | **R** | the same independence precondition, inherited from ARCH and the accord | as 2.2 |
 | 2.5 | ARCH's decision words (PRESENT, ABSENT, DISAGREE, ABSTAIN; §5.2, Table 5.16) | to check against his outputs | his set is positive, negative, ambiguous, and majority with noted dissent. ARCH has no word for a majority carrying a dissent | a majority decision with its dissent recorded beside it, if he agrees |
 
+## His rulings on Parts 1 and 2 (2026-10-03 01:33:48Z, verbatim in `../../FOUNDING_PROMPTS.md`)
+
+Read with Codex's fourth check (`codex_lens_principle_answer4.md`).
+
+- **Part 1, the "B" rows: no "lesion", no "normal".** "No, that's the wrong kind of assignment of meaning. We don't
+  classify "lesion" and "normal". We classify according to definable categories of image … *Strict* boundaries of
+  knowability, always). What those categorizations *mean* is a question for a fluid-intelligence oracle to rule on".
+  So rows 1 and 2 do not become definitions:
+  - the Deviation lens's licensed digit stays a measurement, and so does the λ-trajectory's band;
+  - each enters a category of image only as far as its warrant reaches;
+  - "no lesion" and "the structure is normal" are not assignments the structure makes. A name never outruns its
+    warrant: "not-noise not cell" rejected noise and abstained on cell.
+- **Part 1, the "C" rows: yes, paths to be established by building.** "Most important is to make the code actually
+  work, to be built. I ascribe meaning to it when I literally see it in action. So "what we have to establish" is
+  itself...something we have to establish".
+- **2.1, the ban on majority rulings.** "ARCH 5.3 is not wrong as a principle, it is wrong as a law." "a majority
+  *can* be a sufficient contract that decides on a ruling, comittee style." The committee looks downwards: "how many
+  violations of which strength signals is enough to cause an assignment to fail?" That is near-miss learning.
+- **2.2 and 2.4, independence as a precondition.** "We measure indepenedence, and that certainly is essential to how
+  we assign meaning to the combined verdicts of these signals, but correlation isn't damning in and of itself." The
+  gate's measurements are kept, as information; they no longer silence a voice.
+- **2.3, absolute exclusion from one reading.** "Agreed. We need to be THOROUGH about what passes the gate for what
+  can speak to strict exclusion, but when we find one, we can use it *confidently*", as the black and speck filters
+  did for "cell". The gate's criteria are to be established.
+- **2.5, the word for a majority with a noted dissent.** "The word is "near-miss learning" :3. That's not the *whole*
+  thing, of course. There are some elements that are deterministic, not pure AI." It is not a formal label for every
+  such ruling (Codex's fourth check).
+
 ## Part 3. Noise and entropy (to follow)
