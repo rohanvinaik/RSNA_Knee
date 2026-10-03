@@ -253,6 +253,21 @@ plan to send Codex the whole thesis with the lead's reading.)
 > I actually rather like this whole framing, this and the past message. I'd later like to add it in to the
 > "<object>" thesis. Mind adding that as a memory or gh issue in the "cell_tracking" project?
 
+> **00:27:25Z** 1. That's what building this project is meant to answer. That's based on biology, on medicine, and
+> on physics and math. What the "lenses"/the data we're given *actually* measure, vs what that means and how it
+> informs our understanding of "truth
+> 2. Yes, that is the mechanism of concurrence. Because, I mean, that *is* what a committe is. Not a democracy. Not
+> a dictatorship. A committee is something that makes decisions, period. It can make a positive decision, a negative
+> decision, an ambiguous one, or even make a majority decision with a noted dissention that has a different
+> conclusion. All are valid and sane outputs of a committee process, which is why it's the framing for how this is
+> built.
+> 3. Oh no, not at all. In fact, dissention between lenses that are otherwise positively correlated can be some of
+> the most *valuable* pieces of data. Again, this project is *deeply* instantiated in information theory. The enemy
+> isn't correctness or noise, it's *entropy*. A thing that is wrong or that is noisy with a legible trace of
+> reasoning behind it *is* information. The work of this project is not to discard the noisiness of the real world,
+> but to incorporate it and learn what it means. Hence why we have classical AI in the loop, and don't just build
+> one "God script" in python and call it a day
+
 ## The engineering intent, in the founder's earlier words (2026-08-31, DETERMINISTIC_SICP §1.1)
 
 > "I see this as a resource optimization problem. We want to optimize several 'independent' systems at the same
