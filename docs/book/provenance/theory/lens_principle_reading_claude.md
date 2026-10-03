@@ -192,3 +192,32 @@ qualifications:
 - *His words are "The enemy isn't correctness or noise, it's entropy"*, not "error". And "Properly-designed lenses
   are never wrong, by definition" stands: the "thing that is wrong" is not the objective measurement.
 
+---
+
+## The epistemology (his words, 2026-10-03 01:33:48Z), and my understanding, written before Codex reads it
+
+**My understanding, in my own words.**
+1. **What is classified is the image, not the disease.** The structure resolves an image into definable categories
+   of image: buckets that are mutually exclusive in what an image can be resolved into. The cell work's buckets are
+   the model: noise; cell; not-noise-not-cell. Their boundaries are strict boundaries of knowability.
+   "Not-noise-not-cell" rejects noise and abstains on cell. Medical words such as "lesion" or "normal" are not
+   categories the structure assigns.
+2. **What a category means is his.** A fluid-intelligence oracle, the founder, rules on what an image category
+   means. He ascribes meaning when he sees the code in action, so the code must be built and run. Even what must be
+   established is itself to be established by building.
+3. **A committee decides by looking downwards.** It does not ask how many signals can come together to reach an
+   answer. It asks how many violations, by signals of which strength, are enough to make an assignment fail. A
+   majority does not make an answer correct, but it can be a sufficient contract for a ruling, committee-style.
+   ARCH's refusal on disagreement is right as a principle and wrong as a law. His word for a majority decision with
+   a noted dissent is "near-miss learning", not the whole of it, since some elements are deterministic.
+4. **Independence is measured, and correlation is not damning.** Measured independence is essential to the meaning
+   of combined verdicts, but correlation between lenses does not by itself disqualify one. Correlation sits in the
+   same vector arithmetic as cosine similarity, so dependence is read in the same language as every other reading.
+   *(My addition, as mathematics: Pearson correlation is the cosine of the mean-centred readings.)*
+5. **Strict exclusion: a thorough gate, then confident use.** Whatever may speak to strict exclusion must pass a
+   thorough gate, and once it passes it is used confidently. The cell work's black and speck filters are the model:
+   two lenses that are correct negative signals for "cell", which clear about half of the problem space before the
+   heavy computation.
+6. **The habit to guard against** is finding signals that roughly agree and jumping to a label. The discipline is
+   strict knowability: assign only what is known, reject only what is known not to be, and abstain on the rest.
+
