@@ -142,3 +142,17 @@ He confirmed the restatement above ("Correct."), and added the following.
 - Must evidence from two lenses be warrantedly independent (≠, not merely ≇) before they count as two terms of one
   path? Or is that itself part of each path's definition?
 
+**After Codex's second check** (`codex_lens_principle_answer2.md`). It agrees substantially. I accept its limits:
+- "We can assign +1/0/-1 for both" makes the digit the encoding of a reading, not the whole of a measurement.
+- "Ledger" is my word. His words name "matrix math operations across intentionally-defined banks", "basically a
+  fancy version of a giant truth table", and no particular representation.
+- The exact table is unspecified. It rests on "the structure of the problem space (And me, you with my approval)".
+
+It also confirms that his words leave all three of my questions open:
+- which combinations reject and which abstain;
+- whether the committee's concurrence is a path, and on what terms ("two or more", "none against");
+- whether a path needs warranted independence of its evidence.
+
+His "≇" answer concerns whether categories are known to be mutually exclusive, which is not a definition of
+independence between evidence sources. All three questions are his.
+
