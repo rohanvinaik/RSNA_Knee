@@ -219,6 +219,9 @@ sub-agents launched at 16:33Z. They were stopped before reporting, and nothing o
 (A first send at 23:55:42Z, the first paragraph alone, was interrupted; the 23:56:22Z text stands. It answered a
 plan to send Codex the whole thesis with the lead's reading.)
 
+> **23:59:57Z** (mid-turn) Note this principle will even supercede the atchitecture document as well. The concept is
+> the rigid oracle, the design is something we're working on building in session
+
 ## The engineering intent, in the founder's earlier words (2026-08-31, DETERMINISTIC_SICP §1.1)
 
 > "I see this as a resource optimization problem. We want to optimize several 'independent' systems at the same

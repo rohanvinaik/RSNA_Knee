@@ -10,9 +10,21 @@
 - "Not just this session--EVERY change to the original design"
 - "there is LITERALLY not an actual functional codebase that meets the design intent"
 
-## The original design
+## The rigid oracle, and the design
 
-Unchanged since it was merged; the hashes match `REFERENCE_MANIFEST.toml`, checked 2026-10-02.
+**Re-framed by the founder, 23:59:57Z:** "Note this principle will even supercede the atchitecture document as well.
+The concept is the rigid oracle, the design is something we're working on building in session".
+- The oracle is his lens principle (23:50:20Z, `../theory/lens_principle_reading_claude.md` read after Codex's
+  check), with his words beside it. Its open terms ("direction", "exclusion", "lenses") are his to define.
+- The design (THEORY, KNEE_ARCHITECTURE) is not the fixed reference. It is being built in session.
+- So each element of the design and of the book is judged by whether it adheres to the principle. A change that
+  brings it into line is warranted by his words. A change on any other ground still needs proof or his words.
+- A1–A10 below were classified against ARCH before this ruling. They are re-read against the principle before any
+  revert is made.
+
+### The design's documents
+
+Unchanged since they were merged; the hashes match `REFERENCE_MANIFEST.toml`, checked 2026-10-02.
 
 | document | commit | sha256 (first 16) |
 |---|---|---|
