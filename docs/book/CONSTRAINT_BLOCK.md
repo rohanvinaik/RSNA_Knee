@@ -194,6 +194,9 @@ to actually build." The report says what "computer vision" means here, specifica
 thrust. The design walk (`provenance/theory/design_walk.md`, Part 3 next) waits for his direction. Then build: "Most
 important is to make the code actually work".
 
+The reading is `provenance/theory/thesis_reading_claude.md` (2026-10-03). Its proposed next step is to work the
+thesis's nine-step recipe (§13.1) for the knee, then hold the book against it. That waits for his word.
+
 ## Sources that can contradict this block: THEY WIN
 
 - `docs/book/FOUNDING_PROMPTS.md` and `docs/FOUNDING_RECORD.md` (the founder's words). First among them is the lens
