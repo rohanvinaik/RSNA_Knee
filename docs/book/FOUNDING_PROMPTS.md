@@ -240,6 +240,19 @@ plan to send Codex the whole thesis with the lead's reading.)
 >
 > Sounds good? Makes sense?
 
+> **00:18:12Z** Correct. We can assign +1/0/-1 for both. For a lens that speaks to correctness and a strict warrant,
+> that can mean "assignment/abstention/rejection". For one that is directional only, an assignment that is a
+> statement of truth/understanding beyond the reach of any objective single lens, it can mean "evidence
+> for/abstention/evidence against", and the truth table is an explicitly encoded operation in balanced ternary, a
+> strictly defined subset of the truth table, possibly (likely, for complex assignment) more than one single path to
+> truth. You see the elegance of the whole design, yes? Hypervectors and HDC seem kind of overwrought, the way we
+> use them. But they are *literally* matrix math operations across intentionally-defined banks, which is basically a
+> fancy version of a giant truth table. Make sure to take it to codex in that chat you just opened, make sure you
+> both understand it fully.
+>
+> I actually rather like this whole framing, this and the past message. I'd later like to add it in to the
+> "<object>" thesis. Mind adding that as a memory or gh issue in the "cell_tracking" project?
+
 ## The engineering intent, in the founder's earlier words (2026-08-31, DETERMINISTIC_SICP §1.1)
 
 > "I see this as a resource optimization problem. We want to optimize several 'independent' systems at the same

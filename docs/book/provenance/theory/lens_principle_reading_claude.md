@@ -114,3 +114,31 @@ approval)".
   first is known, whether the two are mutually exclusive is unknown. That is a finding, and what depends on it
   abstains.
 
+---
+
+## The truth table (his words, 2026-10-03 00:18:12Z), and my understanding, written before Codex reads it
+
+He confirmed the restatement above ("Correct."), and added the following.
+
+**My understanding, in my own words.**
+1. Every lens reading is a balanced-ternary digit, +1, 0 or −1. What the digit means depends on the kind of lens.
+2. *A lens that speaks to correctness, with a strict warrant.* Its reading is itself a statement of truth, because
+   the statement is what it measured. Here +1, 0 and −1 mean assignment, abstention and rejection: "is X", no
+   answer, "is not X".
+3. *A lens that is directional only.* The assignment lies beyond the reach of any single objective lens. Here +1, 0
+   and −1 mean evidence for, abstention and evidence against.
+4. *The assignment is then an explicitly encoded operation in balanced ternary* over those readings. It is a
+   strictly defined subset of the truth table, the combinations of digits that warrant it. A complex assignment
+   likely has more than one path to truth, that is, more than one warranting combination.
+5. *The hypervector ledger is that table made concrete.* Its banks are defined on purpose, and its arithmetic is
+   plain matrix operations over them. In his words, "basically a fancy version of a giant truth table". It is
+   explicit logic, not a learned model.
+
+**Where I go beyond his words. These are questions, not claims.**
+- Is every combination outside an encoded subset an abstention? Or can a rejection also be a defined subset, so
+  that the table has an assignment region, a rejection region and an abstention region?
+- Is the committee's concurrence one such encoded path? For example, two or more warranted-independent readings of
+  evidence for, and none against.
+- Must evidence from two lenses be warrantedly independent (≠, not merely ≇) before they count as two terms of one
+  path? Or is that itself part of each path's definition?
+
