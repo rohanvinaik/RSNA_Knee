@@ -113,7 +113,9 @@ Code is evidence of behaviour, never authority over intent: a bug is not a speci
 2. **No Popery.** The build is a conclave, not one tuned pipeline:
    - a lens (member) measures one thing about an object and knows no question;
    - an agency (body) holds the signs;
-   - truth is assigned by concurrence and refused on disagreement;
+   - truth is assigned by concurrence. Refusing on disagreement is "not wrong as a principle, it is wrong as a law"
+     (the oracle, point 7): the committee looks downwards, and "a majority *can* be a sufficient contract that
+     decides on a ruling";
    - the harness asks every question of every object, including unclaimed and overlapping material, and reports
      identified / abstained / wrong per class of object and role.
    - *Reason:* one pipeline tuned to one verdict is the ML prior returning as the build's shape.

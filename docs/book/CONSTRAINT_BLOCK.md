@@ -136,8 +136,6 @@ Each kernel carries a compute contract and a reference, and answers to SAME.
 - **The build order:** whole chapters in dependency order, with first light at K18; never a demo slice. The
   independence gate and the hardness map (K13a) come before the loop, as ARCH §6.6.3 orders Phase 6 before
   Phase 7. Every integration-changing chapter after K18 re-runs first light.
-- **Concurrence:** an answer needs concurring independent acquisitions (ARCH Glossary). A single voice yields a
-  provisional take and an ABSTAIN, never PRESENT or ABSENT.
 - **Environments:** VERIFY (uv-managed CPython ≥ 3.12) and DEPLOY (Kaggle's measured runtime).
 - **Compute:**
   - the M1 Max is the dev seat;
@@ -148,6 +146,17 @@ Each kernel carries a compute contract and a reference, and answers to SAME.
 - **The emission default:** Law 7's literal 0.5 for the open register, until the founder rules on Q4.
 - **The λ words:** legacy routing codes for cells of (I, D). D is a named reference-conflict energy; it is not
   the founder's detector completed.
+
+## Open, under the walk: never stated as resolved
+
+- **Concurrence and independence.** This block once stated as resolved: "an answer needs concurring independent
+  acquisitions (ARCH Glossary). A single voice yields a provisional take and an ABSTAIN, never PRESENT or ABSENT."
+  It is not resolved. The founder's words stand above it:
+  - "Oh no, not at all" (00:27:25Z), asked whether evidence must be warrantedly independent to count;
+  - "correlation isn't damning in and of itself" (01:33:48Z);
+  - the oracle's point 2: a single lens may assign or reject what it inherently measured.
+
+  His rulings are in `provenance/theory/design_walk.md`, Part 2 (2.1–2.5).
 
 ## Forbidden moves
 
@@ -173,10 +182,17 @@ Each kernel carries a compute contract and a reference, and answers to SAME.
 
 ## Next action: ONE imperative
 
-Continue the design walk (`provenance/theory/design_walk.md`) against the rigid oracle. Part 3 is noise and entropy.
-Then come ARCH's remaining decision rules (the split, recall, censors, emission), then the book's chapters. Every
-item is a proposal for the founder's ruling, and his rulings on Parts 1 and 2 are recorded in the walk. Then build:
-"Most important is to make the code actually work".
+Build an independent understanding, then report it to the founder and take his direction (2026-10-03 01:55:51Z):
+- read the tooling that the global agent context discusses, from what its pointers point to;
+- lightly peruse the *What an \<Object> Is* thesis;
+- read the last Codex exchange on the epistemology (`provenance/theory/codex_lens_principle_prompt4.md` and
+  `codex_lens_principle_answer4.md`).
+
+Do not read KNEE_ARCHITECTURE for now. He: "It's good to get an independent understanding and use that to think
+through how it should be built and our work on auditing/correcting the general design ("the book") before we start
+to actually build." The report says what "computer vision" means here, specifically, and the thesis's general
+thrust. The design walk (`provenance/theory/design_walk.md`, Part 3 next) waits for his direction. Then build: "Most
+important is to make the code actually work".
 
 ## Sources that can contradict this block: THEY WIN
 
