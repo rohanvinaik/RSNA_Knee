@@ -304,6 +304,37 @@ plan to send Codex the whole thesis with the lead's reading.)
 > Check in with codex again with this explanation, make sure the epistemology here is *rigorously* clear to all
 > three of us
 
+## 2026-10-03 — the oracle front and center; an independent understanding before the architecture
+
+> **01:39:36Z** We should also make sure this is front and center wherever relevant. CLAUDE.md, general
+> grounding/theory stuff--anything that would come up first when an agent in a new session starts to work in this
+> session. "Constraint block", of course.
+>
+> Yup, let's go!
+
+> **01:40:45Z** (mid-turn) Nuts, 2% until auto-compact
+
+> **01:40:52Z** (mid-turn) Save it for persistence above all please
+
+(He compacted the session at 01:43:07Z.)
+
+> **01:44:47Z** Can you ground in the "constraint block" and what we were doing just before the compact
+
+> **01:55:51Z** Good! Record the three messages and make those fixes, but don't jump into #4 just yet. I actually
+> think it's better that you didn't read the ARCH document. It's good to get an independent understanding and use that
+> to think through how it should be built and our work on auditing/correcting the general design ("the book") before
+> we start to actually build. First, you get the idea of "computer vision" here? What it means specifically, and the
+> general thrust of the thesis? Rather than reading the architecture document, I think it'd be better for you to
+> lightly peruse the "what is an <object>" thesis. First, look at the global agent context file and read into the
+> tooling that it discusses, read up on it, make sure you're familiar with what we have at our disposal. Then read and
+> think it over, come back to me with what you understand about this. Also read the final turn of the "epistemology"
+> conversation with Codex--just the prompt you sent and the response you got from Codex is sufficient. Then come back,
+> and let's see what we do from there
+
+("The three messages" are the first three above. "Those fixes" were two lines that predated his 01:33:48Z
+rulings: CONSTRAINT_BLOCK's *Concurrence* under *Resolved*, and AGENTS law 2's "refused on disagreement". "#4" was
+the lead's next step: begin the walk's Part 3 by reading KNEE_ARCHITECTURE's sections whole.)
+
 ## The engineering intent, in the founder's earlier words (2026-08-31, DETERMINISTIC_SICP §1.1)
 
 > "I see this as a resource optimization problem. We want to optimize several 'independent' systems at the same
@@ -344,3 +375,6 @@ plan to send Codex the whole thesis with the lead's reading.)
 | language-specific modules (C/C++ for memory and cache, Rust for speed) designed in from the start, guided by the tools | chapter K02b (the compute design and the native layer); `THE_KNEE.md` §3.2 |
 | Radon kept as an independent instrument, preferred to LintGate for complexity | K02 (dev tools), K02a (the fixture's gradient), K02b (the instruments table) |
 | no operation exempt from engineering because it looks cheap; "suit and tie, not just "not naked"" | `CONSTRAINT_BLOCK.md` law 14; `AGENTS.md` law 8; K02b §1 and §3.4 |
+| the lens principle is the rigid oracle and supersedes the architecture document | the twelve points at the head of `AGENTS.md`, `CONSTRAINT_BLOCK.md`, `THE_KNEE.md` §0 and THEORY; `provenance/theory/` (the readings, the Codex checks, the design walk) |
+| the oracle front and center wherever a new session starts | the same heads; `CLAUDE.md`'s read-first line; ARCH's banner; the book's README |
+| an independent understanding before the architecture: the tooling, the thesis, the last Codex exchange; ARCH not read for now | `CONSTRAINT_BLOCK.md` → *Next action* |
