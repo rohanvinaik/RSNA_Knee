@@ -222,6 +222,24 @@ plan to send Codex the whole thesis with the lead's reading.)
 > **23:59:57Z** (mid-turn) Note this principle will even supercede the atchitecture document as well. The concept is
 > the rigid oracle, the design is something we're working on building in session
 
+## 2026-10-03 — the lens principle, defined
+
+> **00:10:18Z** 1. I'm not sure what those three words specifically reference without context
+> 2. Yes, "≇" was meant to imply a statement of truth that some lenses seem to *imply*, but cannot formally warrant,
+> and so the mutual exclusivity of those categories as assignments to a particular problem/object is not known.
+> "Seems like they're different" is not the same as "these are different". Your question was about knowable
+> mutual-exclusiveness vs that which is only vibes-y
+> 3. Yes. If defined carefully. A single lens can assign a value (or assign that something is *not* <X>--knowing
+> that something is "<not> X" is as much a statement of truth as knowing something *is* X), but only if it is
+> inherently a measurement of truth. A "lens" can measure that a set contains the integers [3,5,7], and that can be
+> the same as the assignment of truth that "this set only contains odd, prime numbers". It CANNOT assert that "this
+> set will always contain only odd, prime numbers". But if ANOTHER lens says that the set is complete as is, THEN we
+> can. Both are statements of truth, both can be warranted. The first is sufficient with just the one lens. The
+> second is warranted as well, but the truth is a CONJUNCTION of both lenses, with an interpretation provided by the
+> structure of the problem space (And me, you with my approval).
+>
+> Sounds good? Makes sense?
+
 ## The engineering intent, in the founder's earlier words (2026-08-31, DETERMINISTIC_SICP §1.1)
 
 > "I see this as a resource optimization problem. We want to optimize several 'independent' systems at the same
