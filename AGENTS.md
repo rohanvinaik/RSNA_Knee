@@ -14,7 +14,9 @@ macro-averaged ROC-AUC. **There is no machine learning in the architecture.**
 - Lenses, each measuring one thing, read the deviation and the patient's own anatomy.
 - A society of agencies decides each finding by concurrence, or abstains.
 
-The design is the founder's: `docs/THEORY_OF_THE_CASE.md` and `docs/KNEE_ARCHITECTURE.md`. The book,
+The rigid oracle is the founder's lens principle (`docs/book/FOUNDING_PROMPTS.md`, 2026-10-02 23:50:20Z): a lens measures; intentionally lossy lenses that encode no 1:1 relationship to an element of truth have no authority to warrant a decision alone; interpretation is built on top; meaning is derived from structure; principled abstention. It supersedes the architecture document: "The concept is the rigid
+oracle, the design is something we're working on building in session" (23:59:57Z). The design is the founder's
+`docs/THEORY_OF_THE_CASE.md` and `docs/KNEE_ARCHITECTURE.md`, being built in session. The book,
 [`docs/book/`](docs/book/README.md), plans how it is built. `docs/book/THE_KNEE.md` lists the canon passages that
 the 2026-10-02 accord and revision 1 amend. Each amendment stands only if it is provably correct or warranted by
 the founder's explicit words (law 9). Until `docs/book/provenance/build/audit_against_original.md` has classified
@@ -23,8 +25,10 @@ it, it is unverified.
 ## Where truth lives
 
 **Intent** (what the system should do). Highest first; the higher wins:
-1. the founder's words: `docs/FOUNDING_RECORD.md`, `docs/book/FOUNDING_PROMPTS.md`;
-2. the founder's design: THEORY (its Laws 1–8 bind), KNEE_ARCHITECTURE, and `docs/canon/`;
+1. the founder's words: `docs/FOUNDING_RECORD.md`, `docs/book/FOUNDING_PROMPTS.md`. First among them is the lens
+   principle, the rigid oracle (23:50:20Z), which supersedes the architecture document (23:59:57Z);
+2. the founder's design: THEORY (its Laws 1–8 bind), KNEE_ARCHITECTURE, and `docs/canon/`. It is being built in
+   session, and where it conflicts with the principle, the principle wins;
 3. the book: `docs/book/CONSTRAINT_BLOCK.md`, `THE_KNEE.md`, the chapter specs. The book implements the design.
    Where it departs from the design, the departure stands only if it is provably correct or warranted by the
    founder's explicit words (law 9); otherwise the design wins;
@@ -106,6 +110,9 @@ Code is evidence of behaviour, never authority over intent: a bug is not a speci
      by how it looks: something that looks wrong may be critically important.
    - His general approval is not open authority: "my warrant was general and high-level, not open authority"
      (23:22:50Z).
+   - The lens principle (23:50:20Z) is "the rigid oracle" and supersedes KNEE_ARCHITECTURE (23:59:57Z). So a change
+     that brings the design into line with it is warranted by his words. A reading of the principle is not: its
+     open terms ("direction", "exclusion", "lenses") are his to define.
    - *Reason:* the founder, 2026-10-02: "*I* am the authority on what works or doesn't … You do not have the
      authority to change the design *I* built based on a random guess, when you don't know the intent"; "Make
      SURE you are not changing anything other than that which is definitevely/provably correct, or warranted by

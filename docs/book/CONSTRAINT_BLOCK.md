@@ -69,7 +69,9 @@ Each kernel carries a compute contract and a reference, and answers to SAME.
 15. **The design is the founder's.** A change to it stands only if provably correct (logic, arithmetic, a quoted
     contradiction, an order that cannot execute, the competition's literal data and framing as fact, never as a
     warrant on design) or warranted by his explicit words, which are specific: a general approval is "not open
-    authority" (23:22:50Z).
+    authority" (23:22:50Z). His lens principle (23:50:20Z) is "the rigid oracle" and supersedes the architecture
+    document (23:59:57Z). A change that brings the design into line with it is warranted. Its open terms
+    ("direction", "exclusion", "lenses") are his to define.
     Everything else returns to the original or goes to him as a question. A second reader's critique is never
     warrant. Nothing is built and nothing is evidenced. *(Founder, 2026-10-02 23:08Z: "*I* am the authority on
     what works or doesn't"; 23:09Z: "Make SURE you are not changing anything other than that which is
@@ -136,8 +138,9 @@ chapter is **K01 (characterization)**.
 
 ## Sources that can contradict this block: THEY WIN
 
-- `docs/book/FOUNDING_PROMPTS.md` and `docs/FOUNDING_RECORD.md` (the founder's words);
-- the founder's design: `docs/THEORY_OF_THE_CASE.md` (Laws 1–8 bind) and `docs/KNEE_ARCHITECTURE.md`. An amendment
+- `docs/book/FOUNDING_PROMPTS.md` and `docs/FOUNDING_RECORD.md` (the founder's words). First among them is the lens
+  principle (23:50:20Z), the rigid oracle, which supersedes the architecture document (23:59:57Z);
+- the founder's design, being built in session: `docs/THEORY_OF_THE_CASE.md` (Laws 1–8 bind) and `docs/KNEE_ARCHITECTURE.md`. An amendment
   in `THE_KNEE.md` overrides them only where the audit finds it provably correct or warranted by his words;
 - `docs/book/THE_KNEE.md` and the chapter specs, which implement the design;
 - the checksummed sources (`docs/book/REFERENCE_MANIFEST.toml`);
