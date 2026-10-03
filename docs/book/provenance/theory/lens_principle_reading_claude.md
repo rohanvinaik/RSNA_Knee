@@ -181,3 +181,14 @@ independence between evidence sources. All three questions are his.
   gate (§5.3, §6.2.2). Under his words, independence is not a precondition. Measured dependence, and dissent among
   correlated lenses, are information.
 
+**After Codex's third check** (`codex_lens_principle_answer3.md`). It agrees substantially. I accept its
+qualifications:
+- *"Found by building"* means establishing warranted meanings, not inventing them. He leaves the combinations
+  unresolved; he does not say none can be specified beforehand.
+- *Permission is not a decision rule.* "a majority decision with a noted dissention" is a valid output. When a
+  particular majority warrants a decision is still to be established.
+- *No universal independence prerequisite,* but correlated agreement does not thereby gain warrant. Its meaning
+  still needs establishing. Measuring dependence stays, as information.
+- *His words are "The enemy isn't correctness or noise, it's entropy"*, not "error". And "Properly-designed lenses
+  are never wrong, by definition" stands: the "thing that is wrong" is not the objective measurement.
+
