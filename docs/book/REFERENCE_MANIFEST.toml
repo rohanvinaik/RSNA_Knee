@@ -59,13 +59,13 @@ sha256 = "6215967be99e02ec2b72363bbff360476ea0811afba00d5f697b45ffb31d03b6"
 id = "theory"
 path = "docs/THEORY_OF_THE_CASE.md"
 role = "THEORY: Laws 1-8 (binding), the data layer, the pathology record"
-sha256 = "59e916c5400d3cba59a2c08b97edc94ebeeb21b0215e0c6de4fd1a950a4d590f"
+sha256 = "525bf5326f900dfa609ac9f23253da4b553fb6449d1be37d358205877018ac15"
 
 [[ref]]
 id = "knee-architecture"
 path = "docs/KNEE_ARCHITECTURE.md"
 role = "KNEE_ARCHITECTURE: the deep design, amended by THE_KNEE §2"
-sha256 = "d913777da4425a3d994a85adf9e5cc03c842de033379b9ccd60c51722732ced1"
+sha256 = "e6fb8b598946a3a594bb9a841da101cca169b6fdfd8de88c26e6b9ccbcc8b3be"
 
 [[ref]]
 id = "knee-recipe"

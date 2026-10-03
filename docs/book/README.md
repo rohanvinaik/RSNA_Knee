@@ -2,8 +2,9 @@
 
 **What it is.** The build plan for the classical-AI RSNA Knee entry, persisted so that no session can lose it. It
 takes the form the founder asked for: the SquishOS book, one chapter per severable module, "with the full intent
-and context laid out cleanly and persistently" (founder, 2026-10-02). The design is settled; the build runs in
-dependency order.
+and context laid out cleanly and persistently" (founder, 2026-10-02). The rigid oracle is the founder's lens principle, stated
+first in [`CONSTRAINT_BLOCK.md`](CONSTRAINT_BLOCK.md). The design is being built in session under it (founder,
+2026-10-02 23:59:57Z), and the build runs in dependency order.
 
 ## How to read this book
 

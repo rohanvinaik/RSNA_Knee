@@ -1,9 +1,16 @@
 # CLAUDE.md — RSNA_Knee
 
+**Read first:** the rigid oracle, the founder's lens principle, which heads `AGENTS.md` (imported below) and
+`docs/book/CONSTRAINT_BLOCK.md`. It governs every design decision, and it supersedes the architecture document.
+
 @AGENTS.md
 
 ## Claude Code specifics
 
+- **Your native pull runs against the oracle.** The founder: "You have a bad habit of finding a set of signals that
+  kinda vibe and jumping to assign a label to it". As a neural net you reach for the most plausible label; this
+  project runs on strict knowability. Assign only what is known, reject only what is known not to be, and abstain
+  on the rest. A category's name never outruns its warrant.
 - **Do the reading yourself.** Grounding is the lead's own work, and it is never delegated to a sub-agent, which
   carries none of this context. Grounding means reading:
   - the canon and the book;
