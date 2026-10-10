@@ -66,7 +66,9 @@ def panels(
     )
 
 
-def over(plane: np.ndarray, mask: np.ndarray, colour: tuple[float, float, float]) -> np.ndarray:
+def over(
+    plane: np.ndarray, mask: np.ndarray, colour: tuple[float, float, float]
+) -> np.ndarray:
     """`plane` as grey, with `mask`'s places in `colour`: an (rows, columns, 3) float64 array.
 
     The one drawing primitive this layer needs. Grey comes from the plane's own 99.5th percentile,

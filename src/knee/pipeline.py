@@ -83,7 +83,9 @@ def run_study(corpus: Corpus, uid: str) -> StudyRun:
         series = read_series(directory, row)
         view = (row.anatomical_plane, row.fluid_sensitive, row.fat_suppression)
         if series.volume is None:
-            runs.append(SeriesRun(row.series_uid, view, series.stack, None, "no_stacked_volume"))
+            runs.append(
+                SeriesRun(row.series_uid, view, series.stack, None, "no_stacked_volume")
+            )
             continue
         key = read_regime(series)
         runs.append(
