@@ -43,6 +43,18 @@ extend-select = ["B"]
 [tool.ruff.lint.per-file-ignores]
 # Detective regenerates these wholesale and checksums them; their import block is its own.
 "tests/detective/*" = ["I001"]
+# The workbench is the project's second tier (workbench/README.md): a probe answers for being
+# re-runnable and for not being wrong about what it measured, not for production polish. A probe
+# that sweeps all 336 series MUST catch broadly -- a single unreadable series is a finding to
+# record, never a reason for the sweep to die -- so the blind-except rule is lifted here and
+# nowhere else. Everything that bears on CORRECTNESS (B905's silent zip truncation, the import
+# and format rules) still applies: a rough probe is allowed, a probe with a wrong number is not.
+"workbench/*" = ["BLE001"]
+
+[tool.ruff.lint.isort]
+# `_out` is workbench/render's own sibling module (the pictures directory), resolved because a
+# script's directory is on sys.path when it is run as a script. It is ours, not third-party.
+known-first-party = ["knee", "_out"]
 
 [tool.ty.src]
 exclude = ["archive"]
