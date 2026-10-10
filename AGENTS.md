@@ -13,8 +13,14 @@ The founder, 2026-10-10, verbatim:
 - "I guess..we go in order? The PI-UNdergrad pass, you tell, I teach?"
 - "this will be the project and how we build it. Throw everything else into an archive, we'll dig from it as we
   need. I guess a folder for the raw data."
+- "the "spine", the step-by-step chapters of the project from the thesis that this computer vision project will
+  instantiate and that I will walk you through, and the PI-Undergrad workflow, driven with the thesis and the
+  cell-tracking project as an oracle that we'll use to work this project out"
 
 What that makes of this repository:
+- **The plan and the way of working** are `docs/SPINE.md`, loaded in every session through `CLAUDE.md`: the
+  chapters, Figure 8's stages in order, and the PI–undergrad pass the founder walks each one through, with the
+  thesis and the cell-tracking project as the oracle.
 - **The build** is `src/knee/`: one package per stage of Figure 8 of *What an \<Object> Is* (§2.8, in
   `~/Projects/Kaggle_Killer/competitions/cell_tracking/docs/pipeline_thesis/paper/what_an_object_is.md`). Each
   package carries the figure's text for its stage and says whether the founder has given the knee's version. Its
@@ -79,45 +85,34 @@ macro-averaged ROC-AUC. **There is no machine learning in the architecture.**
 - Lenses, each measuring one thing, read the deviation and the patient's own anatomy.
 - A society of agencies decides each finding by concurrence, or abstains.
 
-The rigid oracle is the founder's lens principle (`docs/book/FOUNDING_PROMPTS.md`, 2026-10-02 23:50:20Z): a lens measures; intentionally lossy lenses that encode no 1:1 relationship to an element of truth have no authority to warrant a decision alone; interpretation is built on top; meaning is derived from structure; principled abstention. It supersedes the architecture document: "The concept is the rigid
-oracle, the design is something we're working on building in session" (23:59:57Z). The design is the founder's
-`docs/THEORY_OF_THE_CASE.md` and `docs/KNEE_ARCHITECTURE.md`, being built in session. The book,
-[`docs/book/`](docs/book/README.md), plans how it is built. `docs/book/THE_KNEE.md` lists the canon passages that
-the 2026-10-02 accord and revision 1 amend. Each amendment stands only if it is provably correct or warranted by
-the founder's explicit words (law 9). Until `docs/book/provenance/build/audit_against_original.md` has classified
-it, it is unverified.
+The rigid oracle is the founder's lens principle (`archive/docs/book/FOUNDING_PROMPTS.md`, 2026-10-02 23:50:20Z): a lens measures; intentionally lossy lenses that encode no 1:1 relationship to an element of truth have no authority to warrant a decision alone; interpretation is built on top; meaning is derived from structure; principled abstention. It supersedes the architecture document: "The concept is the rigid
+oracle, the design is something we're working on building in session" (23:59:57Z).
+
+The registration into a platonic knee's frame and the population of normal knees come from the earlier design
+(`archive/docs/THEORY_OF_THE_CASE.md`, `archive/docs/KNEE_ARCHITECTURE.md`, and the book that planned it,
+`archive/docs/book/`). The build now follows Figure 8, chapter by chapter (`docs/SPINE.md`). How much of the
+earlier design each chapter keeps is the founder's to say as he teaches it.
 
 ## Where truth lives
 
 **Intent** (what the system should do). Highest first; the higher wins:
-1. the founder's words: `docs/FOUNDING_RECORD.md`, `docs/book/FOUNDING_PROMPTS.md`. First among them is the lens
-   principle, the rigid oracle (23:50:20Z), which supersedes the architecture document (23:59:57Z);
-2. the founder's design: THEORY (its Laws 1–8 bind), KNEE_ARCHITECTURE, and `docs/canon/`. It is being built in
-   session, and where it conflicts with the principle, the principle wins;
-3. the book: `docs/book/CONSTRAINT_BLOCK.md`, `THE_KNEE.md`, the chapter specs. The book implements the design.
-   Where it departs from the design, the departure stands only if it is provably correct or warranted by the
-   founder's explicit words (law 9); otherwise the design wins;
-4. logs (`decisions/`, `docs/book/provenance/`, git history), never read as status.
+1. the founder's words: those of 2026-10-10 (this file's opening section and `docs/SPINE.md`), what he teaches at
+   each chapter (recorded in that stage's package), and the earlier record (`archive/docs/FOUNDING_RECORD.md`,
+   `archive/docs/book/FOUNDING_PROMPTS.md`). First among them is the lens principle, the rigid oracle (23:50:20Z);
+2. the oracle each chapter is worked out from: the thesis and the cell-tracking project (`docs/SPINE.md`);
+3. the archive (`archive/`: THEORY, KNEE_ARCHITECTURE, the canon, the book, the legacy code and logs), dug from as
+   needed and never the plan.
 
-**State** (what the system does and how far the build has gone) is **computed, never written as prose**:
-- from code, tests, data and their outputs;
-- from `git tag -l 'knee-*'` for accepted chapters;
-- from `just accept Kxx`, which re-runs a chapter's acceptance at HEAD. A tag attests acceptance at one revision,
-  and staleness is computed.
+**State** (what the system does and how far the build has gone) is **computed, never written as prose**: from
+code, tests, data and their outputs, and from git. Each stage package's docstring says whether the founder has
+given the knee's version.
 
 Code is evidence of behaviour, never authority over intent: a bug is not a specification.
 
 ## How a session runs
 
-1. Read `docs/book/CONSTRAINT_BLOCK.md`.
-2. Run `git tag -l 'knee-*'`. Take the first chapter in the book's table whose dependencies are all accepted and
-   which is not. Read it in full, with its substrate. Do this reading yourself: grounding is never delegated to a
-   helper that lacks this context (founder, 2026-10-02).
-3. Before changing anything the design derives, restate the chapter's mechanism at data-flow level. A fluent
-   paraphrase is not the test; the data flow is.
-4. Build the whole chapter to its acceptance. A chapter is never a demo slice. Commit messages start
-   `knee/Kxx:`.
-5. Close: run the gate, get a Codex review (model-only), add a dated status note, then `git tag knee-Kxx`.
+The way of working, the PI–undergrad pass, and the chapters in order are in `docs/SPINE.md`. Do the reading
+yourself: grounding is never delegated to a helper that lacks this context (founder, 2026-10-02).
 
 ## Project laws, each with its reason
 
@@ -256,11 +251,11 @@ Code is evidence of behaviour, never authority over intent: a bug is not a speci
    It runs only through `squishos-harness`. It never drives, never chooses what to type, and never types intent,
    tests, bars, contracts, references or impure code. A body enters the codebase only with its certificate and
    after the lead has read it. It is selected only on the founder's word, after its qualification run.
-9. **Acceptance is written first and is discovery.**
-   - Each chapter's first act writes `acceptance/<K>.toml`.
-   - Engineering checks gate the tag.
+9. **Acceptance is discovery.**
+   - A chapter's bars are written down before the run that judges them.
+   - Engineering checks gate the commit (`just gate`).
    - Domain readings never gate. A miss opens a problem to solve, never a reason to discard or work around the
-     design (founder, 2026-10-02 16:29:22Z; ARCH §6.6.3).
+     design (founder, 2026-10-02 16:29:22Z).
 
 ## Stop — I can explain (when it looks like the model is missing)
 
@@ -283,12 +278,12 @@ Code is evidence of behaviour, never authority over intent: a bug is not a speci
 
 | If the task is… | read first | then |
 |---|---|---|
-| building anything | `docs/book/README.md` → the chapter | its substrate and prior art |
-| what the design is, and which canon it amends | `docs/book/THE_KNEE.md` | `docs/KNEE_ARCHITECTURE.md` (the deep derivations) |
+| building anything | `docs/SPINE.md` → the chapter's stage package in `src/knee/` | the thesis sections and the cell-tracking build that chapter names |
+| the earlier design, dug from as needed | `archive/docs/THEORY_OF_THE_CASE.md` | `archive/docs/book/THE_KNEE.md`, `archive/docs/KNEE_ARCHITECTURE.md` |
 | a tool choice: properties, contracts, layers, profiling, Rust/C, SICP | the global `code-verification.md` → *The toolkit* | `~/Projects/SquishOS/docs/home/TOOLKIT.md` |
 | a performance question | the global `performance.md` | Detective's `docs/theory/deterministic_sicp/DETERMINISTIC_SICP.md` §7–§8 |
 | pinning | the global `detective-protocol.md` | `~/tools/Detective/ARCHITECTURE.md` §11 |
-| a harness or an evaluation | the global `no-popery.md` | the harness chapter (K03) |
-| the typist, or any local-model call | `docs/book/chapters/K02a-the-typist.md` | SquishOS `docs/theory/THE_DYAD.md`, `CONSTRAINED_OUTPUT_AND_REASONING.md`; Uroboros `docs/ARCHITECTURE.md` |
-| the Kaggle kernel or submission | `../../CLAUDE.md` (the Kaggle submission protocol) | the kernel chapters (K18, K27) |
+| a harness or an evaluation | the global `no-popery.md` | `archive/docs/book/chapters/K03-acceptance-corpus-and-harness.md`, dug from as needed |
+| the typist, or any local-model call | `archive/docs/book/chapters/K02a-the-typist.md` | SquishOS `docs/theory/THE_DYAD.md`, `CONSTRAINED_OUTPUT_AND_REASONING.md`; Uroboros `docs/ARCHITECTURE.md` |
+| the Kaggle kernel or submission | `../../CLAUDE.md` (the Kaggle submission protocol) | `archive/docs/book/chapters/K18-kernel-and-first-light.md` and `K27-final-kernel.md`, dug from as needed |
 | a commit or a push | the global `verification-gates.md` | the global `repo-hygiene.md` |

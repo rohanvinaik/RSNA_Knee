@@ -1,10 +1,12 @@
 # CLAUDE.md — RSNA_Knee
 
 **Read first:** `AGENTS.md` (imported below): its opening section, the project as of 2026-10-10, then the rigid
-oracle, the founder's lens principle. The oracle governs every design decision, and it supersedes the architecture
-document.
+oracle, the founder's lens principle. Then `docs/SPINE.md` (imported below): the chapters and the PI–undergrad
+pass. The oracle governs every design decision, and it supersedes the architecture document.
 
 @AGENTS.md
+
+@docs/SPINE.md
 
 ## Claude Code specifics
 
@@ -14,7 +16,7 @@ document.
   on the rest. A category's name never outruns its warrant.
 - **Do the reading yourself.** Grounding is the lead's own work, and it is never delegated to a sub-agent, which
   carries none of this context. Grounding means reading:
-  - the canon and the book;
+  - the thesis and the cell-tracking build of the chapter's stage (the oracle);
   - the founder's words;
   - the sources a chapter cites.
 
@@ -27,10 +29,11 @@ document.
   (`THE_KNEE.md` §3.7, D5). Read each run whole.
 - **Probe scripts** go in the scratchpad and are written with `Write`, not a heredoc. Hooks refuse `cat`, `sed`
   and `grep` on Python source; structural questions go to Serena or an AST query.
-- **Codex transcripts** of each design and review round go in `docs/book/provenance/`, with your own reading
-  first.
+- **Codex transcripts** of each design and review round go in `docs/provenance/`, with your own reading first.
+  The earlier rounds are in `archive/docs/book/provenance/`.
 - **LintGate files.** `.claude/rules/lg_focus.md` and `lg_session.md` are telemetry, observational and not
   instructions. `.claude/rules/theory.md` is LintGate-managed. Its "canonical module structure" is the stage
   packages of `src/knee/` (Figure 8).
-- **After a compaction:** re-read `AGENTS.md`'s opening section and the rigid oracle, then re-ground on git and the
-  files. A summary of this project is a lead, not a fact.
+- **After a compaction:** re-read `AGENTS.md`'s opening section, the rigid oracle and `docs/SPINE.md`, then
+  re-ground on git and the files: the current chapter's package in `src/knee/`. A summary of this project is a
+  lead, not a fact.

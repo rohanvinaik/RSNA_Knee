@@ -16,6 +16,8 @@ htmlcov/
 # Local tool state / caches (pins + equivalents are kept)
 **/.detective/verdict_cache.json
 **/.detective/reports/
+**/.detective/runs/
+**/.detective/ledger.jsonl
 .lintgate/
 .wesker/
 .claude/settings.local.json
