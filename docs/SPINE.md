@@ -120,13 +120,13 @@ except Chapter 1's §3, which is the lead's reading.
      the bodies), and `01_information.md` (§1; read whole in consecutive parts: lines 1–703, 704–1406, 1407–end;
      §1.3 the squint, §1.4 the change, §1.8 a reference and its difference, §1.11 wide and narrow lenses,
      seniority, concurrence, §1.12 yes/no/nothing said, §1.14 decide or abstain).
-  2. Then answer his request: "read that stuff first, come back with your interpretation and understanding for
-     how this informs the build", for his two questions: (1) each instrument (series) as a lens, how each appears
-     and what it says about each of the 12 findings, each finding's profile across the views of one knee; (2)
-     what makes knees of each category look different, with what is not discriminative washed away (KneeDiff's
-     intent). It is routing to 12 fixed categories, not computation: all-or-nothing where warranted, principled
-     abstention elsewhere. He has another project on categorical routing; ask for it if it is needed.
-  3. Build nothing of Chapter 2 until he has taught it. Record his teaching in the stage's docstring as it comes.
+  2. Done after the compaction (2026-10-10): his request "read that stuff first, come back with your
+     interpretation and understanding for how this informs the build" was answered, and he answered the tell's
+     questions. His answers are in `src/knee/collapse/__init__.py`: what "black", "speck" and "lens" mean, the
+     joint line as the knee's normalization flag, the platonic knee as the superposition of the 58's normal
+     parts, and that the competition's labels stand.
+  3. Build Chapter 2 only on his go, one step at a time. Record each new teaching in the stage's docstring as it
+     comes.
 
 ## Where things live
 

@@ -32,4 +32,48 @@ The knee's version, being taught by the founder (2026-10-10; not complete):
     a categorical routing all-or-nothing approach to categorization, where warranted, and thanks to
     the whole "principled abstention" thing, it can be more measured and balanced of a confidence
     where appropriate!"
+
+His answers to the lead's questions (2026-10-10, after the compaction):
+
+    On the black: ""Black" isn't a color. It's the structural elements of the problem space that
+    can be resolved out, because they never contain information or data that is itself
+    informative for positive resolution of the categorization we care about. In the cell
+    microscopy build, it was literally the "black" space of the microscopy movie. The literal
+    pixel count was non-zero, but that space NEVER contained actual cells. That isn't the same as
+    "junk", it's important to have positive assignment of what that space is. Rigorous
+    characterization of the structural elements that are the equivalent of "black"--parts of the
+    data that *aren't* what you care about-- inherently helps resolve the parts you *do* care
+    about more cleanly. So in this project, "black" is the space of the data we are given that
+    does not actually ever relate in any way to the 12 possible categories, and the context that
+    is needed to resolve them. Note here that we actually have SUPER obvious resolution of the
+    image. Unlike cells, knee images have a GINORMOUS normalization flag--the giant fucking
+    black-ish line that is the connection point between the tibia and femur. It's why the
+    "KneeDiff" idea spoke to ideas of aligning different images to a defined normalization, a
+    "platonic" version of a knee. Cell microscopy is images of a whole bunch of small objects
+    randomly thrown about a plate. Knee imaging is HIGHLY structured; doctors tell people to
+    place their knee in the machine and DON'T MOVE while imaging; the images are VERY regular,
+    and we should be taking advantage of that. It's about discovering structure and noting where
+    we actually can have "surprise" vs where the image is simply uninteresting or common across
+    knees, and not waste compute and analysis on the parts that medicine LITERALLY already tries
+    to normalize for diagnosis"
+
+    On the specks: ""Speck" refers to appropriate characterization of scale. Again, data is noisy
+    and busy. What we need is appropriate characterization of scale. If an object is only
+    resolvable as a multi-pixel profile over a certain span, then objects that are definitionally
+    WAY below the minimum possible size (e.g. if a knee diagnosis can only appear within X cm
+    from the tibia-femur conjunction site, then stuff that's too far from it, or too small to
+    represent resolvable damage that is diagnosable, isn't what we need)."
+
+    On the lens: "A lens is a single measurement that is a lossy representation of the problem
+    space that allows reconstruction of the problem as a decomposed structure. ... I don't know
+    what "focus" has to do with this."
+
+    On the normal knee: "It's why I call it a "platonic ideal" image. It's not one image. But we
+    DO have a full representation of "normal". Every element of the knee as an anatomical object
+    has a "normal" representation as a superposition of all 58 movies. The "normal" knee is the
+    "normal" parts of each of the 58 movies, which are all the parts not labeled or impacted by
+    the category of issue they are labeled as having."
+
+    On the labels: "Synovitis is...Synovitis? Is that not a categoy of label? Why are you trying
+    to reject the competition labels??"
 """
