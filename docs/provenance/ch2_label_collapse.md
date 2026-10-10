@@ -172,6 +172,71 @@ shows the report leg cannot reconstruct the image committee's conclusion either.
 That is the three-legged stool behaving exactly as the founder described: each leg correct in its
 own frame, none complete, and the disagreements carrying the most information.
 
+### Two corrections that change the fingerprint ranking
+
+A second, independent Fable reading (spawned by the lead in error, then answered before the
+stand-down landed) produced two corrections neither prior consultant made. Both hold.
+
+**Correction 1 — the severity-word mapping is per-finding, and must abstain where the axes do not
+match.**
+
+> "severity -> subthreshold holds **only where the floor is a grade on the report's scale**:
+> effusion, Baker's, synovitis, ACL ('mild signal change' explicitly negative). For **OA** (>= 1 cm,
+> >50% depth) and **meniscus** (surface contact on two images), **'mild' lies on another axis**:
+> mild degeneration is a different category, not a mild tear. The lexicon abstains there."
+
+OA's floor is a size and depth criterion; the meniscus floor is morphological (does the signal
+reach the surface, on two images). A report saying "mild meniscal degeneration" is **not** reporting
+a mild tear — it is reporting a different finding, one the definition explicitly excludes. Mapping
+a grade word onto a non-grade floor is a category error. **The lexicon is per finding, and
+abstains where the report's axis and the definition's axis differ.**
+
+**Correction 2 — the hedge belongs to the reader, the fold belongs to the committee. This inverts
+the ranking.**
+
+> "hedging is the **reader's** abstention; the fold was the **committee's**. One reader can
+> confidently report what the stricter committee could not decide. So the stronger fingerprint of a
+> folded abstention is **a confident grade at or straddling the floor** ('moderate',
+> 'small-to-moderate', 'massive synovitis' -> 0), or presence asserted without a grade where the
+> floor is a grade."
+
+The lead had hedges as the primary fingerprint. They are not. A hedge tells us the *signing
+radiologist* was unsure; it says little about what the *committee* did. A **confident** at-floor
+grade against a 0 is stronger evidence of a folded abstention, because someone confident saw it and
+the committee still did not assign. Both Fable readings reached this independently — the first
+called floor-straddling "the highest-value tier".
+
+**The corrected ranking of fold evidence, strongest first:**
+
+1. a confident grade **at or straddling the floor**, against a 0
+2. presence asserted **without a grade**, where the floor is a grade
+3. a **hedge** against a 0 — the reader's own abstention
+
+### The five codes the conjunction yields
+
+Re-expanding a 0 by conjunction with the report leg gives named codes, not a binary:
+
+| code | state | what it is |
+|---|---|---|
+| `ABSENT_CONCURRED` | reject | explicit negation and a 0; two legs agree |
+| `SUBTHRESHOLD_CONCURRED` | reject *under the rubric* | present, graded below the floor, and a 0 |
+| `FOLD_SUSPECT` | **abstain — queue it** | the fold's fingerprints above |
+| `REPORT_SILENT` | abstain | the structure is never named; silence is not denial |
+| `UNPARSED` | silence | the lexicon could not read it; **never read a parse failure as absent** |
+
+### The sub-floor class is a resource, not contamination
+
+The sharpest point in the second reading, and it reverses the framing:
+
+> "**SUBTHRESHOLD_CONCURRED is the prize**, since it shows **where the floor sits in image terms**,
+> measured on **two-lens-concordant populations** rather than fitted."
+
+These are cases where both written legs agree a finding is present *and* below the floor. They are
+therefore a set of **known-mild exemplars, free of charge**, which locate the definition's floor in
+image measurements — millimetres of extent, fraction of fibres, depth of cartilage loss — **by
+measurement on a concordant population, never by tuning against a score**. That is exactly what
+Law 4 permits and what the ordering in the scoring section needs.
+
 ### A second fence fingerprint, and the unresolved class
 
 Fable adds a marker class neither the lead nor Codex had: a **floor-straddling grade** against a 0
@@ -285,3 +350,35 @@ and the lexicon version it was made against.
   the competition's definition.
 - Discard the report leg over the 17 cases where it missed a true positive.
 - Name a category without its floor.
+- **Build the lexicon as a feature that separates 1 from 0.** That is Popery. The lexicon is a
+  lens: it measures what the signing reader asserted and how surely, and **knows no question**. It
+  is asked of every report, not of the positives.
+- **Read a parse failure as absent.** `UNPARSED` is silence, never rejection.
+- **Cite the 82.5% as the report leg's reliability.** It mixes three different kinds of
+  disagreement — threshold, omission and genuine conflict — and the audit parsed *presence* without
+  parsing *grade*, so its "false positives" include concordant sub-floor cases that are not errors
+  at all.
+- **Emit an abstention as 0.0.** That reproduces the host's fold in our own output. The three
+  states' *order* must survive emission; the values themselves are the founder's.
+
+### The queue is smaller than first estimated
+
+Three sizings were given. The difference is whether the floor check runs before the queue is built:
+
+| source | estimate | condition |
+|---|---|---|
+| Fable, first reading | ~60 per-case rows | after one policy ruling clears the sub-floor set |
+| Fable, second reading | **20-40 pairs** | after the **per-finding floor check** removes concordant-mild |
+| Codex | not sized | — |
+
+The second is smaller because the floor check is per finding and abstains where the axes do not
+match, so fewer rows survive into the queue. Run the floor check first.
+
+His ruling per pair is one of four codes — `PRESENT_AT_FLOOR`, `PRESENT_SUBTHRESHOLD`, `ABSENT`,
+`CANNOT_TELL` — with the view and slice he judged from. **`CANNOT_TELL` stays 0**: the queue does
+not force a decision it cannot warrant. The table is versioned and sits **beside** the competition's
+labels, never overwriting them. The harness reads it as a second truth column **for acceptance
+only**; the competition's labels remain the scoring column, because the hidden test applies the
+committee's rule.
+
+`SUBTHRESHOLD_CONCURRED` goes to him as a **batch for wholesale confirmation**, not as rows.
