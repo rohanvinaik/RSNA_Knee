@@ -40,7 +40,7 @@ The structure is kept; the **noise family is replaced**, because MR is not a pho
 |---|---|---|
 | 1 | **regime key** per series: the noise law, zero share, signedness, normalization flag, laterality | [T §5.1] cheap readings taken once where their input first exists |
 | 2 | **flicker units**: the variance-stabilizing transform, tabulated per series | [C] `flicker_units`, [A] Rician family |
-| 3 | **level map** per series: decile landmarks. Noise normalization is not level normalization | [A] |
+| 3 | ~~level map per series: decile landmarks~~ **REFRAMED 2026-10-10: dark-referenced ternary encoding and whole-field regime indexing.** There is no level map. See `ch3_the_level_problem.md` | [F] the confluent/sparse homology; [C] `light_above`, `digit_of`, `regime_facet`; [T] §5.1 |
 | 4 | **laterality and the mirror**: derived reading, tag as a concurring check | [M] 181/336 series carry no tag |
 | 5 | **the squint**: tile medians at a physical scale, with the fill rule | [T §1.3, §13.4] |
 | 6 | **the common frame**: physical millimetres, coverage mask propagated | [M] pixel grids differ 8x; physical extent does not |
