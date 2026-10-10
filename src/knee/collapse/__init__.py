@@ -197,4 +197,48 @@ His rulings of 2026-10-10 on the lead's two open questions:
     So: a region that is stubborn-minority but belongs to none of the 12 is not a category of this
     chapter. It is logged as an observation for a later noise-correction pass and is immaterial to
     establishing the ground. Chapter 2 does not model it, name it or abstain on it.
+
+The three-legged stool (2026-10-10). His words:
+
+    "Persist what we need for MOAKS, Hoffa's, AND baker's. In the thesis/cell tracking project we
+    called it the "three-legged stool" principle, after the one in Anglicanism; when sources of
+    truth are defined as correct but are incomplate but overlapping in their coverage, then the
+    places in which they seem to disagree are not noise to wipe away, but are some of the MOST
+    informative information we can have"
+
+    This corpus has such a stool, and the competition's host built it deliberately. The 12 labels
+    were made by two subspecialty radiologists reading the images independently, a third
+    adjudicating; the report was written by one signing radiologist for clinical care; the images
+    are what the scanner recorded. The host, asked whether image or report is authoritative where
+    they differ: "Yes [the image]. Note that only a small sample of provided data contains both.
+    It is intended to help participants surface this conclusion." And on why they differ at all:
+    "clinical reports typically involve one signing radiologist who created it for clinical care,
+    and the image-based labels uses multiple readers with stricter image-based thresholds."
+
+    A participant's audit of 20 of the 58 measured the two written legs against each other at
+    82.5% agreement. That residual is the stool speaking, not noise to clean.
+
+On adding measures (2026-10-10). His words:
+
+    "The addition of additional measures is very much encouraged. Each domain should have its own
+    entire universe of lenses/meausres that carry useful or interesting bits of data. None of them
+    are wrong. Anything above entropy is genuine information. The *actual* usefulness is something
+    we will consider, weigh how to apply, drop if not helpful for interpretation or understanding,
+    but the addition of measures and information are never a bad thing."
+
+On the bars, which are empirical rather than declared (2026-10-10). His words:
+
+    On the change level: "The change level is technically mine, but it should be pretty clear from
+    the data. I'll provide more discrete ruling if necessary, for which I'll need to see the actual
+    photos and how the work we're doing subtracts and produces a genuine "platonic" version, but
+    see if it's not already obvious"
+
+    On the coverage count: "Enough. Seems like a circular answer, but it's not something knowable
+    in advance. I think the data we have should be enough"
+
+    On the concurrence tolerance: "Another empirical result, the data should speak for us"
+
+    On the unlabeled pool: "There is no unlabeled pool--there is in the competition itself. But
+    that's a LOT of data, only worth adding in what we need, if it actually is helpful for the
+    build"
 """
