@@ -124,7 +124,11 @@ an interface narrow enough to state in a sentence, and nothing reaches past its 
    the frame's border works cleanly and he called it "VERY clean"; the enclosed holes are not yet
    filled, and the gestalt prior he named is **closure** (§5.3's "contiguous, closed"); and four
    intensity instruments have failed, so the reading must be structural.
-5. **Promoting the scratchpad probes.** The measurement probes (corpus shape, geometry spread,
-   regime run) and the rendering probes (the leg, the squint, the two objects, the axial walk)
-   still live in the session scratchpad. The rendering belongs in `knee.pictures`; the measuring
-   belongs behind a `just` verb so a reading is reproducible rather than retyped.
+5. ~~**Promoting the scratchpad probes.**~~ **Done, 2026-10-10.** The eleven probes are in
+   `workbench/` (`measure/` and `render/`, with the consultants' prompts in `consults/`), and
+   `workbench/README.md` states the three tiers and exactly what the gate asks of each. The five
+   render scripts had hardcoded the session scratchpad by its UUID, which made every recorded
+   picture unreproducible the moment the session ended; they now write to `data/pictures/` through
+   `_out.pictures_dir()`, gitignored because a rendered knee is pixels. What remains of this item:
+   the *pure* panel-arranging keeps moving into `knee.pictures` as each stage's renderer settles,
+   and the measuring is not yet behind a `just` verb.
