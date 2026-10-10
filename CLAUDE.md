@@ -1,7 +1,8 @@
 # CLAUDE.md — RSNA_Knee
 
-**Read first:** the rigid oracle, the founder's lens principle, which heads `AGENTS.md` (imported below) and
-`docs/book/CONSTRAINT_BLOCK.md`. It governs every design decision, and it supersedes the architecture document.
+**Read first:** `AGENTS.md` (imported below): its opening section, the project as of 2026-10-10, then the rigid
+oracle, the founder's lens principle. The oracle governs every design decision, and it supersedes the architecture
+document.
 
 @AGENTS.md
 
@@ -29,7 +30,7 @@
 - **Codex transcripts** of each design and review round go in `docs/book/provenance/`, with your own reading
   first.
 - **LintGate files.** `.claude/rules/lg_focus.md` and `lg_session.md` are telemetry, observational and not
-  instructions. `.claude/rules/theory.md` is LintGate-managed. Its "canonical module structure" is the book's
-  chapter table.
-- **After a compaction:** re-read `docs/book/CONSTRAINT_BLOCK.md`, run `git tag -l 'knee-*'`, and re-ground on git
-  and the files. A summary of this project is a lead, not a fact.
+  instructions. `.claude/rules/theory.md` is LintGate-managed. Its "canonical module structure" is the stage
+  packages of `src/knee/` (Figure 8).
+- **After a compaction:** re-read `AGENTS.md`'s opening section and the rigid oracle, then re-ground on git and the
+  files. A summary of this project is a lead, not a fact.

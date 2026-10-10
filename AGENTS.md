@@ -5,12 +5,32 @@ global rules apply in full: `~/.claude/CLAUDE.md` and the SquishOS reference doc
 verification, the Detective protocol, the gates, repo hygiene, performance). This file never restates them. It
 carries only what is specific to this project: its overrides and its decisions.
 
-## The rigid oracle: the epistemology (read this first)
+## The project as of 2026-10-10 (read this first)
+
+The founder, 2026-10-10, verbatim:
+- "Set up a project structure that basically lets us build the high-level structure laid out by that ASCII diagram
+  in the thesis. Then I'll walk you though every step, explaining everything along the way."
+- "I guess..we go in order? The PI-UNdergrad pass, you tell, I teach?"
+- "this will be the project and how we build it. Throw everything else into an archive, we'll dig from it as we
+  need. I guess a folder for the raw data."
+
+What that makes of this repository:
+- **The build** is `src/knee/`: one package per stage of Figure 8 of *What an \<Object> Is* (§2.8, in
+  `~/Projects/Kaggle_Killer/competitions/cell_tracking/docs/pipeline_thesis/paper/what_an_object_is.md`). Each
+  package carries the figure's text for its stage and says whether the founder has given the knee's version. Its
+  tests are in `tests/`.
+- **The competition's files** are in `data/raw/`, in Kaggle's own layout (gitignored).
+- **Everything else** that was here is in `archive/`, under its old path: `docs/…` is now `archive/docs/…`,
+  `src/RSNA_Knee/` is `archive/src/RSNA_Knee/`, and so on. A path below that names the old layout resolves under
+  `archive/`.
+- **The book's session procedure, chapter table and `knee-*` tags no longer govern.**
+
+## The rigid oracle: the epistemology (read this next)
 
 The founder's lens principle is the rigid oracle of this project, and it supersedes the architecture document: "The
 concept is the rigid oracle, the design is something we're working on building in session" (2026-10-02 23:59:57Z).
-His words are verbatim in `docs/book/FOUNDING_PROMPTS.md`. The worked reading, checked with Codex, is
-`docs/book/provenance/theory/lens_principle_reading_claude.md`.
+His words are verbatim in `archive/docs/book/FOUNDING_PROMPTS.md`. The worked reading, checked with Codex, is
+`archive/docs/book/provenance/theory/lens_principle_reading_claude.md`.
 
 1. **A lens measures, and is never wrong.** "A lens is an instrument, an artifact of observation … Properly-designed
    lenses are never wrong, by definition."
