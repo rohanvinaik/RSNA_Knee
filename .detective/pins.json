@@ -256,5 +256,75 @@
         "witness"
       ]
     }
+  ],
+  "src/knee/collapse/noise.py::floor_bias::136053b4ada746a3": [
+    {
+      "assertion_code": "result = floor_bias(samples=64, quantile=0.1)\nassert result == 0.8137783207212441",
+      "category": "VALUE",
+      "confidence": 0.9,
+      "function_key": "",
+      "golden_case": [
+        "(64, 0.1)",
+        "0.8137783207212441"
+      ],
+      "mutant_id": "",
+      "needs_oracle": false,
+      "preconditions": [
+        "golden capture (pure + deterministic)"
+      ],
+      "setup_code": "from knee.collapse.noise import floor_bias",
+      "source_lenses": [
+        "golden_capture"
+      ]
+    },
+    {
+      "assertion_code": "result = floor_bias(samples=2, quantile=1.0)\nassert result == 1.0",
+      "category": "VALUE",
+      "confidence": 0.95,
+      "function_key": "",
+      "golden_case": null,
+      "mutant_id": "",
+      "needs_oracle": false,
+      "preconditions": [
+        "distinguishing witness (equivalence search)"
+      ],
+      "setup_code": "from knee.collapse.noise import floor_bias",
+      "source_lenses": [
+        "witness"
+      ]
+    },
+    {
+      "assertion_code": "result = floor_bias(samples=64, quantile=0.1)\nassert result == 0.8137783207212441\nassert type(result) is float",
+      "category": "VALUE",
+      "confidence": 0.95,
+      "function_key": "",
+      "golden_case": null,
+      "mutant_id": "",
+      "needs_oracle": false,
+      "preconditions": [
+        "distinguishing witness (equivalence search)",
+        "outcomes ==-equal; distinction pinned by type/repr"
+      ],
+      "setup_code": "from knee.collapse.noise import floor_bias",
+      "source_lenses": [
+        "witness"
+      ]
+    },
+    {
+      "assertion_code": "result = floor_bias(samples=0, quantile=0.5)\nassert result == 1.0",
+      "category": "VALUE",
+      "confidence": 0.95,
+      "function_key": "",
+      "golden_case": null,
+      "mutant_id": "",
+      "needs_oracle": false,
+      "preconditions": [
+        "distinguishing witness (equivalence search)"
+      ],
+      "setup_code": "from knee.collapse.noise import floor_bias",
+      "source_lenses": [
+        "witness"
+      ]
+    }
   ]
 }

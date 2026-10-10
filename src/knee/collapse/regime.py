@@ -30,11 +30,11 @@ from knee.collapse.codes import (
     storage_code,
 )
 from knee.collapse.noise import (
+    background_split,
     bright_sigma,
-    coil_count,
+    coil_count_robust,
     dark_sigma,
     finite_values,
-    moment_ratio,
     quiet_population,
 )
 from knee.collapse.units import magnitude_moments, stabilizer, to_units
@@ -108,17 +108,18 @@ def _shape_readings(values: np.ndarray) -> tuple[tuple[float, float], float, flo
 
 def read_regime(
     series: Series,
-    quiet_share: float = QUIET_SHARE,
     min_quiet: int = 1000,
     lag: int = 2,
     single_tolerance: float = 0.25,
     tolerance_errors: float = 3.0,
     foreground_units: float = 3.0,
+    block: int = 16,
+    floor_quantile: float = 0.1,
 ) -> RegimeKey | None:
     """One series' regime key, read once from its own values and no label.
 
-    The bars this reads -- how much of the series is taken as quiet, how few values are too few,
-    the neighbour lag, and how many standard errors count as concurrence -- are arguments, never
+    The bars this reads -- how few quiet values are too few, the neighbour lag, how many standard
+    errors count as concurrence, the block size and the floor's quantile -- are arguments, never
     constants inside a decision. Under Law 4 a level is written down before the run it judges.
 
     None when the series carries no stacked volume: a regime cannot be read from a series whose
@@ -131,21 +132,28 @@ def read_regime(
     if values.size == 0:
         return None
 
-    quiet = quiet_population(values, quiet_share)
+    # The background is cut at the histogram's valley, never at a quantile: a quantile truncates
+    # the population and its moments stop being the noise's (see `background_split`).
+    split = background_split(values)
+    quiet = quiet_population(values, split)
     n_zero = int(np.count_nonzero(quiet == 0.0))
     spread = float(np.std(quiet)) if quiet.size else float("nan")
     quiet_word = quiet_code(quiet.size, n_zero, spread, min_quiet)
 
-    ratio = moment_ratio(quiet)
-    coils = coil_count(ratio)
+    # The channel count comes from the background's QUARTILE ratio, not its moments: measurement
+    # showed a handful of leaked tissue values sends the fourth moment to 7.19, outside the
+    # identity's range, while quartiles barely move. `coil_code` is pinned against a moment ratio,
+    # so the robust count is carried back to its equivalent ratio, (L + 1) / L, exactly.
+    coils = coil_count_robust(quiet)
+    ratio = (coils + 1.0) / coils if np.isfinite(coils) and coils > 0 else float("nan")
     coils_word = coil_code(ratio, single_tolerance)
     # A coil count the identity refuses is not a reading; one channel is what a magnitude is at
     # minimum, and the dark estimator says so by abstaining rather than by assuming.
     dark = dark_sigma(quiet, coils)
 
+    # The bright estimator reads tissue, so its floor is the same valley: above it is tissue.
     middle = volume[volume.shape[0] // 2]
-    floor = float(np.median(values)) if values.size else float("nan")
-    bright, bright_n = bright_sigma(middle, lag, floor)
+    bright, bright_n = bright_sigma(middle, lag, split, block, floor_quantile)
 
     concurrence = concurrence_code(dark, bright, quiet.size, bright_n, tolerance_errors)
 
