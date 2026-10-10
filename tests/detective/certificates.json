@@ -28,5 +28,11 @@
     "function_digest": "a2b55ed6fa34eca4",
     "refusal": "",
     "standing": "complete"
+  },
+  "src/knee/collapse/noise.py::floor_bias": {
+    "cut_reasons": [],
+    "function_digest": "136053b4ada746a3",
+    "refusal": "",
+    "standing": "complete"
   }
 }
