@@ -99,6 +99,18 @@ an interface narrow enough to state in a sentence, and nothing reaches past its 
 - **Truth by concurrence.** A member measures one thing and knows no question; a body holds the
   signs; disagreement is kept, never averaged away.
 
+## Built as of 2026-10-10
+
+- `src/knee/pipeline.py` — the route, walking Figure 8's line in order, honest about its own state.
+  `ROUTE` carries each stage's state; a stage counts as **built** only when it has run over real
+  studies through Chapter 1's entry point.
+- `src/knee/pictures/` — the drawing layer. One renderer per stage, importing stages and imported
+  by none, switchable off. Its contract is the founder's test: **a picture should be basically
+  free, and a renderer that has to compute something is evidence the stage is not reasoning
+  visually.**
+- `assignment` and `every_object` renamed from the cell instance to the role, with a test guarding
+  that no package is named for the instance.
+
 ## What is open before chapter 3 can start
 
 1. **The noise law's ruling** — three options are on the table (see `chapters/02-collapse/README.md`).
@@ -106,3 +118,13 @@ an interface narrow enough to state in a sentence, and nothing reaches past its 
 3. **Chapters 9, 10 and 11** have no knee analogue as named. Either the role maps to something the
    knee does have, or the chapter is struck and Figure 8's row is marked "not instantiated here".
    Striking a row is a change to the founder's design and needs his word.
+4. **The "black" / background clearance stage.** The founder, 2026-10-10: *"I do have to give you
+   some guidance on the 'black'/background noise clearance stage, but the bones are REALLY good."*
+   **His guidance is owed and the stage waits on it.** What is known so far: air by connectivity to
+   the frame's border works cleanly and he called it "VERY clean"; the enclosed holes are not yet
+   filled, and the gestalt prior he named is **closure** (§5.3's "contiguous, closed"); and four
+   intensity instruments have failed, so the reading must be structural.
+5. **Promoting the scratchpad probes.** The measurement probes (corpus shape, geometry spread,
+   regime run) and the rendering probes (the leg, the squint, the two objects, the axial walk)
+   still live in the session scratchpad. The rendering belongs in `knee.pictures`; the measuring
+   belongs behind a `just` verb so a reading is reproducible rather than retyped.
