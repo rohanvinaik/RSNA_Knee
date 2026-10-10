@@ -1,0 +1,260 @@
+{
+  "src/knee/collapse/codes.py::coil_code::9831de1b1e68ee7f": [
+    {
+      "assertion_code": "result = coil_code(moment_ratio=1.0625, single_tolerance=1.0625)\nassert result == 'multi'",
+      "category": "VALUE",
+      "confidence": 0.9,
+      "function_key": "",
+      "golden_case": [
+        "(1.0625, 1.0625)",
+        "'multi'"
+      ],
+      "mutant_id": "",
+      "needs_oracle": false,
+      "preconditions": [
+        "golden capture (pure + deterministic)"
+      ],
+      "setup_code": "from knee.collapse.codes import coil_code",
+      "source_lenses": [
+        "golden_capture"
+      ]
+    },
+    {
+      "assertion_code": "result = coil_code(moment_ratio=2.0, single_tolerance=0.0)\nassert result == 'single'",
+      "category": "VALUE",
+      "confidence": 0.95,
+      "function_key": "",
+      "golden_case": null,
+      "mutant_id": "",
+      "needs_oracle": false,
+      "preconditions": [
+        "distinguishing witness (equivalence search)"
+      ],
+      "setup_code": "from knee.collapse.codes import coil_code",
+      "source_lenses": [
+        "witness"
+      ]
+    },
+    {
+      "assertion_code": "result = coil_code(moment_ratio=-1.0, single_tolerance=-1.0)\nassert result == 'implausible_ratio'",
+      "category": "VALUE",
+      "confidence": 0.95,
+      "function_key": "",
+      "golden_case": null,
+      "mutant_id": "",
+      "needs_oracle": false,
+      "preconditions": [
+        "distinguishing witness (equivalence search)"
+      ],
+      "setup_code": "from knee.collapse.codes import coil_code",
+      "source_lenses": [
+        "witness"
+      ]
+    },
+    {
+      "assertion_code": "result = coil_code(moment_ratio=0.5, single_tolerance=0.0)\nassert result == 'implausible_ratio'",
+      "category": "VALUE",
+      "confidence": 0.95,
+      "function_key": "",
+      "golden_case": null,
+      "mutant_id": "",
+      "needs_oracle": false,
+      "preconditions": [
+        "distinguishing witness (equivalence search)"
+      ],
+      "setup_code": "from knee.collapse.codes import coil_code",
+      "source_lenses": [
+        "witness"
+      ]
+    },
+    {
+      "assertion_code": "result = coil_code(moment_ratio=1.0625, single_tolerance=2.5)\nassert result == 'multi'",
+      "category": "VALUE",
+      "confidence": 0.95,
+      "function_key": "",
+      "golden_case": null,
+      "mutant_id": "",
+      "needs_oracle": false,
+      "preconditions": [
+        "distinguishing witness (equivalence search)"
+      ],
+      "setup_code": "from knee.collapse.codes import coil_code",
+      "source_lenses": [
+        "witness"
+      ]
+    }
+  ],
+  "src/knee/collapse/codes.py::concurrence_code::d8a1d39206b4e9bd": [
+    {
+      "assertion_code": "result = concurrence_code(dark_sigma=1.0625, bright_sigma=1.0625, dark_n=1, bright_n=2, tolerance_errors=1.0625)\nassert result == 'concur'",
+      "category": "VALUE",
+      "confidence": 0.9,
+      "function_key": "",
+      "golden_case": [
+        "(1.0625, 1.0625, 1, 2, 1.0625)",
+        "'concur'"
+      ],
+      "mutant_id": "",
+      "needs_oracle": false,
+      "preconditions": [
+        "golden capture (pure + deterministic)"
+      ],
+      "setup_code": "from knee.collapse.codes import concurrence_code",
+      "source_lenses": [
+        "golden_capture"
+      ]
+    },
+    {
+      "assertion_code": "result = concurrence_code(dark_sigma=1.0625, bright_sigma=0.0, dark_n=0, bright_n=1, tolerance_errors=2.5)\nassert result == 'both_abstained'",
+      "category": "VALUE",
+      "confidence": 0.95,
+      "function_key": "",
+      "golden_case": null,
+      "mutant_id": "",
+      "needs_oracle": false,
+      "preconditions": [
+        "distinguishing witness (equivalence search)"
+      ],
+      "setup_code": "from knee.collapse.codes import concurrence_code",
+      "source_lenses": [
+        "witness"
+      ]
+    },
+    {
+      "assertion_code": "result = concurrence_code(dark_sigma=2.5, bright_sigma=1.0625, dark_n=-1, bright_n=0, tolerance_errors=1.0)\nassert result == 'both_abstained'",
+      "category": "VALUE",
+      "confidence": 0.95,
+      "function_key": "",
+      "golden_case": null,
+      "mutant_id": "",
+      "needs_oracle": false,
+      "preconditions": [
+        "distinguishing witness (equivalence search)"
+      ],
+      "setup_code": "from knee.collapse.codes import concurrence_code",
+      "source_lenses": [
+        "witness"
+      ]
+    },
+    {
+      "assertion_code": "result = concurrence_code(dark_sigma=1.0, bright_sigma=1.0, dark_n=1, bright_n=1, tolerance_errors=1.0)\nassert result == 'concur'",
+      "category": "VALUE",
+      "confidence": 0.95,
+      "function_key": "",
+      "golden_case": null,
+      "mutant_id": "",
+      "needs_oracle": false,
+      "preconditions": [
+        "distinguishing witness (equivalence search)"
+      ],
+      "setup_code": "from knee.collapse.codes import concurrence_code",
+      "source_lenses": [
+        "witness"
+      ]
+    }
+  ],
+  "src/knee/collapse/codes.py::normalization_code::daf9fb3c808daa3e": [],
+  "src/knee/collapse/codes.py::quiet_code::143a704dfa403f53": [
+    {
+      "assertion_code": "result = quiet_code(n_finite=1, n_zero=2, spread=1.0625, min_count=3)\nassert result == 'too_few'",
+      "category": "VALUE",
+      "confidence": 0.9,
+      "function_key": "",
+      "golden_case": [
+        "(1, 2, 1.0625, 3)",
+        "'too_few'"
+      ],
+      "mutant_id": "",
+      "needs_oracle": false,
+      "preconditions": [
+        "golden capture (pure + deterministic)"
+      ],
+      "setup_code": "from knee.collapse.codes import quiet_code",
+      "source_lenses": [
+        "golden_capture"
+      ]
+    },
+    {
+      "assertion_code": "result = quiet_code(n_finite=-1, n_zero=-1, spread=0.0, min_count=-1)\nassert result == 'no_values'",
+      "category": "VALUE",
+      "confidence": 0.95,
+      "function_key": "",
+      "golden_case": null,
+      "mutant_id": "",
+      "needs_oracle": false,
+      "preconditions": [
+        "distinguishing witness (equivalence search)"
+      ],
+      "setup_code": "from knee.collapse.codes import quiet_code",
+      "source_lenses": [
+        "witness"
+      ]
+    },
+    {
+      "assertion_code": "result = quiet_code(n_finite=1, n_zero=1, spread=1.0, min_count=1)\nassert result == 'background_masked'",
+      "category": "VALUE",
+      "confidence": 0.95,
+      "function_key": "",
+      "golden_case": null,
+      "mutant_id": "",
+      "needs_oracle": false,
+      "preconditions": [
+        "distinguishing witness (equivalence search)"
+      ],
+      "setup_code": "from knee.collapse.codes import quiet_code",
+      "source_lenses": [
+        "witness"
+      ]
+    },
+    {
+      "assertion_code": "result = quiet_code(n_finite=1, n_zero=2, spread=1.0625, min_count=-1)\nassert result == 'background_masked'",
+      "category": "VALUE",
+      "confidence": 0.95,
+      "function_key": "",
+      "golden_case": null,
+      "mutant_id": "",
+      "needs_oracle": false,
+      "preconditions": [
+        "distinguishing witness (equivalence search)"
+      ],
+      "setup_code": "from knee.collapse.codes import quiet_code",
+      "source_lenses": [
+        "witness"
+      ]
+    }
+  ],
+  "src/knee/collapse/codes.py::storage_code::a2b55ed6fa34eca4": [
+    {
+      "assertion_code": "result = storage_code(pixel_representation=0, n_negative=1)\nassert result == 'unsigned_negative'",
+      "category": "VALUE",
+      "confidence": 0.95,
+      "function_key": "",
+      "golden_case": null,
+      "mutant_id": "",
+      "needs_oracle": false,
+      "preconditions": [
+        "distinguishing witness (equivalence search)"
+      ],
+      "setup_code": "from knee.collapse.codes import storage_code",
+      "source_lenses": [
+        "witness"
+      ]
+    },
+    {
+      "assertion_code": "result = storage_code(pixel_representation=1, n_negative=1)\nassert result == 'signed_negative'",
+      "category": "VALUE",
+      "confidence": 0.95,
+      "function_key": "",
+      "golden_case": null,
+      "mutant_id": "",
+      "needs_oracle": false,
+      "preconditions": [
+        "distinguishing witness (equivalence search)"
+      ],
+      "setup_code": "from knee.collapse.codes import storage_code",
+      "source_lenses": [
+        "witness"
+      ]
+    }
+  ]
+}

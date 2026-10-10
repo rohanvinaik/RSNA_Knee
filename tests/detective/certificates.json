@@ -1,0 +1,32 @@
+{
+  "src/knee/collapse/codes.py::coil_code": {
+    "cut_reasons": [],
+    "function_digest": "9831de1b1e68ee7f",
+    "refusal": "",
+    "standing": "complete"
+  },
+  "src/knee/collapse/codes.py::concurrence_code": {
+    "cut_reasons": [],
+    "function_digest": "d8a1d39206b4e9bd",
+    "refusal": "",
+    "standing": "complete"
+  },
+  "src/knee/collapse/codes.py::normalization_code": {
+    "cut_reasons": [],
+    "function_digest": "daf9fb3c808daa3e",
+    "refusal": "",
+    "standing": "complete"
+  },
+  "src/knee/collapse/codes.py::quiet_code": {
+    "cut_reasons": [],
+    "function_digest": "143a704dfa403f53",
+    "refusal": "",
+    "standing": "complete"
+  },
+  "src/knee/collapse/codes.py::storage_code": {
+    "cut_reasons": [],
+    "function_digest": "a2b55ed6fa34eca4",
+    "refusal": "",
+    "standing": "complete"
+  }
+}
