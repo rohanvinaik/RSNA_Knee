@@ -328,4 +328,83 @@ WHAT THE IMAGES SHOWED, AND FOUR INSTRUMENTS THAT FAILED (2026-10-10)
     The lesson the founder drew: these are objects, not intensity classes, and the reading must be
     structural. "The objects are hard to reason over with numbers. But computer vision is about
     reasoning over *objects*."
+
+================================================================================
+WHERE CHAPTER 2 STANDS. Read this first in a new session or after a compaction.
+================================================================================
+
+THE CHAPTER'S TASK, in one line: resolve the femur, resolve the tibia, resolve the joint space
+between them, structurally and deterministically, so that diagnosis becomes reasoning over how the
+two objects sit relative to each other.
+
+BUILT, gated and committed:
+  - `codes.py`   the stage's pure decisions, five of them, all Detective-converged COMPLETE.
+  - `noise.py`   the noise law per series: a background population, a channel count from the
+                 background's QUARTILE ratio (the fourth moment is not robust), a dark estimator,
+                 and a bright estimator that reads the noise FLOOR among local blocks with its own
+                 sampling bias derived and corrected.
+  - `units.py`   the variance-stabilizing transform for the Rician/noncentral-chi family,
+                 tabulated per series. Measured quality: within 0.5% above 5 sigma, within 7%
+                 through the transition, 11% LOW at pure noise. A null taken in air must use the
+                 measured dark-end spread rather than assume one.
+  - `regime.py`  the regime key: the cheap whole-field readings taken once per series.
+
+NOT WORKING, and the reason matters:
+  Over all 336 series the two noise estimators concur on 4. The ratio between them flipped from
+  5.5x to 0.2x across the rebuild, which means the instrument moved and the disagreement did not
+  resolve. The founder's ruling on how to proceed is OUTSTANDING -- the three options put to him
+  were: keep refining the background instrument; accept that the dark estimator works only where a
+  clean background exists and let abstention carry the rest (so concurrence is a READING about
+  comparability, not a target); or make the bright estimator primary and the dark its check.
+
+  Do not resume by trying a fifth intensity instrument. Four are listed above with why each failed.
+
+THE REDIRECT, which supersedes the order of work above:
+  The founder stopped the noise work and redirected to OBJECTS. The chapter does not need a
+  population variance map first; it needs the two bones resolved first, because a deviation has to
+  be a deviation OF something. The mechanism is the sibling's dome and seam, already built:
+
+    `instruments/support.py::read_dips` -- local maxima as markers, watershed on the NEGATED image
+    so each peak holds a basin, then the saddle between two basins, and
+    `seam_depth_flickers(peak_a, peak_b, saddle) = min(peak_a, peak_b) - saddle`, "how far the seam
+    dips below the lower of two peaks, IN FLICKERS".
+
+  So two peaks are two objects when the seam between them is deep in units of the noise. That is
+  the "discrete fall-off". It is why the transform matters: a dip depth means nothing outside noise
+  units.
+
+  For the knee, N = 2 is GIVEN by anatomy rather than discovered, the seam is enormous rather than
+  marginal, and the superior-inferior direction is read FROM THE HEADER (Chapter 1's
+  `SeriesGeometry.orientation`, LPS, superior is +Z) because "the direction we're looking has to be
+  told to us" and the frames are visibly rotated.
+
+OPEN, and the founder's to rule:
+  1. the noise law's three options above;
+  2. valleys or terciles for a middle's edges, and values or digits into the stack (stage 3);
+  3. whether the polarity flip between weightings is one machinery with a sign flip or two
+     readings -- on the anatomy sequence the bones are bright and the seam is a dark valley, on
+     the fluid-sensitive one the joint space is bright and the seam is a RIDGE;
+  4. what "the lateral view is of the space between them" means for which view carries what.
+
+A CLAIM WITHDRAWN: it was said that "there is no background noise in this corpus to measure." That
+came from THREE rendered series whose air was nearly all zeros. The 336-series run reported 18.8%
+background_masked, not 100%. The corpus-wide air distribution has not been measured.
+
+THE READINGS AND MEASUREMENTS all live in `docs/provenance/`, one file per unit, written before
+the next step so a compaction costs one unit rather than a session:
+  ch2_design.md                     the chapter's design, with provenance per element
+  ch2_the_collapse_resolved.md      the collapse as population, the disagreement geography
+  ch2_thesis_math_and_code.md       SS1.3's pooling math, SS13.4's precision ladder, the sibling's code
+  ch2_cell_tracking_trace.md        the symbolic trace of the sibling's stage 0
+  ch2_competition_definitions.md    the host's own definitions of the 12, the tightest source
+  ch2_label_collapse.md             the gold labels' ternary fold and what it reaches
+  ch2_flicker_port_and_nulls.md     the Rician port, the profiles, the null suite
+  ch2_measured_*.md                 corpus shape, geometry spread, noise floor, regime key
+  ch2_stage1_fails_on_real_data.md  the 336-series run and the traced causes
+  ch2_two_objects_my_reading.md     the dome and seam port, written before consulting
+  ch3_the_level_problem.md          stage 3 reframed: there is no level map
+
+THE WAY OF WORKING is `docs/SPINE.md`, "The working loop". The founder corrects the frame; an
+apparent blocker is the signal that something has been misframed, and goes to him with the framing
+laid bare and no verdict attached.
 """
