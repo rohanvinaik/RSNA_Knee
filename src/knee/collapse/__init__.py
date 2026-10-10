@@ -241,4 +241,91 @@ On the bars, which are empirical rather than declared (2026-10-10). His words:
     On the unlabeled pool: "There is no unlabeled pool--there is in the competition itself. But
     that's a LOT of data, only worth adding in what we need, if it actually is helpful for the
     build"
+
+THE KNEE IS TWO OBJECTS THAT COMBINE (2026-10-10). The chapter's real decomposition, after the
+lead had spent a long stretch tuning histogram statistics without ever rendering an image.
+
+    First, the redirect: "Can you show me? Show me what the literal images look like at this
+    stage, and what structure needs to be built to resolve signals? It's about visual reasoning,
+    not tuning metrics. "Knee" or sections of the knee that are significant aren't objective
+    numbers, they're heuristics about the structure of the problem space that we use to reason
+    over the problem space"
+
+    Then the decomposition:
+
+    "structure isn't something you can blindly apply. It has to be re-derived for each problem
+    space. For here, you're missing a BIG one: Knees are two objects that combine. The problem
+    space is to split the visual field into "<object>"s--the tibia and the femur"
+
+    "Knee injuries aren't some arbitrary thing, they are reasoned deviations from the norm of how
+    knees are supposed to work. A tibia and a femur sit into one another, with interstitial fluid
+    (that's what they call it, right?) between them. An injury is a breakage, an issue in the way
+    they sit in one another. What we need to do is resolve what is the tibia, resolve what is the
+    femur, resolve what is the interstitial space, and have it be a structural and deterministic
+    resolution. Then, diagnosis is a matter of reasoning over the dynamics between them and how
+    these objects sit relative to each other"
+
+    The lead's correction to the term, which he invited ("right?"): the fluid in a joint is
+    SYNOVIAL fluid, in the JOINT SPACE (the articular cavity), lined by the SYNOVIUM. Interstitial
+    fluid is a different thing, the fluid in tissue spaces generally. It matters because two of
+    the twelve name that space: Effusion is excess synovial fluid in it, Synovitis is inflammation
+    of its lining.
+
+    What makes the two objects two, and where the mechanism already lives:
+
+    "The answer here, what makes these two objects, is, again, SUPER obvious. The lateral view is
+    of the space between them, where synovial fluid sits. The identity of the thing being imaged,
+    the direction we're looking (down-->up or up-->down) has to be told to us. But for any images
+    that are vertical, it's laughably simple"
+
+    "The difference between tibia and femur? It's the GIANT fucking gap between them. Look into
+    the cell tracking project for the way we resolved cells, the "dome" shape, with a discrete
+    fall-off in signal intensity that marks the border between the edge of the cell membrane and
+    the rest of the field. THat was WAAAAAY harder. That could resolve between HUNDREDS of cells
+    in a single plate. Here? We just need to figure out the difference between two GIANT fucking
+    objects that almost precisely split the picture right in the middle. It's always in roughly
+    the same place, and almost looks the exact same. Compared to cell tracking, it's child's play."
+
+    "Trust the thesis. I promise, the answer exists. I'll help you find it"
+
+    On the background, which the lead HAD got right by connectivity rather than by threshold:
+    "the "background" resolution here is REALLY good, just wanted to say that. VERY clean. In the
+    images, we can see that some of the views are able to draw the boundary around the black, but
+    we're not using the obvious gestalt priors that "fill in" the middle and resolve that as
+    background as well."
+
+    So: the leg's boundary is drawn, but the enclosed black is not yet filled. The gestalt prior
+    is CLOSURE -- the thesis's own stage 2 "reasons from the gestalt of an <object>: contiguous,
+    closed" (SS5.3), and SS4.5 names "the gestalt, the contiguous, closed whole".
+
+WHAT THE IMAGES SHOWED, AND FOUR INSTRUMENTS THAT FAILED (2026-10-10)
+
+    Rendered at last: the middle slice of one series per view, as recorded, squinted, with the
+    background marked and the histogram beside it.
+
+    - Air by CONNECTIVITY TO THE FRAME'S BORDER works, and cleanly: about 10-11% of the frame,
+      tracing the leg's contour. The founder called it "VERY clean". It is a structural reading,
+      so it holds whatever the values are.
+    - The squint keeps the knee legible at 8x8 tile medians: femur, tibia, patella and the joint
+      space all still readable at a sixty-fourfold loss of fidelity.
+    - The joint line's SIGN FLIPS between weightings. On the anatomy sequence the marrow is bright
+      and the joint line is the dark band -- the founder's "giant black-ish line". On the
+      fluid-sensitive sequence the marrow is mid-grey and the joint space is BRIGHT. Same
+      structure, opposite polarity, which is why a digit's meaning must be keyed by weighting.
+
+    Four intensity instruments were tried for cutting background from tissue, and every one
+    failed. They are listed so a later reader does not try a fifth:
+      1. a QUANTILE (the lowest fifth by value) -- truncates the population, so its moments stop
+         being the noise's;
+      2. OTSU -- maximises between-class variance, which sits at the valley only when the modes
+         carry comparable mass; a knee's background is a narrow spike against broad tissue, so it
+         lands far above the valley;
+      3. the HISTOGRAM VALLEY (first local minimum after the first peak) -- exact on synthetic
+         bimodal data, erratic on real knees, whose histograms carry several tissue modes;
+      4. the DARKEST FIFTH inside the leg, meant to find cortical bone -- found the leg's left and
+         right edges instead, and "the three largest bodies above it" was one blob.
+
+    The lesson the founder drew: these are objects, not intensity classes, and the reading must be
+    structural. "The objects are hard to reason over with numbers. But computer vision is about
+    reasoning over *objects*."
 """
