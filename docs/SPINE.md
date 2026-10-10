@@ -57,8 +57,42 @@ Each chapter, in order:
 6. **Verify** through the real entry point and adversarially; pin pure decisions with `just detective`; run
    `just gate` before every commit.
 
-No sub-agents or workflows for the reasoning. The design is the founder's (`AGENTS.md`, law 9): the lead tells
+No sub-agents or workflows for the **reasoning**. The design is the founder's (`AGENTS.md`, law 9): the lead tells
 what it understands and what it measured, and asks.
+
+## The working loop (founder, 2026-10-10)
+
+His words: "the workflow you should be using is to work it out with fable/codex and ground on truth with cheap
+agents mining on the text/advisors on questions you need to solve. I can guide where needed, but this is a nice,
+clean workflow loop you've been using, I'd like to persist it."
+
+**Two oracles, each with its own way in.** Both are truth; neither is opinion.
+
+| oracle | what it settles | how it is read |
+|---|---|---|
+| the thesis, *What an \<Object> Is* | theory, explanation, why a thing is the way it is | **read** — whole sections, by a mining agent where the section is long |
+| the cell-tracking build | literal engineering, what was actually done | **symbolically traced** — Serena `find_symbol` / `find_referencing_symbols`, then the unit read whole |
+
+**The loop, in order:**
+
+1. **Hit something uncertain.** Say so rather than resolving it with a plausible guess.
+2. **Ground on the oracles.** Launch a cheap mining agent at the thesis, or trace the sibling build symbolically.
+   A miner returns facts with locations and verbatim quotations, and no judgement. It says what it did not look
+   at. Its facts are checked against the founder's words before they become premises.
+3. **Work it out with Fable and Codex.** Write the lead's own reading to `docs/provenance/` *before* opening
+   either answer. They are second readers, never warrant (law 9): they may report a provable error with its
+   proof, or ask a question. Agreement reached independently is evidence; disagreement is a question for the
+   founder.
+4. **Call the advisor** on the question itself — before a multi-file plan locks, when the same failure returns
+   twice, and before declaring work done.
+5. **Measure, on the real corpus, through Chapter 1's entry point.** A stage that has only seen synthetic data is
+   not built. Run it over the 58 and read the table before building the stage above it.
+6. **Record to `docs/provenance/` before the next step**, so a compaction costs one unit and not the session.
+7. **Tell the founder**: the mechanism as read, what was measured, and where the lead is still uncertain. He
+   guides from there.
+
+**What never delegates:** the synthesis, the interpretation, the telling, and every judgement. A miner informs
+the lead of facts; it never tells the lead what the founder is asking, what a thing means, or what to build.
 
 ## The oracle: the thesis and the cell-tracking project
 

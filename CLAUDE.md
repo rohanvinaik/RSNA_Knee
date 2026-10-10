@@ -14,15 +14,25 @@ pass. The oracle governs every design decision, and it supersedes the architectu
   kinda vibe and jumping to assign a label to it". As a neural net you reach for the most plausible label; this
   project runs on strict knowability. Assign only what is known, reject only what is known not to be, and abstain
   on the rest. A category's name never outruns its warrant.
-- **Do the reading yourself.** Grounding is the lead's own work, and it is never delegated to a sub-agent, which
-  carries none of this context. Grounding means reading:
-  - the thesis and the cell-tracking build of the chapter's stage (the oracle);
+- **The understanding is yours; the mining may be delegated.** Grounding means knowing:
+  - the thesis and the cell-tracking build of the chapter's stage (the two oracles);
   - the founder's words;
   - the sources a chapter cites.
 
-  Launch a sub-agent only when the founder asks for one. Founder, 2026-10-02 16:35:20Z: "I want YOU to do this
-  … We are lITERALLY establishing the persistent, post-compact stable context grounding." If he does ask, it
-  orients with `aider-map` and `Read`, never its own Serena.
+  The lead does the **synthesis, the interpretation and the telling**, always. Founder, 2026-10-02 16:35:20Z:
+  "I want YOU to do this … We are lITERALLY establishing the persistent, post-compact stable context grounding."
+
+  **Standing authorization, founder 2026-10-10**, which amends the former rule that a sub-agent was launched only
+  when he asked each time: "Make sure you're using cheap agents/advisors to look into the thesis and the cell
+  tracking project build as needed when you're uncertain. Both are oracles of truth--one on theory and
+  explanation, one on literal engineering. One can be read, one symbolically traced, but the workflow you should
+  be using is to work it out with fable/codex and ground on truth with cheap agents mining on the text/advisors on
+  questions you need to solve. I can guide where needed, but this is a nice, clean workflow loop."
+
+  So a reading agent may be launched without asking. It is a **miner**, never a reasoner: it reads named units
+  whole and returns **facts with their locations and verbatim quotations**, says plainly what it did not look at,
+  and offers no judgement. Information still flows downward only — it informs the lead of facts, and never of
+  meaning, intent or what to build. The loop itself is in `docs/SPINE.md`.
 - **Serena** is activated on this directory by path.
 - **The filter hooks do not see `python -m Detective.cli`** (verified 2026-10-02). Use `just detective …`, which
   keeps every run's complete output in `.detective/runs/` and preserves its exit status. It does not refuse pipes
