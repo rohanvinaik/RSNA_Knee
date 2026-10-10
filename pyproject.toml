@@ -10,6 +10,7 @@ dependencies = [
     "pandas",
     "pydicom",
     "SimpleITK",
+    "python-gdcm>=3.2.6",
 ]
 
 [build-system]
@@ -18,6 +19,10 @@ build-backend = "setuptools.build_meta"
 
 [tool.setuptools.packages.find]
 where = ["src"]
+
+[tool.uv]
+# VERIFY is a uv-managed CPython (AGENTS.md, override 4), as Detective's own environment is.
+python-preference = "only-managed"
 
 [tool.pytest.ini_options]
 minversion = "9.0"
@@ -35,15 +40,22 @@ extend-exclude = ["archive"]
 [tool.ruff.lint]
 extend-select = ["B"]
 
+[tool.ruff.lint.per-file-ignores]
+# Detective regenerates these wholesale and checksums them; their import block is its own.
+"tests/detective/*" = ["I001"]
+
 [tool.ty.src]
 exclude = ["archive"]
 
 [tool.deptry]
 extend_exclude = ["archive"]
+known_first_party = ["knee"]
 
 [tool.deptry.per_rule_ignores]
 # Imported only by the dev script scripts/detective_resolution.py.
 DEP004 = ["Detective", "Wesker"]
+# A pydicom decoder plugin: pydicom loads it, and nothing imports it by name.
+DEP002 = ["python-gdcm"]
 
 [tool.deptry.package_module_name_map]
 detective-spec = "Detective"
@@ -52,6 +64,7 @@ scikit-image = "skimage"
 SimpleITK = "SimpleITK"
 crosshair-tool = "crosshair"
 import-linter = "importlinter"
+python-gdcm = "gdcm"
 
 [dependency-groups]
 dev = [
