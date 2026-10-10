@@ -79,15 +79,16 @@ clean workflow loop you've been using, I'd like to persist it."
 2. **Ground on the oracles.** Launch a cheap mining agent at the thesis, or trace the sibling build symbolically.
    A miner returns facts with locations and verbatim quotations, and no judgement. It says what it did not look
    at. Its facts are checked against the founder's words before they become premises.
-3. **Work it out with Fable and Codex.** Write the lead's own reading to `docs/provenance/` *before* opening
-   either answer. They are second readers, never warrant (law 9): they may report a provable error with its
-   proof, or ask a question. Agreement reached independently is evidence; disagreement is a question for the
+3. **Work it out with Fable and Codex.** Write the lead's own reading to the chapter's `readings/` *before*
+   opening either answer. They are second readers, never warrant (law 9): they may report a provable error with
+   its proof, or ask a question. Agreement reached independently is evidence; disagreement is a question for the
    founder.
 4. **Call the advisor** on the question itself — before a multi-file plan locks, when the same failure returns
    twice, and before declaring work done.
 5. **Measure, on the real corpus, through Chapter 1's entry point.** A stage that has only seen synthetic data is
    not built. Run it over the 58 and read the table before building the stage above it.
-6. **Record to `docs/provenance/` before the next step**, so a compaction costs one unit and not the session.
+6. **Record to the chapter's folder before the next step** — a reading to `readings/`, a measurement to
+   `measurements/`, and the chapter's `README.md` kept current — so a compaction costs one unit, not the session.
 7. **Tell the founder**: the mechanism as read, what was measured, and where the lead is still uncertain.
 
 **What never delegates:** the synthesis, the interpretation, the telling, and every judgement. A miner informs
@@ -172,15 +173,23 @@ except Chapter 1's §3, which is the lead's reading.
 
 ## Where things live
 
-- `src/knee/<stage>/`: the build. **Each package's docstring is that chapter's own record, and is read
-  FIRST in a new session or after a compaction.** It carries the figure's text for its stage, the founder's
-  teaching verbatim once given, and a section headed "WHERE CHAPTER N STANDS" saying: what is built, what is
-  not working and the traced reason, what is open and his to rule, any claim withdrawn, and where the
-  chapter's readings live. State stays computed — this says what was measured and what it meant, never a
-  prose substitute for running the code.
-- `docs/provenance/`: the chapter's readings and measurements, one file per unit, each written **before** the
-  next step so a compaction costs one unit rather than a session. The stage docstring lists them by name.
-  Second readers' transcripts go here too, with the lead's own reading written first.
+- `src/knee/<package>/`: the build, one package per chapter. Its `__init__.py` docstring carries Figure 8's
+  text for that stage, the knee's version in a paragraph, and a pointer to the chapter's record. It stays
+  short: a docstring is not a notebook.
+- **`docs/chapters/NN-<package>/`: the chapter's record. Read `README.md` there FIRST** in a new session or
+  after a compaction. Each chapter folder holds:
+  - `README.md` — where it stands: the chapter's task in one line, the mechanism as settled, what is built,
+    what is **not** working with the traced reason, what is open and the founder's to rule, any claim
+    withdrawn, and the chapter's own vocabulary.
+  - `teachings.md` — the founder's words, verbatim and dated, in the order given. Never paraphrased.
+  - `design.md` — the design, with provenance per element.
+  - `readings/` — what the **oracles** say: the thesis read whole, the sibling build traced symbolically,
+    and the second readers, each with the lead's own reading written **first**.
+  - `measurements/` — what was measured on the **real corpus**, through Chapter 1's entry point.
+
+  The readings are the oracle's; the measurements are the corpus's. A reading never substitutes for a
+  measurement, and state stays computed from code, tests and git — these say what was measured and what it
+  meant.
 - `tests/`: the tests, Detective's generated suites among them.
 - `data/raw/`: the competition's files, in Kaggle's own layout (gitignored).
 - `archive/`: everything from before 2026-10-10, under its old path.
