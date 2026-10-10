@@ -172,8 +172,15 @@ except Chapter 1's §3, which is the lead's reading.
 
 ## Where things live
 
-- `src/knee/<stage>/`: the build. Each package's docstring carries the figure's text for its stage, and the
-  knee's version once the founder has given it.
+- `src/knee/<stage>/`: the build. **Each package's docstring is that chapter's own record, and is read
+  FIRST in a new session or after a compaction.** It carries the figure's text for its stage, the founder's
+  teaching verbatim once given, and a section headed "WHERE CHAPTER N STANDS" saying: what is built, what is
+  not working and the traced reason, what is open and his to rule, any claim withdrawn, and where the
+  chapter's readings live. State stays computed — this says what was measured and what it meant, never a
+  prose substitute for running the code.
+- `docs/provenance/`: the chapter's readings and measurements, one file per unit, each written **before** the
+  next step so a compaction costs one unit rather than a session. The stage docstring lists them by name.
+  Second readers' transcripts go here too, with the lead's own reading written first.
 - `tests/`: the tests, Detective's generated suites among them.
 - `data/raw/`: the competition's files, in Kaggle's own layout (gitignored).
 - `archive/`: everything from before 2026-10-10, under its old path.
