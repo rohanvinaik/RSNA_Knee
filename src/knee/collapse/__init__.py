@@ -76,4 +76,125 @@ His answers to the lead's questions (2026-10-10, after the compaction):
 
     On the labels: "Synovitis is...Synovitis? Is that not a categoy of label? Why are you trying
     to reject the competition labels??"
+
+The knee's collapse (2026-10-10, the teaching pass). His words:
+
+    "The knee's "collapse" is KneeDiff and the above. As for what fills the "lens" role, that's
+    for us to reason over, with domain knowledge on knee physiology and medicine and some logic"
+
+    On what the four/five lenses of stage 0 actually were, correcting the lead's reading that they
+    measured "focus":
+
+    "the lenses in cell tracking weren't measuring the same property at every place. In fact, none
+    of them were trying to measure "focus". That's not a thing that has a measure. There isn't an
+    objective measure of "in focus" for every posible interpretation of that word. What those four
+    lenses did wasn't really meant as a "measure". The purpose of THOSE four/five lenses was
+    different from the other lenses in that project. They are "lenses" in the sense of the project
+    epistemology--singular lossy measures that are inherently correct because they simply measure a
+    metric, a reading, which is inherently correct, and interpretation is explicitly disclaimed.
+    But for these four/five, their "measurment" isn't really a point for interpretation. They
+    measure simple metrics--variance in pixel intensity, black/white balance, intensity/coverage,
+    etc--for the sake of finding a local minima state that can resolve a single view of cells that
+    was analytically useful. That is all. Finding a single slice in each of the four to start the
+    first loop of the pipeline."
+
+    "There needs to be SOME grounding consistency. There doesn't need to be perfect identity. The
+    lenses there didn't measure the same property at every place. They read one metric--NOT
+    focus--at ONE place at a time, and after one loop finished and cells were pulled out each of
+    the four pulled out anoter z-plane to resolve for the sake of presenting a clear image to
+    process in the pipeline."
+
+    Rejecting "deviation from normal" as a lens:
+
+    "what is "deviation from normal"? What is an objective metric to measure "deviation" or
+    "normal"? There isn't."
+
+    What this chapter is:
+
+    "The point of the knee project at THIS stage is to find an analysis frame that allows
+    dimensional collapse. Essentially--what is the format of the data we are presented? What are we
+    shown, and what about it is categorically something small and resolvable as largely static?
+    Basically, the point is to establish the information-theoretic ground here. What is the way
+    that we can do a pure, mathematical operation or search or what have you, to produce a single,
+    resolvable starting ground that highlights what ACTUALLY matters?"
+
+    KneeDiff, the mechanism:
+
+    "In this project, my ideas was "KneeDiff". Basically, in order for knee scans to MEAN
+    something, they all have to look reeeeeally similar. They're roughly the same size, roughly the
+    same orientation, the boundary between the femur and tibia is this GIANT fucking dark line
+    right in the middle, and most of the rest is just undifferentiated slop. Say you took 100
+    different images of knees. There are plenty of tools that can do basic alignment, yes? If not,
+    even in the cell tracking project there's a whole "squint" conncept with various
+    implementations, which instantiates the idea of intentional lossy representation of data to
+    better resolve S/N for significant elements and patterns, like how humans squint to allow
+    gestalt priors to better help resole an ambiguous view. In the cell project, one such
+    application was a split of the grid into 16x16 chunks of flat representation--an astronomical
+    collapse of information fidelity. But just look at this picture: [the 16x16 tile-median
+    reduction of a microscopy plane, in which the cells remain plainly visible]"
+
+    "Yes, very lossy. But...you see the cells, right? It's pretty freaking obvious where you see
+    "cell" vs the black background. Think about it simply and logically. Knee images are WILDLY
+    similar. So just...take a cheap, lossy view, "squint" at a whole stack of them, then
+    just...subtract. Even with just the 58 different knees we have annotated, or maybe we can even
+    throw in the others from the competition that aren't labeled--we just want to get an average, a
+    vibe-y representation of the sites that actually matter or are useful--line up each specific
+    view that they provide, kinda shift them around a bit, line them up nicely, then produce a
+    single "platonic" study set that has as each view, each image in the study, as an amalgamation
+    of ALL the views lined up then subtracted. What would you expect? Well, personally, I'd expect
+    most of the data to basically subtract out into near-noise. Low variance, largely drift, very
+    obviously not something useful for diagnosis. And in the places that actually carry diagnostic
+    information? Mostly I'd expect it to be kinda messy and blobby in those areas, no? Seems like a
+    bad thing--it's NOT. This us where the "there is no noise" principle comes into play. Because
+    what I described is NOT an undifferentiated mass of blah. What I described are two DIFFERENT
+    profiles of "blah". One is spiky, small, and largley pure noise. The other is a definable
+    region of clear and obvious uncertainty, places where the studies and images have GENUINE
+    differences in what they show--whaich is obviously what we actually CARE about. It LITERALLY
+    should produce an amalgamation that explicitly preserves exactly the sites of high variance as
+    resolvable points of analysis, places that are diagnostically-significant."
+
+    The discriminator, and the baseline:
+
+    "And how does this relate to actual computer vision? Image data like this is messy. You see a
+    knee with a fracture or whatever, most of the image is variable vs any other arbitrary image of
+    a knee you might see, and certainly a superimposed combination of a whole bunch of them. But
+    WHERE the variance is ACTUALLY diagnostic is definable as (1) a profile of discrete
+    variance--where does this knee look NOTABLY different from other knees, with a clean and
+    obvious profile (e.g. a giant-ass fracture that shows as a big freaking line that is an
+    entropic abnormality that is unmistakable), and (2) variance that SPECIFICALLY shows up in
+    places that have distinct pockets of discrete variance that is stubborn and unmistakable.
+    Places that are parts of the knee and unimportant have a spiky profile of variance--some
+    per-study variance, each image is taken by different people, of different people, at different
+    times. But places that correspond EXPLICITLY to places where knee abnormalities show up and are
+    diagnosable will have stubborn and persistent pockets of differential presentation that will
+    NOT simply go away when you stack many of these study images on top of one another. The
+    variance isn't in one random study at a few random spots, it's PERSISTENT and consistent and
+    shows up repeatedly in the same general ways and in the same general places. The baseline isn't
+    noisiness; it's *entropy*"
+
+    On the task's nature:
+
+    "this project is WAAAAAAAAY easier; the cell tracking project expected us to identify and track
+    the exact position of every cell, a literal numerical value. The hard stuff for a classical vs
+    neural approach. But here? We JUST need to be able to say which of the 12 categories each study
+    fits into."
+
+    "I have another project that's all about routing categorical assignment when the task is simply
+    routing to a fixed category set, not a free-floating space of numerical assignment."
+
+His rulings of 2026-10-10 on the lead's two open questions:
+
+    On the finding-to-region map, which the lead had called domain knowledge for him to author:
+    "that's actually an objective fact, not something I should be vibing in chat about. Find what
+    the current standard approach assigns for them."
+
+    On rare normal variants (discoid meniscus, bipartite patella), which the lead had asked whether
+    to treat as abstentions: "the domain space is defined by the competition. If it's not one of
+    the 12, then to me it doesn't exist. Log it, we'll come back to it when it comes to "noise
+    correction" if needed, but for establishing the ground for this project, it's immaterial by
+    definition"
+
+    So: a region that is stubborn-minority but belongs to none of the 12 is not a category of this
+    chapter. It is logged as an observation for a later noise-correction pass and is immaterial to
+    establishing the ground. Chapter 2 does not model it, name it or abstain on it.
 """

@@ -106,28 +106,6 @@ except Chapter 1's §3, which is the lead's reading.
 | beside | `agencies` | the four agencies, each marked where it acts | §11 |
 | beside | `record` | the kept record of findings, where the agencies meet | §11 |
 
-## Resuming after the compaction of 2026-10-10 (written at the founder's word, before it)
-
-- Chapter 1 (`study`) is built and committed (361c519): `open_corpus`, `read_study`, every series whole at
-  stored fidelity, named codes for every zero. Measured: none of the 58 labeled studies is all-normal (1 to 9
-  positive findings each), and Kaggle's kernel lacks a JPEG Lossless decoder (no shipping until the work is done).
-- Chapter 2 (`collapse`) is being taught. His words so far are in `src/knee/collapse/__init__.py`. He said what
-  August built is not to be recapitulated; the thesis is the design source.
-- Exact next steps:
-  1. Re-read, whole: this file; `AGENTS.md`'s opening section; `src/knee/collapse/__init__.py`; and in
-     `~/Projects/Kaggle_Killer/competitions/cell_tracking/docs/pipeline_thesis/paper/v7_parts/`: `03_collapse.md`
-     (§4), `04_structure.md` (§5: stage 0's four lenses and the composite, stage 1 the black by seniority, stage 2
-     the bodies), and `01_information.md` (§1; read whole in consecutive parts: lines 1–703, 704–1406, 1407–end;
-     §1.3 the squint, §1.4 the change, §1.8 a reference and its difference, §1.11 wide and narrow lenses,
-     seniority, concurrence, §1.12 yes/no/nothing said, §1.14 decide or abstain).
-  2. Done after the compaction (2026-10-10): his request "read that stuff first, come back with your
-     interpretation and understanding for how this informs the build" was answered, and he answered the tell's
-     questions. His answers are in `src/knee/collapse/__init__.py`: what "black", "speck" and "lens" mean, the
-     joint line as the knee's normalization flag, the platonic knee as the superposition of the 58's normal
-     parts, and that the competition's labels stand.
-  3. Build Chapter 2 only on his go, one step at a time. Record each new teaching in the stage's docstring as it
-     comes.
-
 ## Where things live
 
 - `src/knee/<stage>/`: the build. Each package's docstring carries the figure's text for its stage, and the
