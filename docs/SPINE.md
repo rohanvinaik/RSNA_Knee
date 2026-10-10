@@ -88,11 +88,41 @@ clean workflow loop you've been using, I'd like to persist it."
 5. **Measure, on the real corpus, through Chapter 1's entry point.** A stage that has only seen synthetic data is
    not built. Run it over the 58 and read the table before building the stage above it.
 6. **Record to `docs/provenance/` before the next step**, so a compaction costs one unit and not the session.
-7. **Tell the founder**: the mechanism as read, what was measured, and where the lead is still uncertain. He
-   guides from there.
+7. **Tell the founder**: the mechanism as read, what was measured, and where the lead is still uncertain.
 
 **What never delegates:** the synthesis, the interpretation, the telling, and every judgement. A miner informs
 the lead of facts; it never tells the lead what the founder is asking, what a thing means, or what to build.
+
+### The founder's place in the loop, which is not the end of it
+
+He is **not** a terminus the loop reports to. He is the one who **corrects a misframing**, and nothing else in
+the loop can do that job:
+
+- a **miner** returns what the text says, but cannot know the lead asked the wrong question;
+- **Fable and Codex** reason *inside* the framing they are handed, so a bad frame comes back elaborated;
+- the **advisor** reads the same transcript, so it inherits the same blind spot.
+
+His words, 2026-10-10: "I am the one that guides misunderstandings, like your 'pleural effusion brightness' issue
+that you were stuck on."
+
+**The worked case.** The lead concluded a level map was impossible, because on a fluid-sensitive sequence the
+brightest tissue is fluid, so any bright anchor would normalize away the finding. That was reported as a genuine
+incongruity. He answered: "confluent plates vs sparse plates obviously ALSO have the same global signal scale-up
+issue, no?" — which named where to look and said the answer already existed. The loop then resolved it in one
+pass. It could not have found that on its own.
+
+**So the tell to watch for.** An apparent **blocker** is the signal. His law: "*I* am the domain expert, and I
+KNOW that the idea is complete and correct. If you're having problems, it's because you're missing something."
+And 2026-10-10: "if you simply trust that this IS a genuine implementation of computer vision, then problems like
+that CAN'T be definitive blockers or unresolvable incongruities. **The answer *exists*.** We simply have to work
+it out together."
+
+When the lead's conclusion is that something cannot work, that conclusion is **evidence of a missing
+understanding, never a finding**. It goes to him immediately — with the framing laid bare and the reasoning shown,
+and **without a verdict attached**. "Here is where I am stuck and here is how I am framing it" — never "here is
+why this is impossible."
+
+The loop re-enters at step 2 once he has redirected it.
 
 ## The oracle: the thesis and the cell-tracking project
 
