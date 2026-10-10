@@ -69,8 +69,17 @@ what it understands and what it measured, and asks.
   system, one element at a time (§4–§6 carry H1, §7 H2, §8–§10 H3, §11–§12 H4); §13 the mechanics beneath the
   language and the memory.
 - **The cell-tracking project**, the thesis built: `~/Projects/Kaggle_Killer/competitions/cell_tracking/`, its
-  code in `src/cell_tracking/`, its own spine and code map in `docs/BUILD_SPINE.md` and `docs/CODE_MAP.md`.
-  Where it built a stage is located when that stage's chapter opens.
+  code in `src/cell_tracking/` (a map of it in `docs/CODE_MAP.md`). Where it built a stage is located when that
+  stage's chapter opens. "Spine" here is the founder's casual word; this file does not follow cell tracking's
+  `docs/BUILD_SPINE.md` (founder, 2026-10-10: "do NOT hinge on the "spine" document from cell tracking, I was just
+  using a casual term").
+
+## The corpus
+
+The 58 labeled studies (founder, 2026-10-10: "We only need the 58 labeled studies. The advantage of a
+classical/symbolic approach--if it works on a handful of cases, scaling up doesn't really add in much utility for
+training. So the 58 are enough."). They are in `data/raw/train_series/`; at scoring, the hidden test studies
+arrive in the kernel.
 
 ## The chapters
 
