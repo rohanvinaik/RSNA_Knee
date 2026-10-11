@@ -370,6 +370,57 @@ On encoding it:
 > the "chapters" we have right now, though I'm sure some of it can be folded in and maybe even provide
 > some genuine refinement to these."
 
+## 2026-10-11 — the fingerprint IS the bundle; the build plan
+
+On the second readers, and on the figures he attached (H2a2 and H2b from the `<object>` thesis):
+
+> "On the fibula point, **I agree with Fable.** It also was rather good about that whole **LPS
+> handedness point.** I had forgotten about that, it's good. And yes, **the 'fingerprint' idea is VERY
+> in-line with the thesis.** See the attached figures from the \<object> thesis about the cell
+> tracking project--VERY much in-line with the design"
+
+> "Generally speaking, LOVE what fable put out. **Let's iron this out nicely. We should be able to set
+> up a clean build plan to instantiate all this.** Again, **use the tooling for coding and code
+> planning. Everything should have telemetry**, the ideas and the scripts that build them should have
+> a **clean, SICP-style implementation**, we should **archive out anything not part of the clean
+> production build** should be in the main repo path, then **build out the scaffold for the build
+> thus**. **The full thesis should be laid out cleanly and unambiguously, precisely in the clean,
+> logical flow we've developed in this chat.** With the code planning tools set up as a contract, and
+> the workflow prescribed by this conversation and the thesis and the cell tracking project as an
+> example of the thesis instantiated (for ideas on implementation, like **the finer details of cell
+> body resolution for ideas on resolving knee anatomy**), we should be good!"
+
+**The first two tasks, in his order:**
+
+> "When you've set all this up, our first task will be to **(1) resolve the added additional
+> components of knee anatomy we don't currently have \<object> roles for**, and **(2) making the ones
+> we DO have roles for cleaner, full traces of the outline based on all the lenses and signals we have
+> converging onto each object's role**, much like the cell body resolution/cell pull-out work in that
+> project."
+
+**What the two figures establish** (the lead's reading of them, to be corrected if wrong):
+
+- **H2a2 panel C, "Its Profile: The Bundle of Its Places, as Row Counts".** The bundle crosses
+  **scale** (the voxel · the 16×16 neighborhood · the lens · the plate) with **lens** (Gradient ·
+  Contrast · Split Quality · Dark Share · Composite), and adds relational banks (the dome link's eight
+  compass directions, the ring) and provenance banks (the lenses' conversation · **how its cell came
+  out** · its own voxels). Each row carries a balanced-ternary digit against a **static middle** —
+  below / at / above — shaded by how many of the object's places wrote it.
+- So **Fable's "tissue fingerprint by conjunction" is this bank layout**, not a new mechanism. The
+  knee's lens axis is the acquisitions (T1/T2/PD × FS/non-FS); `fat = bright(non-FS) ∧ dark(FS)` is
+  one row of one bank, read against in-image references rather than absolute levels.
+- **Lineage is a bank.** "How its cell came out" sits inside the profile, so how an object was
+  resolved is part of its identity, never metadata beside it (§6.6: "how it came out is a physical
+  fact").
+- **H2b, "A Cell's Full Profile Beside Its Cheap Profile".** A full profile (whole pipeline, at the
+  anchor) beside a cheap one (raw picture alone), bank by bank, each marked `Same rows` /
+  `Whole pipeline only` / `Reads no Composite` / `Not written`. This is the compute mechanism for the
+  trade he named on 2026-10-11 ("balance resolution and diagnosis quality with computational
+  efficiency for the competition submission popeline"): the cheap profile is what survives a budget,
+  and the figure says exactly which banks it loses.
+
+---
+
 *Three corrections the lead made to its own earlier reading, which he let stand:* the MCL is
 **extra-articular** — a span on the medial exterior, not interstitial content; **Effusion's space is
 the capsule**, which includes the suprapatellar recess and exceeds the union of the interstices; and

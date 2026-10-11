@@ -29,12 +29,14 @@ from knee.study.corpus import Corpus, Study, read_study
 ROUTE: tuple[tuple[str, str], ...] = (
     ("study", "built"),
     ("collapse", "partly"),
+    ("lenses", "not_built"),
+    ("relations", "not_built"),
     ("loop", "not_built"),
     ("candidates", "not_built"),
-    ("vectors", "not_built"),
     ("cleanup", "not_built"),
-    ("assignment", "not_built"),
+    ("vectors", "not_built"),
     ("every_object", "not_built"),
+    ("predicates", "not_built"),
     ("output", "not_built"),
 )
 
