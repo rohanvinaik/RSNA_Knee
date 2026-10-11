@@ -80,6 +80,18 @@ This is the part that bears hardest on the knee's coil-falloff problem:
 So: **local structural baseline → noise units → static tercile edges.** The middle never carries the
 spatial correction.
 
+### Two gaps §7 leaves open, which the sibling answers in code
+
+- **"A metric with few readings"** — §7 gives no rule. `layout.test_middles` (`layout.py:661-678`)
+  does: `if finite.size < 3: continue`, so the pair gets **no middle at all**, and `middle_of` then
+  raises rather than inventing one. A middle that cannot be read is absent, not guessed.
+- **A per-object own baseline was tried and measured as mostly silent.** The older
+  `hdc/position.mine_zero` returns an infinite tolerance below two points, and
+  `docs/HDC_SUBSTRATE.md:350-356` records that on wave 1 **78.3% of all position-family readings were
+  cold start**, and 100% at the first two frames of every window. That is evidence about a design the
+  knee might otherwise reach for: an object compared against its own history cannot speak early, and
+  for a knee study — which is a still, with no history at all — it could never speak.
+
 ## The tension this creates, which is the founder's to settle
 
 | | a middle is | spatial variation handled by |
