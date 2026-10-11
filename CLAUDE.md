@@ -1,5 +1,15 @@
 # CLAUDE.md — RSNA_Knee
 
+## ⇒ BEFORE YOU WRITE ANY CODE IN THIS REPOSITORY: **`just unit`**
+
+It prints the build loop with the route's live state and the declared change's progress. **Run it;
+do not try to remember the loop.** This line is deliberately a pointer to a command and not a
+summary of one: the loop is also written in `docs/STAGE_CONTRACT.md` and `docs/SPINE.md`, and on
+2026-10-11 the lead had both in context and built against neither. What changed its behaviour that
+day was `plan-status` printing 3/23, Detective refusing to call two survivors equivalent, ruff
+failing the gate, and an intent test failing — commands that answer back, never prose. A fourth copy
+of the loop in this file would fail the same way, so there isn't one.
+
 **Read first:** `AGENTS.md` (imported below): its opening section, the project as of 2026-10-10, then the rigid
 oracle, the founder's lens principle. Then `docs/SPINE.md` (imported below): the chapters and the PI–undergrad
 pass. The oracle governs every design decision, and it supersedes the architecture document.

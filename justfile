@@ -82,15 +82,28 @@ gate:
 detective-resolution:
     PYTHONPATH={{ pp }} .venv/bin/python scripts/detective_resolution.py
 
-# Declared work lives in OpenSpec; client instruction generation is deliberately off.
-plan-status:
-    OPENSPEC_TELEMETRY=0 openspec status --change object-resolution-toolkit
+# START HERE before writing code. The build loop, with this project's live state filled in.
+#
+# It is a COMMAND and not a document on purpose. The loop is also written in docs/STAGE_CONTRACT.md
+# and docs/SPINE.md, and on 2026-10-11 the lead had both in context and built against neither. What
+# changed its behaviour that day was never prose -- plan-status printing 3/23, Detective refusing to
+# call two survivors equivalent, ruff failing the gate, an intent test failing. Commands answer back.
+unit:
+    PYTHONPATH=src .venv/bin/python scripts/unit_loop.py
+    @echo
+    @just plan-status
 
-plan-next:
-    OPENSPEC_TELEMETRY=0 openspec instructions apply --change object-resolution-toolkit --json
+# Declared work lives in OpenSpec; client instruction generation is deliberately off. The change
+# defaults to knee-object-model, the structure the founder settled 2026-10-11; name the other
+# explicitly (`just plan-status object-resolution-toolkit`) for the packet work it supersedes.
+plan-status CHANGE="knee-object-model":
+    OPENSPEC_TELEMETRY=0 openspec status --change "$1"
 
-plan-check:
-    OPENSPEC_TELEMETRY=0 openspec validate object-resolution-toolkit --strict
+plan-next CHANGE="knee-object-model":
+    OPENSPEC_TELEMETRY=0 openspec instructions apply --change "$1" --json
+
+plan-check CHANGE="knee-object-model":
+    OPENSPEC_TELEMETRY=0 openspec validate "$1" --strict
 
 # The graph observes the real production route, and never imports into knee.
 graph OUT:
