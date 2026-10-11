@@ -1,5 +1,25 @@
 # Chapter 2 — `collapse`. Where it stands.
 
+For the accepted object-resolution toolkit build and an interrupted-session handoff,
+start at [RESUME.md](RESUME.md), [the build index](../../BUILD_PLAN.md), and
+[B2's evidence record](measurements/same-knee-conversation-b2.md). The
+[continuing contract](object-resolution-contract.md) and
+[same-knee conversation reading](readings/same-knee-conversation-codex.md) record
+the founder's latest guidance. Compute current
+standing with the commands there. The earlier readings and noise-law history below
+remain context; their past measurements are not current status.
+
+The continuing target is every significant anatomical element relevant to all
+twelve findings. The implemented increment exchanges original same-knee boundary
+readings through the read-once production route, returning separate concurrent
+and conditional subdivisions. All territories, unsupported divisions, source
+bands, disputes and missing support remain accessible. Its staged photos and
+per-view comparisons are in `data/pictures/object-toolkit/conversation-b2/`.
+The next operation is supported chain closure and constrained refinement
+(OpenSpec task 3.8), before facing surfaces, extent and anatomical ownership.
+The coronal example guides inspection; the theory and live cell implementation
+guide the general mechanism.
+
 **Read this first** in a new session or after a compaction. Then `teachings.md` for the founder's
 words verbatim, then `design.md`.
 
@@ -25,7 +45,13 @@ Every one of the twelve findings is a deviation in that relation:
 | what maintains the relation | Medial / Lateral Meniscus, ACL, MCL |
 | fluid leaving the space | Baker's cyst |
 
-## The mechanism, settled
+## Earlier object/seam mechanism discussion
+
+This section preserves the earlier discussion. It is not the implemented B1
+contract or a settled specification for B2. In particular, B1's geometric
+prominence markers measure proposed interiors, not anatomical identity, and
+the sibling's `read_dips` is not a supplied 1D knee-seam implementation. Follow
+the current contract and source traces above when building.
 
 1. **Close the leg.** Air is what connects to the frame's border, after a morphological opening at
    the tile scale; the leg is the rest, with its holes filled. Two fills, both answering only
@@ -52,7 +78,7 @@ Every one of the twelve findings is a deviation in that relation:
 
 Detail and quotations: `readings/resolving-the-two-objects.md`, `readings/the-dome-and-the-seam.md`.
 
-## Built, gated, committed
+## Earlier noise-law build record
 
 | module | what it is |
 |---|---|
@@ -61,7 +87,7 @@ Detail and quotations: `readings/resolving-the-two-objects.md`, `readings/the-do
 | `units.py` | the variance-stabilizing transform (Rician / noncentral chi), tabulated per series |
 | `regime.py` | the regime key — the cheap whole-field readings taken once per series |
 
-## Not working, and the traced reason
+## Earlier noise-law measurements and their traced reason
 
 Over all 336 series the two noise estimators concur on **4**. The ratio between them flipped from
 5.5× to 0.2× across a rebuild, so the instrument moved and the disagreement did not resolve.
@@ -76,7 +102,7 @@ The founder's ruling is outstanding. The three options put to him:
    carry the rest — so concurrence becomes a **reading about comparability**, not a target;
 3. make the bright estimator primary and the dark its check.
 
-## Open, and the founder's to rule
+## Earlier questions retained for context
 
 1. the noise law's three options above;
 2. **valleys or terciles** for a middle's edges, and **values or digits** into the stack;

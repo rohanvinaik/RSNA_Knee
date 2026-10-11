@@ -15,6 +15,10 @@ What the gate actually asks of this folder, exactly: `ruff check .` and `ruff fo
 the whole tree, so a probe here is lint-clean and formatted. `ty check src tests` and
 `pytest` (`testpaths = ["tests"]`) do not reach it, so a probe is neither typed nor tested.
 
+The Packet A Hamilton adapter is additionally exercised by production integration
+tests under `tests/`; that explicit evidence does not introduce a whole-workbench
+test/type obligation.
+
 One rule is lifted here and nowhere else: **`BLE001`, the blind-except rule**
 (`pyproject.toml`). A probe that sweeps all 336 series *must* catch broadly — one unreadable
 series is a finding to record, never a reason for the sweep to die. Everything bearing on
@@ -36,6 +40,8 @@ in `docs/chapters/` belongs here. A probe that told me nothing belongs nowhere.
 |---|---|---|
 | `corpus_shape.py` | six views; fluid-sensitive and fat-suppressed perfectly correlated; only Axial (1,1) in all 58 | `measurements/corpus-shape.md` |
 | `geometry_spread.py` | physical extent consistent (~160 mm) while pixel grids differ eightfold | `measurements/geometry-spread.md` |
+| `object_toolkit_geometry.py` | actual Chapter 1 stack geometry; the demonstrated 8-place tile spans 1.172–6.2504 mm | `measurements/object-toolkit-geometry.md` |
+| `object_analysis.py` | actual production physical squints/profiles, source-linked arrays, final receipt and atomic per-study checkpoints | `measurements/physical-packet-a.md` |
 | `noise_floor.py` | the air-based sigma estimator returns 0.0 where the background is vendor-masked | `measurements/noise-floor.md` |
 | `regime_key.py` | laterality absent from 181 of 336 series; only 58 train + 3 test studies on disk | `measurements/regime-key.md` |
 | `regime_run.py` | the noise law over all 336 series: 4 concurring | `measurements/the-noise-law-fails-on-real-data.md` |
@@ -59,6 +65,13 @@ A picture of this corpus never enters git.
 | `objects.py` | the failed attempt to split the bones by an intensity quantile — kept because the failure is the finding |
 | `seam.py` | the closed leg and the header-derived superior-inferior axis |
 | `axial.py` | the stack walked through Z: tibia, then the joint, then femur and patella |
+| `object_profiles.py` | a saved production plane, squint, sample locations and profile |
+| `object_packet.py` | a saved-record series across views/contrasts, with source/receipt manifest |
+
+The Packet A renderers read saved production records and write under their explicit
+`--out` path in `data/pictures/`; they do not compute another segmentation. The
+development `graph/` adapter observes one actual production study call and exposes
+its measurements and counted work.
 
 ### `consults/` — the prompts put to the second readers
 
@@ -76,8 +89,10 @@ Rendering needs matplotlib, which is deliberately **not** a project dependency: 
 imports no drawing code (§13.7), so matplotlib stays outside it and is supplied per-run. That
 `--with` is the proof of the separation, not a workaround.
 
-A measure script prints its table to stdout; a render script writes its PNG to `data/pictures/`
-and prints the path. Neither writes anything else, and neither is imported by `src/knee/`.
+The older table probes print to stdout. `object_analysis.py` additionally saves
+NPZ records, a receipt and study checkpoints under the explicit private `data/`
+run directory. Packet renderers save PNGs and a manifest in `data/pictures/`.
+None is imported by `src/knee/`.
 
 ## The rule for this folder
 

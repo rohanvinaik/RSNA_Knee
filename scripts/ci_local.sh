@@ -16,7 +16,7 @@ echo "== pytest"
 PYTHONPATH="$PP" .venv/bin/python -m pytest || fail=1
 
 echo "== ty (advisory)"
-uvx ty check src tests || echo "ty: the findings above are leads, not a gate"
+ty check src tests || echo "ty: the findings above are leads, not a gate"
 
 if [ "$fail" -ne 0 ]; then
     echo "GATE: FAILED"

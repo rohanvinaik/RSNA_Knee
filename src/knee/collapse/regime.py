@@ -61,7 +61,7 @@ class RegimeKey:
     cheap global readings: `zero_share` and `foreground_share` (the knee's density), the `terciles`
     of the above-dark values, `spread_ratio` and `skew` (the distribution's shape), and
     `depth_spread` (its profile along the stack). Every reading is in the series' own stored values
-    unless named otherwise. A reading not made is NaN, never zero.
+    unless named otherwise. `background_split` retains the whole-series histogram valley\n    already used to read the quiet population, so downstream annotations use that same reading.\n    A reading not made is NaN, never zero.
     """
 
     view: tuple[str, str, str]
@@ -82,6 +82,7 @@ class RegimeKey:
     spread_ratio: float
     skew: float
     depth_spread: float
+    background_split: float = float("nan")
 
 
 def _shape_readings(values: np.ndarray) -> tuple[tuple[float, float], float, float]:
@@ -214,4 +215,5 @@ def read_regime(
         spread_ratio=spread_ratio,
         skew=skew,
         depth_spread=depth_spread,
+        background_split=split,
     )
