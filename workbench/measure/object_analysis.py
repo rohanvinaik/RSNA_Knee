@@ -16,6 +16,7 @@ from knee.objects.analysis import AnalysisRequest
 from knee.pipeline import run_study
 from knee.study.corpus import open_corpus
 from knee.study.tables import labeled_uids
+from workbench.measure.boundary_records import boundary_record
 from workbench.measure.conversation_records import conversation_record
 from workbench.measure.interior_records import interior_record
 
@@ -218,6 +219,11 @@ def main() -> None:
                         measurement.interiors
                     )
                     arrays.update(interior_arrays)
+                if measurement.boundaries is not None:
+                    record["boundaries"], boundary_arrays = boundary_record(
+                        measurement.boundaries
+                    )
+                    arrays.update(boundary_arrays)
                 if series.series_uid in conversations:
                     record["conversation"], conversation_arrays = conversation_record(
                         conversations[series.series_uid], args.backend
@@ -310,6 +316,9 @@ def main() -> None:
         "writer_sha256": sha256(Path(__file__).read_bytes()).hexdigest(),
         "interior_serializer_sha256": sha256(
             Path(__file__).with_name("interior_records.py").read_bytes()
+        ).hexdigest(),
+        "boundary_serializer_sha256": sha256(
+            Path(__file__).with_name("boundary_records.py").read_bytes()
         ).hexdigest(),
         "conversation_serializer_sha256": sha256(
             Path(__file__).with_name("conversation_records.py").read_bytes()
