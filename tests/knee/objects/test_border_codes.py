@@ -3,9 +3,9 @@
 import numpy as np
 import pytest
 
-from knee.collapse.border_codes import border_code
-from knee.collapse.interiors import dark_bands
-from knee.collapse.profiles import sample_profiles
+from knee.objects.border_codes import border_code
+from knee.objects.interiors import dark_bands
+from knee.objects.profiles import sample_profiles
 
 
 @pytest.mark.parametrize(

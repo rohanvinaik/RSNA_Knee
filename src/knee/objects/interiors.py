@@ -13,10 +13,10 @@ from scipy import ndimage as ndi
 from skimage.morphology import h_maxima
 from skimage.segmentation import watershed
 
-from knee.collapse.border_codes import border_code
-from knee.collapse.contracts import ComputeContract, handed_on
 from knee.collapse.physical import numeric_plane, spacing_pair
-from knee.collapse.profiles import ProfileReading, sample_profiles
+from knee.compute.contracts import ComputeContract, handed_on
+from knee.objects.border_codes import border_code
+from knee.objects.profiles import ProfileReading, sample_profiles
 
 TRACE_CODES = {
     "bracketed": 1,

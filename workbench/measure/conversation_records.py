@@ -5,7 +5,7 @@ from math import isfinite
 
 import numpy as np
 
-from knee.collapse.conversation import (
+from knee.objects.conversation import (
     CONTRACT,
     COVERAGE,
     EXCHANGE_CODES,

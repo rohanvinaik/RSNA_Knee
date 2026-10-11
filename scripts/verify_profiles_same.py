@@ -7,7 +7,7 @@ from pathlib import Path
 
 import numpy as np
 
-from knee.collapse.profiles import sample_profiles
+from knee.objects.profiles import sample_profiles
 
 
 def assert_same(left: np.ndarray, right: np.ndarray) -> None:

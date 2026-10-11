@@ -7,8 +7,8 @@ import builtins
 import numpy as np
 import pytest
 
-from knee.collapse.analysis import AnalysisRequest
-from knee.collapse.profiles import jit_profile_kernel, sample_profiles
+from knee.objects.analysis import AnalysisRequest
+from knee.objects.profiles import jit_profile_kernel, sample_profiles
 
 
 def _metric_case():

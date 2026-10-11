@@ -14,7 +14,7 @@ from pydicom.uid import ExplicitVRLittleEndian, MRImageStorage, generate_uid
 
 import knee.study.corpus as corpus_module
 from knee import pipeline
-from knee.collapse.analysis import AnalysisRequest
+from knee.objects.analysis import AnalysisRequest
 from knee.study.tables import LABELS
 
 STUDY_UID = "study-measurements"

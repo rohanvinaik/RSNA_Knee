@@ -6,9 +6,9 @@ from math import floor, isfinite
 
 import numpy as np
 
-from knee.collapse.contracts import ComputeContract, contracted, handed_on
 from knee.collapse.physical import numeric_plane, spacing_pair
-from knee.collapse.profile_codes import profile_support_code
+from knee.compute.contracts import ComputeContract, contracted, handed_on
+from knee.objects.profile_codes import profile_support_code
 
 
 @contracted(

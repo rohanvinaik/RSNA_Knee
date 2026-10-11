@@ -5,7 +5,7 @@ from math import ceil
 
 import numpy as np
 
-from knee.collapse.contracts import ComputeContract, contracted, handed_on
+from knee.compute.contracts import ComputeContract, contracted, handed_on
 
 
 def spacing_pair(spacing_rc: tuple[float, float]) -> tuple[float, float]:

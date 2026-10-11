@@ -5,18 +5,18 @@ from dataclasses import replace
 import numpy as np
 import pytest
 
-from knee.collapse import conversation
-from knee.collapse.analysis import SeriesMeasurement
-from knee.collapse.conversation import (
+from knee.collapse.physical import PlaneFrame
+from knee.objects import conversation
+from knee.objects.analysis import SeriesMeasurement
+from knee.objects.conversation import (
     ConversationInput,
     converse,
     exchange,
     selected_runs,
     subdivide,
 )
-from knee.collapse.interiors import TRACE_CODES, InteriorReading
-from knee.collapse.physical import PlaneFrame
-from knee.collapse.profiles import ProfileReading
+from knee.objects.interiors import TRACE_CODES, InteriorReading
+from knee.objects.profiles import ProfileReading
 
 OFFSETS = np.array([-2.0, -1.0, 0.0, 1.0, 2.0])
 

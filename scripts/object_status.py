@@ -5,7 +5,8 @@ import json
 from hashlib import sha256
 from pathlib import Path
 
-from knee import collapse
+import knee
+from knee import objects
 
 
 def main() -> None:
@@ -17,9 +18,11 @@ def main() -> None:
         print(json.dumps({"code": "receipt_not_written", "run": str(args.run)}))
         return
     receipt = json.loads(receipt_path.read_text())
-    if collapse.__file__ is None:
+    if knee.__file__ is None or objects.__file__ is None:
         raise RuntimeError("package_source_unavailable")
-    package = Path(collapse.__file__).resolve().parent.parent
+    # The package root, named directly rather than reached through one stage's location, so moving
+    # a module between stages cannot silently change what this status covers (2026-10-11).
+    package = Path(knee.__file__).resolve().parent
     actual = {
         str(p.relative_to(package.parent)): sha256(p.read_bytes()).hexdigest()
         for p in sorted(package.rglob("*.py"))
@@ -88,7 +91,7 @@ def main() -> None:
                 "profile_codes_source_sha256"
             )
             == sha256(
-                Path(collapse.__file__).parent.joinpath("profile_codes.py").read_bytes()
+                Path(objects.__file__).parent.joinpath("profile_codes.py").read_bytes()
             ).hexdigest(),
         },
     }

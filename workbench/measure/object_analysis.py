@@ -12,7 +12,7 @@ from pathlib import Path
 import numpy as np
 
 from knee import collapse
-from knee.collapse.analysis import AnalysisRequest
+from knee.objects.analysis import AnalysisRequest
 from knee.pipeline import run_study
 from knee.study.corpus import open_corpus
 from knee.study.tables import labeled_uids

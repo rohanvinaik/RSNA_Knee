@@ -10,12 +10,12 @@ from dataclasses import dataclass
 import numpy as np
 from scipy import ndimage as ndi
 
-from knee.collapse.analysis import SeriesMeasurement
-from knee.collapse.band_raster import raster_bands
-from knee.collapse.contracts import ComputeContract, handed_on
-from knee.collapse.exchange_codes import exchange_code
-from knee.collapse.interiors import TRACE_CODES
-from knee.collapse.profiles import ProfileReading, sample_profiles
+from knee.compute.contracts import ComputeContract, handed_on
+from knee.objects.analysis import SeriesMeasurement
+from knee.objects.band_raster import raster_bands
+from knee.objects.exchange_codes import exchange_code
+from knee.objects.interiors import TRACE_CODES
+from knee.objects.profiles import ProfileReading, sample_profiles
 
 EXCHANGE_CODES = {
     name: index + 1

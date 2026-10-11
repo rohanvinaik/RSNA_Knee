@@ -5,7 +5,7 @@ import pytest
 from hypothesis import given
 from hypothesis import strategies as st
 
-from knee.collapse.profiles import profile_support_code, sample_profiles
+from knee.objects.profiles import profile_support_code, sample_profiles
 
 
 @pytest.mark.parametrize(
