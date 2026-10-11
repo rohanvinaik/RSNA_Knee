@@ -35,6 +35,24 @@
     "refusal": "",
     "standing": "complete"
   },
+  "src/knee/lenses/digits.py::band_width": {
+    "cut_reasons": [],
+    "function_digest": "fdd83186b1d8a506",
+    "refusal": "",
+    "standing": "complete"
+  },
+  "src/knee/lenses/digits.py::digit_code": {
+    "cut_reasons": [],
+    "function_digest": "e942a94a52a7b5ad",
+    "refusal": "",
+    "standing": "complete"
+  },
+  "src/knee/lenses/digits.py::is_read": {
+    "cut_reasons": [],
+    "function_digest": "ef269f15fe73c411",
+    "refusal": "",
+    "standing": "complete"
+  },
   "src/knee/objects/border_codes.py::border_code": {
     "cut_reasons": [],
     "function_digest": "b9d5c1ca2b535dbc",
