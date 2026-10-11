@@ -276,6 +276,8 @@ yourself: grounding is never delegated to a helper that lacks this context (foun
 
 ## Routing: from task to first read
 
+Repository tooling commands and environment setup: `docs/TOOLING.md` (global owners linked there).
+
 | If the task is… | read first | then |
 |---|---|---|
 | building anything | `docs/SPINE.md` → the chapter's stage package in `src/knee/` | the thesis sections and the cell-tracking build that chapter names |

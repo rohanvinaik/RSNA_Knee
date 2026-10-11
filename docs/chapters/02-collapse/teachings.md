@@ -239,3 +239,33 @@ Listed so a fifth is not tried. The founder's lesson: these are **objects, not i
 - **The joint line's sign flips between weightings.** Anatomy sequence: marrow bright, joint line a
   dark band — the founder's "giant black-ish line". Fluid-sensitive: marrow mid-grey, joint space
   **bright**. Same structure, opposite polarity.
+
+## 2026-10-11 — each additional build must be visible and resumable
+
+> "Good! Set up the contract properly and persistently record the idea, how we think about this, the lenses/build for the project as articulated in the thesis and as I've explained in this conversation, then show me the superior trace, how this enables us to pull out actual <objects> from the images, by having each stage of the process, each additional build show up as image series, as we have been doing"
+
+> "Very good work! I see the cell-tracking inspiration. Remember, \"there is no noise\"--if a lens is correct and able to discriminate in SOME way between elements, we will find a way that it is useful and able to perform visual reasoning"
+
+> "Make sure you's wiring things in properly to the production pipeline, and that the photo output goes out properly to the photo output folder"
+
+## 2026-10-11 — cross-resolution of the same knee
+
+> "Also note how lenses and image views can cross-resolve information! You see in the /Users/rohanvinaik/Projects/Kaggle_Killer/competitions/RSNA_Knee/data/pictures/object-toolkit/interiors-b1-preview/02-interiors.png image, row 2 and 3, blue chunk 1 in row 3 can better resolve the inability of orange chunk 3 in row 2 to isolate the bone? Looks REALLY good!"
+
+> "Note how the cell tracking project does this, by seeing if any of the four lenses resolve near z-slices, and if they do the lenses cross-communicate and clean each other up"
+
+Correcting the lead's transfer of the cell instance's depth-nearness mechanism:
+
+> "It's not about nearness. In the cell tracking project, there was a concept of nearness since they were 4D images. These aren't \"near\", they're the same, if they're of the same axis of orientation, since they're the same scan of the same knee"
+
+> "This was the pre-compact context:
+> You see in the /Users/rohanvinaik/Projects/Kaggle_Killer/competitions/RSNA_Knee/data/pictures/object-toolkit/interiors-b1-preview/02-interiors.png image, row 2 and 3, blue chunk 1 in row 3 can better resolve the inability of orange chunk 3 in row 2 to isolate the bone? Looks REALLY good!"
+
+> "Yes, but again, note that this is an example. It's a pointer to guide your thinking, and the implementation in the cell tracking project and the theory in the thesis should guide using it in the production pipeline"
+
+
+## 2026-10-11 — whole target and coherent production build
+
+> Yes, do that, and make sure you're using the tooling from the global model context file so that this is built as a clean and coherent production system that's efficient, uses the right computational performance tooling for the job, and is in general a clean, SICP-style, organized single pipeline that takes in the data we're presented and spits out the results we're building towards
+
+> Yes, the general goal here is to be ale to resolve every single significant element of the knee anatomy/relevant for the 12 diagnoses cleanly and deterministically

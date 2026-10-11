@@ -1,0 +1,9 @@
+{
+  "src/knee/collapse/border_codes.py::border_code": {
+    "disposition": "leave",
+    "func_key": "src/knee/collapse/border_codes.py::border_code",
+    "function_digest": "b9d5c1ca2b535dbc",
+    "note": "The five scalar facts have distinct meanings and remedies; retain explicit named inputs rather than hide them in one opaque container.",
+    "verdict": "AMBIGUOUS"
+  }
+}

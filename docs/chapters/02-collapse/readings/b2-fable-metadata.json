@@ -1,0 +1,19 @@
+{
+  "model": "claude-fable-5-1",
+  "usage": {
+    "input_tokens": 1026,
+    "cache_creation_input_tokens": 0,
+    "cache_read_input_tokens": 0,
+    "cache_creation": {
+      "ephemeral_5m_input_tokens": 0,
+      "ephemeral_1h_input_tokens": 0
+    },
+    "output_tokens": 6150,
+    "output_tokens_details": {
+      "thinking_tokens": 3528
+    },
+    "service_tier": "standard",
+    "inference_geo": "global"
+  },
+  "payload": "abstract conceptual workshop only; no source/data/identifiers"
+}

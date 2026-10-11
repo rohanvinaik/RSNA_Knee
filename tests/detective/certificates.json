@@ -1,4 +1,10 @@
 {
+  "src/knee/collapse/border_codes.py::border_code": {
+    "cut_reasons": [],
+    "function_digest": "b9d5c1ca2b535dbc",
+    "refusal": "",
+    "standing": "complete"
+  },
   "src/knee/collapse/codes.py::coil_code": {
     "cut_reasons": [],
     "function_digest": "9831de1b1e68ee7f",
@@ -29,9 +35,21 @@
     "refusal": "",
     "standing": "complete"
   },
+  "src/knee/collapse/exchange_codes.py::exchange_code": {
+    "cut_reasons": [],
+    "function_digest": "122d6f657b66fb12",
+    "refusal": "",
+    "standing": "complete"
+  },
   "src/knee/collapse/noise.py::floor_bias": {
     "cut_reasons": [],
     "function_digest": "136053b4ada746a3",
+    "refusal": "",
+    "standing": "complete"
+  },
+  "src/knee/collapse/profile_codes.py::profile_support_code": {
+    "cut_reasons": [],
+    "function_digest": "f0d118e0d4fcd235",
     "refusal": "",
     "standing": "complete"
   }

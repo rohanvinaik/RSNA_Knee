@@ -18,9 +18,10 @@ from __future__ import annotations
 from dataclasses import dataclass, field
 from pathlib import Path
 
+from knee.collapse.analysis import AnalysisRequest, SeriesMeasurement, measure_series
+from knee.collapse.conversation import ConversationInput, SeriesConversation, converse
 from knee.collapse.regime import RegimeKey, read_regime
 from knee.study.corpus import Corpus, Study, read_study
-from knee.study.series import read_series
 
 # Figure 8's line, in order, with the state of each stage. A stage is "built" when it runs over a
 # real study through Chapter 1's entry point -- never when its unit tests pass. That distinction is
@@ -51,6 +52,7 @@ class SeriesRun:
     stack: tuple[str, ...]
     regime: RegimeKey | None
     why: str
+    measurements: SeriesMeasurement | None = None
 
 
 @dataclass(frozen=True, slots=True)
@@ -66,9 +68,12 @@ class StudyRun:
     split: str
     series: tuple[SeriesRun, ...] = field(default_factory=tuple)
     reached: str = "study"
+    conversations: tuple[SeriesConversation, ...] = field(default_factory=tuple)
 
 
-def run_study(corpus: Corpus, uid: str) -> StudyRun:
+def run_study(
+    corpus: Corpus, uid: str, analysis: AnalysisRequest | None = None
+) -> StudyRun:
     """Walk one study down Figure 8's line, as far as the build reaches.
 
     Chapter 1 reads the study whole at stored fidelity. The collapse then reads each series' regime
@@ -76,18 +81,36 @@ def run_study(corpus: Corpus, uid: str) -> StudyRun:
     Beyond that the route is unbuilt, and `StudyRun.reached` says so.
     """
     study: Study = read_study(corpus, uid)
-    folder = "train_series" if study.row.split == "train" else "test_series"
     runs: list[SeriesRun] = []
-    for row in study.row.series:
-        directory = corpus.root / folder / row.study_uid / row.series_uid
-        series = read_series(directory, row)
+    for series in study.series:
+        row = series.row
+        key = read_regime(series) if series.volume is not None else None
+        measurements = None
+        if analysis is not None:
+            measurements = (
+                measure_series(series, analysis)
+                if analysis.prominence_mm is None
+                else measure_series(
+                    series,
+                    analysis,
+                    background_split=key.background_split
+                    if key is not None
+                    else float("nan"),
+                )
+            )
         view = (row.anatomical_plane, row.fluid_sensitive, row.fat_suppression)
         if series.volume is None:
             runs.append(
-                SeriesRun(row.series_uid, view, series.stack, None, "no_stacked_volume")
+                SeriesRun(
+                    row.series_uid,
+                    view,
+                    series.stack,
+                    None,
+                    "no_stacked_volume",
+                    measurements,
+                )
             )
             continue
-        key = read_regime(series)
         runs.append(
             SeriesRun(
                 series_uid=row.series_uid,
@@ -95,11 +118,32 @@ def run_study(corpus: Corpus, uid: str) -> StudyRun:
                 stack=series.stack,
                 regime=key,
                 why="read" if key is not None else "regime_unreadable",
+                measurements=measurements,
             )
         )
     reached = "collapse" if any(r.regime is not None for r in runs) else "study"
+    conversations = ()
+    if analysis is not None and analysis.conversation:
+        import numpy as np
+
+        inputs = tuple(
+            ConversationInput(
+                r.series_uid,
+                r.view[0],
+                r.measurements,
+                r.regime.background_split if r.regime is not None else float("nan"),
+            )
+            for r in runs
+        )
+        conversations = converse(
+            inputs, np.asarray(analysis.offsets_mm), analysis.backend
+        )
     return StudyRun(
-        uid=study.row.uid, split=study.row.split, series=tuple(runs), reached=reached
+        uid=study.row.uid,
+        split=study.row.split,
+        series=tuple(runs),
+        reached=reached,
+        conversations=conversations,
     )
 
 
@@ -108,8 +152,10 @@ def route_state() -> tuple[tuple[str, str], ...]:
     return ROUTE
 
 
-def open_and_run(root: Path, uid: str) -> StudyRun:
+def open_and_run(
+    root: Path, uid: str, analysis: AnalysisRequest | None = None
+) -> StudyRun:
     """Open the corpus at `root` and run one study. The one call a caller needs."""
     from knee.study.corpus import open_corpus
 
-    return run_study(open_corpus(root), uid)
+    return run_study(open_corpus(root), uid, analysis)

@@ -10,3 +10,7 @@ macro-averaged ROC-AUC. There is no machine learning in the architecture.
 - `archive/`: everything from before 2026-10-10, under its old path.
 
 Agents start at `AGENTS.md` (`CLAUDE.md` imports it).
+
+Development setup and commands: [docs/TOOLING.md](docs/TOOLING.md).
+
+Chapter-by-chapter work packets and tool roles: [docs/BUILD_PLAN.md](docs/BUILD_PLAN.md).

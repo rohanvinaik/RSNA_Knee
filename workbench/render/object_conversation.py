@@ -1,0 +1,684 @@
+"""Render saved production B2 conversations; this module never recomputes them."""
+
+import argparse
+import colorsys
+import json
+from hashlib import sha256
+from pathlib import Path
+
+import matplotlib
+
+matplotlib.use("Agg")
+import matplotlib.pyplot as plt
+import numpy as np
+from matplotlib.collections import LineCollection, PolyCollection
+from matplotlib.patches import Patch
+
+TERRITORY = plt.colormaps["tab20"]
+EXCHANGE_COLORS = {
+    "concurrent": "#00e5ff",
+    "peer_only": "#ffb000",
+    "disagreement": "#ff3b30",
+    "native_missing": "#ff00ff",
+    "native_open": "#ff6bd6",
+    "native_multiple": "#a855f7",
+    "outside_slab": "#8c564b",
+    "slab_support_unknown": "#7f7f7f",
+    "normal_unavailable": "#d62728",
+    "empty_profile": "#bcbd22",
+    "invalid_measurement": "#17becf",
+}
+
+
+def digest_array(array):
+    return sha256(
+        array.dtype.str.encode() + str(array.shape).encode() + array.tobytes()
+    ).hexdigest()
+
+
+def territory_rgba(labels):
+    rgba = np.zeros((*labels.shape, 4))
+    for label in np.unique(labels):
+        if label:
+            rgba[labels == label] = TERRITORY((int(label) - 1) % 20)
+            rgba[labels == label, 3] = 0.72
+    return rgba
+
+
+def subdivision_rgba(labels, parents):
+    rgba = np.zeros((*labels.shape, 4))
+    colors = {}
+    for child in np.unique(labels):
+        if child:
+            parent = int(parents[int(child)])
+            base = TERRITORY((parent - 1) % 20)[:3]
+            # Siblings retain their parent's hue and receive deterministic shades.
+            h, s, v = colorsys.rgb_to_hsv(*base)
+            sibling = np.flatnonzero(parents[1:] == parent) + 1
+            rank = int(np.flatnonzero(sibling == child)[0])
+            if len(sibling) == 1:
+                color = (*base, 0.72)
+            else:
+                value = min(0.95, max(0.42, v * (0.62 + 0.36 * ((rank % 4) / 3))))
+                color = (
+                    *colorsys.hsv_to_rgb(h, min(1, s * (1 + 0.12 * (rank % 2))), value),
+                    0.82,
+                )
+            rgba[labels == child] = color
+            colors[int(child)] = color
+    return rgba, colors
+
+
+def image_base(ax, plane, background=None):
+    ax.imshow(plane, cmap="gray")
+    if background is not None and background.shape == plane.shape:
+        overlay = np.zeros((*plane.shape, 4))
+        overlay[background] = (1, 0.08, 0.08, 0.78)
+        ax.imshow(overlay, interpolation="nearest")
+    ax.set_axis_off()
+
+
+def edge_segments(points, normals):
+    if not len(points):
+        return np.empty((0, 2, 2))
+    tangent = np.column_stack((-normals[:, 1], normals[:, 0]))
+    tangent /= np.maximum(np.max(np.abs(tangent), axis=1)[:, None], 1e-12)
+    return np.stack((points - tangent / 2, points + tangent / 2), axis=1)[:, :, ::-1]
+
+
+def add_original(ax, plane, arrays, record, background=None, show_legend=True):
+    image_base(ax, plane, background)
+    labels = arrays.get("b1_labels")
+    handles = []
+    if labels is not None and labels.shape == plane.shape:
+        ax.imshow(territory_rgba(labels), interpolation="nearest")
+        for label in np.unique(labels):
+            if label:
+                handles.append(
+                    Patch(
+                        facecolor=TERRITORY((int(label) - 1) % 20),
+                        label=f"original territory {int(label)}",
+                    )
+                )
+                points = np.argwhere(labels == label)
+                r, c = points.mean(axis=0)
+                ax.text(
+                    c,
+                    r,
+                    str(int(label)),
+                    color="white",
+                    fontsize=7,
+                    ha="center",
+                    va="center",
+                    weight="bold",
+                )
+    if "b1_edge_points_rc" in arrays and "b1_edge_normals_rc" in arrays:
+        points, normals = arrays["b1_edge_points_rc"], arrays["b1_edge_normals_rc"]
+        seg = edge_segments(points, normals)
+        codes = arrays.get("b1_trace_codes", np.ones(len(seg), dtype=int))
+        colors = {1: "#00e5ff", 2: "#ffd166", 3: "#ff9e00", 4: "#ff00ff", 5: "#ff00ff"}
+        for code, color in colors.items():
+            if np.any(codes == code):
+                ax.add_collection(
+                    LineCollection(seg[codes == code], colors=color, linewidths=0.8)
+                )
+                handles.append(Patch(color=color, label=f"B1 trace code {code}"))
+        trace_points = arrays.get("b1_trace_points_rc", np.empty((0, 2)))
+        resolved = codes == 1
+        if len(trace_points) == len(codes) and np.any(resolved):
+            selected = trace_points[resolved]
+            ax.scatter(selected[:, 1], selected[:, 0], s=4, c="#00e5ff", linewidths=0)
+            handles.append(
+                Patch(color="#00e5ff", label="saved B1 bracketed native traces")
+            )
+        unresolved = ~resolved
+        if np.any(unresolved):
+            ax.add_collection(
+                LineCollection(
+                    seg[unresolved], colors="#ffd166", linewidths=0.25, alpha=0.55
+                )
+            )
+            handles.append(
+                Patch(color="#ffd166", label="saved unresolved B1 edge support")
+            )
+    if background is not None and np.any(background):
+        handles.append(
+            Patch(color="red", label="saved surrounding-background predicate")
+        )
+    if handles and show_legend:
+        ax.legend(
+            handles=handles,
+            fontsize=5,
+            loc="upper left",
+            bbox_to_anchor=(1.01, 1),
+            borderaxespad=0,
+            framealpha=0.9,
+        )
+    ax.set_title(
+        "Original B1 territories + profile traces\nterritory IDs are original labels"
+    )
+
+
+def all_exchange_items(record, arrays):
+    conversation = record["conversation"]
+    for index, exchange in enumerate(conversation.get("exchanges", [])):
+        prefix = f"b2_exchange{index}_"
+        yield (
+            exchange,
+            {
+                key[len(prefix) :]: value
+                for key, value in arrays.items()
+                if key.startswith(prefix)
+            },
+        )
+
+
+def draw_bands(ax, plane, record, arrays, peers, show_legend=True):
+    image_base(ax, plane, arrays.get("background_mask"))
+    present = set()
+    for _metadata, fields in peers:
+        quads = fields.get("donor_quads_rc", np.empty((0, 4, 2)))
+        codes = fields.get("trace_codes", np.empty(0, dtype=int))
+        if len(quads):
+            code_names = {
+                value: name
+                for name, value in record["conversation"]["exchange_codes"].items()
+            }
+            colors = [
+                EXCHANGE_COLORS.get(code_names.get(int(code), ""), "#ffffff")
+                for code in codes
+            ]
+            present.update(int(code) for code in np.unique(codes))
+            ax.add_collection(
+                PolyCollection(
+                    quads[:, :, ::-1],
+                    facecolors=colors,
+                    edgecolors=colors,
+                    alpha=0.27,
+                    linewidths=0.35,
+                )
+            )
+            ax.scatter(
+                fields["points_rc"][:, 1],
+                fields["points_rc"][:, 0],
+                s=2,
+                c=colors,
+                alpha=0.9,
+            )
+    codebook = record["conversation"]["exchange_codes"]
+    handles = [
+        Patch(color=EXCHANGE_COLORS.get(name, "#ffffff"), label=name)
+        for name, value in codebook.items()
+        if value in present
+    ]
+    if handles and show_legend:
+        ax.legend(
+            handles=handles,
+            fontsize=5,
+            loc="upper left",
+            bbox_to_anchor=(1.01, 1),
+            borderaxespad=0,
+            framealpha=0.9,
+        )
+    ax.set_title("Transported donor bands\ncolored by saved native outcome")
+
+
+def draw_native(ax, plane, record, arrays, peers, show_legend=True):
+    image_base(ax, plane, arrays.get("background_mask"))
+    codebook = record["conversation"]["exchange_codes"]
+    for metadata, fields in peers:
+        codes = fields.get("trace_codes", np.empty(0, dtype=int))
+        points = fields.get("points_rc", np.empty((0, 2)))
+        trace = fields.get("derived_trace_rc", np.empty((0, 2)))
+        for name, value in codebook.items():
+            select = codes == value
+            color = EXCHANGE_COLORS.get(name, "#ffffff")
+            if np.any(select):
+                ax.scatter(
+                    points[select, 1],
+                    points[select, 0],
+                    s=5,
+                    c=color,
+                    label=f"{metadata['donor_uid'][-8:]} · {name} ({select.sum()})",
+                )
+        resolved = (
+            np.isfinite(trace).all(axis=1) if len(trace) else np.zeros(0, dtype=bool)
+        )
+        if np.any(resolved):
+            ax.scatter(
+                trace[resolved, 1],
+                trace[resolved, 0],
+                s=9,
+                facecolors="none",
+                edgecolors=EXCHANGE_COLORS["concurrent"],
+                linewidths=0.45,
+            )
+    if np.any(arrays.get("background_mask", np.zeros((0, 0), dtype=bool))):
+        ax.scatter(
+            [],
+            [],
+            marker="s",
+            color="red",
+            label="saved surrounding-background predicate",
+        )
+    ax.scatter(
+        [],
+        [],
+        marker="o",
+        facecolors="none",
+        edgecolors=EXCHANGE_COLORS["concurrent"],
+        label="derived concurrent intersection",
+    )
+    if show_legend and ax.get_legend_handles_labels()[0]:
+        ax.legend(
+            fontsize=5,
+            loc="upper left",
+            bbox_to_anchor=(1.01, 1),
+            borderaxespad=0,
+            framealpha=0.9,
+        )
+    ax.set_title(
+        "Native outcomes + derived concurrent traces\nopen circles: derived intersections",
+        fontsize=9,
+    )
+
+
+def draw_subdivision(ax, plane, arrays, kind, show_legend=True):
+    labels = arrays[f"b2_{kind}_labels"]
+    parents = arrays[f"b2_{kind}_parents"]
+    barrier = arrays[f"b2_{kind}_barrier"]
+    image_base(ax, plane, arrays.get("background_mask"))
+    if labels.shape != plane.shape or barrier.shape != plane.shape:
+        ax.set_title(
+            f"{kind.capitalize()} subdivision unavailable\nsource territory map unavailable"
+        )
+        return
+    rgba, colors = subdivision_rgba(labels, parents)
+    ax.imshow(rgba, interpolation="nearest")
+    overlay = np.zeros((*plane.shape, 4))
+    overlay[barrier] = (1.0, 0.92, 0.05, 0.95)
+    ax.imshow(overlay, interpolation="nearest")
+    handles = [
+        Patch(
+            color="#ffea00",
+            label=f"retained {kind} barrier ({int(barrier.sum())} cells)",
+        )
+    ]
+    if np.any(arrays.get("background_mask", np.zeros((0, 0), dtype=bool))):
+        handles.append(
+            Patch(color="red", label="saved surrounding-background predicate")
+        )
+    parent_children = {}
+    for child in sorted(colors):
+        parent_children.setdefault(int(parents[child]), []).append(child)
+        pixels = np.argwhere(labels == child)
+        if len(pixels) >= 36:
+            r, c = pixels.mean(axis=0)
+            ax.text(
+                c,
+                r,
+                f"{int(parents[child])}.{child}",
+                color="white",
+                fontsize=5,
+                ha="center",
+                va="center",
+                weight="bold",
+            )
+    for parent, children in sorted(parent_children.items()):
+        handles.append(
+            Patch(
+                facecolor=colors[children[0]],
+                label=f"original parent {parent}: {len(children)} children",
+            )
+        )
+    if show_legend:
+        ax.legend(
+            handles=handles,
+            fontsize=5,
+            loc="upper left",
+            bbox_to_anchor=(1.01, 1),
+            borderaxespad=0,
+            framealpha=0.9,
+        )
+    original = arrays.get("b1_labels", np.zeros((0, 0), dtype=np.int32))
+    territory_count = int(np.count_nonzero(np.unique(original)))
+    ax.set_title(
+        f"{kind.capitalize()} subdivision\n"
+        f"{territory_count} original · {len(colors)} children · {int(barrier.sum())} barrier cells\n"
+        "child IDs map explicitly to original parents",
+        fontsize=9,
+    )
+
+
+def main():
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument("--run", type=Path, required=True)
+    parser.add_argument(
+        "--uid", required=True, help="study UID whose saved B2 records are rendered"
+    )
+    parser.add_argument(
+        "--out", type=Path, default=Path("data/pictures/object-toolkit/conversation-b2")
+    )
+    args = parser.parse_args()
+    receipt_path = args.run / "receipt.json"
+    receipt = json.loads(receipt_path.read_text())
+    records = [
+        row
+        for row in receipt["records"]
+        if row["study_uid"] == args.uid and "conversation" in row
+    ]
+    if not records:
+        parser.error("no saved B2 conversation records for selected study")
+    records.sort(
+        key=lambda row: (tuple(row.get("view", ())), int(row.get("slice_index", -1)))
+    )
+    args.out.mkdir(parents=True, exist_ok=True)
+    prepared = []
+    for row in records:
+        artifact = args.run / row["artifact"]
+        with np.load(artifact, allow_pickle=False) as saved:
+            arrays = dict(saved)
+        for name, descriptor in row["arrays"].items():
+            if digest_array(arrays[name]) != descriptor["digest"]:
+                raise ValueError(f"saved_array_digest_mismatch:{name}")
+        plane = arrays.get("acquired_plane")
+        prepared.append(
+            (row, arrays, artifact, list(all_exchange_items(row, arrays)), plane)
+        )
+
+    views = len(prepared)
+    stages = [
+        "01-original-b1",
+        "02-donor-bands",
+        "03-native-outcomes",
+        "04-concurrent-subdivision",
+        "05-conditional-subdivision",
+    ]
+    panels = []
+    renderers = []
+    for filename in stages:
+        fig, axes = plt.subplots(
+            views, 2, figsize=(18, 4.6 * views), squeeze=False, layout="constrained"
+        )
+        for index, (row, arrays, artifact, peers, plane) in enumerate(prepared):
+            view = row.get("view", ["view", "?", "?"])
+            view_label = f"{view[0]} · fs={view[1]} · fat={view[2]} · slice {row.get('slice_index')}"
+            if plane is None or plane.ndim != 2 or not plane.size:
+                for ax in axes[index]:
+                    ax.set_axis_off()
+                    ax.text(
+                        0.5,
+                        0.5,
+                        f"Acquired plane unavailable\n{view_label}",
+                        ha="center",
+                        va="center",
+                        transform=ax.transAxes,
+                    )
+                continue
+            if filename == stages[0]:
+                image_base(axes[index, 0], plane, arrays.get("background_mask"))
+                axes[index, 0].set_title(
+                    "Acquired plane; RED marks saved background predicate"
+                )
+                add_original(
+                    axes[index, 1], plane, arrays, row, arrays.get("background_mask")
+                )
+            elif filename == stages[1]:
+                add_original(
+                    axes[index, 0], plane, arrays, row, arrays.get("background_mask")
+                )
+                draw_bands(axes[index, 1], plane, row, arrays, peers)
+            elif filename == stages[2]:
+                draw_bands(axes[index, 0], plane, row, arrays, peers)
+                draw_native(axes[index, 1], plane, row, arrays, peers)
+            elif filename == stages[3]:
+                add_original(
+                    axes[index, 0], plane, arrays, row, arrays.get("background_mask")
+                )
+                draw_subdivision(axes[index, 1], plane, arrays, "concurrent")
+            else:
+                add_original(
+                    axes[index, 0], plane, arrays, row, arrays.get("background_mask")
+                )
+                draw_subdivision(axes[index, 1], plane, arrays, "conditional")
+            axes[index, 0].set_title(
+                axes[index, 0].get_title() + "\n" + view_label, fontsize=8
+            )
+            panels.append(
+                {
+                    "stage": filename,
+                    "series_uid": row["series_uid"],
+                    "source_plane": row.get("source_plane"),
+                    "slice_index": row.get("slice_index"),
+                    "artifact": str(artifact.resolve()),
+                    "artifact_sha256": sha256(artifact.read_bytes()).hexdigest(),
+                    "donor_uids": [meta["donor_uid"] for meta, _ in peers],
+                }
+            )
+        fig.suptitle(f"B2 same-knee conversation · {filename}", fontsize=15)
+        path = args.out / f"{filename}.png"
+        fig.savefig(path, dpi=145)
+        plt.close(fig)
+        renderers.append(path)
+
+    # Compact five-view overview: one row per saved view, one column per reading.
+    fig, axes = plt.subplots(
+        views, 5, figsize=(30, 4.2 * views), squeeze=False, layout="constrained"
+    )
+    for index, (row, arrays, _artifact, peers, plane) in enumerate(prepared):
+        view = row.get("view", ["view", "?", "?"])
+        view_label = (
+            f"{view[0]} fs={view[1]} fat={view[2]} · slice {row.get('slice_index')}"
+        )
+        if plane is None or plane.ndim != 2 or not plane.size:
+            for ax in axes[index]:
+                ax.set_axis_off()
+                ax.text(
+                    0.5,
+                    0.5,
+                    f"Acquired plane unavailable\n{view_label}",
+                    ha="center",
+                    va="center",
+                    transform=ax.transAxes,
+                )
+            continue
+        add_original(
+            axes[index, 0], plane, arrays, row, arrays.get("background_mask"), False
+        )
+        draw_bands(axes[index, 1], plane, row, arrays, peers, False)
+        draw_native(axes[index, 2], plane, row, arrays, peers, False)
+        draw_subdivision(axes[index, 3], plane, arrays, "concurrent", False)
+        draw_subdivision(axes[index, 4], plane, arrays, "conditional", False)
+        axes[index, 0].set_title(
+            axes[index, 0].get_title() + "\n" + view_label, fontsize=7
+        )
+    fig.suptitle(
+        "B2 conversation across saved acquired views · source measurements and derived readings",
+        fontsize=16,
+    )
+    code_counts = {
+        name: 0
+        for row, *_ in prepared
+        for name in row["conversation"]["exchange_codes"]
+    }
+    for row, _arrays, _, peers, plane in prepared:
+        if plane is None:
+            continue
+        for _, fields in peers:
+            for name, value in row["conversation"]["exchange_codes"].items():
+                code_counts[name] += int(
+                    np.count_nonzero(fields.get("trace_codes", np.empty(0)) == value)
+                )
+    global_handles = [
+        Patch(color=EXCHANGE_COLORS.get(name, "#ffffff"), label=f"{name}: {count}")
+        for name, count in code_counts.items()
+    ]
+    global_handles.extend(
+        (
+            Patch(color="red", label="saved background predicate"),
+            Patch(color="#ffea00", label="retained barrier"),
+            Patch(color="#00e5ff", label="original B1 bracketed trace"),
+        )
+    )
+    fig.legend(
+        handles=global_handles,
+        loc="center left",
+        bbox_to_anchor=(1.005, 0.5),
+        fontsize=7,
+        framealpha=0.9,
+    )
+    overview = args.out / "series.png"
+    fig.savefig(overview, dpi=130, bbox_inches="tight")
+    plt.close(fig)
+
+    focused_views = []
+    for index, (row, arrays, artifact, peers, plane) in enumerate(prepared, start=1):
+        focused = plt.figure(figsize=(27, 6.5), layout="constrained")
+        grid = focused.add_gridspec(2, 5, height_ratios=(1, 0.22))
+        focused_axes = [focused.add_subplot(grid[0, column]) for column in range(5)]
+        legend_axis = focused.add_subplot(grid[1, :])
+        legend_axis.set_axis_off()
+        view = row.get("view", ["view", "?", "?"])
+        view_label = (
+            f"{view[0]} · fs={view[1]} · fat={view[2]} · slice {row.get('slice_index')}"
+        )
+        if plane is None or plane.ndim != 2 or not plane.size:
+            for ax in focused_axes:
+                ax.set_axis_off()
+                ax.text(
+                    0.5,
+                    0.5,
+                    f"Acquired plane unavailable\n{view_label}",
+                    ha="center",
+                    va="center",
+                    transform=ax.transAxes,
+                )
+        else:
+            add_original(
+                focused_axes[0],
+                plane,
+                arrays,
+                row,
+                arrays.get("background_mask"),
+                False,
+            )
+            draw_bands(focused_axes[1], plane, row, arrays, peers, False)
+            draw_native(focused_axes[2], plane, row, arrays, peers, False)
+            draw_subdivision(focused_axes[3], plane, arrays, "concurrent", False)
+            draw_subdivision(focused_axes[4], plane, arrays, "conditional", False)
+            focused_axes[0].set_title(focused_axes[0].get_title() + "\n" + view_label)
+        local_code_counts = {name: 0 for name in row["conversation"]["exchange_codes"]}
+        for _, fields in peers:
+            for name, value in row["conversation"]["exchange_codes"].items():
+                local_code_counts[name] += int(
+                    np.count_nonzero(fields.get("trace_codes", np.empty(0)) == value)
+                )
+        focused_handles = [
+            Patch(
+                color=EXCHANGE_COLORS.get(name, "#ffffff"),
+                label=f"{name}: {count}",
+            )
+            for name, count in local_code_counts.items()
+        ]
+        focused_handles.extend(
+            (
+                Patch(color="red", label="saved background predicate"),
+                Patch(color="#ffea00", label="retained barrier"),
+                Patch(
+                    color="#00e5ff",
+                    label="original B1 bracketed trace / derived intersection",
+                ),
+            )
+        )
+        legend_axis.legend(
+            handles=focused_handles, loc="center", ncol=4, fontsize=7, frameon=False
+        )
+        focused.suptitle(
+            f"B2 same-knee conversation · {view_label}\n"
+            f"recipient series UID {row['series_uid']}",
+            fontsize=13,
+        )
+        focused_path = args.out / f"view-{index:02d}.png"
+        focused.savefig(focused_path, dpi=145)
+        plt.close(focused)
+        focused_views.append(
+            {
+                "image": focused_path.name,
+                "image_sha256": sha256(focused_path.read_bytes()).hexdigest(),
+                "series_uid": row["series_uid"],
+                "source_plane": row.get("source_plane"),
+                "slice_index": row.get("slice_index"),
+                "view": row.get("view"),
+                "artifact": str(artifact.resolve()),
+                "artifact_sha256": sha256(artifact.read_bytes()).hexdigest(),
+                "donor_uids": [meta["donor_uid"] for meta, _ in peers],
+            }
+        )
+
+    manifest = {
+        "schema": "object-conversation-b2-visuals-v1",
+        "study_uid": args.uid,
+        "run_path": str(args.run.resolve()),
+        "receipt_path": str(receipt_path.resolve()),
+        "receipt_sha256": sha256(receipt_path.read_bytes()).hexdigest(),
+        "renderer_path": str(Path(__file__).resolve()),
+        "renderer_sha256": sha256(Path(__file__).read_bytes()).hexdigest(),
+        "serializer_path": str(
+            (
+                Path(__file__).parents[1] / "measure" / "conversation_records.py"
+            ).resolve()
+        ),
+        "serializer_sha256": sha256(
+            (
+                Path(__file__).parents[1] / "measure" / "conversation_records.py"
+            ).read_bytes()
+        ).hexdigest(),
+        "scope": "all saved conversation records in the selected study; middle acquired planes and their source UID/index links; every recorded exchange retained; no measurements rerun",
+        "color_legend": {
+            "red": "saved surrounding-background predicate",
+            "yellow": "retained geometric barrier cells",
+            "territories": "original B1 numeric territory labels",
+            "cyan": "concurrent native result",
+            "amber": "donor-only peer result",
+            "magenta": "missing native support",
+            "open cyan circles": "derived trace intersections",
+        },
+        "subdivision_children": [
+            {
+                "series_uid": row["series_uid"],
+                "reading": kind,
+                "children": [
+                    {"child_id": child, "original_parent_id": int(parent)}
+                    for child, parent in enumerate(arrays[f"b2_{kind}_parents"])
+                    if child
+                ],
+            }
+            for row, arrays, _, _, _ in prepared
+            for kind in ("concurrent", "conditional")
+        ],
+        "stages": [path.name for path in renderers],
+        "overview": overview.name,
+        "focused_views": focused_views,
+        "panels": panels,
+        "image_sha256": {
+            path.name: sha256(path.read_bytes()).hexdigest()
+            for path in [overview, *renderers]
+        }
+        | {entry["image"]: entry["image_sha256"] for entry in focused_views},
+    }
+    manifest_path = args.out / "manifest.json"
+    manifest_path.write_text(json.dumps(manifest, indent=2) + "\n")
+    print(
+        json.dumps(
+            {
+                "series": str(overview.resolve()),
+                "images": len(renderers) + len(focused_views) + 1,
+                "manifest": str(manifest_path.resolve()),
+            },
+            indent=2,
+        )
+    )
+
+
+if __name__ == "__main__":
+    main()
