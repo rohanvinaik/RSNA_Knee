@@ -132,6 +132,9 @@ Each kernel carries a compute contract and a reference, and answers to SAME.
   Contusion means **bone contusion / bone bruise** (official, 2026-10-02). The column names are bound. Whether
   gold counts a degenerative marrow lesion as Contusion is measured on G before any censor is written. It is
   never inherited from the parser.
+- **The teacher is the host data** (founder, 2026-10-10 00:24:57Z): "That is *definitionally* what rates as
+  correctness." He adds: "the requirements for what makes a sufficient teacher are definitionally smaller and more
+  ambiguous than what we are provided."
 - **The template stubs:** retired (`358aa63`).
 - **The build order:** whole chapters in dependency order, with first light at K18; never a demo slice. The
   independence gate and the hardness map (K13a) come before the loop, as ARCH §6.6.3 orders Phase 6 before
@@ -182,20 +185,24 @@ Each kernel carries a compute contract and a reference, and answers to SAME.
 
 ## Next action: ONE imperative
 
-Build an independent understanding, then report it to the founder and take his direction (2026-10-03 01:55:51Z):
-- read the tooling that the global agent context discusses, from what its pointers point to;
-- lightly peruse the *What an \<Object> Is* thesis;
-- read the last Codex exchange on the epistemology (`provenance/theory/codex_lens_principle_prompt4.md` and
-  `codex_lens_principle_answer4.md`).
+Work out, finding by finding, the structural reason each diagnosis can be made, and put each to the founder as a
+proposal. His question (2026-10-10 00:24:57Z) is "what elements of information provided, what combination of lossy
+lenses, actually tells us the structural reason why we can make a diagnosis?"
 
-Do not read KNEE_ARCHITECTURE for now. He: "It's good to get an independent understanding and use that to think
-through how it should be built and our work on auditing/correcting the general design ("the book") before we start
-to actually build." The report says what "computer vision" means here, specifically, and the thesis's general
-thrust. The design walk (`provenance/theory/design_walk.md`, Part 3 next) waits for his direction. Then build: "Most
-important is to make the code actually work".
+His model is the thermometer. One simple reading, placed at a site and calibrated, is a proxy; with the other
+symptoms, it diagnoses. "The "story" is the structure. The construction of meaning and understanding from simple,
+objective analyses."
 
-The reading is `provenance/theory/thesis_reading_claude.md` (2026-10-03). Its proposed next step is to work the
-thesis's nine-step recipe (§13.1) for the knee, then hold the book against it. That waits for his word.
+How to proceed:
+- **Start with one finding as a worked example,** to fix the form with him.
+- **The form and the reading it rests on** are in `provenance/theory/thesis_reading_claude.md`. §9 holds the form.
+  §1–§8 hold the reading: the tooling, the *What an \<Object> Is* thesis, and its v7 §1 on information
+  (`cell_tracking/docs/pipeline_thesis/paper/v7_parts/01_information.md`).
+- **KNEE_ARCHITECTURE stays unread until he says otherwise.** He (2026-10-03 01:55:51Z): "It's good to get an
+  independent understanding and use that to think through how it should be built and our work on
+  auditing/correcting the general design ("the book") before we start to actually build."
+- **Then hold the book against the result.** The design walk (`provenance/theory/design_walk.md`) waits.
+- **Then build:** "Most important is to make the code actually work".
 
 ## Sources that can contradict this block: THEY WIN
 

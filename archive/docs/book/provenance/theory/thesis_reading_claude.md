@@ -172,3 +172,149 @@ name only labels it.
 
 Work §13.1's nine-step recipe for the knee from this reading, each step a proposal for his ruling. Then hold the book's
 chapters against it. KNEE_ARCHITECTURE stays unread until he says otherwise.
+
+## 8. The v7 information section (read 2026-10-10)
+
+At the founder's word (2026-10-10 00:01:30Z): "It's an update to the information theory articulation of the project
+thesis. Should really help think through the full design here." The section was read whole:
+`cell_tracking/docs/pipeline_thesis/paper/v7_parts/01_information.md`, 1,616 lines.
+
+**What it is:** one story in three operations, each a question asked of any reading.
+- Acquiring (§1.1–§1.4): what has been acquired?
+- Deriving consequences (§1.5–§1.9): what follows?
+- Authorizing assertions (§1.10–§1.14): what may be asserted?
+- §1.15 gives the substrate the three share.
+
+An abstention "names what would supply an answer: the next acquisition … or the next call a teacher must make" (§1.14),
+so the loop closes.
+
+**What it settles from §3 and §5 of this reading:**
+1. **The two passages in the form of law.**
+   - §1.11 says: "A committee of views decides positively, negatively, ambiguously, or by a majority with its dissent
+     recorded, and for each ruling it needs a contract, written before it sits. A majority can be such a contract: a
+     rule for when to rule, never what makes a ruling correct. The contract looks downward."
+   - The commit's refusal on disagreement, the word "one cell", and recall are three such contracts.
+   - So refusal is a contract chosen for one step, not a law of the society.
+2. **Independence.**
+   - The chain rule "needs no assumption of independence": a second view never lowers what is known (§1.3). How
+     independent the views are limits how much they add (§1.6).
+   - "A family is the readings of one source. They are not independent of one another, so they count once, and no
+     evidence is counted twice" (§1.11).
+   - Between views that agree nineteen times in twenty, a disagreement carries about 4.32 bits and an agreement 0.074
+     (§1.6).
+3. **The strict-exclusion gate.**
+   - The criterion: "A lens takes the same standing only where the structure gives it: where a law of the domain, not
+     a run of past successes, says on which side the lens cannot err" (§1.11).
+   - A wide lens clears by exclusion (SnNout).
+   - A narrow lens settles where it speaks (SpPin, "first among equals").
+   - Seniority is "one of authority, not of strength".
+   - Even then the standing is a warrant, open to a near miss.
+4. **Warrant.**
+   - "What a lens may assert is fixed by where the structure places it. We call this its warrant" (§1.10).
+   - "Information is not warrant."
+   - A warrant is strict or directional, and nonmonotonic.
+5. **Meaning:** "A person with fluid intelligence does not build or invent that structure. Such a person resolves it,
+   by understanding the domain, and defines it so that a system can use it" (§1.1).
+6. **"Ledger"** is the thesis's own word (§1.6).
+
+**One change from the 2026-10-01 version, which the book must be checked against: the static middle.**
+- Then: "set once, at the metric's terciles over the movies the system is taught on … It never moves per movie"
+  (§6.2).
+- Now: "read once for each movie, cheaply, off the movie at its start, and held through the run" (v7 §1.6).
+- Wherever the book writes the edges of a digit, it was grounded in the earlier text.
+
+**How it bears on the knee** (my reading, proposals only):
+- **Acquiring.**
+  - A study's series are views at right angles, the front and profile photographs of §1.3: "exact about what it
+    shows and silent about the rest". By the chain rule each adds what the others cannot, with no independence
+    assumed, so no series is judged by how much of the knee it shows alone.
+  - A lens is never wrong about what it measures; if it reports anything else, "the fault is in its code" (§1.1). So
+    each lens is a defined, pinned pure function.
+  - Space can play time's part ("Time is not a privileged dimension. It is one more lens on the field", §1.4).
+    Contiguity from slice to slice is a two-sided prior like the sandwich, never a sighting. A false reading holds over
+    k neighboring slices with probability p^k only where its occurrences on neighboring slices are independent, and
+    that must be measured.
+- **Deriving.**
+  - The population of normal knees in one frame is side information (§1.5). It is the reference of §1.8, "a
+    statistical superposition … so that subtracting the reference left only what was particular". The study's
+    difference from it is the signal.
+  - The thermometer (§1.10) marks what that difference alone may not say: a deviation is a temperature, and what a
+    category means is a fever.
+  - Each structure resolved goes out with what its laws say it causes, and the residual is read again (§1.8–§1.9, the
+    rib and the nodule). Which structures come out first, and what each carries out with it, are design questions.
+  - The edema of §1.2 is the knee's own example: "two relevances of the same thing", evidence for one question and
+    signal to take out of another's view, and never evidence against.
+  - A conjunction is a product term: "a bundle is not an OR, and a binding is not an AND", and "An interaction between
+    banks … needs a code for the combination itself" (§1.6). Each conjunction the knee's truth tables need gets a code
+    of its own.
+  - "The substrate is therefore an efficiency layer: a cheap, exact filter, not a store of values" (§1.6). Values are
+    kept beside the digits, and the arithmetic runs on the values.
+- **Authorizing.**
+  - A law decides each lens's warrant (strict or directional) and its standing (wide, narrow or senior), never a track
+    record. The walk's classes (T1, C, evidence) are this vocabulary.
+  - Each ruling's contract is written before it sits, and it names what defeats an assignment.
+  - The three zeros (§1.12): a series that cannot see a place writes a silent bank. That is neither a digit 0 nor
+    evidence against.
+  - The guard and the completeness map (§1.14) frame the teaching question: structure, corpus, teacher, remainder.
+    A call teaches only if its provenance is independent of the memory.
+  - An abstention names the next acquisition (which series or view would settle it) or the next call.
+
+**Questions (mine):**
+1. **The teacher term.** In the completeness map, who is the teacher T for the knee?
+   - The founder's calls on candidates?
+   - The hosts' study-level labels?
+   - The reports?
+   - Each for its own agency?
+
+   All three have provenance outside the memory, but they answer questions at different scales: a place, a study.
+2. **A story layer.** §1.15 marks a structured problem by "a causally one-way story that explains it". A study has no
+   movie. Does it have a story, the mechanism of an injury, whose chapters the findings are (the kind of reading
+   Regenesis does)? This is a question about structure, which is his to resolve and define.
+
+**Proposed next step,** unchanged: work §13.1's recipe for the knee, now through the three operations, each step a
+proposal for his ruling. Then hold the book against it, with the static middle among the first checks.
+
+## 9. His answers (2026-10-10 00:24:57Z, verbatim in `../../FOUNDING_PROMPTS.md`), and my restatement
+
+**The teacher is the host data.** "That is *definitionally* what rates as correctness."
+- The data was labeled for builders of ML: "meant to be definitionally correct and unambiguous enough to allow for
+  training of a machine learning model".
+- "the requirements for what makes a sufficient teacher are definitionally smaller and more ambiguous than what we are
+  provided."
+- So the completeness map's teacher T is the host data. Its provenance is outside our memory, so under the guard it
+  teaches, and it gives more than a structural design needs.
+
+**The story is the structure, not a narrative layer.** "you're leaning too hard into story understanding. This is a
+much simpler problem space."
+- The question is "what elements of information provided, what combination of lossy lenses, actually tells us the
+  structural reason why we can make a diagnosis?"
+- Diagnosis "is literally the bar we are meant to hit". It is "a rules-driven conclusion based off structural reasoning
+  on the condition and mechanics of human biology and imaging data like what we've been provided".
+- An expert reaches it from such images, so the information is there.
+
+**The thermometer, in the knee's terms** (my restatement, for his check):
+- **The thermometer.** It measures temperature and nothing else. Placed at a site, with its gradations calibrated, it is
+  a proxy for core temperature. Read with the other symptoms, it lets "a simple little tool" diagnose an infection.
+- **Each lens in the knee is such a thermometer: one simple, objective reading.**
+  - Its site is a place in the registered frame: which structure, which part of it, in which series.
+  - Its calibration is the population of normal knees at that place, in that sequence.
+  - A deviation at a registered site is therefore the proxy: a temperature, never yet a fever.
+- **A diagnosis is a conjunction of such readings,** read through anatomy, MR physics and the mechanics of injury, by
+  the rules a radiologist uses.
+  - Each such conjunction is a path of the encoded truth table.
+  - It is strict where a law makes it so, and directional otherwise.
+  - Where no path warrants, the structure abstains.
+- **Categories and diagnoses.** The categories of image (01:33:48Z) are what the readings resolve into, and the
+  diagnosis is the structure's conclusion from them. The rules are the domain's, and he resolves and defines them
+  (v7 §1.1).
+
+**The form of the work, finding by finding:**
+1. its definition, in the hosts' literal words (admissible as fact);
+2. the structural reason it can be diagnosed: the laws of anatomy, MR physics and the mechanics of injury that make it
+   visible;
+3. its thermometers: the lenses, each one objective reading at a registered site, calibrated against the population;
+4. its paths: which combinations assign it, which reading or law rejects it strictly, and where it abstains;
+5. what the host labels confirm, and the near misses they expose.
+
+Each is a proposal for his ruling. One finding goes first, as a worked example to fix the form with him. The rest
+follow, and then the book is held against them.

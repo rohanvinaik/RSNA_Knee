@@ -335,6 +335,34 @@ plan to send Codex the whole thesis with the lead's reading.)
 rulings: CONSTRAINT_BLOCK's *Concurrence* under *Resolved*, and AGENTS law 2's "refused on disagreement". "#4" was
 the lead's next step: begin the walk's Part 3 by reading KNEE_ARCHITECTURE's sections whole.)
 
+## 2026-10-10 — the information section; the teacher; the story is the structure
+
+> **00:01:30Z** One more thing I'd like you to read first--It's an update to the information theory articulation of
+> the project thesis. Should really help think through the full design here:
+> /Users/rohanvinaik/Projects/Kaggle_Killer/competitions/cell_tracking/docs/pipeline_thesis/paper/v7_parts/01_information.md
+
+> **00:24:57Z** 1. The host data. That is *definitionally* what rates as correctness. The project is built on an
+> assumption that people will be building ML solutions, so there is an absurd amount of data that is labeled in a way
+> that is meant to be definitionally correct and unambiguous enough to allow for training of a machine learning model.
+> Since this approach is deterministic and structural, the requirements for what makes a sufficient teacher are
+> definitionally smaller and more ambiguous than what we are provided.
+> 2. Yes, but you're leaning too hard into story understanding. This is a much simpler problem space. we have knee
+> imaging data, we have a small set of posible diagnoses, and the things that enable a human expert to see the data
+> and come to a conclusion--which is obviously possible, since "diagnosis" is literally the bar we are meant to hit,
+> and diagnosis is literally a rules-driven conclusion based off structural reasoning on the condition and mechanics
+> of human biology and imaging data like what we've been provided. The "story" here means "what elements of
+> information provided, what combination of lossy lenses, actually tells us the structural reason why we can make a
+> diagnosis?". Take the "thermometer" example from the thing I had you read. A thermometer is a simple tool. It
+> measures temperature, and that's it. But we use it to measure the temperature of the mouth, or the inner ear, or the
+> rectum, and calibrate the gradations on the thermometer to measure temperature, and use that as a proxy for core
+> body temperature. THIS, in combination with other symptoms (runny nose, tiredness, sweating, chills, cough, sputum,
+> whatever) allows a simple little tool to diagnose something as complex as the presence of viral or bacterial
+> invaders that are disregulating the homeostasis of the patient. That's basically the thesis here. The "story" is the
+> structure. The construction of meaning and understanding from simple, objective analyses.
+
+(His 00:24:57Z answers are to the lead's two questions after reading v7 §1: who the teacher is for the knee, and
+whether the knee has a story layer.)
+
 ## The engineering intent, in the founder's earlier words (2026-08-31, DETERMINISTIC_SICP §1.1)
 
 > "I see this as a resource optimization problem. We want to optimize several 'independent' systems at the same
@@ -378,3 +406,5 @@ the lead's next step: begin the walk's Part 3 by reading KNEE_ARCHITECTURE's sec
 | the lens principle is the rigid oracle and supersedes the architecture document | the twelve points at the head of `AGENTS.md`, `CONSTRAINT_BLOCK.md`, `THE_KNEE.md` §0 and THEORY; `provenance/theory/` (the readings, the Codex checks, the design walk) |
 | the oracle front and center wherever a new session starts | the same heads; `CLAUDE.md`'s read-first line; ARCH's banner; the book's README |
 | an independent understanding before the architecture: the tooling, the thesis, the last Codex exchange; ARCH not read for now | `CONSTRAINT_BLOCK.md` → *Next action* |
+| the teacher is the host data, definitionally correct; a structural approach needs less of a teacher than is provided | `CONSTRAINT_BLOCK.md` → *Resolved* |
+| the story is the structure: which combination of lossy lenses gives the structural reason a diagnosis can be made (the thermometer) | `CONSTRAINT_BLOCK.md` → *Next action*; `provenance/theory/thesis_reading_claude.md` §9 |
