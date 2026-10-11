@@ -3,6 +3,7 @@
 from pathlib import Path
 
 from knee.objects.analysis import AnalysisRequest, SeriesMeasurement
+from knee.objects.boundaries import PAIR_CODE_VALUES
 from knee.objects.conversation import SeriesConversation
 from knee.pipeline import StudyRun, open_and_run
 
@@ -53,6 +54,23 @@ def interior_counts(
     }
 
 
+def boundary_counts(
+    series_measurements: tuple[SeriesMeasurement, ...],
+) -> dict[str, int]:
+    censuses = [m.boundaries for m in series_measurements if m.boundaries is not None]
+    if not censuses:
+        return {}
+    read = PAIR_CODE_VALUES["read"]
+    return {
+        "census_territories": sum(len(c.labels) for c in censuses),
+        "touching_pairs": sum(len(c.pair_labels) for c in censuses),
+        "divide_sites": sum(int(c.pair_sites.sum()) for c in censuses),
+        "pairs_with_a_read_relief": sum(
+            int((c.pair_codes == read).sum()) for c in censuses
+        ),
+    }
+
+
 def conversations(study_run: StudyRun) -> tuple[SeriesConversation, ...]:
     return study_run.conversations
 
@@ -81,6 +99,7 @@ def work_counts(
     native_samples: int,
     squint_tiles: int,
     interior_counts: dict[str, int],
+    boundary_counts: dict[str, int],
     conversation_counts: dict[str, int],
 ) -> dict[str, int]:
     return {
@@ -89,5 +108,6 @@ def work_counts(
         "profile_sample_output_bytes": 9 * native_samples,
         "squint_tiles": squint_tiles,
         **interior_counts,
+        **boundary_counts,
         **conversation_counts,
     }

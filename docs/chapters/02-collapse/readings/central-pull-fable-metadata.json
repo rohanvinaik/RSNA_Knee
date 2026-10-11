@@ -1,0 +1,22 @@
+{
+  "model": "claude-fable-5-1",
+  "usage": {
+    "input_tokens": 7278,
+    "cache_creation_input_tokens": 0,
+    "cache_read_input_tokens": 0,
+    "cache_creation": {
+      "ephemeral_5m_input_tokens": 0,
+      "ephemeral_1h_input_tokens": 0
+    },
+    "output_tokens": 14243,
+    "output_tokens_details": {
+      "thinking_tokens": 9077
+    },
+    "service_tier": "standard",
+    "inference_geo": "global"
+  },
+  "stop_reason": "end_turn",
+  "prompt": "scratchpad/consult_central_pull.md",
+  "picture": "data/pictures/object-toolkit/interiors-b1-preview/02-interiors.png",
+  "payload": "the founder's verbatim words, traced source facts, and one rendered picture he explicitly authorised attaching; no identifiers"
+}

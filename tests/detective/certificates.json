@@ -83,6 +83,18 @@
     "refusal": "",
     "standing": "complete"
   },
+  "src/knee/objects/boundaries.py::carries_prominence": {
+    "cut_reasons": [],
+    "function_digest": "08337326a34baf2d",
+    "refusal": "",
+    "standing": "complete"
+  },
+  "src/knee/objects/boundaries.py::pair_code": {
+    "cut_reasons": [],
+    "function_digest": "c1d3d4be9e959bcf",
+    "refusal": "",
+    "standing": "complete"
+  },
   "src/knee/objects/exchange_codes.py::exchange_code": {
     "cut_reasons": [],
     "function_digest": "122d6f657b66fb12",
