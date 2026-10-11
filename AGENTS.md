@@ -14,6 +14,14 @@ objects do, which is why the compartments cannot be missed and the "squishy" fin
 squishy. Recognition is mechanical: a knee is a fixed anatomy, so identity follows from invariant
 relations and no stored case is consulted during the parse. Recall arrives later, at diagnosis.
 
+**Three first-order requirements bind every stage, equal in rank** (`docs/STAGE_CONTRACT.md`): it
+**renders** what it resolved (a stage is not `built` until it does, and a test enforces it); it is
+**engineered for performance** — a compute contract per kernel, language by computation shape,
+reference before twin, structlog and OTel telemetry, measured with the named instruments and never a
+one-off profile; and it is **clean and modular**, measurements and decisions and orchestrations kept
+apart. The founder, 2026-10-11: "the competition itself scores for efficiency, so that's a
+first-order consideration, alongside the image output and clean modular production-spec design".
+
 The full statement is `docs/OBJECT_MODEL.md`; the declared change is
 `openspec/changes/knee-object-model/`; the founder's words are verbatim in
 `docs/chapters/02-collapse/teachings.md`. This supersedes the chapter table of `docs/SPINE.md`, which

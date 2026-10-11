@@ -27,11 +27,24 @@ a gap in this layer -- **it is evidence that the stage is not reasoning visually
 in the stage. Each renderer's docstring therefore names the values it arranges, and any renderer
 that computes something is a bug.
 
+**A PICTURE IS A REQUIREMENT, NOT A COURTESY.** The founder, 2026-10-11:
+
+    "image output of each stage should be a requirement. Again, visual reasoning, computer vision.
+    Each stage should be clean, modular, and we should be able to see the output visually. Very much
+    like how the <object> thesis itself works this through and shows the process, step-by-step, for
+    computer vision as a built process that works on the problem space"
+
+So the requirement is mechanical rather than remembered. **A stage is not `built` until it renders.**
+`knee.pipeline.ROUTE` may mark a stage `built` or `partly` only when a module of the same name exists
+here, and `tests/knee/test_skeleton.py` enforces exactly that. A stage that runs over the 58 and
+produces no picture is not finished; it is a stage whose reasoning cannot be inspected, which is the
+one thing this project cannot accept.
+
 One module per stage, named for the stage:
 
     study.py      the input as it was read: a series at stored fidelity, with its geometry stated
     collapse.py   the leg closed, the squint, the two objects and the seam between them
 
-The rest arrive with their chapters. A stage without a picture is a stage that cannot yet show its
-work, and `knee.pipeline.ROUTE` says which those are.
+The rest arrive with their stages, and arrive WITH them -- never after. `knee.pipeline.ROUTE` says
+which stages have reached that bar.
 """
