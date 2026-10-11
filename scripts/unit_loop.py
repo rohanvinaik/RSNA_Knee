@@ -128,7 +128,71 @@ MEASURED = (
 )
 
 
+GROUNDING = (
+    (
+        "DISCARD THE SUMMARY",
+        (
+            "An auto-compaction summary is ANTI-CORRELATED with the truth and is never a source. "
+            "Nothing in it is a premise. The verifiable record is git, the pre-compact snapshot "
+            "the SessionStart hook names, and the files themselves."
+        ),
+    ),
+    (
+        "READ THE SNAPSHOT'S PROMPTS, WHOLE",
+        (
+            "The founder's words verbatim, mid-turn ones included, in consecutive parts. They are "
+            "the one thing a summary cannot re-derive, and intent lives only there."
+        ),
+    ),
+    (
+        "READ THE ACTIVE WORK'S INDEX",
+        (
+            "docs/OBJECT_MODEL.md first -- the project's structure -- then "
+            "docs/chapters/02-collapse/RESUME.md for the agreed sequence, and the chapter "
+            "teachings.md files for the founder's rulings verbatim."
+        ),
+    ),
+    (
+        "THEN GIT",
+        (
+            "`git log` for what actually landed. A commit message in this repository states what "
+            "was verified and what was left undone; prose elsewhere may be stale, git is not."
+        ),
+    ),
+    (
+        "COMPUTE THE STATE, NEVER RECALL IT",
+        (
+            "The route below, `just plan-status`, `just graph <out>`, `just gate`. Measured state "
+            "is computed; a past measurement restated as current is not evidence."
+        ),
+    ),
+)
+
+
+def open_tasks() -> list[tuple[str, str]]:
+    """The first open task of each declared change, read from its own checklist."""
+    found: list[tuple[str, str]] = []
+    changes = sorted((ROOT / "openspec" / "changes").glob("*/tasks.md"))
+    for path in changes:
+        for line in path.read_text().splitlines():
+            stripped = line.strip()
+            if stripped.startswith("- [ ]"):
+                found.append((path.parent.name, stripped[5:].strip()))
+                break
+    return found
+
+
 def main() -> None:
+    print("ENTERING A NEW SESSION -- do these first, in this order.\n")
+    for number, (name, detail) in enumerate(GROUNDING, start=1):
+        print(f"  {number}. {name}\n     {detail}\n")
+
+    todo = open_tasks()
+    if todo:
+        print("THE NEXT OPEN TASK OF EACH DECLARED CHANGE, from its own checklist:\n")
+        for change, task in todo:
+            print(f"  {change}\n     {task[:300]}\n")
+
     print("THE BUILD LOOP -- run this, do not remember it.\n")
     for number, (name, detail) in enumerate(STEPS):
         print(f"  {number}. {name}\n     {detail}\n")
