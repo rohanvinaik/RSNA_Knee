@@ -92,7 +92,19 @@ spatial correction.
   knee might otherwise reach for: an object compared against its own history cannot speak early, and
   for a knee study — which is a still, with no history at all — it could never speak.
 
-## The tension this creates, which is the founder's to settle
+## The tension this created — SETTLED by the founder, 2026-10-11
+
+> **RULED. "Your inference is correct."** — the founder, on the reconciliation below
+> (`../teachings.md`). The knee takes **tercile edges after a local structural normalisation**. The
+> witness-tissue middle is withdrawn, and with it the three-fat-witness apparatus and the
+> per-witness spread that entered the band.
+>
+> The table and the inference below are kept as the record of how the question was reached, **not as
+> an open question**. A reader arriving here should not conclude the project is blocked on it; what
+> remains open is what his ruling did not touch — the knee's own local baseline, which Fable's
+> levels consult says is *multiplicative* and so cannot be the sibling's additive haze.
+
+### How it was reached, kept as the record
 
 | | a middle is | spatial variation handled by |
 |---|---|---|

@@ -104,14 +104,25 @@ Read honestly, the contracts stand thus: `half_thickness`'s and `was_measured`'s
 **"Confirmed over all paths"**; the rest are **"Not confirmed"** — no counterexample found, not
 proven, and neither a violation nor a pass.
 
-## What is open
+## A claim withdrawn, 2026-10-11
 
-1. **`witnesses.py`** — the three fat witnesses, muscle and the recess, each admitted *structurally*.
-   The lead's first bootstrap ("subcutaneous fat is the band just inside the leg boundary") was
-   rejected by both readers: that band holds **skin** before fat, and over the patella it reaches
-   tendon or cortex within a millimetre or two. Position establishes *peripheral soft tissue*, not
-   fat. A witness must be allowed to come back **absent** — "a reference manufactured by necessity
-   would undermine every later row."
+**`witnesses.py` as designed is withdrawn**, by the founder's ruling *"Your inference is correct"*
+(`teachings.md`). The knee's middle is a **pair of edges at the terciles of a structurally selected
+population**, read *after* a local structural normalisation — so there is no named tissue witness in
+the middle, no three-fat-witness stool, and no per-witness spread entering a band. The tissue
+conjunction lives in the rows **across acquisitions** instead.
+
+What survives of that work is small and true: **structure selects which places enter the population;
+the distribution's own terciles then set the edges.** Both second readers' corrections stand as
+anatomy (`readings/witnesses-{codex,fable}.md`) and are kept — a compartment is not a tissue, marrow
+can be drawn from the object carrying the finding — but they no longer describe a component to build.
+
+**Consequently `digit_code` has the wrong shape** and is the chapter's first correction: it takes a
+`witness_middle` plus a band computed from spreads where §7.2 says a low edge and a high edge, both
+in the 0 row. Nothing consumes it (`find_referencing_symbols`: test callers only), so the cost is one
+pinned module.
+
+## What is open
 2. **`rows.py`** — assembling (acquisition, witness) rows, and Codex's **correspondence contract**:
    a *place* conjunction (overlapping support inside one matched territory) versus an *object*
    conjunction (same object, not necessarily the same part). Without it, one part of an object
