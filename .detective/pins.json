@@ -424,6 +424,28 @@
     }
   ],
   "src/knee/lenses/digits.py::is_read::ef269f15fe73c411": [],
+  "src/knee/lenses/slabs.py::gap_fraction::0d7066709ec64249": [
+    {
+      "assertion_code": "result = gap_fraction(thickness_mm=-1.0, spacing_mm=-1.0)\nassert result == 0.0\nassert repr(result) == '0.0'",
+      "category": "VALUE",
+      "confidence": 0.95,
+      "function_key": "",
+      "golden_case": null,
+      "mutant_id": "",
+      "needs_oracle": false,
+      "preconditions": [
+        "distinguishing witness (equivalence search)",
+        "outcomes ==-equal; distinction pinned by type/repr"
+      ],
+      "setup_code": "from knee.lenses.slabs import gap_fraction",
+      "source_lenses": [
+        "witness"
+      ]
+    }
+  ],
+  "src/knee/lenses/slabs.py::half_thickness::191790a187469228": [],
+  "src/knee/lenses/slabs.py::slab_code::239c0307fe92afbe": [],
+  "src/knee/lenses/slabs.py::was_measured::c50474549577a85e": [],
   "src/knee/objects/border_codes.py::border_code::b9d5c1ca2b535dbc": [
     {
       "assertion_code": "result = border_code(frame_clipped=True, valid_count=1, sample_count=2, dark_runs=3, bounded=True)\nassert result == 'frame_clipped'",
