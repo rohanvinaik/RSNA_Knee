@@ -17,16 +17,26 @@ and relative extent — so that no element requires recall to be named.
 - **THEN** it abstains with a named code rather than consulting memory, because
   recall belongs to the diagnosis stage
 
-### Requirement: The frame fixes the left–right axis; a witness fixes its lateral sign
-The system SHALL derive the patient left–right AXIS from the LPS frame's
-right-handedness, with superior witnessed by the direction the femoral shaft
-leaves the condyles and anterior by where the patella sits. It SHALL NOT treat
-that axis as the anatomical lateral direction: `S × A` is patient-left, which is
-lateral for a left knee and **medial for a right one**, so the SIGN requires a
-witness that is lateral in both legs. The system SHALL take that sign from the
-fibula, with the fabella, the popliteus groove and the condylar asymmetries
-available for concurrence, and SHALL NOT require the DICOM laterality tag, which
-is absent from 181 of 336 series.
+### Requirement: The frame fixes the patient left–right axis
+The system SHALL derive the patient left–right axis from the LPS frame's
+right-handedness, taking superior from the direction the femoral shaft leaves
+the condyles and anterior from where the patella sits.
+
+#### Scenario: Both frame witnesses are read
+- **WHEN** superior and anterior are witnessed in the acquired field
+- **THEN** the left–right axis follows from them by cross product, and no third
+  frame witness is needed for the axis
+
+#### Scenario: A frame witness cannot be read
+- **WHEN** superior or anterior cannot be witnessed in the acquired field
+- **THEN** the axis is abstained with a named code, and no side is assigned
+
+### Requirement: The lateral sign comes from an anatomical witness, never from the frame
+The system SHALL NOT treat the frame's left–right axis as the anatomical lateral
+direction: `S × A` is patient-left, which is lateral for a left knee and medial
+for a right one. The sign SHALL come from the fibula, lateral in both legs, with
+the fabella, the popliteus groove and the condylar asymmetries for concurrence.
+The DICOM laterality tag SHALL NOT be required.
 
 #### Scenario: A laterality witness is resolved
 - **WHEN** the fibula is resolved beside the tibia
