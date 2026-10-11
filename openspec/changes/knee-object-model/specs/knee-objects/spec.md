@@ -17,29 +17,35 @@ and relative extent — so that no element requires recall to be named.
 - **THEN** it abstains with a named code rather than consulting memory, because
   recall belongs to the diagnosis stage
 
-### Requirement: Laterality is settled by three witnesses and the frame's handedness
-The system SHALL derive medial/lateral in patient coordinates from anatomical
-witnesses and the LPS frame's right-handedness, never from the DICOM laterality
-tag, which is absent from 181 of 336 series. Superior is witnessed by the
-direction the femoral shaft leaves the condyles, anterior by where the patella
-sits, and lateral SHALL be determined from those two by cross product. The
-fibula SHALL serve as a cross-check, not as the sole witness.
+### Requirement: The frame fixes the left–right axis; a witness fixes its lateral sign
+The system SHALL derive the patient left–right AXIS from the LPS frame's
+right-handedness, with superior witnessed by the direction the femoral shaft
+leaves the condyles and anterior by where the patella sits. It SHALL NOT treat
+that axis as the anatomical lateral direction: `S × A` is patient-left, which is
+lateral for a left knee and **medial for a right one**, so the SIGN requires a
+witness that is lateral in both legs. The system SHALL take that sign from the
+fibula, with the fabella, the popliteus groove and the condylar asymmetries
+available for concurrence, and SHALL NOT require the DICOM laterality tag, which
+is absent from 181 of 336 series.
 
-#### Scenario: The fibula is out of the acquired field
-- **WHEN** no fibula territory is resolved, which is common since the fibular head
-  sits 1–2 cm below the lateral plateau
-- **THEN** laterality is still settled from superior and anterior by handedness,
-  and is not abstained on that ground alone
+#### Scenario: A laterality witness is resolved
+- **WHEN** the fibula is resolved beside the tibia
+- **THEN** its direction along the frame's left–right axis is recorded as lateral,
+  medial is its opposite, and the knee's side follows from it
 
-#### Scenario: The fibula disagrees with the cross product
-- **WHEN** a resolved fibula lies opposite to the lateral direction S × A gives
-- **THEN** the study is flagged as mirrored somewhere in its handling, and the
-  disagreement is kept rather than resolved in favour of either reading
+#### Scenario: No laterality witness resolves
+- **WHEN** neither the fibula nor a secondary witness is resolved in the acquired
+  field, which is common since the fibular head sits 1–2 cm below the lateral
+  plateau
+- **THEN** medial/lateral is abstained with a named code, because the frame fixes
+  the axis and never its anatomical sign, and every side-dependent finding
+  abstains rather than being assigned a side
 
-#### Scenario: A witness cannot be read
-- **WHEN** superior or anterior cannot be witnessed in the acquired field
-- **THEN** medial/lateral is abstained with a named code, and every finding that
-  depends on a side is abstained rather than assigned one
+#### Scenario: Two laterality witnesses disagree
+- **WHEN** the fibula and a secondary witness place lateral at opposite ends of
+  the axis
+- **THEN** both readings are kept and the side is abstained, rather than resolved
+  in favour of either
 
 ### Requirement: The residual is pulled out until nothing significant is unassigned
 The system SHALL re-read the unassigned field after each round of resolved

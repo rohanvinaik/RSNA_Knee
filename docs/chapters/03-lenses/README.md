@@ -22,16 +22,26 @@ readers caught it independently. Fable named the mechanism:
 > with respect to position**."
 
 A surface coil falls off 20–40% across the joint. So a single per-series middle is the same mistake
-wearing a new coat. The correction, which both readers reached independently:
+wearing a new coat. **That diagnosis stands and is why this stage exists.**
 
-- **a row is a PAIR (acquisition, witness)** — "above fat on PD-FS", "at muscle on T1" — never a
-  place against a series-wide median, which is dominated by whichever tissue is largest and drifts
-  with body habitus;
-- **the band carries the witness's own spread**, `k·sqrt(place_sigma² + witness_spread²)`, because
-  the question is not "is this distinguishable from a number" but "is this indistinguishable from
-  the witness *tissue*";
-- **three fat witnesses at three radii** — subcutaneous, marrow (a B1 dome's interior), Hoffa's pad
-  (constructible as an interstice) — and **their disagreement is the bias-field measurement**.
+### The remedy first proposed for it — SUPERSEDED, 2026-10-11
+
+> Kept as history, because the ruling below is only legible against what it replaced. **Do not build
+> from these three bullets**; they describe the witness-tissue middle the founder withdrew
+> (`teachings.md`, and *A claim withdrawn* below).
+
+- ~~**a row is a PAIR (acquisition, witness)**~~ — "above fat on PD-FS", "at muscle on T1". *A row
+  is a pair of (acquisition, metric); the middle names no tissue.*
+- ~~**the band carries the witness's own spread**, `k·sqrt(place_sigma² + witness_spread²)`~~. *There
+  is no band: a middle is a low edge and a high edge, and no spread enters it.*
+- ~~**three fat witnesses at three radii**, their disagreement measuring the bias field~~. *Refuted
+  on physics by Fable before the ruling — marrow fat and subcutaneous fat are not one tissue at two
+  radii, so their difference confounds coil bias with tissue offset.*
+
+**The remedy that replaced it**, by the founder's ruling: the spatial problem is solved by a **local
+structural normalisation before the digit**, and the middle is then a pair of **tercile edges** over
+a structurally selected population — carrying no spatial correction at all. The tissue conjunction
+moves out of the middle and into the rows **across acquisitions**.
 
 ## How it instantiates the thesis
 
