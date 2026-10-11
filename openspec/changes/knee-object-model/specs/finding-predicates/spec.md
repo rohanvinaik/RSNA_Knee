@@ -3,23 +3,10 @@
 ### Requirement: Every finding names its subject before it is measured
 The system SHALL state, for each of the twelve findings, the named object,
 relation, span or envelope it is a predicate on, and SHALL measure only that
-subject. No finding SHALL be read from the field at large, and no finding SHALL
-be computed by a measurement whose scope is the whole image.
-
-| finding | subject | predicate |
-|---|---|---|
-| Fracture | a bone | break in the structural coherence of its outline/interior |
-| Contusion | a bone | interior signal anomaly with boundary intact |
-| Medial OA | femur↔tibia medial | gap narrowed; walls degraded; margin outgrowth |
-| Lateral OA | femur↔tibia lateral | gap narrowed; walls degraded; margin outgrowth |
-| PF OA | femur↔patella | gap narrowed; walls degraded; margin outgrowth |
-| Medial Meniscus | content of femur↔tibia medial | its continuity |
-| Lateral Meniscus | content of femur↔tibia lateral | its continuity |
-| ACL | content of the intercondylar interstice | its continuity and course |
-| MCL | medial span, femur→tibia | its continuity |
-| Effusion | the capsule | over-fill of its volume |
-| Synovitis | the capsule's lining | excess thickness |
-| Baker's | the capsule | posterior outpouching beyond the bones' envelope |
+subject. The twelve subjects and predicates are those stated in
+`docs/OBJECT_MODEL.md`, which is the single source for them. No finding SHALL be
+read from the field at large, and no finding SHALL be computed by a measurement
+whose scope is the whole image.
 
 #### Scenario: A predicate is asked of a resolved subject
 - **WHEN** a finding's subject is resolved for a study
@@ -43,7 +30,8 @@ a negative.
   recorded as absent
 
 #### Scenario: Side undetermined
-- **WHEN** medial/lateral is abstained because no fibula was resolved
+- **WHEN** medial/lateral is abstained because superior or anterior could not be
+  witnessed in the acquired field
 - **THEN** the four side-dependent findings abstain, rather than being assigned
   to a default side
 

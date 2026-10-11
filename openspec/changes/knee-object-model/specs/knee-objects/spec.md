@@ -17,22 +17,29 @@ and relative extent — so that no element requires recall to be named.
 - **THEN** it abstains with a named code rather than consulting memory, because
   recall belongs to the diagnosis stage
 
-### Requirement: Laterality is settled by the fibula, not by the tag
-The system SHALL derive the lateral direction in patient coordinates from the
-fibula's position relative to the tibia, which is invariant in both legs. It
-SHALL NOT require the DICOM laterality tag, which is absent from 181 of 336
-series. Where the fibula is not resolved within the acquired field, the system
-SHALL abstain on medial/lateral with a named code.
+### Requirement: Laterality is settled by three witnesses and the frame's handedness
+The system SHALL derive medial/lateral in patient coordinates from anatomical
+witnesses and the LPS frame's right-handedness, never from the DICOM laterality
+tag, which is absent from 181 of 336 series. Superior is witnessed by the
+direction the femoral shaft leaves the condyles, anterior by where the patella
+sits, and lateral SHALL be determined from those two by cross product. The
+fibula SHALL serve as a cross-check, not as the sole witness.
 
-#### Scenario: Fibula present
-- **WHEN** a small bone territory is resolved adjacent to the tibia
-- **THEN** its direction from the tibia is recorded as the lateral direction, and
-  medial is its opposite
+#### Scenario: The fibula is out of the acquired field
+- **WHEN** no fibula territory is resolved, which is common since the fibular head
+  sits 1–2 cm below the lateral plateau
+- **THEN** laterality is still settled from superior and anterior by handedness,
+  and is not abstained on that ground alone
 
-#### Scenario: Fibula out of field
-- **WHEN** no fibula territory is resolved in the acquired field
+#### Scenario: The fibula disagrees with the cross product
+- **WHEN** a resolved fibula lies opposite to the lateral direction S × A gives
+- **THEN** the study is flagged as mirrored somewhere in its handling, and the
+  disagreement is kept rather than resolved in favour of either reading
+
+#### Scenario: A witness cannot be read
+- **WHEN** superior or anterior cannot be witnessed in the acquired field
 - **THEN** medial/lateral is abstained with a named code, and every finding that
-  depends on it is abstained rather than assigned a side
+  depends on a side is abstained rather than assigned one
 
 ### Requirement: The residual is pulled out until nothing significant is unassigned
 The system SHALL re-read the unassigned field after each round of resolved
