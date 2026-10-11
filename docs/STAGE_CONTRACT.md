@@ -137,6 +137,18 @@ vision '\<object>' thesis … I'd like to persist this workflow."*
 A unit is **one idea**: a pure decision and the handful of helpers it needs, in one module, that a
 sentence can describe. Not a stage, not a file of conveniences.
 
+> ## ⇒ **RUN `just unit`.** It prints this loop with the route's live state filled in.
+>
+> This section is kept as the reference, but it is **not** how the loop reaches you. On 2026-10-11
+> the lead had this file and `docs/SPINE.md` both in context and built against neither; what changed
+> its behaviour was never prose — `plan-status` printing 3/23, Detective refusing to call two
+> survivors equivalent, ruff failing the gate, an intent test failing. **Commands answer back.**
+
+0. **Declare it first.** `just plan-status`, then add the task to the OpenSpec change *before*
+   writing code. A change absorbed silently is the failure OpenSpec exists to stop — and the
+   declared tasks may already answer the question, or say that another task comes first (measured
+   here: a corpus census was run against territories that task 2.1 says must be *named with the
+   founder* before any round runs against them).
 1. **Say why it exists, in the module docstring, against the thesis.** Which failure it answers,
    which section it instantiates, and the founder's words where they settled it. A module whose
    docstring cannot name the thesis role it fills is a module that drifted.
@@ -145,25 +157,42 @@ sentence can describe. Not a stage, not a file of conveniences.
    differ — three silences that mean different things are three codes.
 3. **Declare the contracts** as PEP 316 `pre:`/`post:` lines. State the real requirement: positive
    does not imply finite, and a post-condition you cannot hold for every input the `pre:` admits is
-   a defect in one of the two.
+   a defect in one of the two. **A `pre:` on a function the house requires to be TOTAL is a contract
+   that contradicts itself** — and it also stops the symbolic check from ever exploring the refused
+   path (measured here).
 4. **Write intent tests, BOTH SIGNS, calling the function DIRECTLY.**
    - positive: what it must do;
    - negative: what it must never do.
    - Never through a local helper: Detective routes by static path, and a test it cannot route is
      not a pin (measured here — 9 of 13 invisible, `Incomplete` where `COMPLETE` was available).
+   - They catch what a regenerated suite cannot: an intent test caught a **NaN seed** that a
+     characterization would have pinned as correct, since `np.maximum` propagates NaN and a
+     NaN-seeded accumulator makes every reading unreadable.
 5. **`just detective converge <file>::<func>`, then judge EVERY survivor.** Prove equivalence and
    record the proof in the `--note`, or name the must-not and enforce it with a test — a test is
    better than a `--fence`, because the mutant dies instead of being bookkept. A cluster of
    boundary/value survivors on one `if` is usually **dead code**: prove it by case analysis over the
-   sibling clauses and delete it.
+   sibling clauses and delete it. And **"candidate-equivalent" often means "needs a declared
+   input"**: two survivors that crept a guard from `< 0.0` to `< -0.1` were killable, and no
+   synthesised input landed in the gap until a must-not test declared one.
 6. **`just crosshair <file>`.** It reasons over all paths where mutation samples inputs, and it finds
    different defects — measured here, two real post-condition violations at 55/55 mutants killed.
    Read the words exactly: `Not confirmed` is neither a violation nor a pass.
-7. **Re-pin whatever step 6 changed**, then `just gate`, reading the **exit status** rather than the
-   tail. A pipe hands `&&` the filter's status, not the gate's.
-8. **Record the chapter's reasoning** in `docs/chapters/NN-<stage>/README.md`: why the unit exists,
-   how it instantiates the thesis, **what the verification found that the author did not**, and what
-   is open. A compaction then costs one unit, not the session.
+7. **Wire it, so something CONSUMES it.** Into the production route, not beside it. Then `just graph
+   <out>` — a value nothing consumes shows as **dangling** — and `just imports` for the layer
+   contract. A component that works alone and is not on the path from input to output is not
+   progress.
+8. **Render it.** A stage is not `built` until it renders, and the renderer may only **arrange**
+   values the stage already computed. One that has to measure is evidence against the **stage**.
+9. **Run it on real data**, through Chapter 1's real entry point. A unit that has only seen synthetic
+   data is not built — measured the hard way, when the noise law passed every unit test and then
+   concurred on 4 of 336 real series.
+10. **Re-pin whatever steps 6–9 changed**, then `just gate`, reading the **exit status** rather than
+    the tail: `scripts/ci_local.sh > log 2>&1 && git add && git commit`, with nothing between. A pipe
+    hands `&&` the filter's status, not the gate's.
+11. **Record the chapter's reasoning** in `docs/chapters/NN-<stage>/README.md`: why the unit exists,
+    how it instantiates the thesis, **what the verification found that the author did not**, and what
+    is open. A compaction then costs one unit, not the session.
 
 Consult Codex and Fable where the design is genuinely open, with the lead's own reading **written
 first** — and treat agreement reached independently as evidence, disagreement as a question for the
