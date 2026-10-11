@@ -1,6 +1,36 @@
 # Resume the accepted object-resolution build
 
-> ## ⇒ FIRST: `just unit`. It prints the build loop with the route's live state.
+> ## ⇒ FIRST: `just unit`. It prints the build loop, the route's live state, and `just places`.
+
+## Where this stands, 2026-10-11 evening — read this before the sequence below
+
+**The active change is now `every-stage-renders`**, not the contour work. The founder ruled
+breadth-first: *"I can get to the refinement of the baseline functional pipeline when it actually
+EXISTS, and each step can put out a non-stupid image, even if it's not actually good quality."*
+Build the hardware — every stage runs, returns a record or a named absence, and renders. **Mechanism
+only; he assigns the meaning from the picture.**
+
+**Read `docs/THESIS_AS_IDEAS.md` first.** His own section-by-section statement of what the thesis
+IS. Two things in it bind this work: each section is an *idea*, so the cell build's **content was
+never portable and only the idea is**; and **§6 refines borders only once an object's role is
+assigned** — which this project had been attempting on roleless watershed territories, and which is
+why that work hit a wall at every turn. The contour tasks (3.8a–3.12 of `object-resolution-toolkit`)
+are parked for that reason, not abandoned.
+
+**`just places` is new.** `docs/places.json` declares every module's place; `scripts/places.py`
+computes the observed state against it. It does **not** gate, deliberately. Today it reports seven
+modules declared as route stages that the route imports none of — lenses ×3, relations, bundles,
+predicates, output. **That number is `every-stage-renders`, and it goes to zero as the change lands.**
+
+**Two findings still open, both the founder's to rule:**
+- `AGENTS.md` law 9 still says *"Nothing is built. No codebase meets the design and there is no
+  evidence of what works"*. Written 2026-10-02; now false, and it is in the first document a new
+  session reads. A cold reader found it from the entry point alone
+  (`readings/cold-start-stress-test-codex.md`). The replacement is his, not the lead's.
+- Two idioms declare a compute contract — `CONTRACT = ComputeContract(...)` and
+  `@contracted(ComputeContract(...))`. A new kernel's author cannot tell which to use. Task 0.3.
+- The five `shelf` packages (`loop`, `candidates`, `cleanup`, `every_object`, `assignment`) exist,
+  are not archived, and the settled route has no stage for them. Keep, archive, or fold.
 
 ## The agreed sequence, settled 2026-10-11
 
