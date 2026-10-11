@@ -91,7 +91,9 @@ detective-resolution:
 unit:
     PYTHONPATH=src .venv/bin/python scripts/unit_loop.py
     @echo
-    @just plan-status
+    @just plan-status object-resolution-toolkit
+    @echo
+    @just plan-status knee-object-model
 
 # Declared work lives in OpenSpec; client instruction generation is deliberately off. The change
 # defaults to knee-object-model, the structure the founder settled 2026-10-11; name the other

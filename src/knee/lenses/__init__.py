@@ -19,11 +19,18 @@ knee -- and a tissue class is a CONJUNCTION of rows, never a threshold on one im
     muscle               intermediate(T1), intermediate-dark(T2, FS)
     marrow edema         dark(T1) and bright(FS), inside a bone
 
-The middle is read FROM THE IMAGE, never from an absolute level: subcutaneous and marrow fat are the
-fat reference, muscle the intermediate reference, a distended recess the fluid reference. That is
-what defeats the failure recorded in chapters/02-collapse: four intensity instruments died on this
-corpus because scanner scaling moves an absolute level and cannot move a reading stated against
-witnesses in the same image.
+The middle is read FROM THE IMAGE, never from an absolute level. HOW it is read was settled by the
+founder on 2026-10-11 ("Your inference is correct", docs/chapters/03-lenses/teachings.md): it is a
+PAIR OF EDGES AT THE TERCILES of a structurally selected population, both edges in the 0 row, read
+AFTER a local structural normalisation which carries the spatial correction. The middle names no
+tissue. The earlier proposal -- subcutaneous and marrow fat as the fat reference, muscle as the
+intermediate, a distended recess as the fluid -- is WITHDRAWN, and the tissue conjunction lives in
+the rows across acquisitions instead. That is what defeats the failure recorded in
+chapters/02-collapse: four intensity instruments died on this corpus because scanner scaling moves
+an absolute level and cannot move a reading stated against the image's own distribution.
+
+`digits.digit_code` still has the OLD shape (a witness middle plus a band from spreads) and is the
+chapter's first correction; nothing consumes it, so the cost is one pinned module.
 
 The sequence type is read from TR/TE/flip angle/ScanOptions/InversionTime, NEVER from a series
 description string. Two regimes must be flagged here before any predicate runs: a T1 fat-suppressed

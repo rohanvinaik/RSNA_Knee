@@ -191,7 +191,10 @@ def main() -> None:
     if todo:
         print("THE NEXT OPEN TASK OF EACH DECLARED CHANGE, from its own checklist:\n")
         for change, task in todo:
-            print(f"  {change}\n     {task[:300]}\n")
+            # Printed WHOLE and never truncated. A task cut short reads like content while its
+            # acceptance conditions are gone -- measured here, when a 300-character limit dropped
+            # task 3.8's prohibition on bridging a gap by appearance, which is the whole point of it.
+            print(f"  {change}\n     {task}\n")
 
     print("THE BUILD LOOP -- run this, do not remember it.\n")
     for number, (name, detail) in enumerate(STEPS):
@@ -214,11 +217,19 @@ def main() -> None:
         f"\n  {len(drawn)} renderer(s) in knee.pictures; a stage may not claim built or "
         "partly without one\n"
     )
-    print("NEXT, in this order:")
-    print("  just plan-status        the declared change and what remains")
-    print("  just plan-next          the task list, with what is already done")
-    print("  just graph <out>        is anything dangling")
-    print("  just gate               before every commit")
+    # The change is NAMED in every command: the verbs default to knee-object-model, while the
+    # agreed increment (tasks 3.8-3.12) lives in object-resolution-toolkit, so an unqualified
+    # command would send a fresh session to the wrong checklist.
+    print("NEXT, with the change named so you reach the right checklist:")
+    print("  just plan-status object-resolution-toolkit   the increment's artifacts")
+    print(
+        "  just plan-next   object-resolution-toolkit   tasks 3.8-3.12, the next work"
+    )
+    print(
+        "  just plan-status knee-object-model           the structure's own tasks (1.4 open)"
+    )
+    print("  just graph <out>                             is anything dangling")
+    print("  just gate                                    before every commit")
 
 
 if __name__ == "__main__":
