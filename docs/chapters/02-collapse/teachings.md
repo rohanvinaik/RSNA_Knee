@@ -398,6 +398,22 @@ On the second readers, and on the figures he attached (H2a2 and H2b from the `<o
 > converging onto each object's role**, much like the cell body resolution/cell pull-out work in that
 > project."
 
+**The three first-order requirements, added the same day** (recorded as `docs/STAGE_CONTRACT.md`):
+
+> "**image output of each stage should be a requirement.** Again, visual reasoning, computer vision.
+> Each stage should be clean, modular, and we should be able to see the output visually. Very much
+> like how the \<object> thesis itself works this through and shows the process, step-by-step, for
+> computer vision as a built process that works on the problem space"
+
+> "**telemetry, JIT/C++/Rust, overall performance engineering is also a first-order requirment of the
+> pipeline.** The SICP-centric design rules should slot in nicely here, **the competition itself
+> scores for efficiency**, so that's a first-order consideration, alongside the image output and clean
+> modular production-spec design"
+
+> "**Note all the tooling we have in the global context model files for telemetry and performance
+> engineering. All these, as relevant, including the photo and performance tooling, as
+> global/standard requirements for every stage of the whole pipeline**"
+
 **What the two figures establish** (the lead's reading of them, to be corrected if wrong):
 
 - **H2a2 panel C, "Its Profile: The Bundle of Its Places, as Row Counts".** The bundle crosses
