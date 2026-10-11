@@ -199,15 +199,37 @@ def test_bracketed_trace_lies_within_its_declared_profile_band() -> None:
 
 @given(
     scale=st.floats(
-        min_value=0.25, max_value=4.0, allow_nan=False, allow_infinity=False
+        min_value=0.25,
+        max_value=4.0,
+        allow_nan=False,
+        allow_infinity=False,
+        allow_subnormal=False,
     ),
     shift=st.floats(
-        min_value=-10.0, max_value=10.0, allow_nan=False, allow_infinity=False
+        min_value=-10.0,
+        max_value=10.0,
+        allow_nan=False,
+        allow_infinity=False,
+        allow_subnormal=False,
     ),
 )
 def test_positive_affine_intensity_change_preserves_topology(
     scale: float, shift: float
 ) -> None:
+    """A rescaling of intensities, with the split rescaled too, must not move the topology.
+
+    SUBNORMALS ARE EXCLUDED, and that narrows what this property claims rather than hiding a defect.
+    Hypothesis falsified it at scale=1.0, shift=-5e-324 (2026-10-11): `trace_codes` turned
+    `bracketed` into `multiple_brackets`. The mechanism is arithmetic, not a fault in the reading --
+    BILINEAR INTERPOLATION IS NOT EXACTLY AFFINE-EQUIVARIANT IN FLOATING POINT, so `interp(v*s + t)`
+    is not bit-identical to `interp(v)*s + t`, and at subnormal magnitudes an interpolated profile
+    sample can land on the other side of the split. Adding -5e-324 is a no-op for almost every value
+    but exactly representable at zero, so it moves a comparison without moving the picture.
+
+    What the property is FOR is intensity rescaling -- a DICOM RescaleSlope/RescaleIntercept, which
+    is of order 1 to 1000 and never a subnormal. The invariant is real at that scale; the claim that
+    it held bit-exactly at every representable float was the part that was false.
+    """
     plane = _two_rectangles_with_dark_slit()
     plane[0, 0] = np.nan
     original = _read(plane, split=0.0)
