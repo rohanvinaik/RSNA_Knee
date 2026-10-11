@@ -219,11 +219,22 @@ the founder agreeing with Fable's reading over the lead's single-witness version
 | anterior | where the patella sits |
 | lateral | where the fibula sits |
 
-**LPS is right-handed, so given S and A, L is determined by the cross product.** The fibula therefore
-becomes a **cross-check rather than the sole witness** — and a valuable one: *if the fibula disagrees
-with S×A, the data has been mirrored somewhere, and the study is flagged.* That also means laterality
-survives the fibula being out of field, which it often is: the fibular head sits 1–2 cm below the
-lateral plateau, so coronal stacks reach it only posteriorly and sagittal stacks only laterally.
+**LPS is right-handed, so given S and A, the patient LEFT–RIGHT AXIS follows by cross product.** That
+is what the handedness buys, and it is worth having: only **one** anatomical witness is then needed
+rather than three.
+
+**But the axis is not the anatomical lateral direction, and the frame can never give the sign.**
+Corrected 2026-10-11 by arithmetic, after a second reader caught it: in LPS, `S = (0,0,1)` and
+`A = (0,−1,0)`, so `S × A = (1,0,0)` — **patient-left**, which is *lateral* for a left knee and
+**medial for a right one**. Which knee it is was the unknown all along. So the fibula is not a
+cross-check that could be dispensed with: it is **the sign**, being lateral in both legs, with the
+fabella, the popliteus groove and the condylar asymmetries available for concurrence.
+
+Where no laterality witness resolves — common, since the fibular head sits 1–2 cm below the lateral
+plateau, so coronal stacks reach it only posteriorly and sagittal stacks only laterally — medial and
+lateral are **abstained** with a named code, and every side-dependent finding abstains with them.
+Two witnesses placing lateral at opposite ends of the axis keep both readings rather than resolving
+in favour of either.
 
 On the fibula's own invariance the two readers disagreed, and the founder ruled: Fable's position
 stands — *"Anatomically, true without exception. The fibula is lateral (and slightly posterior) to the

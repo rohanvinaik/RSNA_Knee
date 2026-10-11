@@ -1,5 +1,51 @@
 # Resume the accepted object-resolution build
 
+> ## ⇒ FIRST: `just unit`. It prints the build loop with the route's live state.
+
+## The agreed sequence, settled 2026-10-11
+
+Reached with the founder and two independent readers, after a reading put an unresolved design
+question ahead of work whose production inputs already exist. **Dependencies decide the order.**
+
+**1. Reconcile the accounting.** Three items, all bookkeeping rather than design, and each cheap:
+   the boundary census is built, pinned, wired, rendered and run on real data but unchecked in the
+   task list (**done** — task 2.5); `ROUTE` still carries the superseded SPINE stage names
+   (**task 1.4, open**); and `docs/OBJECT_MODEL.md`'s laterality passage contradicted the spec
+   (**done** — the frame fixes the axis, a witness fixes the sign).
+
+**2. Complete OpenSpec task 3.8** — supported connectivity within bands and constrained contour
+   shortening — through `just unit`. It is the next increment because it is **unblocked**: it
+   consumes original boundaries, native profiles, conversation outcomes and the boundary census,
+   and all four are already in production. Its own task text requires the contract for *what support
+   licenses connection and movement* to be specified **before** implementation.
+
+   **The milestone, worded carefully:** *one study's refined outline chains, with closure standing
+   per chain and every arc's support shown beside the original.* **Closure is an observed outcome,
+   never the acceptance bar** — a correct implementation may return an open chain, and requiring
+   closure would invite inventing the missing boundary, which is the one thing this stage must not
+   do. Gaps, shed places, clipping and competing subdivisions stay visible.
+
+**3. Inspect the supported arcs and the remaining gaps with the founder.** Nobody has yet looked at
+   how far a territory boundary actually sits from a cortical surface.
+
+**4. Then the two tracks that are gated, each on its own question:**
+   - **The anatomical inventory** (task 2.1) is gated on the founder's teaching. Its *form* may be
+     proposed — identity, extent, boundary, internal structure, relations, standing — but which
+     elements and what warrants each name are his, and the list is stated *before* any round is run
+     against it. Cartilage, a meniscus and a ligament each need their own definition rather than
+     inheriting the name of the space containing them.
+   - **The lens stage** is gated on the knee's local structural normalisation. The founder's ruling
+     settled the ordering and the tercile mechanism, not the normalisation itself, and Fable's
+     levels consult establishes that the knee's analogue — the coil's S/I falloff — is
+     **multiplicative on signal**, so the sibling's additive haze does not port. Measurements can
+     inform that decision and cannot substitute for it. The `digit_code` low/high-edge correction is
+     *independently settled* and may proceed on its own; it must not block 3.8, and it must not make
+     the lens stage appear complete.
+
+Today's teachings and what they settle: [`../03-lenses/teachings.md`](../03-lenses/teachings.md).
+
+---
+
 Start with [the continuing contract](object-resolution-contract.md),
 [B2's evidence record](measurements/same-knee-conversation-b2.md), and
 [the checked conversation contract](readings/b2-workshop-resolution.md).
