@@ -94,6 +94,15 @@ unit:
     @just plan-status object-resolution-toolkit
     @echo
     @just plan-status knee-object-model
+    @echo
+    -@just places
+
+# Every module's declared place, computed against what is observably true (docs/places.json).
+# Reports only what a check can compare to something observed; a role sentence is counted when
+# unwritten, never passed. It does NOT gate: a stage being built is unreached for as long as it is
+# being built, and a gate there would teach the next session to misdeclare place to go green.
+places:
+    PYTHONPATH=src .venv/bin/python scripts/places.py
 
 # Declared work lives in OpenSpec; client instruction generation is deliberately off. The change
 # defaults to knee-object-model, the structure the founder settled 2026-10-11; name the other
