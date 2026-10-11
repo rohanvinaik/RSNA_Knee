@@ -1,25 +1,4 @@
 {
-  "src/knee/collapse/border_codes.py::border_code::b9d5c1ca2b535dbc": [
-    {
-      "assertion_code": "result = border_code(frame_clipped=True, valid_count=1, sample_count=2, dark_runs=3, bounded=True)\nassert result == 'frame_clipped'",
-      "category": "VALUE",
-      "confidence": 0.9,
-      "function_key": "",
-      "golden_case": [
-        "(True, 1, 2, 3, True)",
-        "'frame_clipped'"
-      ],
-      "mutant_id": "",
-      "needs_oracle": false,
-      "preconditions": [
-        "golden capture (pure + deterministic)"
-      ],
-      "setup_code": "from knee.collapse.border_codes import border_code",
-      "source_lenses": [
-        "golden_capture"
-      ]
-    }
-  ],
   "src/knee/collapse/codes.py::coil_code::9831de1b1e68ee7f": [
     {
       "assertion_code": "result = coil_code(moment_ratio=1.0625, single_tolerance=1.0625)\nassert result == 'multi'",
@@ -278,27 +257,6 @@
       ]
     }
   ],
-  "src/knee/collapse/exchange_codes.py::exchange_code::122d6f657b66fb12": [
-    {
-      "assertion_code": "result = exchange_code(coverage_code='abc', valid_count=1, sample_count=2, dark_runs=3, bounded_matches=4, open_matches=5)\nassert result == 'invalid_measurement'",
-      "category": "VALUE",
-      "confidence": 0.9,
-      "function_key": "",
-      "golden_case": [
-        "('abc', 1, 2, 3, 4, 5)",
-        "'invalid_measurement'"
-      ],
-      "mutant_id": "",
-      "needs_oracle": false,
-      "preconditions": [
-        "golden capture (pure + deterministic)"
-      ],
-      "setup_code": "from knee.collapse.exchange_codes import exchange_code",
-      "source_lenses": [
-        "golden_capture"
-      ]
-    }
-  ],
   "src/knee/collapse/noise.py::floor_bias::136053b4ada746a3": [
     {
       "assertion_code": "result = floor_bias(samples=64, quantile=0.1)\nassert result == 0.8137783207212441",
@@ -369,7 +327,49 @@
       ]
     }
   ],
-  "src/knee/collapse/profile_codes.py::profile_support_code::f0d118e0d4fcd235": [
+  "src/knee/objects/border_codes.py::border_code::b9d5c1ca2b535dbc": [
+    {
+      "assertion_code": "result = border_code(frame_clipped=True, valid_count=1, sample_count=2, dark_runs=3, bounded=True)\nassert result == 'frame_clipped'",
+      "category": "VALUE",
+      "confidence": 0.9,
+      "function_key": "",
+      "golden_case": [
+        "(True, 1, 2, 3, True)",
+        "'frame_clipped'"
+      ],
+      "mutant_id": "",
+      "needs_oracle": false,
+      "preconditions": [
+        "golden capture (pure + deterministic)"
+      ],
+      "setup_code": "from knee.objects.border_codes import border_code",
+      "source_lenses": [
+        "golden_capture"
+      ]
+    }
+  ],
+  "src/knee/objects/exchange_codes.py::exchange_code::122d6f657b66fb12": [
+    {
+      "assertion_code": "result = exchange_code(coverage_code='abc', valid_count=1, sample_count=2, dark_runs=3, bounded_matches=4, open_matches=5)\nassert result == 'invalid_measurement'",
+      "category": "VALUE",
+      "confidence": 0.9,
+      "function_key": "",
+      "golden_case": [
+        "('abc', 1, 2, 3, 4, 5)",
+        "'invalid_measurement'"
+      ],
+      "mutant_id": "",
+      "needs_oracle": false,
+      "preconditions": [
+        "golden capture (pure + deterministic)"
+      ],
+      "setup_code": "from knee.objects.exchange_codes import exchange_code",
+      "source_lenses": [
+        "golden_capture"
+      ]
+    }
+  ],
+  "src/knee/objects/profile_codes.py::profile_support_code::f0d118e0d4fcd235": [
     {
       "assertion_code": "result = profile_support_code(requested=1, supported=2)\nassert result == 'invalid_counts'",
       "category": "VALUE",
@@ -384,7 +384,7 @@
       "preconditions": [
         "golden capture (pure + deterministic)"
       ],
-      "setup_code": "from knee.collapse.profile_codes import profile_support_code",
+      "setup_code": "from knee.objects.profile_codes import profile_support_code",
       "source_lenses": [
         "golden_capture"
       ]
