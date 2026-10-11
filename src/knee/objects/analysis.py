@@ -6,6 +6,7 @@ import numpy as np
 
 from knee.collapse.physical import PlaneFrame, Squint, physical_squint
 from knee.compute.contracts import handed_on
+from knee.objects.boundaries import BoundaryCensus, boundary_census
 from knee.objects.interiors import InteriorReading, read_interiors
 from knee.objects.profiles import ProfileReading, sample_profiles
 from knee.study.series import Series
@@ -27,6 +28,7 @@ class AnalysisRequest:
     slice_index: int | None = None
     prominence_mm: float | None = None
     conversation: bool = False
+    minimum_divide_sites: int = 1
 
     def __post_init__(self) -> None:
         if not np.isfinite(self.tile_mm) or self.tile_mm <= 0:
@@ -55,6 +57,8 @@ class AnalysisRequest:
             self.conversation and self.prominence_mm is None
         ):
             raise ValueError("invalid_conversation_request")
+        if type(self.minimum_divide_sites) is not int or self.minimum_divide_sites < 0:
+            raise ValueError("invalid_minimum_divide_sites")
         if self.prominence_mm is not None:
             if not np.isfinite(self.prominence_mm) or self.prominence_mm <= 0:
                 raise ValueError("invalid_prominence_mm")
@@ -78,6 +82,7 @@ class SeriesMeasurement:
     orientation_spread: float | None = None
     interiors: InteriorReading | None = None
     slice_thickness_mm: float | None = None
+    boundaries: BoundaryCensus | None = None
 
 
 def measure_series(
@@ -134,6 +139,19 @@ def measure_series(
         if request.prominence_mm is not None
         else None
     )
+    # What bounds each territory, and the relief between those that touch. It reads only values
+    # B1 already returned, so it adds no source pass and assigns no anatomy.
+    boundaries = (
+        boundary_census(
+            interiors.labels,
+            interiors.distance_mm,
+            interiors.edge_regions,
+            interiors.edge_kinds,
+            request.minimum_divide_sites,
+        )
+        if interiors is not None
+        else None
+    )
     # Coefficients in the retained affine basis, not dot products with rounded axes.
     projected = np.linalg.pinv(axes) @ direction
     norm = float(np.linalg.norm(axes @ projected))
@@ -150,6 +168,7 @@ def measure_series(
             orientation_spread=geometry.orientation_spread,
             interiors=interiors,
             slice_thickness_mm=thickness,
+            boundaries=boundaries,
         )
     bounds = squint.bounds_rc.reshape(-1, 4)
     points = np.column_stack(
@@ -179,4 +198,5 @@ def measure_series(
         orientation_spread=geometry.orientation_spread,
         interiors=interiors,
         slice_thickness_mm=thickness,
+        boundaries=boundaries,
     )

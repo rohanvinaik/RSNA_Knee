@@ -467,6 +467,8 @@
       ]
     }
   ],
+  "src/knee/objects/boundaries.py::carries_prominence::08337326a34baf2d": [],
+  "src/knee/objects/boundaries.py::pair_code::c1d3d4be9e959bcf": [],
   "src/knee/objects/exchange_codes.py::exchange_code::122d6f657b66fb12": [
     {
       "assertion_code": "result = exchange_code(coverage_code='abc', valid_count=1, sample_count=2, dark_runs=3, bounded_matches=4, open_matches=5)\nassert result == 'invalid_measurement'",

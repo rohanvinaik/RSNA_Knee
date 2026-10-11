@@ -16,6 +16,7 @@ real entry point and saved its image series, not when its unit tests pass.
 - [ ] 2.2 Implement the fibula-relative lateral direction and its named abstention; verify it over all 58 against the series that do carry a laterality tag, and report agreement, abstention and disagreement per series rather than one number.
 - [ ] 2.3 Implement the residual round: re-read the unassigned field after the resolved objects are pulled out, retaining what each round claimed and left; verify unclaimed and disputed places stay reachable and that no round admits an element on appearance alone.
 - [ ] 2.4 Produce the object-parse image series through the production records, showing resolved objects, the residual after each round, and every unresolved place; inspect it with the founder before the parse is called complete.
+- [ ] 2.5 Implement the boundary census over a resolved plane: per territory, its directed edges counted by what lies across them, and per touching pair, the highest pass between them with each centre's height above it, in millimetres; verify it assigns no anatomy, that a pair whose relief cannot be read returns a named code rather than a zero prominence, and that its pure decision is pinned with `just detective` and checked with `just crosshair`. It consumes B1's reading and supplies 2.3's account of what a round claimed and 3.3's unsupported-wall rule. *(Added 2026-10-11 by the lead while building it, so the change declares it rather than absorbing it silently; the founder's to strike if it is not his plan.)*
 
 ## 3. Construct the relations
 
