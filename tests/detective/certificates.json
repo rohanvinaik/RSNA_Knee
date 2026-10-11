@@ -53,6 +53,30 @@
     "refusal": "",
     "standing": "complete"
   },
+  "src/knee/lenses/slabs.py::gap_fraction": {
+    "cut_reasons": [],
+    "function_digest": "0d7066709ec64249",
+    "refusal": "",
+    "standing": "complete"
+  },
+  "src/knee/lenses/slabs.py::half_thickness": {
+    "cut_reasons": [],
+    "function_digest": "191790a187469228",
+    "refusal": "",
+    "standing": "complete"
+  },
+  "src/knee/lenses/slabs.py::slab_code": {
+    "cut_reasons": [],
+    "function_digest": "239c0307fe92afbe",
+    "refusal": "",
+    "standing": "complete"
+  },
+  "src/knee/lenses/slabs.py::was_measured": {
+    "cut_reasons": [],
+    "function_digest": "c50474549577a85e",
+    "refusal": "",
+    "standing": "complete"
+  },
   "src/knee/objects/border_codes.py::border_code": {
     "cut_reasons": [],
     "function_digest": "b9d5c1ca2b535dbc",
