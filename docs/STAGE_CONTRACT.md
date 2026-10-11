@@ -128,6 +128,47 @@ timing. **Counted work and profiler behaviour are reported separately.**
 - **`just gate` before every commit** — and a green gate rules nothing in. It is a law check: "a
   failure rules the answer out, and a pass settles nothing. Only the oracles establish" (§11.5).
 
+## How a UNIT gets built — the loop, kept because it worked
+
+Founder, 2026-10-11, on the `knee.lenses` build: *"this is a REALLY good workflow here. SICP-style
+modular, atomic code, detective two-sign, CrossHair, the record of reasoning against the computer
+vision '\<object>' thesis … I'd like to persist this workflow."*
+
+A unit is **one idea**: a pure decision and the handful of helpers it needs, in one module, that a
+sentence can describe. Not a stage, not a file of conveniences.
+
+1. **Say why it exists, in the module docstring, against the thesis.** Which failure it answers,
+   which section it instantiates, and the founder's words where they settled it. A module whose
+   docstring cannot name the thesis role it fills is a module that drifted.
+2. **Write the pure decision first.** Total over its arguments, returning a **named code**; every bar
+   it reads is an **argument**, never a constant. Keep the named codes distinct wherever the remedies
+   differ — three silences that mean different things are three codes.
+3. **Declare the contracts** as PEP 316 `pre:`/`post:` lines. State the real requirement: positive
+   does not imply finite, and a post-condition you cannot hold for every input the `pre:` admits is
+   a defect in one of the two.
+4. **Write intent tests, BOTH SIGNS, calling the function DIRECTLY.**
+   - positive: what it must do;
+   - negative: what it must never do.
+   - Never through a local helper: Detective routes by static path, and a test it cannot route is
+     not a pin (measured here — 9 of 13 invisible, `Incomplete` where `COMPLETE` was available).
+5. **`just detective converge <file>::<func>`, then judge EVERY survivor.** Prove equivalence and
+   record the proof in the `--note`, or name the must-not and enforce it with a test — a test is
+   better than a `--fence`, because the mutant dies instead of being bookkept. A cluster of
+   boundary/value survivors on one `if` is usually **dead code**: prove it by case analysis over the
+   sibling clauses and delete it.
+6. **`just crosshair <file>`.** It reasons over all paths where mutation samples inputs, and it finds
+   different defects — measured here, two real post-condition violations at 55/55 mutants killed.
+   Read the words exactly: `Not confirmed` is neither a violation nor a pass.
+7. **Re-pin whatever step 6 changed**, then `just gate`, reading the **exit status** rather than the
+   tail. A pipe hands `&&` the filter's status, not the gate's.
+8. **Record the chapter's reasoning** in `docs/chapters/NN-<stage>/README.md`: why the unit exists,
+   how it instantiates the thesis, **what the verification found that the author did not**, and what
+   is open. A compaction then costs one unit, not the session.
+
+Consult Codex and Fable where the design is genuinely open, with the lead's own reading **written
+first** — and treat agreement reached independently as evidence, disagreement as a question for the
+founder (`docs/SPINE.md`, the working loop).
+
 ## What a stage owes, as a checklist
 
 1. its role and the founder's teaching, in the package docstring
