@@ -30,7 +30,17 @@ pinning. Recompute current standing with `just packet-status`.
 - [x] 3.5 Produce and inspect the surrounding-field, interiors and native-traces color image series under data/pictures; bind their receipt/array/image identities and retain telemetry through the same production entry.
 - [x] 3.6 Trace the general lens conversation and refinement in the thesis and live cell route, work out the knee boundary exchange with Fable, and specify supported-chain movement/band contracts. Preserve the founder's shared-object relation and use his coronal pair only as an example.
 - [x] 3.7 Implement the general same-knee conversation in the production study route, exchanging boundary constraints across participating measurements and retaining separate originals, refinements, source provenance and disputes. Show before / exchange / after series across views, including the founder's example.
-- [ ] 3.8 Implement the admitted connectivity-within-bands and constrained contour-shortening reference operation; verify closure is reported per chain and candidate gaps, unsupported places, original/refined traces, shed places, and clipping remain inspectable in the visual packet.
+**→ 3.8–3.12 ARE THE NEXT INCREMENT, agreed 2026-10-11.** Unblocked: they consume original
+boundaries, native profiles, conversation outcomes and the boundary census, all already in
+production. Run `just unit` first. The milestone is *one study's refined outline chains, with closure
+standing per chain and every arc's support shown beside the original* — closure an observed outcome,
+never the bar, since requiring it would invite inventing the missing boundary.
+
+- [ ] 3.8 **Declare the contract before any implementation**, as the capability `supported-contour-chains`: what support licenses a connection, what bounds a point's movement, what closure standing means, and what refinement must keep. Verify `just plan-check` validates it and that no requirement admits bridging a gap on appearance.
+- [ ] 3.9 Implement the reference operation against that contract; extract its pure decisions, pin each two-sign with `just detective converge` judging every survivor, and check its contracts with `just crosshair`. Verify an unmeasured allowance returns a named code rather than a default.
+- [ ] 3.10 Wire it into the production study route so something consumes it, carry a `ComputeContract` and ledger counts, and verify with `just graph` that no value is dangling and with `just imports` that the layer contract holds.
+- [ ] 3.11 Render it: every arc in the colour of what supports it, with gaps, shed places, open chains and clipping visible. Verify the renderer only arranges values the stage computed, and that a chain left open is drawn as open.
+- [ ] 3.12 Run it over the corpus through Chapter 1's real entry point, save the image series and receipt, and inspect the supported arcs and remaining gaps with the founder before anything downstream consumes them.
 
 B1 evidence: `docs/chapters/02-collapse/measurements/geometric-interiors-b1.md`.
 Its completion is the declared geometric measurement, not final anatomical ownership.
