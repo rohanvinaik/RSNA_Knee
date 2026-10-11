@@ -30,12 +30,20 @@ pinning. Recompute current standing with `just packet-status`.
 - [x] 3.5 Produce and inspect the surrounding-field, interiors and native-traces color image series under data/pictures; bind their receipt/array/image identities and retain telemetry through the same production entry.
 - [x] 3.6 Trace the general lens conversation and refinement in the thesis and live cell route, work out the knee boundary exchange with Fable, and specify supported-chain movement/band contracts. Preserve the founder's shared-object relation and use his coronal pair only as an example.
 - [x] 3.7 Implement the general same-knee conversation in the production study route, exchanging boundary constraints across participating measurements and retaining separate originals, refinements, source provenance and disputes. Show before / exchange / after series across views, including the founder's example.
-**→ 3.8–3.12 ARE THE NEXT INCREMENT, agreed 2026-10-11.** Unblocked: they consume original
+**→ 3.8a–3.12 ARE THE NEXT INCREMENT, agreed 2026-10-11.** Unblocked: they consume original
 boundaries, native profiles, conversation outcomes and the boundary census, all already in
 production. Run `just unit` first. The milestone is *one study's refined outline chains, with closure
 standing per chain and every arc's support shown beside the original* — closure an observed outcome,
 never the bar, since requiring it would invite inventing the missing boundary.
 
+**3.8a was added after the consults, and it is a prerequisite, not a detour.** Both second readers
+(`readings/contour-chains-{codex,fable}.md`) refused the lead's completion bar, and a third reader
+found that the convexity argument for the ported shape prior describes an update the sibling does
+not perform. Each of the contract's four terms turned out to rest on a property of the current
+machinery that nobody has measured. Declaring the contract first would have written those terms from
+a reconstruction. The order is: establish, then declare.
+
+- [ ] 3.8a **Establish what the current machinery actually does, before the contract names it.** Six facts the contract's own terms depend on, none of which the record states: what the distance transform's `interior` admits; whether a territory's loop is read per slice or through the volume; whether the flicker is read at the place or once per series, and in what physical unit; whether a place outside the leg can be typed supported; whether any dark reading is made that is not on a loop; and what the sibling's chord step actually moves a point onto — its nearest place on the chord, which is NOT the neighbours' midpoint the ported justification assumed (verified by arithmetic 2026-10-11: neighbours (0,0) and (4,0) with the point at (0,1) give (0, 0.5) and (1, 0.5) respectively). Code facts are established by reading each production unit whole and quoted with its file and line; run facts are computed through `just analyze-objects` on one study, never from the saved B1/B2 runs, which `just interiors-status` and `just conversation-status` report stale. Verify the two kinds are reported separately, that every code fact carries its location, and that no fact enters from a second reader unchecked.
 - [ ] 3.8 **Declare the contract before any implementation**, as the capability `supported-contour-chains`: what support licenses a connection, what bounds a point's movement, what closure standing means, and what refinement must keep. Verify `just plan-check` validates it and that no requirement admits bridging a gap on appearance.
 - [ ] 3.9 Implement the reference operation against that contract; extract its pure decisions, pin each two-sign with `just detective converge` judging every survivor, and check its contracts with `just crosshair`. Verify an unmeasured allowance returns a named code rather than a default.
 - [ ] 3.10 Wire it into the production study route so something consumes it, carry a `ComputeContract` and ledger counts, and verify with `just graph` that no value is dangling and with `just imports` that the layer contract holds.
