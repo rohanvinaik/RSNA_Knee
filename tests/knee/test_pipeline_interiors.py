@@ -8,7 +8,7 @@ from test_pipeline_measurements import (
 )
 
 from knee import pipeline
-from knee.collapse.analysis import AnalysisRequest
+from knee.objects.analysis import AnalysisRequest
 
 
 def test_real_study_entry_carries_interior_reading_even_when_requested_axis_is_unavailable(

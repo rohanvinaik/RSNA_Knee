@@ -5,7 +5,7 @@ from pathlib import Path
 
 import knee.study.series as series_module
 from knee import pipeline
-from knee.collapse.analysis import AnalysisRequest
+from knee.objects.analysis import AnalysisRequest
 
 _fixture_path = Path(__file__).with_name("test_pipeline_measurements.py")
 _fixture_spec = importlib.util.spec_from_file_location(

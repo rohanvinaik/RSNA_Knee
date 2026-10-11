@@ -4,10 +4,10 @@ from dataclasses import dataclass
 
 import numpy as np
 
-from knee.collapse.contracts import handed_on
-from knee.collapse.interiors import InteriorReading, read_interiors
 from knee.collapse.physical import PlaneFrame, Squint, physical_squint
-from knee.collapse.profiles import ProfileReading, sample_profiles
+from knee.compute.contracts import handed_on
+from knee.objects.interiors import InteriorReading, read_interiors
+from knee.objects.profiles import ProfileReading, sample_profiles
 from knee.study.series import Series
 
 

@@ -4,7 +4,7 @@ import pytest
 from hypothesis import given
 from hypothesis import strategies as st
 
-from knee.collapse.exchange_codes import exchange_code
+from knee.objects.exchange_codes import exchange_code
 
 
 @pytest.mark.parametrize(

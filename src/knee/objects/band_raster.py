@@ -5,7 +5,7 @@ from math import ceil, floor
 
 import numpy as np
 
-from knee.collapse.contracts import ComputeContract, contracted, handed_on
+from knee.compute.contracts import ComputeContract, contracted, handed_on
 
 
 @contracted(

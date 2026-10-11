@@ -7,7 +7,7 @@ import pytest
 from hypothesis import given
 from hypothesis import strategies as st
 
-from knee.collapse.interiors import read_interiors
+from knee.objects.interiors import read_interiors
 
 
 def _read(plane: np.ndarray, **overrides):

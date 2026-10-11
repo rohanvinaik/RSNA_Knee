@@ -18,9 +18,9 @@ from __future__ import annotations
 from dataclasses import dataclass, field
 from pathlib import Path
 
-from knee.collapse.analysis import AnalysisRequest, SeriesMeasurement, measure_series
-from knee.collapse.conversation import ConversationInput, SeriesConversation, converse
 from knee.collapse.regime import RegimeKey, read_regime
+from knee.objects.analysis import AnalysisRequest, SeriesMeasurement, measure_series
+from knee.objects.conversation import ConversationInput, SeriesConversation, converse
 from knee.study.corpus import Corpus, Study, read_study
 
 # Figure 8's line, in order, with the state of each stage. A stage is "built" when it runs over a
@@ -30,6 +30,7 @@ ROUTE: tuple[tuple[str, str], ...] = (
     ("study", "built"),
     ("collapse", "partly"),
     ("lenses", "not_built"),
+    ("objects", "partly"),
     ("relations", "not_built"),
     ("loop", "not_built"),
     ("candidates", "not_built"),

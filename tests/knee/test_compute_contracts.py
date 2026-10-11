@@ -16,7 +16,7 @@ import importlib
 import pkgutil
 
 import knee
-from knee.collapse.contracts import ComputeContract
+from knee.compute.contracts import ComputeContract
 
 # Every field is load-bearing. `language` records the computation shape's chosen language, which is
 # the decision AGENTS.md override 3 makes at design time; `reference` names the plain implementation
@@ -76,7 +76,7 @@ def test_every_contract_names_a_reference_and_a_proof_gate() -> None:
 
 def test_contracts_are_data_and_never_wrap_the_measured_function() -> None:
     """SS13.5: attaching a contract must not put a wrapper on the hot path."""
-    from knee.collapse.contracts import contracted
+    from knee.compute.contracts import contracted
 
     def kernel(value: int) -> int:
         return value + 1

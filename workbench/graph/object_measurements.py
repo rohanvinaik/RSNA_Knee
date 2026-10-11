@@ -2,8 +2,8 @@
 
 from pathlib import Path
 
-from knee.collapse.analysis import AnalysisRequest, SeriesMeasurement
-from knee.collapse.conversation import SeriesConversation
+from knee.objects.analysis import AnalysisRequest, SeriesMeasurement
+from knee.objects.conversation import SeriesConversation
 from knee.pipeline import StudyRun, open_and_run
 
 

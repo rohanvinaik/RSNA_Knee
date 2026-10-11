@@ -9,7 +9,7 @@ from pathlib import Path
 import numpy as np
 from verify_profiles_same import assert_same
 
-from knee.collapse.interiors import read_interiors
+from knee.objects.interiors import read_interiors
 from workbench.measure.interior_records import interior_record
 from workbench.measure.object_analysis import (
     array_digest,

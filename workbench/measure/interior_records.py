@@ -4,7 +4,7 @@ from dataclasses import asdict
 
 import numpy as np
 
-from knee.collapse.interiors import CONTRACT, EDGE_KINDS, TRACE_CODES, InteriorReading
+from knee.objects.interiors import CONTRACT, EDGE_KINDS, TRACE_CODES, InteriorReading
 
 
 def interior_record(reading: InteriorReading) -> tuple[dict, dict]:

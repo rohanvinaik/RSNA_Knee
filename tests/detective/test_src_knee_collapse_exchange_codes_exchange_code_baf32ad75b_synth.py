@@ -6,7 +6,7 @@ Regenerated wholesale by `detective converge`; hand edits will be
 overwritten. Witness lines carry full fidelity on purpose."""
 
 import pytest
-from knee.collapse.exchange_codes import exchange_code
+from knee.objects.exchange_codes import exchange_code
 
 
 @pytest.mark.detective

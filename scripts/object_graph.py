@@ -10,7 +10,7 @@ from pathlib import Path
 os.environ["HAMILTON_TELEMETRY_ENABLED"] = "false"
 from hamilton import driver
 
-from knee.collapse.analysis import AnalysisRequest
+from knee.objects.analysis import AnalysisRequest
 from workbench.graph import object_measurements
 
 

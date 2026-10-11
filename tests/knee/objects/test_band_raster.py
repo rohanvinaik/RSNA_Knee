@@ -3,7 +3,7 @@
 import numpy as np
 import pytest
 
-from knee.collapse.band_raster import raster_bands
+from knee.objects.band_raster import raster_bands
 
 
 def _quad(corners: list[tuple[float, float]]) -> np.ndarray:

@@ -9,12 +9,12 @@ from pathlib import Path
 import numpy as np
 from verify_profiles_same import assert_same
 
-from knee.collapse.analysis import SeriesMeasurement
-from knee.collapse.conversation import ConversationInput, converse
-from knee.collapse.interiors import InteriorReading
 from knee.collapse.physical import PlaneFrame
-from knee.collapse.profile_codes import profile_support_code
-from knee.collapse.profiles import ProfileReading
+from knee.objects.analysis import SeriesMeasurement
+from knee.objects.conversation import ConversationInput, converse
+from knee.objects.interiors import InteriorReading
+from knee.objects.profile_codes import profile_support_code
+from knee.objects.profiles import ProfileReading
 from workbench.measure.conversation_records import conversation_record
 from workbench.measure.object_analysis import (
     array_digest,

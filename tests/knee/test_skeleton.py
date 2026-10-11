@@ -11,11 +11,17 @@ import pkgutil
 import knee
 import knee.pictures
 
+# Below the route: project-wide layers every stage may stand on. Not stages; they know no knee.
+# Split out of knee.collapse on 2026-10-11 (founder: "got thrown into that junk pile instead of
+# being organized properly").
+FOUNDATION = ("compute", "telemetry")
+
 # The route a study takes, in order. Each stage consumes the one below it.
 ROUTE = (
     "study",  # files -> series, whole at stored fidelity
-    "collapse",  # the field: regime, noise law, physical frame, squint; and today the objects
+    "collapse",  # the field: regime, noise law, physical frame, the squint
     "lenses",  # every place, every acquisition, one ternary digit per row
+    "objects",  # every element significant to the knee's operation, resolved from geometry
     "relations",  # interstices constructed between facing objects
     "loop",  # the residual pulled out, round by round, until nothing significant is unassigned
     "candidates",  # resolved, not yet called
@@ -35,7 +41,12 @@ BESIDE = ("memory", "expert", "agencies", "record", "assignment")
 # off without the run noticing (SS13.7).
 BESIDE_THE_FIGURE = ("pictures",)
 
-EXPECTED = frozenset(ROUTE) | frozenset(BESIDE) | frozenset(BESIDE_THE_FIGURE)
+EXPECTED = (
+    frozenset(ROUTE)
+    | frozenset(BESIDE)
+    | frozenset(BESIDE_THE_FIGURE)
+    | frozenset(FOUNDATION)
+)
 
 # Archived 2026-10-11 for having no knee analogue, each a checkable external fact: an anchor is a
 # time point resolved in full and a knee study is a still; "following through time" likewise; bones
