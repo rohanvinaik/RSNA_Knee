@@ -4,6 +4,22 @@
 of working, in the founder's words where they exist. No state is written here: it is read from the code (each
 stage package's docstring says whether the founder has given the knee's version) and from git. -->
 
+> ## ⇒ The structure of this project is now `docs/OBJECT_MODEL.md`. READ THAT FIRST.
+>
+> The founder settled it on 2026-10-11: **a finding is a predicate violation on an object, or on a
+> relation between objects.** The build is ordered by the knee's own anatomy — objects, then the
+> interstices *constructed* between them, then the twelve predicates — not by Figure 8's transcribed
+> stages. Declared as an OpenSpec change in `openspec/changes/knee-object-model/`; his words verbatim
+> in `docs/chapters/02-collapse/teachings.md`.
+>
+> **"The chapters" table below is SUPERSEDED.** It was transcribed from Figure 8 before the knee's
+> `<object>` was known, and five of its package names were the cell instance's content rather than
+> roles. Figure 8's roles still apply where the route names them, and fold into the object model's
+> stages rather than ordering the build.
+>
+> **Everything else in this file still governs**: the PI–undergrad pass, the working loop, the two
+> oracles, the corpus, and where things live. Only the chapter table is retired.
+
 ## What this project is
 
 A classical-AI computer-vision system for RSNA Knee Abnormality Detection: for each knee MRI study, a confidence
@@ -146,7 +162,12 @@ classical/symbolic approach--if it works on a handful of cases, scaling up doesn
 training. So the 58 are enough."). They are in `data/raw/train_series/`; at scoring, the hidden test studies
 arrive in the kernel.
 
-## The chapters
+## The chapters — SUPERSEDED by `docs/OBJECT_MODEL.md` (2026-10-11)
+
+**Do not build against this table.** It is kept as the record of what was planned before the knee's
+`<object>` was known, because its section pointers into the thesis are still useful when a stage needs
+the oracle. The route the project actually builds is in `docs/OBJECT_MODEL.md`: objects → relations →
+predicates → output.
 
 In Figure 8's order. The order after Chapter 1, and when the packages beside the line are built, are the
 founder's to set. The sections are the ones Figure 8, its caption or §2.8's road map name for each stage's terms,

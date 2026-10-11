@@ -269,3 +269,109 @@ Correcting the lead's transfer of the cell instance's depth-nearness mechanism:
 > Yes, do that, and make sure you're using the tooling from the global model context file so that this is built as a clean and coherent production system that's efficient, uses the right computational performance tooling for the job, and is in general a clean, SICP-style, organized single pipeline that takes in the data we're presented and spits out the results we're building towards
 
 > Yes, the general goal here is to be ale to resolve every single significant element of the knee anatomy/relevant for the 12 diagnoses cleanly and deterministically
+
+---
+
+## 2026-10-11 — THE OBJECT MODEL: a finding is a predicate on an object
+
+**This is the project's structure.** Stated in full in `docs/OBJECT_MODEL.md`, declared as an
+OpenSpec change in `openspec/changes/knee-object-model/`. It supersedes the chapter table of
+`docs/SPINE.md`.
+
+On three questions the lead put to him — one name or two readings; whether recognition comes first;
+what the conversation is for:
+
+> "Should carry one name"
+
+> "**Recognition SHOULD actually be something we can do mechanically!** Right now I want to really
+> iron down how to resolve EVERY relevant component of the knee anatomy PROPERLY, get EVERY \<object>
+> cleanly, then work on diagnosis, which is where recall of specific presentations and presentations
+> will matter. But for now, **we should be able to isolate the components of the knee with NO
+> recognition, pure math.**"
+
+> "Cross-orientation is for **the same view/orientation of the knee in two image series** to be able
+> to help resolve \<object>s in the visual field more cleanly than any one can resolve alone"
+
+On whether the watershed/dome difference was drift:
+
+> "**Yes, deliberate homology.** More cute/fun, and we DID do the hard work in the cell tracking
+> project, but might be genuinely unique and interesting for object parsing and recognition. **Will
+> need to balance resolution and diagnosis quality with computational efficiency** for the competition
+> submission popeline"
+
+**The interstice is a relative role.** The move the whole model rests on:
+
+> "see the inherent elegance of object-oriented reasoning in computer vision? **"Interstitial
+> space"-related conditions are complex, hard to resolve. It's all squishy oddness. But here we can be
+> *precise* about what the interstitial space is like...because its role identification is
+> *relative*. Interstitial space...is the space between the two bones we resolve as objects!** That's
+> LITERALLY what the term means, and here it's *inherent* in the structure of the way we build the
+> computer vision project itself!"
+
+> "The interstitial space should be carved up in any way that is genuinely informed by visual
+> reasoning, but **the role is *definitionally* defined as a *relative* one, because that's literally
+> how the physical object works. Its shape, the forces that are acting on it, the shear or crush
+> force, the over-fill of fluid or tear or wear in the space is *defined* by how it interfaces with
+> the bones it is "interstitial" to**"
+
+**Every condition is a predicate on an object:**
+
+> "My instinct is, again, *entirely* centered around object-oriented reasoning. **I'm being
+> intentional with the cute reference to "object-oriented programming", by the way. The epistemology
+> and carry-over of the ideation is quite relevant.** But here, the point is to define these
+> conditions as being *relative* to these objects. **A fracture isn't some vague line-y thing you look
+> for in a whole study/image--it's a break in the structural coherence of a "bone" object.** Each of
+> these conditions is, again, almost *absurdly* simple once you frame this as an object-centered
+> reasoning task"
+
+**Why this is not statistics — it recapitulates the radiologist:**
+
+> "It's why a man as smart as Minsky thought that it was reasonable to asign "computer vision" to
+> Sussman as a summer project--**he lacked the tooling to actually make the mechanics work as code**,
+> even with one of the most brilliant programmers in histroy (also, **the reason for the SICP-inspired
+> build here**--practical for a quality project AND a very cute historical Easter egg :3) as his
+> student, but **if you actually CAN resolve objects, then "visual reasoning" is basically common
+> sense + math.** And for medical conditions, because of the inherent epistemology of medicine as a
+> field, **diagnosis is *inherently* mechanical in nature, and diagnosis of physical ailments from
+> scan data is *literally* object-oriented reasoning.** This is so powerful of an approach to machine
+> intelligence because **the mapping to diagnoses here isn't just statistics, it's *literally*
+> recapitulating the exact process that a doctor/radiologist would *themselves* be using for THEIR
+> diagnosis. They THEMSELVES would be thinking "this is the femur, I see a discontinuity in its
+> cohesion, a structural fault, this is defined as a "fracture"", etc.** So yeah, THIS is the build,
+> and it's genuinely *elegant"
+
+**The remaining object parse, and the pull-out:**
+
+> "We'll address baker's when we finalize this stage, the \<object> parse. **Our goal here is to
+> resolve every single element that is significant in any way to the operation of the knee, and thus
+> carries diagnostic relevance.** We're making BRILLIANT progress on this already, the last bits are
+> refinement and probing of the residual. Again, **this is homologous to the "pull out" from the
+> cell-tracking project; once you can confidently resolve \<object>s in the visual data, the roles
+> that are still unassigned in the visual field are a lot easier to figure out, since they're
+> definitionally NOT the things you already DO know how to resolve.** And since these scans all look
+> SUPER similar...finding ways to get that final resolution of every object should be a snap"
+
+**Synovitis, as the worked example of how trivial a predicate becomes:**
+
+> "Synovitis actually shouldn't really be that much of a problem. **Once you know what the "capsule"
+> is, have its exact boundaries in \<x,y> mapped out on all the images...then just look at the
+> contrast data. Bam. Problem solved.** Like, you can almost HEAR the coding logic fall out of your
+> own prose: "Synovitis is a thickness of the capsule's lining". Or, put differently, **"given an
+> object named "the capsule", synovitis is defined as an abnormality/excess thickness in the lining,
+> resolved by contrast imagery".** That's, like, incredibly trivial once you have the obect resolved.
+> **Look at the picture, if signal do big number, is '-itis, if not, is normal. Done. Given \<object>s
+> as the basis of reasoning...how absurdly simple it all is!**"
+
+On encoding it:
+
+> "Excellent work. Yes, THIS is the design. Do what you need to encode it in documentation, context
+> files, and especially in the code-planning tools we have installed. ... **THIS is the project
+> pipeline, built off the core groundwork that's in production right now.** Probably should replace
+> the "chapters" we have right now, though I'm sure some of it can be folded in and maybe even provide
+> some genuine refinement to these."
+
+*Three corrections the lead made to its own earlier reading, which he let stand:* the MCL is
+**extra-articular** — a span on the medial exterior, not interstitial content; **Effusion's space is
+the capsule**, which includes the suprapatellar recess and exceeds the union of the interstices; and
+**Baker's** is a posterior capsular outpouching bounded partly by muscle and tendon objects the parse
+does not yet resolve, which is why he deferred it to the close of this stage.

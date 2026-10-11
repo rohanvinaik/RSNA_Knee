@@ -5,6 +5,20 @@ global rules apply in full: `~/.claude/CLAUDE.md` and the SquishOS reference doc
 verification, the Detective protocol, the gates, repo hygiene, performance). This file never restates them. It
 carries only what is specific to this project: its overrides and its decisions.
 
+## The structure, settled 2026-10-11 (read `docs/OBJECT_MODEL.md` first)
+
+**A finding is a predicate violation on an object, or on a relation between objects.** Resolve every
+element significant to the knee's operation; the twelve findings are then read off those objects by
+arithmetic. An interstice is **constructed, not detected** — it exists the moment its two bounding
+objects do, which is why the compartments cannot be missed and the "squishy" findings stop being
+squishy. Recognition is mechanical: a knee is a fixed anatomy, so identity follows from invariant
+relations and no stored case is consulted during the parse. Recall arrives later, at diagnosis.
+
+The full statement is `docs/OBJECT_MODEL.md`; the declared change is
+`openspec/changes/knee-object-model/`; the founder's words are verbatim in
+`docs/chapters/02-collapse/teachings.md`. This supersedes the chapter table of `docs/SPINE.md`, which
+keeps the way of working. Everything below this section still holds.
+
 ## The project as of 2026-10-10 (read this first)
 
 The founder, 2026-10-10, verbatim:
@@ -280,7 +294,8 @@ Repository tooling commands and environment setup: `docs/TOOLING.md` (global own
 
 | If the task is… | read first | then |
 |---|---|---|
-| building anything | `docs/SPINE.md` → the chapter's stage package in `src/knee/` | the thesis sections and the cell-tracking build that chapter names |
+| **building anything** | **`docs/OBJECT_MODEL.md`** — the project's structure: objects → relations → predicates → output | `openspec/changes/knee-object-model/` for the declared change and its tasks; then the stage's package in `src/knee/` |
+| the way of working | `docs/SPINE.md` — the PI–undergrad pass, the working loop, the oracles, the corpus. **Its chapter table is superseded** | the thesis sections it names, when a stage needs the oracle |
 | the earlier design, dug from as needed | `archive/docs/THEORY_OF_THE_CASE.md` | `archive/docs/book/THE_KNEE.md`, `archive/docs/KNEE_ARCHITECTURE.md` |
 | a tool choice: properties, contracts, layers, profiling, Rust/C, SICP | the global `code-verification.md` → *The toolkit* | `~/Projects/SquishOS/docs/home/TOOLKIT.md` |
 | a performance question | the global `performance.md` | Detective's `docs/theory/deterministic_sicp/DETERMINISTIC_SICP.md` §7–§8 |
