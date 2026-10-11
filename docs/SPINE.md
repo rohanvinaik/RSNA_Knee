@@ -143,6 +143,11 @@ The loop re-enters at step 2 once he has redirected it.
 
 ## The oracle: the thesis and the cell-tracking project
 
+- **What each section of the thesis IS**, in the founder's own words: `docs/THESIS_AS_IDEAS.md`.
+  **Read that before reading any section**, and before porting anything. Each section is an *idea* in
+  computer vision, never the engineering of a piece: the cell build is one instantiation, so the
+  instance's content was never portable and only the idea is. It also fixes this project's scope —
+  §12 is operations *on* resolved objects, and "this knee project stops at recognition".
 - **The thesis**, *What an \<Object> Is*:
   `~/Projects/Kaggle_Killer/competitions/cell_tracking/docs/pipeline_thesis/paper/what_an_object_is.md` (the
   current copy; `archive/docs/canon/what_an_object_is.md` is older, and its line numbers differ). Per its §2.8:
