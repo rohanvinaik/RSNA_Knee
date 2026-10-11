@@ -53,7 +53,7 @@
     "src/knee/expert/__init__.py": {"where": "beside", "role": "the expert's calls become cases", "contract": false},
     "src/knee/agencies/__init__.py": {"where": "beside", "role": "the four agencies, each marked where it acts", "contract": false},
     "src/knee/record/__init__.py": {"where": "beside", "role": "the kept record of findings, where the agencies meet", "contract": false},
-    "src/knee/compute/__init__.py": {"where": "beside", "role": null, "contract": false},
+    "src/knee/compute/__init__.py": {"where": "beside", "role": "the project-wide compute discipline below every stage: the ComputeContract each kernel carries, and handed_on, which freezes output storage so a consumer cannot write through a reading it was handed; defines nothing itself, re-exports three names", "contract": false},
     "src/knee/compute/contracts.py": {"where": "beside", "role": "the ComputeContract itself, and handed_on", "contract": false},
     "src/knee/telemetry/__init__.py": {"where": "beside", "role": null, "contract": false},
     "src/knee/telemetry/ledger.py": {"where": "beside", "role": "the ledger every stage records its work to", "contract": true},
