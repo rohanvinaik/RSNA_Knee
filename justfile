@@ -39,8 +39,15 @@ imports:
     PYTHONPATH=src lint-imports --config pyproject.toml --no-cache
 
 # Name a target with checkable contracts; a no-contract run is not evidence.
+#
+# --report_all is passed ALWAYS, and that is the point: `crosshair check` is SILENT on success, so a
+# bare run cannot be told apart from one that checked nothing at all -- the exact trap docs/TOOLING.md
+# names ("Targets found, but contain no checkable functions" is not a pass). With it, every contract
+# reports either "Confirmed over all paths" or "Not confirmed", and silence means the file had no
+# contract to check. Note what the words mean: "Not confirmed" is NOT a violation and NOT a pass; it
+# says the search found no counterexample and could not prove the condition over all paths.
 crosshair TARGET *ARGS:
-    PYTHONPATH={{ pp }} .venv/bin/python -m crosshair check "$1" "${@:2}"
+    PYTHONPATH={{ pp }} .venv/bin/python -m crosshair check --report_all "$1" "${@:2}"
 
 # Put profiles derived from studies under data/, which is already gitignored.
 trace OUT SCRIPT *ARGS:

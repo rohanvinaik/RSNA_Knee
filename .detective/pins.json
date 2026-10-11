@@ -327,6 +327,103 @@
       ]
     }
   ],
+  "src/knee/lenses/digits.py::band_width::fdd83186b1d8a506": [
+    {
+      "assertion_code": "result = band_width(place_sigma=2.0, witness_spread=0.0, band_k=1.0)\nassert result == 2.0",
+      "category": "VALUE",
+      "confidence": 0.9,
+      "function_key": "",
+      "golden_case": [
+        "(2.0, 0.0, 1.0)",
+        "2.0"
+      ],
+      "mutant_id": "",
+      "needs_oracle": false,
+      "preconditions": [
+        "golden capture (pure + deterministic)"
+      ],
+      "setup_code": "from knee.lenses.digits import band_width",
+      "source_lenses": [
+        "golden_capture"
+      ]
+    },
+    {
+      "assertion_code": "result = band_width(place_sigma=1.0, witness_spread=2.0, band_k=1.0)\nassert result == 2.23606797749979",
+      "category": "VALUE",
+      "confidence": 0.9,
+      "function_key": "",
+      "golden_case": [
+        "(1.0, 2.0, 1.0)",
+        "2.23606797749979"
+      ],
+      "mutant_id": "",
+      "needs_oracle": false,
+      "preconditions": [
+        "golden capture (pure + deterministic)"
+      ],
+      "setup_code": "from knee.lenses.digits import band_width",
+      "source_lenses": [
+        "golden_capture"
+      ]
+    },
+    {
+      "assertion_code": "result = band_width(place_sigma=1.0, witness_spread=1.0, band_k=1.0)\nassert result == 1.4142135623730951",
+      "category": "VALUE",
+      "confidence": 0.9,
+      "function_key": "",
+      "golden_case": [
+        "(1.0, 1.0, 1.0)",
+        "1.4142135623730951"
+      ],
+      "mutant_id": "",
+      "needs_oracle": false,
+      "preconditions": [
+        "golden capture (pure + deterministic)"
+      ],
+      "setup_code": "from knee.lenses.digits import band_width",
+      "source_lenses": [
+        "golden_capture"
+      ]
+    }
+  ],
+  "src/knee/lenses/digits.py::digit_code::e942a94a52a7b5ad": [
+    {
+      "assertion_code": "result = digit_code(place_value=1.0625, witness_middle=1.0625, place_sigma=1.0625, witness_spread=1.0625, band_k=1.0625, witness_count=1, minimum_witness=2)\nassert result == 'witness_too_small'",
+      "category": "VALUE",
+      "confidence": 0.9,
+      "function_key": "",
+      "golden_case": [
+        "(1.0625, 1.0625, 1.0625, 1.0625, 1.0625, 1, 2)",
+        "'witness_too_small'"
+      ],
+      "mutant_id": "",
+      "needs_oracle": false,
+      "preconditions": [
+        "golden capture (pure + deterministic)"
+      ],
+      "setup_code": "from knee.lenses.digits import digit_code",
+      "source_lenses": [
+        "golden_capture"
+      ]
+    },
+    {
+      "assertion_code": "result = digit_code(place_value=1.0625, witness_middle=0.0, place_sigma=2.5, witness_spread=0.0, band_k=1.0, witness_count=3, minimum_witness=0)\nassert result == 'at'",
+      "category": "VALUE",
+      "confidence": 0.95,
+      "function_key": "",
+      "golden_case": null,
+      "mutant_id": "",
+      "needs_oracle": false,
+      "preconditions": [
+        "distinguishing witness (equivalence search)"
+      ],
+      "setup_code": "from knee.lenses.digits import digit_code",
+      "source_lenses": [
+        "witness"
+      ]
+    }
+  ],
+  "src/knee/lenses/digits.py::is_read::ef269f15fe73c411": [],
   "src/knee/objects/border_codes.py::border_code::b9d5c1ca2b535dbc": [
     {
       "assertion_code": "result = border_code(frame_clipped=True, valid_count=1, sample_count=2, dark_runs=3, bounded=True)\nassert result == 'frame_clipped'",
