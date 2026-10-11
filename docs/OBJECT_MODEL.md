@@ -280,11 +280,16 @@ same knee. A tissue class is a conjunction of rows, never a threshold on one ima
 | muscle | intermediate(T1) ∧ intermediate-dark(T2, FS) |
 | marrow edema | dark(T1) ∧ bright(FS), inside a bone |
 
-**The middle is read from the image, never from an absolute level**: subcutaneous and marrow fat are
-the fat reference, muscle the intermediate reference, and a distended recess the fluid reference. That
-is what defeats the failure that killed four intensity instruments on this corpus — scanner scaling
-cannot move a reading that is stated relative to witnesses in the same image. The sequence type is
-read from TR/TE/flip angle/ScanOptions/InversionTime, never from a series description.
+**The middle is read from the image, never from an absolute level** — and *how* it is read was
+settled on 2026-10-11 ("Your inference is correct", `chapters/03-lenses/teachings.md`). It is a
+**pair of edges at the terciles of a structurally selected population**, both edges in the 0 row,
+read **after** a local structural normalisation that carries the spatial correction. The middle
+itself names no tissue: the earlier proposal — subcutaneous and marrow fat as the fat reference,
+muscle as the intermediate, a distended recess as the fluid — is **withdrawn**, and the tissue
+conjunction lives in the rows **across acquisitions** instead. That is what defeats the failure that
+killed four intensity instruments here, since scanner scaling cannot move a reading stated against
+the image's own distribution. The sequence type is read from TR/TE/flip
+angle/ScanOptions/InversionTime, never from a series description.
 
 **Lineage is a bank, not metadata.** "How its cell came out" sits *inside* the profile, so how an
 object was resolved is part of its identity (§6.6: "how it came out is a physical fact: a nucleus
