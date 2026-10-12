@@ -10,7 +10,7 @@ from dataclasses import dataclass
 import numpy as np
 from scipy import ndimage as ndi
 
-from knee.compute.contracts import ComputeContract, handed_on
+from knee.compute.contracts import ComputeContract, contracted, handed_on
 from knee.objects.analysis import SeriesMeasurement
 from knee.objects.band_raster import raster_bands
 from knee.objects.exchange_codes import exchange_code
@@ -383,6 +383,7 @@ def exchange(
     )
 
 
+@contracted(CONTRACT)
 def converse(
     inputs: tuple[ConversationInput, ...],
     offsets_mm: np.ndarray,

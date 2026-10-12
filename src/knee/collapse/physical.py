@@ -7,6 +7,18 @@ import numpy as np
 
 from knee.compute.contracts import ComputeContract, contracted, handed_on
 
+CONTRACT = ComputeContract(
+    kind="measurement",
+    language="NumPy",
+    reads="2D original plane; physical spacing and tile mm",
+    writes="4 float64 tile maps and int64 native bounds",
+    allocation="64 bytes per output tile; per-tile finite mask, gathered values and NumPy median scratch",
+    work="per-tile finite scan/extraction, median selection and extrema reductions",
+    parallel_unit="independent plane",
+    reference="physical_squint",
+    proof_gate="ragged coverage/extrema/median intent tests; source unchanged",
+)
+
 
 def spacing_pair(spacing_rc: tuple[float, float]) -> tuple[float, float]:
     values = np.asarray(spacing_rc, dtype=np.float64)
@@ -82,19 +94,7 @@ class Squint:
     tile_shape_rc: tuple[int, int]
 
 
-@contracted(
-    ComputeContract(
-        kind="measurement",
-        language="NumPy",
-        reads="2D original plane; physical spacing and tile mm",
-        writes="4 float64 tile maps and int64 native bounds",
-        allocation="64 bytes per output tile; per-tile finite mask, gathered values and NumPy median scratch",
-        work="per-tile finite scan/extraction, median selection and extrema reductions",
-        parallel_unit="independent plane",
-        reference="physical_squint",
-        proof_gate="ragged coverage/extrema/median intent tests; source unchanged",
-    )
-)
+@contracted(CONTRACT)
 def physical_squint(
     plane: np.ndarray, spacing_rc: tuple[float, float], tile_mm: float
 ) -> Squint:
