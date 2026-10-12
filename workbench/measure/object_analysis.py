@@ -4,7 +4,7 @@ import argparse
 import json
 import platform
 from collections import Counter
-from dataclasses import asdict
+from dataclasses import asdict, fields
 from hashlib import sha256
 from importlib.metadata import PackageNotFoundError, version
 from pathlib import Path
@@ -42,6 +42,24 @@ def source_snapshot() -> dict[str, str]:
         str(path.relative_to(package.parent)): sha256(path.read_bytes()).hexdigest()
         for path in sorted(package.rglob("*.py"))
     }
+
+
+def json_safe(value: object) -> object:
+    """One regime reading as JSON. A reading that was not made stays absent, never a zero.
+
+    `json.dumps(..., allow_nan=False)` refuses NaN, and NaN is exactly how the field stage says it
+    could not make a reading (`regime.py`: "A reading not made is NaN, never zero"). None carries
+    that through honestly; writing 0.0 there would turn a silence into a measurement.
+    """
+    if value is None or isinstance(value, (bool, str)):
+        return value
+    if isinstance(value, (tuple, list)):
+        return [json_safe(item) for item in value]
+    if isinstance(value, (int, np.integer)):
+        return int(value)
+    if isinstance(value, (float, np.floating)):
+        return float(value) if np.isfinite(value) else None
+    return value
 
 
 def array_digest(array: np.ndarray) -> str:
@@ -184,6 +202,26 @@ def main() -> None:
                     "validation_code": measurement.validation_code,
                     "requested_backend": args.backend,
                     "effective_backend": "not_invoked",
+                }
+                # THE WHOLE REGIME KEY, not one field of it. It is sixteen readings the field
+                # stage already computed once per series, and until 2026-10-12 this writer took
+                # `background_split` and dropped the other fifteen. The founder: "we compute the
+                # required object, we drop it ... any compute process here is done for the purpose
+                # of visual reasoning. If the lenses don't have information that they can literally
+                # show, then what are we doing?" A reading the field could not make stays None.
+                regime = series.regime
+                record["regime"] = {
+                    "code": "read" if regime is not None else "regime_unreadable",
+                    "why": series.why,
+                    # EVERY field, enumerated from the dataclass rather than from a list kept
+                    # here. A reading added to the regime key is then saved by construction, so
+                    # this writer can never silently drop one again.
+                    "readings": {
+                        field.name: json_safe(getattr(regime, field.name))
+                        for field in fields(regime)
+                    }
+                    if regime is not None
+                    else {},
                 }
                 split = (
                     series.regime.background_split

@@ -50,25 +50,32 @@ crosshair TARGET *ARGS:
     PYTHONPATH={{ pp }} .venv/bin/python -m crosshair check --report_all "$1" "${@:2}"
 
 # Put profiles derived from studies under data/, which is already gitignored.
+#
+# PYTHONPATH=.:src on every one of these, added 2026-10-12, and without it they could not profile
+# this project at all. Each profiler runs its target through `runpy.run_path`, which does NOT put
+# the repository root on `sys.path` the way `python -m` does, so a target importing `workbench` or
+# `knee` died with ModuleNotFoundError before it executed a line. Every other recipe that runs
+# project code already sets it; these five did not, which is why the production route had never
+# been profiled with them.
 trace OUT SCRIPT *ARGS:
-    uv run --locked --group profiling python -m viztracer -o "$1" -- "$2" "${@:3}"
+    PYTHONPATH=.:src uv run --locked --group profiling python -m viztracer -o "$1" -- "$2" "${@:3}"
 
 memory OUT SCRIPT *ARGS:
-    uv run --locked --group profiling python -m memray run -o "$1" "$2" "${@:3}"
+    PYTHONPATH=.:src uv run --locked --group profiling python -m memray run -o "$1" "$2" "${@:3}"
 
 profile OUT SCRIPT *ARGS:
-    uv run --locked --group profiling python -m scalene run -o "$1" "$2" --- "${@:3}"
+    PYTHONPATH=.:src uv run --locked --group profiling python -m scalene run -o "$1" "$2" --- "${@:3}"
 
 # Line profiling requires functions decorated with @profile in the target.
 profile-lines OUT SCRIPT *ARGS:
-    uv run --locked --group profiling python -m kernprof -l -o "$1" "$2" "${@:3}"
+    PYTHONPATH=.:src uv run --locked --group profiling python -m kernprof -l -o "$1" "$2" "${@:3}"
 
 profile-tree OUT SCRIPT *ARGS:
-    uv run --locked --group profiling python -m pyinstrument -o "$1" "$2" "${@:3}"
+    PYTHONPATH=.:src uv run --locked --group profiling python -m pyinstrument -o "$1" "$2" "${@:3}"
 
 # Stdlib fallback, including the Detective/Wesker paths VizTracer cannot observe reliably.
 profile-calls OUT SCRIPT *ARGS:
-    PYTHONPATH={{ pp }} .venv/bin/python -m cProfile -o "$1" "$2" "${@:3}"
+    PYTHONPATH=.:src:{{ pp }} .venv/bin/python -m cProfile -o "$1" "$2" "${@:3}"
 
 # Workbench drawing remains supplied per run, as specified in workbench/README.md.
 render SCRIPT *ARGS:

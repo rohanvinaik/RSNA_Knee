@@ -3,12 +3,7 @@
 import pytest
 
 from knee.lenses.digits import DIGIT_CODES, READ_CODES
-from knee.lenses.members import (
-    READ_STANDINGS,
-    STANDING_CODES,
-    is_retained,
-    standing_code,
-)
+from knee.lenses.members import READ_STANDINGS, STANDING_CODES, standing_code
 
 SILENCES = tuple(code for code in DIGIT_CODES if code not in READ_CODES)
 
@@ -49,11 +44,9 @@ def test_a_code_outside_the_digit_vocabulary_is_an_unreadable_argument() -> None
     assert standing_code("ABOVE", "above") == "invalid_measurement"
 
 
-def test_every_standing_including_dissent_is_retained_when_a_member_read() -> None:
-    assert is_retained("concur")
-    assert is_retained("dissent")
-    assert is_retained("first_only")
-    assert is_retained("second_only")
+def test_a_dissent_counts_as_a_reading_just_as_a_concurrence_does() -> None:
+    """Disagreement is information, so it is never filed with the silences."""
+    assert set(READ_STANDINGS) == {"concur", "dissent", "first_only", "second_only"}
 
 
 # --- negative: what it must NEVER do -------------------------------------------------------
@@ -86,15 +79,8 @@ def test_a_silent_member_is_never_filled_from_the_member_that_read(
 @pytest.mark.parametrize("second", SILENCES)
 def test_two_silences_never_become_a_reading(first, second) -> None:
     assert standing_code(first, second) not in READ_STANDINGS
-    assert not is_retained(standing_code(first, second))
 
 
 def test_an_unreadable_argument_is_never_named_as_a_silence_about_the_knee() -> None:
     assert standing_code("resolved", "resolved") != "neither_read"
-    assert not is_retained(standing_code("resolved", "resolved"))
-
-
-def test_is_retained_never_admits_a_standing_outside_its_own_vocabulary() -> None:
-    assert not is_retained("present")
-    assert not is_retained("")
-    assert not is_retained("CONCUR")
+    assert standing_code("resolved", "resolved") not in READ_STANDINGS

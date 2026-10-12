@@ -1,0 +1,22 @@
+{
+  "model": "claude-fable-5-1",
+  "usage": {
+    "input_tokens": 72938,
+    "cache_creation_input_tokens": 0,
+    "cache_read_input_tokens": 0,
+    "cache_creation": {
+      "ephemeral_5m_input_tokens": 0,
+      "ephemeral_1h_input_tokens": 0
+    },
+    "output_tokens": 14273,
+    "output_tokens_details": {
+      "thinking_tokens": 10859
+    },
+    "service_tier": "standard",
+    "inference_geo": "global"
+  },
+  "stop_reason": "end_turn",
+  "prompt": "workbench/consults/wiring-gaps.md",
+  "images": [],
+  "note": "the wiring gaps, with the founder's complete prompt snapshots as the oracle"
+}
