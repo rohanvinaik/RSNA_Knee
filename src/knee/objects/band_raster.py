@@ -7,20 +7,20 @@ import numpy as np
 
 from knee.compute.contracts import ComputeContract, contracted, handed_on
 
-
-@contracted(
-    ComputeContract(
-        kind="convex_band_supercover",
-        language="Python reference / Numba strict twin",
-        reads="float64(P,4,2) native rc convex quads; bool(P); integer R,C",
-        writes="bool(R,C) constraint mask, exact integer visited cell count",
-        allocation="N bytes output; constant scalar scratch per pixel cell",
-        work="clipped bounding cells per selected band; <=P*N visits; four SAT axes",
-        parallel_unit="recipient (serial); JIT releases GIL",
-        reference="raster_bands_reference",
-        proof_gate="exact reference/JIT mask and visits, inclusive ties and clipping",
-    )
+CONTRACT = ComputeContract(
+    kind="convex_band_supercover",
+    language="Python reference / Numba strict twin",
+    reads="float64(P,4,2) native rc convex quads; bool(P); integer R,C",
+    writes="bool(R,C) constraint mask, exact integer visited cell count",
+    allocation="N bytes output; constant scalar scratch per pixel cell",
+    work="clipped bounding cells per selected band; <=P*N visits; four SAT axes",
+    parallel_unit="recipient (serial); JIT releases GIL",
+    reference="raster_bands_reference",
+    proof_gate="exact reference/JIT mask and visits, inclusive ties and clipping",
 )
+
+
+@contracted(CONTRACT)
 def raster_bands_reference(quads, selected, rows, cols):
     out = np.zeros((rows, cols), dtype=np.bool_)
     visits = 0

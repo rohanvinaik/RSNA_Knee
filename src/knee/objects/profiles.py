@@ -10,20 +10,20 @@ from knee.collapse.physical import numeric_plane, spacing_pair
 from knee.compute.contracts import ComputeContract, contracted, handed_on
 from knee.objects.profile_codes import profile_support_code
 
-
-@contracted(
-    ComputeContract(
-        kind="measurement",
-        language="Python reference / Numba strict twin",
-        reads="plane: original dtype (R,C); points,normals: float64(P,2); offsets: float64(S); spacing mm",
-        writes="samples float64(P,S), valid bool(P,S)",
-        allocation="9*P*S bytes output; constant scalar scratch",
-        work="P*S coordinate evaluations, at most 4*P*S positive-weight source reads",
-        parallel_unit="independent profile; serial ordered reference/twin initially",
-        reference="profile_samples_reference",
-        proof_gate="exact SAME including support, signed zero, NaN, dtype, shape",
-    )
+CONTRACT = ComputeContract(
+    kind="measurement",
+    language="Python reference / Numba strict twin",
+    reads="plane: original dtype (R,C); points,normals: float64(P,2); offsets: float64(S); spacing mm",
+    writes="samples float64(P,S), valid bool(P,S)",
+    allocation="9*P*S bytes output; constant scalar scratch",
+    work="P*S coordinate evaluations, at most 4*P*S positive-weight source reads",
+    parallel_unit="independent profile; serial ordered reference/twin initially",
+    reference="profile_samples_reference",
+    proof_gate="exact SAME including support, signed zero, NaN, dtype, shape",
 )
+
+
+@contracted(CONTRACT)
 def profile_samples_reference(plane, points, normals, offsets, spacing):
     samples = np.full((len(points), len(offsets)), np.nan, dtype=np.float64)
     valid = np.zeros(samples.shape, dtype=np.bool_)
