@@ -15,6 +15,7 @@
   },
   "places": {
     "src/knee/__init__.py": {"where": "beside", "role": "the package root", "contract": false},
+    "src/knee/absence.py": {"where": "beside", "role": "the ONE shared vocabulary of silences every stage names an absence from — four silences whose remedies differ, plus `present` and `invalid_count` to keep the decision total; declared before any stage consumes it, because stages that coin their own codes pass their own tests and compose with nothing", "contract": false},
     "src/knee/pipeline.py": {"where": "beside", "role": "the route itself: moves values between stages and decides nothing", "contract": false},
 
     "src/knee/study/__init__.py": {"where": "route:study", "role": "docstring only, no code: Figure 8's A MOVIE text, the founder's 2026-10-10 words on the 58, and what the stage hands on", "contract": false, "renders": "study", "frame": "study"},
