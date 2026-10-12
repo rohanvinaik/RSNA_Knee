@@ -109,10 +109,20 @@ around.** First: `just crosshair` on a FILE whose function is annotated with a p
 operation was detected`. CrossHair walks the subclass map for the annotation, which imports
 `skimage.io`, which globs for plugin `.ini` files at import, which its audit wall refuses. It
 suggests `--unblock`; that was NOT used, because disabling the side-effect wall to check our own
-contracts trades the guarantee for the result. The repair that works is to name the pure decision
-directly — `just crosshair knee.ownership.claims.ownership_code` — which carries no domain
-annotation and confirmed over all paths. So an array-shaped function taking a domain object is
-currently unreachable by the symbolic check in this environment, and that is a limit, not a pass.
+contracts trades the guarantee for the result.
+
+**The actual repair, found the same day: widen the annotation.** `read_ownership` is total over
+anything and its own adversarial tests pass it malformed records, so `InteriorReading | None` was
+a promise the tests broke — `ty` said so independently. Annotating `interiors: object` is both
+more honest and the thing that stops CrossHair walking the subclass map, and the file then checks
+end to end. So this is **not** a standing limit on array-shaped functions: it is a limit on
+annotating a total function with a domain type it does not actually require. Where the narrow
+annotation is genuinely right, naming the pure decision directly
+(`just crosshair knee.ownership.claims.ownership_code`) still works.
+
+Note what the check then said: `ownership_code`'s two contracts `Confirmed over all paths`,
+`read_ownership`'s two **`Not confirmed`** — which is neither a violation nor a pass, but "no
+counterexample found and not proven over all paths". Read the words exactly.
 
 Second: `just detective converge` on that same array-shaped function returns `⚠ UNGATEABLE`, in its
 own words *"one or more mutants could not be BUILT, so they say nothing about any test — this

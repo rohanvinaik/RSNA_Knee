@@ -38,9 +38,11 @@ from dataclasses import dataclass
 
 import numpy as np
 
-from knee.absence import CODES, absence_code
+from knee.absence import (  # noqa: F401  CODES: read by the post: lines
+    CODES,
+    absence_code,
+)
 from knee.compute.contracts import ComputeContract, contracted, handed_on
-from knee.objects.interiors import InteriorReading
 
 #: `absence_code` reads any count below zero as an argument that cannot be read.
 UNREADABLE_COUNT = -1
@@ -117,9 +119,7 @@ def ownership_code(predecessor_returned: bool, item_count: int) -> str:
     )
 
 
-def readable_field(
-    interiors: InteriorReading | None,
-) -> tuple[np.ndarray, np.ndarray] | None:
+def readable_field(interiors: object) -> tuple[np.ndarray, np.ndarray] | None:
     """The labels and availability when they read as one (R,C) field; otherwise nothing.
 
     Integer labels over boolean availability of one shape. Anything else is an argument that
@@ -128,7 +128,8 @@ def readable_field(
     """
     if interiors is None:
         return None
-    labels, available = interiors.labels, interiors.available
+    labels = getattr(interiors, "labels", None)
+    available = getattr(interiors, "available", None)
     if (
         isinstance(labels, np.ndarray)
         and isinstance(available, np.ndarray)
@@ -160,8 +161,13 @@ def empty_ownership(code: str, why: str) -> OwnershipReading:
 
 
 @contracted(CONTRACT)
-def read_ownership(interiors: InteriorReading | None) -> OwnershipReading:
+def read_ownership(interiors: object) -> OwnershipReading:
     """Partition one field into claimed, residual and unread places, or name why it cannot.
+
+    The intended argument is an `InteriorReading` or None, and the annotation is deliberately
+    WIDER than that, as in `relations/shell.py`. The house requires this to be total and verified
+    adversarially, so the malformed records its own tests pass it are part of the contract; a
+    narrower annotation would declare a promise the tests themselves break, and `ty` said so.
 
     Total over its argument: nothing here raises. A reading that is missing, claims nothing or
     does not read as one field returns the empty record, with the code that names which it was.

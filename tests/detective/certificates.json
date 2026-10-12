@@ -1,4 +1,16 @@
 {
+  "src/knee/absence.py::absence_code": {
+    "cut_reasons": [],
+    "function_digest": "cd010cfeaeb0c315",
+    "refusal": "",
+    "standing": "complete"
+  },
+  "src/knee/absence.py::is_silence": {
+    "cut_reasons": [],
+    "function_digest": "86be4df0328ed42f",
+    "refusal": "",
+    "standing": "complete"
+  },
   "src/knee/collapse/codes.py::coil_code": {
     "cut_reasons": [],
     "function_digest": "9831de1b1e68ee7f",
@@ -104,6 +116,26 @@
   "src/knee/objects/profile_codes.py::profile_support_code": {
     "cut_reasons": [],
     "function_digest": "f0d118e0d4fcd235",
+    "refusal": "",
+    "standing": "complete"
+  },
+  "src/knee/ownership/claims.py::ownership_code": {
+    "cut_reasons": [],
+    "function_digest": "14b86ed8dac6a8f6",
+    "refusal": "",
+    "standing": "complete"
+  },
+  "src/knee/ownership/claims.py::read_ownership": {
+    "cut_reasons": [
+      "mutant_construction_failed"
+    ],
+    "function_digest": "e940ee21aa8b140f",
+    "refusal": "",
+    "standing": "ungateable"
+  },
+  "src/knee/relations/shell.py::read_relations": {
+    "cut_reasons": [],
+    "function_digest": "4cc5f3891fc63eb7",
     "refusal": "",
     "standing": "complete"
   }
