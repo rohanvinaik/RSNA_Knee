@@ -555,6 +555,31 @@ on her skin, and it clicks.
 > showing this signal vs this expected signal means this label gets applied'. **None of those words
 > need to be filled in with medicine or anatomy for the system to work perfectly.**"
 
+**Colour he added, and it is the argument's own proof.** Keller on the *Brooklyn Eagle*, whose editor
+praised her until she came out for socialism and then reminded the public she was blind and deaf and
+"especially liable to error":
+
+> "At that time the compliments he paid me were so generous that I blush to remember them. But now
+> that I have come out for socialism he reminds me and the public that I am blind and deaf and
+> especially liable to error. I must have shrunk in intelligence during the years since I met him. …
+> Oh, ridiculous Brooklyn Eagle! Socially blind and deaf, it defends an intolerable system, a system
+> that is the cause of much of the physical blindness and deafness which we are trying to prevent"
+
+His framing: *"Think about the robustness of the theory-of-mind she could develop with an 'artificial'
+structure to her understanding of the external world."*
+
+Three things in it bear directly on this build. **She runs a differential argument on a man she could
+not perceive** — same editor, generous before and dismissive after, one variable changed and it was
+not her eyes; the motive is recovered from the record and the structure alone, with no perception of
+the object. **She reads "blind and deaf" as a ROLE rather than as content** — not a property of eyes
+but a structural failure to perceive what is remote from you, by which measure the paper is the blind
+one; which is `feedback_terms_are_roles` exactly. And **the evidence offered against her was
+manufactured by the thing she was criticising**: a hit locates evidence, it never authorises the
+explanation hung on it.
+
+The disqualification itself — "especially liable to error" — is a prior substituting for the
+argument, which is the shape of this project's own named failure mode.
+
 ### What this settles
 
 1. **Identity is scaffolding for the designer, not a state the system must attain.** The lead had been
