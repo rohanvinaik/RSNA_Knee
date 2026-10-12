@@ -11,30 +11,36 @@ import numpy as np
 from workbench.render.object_profiles import draw_record
 
 
-def main() -> None:
-    parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("run", type=Path)
-    parser.add_argument("--study-uid", required=True)
-    parser.add_argument("--probe-fraction-rc", type=float, nargs=2, required=True)
-    parser.add_argument("--out", type=Path, required=True)
-    args = parser.parse_args()
-    fraction = np.asarray(args.probe_fraction_rc)
+def draw(
+    run: Path,
+    study_uid: str,
+    out: Path,
+    *,
+    probe_fraction_rc: list[float],
+) -> dict:
+    """Draw this stage from the saved run and return its manifest.
+
+    The one entry a caller uses, so the single command can draw every stage without knowing each
+    renderer's argument spelling. `main()` is a thin wrapper over it, so the hand-typed command
+    and the joined run draw the same thing from the same code.
+    """
+    fraction = np.asarray(probe_fraction_rc)
     if (
         not np.all(np.isfinite(fraction))
         or np.any(fraction < 0)
         or np.any(fraction > 1)
     ):
-        parser.error("probe fractions must lie in [0,1]")
-    receipt_path = args.run / "receipt.json"
+        raise ValueError("probe fractions must lie in [0,1]")
+    receipt_path = run / "receipt.json"
     receipt = json.loads(receipt_path.read_text())
     records = [
         r
         for r in receipt["records"]
-        if r["study_uid"] == args.study_uid and "acquired_plane" in r["arrays"]
+        if r["study_uid"] == study_uid and "acquired_plane" in r["arrays"]
     ]
     if not records:
-        parser.error("no saved acquired planes for this study")
-    args.out.mkdir(parents=True, exist_ok=True)
+        raise ValueError("no saved acquired planes for this study")
+    out.mkdir(parents=True, exist_ok=True)
     gallery, axes = plt.subplots(
         len(records),
         5,
@@ -44,7 +50,7 @@ def main() -> None:
     )
     panels = []
     for row, metadata in enumerate(records):
-        artifact = args.run / metadata.get("artifact", f"{metadata['series_uid']}.npz")
+        artifact = run / metadata.get("artifact", f"{metadata['series_uid']}.npz")
         with np.load(artifact, allow_pickle=False) as arrays:
             record = dict(arrays)
         for name, descriptor in metadata["arrays"].items():
@@ -68,7 +74,7 @@ def main() -> None:
         figure, one_axes = plt.subplots(1, 5, figsize=(20, 4), layout="constrained")
         draw_record(one_axes, record, profile, title)
         name = f"{row + 1:02d}-{view.lower()}-fs{fluid}-fat{fat}.png"
-        figure.savefig(args.out / name, dpi=160)
+        figure.savefig(out / name, dpi=160)
         plt.close(figure)
         panels.append(
             {
@@ -87,7 +93,7 @@ def main() -> None:
         "Packet A: acquired image → RED background annotation → squint → CYAN samples → measured profile",
         fontsize=17,
     )
-    gallery.savefig(args.out / "series.png", dpi=160)
+    gallery.savefig(out / "series.png", dpi=160)
     plt.close(gallery)
     manifest = {
         "schema": "packet-a-visuals-v2",
@@ -105,11 +111,30 @@ def main() -> None:
         "scope": "all saved middle planes in the chosen study; red background-split mask, cyan samples, magenta missing support",
         "panels": panels,
     }
-    (args.out / "manifest.json").write_text(json.dumps(manifest, indent=2) + "\n")
+    (out / "manifest.json").write_text(json.dumps(manifest, indent=2) + "\n")
+    return manifest
+
+
+def main() -> None:
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument("run", type=Path)
+    parser.add_argument("--study-uid", required=True)
+    parser.add_argument("--probe-fraction-rc", type=float, nargs=2, required=True)
+    parser.add_argument("--out", type=Path, required=True)
+    args = parser.parse_args()
+    try:
+        manifest = draw(
+            args.run,
+            args.study_uid,
+            args.out,
+            probe_fraction_rc=args.probe_fraction_rc,
+        )
+    except ValueError as refusal:
+        parser.error(str(refusal))
     print(
         json.dumps(
             {
-                "images": len(panels),
+                "images": len(manifest["panels"]),
                 "series": str((args.out / "series.png").resolve()),
                 "manifest": str((args.out / "manifest.json").resolve()),
             },

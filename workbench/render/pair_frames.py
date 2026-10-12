@@ -153,25 +153,26 @@ def draw_frame(axis, reading, labels, metadata):
     axis.set_axis_off()
 
 
-def main():
+def draw(run: Path, study_uid: str, out: Path) -> dict:
+    """Draw this stage from the saved run and return its manifest.
+
+    The one entry a caller uses, so the single command can draw every stage without knowing each
+    renderer's argument spelling. `main()` is a thin wrapper over it, so the hand-typed command
+    and the joined run draw the same thing from the same code.
+    """
     import matplotlib.pyplot as plt
 
-    parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("run", type=Path)
-    parser.add_argument("--study-uid", required=True)
-    parser.add_argument("--out", type=Path, required=True)
-    args = parser.parse_args()
     data_root = Path(__file__).resolve().parents[2] / "data"
-    out = args.out.resolve()
+    out = out.resolve()
     if not out.is_relative_to(data_root.resolve()):
-        parser.error("out must be under the project private data directory")
-    receipt_path = args.run / "receipt.json"
+        raise ValueError("out must be under the project private data directory")
+    receipt_path = run / "receipt.json"
     receipt_bytes = receipt_path.read_bytes()
     receipt = json.loads(receipt_bytes)
-    records = [r for r in receipt["records"] if r["study_uid"] == args.study_uid]
+    records = [r for r in receipt["records"] if r["study_uid"] == study_uid]
     if not records:
-        parser.error("no saved records for this study")
-    loaded = [saved_panels(args.run, record) for record in records]
+        raise ValueError("no saved records for this study")
+    loaded = [saved_panels(run, record) for record in records]
     if pictures.__file__ is None:
         raise RuntimeError("picture_module_source_unavailable:pairings")
     out.mkdir(parents=True, exist_ok=True)
@@ -207,13 +208,27 @@ def main():
         "picture_module_sha256": sha256(
             Path(pictures.__file__).read_bytes()
         ).hexdigest(),
-        "study_uid": args.study_uid,
+        "study_uid": study_uid,
         "image": "series.png",
         "series": series,
     }
     (out / "manifest.json").write_text(
         json.dumps(manifest, indent=2, allow_nan=False) + "\n"
     )
+    return manifest
+
+
+def main() -> None:
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument("run", type=Path)
+    parser.add_argument("--study-uid", required=True)
+    parser.add_argument("--out", type=Path, required=True)
+    args = parser.parse_args()
+    try:
+        draw(args.run, args.study_uid, args.out)
+    except ValueError as refusal:
+        parser.error(str(refusal))
+    out = args.out.resolve()
     print(
         json.dumps(
             {"series": str(out / "series.png"), "manifest": str(out / "manifest.json")}
