@@ -3,10 +3,10 @@
 This is an ORCHESTRATION in the thesis's sense (SS13.7): it moves values between stages and decides
 nothing itself. Every judgement belongs to the stage it came from.
 
-It is the whole of Figure 8's line, in order, and it is honest about its own state: a stage that is
-built runs and reports what it read; a stage that is not built reports `not_built` and the route
-carries on. So this file is readable as the project's table of contents, and `just run` over the
-corpus says exactly how far the pipeline reaches today.
+It is the object model's route, in order (`docs/OBJECT_MODEL.md`, `docs/PIPELINE_AS_OBJECT.md`), and
+it is honest about its own state: a stage that is built runs and reports what it read; a stage that
+is not built reports `not_built` and the route carries on. So this file is readable as the project's
+table of contents, and `just run` over the corpus says exactly how far the pipeline reaches today.
 
 The impure edge stays thin (SS13.7: "reading a movie, writing the output, drawing pictures"). This
 module reads studies and returns values. It writes nothing and draws nothing; `knee.pictures` is a
@@ -23,22 +23,25 @@ from knee.objects.analysis import AnalysisRequest, SeriesMeasurement, measure_se
 from knee.objects.conversation import ConversationInput, SeriesConversation, converse
 from knee.study.corpus import Corpus, Study, read_study
 
-# Figure 8's line, in order, with the state of each stage. A stage is "built" when it runs over a
-# real study through Chapter 1's entry point -- never when its unit tests pass. That distinction is
-# not pedantry: the noise law passed every unit test and then concurred on 4 of 336 real series.
+# The object model's route, in order, with the state of each stage. A stage is "built" when it runs
+# over a real study through Chapter 1's entry point -- never when its unit tests pass. That
+# distinction is not pedantry: the noise law passed every unit test and then concurred on 4 of 336
+# real series.
+#
+# Entries are PACKAGE names, because `test_a_stage_is_not_built_until_it_renders` reads them against
+# `knee.pictures`; `docs/OBJECT_MODEL.md` names two of them differently as stages, noted below.
+# Four of Figure 8's transcribed stages were archived 2026-10-12 at the founder's ruling ("Begone,
+# Satan!"): loop, candidates, cleanup and every_object, whose roles fold into objects and ownership.
 ROUTE: tuple[tuple[str, str], ...] = (
-    ("study", "built"),
-    ("collapse", "partly"),
-    ("lenses", "not_built"),
-    ("objects", "partly"),
-    ("relations", "not_built"),
-    ("loop", "not_built"),
-    ("candidates", "not_built"),
-    ("cleanup", "not_built"),
-    ("vectors", "not_built"),
-    ("every_object", "not_built"),
-    ("predicates", "not_built"),
-    ("output", "not_built"),
+    ("study", "built"),  # the input, whole at stored fidelity
+    ("collapse", "partly"),  # the FIELD: regime, noise law, physical frame, the squint
+    ("lenses", "not_built"),  # every place, every acquisition, one ternary digit
+    ("objects", "partly"),  # the <object>s, and SS6's refinement of their borders
+    ("relations", "not_built"),  # interstices CONSTRUCTED between facing <object>s
+    ("ownership", "not_built"),  # every place claimed, or named unassigned
+    ("vectors", "not_built"),  # the BUNDLES: each <object>'s profile as row counts
+    ("predicates", "not_built"),  # the twelve, each on its named subject
+    ("output", "not_built"),  # twelve confidences, with the kept record behind them
 )
 
 
@@ -77,7 +80,7 @@ class StudyRun:
 def run_study(
     corpus: Corpus, uid: str, analysis: AnalysisRequest | None = None
 ) -> StudyRun:
-    """Walk one study down Figure 8's line, as far as the build reaches.
+    """Walk one study down the object model's route, as far as the build reaches.
 
     Chapter 1 reads the study whole at stored fidelity. The collapse then reads each series' regime
     key -- the cheap whole-field readings that say what a series IS before any expensive work runs.
@@ -151,7 +154,7 @@ def run_study(
 
 
 def route_state() -> tuple[tuple[str, str], ...]:
-    """Figure 8's line with each stage's state, for a caller that wants to print the map."""
+    """The object model's route with each stage's state, for a caller that wants to print the map."""
     return ROUTE
 
 

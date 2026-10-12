@@ -132,13 +132,18 @@ Each row: what it does, what it consumes, what it produces, **what its picture s
 thesis section it instantiates. The picture is not documentation of the stage; it is the stage's
 output in the only form that demonstrates visual reasoning.
 
+**Ten operations, NINE stages.** Corrected 2026-10-12: the lead's first draft of this page listed
+`borders` as a tenth route stage, which added one to the founder's settled route table
+(`docs/OBJECT_MODEL.md`) on the lead's own authority. §6 refines **an object's** borders — it is work
+*inside* `objects`, not a stage beside it, and `knee.pipeline.ROUTE` carries the nine.
+
 | # | stage | consumes | produces | its picture shows | § |
 |---|---|---|---|---|---|
 | 1 | **study** | the competition's files | series, slices, geometry (LPS), tables — nothing compressed, rescaled, resampled or dropped | the acquired views as recorded, with what each series IS | 3 |
 | 2 | **field** | a series | the regime key, the noise law, the variance-stabilising transform, the physical frame, the squint | the field it stands on: the squint, and where the quiet population lies | 4 |
 | 3 | **lenses** | a series + its regime | one ternary digit per place per acquisition against a pair of edges, silence kept silent | the three-colour digit map per acquisition, silence drawn as silence | 7 |
 | 4 | **objects** | the field | `<object>`s: territories with extents, boundaries, and the census of what bounds each and what lies across | the parse — every `<object>` in the field, by index, with its boundary and what was measured versus constructed | 5 |
-| 5 | **borders** | `<object>`s + their structural role + native profiles | each `<object>`'s border refined **given** its role: supported connectivity, constrained shortening, closure standing per chain | original trace beside refined, with every arc's support, shed places and open chains visible | 6 |
+| 5 | **borders** — *not a stage; work inside `objects`* | `<object>`s + their structural role + native profiles | each `<object>`'s border refined **given** its role: supported connectivity, constrained shortening, closure standing per chain | original trace beside refined, with every arc's support, shed places and open chains visible | 6 |
 | 6 | **relations** | the facing-pair graph among `<object>`s | one interstice per facing pair, **constructed not detected**, with its gap, walls, fill and contents | each interstice drawn as the thing between its two bounding `<object>`s | 2 |
 | 7 | **ownership** | every place + every `<object>`'s claim | every place owned by one `<object>` or named **unassigned**; each round records claimed / disputed / unassigned | **the residual map** — every place nothing claims, which is the next structure argument | 10 |
 | 8 | **bundles** | each `<object>`'s places + their digits | the profile as row counts over named banks, unavailable banks named and never zeroed, the **subject kind** it was keyed on recorded | the count table per `<object>`, with unavailable banks visible as unavailable | 7, 13 |
