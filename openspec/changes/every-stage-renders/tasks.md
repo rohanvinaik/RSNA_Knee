@@ -80,7 +80,7 @@ earlier stage produced, identity is not assumed. If it is a kind-label, it is, a
       arranges values computed from the STUDY or values about the PIPELINE** — Fable: *"a stage is not
       built until it renders" cannot distinguish them*, so without this the route will report
       `relations` as built while its purpose is unserved.
-- [ ] 0.6 **Archive the five shelf packages and create `ownership`.** Founder's ruling 2026-10-12:
+- [x] 0.6 **Archive the five shelf packages and create `ownership`.** Founder's ruling 2026-10-12:
       *"Begone, Satan! … I'd rather lose work and have to re-do it than have you be constantly
       confused when you encounter old things we haven't structured properly."* `loop`, `candidates`,
       `cleanup`, `every_object` and `assignment` move to `archive/src/knee/` under their old paths;
@@ -90,7 +90,7 @@ earlier stage produced, identity is not assumed. If it is a kind-label, it is, a
 
 ## 1. The route and the vocabulary — the lead's, and first
 
-- [ ] 1.1 Replace `src/knee/pipeline.py`'s `ROUTE` with the object model's **nine** stages — study,
+- [x] 1.1 Replace `src/knee/pipeline.py`'s `ROUTE` with the object model's **nine** stages — study,
       collapse (the field), lenses, objects, relations, ownership, vectors (the bundles), predicates,
       output. **Not ten:** §6's border refinement is work inside `objects`, not a stage beside it, and
       a first draft of `docs/PIPELINE_AS_OBJECT.md` wrongly added it to the founder's settled route.
