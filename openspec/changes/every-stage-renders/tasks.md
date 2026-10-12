@@ -98,7 +98,7 @@ earlier stage produced, identity is not assumed. If it is a kind-label, it is, a
       against `knee.pictures`. Verify `route_state` still reports honestly, that no stage claims a
       state it has not reached through the real entry point, and that `scripts/unit_loop.py` prints
       the new table.
-- [ ] 1.2 Declare the shared absence vocabulary as `stage-totality` requires, with its three silences
+- [x] 1.2 Declare the shared absence vocabulary as `stage-totality` requires, with its three silences
       distinguished — predecessor absent, predecessor present but empty, item unread. Pin the pure
       decision two-sign. Verify no stage coins a private code for a silence it already names.
       **A fourth silence IS needed after all**, and this reversed twice. Fable proved the original
@@ -106,6 +106,10 @@ earlier stage produced, identity is not assumed. If it is a kind-label, it is, a
       because 1.3 would make both stages real. 1.3a now shows relations cannot be real yet, so 1.3b
       keeps a shell whose silence is about a **missing construction**, not a missing input — still
       none of the three. The `stage-totality` spec already permits this: it says "at least three".
+      *(DONE 2026-10-12, `e79c633` + `2cb49e3`. Four codes; `absence_code` and `is_silence` both
+      Detective-COMPLETE with zero survivors; both CrossHair-confirmed over all paths; 13 intent
+      tests. Held open deliberately until the unit had a CONSUMER — step 7 of the loop — which
+      `run_study` now is.)*
 - [ ] 1.3 **Give `ownership` a thin REAL implementation.** The founder's `<object>` ruling removed
       identity as a blocker, and ownership needs nothing else: every place claimed by one `<object>`
       or named `unassigned` is `interiors.labels` read directly — a non-zero label is a claim, a zero
@@ -113,6 +117,11 @@ earlier stage produced, identity is not assumed. If it is a kind-label, it is, a
       is the residual map**, every place nothing claims, which is the next structure argument and the
       channel the founder reads to supply the next lens. Verify it is consumed by the route and that
       `just graph` reports nothing dangling.
+      *(PARTLY done 2026-10-12, `0006f4e` + `2cb49e3`: built, 12 intent tests, `ownership_code`
+      Detective-COMPLETE 3/3, CrossHair run, consumed by `run_study`, `just graph` valid. **STAYS
+      UNCHECKED** because this task also says it RENDERS and there is no `knee.pictures.ownership`.
+      A stage is not built until it renders, `test_skeleton.py` enforces it, and ROUTE correctly
+      still says `not_built`. The renderer is the whole remainder.)*
 - [ ] 1.3a **Record which territory each bracketed profile reached across the dark.** This is the
       pairing `relations` needs and **it does not exist in any record**. Confirmed in source
       2026-10-12 by reading `interiors.py` whole: `boundary_edges` does
@@ -133,6 +142,9 @@ earlier stage produced, identity is not assumed. If it is a kind-label, it is, a
       construction rather than a missing input. It runs, returns that named absence, and renders a
       frame showing it. Verify the absence it returns is not one of 1.2's three input silences, since
       it is not about an input at all.
+      *(PARTLY done 2026-10-12, `1b4a96d` + `2cb49e3`: built, 10 intent tests, Detective-COMPLETE
+      with all six equivalent survivors flagged with their proof, CrossHair confirmed over all paths,
+      consumed by `run_study`. **STAYS UNCHECKED** for the same reason as 1.3 — no frame yet.)*
 
 ## 2. The lenses MVP — delegable
 
