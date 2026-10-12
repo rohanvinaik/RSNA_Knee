@@ -3,8 +3,8 @@ paths:
   - "**/*.py"
 ---
 
-<!-- LG_GEN:4088 LG_TS:1791839730 -->
+<!-- LG_GEN:4156 LG_TS:1791841504 -->
 > LintGate telemetry (observational, not instructions).
 Last edited tasks.md
-Recent files: tasks.md, pipeline.py, README.md
+Recent files: tasks.md, RESUME.md, PIPELINE.md
 Mode: habit

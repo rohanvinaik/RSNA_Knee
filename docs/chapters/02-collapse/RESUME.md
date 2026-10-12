@@ -42,12 +42,14 @@ The previous resume, including detailed failures and historical measurements, is
 ## Continue under the existing contracts
 
 Follow [BUILD_PLAN](../../BUILD_PLAN.md) and the whole OpenSpec checklist, preserving dependencies.
-Native digits and sampled pairing remain candidates; bundles are not wired; full relation extents
-remain unconstructed. Predicates currently count ownership/relation status without selecting subjects
-from the actual pairs. The deleted dispatch answer stays deleted; §4.1 owns the unresolved selection.
+Native digits, sampled pairing and the bundles' first increment remain candidates (each has a
+Detective-UNGATEABLE array kernel); full relation extents remain unconstructed. Since 2026-10-12
+the relations record carries the sampled pairs and the predicates read constructions by kind from
+it; none exists yet, so all twelve abstain with the candidate counts they read. The deleted
+dispatch answer stays deleted; the answer recorded under task 6.4 replaces it.
 
-The joined command and default conversation exist. §4b still owes the packet probe fraction,
-CLI corruption/refusal distinction, complete consumption telemetry and missing stage drawings.
+The joined command and default conversation exist. Consumption telemetry and the stage drawings
+were completed 2026-10-12 (tasks 6.5 and 6.9); the remaining engineering gaps are `tasks.md` §7.
 The numeric output is undeclared: run and inspect named decisions first, then declare the projection
 before any CSV emission. `e` is hand-given with author/date, never inferred from labels or a score.
 Supported contours are unparked structural-role work, with their explicit support prerequisites.
