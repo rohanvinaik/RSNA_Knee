@@ -4,6 +4,25 @@
 the founder said between 22:31 and 23:46 on 2026-10-11? Written first, per the protocol, so that
 agreement with Fable or Codex is evidence rather than an echo.
 
+> ## CORRECTION, added after the answers opened. One claim below is WITHDRAWN.
+>
+> Under *"Where it is faithful"* this reading says: **"§12 is out of scope by his word, so nine
+> unbuilt stages are not nine omissions."** That is a scope error and it does not follow. Codex's
+> proof, which the lead accepts:
+>
+> > "§12 being extra does **not** establish that the unbuilt route stages are not omissions. The
+> > quoted passage excludes operations beyond recognition, with tracking as its example. It does not
+> > exempt the listed recognition stages. Their temporary incompleteness may be consistent with
+> > breadth-first construction; §12 is not the evidence for that allowance."
+>
+> Two claims had been conflated. §12 *does* exempt the five `shelf` packages and the retired
+> `following`/`division`, which are operations **on** resolved objects — that part stands, and
+> `docs/INSTANTIATION.md`'s §12 row states it correctly. But lenses, relations, ownership, bundles,
+> predicates and output are all **recognition** stages. §12 exempts none of them. What licenses their
+> being unbuilt today is the breadth-first **construction order** the founder chose at 22:38, and
+> nothing else. The rest of the reading below is left exactly as written, so the comparison stays
+> legible.
+
 ## What he asked for, in six prompts
 
 1. **22:31 — the hardware.** *"build the basic hardware of the `<object>` thesis, sufficient to
