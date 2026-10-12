@@ -103,6 +103,26 @@ just render workbench/render/axial.py
 `data/pictures/`; Matplotlib remains outside the production dependency list. Do not publish
 profiles that expose competition data or paths.
 
+**Two limits measured 2026-10-12, on `knee.ownership.claims`, both recorded rather than worked
+around.** First: `just crosshair` on a FILE whose function is annotated with a project dataclass
+(`InteriorReading | None`) crashes with `crosshair.auditwall.SideEffectDetected: A "glob.glob/2"
+operation was detected`. CrossHair walks the subclass map for the annotation, which imports
+`skimage.io`, which globs for plugin `.ini` files at import, which its audit wall refuses. It
+suggests `--unblock`; that was NOT used, because disabling the side-effect wall to check our own
+contracts trades the guarantee for the result. The repair that works is to name the pure decision
+directly — `just crosshair knee.ownership.claims.ownership_code` — which carries no domain
+annotation and confirmed over all paths. So an array-shaped function taking a domain object is
+currently unreachable by the symbolic check in this environment, and that is a limit, not a pass.
+
+Second: `just detective converge` on that same array-shaped function returns `⚠ UNGATEABLE`, in its
+own words *"one or more mutants could not be BUILT, so they say nothing about any test — this
+measures the engine, not your suite; it is a defect to report, not a gap to close"*. The pure
+decision beside it converged `✓ COMPLETE`. `AGENTS.md` override 1 separately records Detective's
+stated scope — functions over domain objects are reachable only through real arguments captured
+from tests — and that is a recorded fact placed beside this one, **not** a claim that it explains
+the refusal; Detective says the refusal is an engine defect, and theorising past a refusal is the
+failure the protocol names.
+
 The Scalene recipe explicitly names its output rather than writing its default file in the
 repository root. The shared performance guide records
 a macOS SIGTRAP on a real workload; a small installation check does not resolve that failure.
