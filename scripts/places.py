@@ -36,6 +36,23 @@ REGISTRY = ROOT / "docs" / "places.json"
 ROUTE_ENTRY = "knee.pipeline"
 SCOPES = ("src/knee", "workbench", "scripts")
 
+#: EVERY layer's entry point, because every layer has one and each was previously unchecked.
+#:
+#: Until 2026-10-12 this file asked one question -- is a `route:*` module reached from
+#: `knee.pipeline` -- and asked it of 46 modules out of 97. The other 51 were never checked by
+#: anything, which is how `knee/pictures/collapse.py` sat with ZERO callers while describing a
+#: stage shape that has never existed, and how three stages ended up with no drawer at all.
+#:
+#: Reachability from `knee.pipeline` is the WRONG question for the drawing and workbench layers:
+#: production must never import a picture (that is the layer contract, and `just imports` gates
+#: it), and the workbench imports the route rather than the reverse. So each layer is walked from
+#: the thing that actually calls it.
+ENTRY_POINTS: tuple[tuple[str, str], ...] = (
+    ("knee.pipeline", "the production route"),
+    ("workbench.measure.object_analysis", "the real entry point"),
+    ("workbench.render.all_frames", "the joined drawing pass"),
+)
+
 
 def modules_on_disk() -> set[str]:
     """Every Python file in scope, as a path relative to the project root."""
@@ -56,6 +73,20 @@ def module_name(relative: str) -> str | None:
     return ".".join(parts[:-1]) if parts[-1] == "__init__" else ".".join(parts)
 
 
+def importable_name(relative: str) -> str | None:
+    """Any importable module's dotted name: `knee.*` under src/, `workbench.*` at the root.
+
+    `scripts/` is deliberately None: those are run by path from the justfile, never imported, so
+    import reachability is not the question to ask of them.
+    """
+    if relative.startswith("src/"):
+        return module_name(relative)
+    if relative.startswith("workbench/"):
+        parts = Path(relative).with_suffix("").parts
+        return ".".join(parts[:-1]) if parts[-1] == "__init__" else ".".join(parts)
+    return None
+
+
 def imports_of(path: Path) -> set[str]:
     """The `knee.*` modules this file imports, read from its syntax and never from its text."""
     tree = ast.parse(path.read_text())
@@ -66,7 +97,72 @@ def imports_of(path: Path) -> set[str]:
         elif isinstance(node, ast.ImportFrom) and node.module and not node.level:
             names.add(node.module)
             names.update(f"{node.module}.{alias.name}" for alias in node.names)
-    return {name for name in names if name.split(".")[0] == "knee"}
+    # `workbench` as well as `knee`: the drawing layer and the entry point are imported from the
+    # workbench, so a walk restricted to `knee` cannot see whether a renderer is ever called.
+    return {name for name in names if name.split(".")[0] in ("knee", "workbench")}
+
+
+def reached_from(entries: tuple[str, ...], on_disk: set[str]) -> set[str]:
+    """Every module import-reachable from any of `entries`, across `knee` and `workbench`.
+
+    `all_frames` imports each renderer lazily inside its loop, from a table of module names rather
+    than with an `import` statement, so a renderer it drives is NOT reachable by syntax. Those
+    names are read from the table itself below, which is why a stage with no entry there shows up
+    here as unwired -- which is exactly the state `collapse`, `vectors` and `output` are in.
+    """
+    by_name = {
+        name: relative
+        for relative in on_disk
+        if (name := importable_name(relative)) is not None
+    }
+    seen, queue = set(), deque(entries)
+    # `scripts/*.py` are entry points too: the justfile runs them by PATH, so they are never
+    # imported and carry no dotted name, yet what they import is wired. Seeding the walk with
+    # their imports is the difference between `object_measurements.py` reading as an island and
+    # reading as what it is -- the development graph that `scripts/object_graph.py` drives.
+    for relative in sorted(on_disk):
+        if relative.startswith("scripts/"):
+            queue.extend(imports_of(ROOT / relative))
+    while queue:
+        name = queue.popleft()
+        if name in seen or name not in by_name:
+            continue
+        seen.add(name)
+        path = ROOT / by_name[name]
+        imported_names = imports_of(path)
+        if name == "workbench.render.all_frames":
+            imported_names |= {
+                f"workbench.render.{module}" for module in drawing_table(path)
+            }
+        for imported in imported_names:
+            for candidate in (imported, imported.rsplit(".", 1)[0]):
+                if candidate in by_name and candidate not in seen:
+                    queue.append(candidate)
+    return seen
+
+
+def drawing_table(path: Path) -> set[str]:
+    """The renderer module names `all_frames.DRAWINGS` drives, read from its syntax.
+
+    They are imported by name at run time, not with an `import` statement, so nothing else can see
+    them. Read here so a renderer that IS driven counts as wired and one that is not shows plainly.
+    """
+    tree = ast.parse(path.read_text())
+    for node in tree.body:
+        targets = node.targets if isinstance(node, ast.Assign) else []
+        if isinstance(node, ast.AnnAssign):
+            targets = [node.target]
+        if not any(isinstance(t, ast.Name) and t.id == "DRAWINGS" for t in targets):
+            continue
+        return {
+            element.elts[-1].value
+            for element in ast.walk(node)
+            if isinstance(element, ast.Tuple)
+            and len(element.elts) == 3
+            and isinstance(element.elts[-1], ast.Constant)
+            and isinstance(element.elts[-1].value, str)
+        }
+    return set()
 
 
 def declares_contract(path: Path) -> bool:
@@ -133,11 +229,14 @@ def main(argv: list[str]) -> int:
     declared: dict[str, dict] = registry["places"]
     on_disk = modules_on_disk()
     reached = reached_from_route(on_disk)
+    entries = tuple(entry for entry, _ in ENTRY_POINTS)
+    wired = reached_from(entries, on_disk)
 
     findings: dict[str, list[str]] = {
         "undeclared": sorted(on_disk - set(declared)),
         "absent": sorted(set(declared) - on_disk),
         "unreached": [],
+        "unwired": [],
         "misplaced": [],
         "contract_disagrees": [],
         "renders_missing": [],
@@ -163,6 +262,19 @@ def main(argv: list[str]) -> int:
                 f"{relative}: declared contract={entry.get('contract')}, module "
                 f"{'defines' if declares_contract(path) else 'does not define'} CONTRACT"
             )
+        # EVERY layer, against its own entry point. `script` is excluded because the justfile runs
+        # those by path rather than importing them, so import reachability asks the wrong thing.
+        importable = importable_name(relative)
+        if (
+            importable is not None
+            and where != "script"
+            and importable not in entries
+            and importable not in wired
+        ):
+            findings["unwired"].append(
+                f"{relative}: declared {where}, nothing reaches it"
+            )
+
         if name is None:
             continue
         if where.startswith("route:") and name not in reached:
@@ -208,7 +320,11 @@ def main(argv: list[str]) -> int:
     print(f"PLACES, computed against {REGISTRY.relative_to(ROOT)}\n")
     print(f"  modules in scope   {len(on_disk)}")
     print(f"  declared           {len(declared)}")
-    print(f"  reached from {ROUTE_ENTRY}  {len(reached)}\n")
+    print(f"  reached from {ROUTE_ENTRY}  {len(reached)}")
+    print(f"  wired to ANY entry point    {len(wired)}")
+    for entry, what in ENTRY_POINTS:
+        print(f"      {entry}  ({what})")
+    print()
     for kind, rows in findings.items():
         if not rows:
             print(f"  {kind:<20} none")

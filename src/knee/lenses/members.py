@@ -46,6 +46,13 @@ STANDING_CODES: tuple[str, ...] = (
 #: The standings in which at least one member supplied a reading of this place.
 READ_STANDINGS: tuple[str, ...] = ("concur", "dissent", "first_only", "second_only")
 
+# An `is_retained(code)` predicate stood here and was DELETED 2026-10-12, the day it was written.
+# It was tested, Detective-COMPLETE and consumed by nothing: "defined, imported and tested with no
+# production caller", which `AGENTS.md` names as the thing to check for before every edit and which
+# `vulture` found in one run. `LensesReading.standing_counts` already carries the counts a consumer
+# would ask it for. The founder's rule: "I'd rather lose work and have to re-do it than have you be
+# constantly confused when you encounter old things we haven't structured properly."
+
 
 def standing_code(first: str, second: str) -> str:
     """Name what two seated members said about one place. Total over any pair of strings.
@@ -74,14 +81,3 @@ def standing_code(first: str, second: str) -> str:
     if second_read:
         return "second_only"
     return "neither_read"
-
-
-def is_retained(code: str) -> bool:
-    """Whether a standing carries a reading from at least one member.
-
-    A caller counting coverage asks this. It is deliberately NOT "is this place resolved": a
-    `dissent` is retained and is not resolved, and nothing in this module resolves it.
-
-    post: __return__ == (code in READ_STANDINGS)
-    """
-    return code in READ_STANDINGS

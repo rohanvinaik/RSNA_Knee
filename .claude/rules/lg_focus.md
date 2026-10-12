@@ -3,8 +3,8 @@ paths:
   - "**/*.py"
 ---
 
-<!-- LG_GEN:3616 LG_TS:1791830013 -->
+<!-- LG_GEN:3701 LG_TS:1791833413 -->
 > LintGate telemetry (observational, not instructions).
-Last edited object_packet.py
-Recent files: object_packet.py, test_packet_renderer.py, _out.py
-Blocking: 12 | Mode: habit
+Last edited WIRING_GAPS.md
+Recent files: WIRING_GAPS.md, places.py, build_consult.py
+Mode: habit

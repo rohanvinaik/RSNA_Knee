@@ -331,6 +331,26 @@ three of five; relations `construction_absent` on all five.
       reported unmoved with its reason. Nothing here may call the pipeline coherent on the strength
       of one function; the evidence is the re-run.
 
+- [ ] 4b.7 **The field keeps what it computed, and draws it.** `collapse` computes two things per
+      series — the regime key (sixteen readings) and the squint — and the writer reads **one** field
+      off the regime key (`background_split`) and drops the other fifteen. The squint is saved and
+      nothing draws it. The founder, 2026-10-12: *"we compute the required object, we drop it"*, and
+      on why it matters: *"any compute process here is done for the purpose of visual reasoning. If
+      the lenses don't have information that they can literally show, then what are we doing?"*
+
+      **No new measurement.** Serialise the whole regime key beside the squint; give `collapse` a
+      drawer registered in the joiner like every other stage; and correct `knee.pictures.collapse`,
+      whose `panels()` asks for a leg, a superior–inferior profile and an axis sign that this stage
+      does not compute and that nothing calls (`find_referencing_symbols`: **zero references** on
+      both `panels` and `over`, 2026-10-12). Those words came from the adapter's docstring, not from
+      the route.
+
+      Verify the drawer arranges only values already saved and recomputes no reading; that the
+      joined run reports `collapse` **drawn** rather than `no_drawer`; and that a series whose
+      regime could not be read still draws, naming the absence.
+      *(Declared before any code was written. The founder: "This IS what the production pipeline is
+      for ... do NOT make it some random script in a throwaway folder somewhere.")*
+
 Joined-task evidence (4b.2/3/4/6): implemented in `92e5b7e`; fresh one-command
 run recorded in `docs/chapters/02-collapse/measurements/documentation-reconciliation-20261012.md`.
 Seven drawings, one named failure, three `no_drawer` stages; conversation 4 measured/1 solitary;
