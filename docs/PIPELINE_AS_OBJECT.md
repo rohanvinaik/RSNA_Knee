@@ -63,15 +63,38 @@ checked without judging whether any particular rule is good yet:
 |---|---|
 | **symbols exist** | the field is parsed into `<object>`s with extents and boundaries, and every place is owned by one or named unassigned |
 | **a language exists** | every place carries a balanced-ternary digit per acquisition against a pair of edges from that series' own distribution, with silence kept distinct from the middle digit |
-| **reasoning composes** | every decision is a **named code**, total over its arguments, with every bar an **argument** and never a constant — so decisions compose into predicates without any of them being tuned |
+| **reasoning composes** | every decision is a **named code**, total over its arguments, with every bar an **argument** and never a constant — **and the decision reads a RELATION between its subjects, not a property of one.** The relational clause was added 2026-10-12 after both readers independently found the property too weak: *"'Reasoning composes' as written admits a predicate over a single object; his sentence is intrinsically relational"* (Fable); *"passing two objects … into a total function is different from demonstrating that the function reasons with their relationship"* (Codex) |
+| **the correspondence is named** | the **expected reading `e`** exists and is declared as a hand-given correspondence with its author and date — not computed, not fitted, and not silently a magic number. Added 2026-10-12: `e` appeared in the finished sentence and in none of the properties, which left the one thing the founder's own argument *requires* to be hand-given looking like a violation of the rule above |
 
-A pipeline with all three has the capacity, even while every rule in it is still crude. A pipeline
+A pipeline with all four has the capacity, even while every rule in it is still crude. A pipeline
 missing any one of them does not, however good its numbers.
 
-**The test for whether a lens does the thesis or is hand-tuned** — which replaces a score. The dome
-is arbitrary in the same sense that "R" → a particular mouth shape is arbitrary; arbitrariness of the
-*correspondence* is not brittleness of the *process*. The difference is generativity: **a lens that
-needs re-tuning per study is brittle; one that does not is a correspondence.**
+**On `e`, because it is the hinge.** Every other bar in the system is an argument read from the
+data. `e` is not: it is the water written on the hand — the designer-supplied correspondence that the
+Helen Keller argument says must be given and cannot be derived. **It is the one legitimate constant
+in the architecture**, and it is legitimate precisely because it is declared rather than tuned. The
+standing risk, which Fable named: if `e` is ever supplied from `memory` instead of declared, that is
+the door a fitted value re-enters the architecture through.
+
+**On generativity — WITHDRAWN as an acceptance condition, 2026-10-12.** The lead had written: *a lens
+that needs re-tuning per study is brittle; one that does not is a correspondence.* Both readers
+independently refused it as a bar, because it is a counterfactual about a **second** study and
+acceptance is one. Codex: *"if 'needs no retuning per study' is presented as something the one-study
+acceptance demonstrates, that claim is unsupported."*
+
+It survives as a **design principle** and is replaced, as a check, by what both proposed
+independently — **read the procedure, not repeated trials**:
+
+> **The provenance check.** Every threshold a lens reads has a declared provenance: either computed
+> from that series' own distribution, or a named design constant (`e` and its kin). Nothing was set
+> by looking at this study. That is a property of the code and the record, readable in **one** run.
+
+This is the same thing the founder's addition analogy already says: you confirm long addition by
+inspecting that no step depends on the particular digits, then watching it run once.
+
+**It is necessary and not sufficient**, which only Codex caught: *"absence of retuning alone does not
+establish generativity: a fixed procedure can consistently fail to perform its promised
+association."* So a clean provenance check never shows that a lens works — only that it is not tuned.
 
 **And evidence is existential, not statistical.** *"If you have a set of rules that are able to do a
 thing, one that isn't based on fitting/tuning metrics, then if it works properly once, then it works
@@ -119,6 +142,21 @@ In the **design**, never in the **record**.
 So: designing a lens *because* a bone behaves a certain way is required. Writing "femur" into a stage
 record, code or picture is forbidden. `stage-totality`'s no-anatomy rule is the system's **correct
 final form**, not a concession during a hardware phase.
+
+**And guarding the record is not enough.** Codex, 2026-10-12, and this is the sharpest line in either
+reading: *"Removing anatomical words from records does not establish that anatomical classification
+is absent from **dispatch**."* A route that never writes "femur" anywhere can still have a step that
+decides "`<object>` 3 is the femur" in order to choose which refinement rule to run, which bank to
+key, or which subject a predicate receives — and identity would then be a destination the route must
+reach, whatever its records say.
+
+**The decisive question, which both readers arrived at independently and which no stage currently
+answers:** *what resolved facts select the structural role, the subject kind, and the predicate's
+subject — and where were those facts obtained?* If the selector is a relational fact an earlier stage
+computed (what bounds this, what lies across it, whether its chain closes), identity is not assumed.
+If the selector is a kind-label, it is. **Three places this must be answered before each is built:**
+operation 5's "given its structural role", operation 8's "subject kind", and operation 9's choice of
+which `<object>`s a predicate receives.
 
 ## The grading loop, which is finite
 
