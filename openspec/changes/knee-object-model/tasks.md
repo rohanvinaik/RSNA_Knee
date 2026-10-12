@@ -8,7 +8,7 @@ real entry point and saved its image series, not when its unit tests pass.
 - [x] 1.1 Record the founder's 2026-10-11 teaching verbatim and dated in `docs/chapters/02-collapse/teachings.md`, including the interstice as a relative role, the fracture-as-broken-coherence example, and the synovitis worked example.
 - [x] 1.2 State the four-tier object model, the twelve predicates and their subjects, and what it supersedes, in `docs/OBJECT_MODEL.md`.
 - [x] 1.3 Route the context files to it: `AGENTS.md` and `docs/SPINE.md` name `docs/OBJECT_MODEL.md` as the first read, and `docs/SPINE.md` marks its chapter table superseded while keeping the way of working.
-- [ ] 1.4 Replace `src/knee/pipeline.py`'s `ROUTE` with the object model's stages so the route's table of contents matches the agreed structure; verify `route_state` still reports honestly and no stage claims a state it has not reached through the real entry point.
+- [x] 1.4 Replace `src/knee/pipeline.py`'s `ROUTE` with the object model's stages so the route's table of contents matches the agreed structure; verify `route_state` still reports honestly and no stage claims a state it has not reached through the real entry point. *(Done 2026-10-12 as `every-stage-renders` task 1.1, which is the same task declared in two changes. Nine stages — study, collapse, lenses, objects, relations, ownership, vectors, predicates, output — and `scripts/unit_loop.py` prints them. §6's border refinement is NOT a tenth stage: it refines an object's borders and is work inside `objects`.)*
 
 ## 2. Complete the object parse
 
