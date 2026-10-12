@@ -2,6 +2,19 @@
 
 Full statement: `docs/OBJECT_MODEL.md`. This records the decisions and their provenance.
 
+## Implementation ownership and later rulings
+
+This change owns the full architecture. `every-stage-renders` owns the immediate
+breadth-first pass; `object-resolution-toolkit` owns the measurement/contour substrate.
+The founder’s later teaching (Chapter 2, `<object>` and Keller sections) locates anatomy
+in the design, not production identity labels. Subjects are indexed visual subsets
+and relations, selected by retained structural facts. An anatomical inventory is
+human design work, not a runtime naming requirement.
+
+One real-entry-point demonstration establishes a structural mechanism; the 58-study
+run is engineering. Existing all-58 tasks below still own that later robustness work.
+See `docs/BUILD_PLAN.md` and `docs/RECONCILIATION.md`.
+
 ## The decision
 
 A finding is a predicate violation on an object, or on a relation between objects. The build is
@@ -48,7 +61,9 @@ patient side is lateral" is unknown, and that is equivalent to knowing left knee
 
 The fibula is lateral to the tibia in both legs without exception, so its direction from the tibia is
 the lateral direction. This is a checkable external fact about anatomy, used as a measurement — not a
-change to the founder's design. Where the fibula is out of field, the series abstains.
+change to the founder's design. Where no warranted laterality sign resolves, the series abstains. Secondary witnesses
+are for concurrence under OBJECT_MODEL; their independent authority when the fibula
+is absent is unresolved. Do not silently invent a fallback.
 
 ## The homology, and where it is re-derived
 
@@ -81,6 +96,7 @@ That change is this one's substrate and keeps its contracts. Its tasks 4.1 and 5
 founder recording the knee teaching; that teaching is now recorded, so both are unblocked.
 
 One follow-up it owns: the founder ruled that the conversation's two retained readings "should carry
-one name". `SeriesConversation` currently returns `concurrent_*` and `conditional_*` in parallel; they
-become a single named ternary reading per place. This changes a saved record's shape, so it is done
+one name". `SeriesConversation` currently returns `concurrent_*` and `conditional_*` in parallel; the existing design interprets that as a single named ternary reading per place,
+while originals, both derivations and dissent remain inspectable. The merge/precedence
+rule is not supplied by this reconciliation, so no two-sign evidence is discarded. This changes a saved record's shape, so it is done
 deliberately with its SAME comparison, not silently.

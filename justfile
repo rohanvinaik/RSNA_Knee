@@ -91,6 +91,8 @@ detective-resolution:
 unit:
     PYTHONPATH=src .venv/bin/python scripts/unit_loop.py
     @echo
+    @just plan-status every-stage-renders
+    @echo
     @just plan-status object-resolution-toolkit
     @echo
     @just plan-status knee-object-model
@@ -105,15 +107,15 @@ places:
     PYTHONPATH=src .venv/bin/python scripts/places.py
 
 # Declared work lives in OpenSpec; client instruction generation is deliberately off. The change
-# defaults to knee-object-model, the structure the founder settled 2026-10-11; name the other
-# explicitly (`just plan-status object-resolution-toolkit`) for the packet work it supersedes.
-plan-status CHANGE="knee-object-model":
+# defaults to every-stage-renders, the active breadth-first build. Name knee-object-model
+# for the full architecture or object-resolution-toolkit for its measurement/contour substrate.
+plan-status CHANGE="every-stage-renders":
     OPENSPEC_TELEMETRY=0 openspec status --change "$1"
 
-plan-next CHANGE="knee-object-model":
+plan-next CHANGE="every-stage-renders":
     OPENSPEC_TELEMETRY=0 openspec instructions apply --change "$1" --json
 
-plan-check CHANGE="knee-object-model":
+plan-check CHANGE="every-stage-renders":
     OPENSPEC_TELEMETRY=0 openspec validate "$1" --strict
 
 # The graph observes the real production route, and never imports into knee.
@@ -125,8 +127,8 @@ graph OUT:
 #
 # Matplotlib is supplied PER RUN here, exactly as the drawing recipes do it, so the single command
 # can print what it resolved while `knee` still imports no drawing code and `just imports` holds.
-# `--no-pictures` is the competition kernel, where the output is just the diagnosis; it loads no
-# Matplotlib at all and computes precisely the same thing.
+# `--no-pictures` skips the drawing edge and its import. Submission projection and DEPLOY
+# packaging/dry-run proof remain separate obligations; this flag is not a competition kernel.
 analyze-objects *ARGS:
     uv run --no-sync --with matplotlib python -m workbench.measure.object_analysis "$@"
 

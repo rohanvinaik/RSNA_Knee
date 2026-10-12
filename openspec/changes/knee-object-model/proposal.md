@@ -31,8 +31,10 @@ the founder recording the knee teaching. That teaching is now recorded.
 - Construct interstices as relations between facing objects, each carrying gap, walls, fill and
   contents. Compartments are enumerated by the bones, never searched for.
 - Settle medial/lateral from the fibula's geometry rather than the laterality tag, which is absent
-  from 181 of 336 series; abstain where the fibula is out of field.
-- State each of the twelve findings as a predicate on a named subject, and emit twelve confidences.
+  from 181 of 336 series in the historical measurement. Keep secondary witnesses for
+  concurrence; abstain when no warranted sign is available. Their independent fallback
+  authority remains unresolved and is not supplied by this reconciliation.
+- State each of the twelve findings as a predicate on an indexed structural subject (anatomy remains human design vocabulary), and emit twelve confidences.
 - Keep recognition mechanical. The thesis's memory, buckets and recall (§8) are not part of the object
   parse; they arrive at the diagnosis stage, for presentations a predicate cannot settle alone.
 
@@ -44,7 +46,7 @@ the founder recording the knee teaching. That teaching is now recorded.
   resolved from geometry, with the residual pulled out and nothing significant left unassigned.
 - `object-relations`: Defines interstices as constructed relations between facing objects, their
   enumeration by the bones, and their gap, walls, fill and contents.
-- `finding-predicates`: Defines each of the twelve findings as a predicate on a named object,
+- `finding-predicates`: Defines each of the twelve findings as a predicate on an indexed object,
   relation, span or envelope, and the emission of twelve confidences.
 
 ### Modified Capabilities

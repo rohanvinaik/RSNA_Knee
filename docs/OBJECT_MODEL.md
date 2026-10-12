@@ -4,6 +4,19 @@
 docs/SPINE.md as the project's structure; SPINE.md keeps the way of working. Read this FIRST in a
 new session or after a compaction, then docs/chapters/<stage>/README.md for where a stage stands. -->
 
+## Runtime vocabulary and evidence
+
+The later founder rulings in `chapters/02-collapse/teachings.md` distinguish an
+`<object>` (a resolved visual subset) from an anatomically meaningful human object.
+Anatomy informs the design and the inventory below; runtime subjects are indexed and
+selected by retained structural facts. No anatomical naming stage is required. See
+[PIPELINE_AS_OBJECT.md](PIPELINE_AS_OBJECT.md).
+
+This document states intended structure. Historical observations below do not certify
+current resolution of named anatomy. [PIPELINE.md](PIPELINE.md) maps the actual interfaces;
+[the reconciliation evidence](chapters/02-collapse/measurements/documentation-reconciliation-20261012.md)
+is a dated run, and `just unit`/source/returned records recompute standing.
+
 ## The claim
 
 **A finding is a predicate violation on an object, or on a relation between objects.** It is never a
@@ -62,7 +75,8 @@ missed, because the bones produce it.
 The elements of the knee, each resolved from the data's own geometry. Bones first, because they are
 what the rest is defined against: **femur, tibia, patella, fibula**.
 
-Resolved today by the dome, re-derived for bone. The thesis's centres are brightness peaks because a
+The current geometric instrument is the dome re-derived for bone; its territories are
+indexed proposals, not certificates that the anatomical inventory has been resolved. The thesis's centres are brightness peaks because a
 nucleus is brightest at its centre; a bone is not an emitter, it is a solid bounded by dark cortex, so
 it is **deepest** at its centre. The distance transform replaces brightness as the dome's height
 field, and §6.2's law survives: prominence, never a level, so "nothing is cut on strength" and a thin
@@ -120,8 +134,9 @@ an **outline**.
 ## The inventory: every element that must get an `<object>` role
 
 The goal, founder 2026-10-11: *"resolve every single element that is significant in any way to the
-operation of the knee, and thus carries diagnostic relevance."* This is that list, assembled from
-both second readers' answers and checked against the twelve. **Bold** is resolved today.
+operation of the knee, and thus carries diagnostic relevance."* This is the design inventory, assembled
+from both second readers’ answers and checked against the twelve. Bold is historical emphasis,
+not current resolution standing; current records do not certify anatomical identities.
 
 **Bones and their sub-objects (T1).** **Femur** → shaft, medial condyle, lateral condyle, trochlea,
 notch roof and walls, epicondyles, adductor tubercle. **Tibia** → shaft, medial plateau, lateral
@@ -130,8 +145,9 @@ tubercle, Gerdy's tubercle. **Patella** → median ridge, medial and lateral fac
 styloid, neck. For each: cortex, **subchondral plate**, marrow (fat vs red marrow), physeal scar.
 
 The watershed already tends to split the distal femur at the notch and the tibia at the eminence,
-because both are saddles in the distance field. **That split is not a defect — it is the compartment
-enumeration**, arriving for free from machinery already running.
+because both are saddles in the distance field. **That split motivates the intended compartment
+enumeration.** A watershed saddle is not by itself a certificate of a complete interstice;
+the retained touching-pair census and sampled dark pairings have different scopes.
 
 **The articular layer (new, and the largest omission).** Articular cartilage on the femoral condyles,
 trochlea, tibial plateaus and patellar facets, each with a thickness profile; the subchondral plate
@@ -172,7 +188,9 @@ uses T1 FS but with intra-articular contrast and deliberate distension, and its 
 
 ## The twelve findings as predicates
 
-Each row is a measurement on a named object or relation. None is a search over an image.
+Each row names the human design subject of a measurement on an object or relation.
+Production uses indexed subjects selected by structural facts, not the anatomical words.
+None is a search over an image.
 
 | finding | subject | predicate |
 |---|---|---|
@@ -318,17 +336,21 @@ the diagnosis stage, for the presentations a predicate cannot settle alone.
 
 ## The route
 
-| stage | what it produces | state |
-|---|---|---|
-| study | files → series, whole at stored fidelity | built |
-| field | regime, noise law, physical frame, squint | built (Packet A) |
-| lenses | per-place readings across every acquisition, as ternary digits against a static middle | not built |
-| objects | every diagnostically significant element of the knee | partly (B1 territories, B2 conversation); the residual is open |
-| relations | interstices per facing pair, with gap, walls, fill and contents | not built (Packet C) |
-| ownership | every place owned; residual pulled out until nothing significant is unassigned | not built (Packet D) |
-| bundles | each object's profile: its banks and rows, as row counts, lineage among them | not built |
-| predicates | the twelve, each on its subject | not built |
-| output | twelve confidences per study, with the kept record behind them | not built |
+| route package | design role |
+|---|---|
+| study | files → series, whole at stored fidelity |
+| collapse (field) | regime, noise law, physical frame, squint |
+| lenses | per-place readings per acquisition as ternary digits |
+| objects | diagnostically significant visual subsets; border refinement inside this stage |
+| relations | interstices per facing pair, with gap, walls, fill and contents |
+| ownership | claims and residual scheduling |
+| vectors (bundles) | bank/row counts, lineage among them |
+| predicates | the twelve, each on its structurally selected subject |
+| output | twelve confidences, with a companion named-code record |
+
+This is the intended nine-stage route, not a cached status table. Compute declared
+standing with `just unit`, then check actual invocation/consumption and drawing outcomes
+through [PIPELINE.md](PIPELINE.md) and the real entry point.
 
 Beside the route: **memory** and **expert** (diagnosis-stage recall of presentations), **record**,
 **agencies**.

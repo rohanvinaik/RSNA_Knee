@@ -1,7 +1,11 @@
 # Tasks
 
-Ordered by what each stage consumes. A stage is done when it has run over the 58 through Chapter 1's
-real entry point and saved its image series, not when its unit tests pass.
+This is the full architecture checklist. Immediate breadth-first work belongs to
+`every-stage-renders`; measurement/contour substrate belongs to `object-resolution-toolkit`.
+A real-entry-point demonstration with visible records establishes the mechanism; the
+58-study tasks here measure engineering robustness and cost. Unit tests alone establish neither.
+Anatomical names below describe the designer’s intended subjects; runtime records use
+indexed structural subjects, selected by retained facts (later Chapter 2 founder rulings).
 
 ## 1. Record the structure
 
@@ -28,7 +32,7 @@ real entry point and saved its image series, not when its unit tests pass.
 
 ## 4. The predicates
 
-- [ ] 4.1 For each of the twelve, implement the predicate on its named subject, returning a named code and a reading in physical units; verify no predicate's scope is the whole field and that an unresolved subject abstains rather than reading absent.
+- [ ] 4.1 For each of the twelve, implement the predicate on its indexed structural subject, returning a named code and a reading in physical units; verify no predicate's scope is the whole field and that an unresolved subject abstains rather than reading absent.
 - [ ] 4.2 Declare every bar a predicate reads as a recorded argument, written before the run that judges it; verify no bar is fitted to the labels and that measurements are reported per class for the founder's reading.
 - [ ] 4.3 Settle Baker's subject with the founder once the object parse is closed, since its outpouching is bounded by objects the parse must first resolve.
 - [ ] 4.4 Pin each pure predicate decision with `just detective` and record its standing per current digest.

@@ -3,14 +3,16 @@
 ### Requirement: Objects are resolved from geometry, never recognised
 The system SHALL resolve each knee element from the data's own geometry and the
 anatomy's invariant relations, and SHALL NOT use stored cases, learned
-resemblance or an anatomical atlas during the object parse. An object's identity
-SHALL follow from invariant relations — position in the patient frame, adjacency,
-and relative extent — so that no element requires recall to be named.
+resemblance or an anatomical atlas during the object parse. An object’s structural standing
+SHALL follow from invariant relations — position in the patient frame, adjacency
+and relative extent. Production SHALL retain indexed subjects and the selecting
+facts, not anatomical identity labels; anatomy informs the human design.
 
 #### Scenario: A bone is identified by its relations
 - **WHEN** two large bone territories face each other across the articulation
-- **THEN** the superior is the femur and the inferior the tibia, settled by the
-  patient frame alone, with no stored case consulted
+- **THEN** their indexed extents and superior/inferior relationship are retained
+  without stored cases or anatomical naming; the human design associates those
+  structural subjects with its intended anatomy
 
 #### Scenario: Recall is requested during the parse
 - **WHEN** any object-parse step would need a confirmed case to proceed
@@ -44,9 +46,9 @@ The DICOM laterality tag SHALL NOT be required.
   medial is its opposite, and the knee's side follows from it
 
 #### Scenario: No laterality witness resolves
-- **WHEN** neither the fibula nor a secondary witness is resolved in the acquired
-  field, which is common since the fibular head sits 1–2 cm below the lateral
-  plateau
+- **WHEN** no warranted laterality sign is resolved in the acquired field
+  (the secondary witnesses are for concurrence; independent fallback authority
+  remains a founder ruling, not an implicit default)
 - **THEN** medial/lateral is abstained with a named code, because the frame fixes
   the axis and never its anatomical sign, and every side-dependent finding
   abstains rather than being assigned a side

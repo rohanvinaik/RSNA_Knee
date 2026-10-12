@@ -39,10 +39,13 @@ independently proposed something different (`readings/witnesses-codex.md`,
    per-witness spread that entered the band. What survives is the small true thing: structure
    selects which places enter the population; the distribution's own terciles then set the edges.
 
-**Consequently `knee.lenses.digits.digit_code` has the wrong shape against the oracle** — it takes a
+**Historical implementation annotation, at this ruling (2026-10-11):**
+`knee.lenses.digits.digit_code` then had the wrong shape against the oracle — it takes a
 `witness_middle` plus a band computed from spreads. Nothing consumes it (verified by
 `find_referencing_symbols`: test callers only), so the cost of correcting it is one pinned module.
-Its *silence* rules are right and match §7 exactly.
+Its *silence* rules were retained. The later candidate replaces this shape with low/high
+edges and is connected by `read_lenses`; see this chapter’s README for current evidence.
+The founder’s quotation and ruling above remain unchanged.
 
 ### What his ruling did NOT settle, recorded so it is not assumed
 

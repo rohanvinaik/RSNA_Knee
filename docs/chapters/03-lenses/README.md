@@ -5,7 +5,7 @@ this stage sits, and `docs/STAGE_CONTRACT.md` for what every stage owes.
 
 ## The chapter's task, in one line
 
-Write every place of every acquisition as **balanced-ternary digits against named witnesses**, so
+Write every place of every acquisition as **balanced-ternary digits against its own edge pair**, so
 that a tissue class is a *conjunction of rows* rather than a threshold on one image.
 
 ## Why it exists: the failure it answers
@@ -58,15 +58,31 @@ Two laws carry straight across. §1.12's three readings — **a digit of 0 is "a
 not silence"**, and a row no place writes is a different thing entirely. And lineage is a bank, not
 metadata: "how its cell came out" sits *inside* the profile.
 
-## What is built
+## Current contract and evidence
 
-| module | what it decides | standing |
-|---|---|---|
-| `digits.py` | one place's standing against one named witness | `digit_code` 93/95 · `band_width` 6/6 · `is_read` 4/4, all COMPLETE |
-| `slabs.py` | did THIS slice measure THAT place | `slab_code` 55/55 · `gap_fraction` 21/21 · `was_measured` 5/5 · `half_thickness` 7/7, all COMPLETE |
+`digit_code(place_value, low_edge, high_edge, population_count, minimum_population)`
+uses inclusive low/high edges for the middle. `band_width` and the witness/spread
+shape are retired. `places.read_lenses` is consumed by `pipeline.run_study`; it writes
+full native-volume codes/digits, saves the selected plane and names silence separately.
+It records `normalisation: none`. The current lens renderer and saved-record adapter exist.
 
-Both are pure decisions returning named codes, pinned two-sign: an intent test for what the function
-must do, and an enforced must-not for what it must never do.
+The [dated run](../02-collapse/measurements/documentation-reconciliation-20261012.md)
+observed two `present` series and three `no_edges` series, with the latter drawn as silence.
+This is connected candidate behavior. Numeric-map admission remains open in
+`every-stage-renders` §2: Detective returned `UNGATEABLE` and array CrossHair was
+`Not confirmed` in the retained audit. No claim of current certification follows from
+historical scalar counts or the ordinary gate.
+
+`slabs.py` holds the cross-acquisition support decisions, but is not reached by the
+current route. A native map is not yet a matched-place conjunction across acquisitions.
+
+### Historical scalar verification (2026-10-11)
+
+The withdrawn witness-middle implementation recorded `digit_code` 93/95, `band_width`
+6/6 and `is_read` 4/4, COMPLETE. Slab decisions recorded `slab_code` 55/55,
+`gap_fraction` 21/21, `was_measured` 5/5 and `half_thickness` 7/7, COMPLETE.
+These describe those source versions only. The lessons below remain history, not
+current-digest standing.
 
 ### The slab rule, and where silence comes from
 
@@ -127,23 +143,20 @@ the distribution's own terciles then set the edges.** Both second readers' corre
 anatomy (`readings/witnesses-{codex,fable}.md`) and are kept — a compartment is not a tissue, marrow
 can be drawn from the object carrying the finding — but they no longer describe a component to build.
 
-**Consequently `digit_code` has the wrong shape** and is the chapter's first correction: it takes a
-`witness_middle` plus a band computed from spreads where §7.2 says a low edge and a high edge, both
-in the 0 row. Nothing consumes it (`find_referencing_symbols`: test callers only), so the cost is one
-pinned module.
+**The old shape was corrected by the later candidate**, not left as the chapter’s next task.
+The scalar now takes low/high edges. Current consumers and admission limits are above.
 
-## What is open
-2. **`rows.py`** — assembling (acquisition, witness) rows, and Codex's **correspondence contract**:
-   a *place* conjunction (overlapping support inside one matched territory) versus an *object*
-   conjunction (same object, not necessarily the same part). Without it, one part of an object
-   writing "bright on non-FS" and another writing "dark on FS" combine into false evidence that some
-   place showed both.
-3. **`knee/pictures/lenses.py`** — the stage cannot claim anything but `not_built` without it
-   (`docs/STAGE_CONTRACT.md`; enforced by `tests/knee/test_skeleton.py`).
-4. **Three rows neither the lead nor the thesis had**: fat-suppression quality per slice, the B0
-   angle (magic-angle collagen reads intermediate on short-TE and dark on T2 — the same signature as
-   mucoid degeneration, so the angle is "a witness that exonerates"), and the motion offset, which
-   point-wise sampling silently bets is zero.
+## What remains open
+
+- Local structural normalisation before digitisation: the ordering is settled, the mechanism
+  remains founder-supplied. The candidate explicitly applies none.
+- Correspondence/support across acquisitions: place conjunction means overlapping support
+  inside a matched territory; object conjunction need not mean the same part. Independent
+  bright/dark counts cannot be silently combined into one place’s evidence.
+- Bundles and their dispatch contract, named banks and missing readings (`every-stage-renders` §3).
+- Numeric candidate admission and full engineering evidence (`every-stage-renders` §2).
+- Fat-suppression quality, B0-angle and motion readings discussed in the earlier consultations.
+  Their meanings remain design questions rather than automatically supplied pipeline stages.
 
 ## The readings behind this chapter
 

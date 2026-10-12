@@ -60,10 +60,12 @@ Run from the repository root. `just --list` lists the recipes and their argument
 | `just profile-tree <output.html> <script.py> [arguments]` | Pyinstrument call tree |
 | `just profile-calls <output.prof> <script.py> [arguments]` | stdlib cProfile |
 | `just render <script.py> [arguments]` | workbench drawing, supplying Matplotlib per run |
-| `just plan-status` / `just plan-check` | OpenSpec's tracked packet artifacts and strict specification validation |
-| `just plan-next` | compute completed and remaining implementation tasks from the recorded plan |
-| `just graph <output>` | Hamilton's development DAG around the actual production study run |
-| `just analyze-objects [arguments]` | explicit physical request through production; saves arrays, receipt and atomic study checkpoints |
+| `just unit` | whole open tasks, declared route metadata and structural place diagnostics |
+| `just places` | declared modules versus filesystem/import graph; advisory, not runtime certification |
+| `just plan-status [change]` / `just plan-check [change]` | artifact status / strict validation; default `every-stage-renders` |
+| `just plan-next [change]` | task checklist, default active breadth-first change; artifact completion is separate |
+| `just graph <output>` | static development DAG validation; execution commands with a UID observe an actual run |
+| `just analyze-objects [arguments]` | real production route; arrays, receipt, checkpoints and joined drawings by default |
 | `just same <run>` | source-linked saved-plane reference/JIT comparison |
 | `just packet-status <run>` | recompute and save source/proof/artifact standing for a handoff |
 | `just render-packet [arguments]` | saved-record image series and source manifest, with per-run Matplotlib |
@@ -84,6 +86,21 @@ external modules are allowed in the graph; an import of one is still forbidden.
 deptry recognizes `_out` as the workbench's sibling module and Matplotlib as intentionally
 supplied via `--with`, per `workbench/README.md`. It still reports unused declared packages;
 these are leads to inspect, not authority to remove a package from the founder's design.
+
+## One command, its switches and its limits
+
+`just analyze-objects` requires `--tile-mm`, `--span-mm`, `--samples`, `--axis`,
+`--backend` and `--out`; supply `--uid` for one study. Conversation defaults on
+and requires `--prominence-mm`; `--no-conversation` explicitly disables it.
+Drawing defaults on; `--no-pictures` skips the drawing edge and its import.
+This switch alone is not a competition kernel or proof of DEPLOY compatibility: the
+submission projection, packaging and private Kaggle dry run remain separate work.
+
+The joiner reads saved records and keeps each drawing outcome. Its current packet
+call needs a founder-supplied probe fraction; collapse, vectors and output have no
+joined drawer. Renderer-module checks do not prove that actual stage images exist.
+See the [dated execution evidence](chapters/02-collapse/measurements/documentation-reconciliation-20261012.md).
+Use its parameters only as a reproduction of that recorded request, not new defaults.
 
 ## Profiles and pictures
 

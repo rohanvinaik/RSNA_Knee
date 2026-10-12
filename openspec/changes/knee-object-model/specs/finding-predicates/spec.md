@@ -1,12 +1,11 @@
 ## ADDED Requirements
 
 ### Requirement: Every finding names its subject before it is measured
-The system SHALL state, for each of the twelve findings, the named object,
-relation, span or envelope it is a predicate on, and SHALL measure only that
-subject. The twelve subjects and predicates are those stated in
-`docs/OBJECT_MODEL.md`, which is the single source for them. No finding SHALL be
-read from the field at large, and no finding SHALL be computed by a measurement
-whose scope is the whole image.
+The system SHALL measure each finding only on its resolved indexed object,
+relation, span or envelope, retaining the earlier facts selecting that subject.
+Subject classes and predicates SHALL follow `docs/OBJECT_MODEL.md`. Production
+records and dispatch SHALL NOT require anatomical names. A whole-field
+measurement SHALL NOT be a finding’s predicate.
 
 #### Scenario: A predicate is asked of a resolved subject
 - **WHEN** a finding's subject is resolved for a study
@@ -14,7 +13,7 @@ whose scope is the whole image.
   units, and the measurement records which series supported it
 
 #### Scenario: A whole-image measurement is proposed for a finding
-- **WHEN** a measurement's scope is the field rather than a named subject
+- **WHEN** a measurement's scope is the field rather than an indexed structural subject
 - **THEN** it is refused as a finding's predicate, because a finding is a
   statement about an object and not a pattern in a picture
 

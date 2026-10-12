@@ -4,6 +4,15 @@ Recorded 2026-10-11 from the founder's conversation; theory is *What an <Object>
 Is*, current sibling thesis. This document persists intent. Run receipts,
 saved arrays, tests and current source digests compute implementation standing.
 
+## Responsibility and later rulings
+
+This is the measurement/contour substrate contract, not a second route or the
+immediate project checklist. `every-stage-renders` owns breadth-first integration;
+`knee-object-model` owns the full architecture. Anatomical names below describe
+human design intent; production keeps indexed extents and structural facts.
+Thin ownership and sampled pairings now exist as separate candidates; C/D’s full
+extent/residual scheduling obligations remain. See `../../BUILD_PLAN.md`.
+
 ## The idea we are building
 
 The founder: "Don't look at it by trying to count pixels, look at WHERE those

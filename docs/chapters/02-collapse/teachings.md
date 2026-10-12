@@ -735,7 +735,14 @@ And on where the anatomy lives, which resolves an apparent tension with the no-a
    deliverable is not a score and not a result that beats a competing design — it is the existence
    proof, complete across every stage.
 
-### What the lead must NOT assume from it — a question for him
+### Earlier role ambiguity — lead annotation, superseded by the Keller reading above
+
+Reconciliation note, 2026-10-12: this annotation describes the earlier parking. The
+Keller section above and `every-stage-renders`’ final section record the subsequent
+structural-role reading and unpark the work with support prerequisites. No founder
+quotation below or above has been changed.
+
+#### What the lead must NOT assume from it — the earlier question
 
 The lead had parked contour refinement on §6: *"once an object is identified meaningfully, its role
 assigned, then its exact boundaries and borders can then recursively be refined given such

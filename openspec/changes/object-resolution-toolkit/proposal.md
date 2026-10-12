@@ -21,6 +21,9 @@ Chapter 2 needs a traceable physical measurement foundation before anatomical ob
 - `geometric-interiors`: Defines surrounding-field constraints, all geometric territories, native dark-band evidence and production-backed staged pictures for B1.
 - `same-knee-conversation`: Declares the continuing B2 contract for cross-resolution of independent readings of shared objects, retaining native evidence and disagreements.
 
+- `supported-contour-chains`: Role-supported boundary connection/refinement with
+  explicit support, movement bounds, closure standing and preserved originals.
+
 ### Modified Capabilities
 
 None.

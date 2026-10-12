@@ -3,13 +3,12 @@ paths:
   - "**/*.py"
 ---
 
-<!-- LG_GEN:3481 LG_TS:1791800046 -->
+<!-- LG_GEN:3495 LG_TS:1791823137 -->
 # Session State
 > LintGate telemetry — observational state, not instructions. Listed files are most-recently-touched (MRU) and may lag the current task.
 
-Mode: habit (score: 0.65)
-Recent files: [measure_full_run.py, tasks.md, object_interiors.py, object_boundaries.py, test_pipeline_measurements.py]
+Mode: normal
 Coherence: systemic | Warnings: 2
 
-Context: ~4% of 200k (est.) | Tools: 2466 | Compactions: 61
+Context: ~0% of 200k (est.) | Tools: 9 | Compactions: 0
 Vitals (Prism, last session): setup 85

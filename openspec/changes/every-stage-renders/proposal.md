@@ -2,8 +2,10 @@
 
 ## Why
 
-The route reaches `objects` and stops. Seven of its nine stages are `not_built` with no renderer, so
-there is nothing for the founder to look at and therefore nothing he can assign meaning to. He ruled
+At this change’s declaration, the route stopped at `objects` and later stages lacked
+inspectable output. This is the problem statement, not current state: later candidates
+and joined drawings are connected, with admission and capacity gaps still open.
+Current evidence is in `docs/RECONCILIATION.md` and the dated chapter measurement. He ruled
 on 2026-10-11 that the scarce resource is his own attention, not tokens: *"I can get to the
 refinement of the baseline functional pipeline when it actually EXISTS, and each step can put out a
 non-stupid image, even if it's not actually good quality."*
@@ -45,6 +47,9 @@ constant.
   as absent rather than as zero.
 - `abstaining-findings`: the twelve findings as named decisions that abstain, and their serialisation
   to the competition's schema without a number standing in for silence.
+
+- `dark-bounded-pairing`: Native sample-supported indexed pairs across existing dark
+  brackets, preserving every refusal; not complete interstice extents.
 
 ### Modified Capabilities
 
