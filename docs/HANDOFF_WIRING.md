@@ -282,13 +282,13 @@ not merely unfinished — it is closed to the only input that can improve it.
 
 ## 9. Where things are, and how to recompute all of it
 
-`main` holds the real history. The branch `review/wiring-gaps` holds a deliberately assembled commit
-— an empty base `b854662`, then `7d9a52f` adding 55 files, 7,012 lines: the 22 unreached modules,
-the four stages that do not work, their potential consumers, and `docs/REVIEW_GOALS.md`. It was
-built as the target for a cloud review that did not run. It is a partial checkout and is not a
-working tree; `git switch main` restores everything.
+`main` holds everything. A branch `review/wiring-gaps` briefly existed, assembled as the target for
+a cloud review that could not run; it has been deleted at the founder's instruction and held no
+unique work — every file in it was copied from `main`. `docs/REVIEW_GOALS.md` survives on `main` and
+is still the clearest statement of what to look for and what not to propose; read it beside this
+document.
 
-Nothing has been deleted this session. Zero files removed.
+No source file has been deleted. Zero files removed from the project.
 
 To recompute every number in this document:
 
