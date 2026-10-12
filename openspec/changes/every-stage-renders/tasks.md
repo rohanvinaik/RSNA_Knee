@@ -101,15 +101,32 @@ earlier stage produced, identity is not assumed. If it is a kind-label, it is, a
 - [ ] 1.2 Declare the shared absence vocabulary as `stage-totality` requires, with its three silences
       distinguished — predecessor absent, predecessor present but empty, item unread. Pin the pure
       decision two-sign. Verify no stage coins a private code for a silence it already names.
-      **A fourth silence is no longer needed**: Fable proved 1.3's shells required one ("the record
-      shape is unsettled") that was none of the three, and 1.3 below removes the shells.
-- [ ] 1.3 **Give `relations` and `ownership` thin REAL implementations, not shells.** Changed
-      2026-10-12: the founder ruled that an interstice is defined between two `<object>`s, not two
-      role-bearing objects, so it is constructible today from the facing-pair graph the boundary
-      census already computes; and ownership is every place's claim or `unassigned`, which needs no
-      identity. Each returns a record, each renders, and **ownership's picture is the residual map** —
-      every place nothing claims, which is the next structure argument. Verify each is consumed by
-      the route and that `just graph` reports nothing dangling.
+      **A fourth silence IS needed after all**, and this reversed twice. Fable proved the original
+      shells required a silence that was none of the three. The lead then wrote that it dissolved,
+      because 1.3 would make both stages real. 1.3a now shows relations cannot be real yet, so 1.3b
+      keeps a shell whose silence is about a **missing construction**, not a missing input — still
+      none of the three. The `stage-totality` spec already permits this: it says "at least three".
+- [ ] 1.3 **Give `ownership` a thin REAL implementation.** The founder's `<object>` ruling removed
+      identity as a blocker, and ownership needs nothing else: every place claimed by one `<object>`
+      or named `unassigned` is `interiors.labels` read directly — a non-zero label is a claim, a zero
+      inside the available field is the residual. It returns a record, it renders, and **its picture
+      is the residual map**, every place nothing claims, which is the next structure argument and the
+      channel the founder reads to supply the next lens. Verify it is consumed by the route and that
+      `just graph` reports nothing dangling.
+- [ ] 1.3a **Record which territory each bracketed profile reached across the dark.** This is the
+      pairing `relations` needs and **it does not exist in any record**. Confirmed in source
+      2026-10-12 by reading `interiors.py` whole: `boundary_edges` does
+      `regions.append(labels[rows, cols])` — the territory's **own** label — and uses the neighbour
+      only at `kind[padded[nr, nc] > 0] = EDGE_KINDS["peer_territory"]`, to set the edge kind. So the
+      far side is genuinely unrecorded, and the pairs the thesis wants are bounded **across dark**,
+      which are precisely the pairs that are *not* watershed-adjacent. Its own unit, its own contract,
+      pinned two-sign. **Corrects a false claim this lead wrote into task 1.3 on 2026-10-12** — that
+      relations was constructible "from the facing-pair graph the boundary census already computes".
+      It is constructible in principle and it is **not a lookup**.
+- [ ] 1.3b **`relations` stays an honest shell until 1.3a lands**, and its absence names the missing
+      construction rather than a missing input. It runs, returns that named absence, and renders a
+      frame showing it. Verify the absence it returns is not one of 1.2's three input silences, since
+      it is not about an input at all.
 
 ## 2. The lenses MVP — delegable
 

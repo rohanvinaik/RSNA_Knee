@@ -228,9 +228,9 @@ contract specified before implementation.
 
 **The acceptance**, in his words: *"Doesn't have to be good, or able to diagnose — it has to have the
 requisite component of the full thesis, and have the symbolic capacity to resolve and reason on these
-`<object>`s."* So the pass is complete when **one study, through the real entry point, produces ten
-stages that each ran, each returned a record or a named absence, and each rendered what it resolved**
-— and the three capacity properties above hold.
+`<object>`s."* So the pass is complete when **one study, through the real entry point, produces the
+nine stages each having run, each having returned a record or a named absence, and each having
+rendered what it resolved** — and the **four** capacity properties above hold.
 
 Then he inspects the image series. That is the point of the change, and nothing in it may assign
 meaning on his behalf.
