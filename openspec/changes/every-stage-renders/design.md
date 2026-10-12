@@ -31,7 +31,9 @@ computes". **That claim is false**, and the section below says why in source ter
   `interiors.labels` read directly: a non-zero label is a claim, a zero inside the available field is
   the residual. No identity, no new record shape, no construction. It becomes thin and real.
 - **`relations` stays a shell for one more step**, not because of identity but because the pairing it
-  needs is not in any record yet.
+  needs is a complete interstice construction, not merely a touching-pair census.
+Later sampled dark pairs are now retained as a candidate; the shell still constructs
+no extent and is not connected to that candidate as a construction consumer.
 
 **Correction two.** The proposal's earlier claim that an end-to-end run "proves every wire" is false,
 and Codex gives the counterexample: *"a disconnected predicates stage that always returns twelve

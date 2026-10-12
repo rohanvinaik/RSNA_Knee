@@ -1,5 +1,14 @@
 # Design
 
+## Responsibility in the current build
+
+This change owns the substrate packets, including supported-contour-chains added
+after the original proposal. The immediate breadth-first route belongs to
+`every-stage-renders`; full object/relation/predicate/deployment work belongs to
+`knee-object-model`. B2’s two maps remain source evidence; the founder’s one-name
+conversation intent requires a deliberate exposed-standing contract, preserving
+originals and dissent. No merge rule is inferred here.
+
 ## Context
 
 See [proposal.md](proposal.md) for the motivation and scope. Chapter 1 reads each study and its series; Chapter 2's production measurement consumes that series. The pre-packet study route reread series. The admitted route decodes once, while workbench panels observe the returned values. The thesis compute contract requires a plain reference, a twin that agrees within one environment, and contracts carried as data.

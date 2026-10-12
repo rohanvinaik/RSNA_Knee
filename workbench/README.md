@@ -1,6 +1,6 @@
 # The workbench
 
-Work that is real but not production. Kept in the project rather than a scratchpad, because the
+Execution and development tools around the production package, plus historical probes. Kept in the project rather than a scratchpad, because the
 findings it produced are cited in the chapter records and a cited reading must be reproducible.
 
 ## The three tiers, and what separates them
@@ -8,16 +8,16 @@ findings it produced are cited in the chapter records and a cited reading must b
 | tier | where | what it is | the bar |
 |---|---|---|---|
 | **production** | `src/knee/` | the pipeline itself | lint, format, **types** (`ty`), **tests**, pure decisions Detective-converged, run over real studies |
-| **workbench** | here | probes, experiments, one-off measurements | it ran, it produced a finding, the finding is recorded. **Lint and format** apply; **no** types, **no** tests |
+| **workbench** | here | execution/drawing edge, observers and probes | whole-tree lint/format; targeted integration tests where declared; historical probes answer for their recorded measurements |
 | **scratch** | the session scratchpad | genuine throwaway — a thing tried once and abandoned | nothing; it is not kept |
 
 What the gate actually asks of this folder, exactly: `ruff check .` and `ruff format --check .` cover
 the whole tree, so a probe here is lint-clean and formatted. `ty check src tests` and
-`pytest` (`testpaths = ["tests"]`) do not reach it, so a probe is neither typed nor tested.
+`pytest` discovers tests under `tests/`, rather than in this folder. Those tests can and do
+exercise execution/graph/rendering adapters here; file location is not evidence of no tests.
 
-The Packet A Hamilton adapter is additionally exercised by production integration
-tests under `tests/`; that explicit evidence does not introduce a whole-workbench
-test/type obligation.
+The Hamilton and saved-record adapters have explicit integration coverage under `tests/`.
+That evidence does not introduce a blanket test/type obligation for historical probes.
 
 One rule is lifted here and nowhere else: **`BLE001`, the blind-except rule**
 (`pyproject.toml`). A probe that sweeps all 336 series *must* catch broadly — one unreadable
@@ -26,15 +26,21 @@ series is a finding to record, never a reason for the sweep to die. Everything b
 allowed, a probe with a wrong number is not.
 
 The line between the first two is not polish, it is **obligation**. A production module is
-something the pipeline depends on, so it answers to the gate. A workbench script is something a
-*reading* depended on, so it answers only for being re-runnable.
+something the pipeline depends on, so it answers to the gate. A historical probe is something a
+reading depended on. The joined execution/drawing adapters additionally answer to their
+explicit contracts and integration tests, despite living at the development/impure edge.
 
 The line between the second and third is whether anything cites it. A probe whose number appears
 in `docs/chapters/` belongs here. A probe that told me nothing belongs nowhere.
 
 ## What is here
 
-### `measure/` — probes that produced recorded findings
+### `measure/` — execution edge and recorded probes
+
+`object_analysis.py` is the one-command execution edge (`just analyze-objects`): it
+calls `run_study`, saves arrays/receipt/checkpoints, and draws saved records by default.
+Conversation is on by default and requires explicit prominence. The table below
+locates historical evidence; it does not report fresh corpus state.
 
 | script | the finding it produced | recorded in |
 |---|---|---|
@@ -47,7 +53,12 @@ in `docs/chapters/` belongs here. A probe that told me nothing belongs nowhere.
 | `regime_run.py` | the noise law over all 336 series: 4 concurring | `measurements/the-noise-law-fails-on-real-data.md` |
 | `reports.py` | all 58 studies carry a report; 456 of 696 label cells negative | `readings/the-labels-ternary-collapse.md` |
 
-### `render/` — probes that produced the pictures
+### `render/` — saved-record adapters and earlier probes
+
+`all_frames.py` joins eight adapters (packet, interiors, boundaries, conversation, digits,
+partition, pairings and predicates). Each outcome is retained in a gallery index, including
+`not_drawn` and route stages with `no_drawer`. It does not measure missing stage output.
+See [the current route](../docs/PIPELINE.md) for the join’s limits.
 
 These are the **impure edge**: they open a study, call a renderer, and write a PNG. The *pure*
 part — arranging a stage's values into panels — belongs in `src/knee/pictures/` and is moving

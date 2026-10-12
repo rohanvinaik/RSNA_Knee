@@ -6,7 +6,7 @@ own. Read it before reading any section of the thesis, and before porting anythi
 cell-tracking build.
 
 > **For what each section actually BUILDS here, read `docs/INSTANTIATION.md`** — the join this page
-> does not carry: section → stage → package → computed state → what it owes, with every open ruling
+> does not carry: section → stage → package → responsibility and what it owes, with every open ruling
 > that is the founder's listed rather than invented.
 
 > "This is a thesis of a type of *machine intelligence*, not a pile of scripts. That's why I wrote
@@ -72,10 +72,14 @@ was. A thing that "fails to port" is a sign the instance's content was mistaken 
 (`openspec/changes/every-stage-renders/design.md` carries the worked cases).
 
 **It settles the scope.** §12 is operations *on* resolved objects — tracking, following, division.
-**This project stops at recognition**, in his words, so §12 is out of scope and the route's upper
-stages are not missing anything.
+**This project stops at recognition**, in his words, so §12’s tracking/following/division
+operations are out of scope. That does not exempt the nine-stage route’s unimplemented
+bundles, relation extents or output; those remain obligations in the active changes.
 
-**It changes one thing in the plan, and the change is real.** His §6:
+**The initial §6 reading below is historical.** Later `<object>`/Keller teaching clarified
+that the role is structural, not an anatomical name. `every-stage-renders` records contour
+work as unparked, with support prerequisites. The earlier account explains the parking;
+it is not current sequencing. His §6:
 
 > "once an object is identified meaningfully, **its role assigned**, then its exact boundaries and
 > borders can then recursively be refined **given** such assignment"

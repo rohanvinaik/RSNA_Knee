@@ -6,8 +6,8 @@ neither. What changed its behaviour that day was never prose: `just plan-status`
 Detective refusing to call two survivors equivalent, ruff failing the gate, an intent test failing.
 Commands answer back; paragraphs do not. So the loop is something you RUN.
 
-State here is computed, never written down (`AGENTS.md`, "Where truth lives"): the route reports
-itself, and the renderers are read off the drawing package.
+Planning/place diagnostics are computed. ROUTE is declared standing, and renderer-module
+presence is read from the drawing package. Neither is a runtime or admission certificate.
 
 Every multi-line string below is parenthesised on purpose: an implicit concatenation inside a
 collection turns one missing comma into two silently merged entries (ruff ISC004).
@@ -156,7 +156,7 @@ GROUNDING = (
         "THEN GIT",
         (
             "`git log` for what actually landed. A commit message in this repository states what "
-            "was verified and what was left undone; prose elsewhere may be stale, git is not."
+            "was verified and what was left undone; history locates evidence; verify sources and rerun checks before asserting current state."
         ),
     ),
     (
@@ -170,15 +170,23 @@ GROUNDING = (
 
 
 def open_tasks() -> list[tuple[str, str]]:
-    """The first open task of each declared change, read from its own checklist."""
+    """Return each change's first unchecked task, including its whole continuation."""
     found: list[tuple[str, str]] = []
     changes = sorted((ROOT / "openspec" / "changes").glob("*/tasks.md"))
     for path in changes:
-        for line in path.read_text().splitlines():
-            stripped = line.strip()
-            if stripped.startswith("- [ ]"):
-                found.append((path.parent.name, stripped[5:].strip()))
-                break
+        lines = path.read_text().splitlines()
+        for start, line in enumerate(lines):
+            if not line.startswith("- [ ]"):
+                continue
+            end = start + 1
+            while end < len(lines):
+                following = lines[end]
+                if following.startswith(("- [", "#")):
+                    break
+                end += 1
+            task = "\n".join([line[5:].strip(), *lines[start + 1 : end]]).rstrip()
+            found.append((path.parent.name, task))
+            break
     return found
 
 
@@ -204,36 +212,38 @@ def main() -> None:
     for note in MEASURED:
         print(f"  - {note}\n")
 
-    print("THE ROUTE, as it reports itself:\n")
+    print("DECLARED ROUTE STANDING -- not an execution trace:\n")
     drawn = {
         path.stem
         for path in Path(pictures_file).parent.glob("*.py")
         if path.stem != "__init__"
     }
     for stage, state in ROUTE:
-        mark = "renders" if stage in drawn else "NO RENDERER"
+        mark = "renderer module present" if stage in drawn else "NO RENDERER MODULE"
         print(f"  {stage:<16} {state:<12} {mark}")
     print(
-        f"\n  {len(drawn)} renderer(s) in knee.pictures; a stage may not claim built or "
-        "partly without one\n"
+        f"\n  {len(drawn)} renderer modules in knee.pictures. Presence does not prove "
+        "successful drawing; inspect actual gallery outcomes.\n"
     )
-    # The change is NAMED in every command: the verbs default to knee-object-model, so an
-    # unqualified command sends a fresh session to the wrong checklist. Corrected 2026-10-12 --
-    # this footer still pointed at object-resolution-toolkit as "the next work" after the
-    # breadth-first change superseded it, and still said knee-object-model 1.4 was open after it
-    # was done. A fresh confirming agent caught the same class of staleness one layer up.
-    print("NEXT, with the change named so you reach the right checklist:")
+    # Defaults select the active breadth-first change; explicit names expose other owners.
+    print(
+        "NEXT -- defaults select every-stage-renders; each other owner stays explicit:"
+    )
     print(
         "  just plan-next   every-stage-renders         THE ACTIVE CHANGE: the next work"
     )
-    print("  just plan-status every-stage-renders         its artifacts")
     print(
-        "  just plan-status knee-object-model           the structure's tasks (2.1 is HIS to teach)"
+        "  just plan-status every-stage-renders         its artifacts (not implementation acceptance)"
     )
     print(
-        "  just plan-next   object-resolution-toolkit   the contour work, PARKED behind 1.3a"
+        "  just plan-status knee-object-model           the full architecture and engineering tasks"
     )
-    print("  just graph <out>                             is anything dangling")
+    print(
+        "  just plan-next   object-resolution-toolkit   unparked contour substrate; support prerequisites remain"
+    )
+    print(
+        "  just graph <out>                             static development graph; does not prove every internal wire"
+    )
     print("  just gate                                    before every commit")
 
 

@@ -5,6 +5,16 @@
 **[M]** a measurement made here, **[A]** a consultant (admissible because he asked for a
 consult-worked design; never warrant under Law 9).
 
+## Scope of this dated design
+
+This is the 2026-10-10 population-collapse design and its noise-law plan. It is
+retained as intent/history, not a description of the current native-digit or
+object-analysis entry point. Later founder teachings refine the route, runtime
+vocabulary, static middle and breadth-first build; start at `../../OBJECT_MODEL.md`,
+`../../PIPELINE.md` and `../../BUILD_PLAN.md`. No population reference is claimed
+implemented by this document. The cited `ch3_the_level_problem.md` was retired;
+current static-middle teaching is in `../03-lenses/teachings.md`.
+
 ## What the chapter produces
 
 A **disagreement geography** per view: a map over a common physical frame saying where the 58

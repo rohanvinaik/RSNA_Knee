@@ -1,16 +1,23 @@
 # RSNA Knee
 
-A classical-AI entry for RSNA Knee Abnormality Detection: 12 findings per knee MRI study, scored by
-macro-averaged ROC-AUC. There is no machine learning in the architecture.
+A classical-AI entry for RSNA Knee Abnormality Detection. The intended system resolves
+structural `<object>`s and their relations, then reads twelve findings as predicates.
+There is no machine learning in the architecture. Anatomy informs the design; runtime
+records use indexed subjects and named codes.
 
-- `src/knee/`: the build, one package per stage of Figure 8 of *What an \<Object> Is* (§2.8), built
-  in order with the founder.
-- `tests/`: its tests.
-- `data/raw/`: the competition's files, in Kaggle's own layout (gitignored; never redistributed).
-- `archive/`: everything from before 2026-10-10, under its old path.
+Start with [the object model](docs/OBJECT_MODEL.md), [the pipeline as one object](docs/PIPELINE_AS_OBJECT.md),
+and [the current route](docs/PIPELINE.md). [The build plan](docs/BUILD_PLAN.md) identifies each
+OpenSpec change's responsibility; [the resume entry](docs/chapters/02-collapse/RESUME.md) points to
+remaining work and evidence. [The reconciliation record](docs/RECONCILIATION.md) traces how this
+scaffold became the current architecture.
 
-Agents start at `AGENTS.md` (`CLAUDE.md` imports it).
+- `src/knee/`: nine route stages, with separate compute, telemetry and drawing layers.
+- `tests/`: engineering checks and intent tests.
+- `workbench/`: execution, saved-record rendering, development observers and historical probes.
+- `openspec/`: declared changes, scenario contracts and implementation checklists.
+- `data/`: private source data and derived runs; gitignored.
+- `archive/`: retired design, code and dated planning snapshots, consulted as history.
 
-Development setup and commands: [docs/TOOLING.md](docs/TOOLING.md).
-
-Chapter-by-chapter work packets and tool roles: [docs/BUILD_PLAN.md](docs/BUILD_PLAN.md).
+Agents start at `AGENTS.md`. The PI–undergrad workflow remains in [SPINE.md](docs/SPINE.md);
+its original Figure 8 chapter table is historical. Use `just unit` to compute planning and
+structural state. Commands and environment limits: [TOOLING.md](docs/TOOLING.md).

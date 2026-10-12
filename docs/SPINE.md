@@ -1,4 +1,4 @@
-# The spine: the knee, built chapter by chapter on Figure 8
+# The spine: the PI–undergrad workflow
 
 <!-- Loaded in every session through CLAUDE.md (`@docs/SPINE.md`); AGENTS.md points here. The plan and the way
 of working, in the founder's words where they exist. No state is written here: it is read from the code (each
@@ -17,7 +17,12 @@ stage package's docstring says whether the founder has given the knee's version)
 > roles. Figure 8's roles still apply where the route names them, and fold into the object model's
 > stages rather than ordering the build.
 >
-> **Everything else in this file still governs**: the PI–undergrad pass, the working loop, the two
+> **Later rulings refine the workflow:** the immediate build is breadth-first under
+> `every-stage-renders`; indexed structural `<object>`s need no anatomical names in records.
+> One real-study demonstration establishes a mechanism; the 58-study run is engineering.
+> See `docs/BUILD_PLAN.md` and `docs/PIPELINE.md`.
+>
+> **The workflow and source record below govern with those refinements**: the PI–undergrad pass, the working loop, the two
 > oracles, the corpus, and where things live. Only the chapter table is retired.
 
 ## What this project is
@@ -25,7 +30,8 @@ stage package's docstring says whether the founder has given the knee's version)
 A classical-AI computer-vision system for RSNA Knee Abnormality Detection: for each knee MRI study, a confidence
 for each of 12 findings, scored by macro-averaged ROC-AUC. There is no machine learning in the architecture. It
 instantiates the computer-vision thesis *What an \<Object> Is*, whose whole system is drawn in its Figure 8
-(§2.8), and it is built from that figure, one stage at a time. The founder, 2026-10-10:
+(§2.8), and its ideas are re-derived in the knee’s nine-stage object route. The original scaffold
+was built from the figure; the immediate build now proceeds breadth-first. The founder, 2026-10-10:
 - "Set up a project structure that basically lets us build the high-level structure laid out by that ASCII
   diagram in the thesis. Then I'll walk you though every step, explaining everything along the way."
 - "We need to build something like it here. That includes a lot of the literal mechanics, the workflow, but also
@@ -58,7 +64,7 @@ The founder's words, 2026-10-10 (the first group recorded in memory `feedback_pi
   promise I'll explain, but you have to actually engage, ask me if you doubt, work out problems with me, don't
   just assume."
 
-Each chapter, in order:
+For each declared unit, in the order set by the active change:
 1. **Read the oracle for the stage, whole**: its sections of the thesis, and how the cell-tracking project built
    it (below). `archive/` is dug from as needed; it is never the plan.
 2. **Tell**: say in plain words what the thesis stage does, what the cell-tracking build of it does, and what
@@ -199,8 +205,9 @@ except Chapter 1's §3, which is the lead's reading.
 
 ## Where things live
 
-- `src/knee/<package>/`: the build, one package per chapter. Its `__init__.py` docstring carries Figure 8's
-  text for that stage, the knee's version in a paragraph, and a pointer to the chapter's record. It stays
+- `src/knee/<package>/`: the stage and support packages of the current route. A chapter is a teaching
+  record, not necessarily one package. Each package docstring carries its thesis role, the knee’s
+  version and a pointer to its record. It stays
   short: a docstring is not a notebook.
 - **`docs/chapters/NN-<package>/`: the chapter's record. Read `README.md` there FIRST** in a new session or
   after a compaction. Each chapter folder holds:
@@ -218,6 +225,7 @@ except Chapter 1's §3, which is the lead's reading.
   meant.
 - `tests/`: the tests, Detective's generated suites among them.
 - `data/raw/`: the competition's files, in Kaggle's own layout (gitignored).
-- `archive/`: everything from before 2026-10-10, under its old path.
+- `archive/`: retired designs and code under their old paths, including packages retired after
+  2026-10-10 and dated planning snapshots. Consult it as history, never as the next plan.
 - The project verbs: `just test`, `just lint`, `just types`, `just gate`, `just detective <verb> …`,
   `just detective-resolution`.

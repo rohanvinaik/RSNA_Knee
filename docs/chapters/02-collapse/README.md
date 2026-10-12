@@ -15,8 +15,10 @@ readings through the read-once production route, returning separate concurrent
 and conditional subdivisions. All territories, unsupported divisions, source
 bands, disputes and missing support remain accessible. Its staged photos and
 per-view comparisons are in `data/pictures/object-toolkit/conversation-b2/`.
-The next operation is supported chain closure and constrained refinement
-(OpenSpec task 3.8), before facing surfaces, extent and anatomical ownership.
+The immediate build is now breadth-first under `every-stage-renders`, including native
+digit and sampled-pairing candidates, ownership and named predicates. Supported contours
+remain toolkit tasks 3.8a–3.12 beside that change, with their support prerequisites.
+See the [current route](../../PIPELINE.md) and [dated reconciliation evidence](measurements/documentation-reconciliation-20261012.md).
 The coronal example guides inspection; the theory and live cell implementation
 guide the general mechanism.
 
@@ -96,7 +98,8 @@ See `measurements/the-noise-law-fails-on-real-data.md`.
 **Do not resume by trying a fifth intensity instrument.** Four have failed, each for a different
 reason, and they are listed in `teachings.md`. These are objects, not intensity classes.
 
-The founder's ruling is outstanding. The three options put to him:
+The earlier noise-law record put three options to him; this historical discussion
+does not override the later structural-object/breadth-first rulings:
 1. keep refining the background instrument;
 2. accept that the dark estimator works only where a clean background exists, and let abstention
    carry the rest — so concurrence becomes a **reading about comparability**, not a target;
@@ -117,9 +120,10 @@ rendered series** whose air was nearly all zeros. The 336-series run reported **
 
 ## Vocabulary, so the next chapter does not inherit a collision
 
-- **Chapter** — a row of SPINE's table, one package under `src/knee/`.
+- **Chapter** — a teaching/evidence record. SPINE’s old chapter table is superseded;
+  the current route does not require one chapter per package.
 - **Stage 0–4** — the thesis's own numbering for the *loop's* stages (§5). It belongs to chapter 3
-  (`loop`), **not** to this chapter.
+  historically (`loop`), not to a new active package; the shelf package is archived.
 - The parts of this chapter are named, never numbered: **the noise law**, **the transform**, **the
   regime key**, **the objects and the seam**. Earlier notes called these "stage 1/2/3"; that
   numbering is retired because it collided with both of the above.

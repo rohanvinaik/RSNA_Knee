@@ -23,12 +23,14 @@ work is not finished, and neither is one that draws beautifully and was never me
 
 ---
 
-## 1. The picture — `ENFORCED`
+## 1. The picture — structural presence enforced, execution separately observed
 
 Every stage renders what it resolved. **A stage is not `built` until it renders**, and
 `tests/knee/test_skeleton.py::test_a_stage_is_not_built_until_it_renders` fails the gate if
 `knee.pipeline.ROUTE` claims `built` or `partly` for a stage with no module of its name in
-`knee.pictures`.
+`knee.pictures`. This enforces module presence, not a successful drawing. The joined gallery
+records `drawn`, `not_drawn` and `no_drawer`; full acceptance still requires actual output
+for every stage. See [PIPELINE.md](PIPELINE.md).
 
 - **One renderer per stage**, named for the stage, in `knee/pictures/`.
 - **A renderer may only ARRANGE values the stage already computed.** It may not measure, threshold,
@@ -54,7 +56,9 @@ the tools merely *check*.
 `ComputeContract` states `kind · language · reads · writes · allocation · work · parallel_unit ·
 reference · proof_gate`. `tests/knee/test_compute_contracts.py` fails the gate on a stub: a contract
 that does not name its reference and proof gate licenses nothing, and reads as a guarantee it has not
-earned. Contracts are **data attached without a wrapper** (§13.5) — never a decorator on the hot path.
+earned. The settled idiom is module-level `CONTRACT = ComputeContract(...)` attached to the
+reference with `@contracted(CONTRACT)`. Contracts are **data attached without a wrapper**
+(§13.5); the decorator returns the function unchanged and is not a hot-path wrapper.
 
 ### Language by computation shape, decided at design time
 | shape | language |
@@ -115,6 +119,9 @@ timing. **Counted work and profiler behaviour are reported separately.**
 - **One stage consumes only the stage below it**, through an interface narrow enough to state in a
   sentence. The route is `docs/OBJECT_MODEL.md`; `knee.pipeline.ROUTE` is its table of contents and
   reports each stage's state honestly.
+  Current `run_study` retains original series and several earlier measurement records
+  for later consumers. Literal neighbor-only consumption versus declared retained-record
+  interfaces remains an explicit scope question; `just imports` does not establish it.
 - **Measurements, decisions and orchestrations are kept apart** (§13.7): a measurement returns a
   number or a field and decides nothing; a decision returns a **named code**, is pure and total, and
   every bar it reads is an **argument** rather than a constant; an orchestration moves values and
@@ -205,7 +212,8 @@ founder (`docs/SPINE.md`, the working loop).
 3. a `ComputeContract` for each numeric kernel, naming its reference and proof gate
 4. a plain reference implementation, pinned, before any accelerated twin
 5. structlog events; OTel spans where it must be correlated
-6. a run over all 58 through Chapter 1's real entry point, with its image series saved
+6. a real-study demonstration through Chapter 1’s entry point, with its image series saved;
+   the separate 58-study run measures robustness, accuracy and cost (founder’s existential-evidence ruling)
 7. `just detective` standing for each pure decision
 8. a counted-work budget, reported separately from profiler behaviour
 

@@ -1,74 +1,71 @@
 # Build plan
 
-## Authority and navigation
+## Authority and responsibility
 
-The founder's decisions, `docs/SPINE.md`, and the chapter teaching govern the build. The accepted Chapter 2 reading is [`object-resolution-toolkit-codex.md`](chapters/02-collapse/readings/object-resolution-toolkit-codex.md); the compute decisions are recorded in [`compute-build-codex.md`](chapters/02-collapse/readings/compute-build-codex.md). The tracked proposal, design, scenario contract, and atomic tasks are in [`object-resolution-toolkit`](../openspec/changes/object-resolution-toolkit/).
+The founder's words and [OBJECT_MODEL.md](OBJECT_MODEL.md) govern the architecture, refined
+by [PIPELINE_AS_OBJECT.md](PIPELINE_AS_OBJECT.md). The [current route](PIPELINE.md) maps that
+intent to source interfaces. [SPINE.md](SPINE.md) keeps the PI–undergrad workflow, not its
+superseded chapter order. [INSTANTIATION.md](INSTANTIATION.md) joins thesis ideas to stage roles.
 
-For each chapter, read the thesis section in full and trace the cell project's source and production callers. Write the lead reading before asking Fable for an answer. State the atomic contract and its consumers before implementation. Intent and property tests precede the reference implementation. Detective applies to pure named-code decisions through the local `just detective` wrapper; report standing per current digest. Numeric array loops are not automatically pinned. Compare an accelerated twin to its reference with exact SAME requirements and refuse a required backend that is unavailable. Run through the real corpus from Chapter 1, inspect saved-record visuals, and keep profiler behavior and counted work separate. The lead compares Fable's external audit as independent evidence, not as warrant. Finish with `just gate`.
+| OpenSpec change | responsibility | how to resume |
+|---|---|---|
+| [every-stage-renders](../openspec/changes/every-stage-renders/) | immediate breadth-first build: every stage wired, returning records or named absences, visibly inspectable | `just plan-next` (default) |
+| [knee-object-model](../openspec/changes/knee-object-model/) | complete object/relation/predicate architecture, corpus engineering and deployment | `just plan-next knee-object-model` |
+| [object-resolution-toolkit](../openspec/changes/object-resolution-toolkit/) | physical, interior, conversation and supported-contour substrate | `just plan-next object-resolution-toolkit` |
+| [reconcile-project-record](../openspec/changes/reconcile-project-record/) | documentation/planning reconciliation requested 2026-10-12; no domain implementation | its checklist and [reconciliation record](RECONCILIATION.md) |
 
-## Work packets
+A completed OpenSpec artifact means the proposal/design/spec/tasks documents exist. A checked
+implementation task means its declared obligation was verified. Neither implies the whole change
+or a candidate kernel is admitted. Historical task counts and certificates are dated evidence.
 
-The founder's clarification in this build governs the reading: orthogonality is
-constructed by definition, not established by empirical correlation. Thesis §1.12
-describes the orthogonality of claims; §13.1 supplies the exact carrier construction.
-The DICOM coordinate adapter is a separate numerical contract.
+## Immediate sequence and remaining obligations
 
-**A — Physical measurements.** Establish the DICOM patient frame, ragged physical squints, and native bilinear profiles. Keep a Python reference and an exact Numba SAME twin. Preserve source arrays and expose read-only newly owned outputs. Route the optional Chapter 1 production entry through the measurement once, with a development Hamilton DAG around one production run. Produce the receipt and make the returned record available to rendering and telemetry.
+Run `just unit` and read the whole relevant checklist/spec before building. The existing breadth-first
+plan owns the next work; this index does not create a new architecture or substitute new bars.
 
-**B1 — Geometric interiors and native border readings.** Consume surrounding-field readings to measure interior distance, declared prominence markers, all proposed territories, directed native edges and bracketed dark intervals. The [continuing contract](chapters/02-collapse/object-resolution-contract.md) gives their exact scopes. The [B1 record](chapters/02-collapse/measurements/geometric-interiors-b1.md) locates production receipts, SAME, telemetry and the separate color image series. Compute current standing with `just interiors-status`.
+1. Preserve and resolve the admission obligations on native digits and sampled dark-bounded
+   pairings: both candidate implementations are connected and drawn, while their numeric
+   Detective runs were refused as `UNGATEABLE`. The ordinary gate cannot erase that standing.
+2. Finish the joined drawing contract (§4b): packet probe fraction remains founder-supplied;
+   CLI refusal/corruption distinction and complete telemetry consumption remain owed. All stages
+   must actually draw, including named absences, before full breadth-first acceptance.
+3. Build bundles (§3), with indexed subject kind, unavailable banks named and dispatch evidence
+   recorded before implementation. Subject support/correspondence must not be inferred from
+   matching array indices or independent object-wide counts.
+4. Reconcile the existing predicate candidate with actual subject-selection evidence (§4.1).
+   The withdrawn dispatch answer stays withdrawn. Named decisions can run/render now; declare
+   the numeric abstention projection after founder inspection and before CSV emission (§4.2).
+5. Complete the one-study capacity demonstration and first grading round (§5): alphabet plus
+   object–interstice–object sentence. `e` remains a hand-given correspondence. Then perform
+   corpus engineering and later deployment work under `knee-object-model`.
 
-**B2 — Lens conversation and supported contour chains.** Same-orientation sequences measure the same knee and objects. The general exchange uses original boundary bands, unchanged native readings, explicit acquisition support and separate concurrent/conditional parent-preserving subdivisions. The founder's coronal pair is an illustrative inspection case, never a hard-coded pair/region rule. Trace and contract: [same-knee conversation](chapters/02-collapse/readings/same-knee-conversation-codex.md) and [checked workshop](chapters/02-collapse/readings/b2-workshop-resolution.md). [B2's evidence](chapters/02-collapse/measurements/same-knee-conversation-b2.md) links the production run, exact SAME, compute evidence and color series. Generic closure and constrained chain refinement remain task 3.8, retaining original/refined traces and shed places.
+Supported contour work (`object-resolution-toolkit` 3.8a–3.12) is unparked under the structural-role
+reading already recorded in the breadth-first change. Its support contract/machinery prerequisites
+remain; it is beside that change, after §1, and does not replace or block independent §2–§4 work.
 
-**C — Facing surfaces and extent.** Specify facing surfaces, the interstitial region, extent through neighboring slices, and separately acquired views. The founder teaches admission and meaning before implementation.
+## Substrate packets and evidence
 
-**D — Ownership and residual loop.** Specify peer ownership, own-signal views, and residual scheduling. The founder teaches the knee version and loop policy before implementation.
+A: physical frame, ragged squints and native profiles. B1: geometric interiors and native border
+readings. B2: same-orientation conversation and supported chains. C: facing surfaces/interstitial
+extent. D: ownership and residual scheduling. These are packet roles within the nine-stage route,
+not a second pipeline. Thin ownership and sampled pairing candidates do not finish C or D.
 
-The remaining B2 contour operation and C–D continue toward **every significant
-knee element relevant to the twelve findings, cleanly and deterministically
-resolved**. Completion of an instrument's contract does not mean completion of
-that anatomical goal. Meaning, extent and ownership require the subsequent
-conjunctions and the founder's teaching.
+Historical receipts: [Packet A](chapters/02-collapse/measurements/physical-packet-a.md),
+[B1](chapters/02-collapse/measurements/geometric-interiors-b1.md),
+[B2](chapters/02-collapse/measurements/same-knee-conversation-b2.md).
+Recompute their source/artifact/proof standing with `just packet-status`, `just interiors-status`
+and `just conversation-status`; a past SAME result does not certify changed sources.
+The [resume entry](chapters/02-collapse/RESUME.md) points to candidate audits and the latest dated run.
 
-Every distinct step saves an actual image series from the production records:
+## Engineering and acceptance
 
-| packet | visual deliverable |
-|---|---|
-| A | acquired image, full red annotation from the recorded background split, physical squint, cyan native sampling locations and measured profiles, with magenta missing support |
-| B | candidate interiors, native profiles, original/refined supported contour chains, gaps, clipping and shed places |
-| C | paired facing surfaces, intervening support, neighboring slices and separately acquired views, with disagreement and alignment uncertainty |
-| D | unchanged own-object signal, excluded peers, disputed/unclaimed material and successive residual rounds |
+Each unit follows [STAGE_CONTRACT.md](STAGE_CONTRACT.md): declared contract and consumers,
+two-sign intent tests, pure decisions first, reference before accelerated twin, exact same-environment
+SAME, current-digest Detective standing, actual records rendered, telemetry and counted budgets.
+Hamilton observes a limited development graph; Import Linter checks layer separation. Neither
+alone proves every internal wire. Profilers answer their named questions, separately from budgets.
 
-Keep raw coordinates, series/slice identity and source digests with those panels.
-The cell-source trace and thesis sections supporting each operation are recorded
-in the accepted reading above. Its mechanism table is the reuse map; copying a
-cell constant or its oval/fluorescence assumptions is not reuse warranted by that map.
-
-## Tool roles
-
-- Serena supplies references. OpenSpec tracks the packet contracts and tasks.
-- Hamilton is a development observer around one production run; it does not turn every internal kernel operation into a graph node.
-- Hypothesis covers declared properties; CrossHair covers supported symbolic contracts; SAME compares reference and accelerated behavior within one environment.
-- Detective covers pure named-code decisions through the local wrapper. Numeric array loops are not pinned automatically.
-- Memray measures tracked allocations. VizTracer is intended to record a project-scoped timeline; verify that project calls are actually present, and use cProfile when they are absent. Scalene separates Python/native CPU and samples. Line profiler targets named repeated loops. Pyinstrument supplies a call tree.
-- Native `perf`, C sanitizers, and Rust are admitted only when the computation shape calls for them. Import Linter checks package boundaries and dependency hygiene.
-
-Use the existing commands: `just setup`, `just setup-profile`, `just plan-status`, `just plan-check`, `just graph`, `just graph-interiors`, `just graph-conversation`, `just analyze-objects`, `just interiors-status`, `just conversation-status`, `just same-interiors`, `just same-conversation`, `just render-interiors`, `just render-conversation`, and `just gate`. Per-run Matplotlib rendering stays outside project dependencies.
-
-## Resume and evidence
-
-Start at [Chapter 2's resume entry](chapters/02-collapse/RESUME.md). Run
-`just interiors-status data/measurements/object-conversation-b2-v1` and
-`just conversation-status data/measurements/object-conversation-b2-v1` to recompute
-the original B1 and B2
-source standing, receipt/SAME linkage, saved-artifact integrity and verifier
-identity. The [B2 record](chapters/02-collapse/measurements/same-knee-conversation-b2.md)
-locates that run and its staged photos. The [B1 record](chapters/02-collapse/measurements/geometric-interiors-b1.md)
-and earlier [Packet A record](chapters/02-collapse/measurements/physical-packet-a.md)
-retain their historical receipts and audits; an older source digest is not a claim
-about the current build. No prose status substitutes for the status command.
-
-Future measurements publish one atomic study checkpoint under the run's
-`checkpoints/` directory. After interruption, inspect completed/partial records and
-rerun the affected study into a fresh directory; never silently merge different
-source snapshots. Save the receipt, images, checks and the next unresolved contract
-before handing off. Update OpenSpec task checkboxes only for work with that evidence.
+The founder's existential demonstration uses real data through the real entry point. The 58-study
+run measures robustness, accuracy and cost; it does not replace that demonstration or turn a domain
+miss into a reason to discard the design. No score-driven bar, automatic submission or implied
+DEPLOY proof is introduced. Finish each authorized increment with `just gate` and its evidence record.

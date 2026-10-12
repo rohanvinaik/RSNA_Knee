@@ -41,6 +41,13 @@ Per the founder, the check reports provenance and never rules on generality, bec
 by eye is legitimate when its rule describes how the anatomy presents *generally*. The guard against
 over-fitting is his.
 
+Interpretation still to reconcile: the universal relational wording above is the
+lead/second-reader capacity operationalization. The full object model explicitly
+contains predicates on individual objects. It must not silently replace those
+subjects or require every scalar helper to take two objects; the exact scope
+remains an explicit question in `docs/PIPELINE_AS_OBJECT.md`. No task is closed
+on that unresolved interpretation.
+
 ## The dispatch question, which binds tasks 2.4, 3.1 and 4.1
 
 Codex, 2026-10-12: *"Removing anatomical words from records does not establish that anatomical
@@ -93,7 +100,9 @@ earlier stage produced, identity is not assumed. If it is a kind-label, it is, a
 Continuation discipline (founder instruction 2026-10-12): mechanize settled packets through Sonnet
 API calls and local sub-agents under the delegation contract above. Record exact verification
 standing per unit; a refusal leaves that unit open while independent declared work continues.
-The next independent lead-owned unit is 1.3a, whose support contract must precede code.
+Task 1.3a now has its support contract and a connected/rendered candidate, but admission
+remains open. Continue under the existing dependency order; do not treat it as unwritten
+or certified. The dated reconciliation run and `docs/BUILD_PLAN.md` locate current evidence.
 
 - [x] 1.1 Replace `src/knee/pipeline.py`'s `ROUTE` with the object model's **nine** stages — study,
       collapse (the field), lenses, objects, relations, ownership, vectors (the bundles), predicates,
@@ -130,7 +139,8 @@ The next independent lead-owned unit is 1.3a, whose support contract must preced
       data/pictures/partition-frames-20261012. Graph valid; import contract kept. Ownership's
       frame is study-derived; relations' frame is pipeline status.)*
 - [ ] 1.3a **Record which territory each bracketed profile reached across the dark.** This is the
-      pairing `relations` needs and **it does not exist in any record**. Confirmed in source
+      pairing `relations` needs. **At declaration it did not exist in any record**; the
+      candidate below now retains sampled pairs, with complete extents and admission still owed. Confirmed in source
       2026-10-12 by reading `interiors.py` whole: `boundary_edges` does
       `regions.append(labels[rows, cols])` — the territory's **own** label — and reads the neighbour
       only to decide *that* a place is an edge (`neighbor != labels`) and of which *kind*. **Sharpened
@@ -280,24 +290,30 @@ three of five; relations `construction_absent` on all five.
         real `ValueError`s to propagate. **The joined run is unaffected** — the joiner calls
         `draw()` directly and records the true reason — so this degrades only the hand-typed
         command, and it is owed before this section is checked off.
-- [ ] 4b.2 **One joiner** that takes the saved run and draws every stage, collecting each
+- [x] 4b.2 **One joiner** that takes the saved run and draws every stage, collecting each
       renderer's manifest into a single gallery index. A stage whose reading is a named absence
       draws its absence and the joiner records it; **one renderer failing never fails the run**, it
       returns its named code. Verify the index names every stage of `ROUTE`, present or absent.
-- [ ] 4b.3 **The entry point draws.** `workbench.measure.object_analysis` calls the joiner after
-      writing its receipt, under `--pictures/--no-pictures`, default ON; `--no-pictures` is the
-      competition kernel, where "the output is just the diagnosis". The `analyze-objects` recipe
+- [x] 4b.3 **The entry point draws.** `workbench.measure.object_analysis` calls the joiner after
+      writing its receipt, under `--pictures/--no-pictures`, default ON; `--no-pictures` disables the drawing edge for eventual competition use. It does
+      not itself implement the competition kernel, output projection or DEPLOY proof. The `analyze-objects` recipe
       becomes `uv run --with matplotlib` so the one command has it; `knee` still never imports it
       and `just imports` must still pass.
-- [ ] 4b.4 **The acquisitions converse by default**, not behind a flag — "the combined sum total of
+- [x] 4b.4 **The acquisitions converse by default**, not behind a flag — "the combined sum total of
       all the analyses we have in conversation with one another" is what the one command does.
       Mind `AnalysisRequest.__post_init__`, which couples `conversation` to `prominence_mm`.
 - [ ] 4b.5 **Telemetry everywhere.** The five silent stages — study, collapse, ownership, relations,
       conversation — each record what they produced and what was consumed, as lenses and pairings
       already do. Verify by re-running and counting ledger sources, not by reading the code.
-- [ ] 4b.6 **Run the one command and measure it against the five rows above.** Each row moves or is
+- [x] 4b.6 **Run the one command and measure it against the five rows above.** Each row moves or is
       reported unmoved with its reason. Nothing here may call the pipeline coherent on the strength
       of one function; the evidence is the re-run.
+
+Joined-task evidence (4b.2/3/4/6): implemented in `92e5b7e`; fresh one-command
+run recorded in `docs/chapters/02-collapse/measurements/documentation-reconciliation-20261012.md`.
+Seven drawings, one named failure, three `no_drawer` stages; conversation 4 measured/1 solitary;
+60 ledger events. No capacity completion follows. 4b.1 remains open for its two stated defects;
+4b.5 remains open because `study.consumed` is absent. §5 remains wholly open.
 
 ## 5. The whole route, end to end
 

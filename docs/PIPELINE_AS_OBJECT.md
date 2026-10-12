@@ -56,7 +56,7 @@ Three properties, each mechanical, make it one object:
 His bar for this build, verbatim: *"it has to have the requisite component of the full thesis, and
 have the symbolic **capacity** to resolve and reason on these `<object>`s."*
 
-That capacity is not a score and not a diagnosis. It is three structural properties, and each can be
+That capacity is not a score and not a diagnosis. It is four structural properties, and each can be
 checked without judging whether any particular rule is good yet:
 
 | the capacity | what makes it present |
@@ -66,13 +66,21 @@ checked without judging whether any particular rule is good yet:
 | **reasoning composes** | every decision is a **named code**, total over its arguments, with every bar an **argument** and never a constant — **and the decision reads a RELATION between its subjects, not a property of one.** The relational clause was added 2026-10-12 after both readers independently found the property too weak: *"'Reasoning composes' as written admits a predicate over a single object; his sentence is intrinsically relational"* (Fable); *"passing two objects … into a total function is different from demonstrating that the function reasons with their relationship"* (Codex) |
 | **the correspondence is named** | the **expected reading `e`** exists and is declared as a hand-given correspondence with its author and date — not computed, not fitted, and not silently a magic number. Added 2026-10-12: `e` appeared in the finished sentence and in none of the properties, which left the one thing the founder's own argument *requires* to be hand-given looking like a violation of the rule above |
 
+These four properties are the lead/second-reader operationalization of the founder’s
+capacity request, not permission to replace the full object model. The universal
+wording of the relational clause must be reconciled with OBJECT_MODEL’s predicates
+on individual objects (Fracture/Contusion); the complete sentence is relational,
+but that alone does not settle every helper/predicate’s scope. This remains an
+explicit interpretation question, not a new design decision.
+
 A pipeline with all four has the capacity, even while every rule in it is still crude. A pipeline
 missing any one of them does not, however good its numbers.
 
-**On `e`, because it is the hinge.** Every other bar in the system is an argument read from the
-data. `e` is not: it is the water written on the hand — the designer-supplied correspondence that the
-Helen Keller argument says must be given and cannot be derived. **It is the one legitimate constant
-in the architecture**, and it is legitimate precisely because it is declared rather than tuned. The
+**On `e`, because it is the hinge.** Bars remain explicit arguments with recorded
+provenance: data-derived quantities or founder-declared design constants describing a general
+pattern. `e` has the special role of expected correspondence: it is the water written on the hand — the designer-supplied correspondence that the
+Helen Keller argument says must be given and cannot be derived. **It is a declared correspondence, not the architecture’s only legitimate constant.**
+The founder’s fitting correction below explicitly allows general-pattern design constants. The
 standing risk, which Fable named: if `e` is ever supplied from `memory` instead of declared, that is
 the door a fitted value re-enters the architecture through.
 
@@ -204,18 +212,20 @@ The declared change is `openspec/changes/every-stage-renders/`. Its shape is unc
 teachings changed is recorded here.
 
 **§0 — the scaffold, before anything is delegated.**
-Done: the place registry and its check; both compute-contract idioms known to it; all 83 roles
-written. Open: a structural check that every reference/twin pair declares a `ComputeContract`
-(enumerating the kernels first, since a count of six has no denominator); `renders` in the registry.
+The active change’s §0 records the completed scaffold: place registry, roles and renderer
+metadata; one contract form (`CONTRACT` attached with `@contracted(CONTRACT)`); structural
+reference/twin checks; five shelf packages archived. Recompute with `just unit`/`just places`.
+Module presence and declared metadata do not certify successful drawing or runtime capacity.
 
 **§1 — the route and the vocabulary. The lead's own, and first.**
-The route table becomes the ten operations above. The shared absence vocabulary distinguishes its
+The route table is the nine stages containing the ten operations above. The shared absence vocabulary distinguishes its
 silences, pinned two-sign. **Changed tonight:** `relations` and `ownership` were declared as honest
 shells returning "the record shape is unsettled". That silence is no longer true — an interstice is
 constructible between two `<object>`s today, and ownership is every place's claim or `unassigned`.
-Both become thin **real** stages. Fable's proved gap (task 1.2 names three silences, all about an
-*input*; task 1.3 needed a fourth about the stage's own design) **dissolves** rather than needing a
-fourth code.
+That was the intended progression, not what currently exists: ownership has a real
+partition, while relations still returns a construction-absence shell. The shared vocabulary
+therefore retains its fourth, construction-absence code. Sampled dark pairs are retained separately
+and do not supply complete interstice extents. See the active change’s §1 and [PIPELINE.md](PIPELINE.md).
 
 **§2–§4 — delegable**, under his 22:48 authorization: a sub-agent writes the body, the renderer and
 the serialiser; never the contract, the intent tests, a bar, or a Detective survivor's verdict. A body

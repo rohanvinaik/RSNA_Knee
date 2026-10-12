@@ -1,3 +1,8 @@
+<!-- Reconciliation 2026-10-12: these two maps are retained evidence, not two
+final names. The founder’s “should carry one name” ruling is recorded in
+knee-object-model/design.md. A future single exposed standing must preserve
+originals and dissent; its merge/precedence rule remains unsettled. -->
+
 ## ADDED Requirements
 
 ### Requirement: Shared knee readings exchange boundary information generally
