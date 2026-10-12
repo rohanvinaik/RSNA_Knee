@@ -13,13 +13,13 @@
     "src/knee/__init__.py": {"where": "beside", "role": "the package root", "contract": false},
     "src/knee/pipeline.py": {"where": "beside", "role": "the route itself: moves values between stages and decides nothing", "contract": false},
 
-    "src/knee/study/__init__.py": {"where": "route:study", "role": null, "contract": false},
+    "src/knee/study/__init__.py": {"where": "route:study", "role": "docstring only, no code: Figure 8's A MOVIE text, the founder's 2026-10-10 words on the 58, and what the stage hands on", "contract": false},
     "src/knee/study/corpus.py": {"where": "route:study", "role": "opens the corpus and reads one study whole at stored fidelity", "contract": false},
-    "src/knee/study/series.py": {"where": "route:study", "role": null, "contract": false},
-    "src/knee/study/slices.py": {"where": "route:study", "role": null, "contract": false},
-    "src/knee/study/decoders.py": {"where": "route:study", "role": null, "contract": false},
-    "src/knee/study/geometry.py": {"where": "route:study", "role": null, "contract": false},
-    "src/knee/study/tables.py": {"where": "route:study", "role": null, "contract": false},
+    "src/knee/study/series.py": {"where": "route:study", "role": "one series assembled from every .dcm in its directory, reordered along the slice normal, carrying named stack codes; returns a Series on BOTH paths, with volume and geometry None where it cannot stack", "contract": false},
+    "src/knee/study/slices.py": {"where": "route:study", "role": "one DICOM file read whole: the header as stored minus Pixel Data, whose content becomes `pixels` at stored fidelity", "contract": false},
+    "src/knee/study/decoders.py": {"where": "route:study", "role": "the six transfer syntaxes the competition's files need, each reported available or unavailable by name; `require_decoders` raises naming the missing and nothing falls back", "contract": false},
+    "src/knee/study/geometry.py": {"where": "route:study", "role": "slice geometry in the patient's LPS frame from the tags as stored; every reader returns a named status with its values, naming WHICH zero it found (absent, empty, malformed, degenerate) rather than defaulting one", "contract": false},
+    "src/knee/study/tables.py": {"where": "route:study", "role": "the competition's tables read as given, every cell a raw string and a blank kept as a blank, joined into studies with their series and the orphans kept; raises rather than guessing on a header mismatch, a duplicate study or a None cell", "contract": false},
     "src/knee/study/codes.py": {"where": "route:study", "role": "the study stage's named decisions", "contract": false},
 
     "src/knee/collapse/__init__.py": {"where": "route:field", "role": "the field: what a series IS before any expensive work runs", "contract": false},
@@ -33,7 +33,7 @@
     "src/knee/lenses/digits.py": {"where": "route:lenses", "role": "one place's ternary digit against a static middle", "contract": false},
     "src/knee/lenses/slabs.py": {"where": "route:lenses", "role": "the through-plane slab rule", "contract": false},
 
-    "src/knee/objects/__init__.py": {"where": "route:objects", "role": null, "contract": false},
+    "src/knee/objects/__init__.py": {"where": "route:objects", "role": "docstring only, no code: declares the objects stage — what each module in it does, why it was split out of collapse, and that the residual pull-out is still owed", "contract": false},
     "src/knee/objects/analysis.py": {"where": "route:objects", "role": "measures one series through the route: squint, interiors, boundary census", "contract": false},
     "src/knee/objects/interiors.py": {"where": "route:objects", "role": "geometric interiors and observed dark borders, with no anatomical assignment", "contract": true},
     "src/knee/objects/boundaries.py": {"where": "route:objects", "role": "what bounds each territory, and the relief between those that touch", "contract": true},
