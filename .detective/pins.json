@@ -497,6 +497,47 @@
       ]
     }
   ],
+  "src/knee/predicates/findings.py::finding_code::b320979d7abda64e": [],
+  "src/knee/predicates/findings.py::finding_reason::972dcb9ca98915a7": [
+    {
+      "assertion_code": "result = finding_reason(requirement='an envelope', code='subject_unconstructed')\nassert result == 'requires an envelope; no such relation is constructed in this build'",
+      "category": "VALUE",
+      "confidence": 0.9,
+      "function_key": "",
+      "golden_case": [
+        "('an envelope', 'subject_unconstructed')",
+        "'requires an envelope; no such relation is constructed in this build'"
+      ],
+      "mutant_id": "",
+      "needs_oracle": false,
+      "preconditions": [
+        "golden capture (pure + deterministic)"
+      ],
+      "setup_code": "from knee.predicates.findings import finding_reason",
+      "source_lenses": [
+        "golden_capture"
+      ]
+    },
+    {
+      "assertion_code": "result = finding_reason(requirement='an object', code='not_a_code')\nassert result == 'requires an object; the code is not one this unit admits'",
+      "category": "VALUE",
+      "confidence": 0.9,
+      "function_key": "",
+      "golden_case": [
+        "('an object', 'not_a_code')",
+        "'requires an object; the code is not one this unit admits'"
+      ],
+      "mutant_id": "",
+      "needs_oracle": false,
+      "preconditions": [
+        "golden capture (pure + deterministic)"
+      ],
+      "setup_code": "from knee.predicates.findings import finding_reason",
+      "source_lenses": [
+        "golden_capture"
+      ]
+    }
+  ],
   "src/knee/relations/pair_codes.py::pair_code::8a2b51677a4cb4a9": [
     {
       "assertion_code": "result = pair_code(source=1, trace=7, near=[], far=[1, 1])\nassert result == 'profile_unbracketed'",

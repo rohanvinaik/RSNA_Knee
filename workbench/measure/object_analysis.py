@@ -16,6 +16,7 @@ from knee.lenses.digits import DIGIT_CODES
 from knee.lenses.places import SILENT
 from knee.objects.analysis import AnalysisRequest
 from knee.pipeline import run_study
+from knee.predicates.findings import CODES as FINDING_CODES
 from knee.relations.pair_codes import CODES as PAIRING_CODES
 from knee.study.corpus import open_corpus
 from knee.study.tables import labeled_uids
@@ -339,15 +340,35 @@ def main() -> None:
                 (args.out / artifact).parent.mkdir(parents=True, exist_ok=True)
                 np.savez_compressed(args.out / artifact, allow_pickle=False, **arrays)
                 records.append(record)
-            studies.append(
-                {
-                    "study_uid": uid,
-                    "code": "complete",
-                    "series_written": len(records) - start,
-                    "reached": result.reached,
-                    "ledger": events,
+            study_entry = {
+                "study_uid": uid,
+                "code": "complete",
+                "series_written": len(records) - start,
+                "reached": result.reached,
+                "ledger": events,
+            }
+            if result.findings is not None:
+                # PER STUDY, not per series: a finding is a statement about the knee. Serialised
+                # as returned -- index, structural requirement, named code and reason. No number
+                # is written for any finding, because a confidence is knee.output's lossy
+                # projection of this record and the projection has not been declared.
+                study_entry["findings"] = {
+                    "code": result.findings.code,
+                    "why": result.findings.why,
+                    "code_names": FINDING_CODES,
+                    "series_with_population": result.findings.series_with_population,
+                    "series_with_construction": result.findings.series_with_construction,
+                    "findings": [
+                        {
+                            "index": finding.index,
+                            "requirement": finding.requirement,
+                            "code": finding.code,
+                            "reason": finding.reason,
+                        }
+                        for finding in result.findings.findings
+                    ],
                 }
-            )
+            studies.append(study_entry)
             print(f"measured {uid}: {len(result.series)} series", flush=True)
         except Exception as error:
             failures.append(

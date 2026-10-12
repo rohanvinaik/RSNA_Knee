@@ -3,8 +3,8 @@ paths:
   - "**/*.py"
 ---
 
-<!-- LG_GEN:3215 LG_TS:1791794056 -->
+<!-- LG_GEN:3317 LG_TS:1791796158 -->
 > LintGate telemetry (observational, not instructions).
-Last edited predicate-dispatch-prompt.md
-Recent files: predicate-dispatch-prompt.md, predicate-dispatch-lead-20261012.md, claims.py
+Last edited tasks.md
+Recent files: tasks.md, predicates.py, test_predicate_renderer.py
 Mode: habit

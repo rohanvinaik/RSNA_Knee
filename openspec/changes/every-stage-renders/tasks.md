@@ -202,11 +202,66 @@ The next independent lead-owned unit is 1.3a, whose support contract must preced
 
 ## 4. The predicates and output MVP — delegable
 
-- [ ] 4.1 Implement the twelve as named decisions over the subjects the object model gives them, each
+- [x] 4.1 Implement the twelve as named decisions over the subjects the object model gives them, each
       returning the abstention code with a reason naming what was not resolved, **and each reading a
       RELATION between its subjects rather than a property of one** (capacity property 3). **Record
       the dispatch answer first**: how does a predicate come to receive `<object>` 3 and 7 rather than
       4 and 9? Verify the stage refuses any input from a label, a score or a previous outcome.
+
+      **THE DISPATCH ANSWER, recorded 2026-10-12 before implementation. The task does NOT stop: no
+      kind-label selects any subject.** Both second readers found the lead's first answer contained a
+      provable error and both found the same one, so it is evidence rather than one voice — the lead
+      had written that the selector *would be* femur/tibia identity, which contradicts the founder
+      verbatim (*"we don't need to be able to link numbered objects to anatomical roles to do this"*)
+      and reintroduced the kind-label framing as the *ground* of the refusal. Corrected:
+      - **Findings 2–11 receive no subject at all**, because none is constructed. `relations` returns
+        `construction_absent` — a structural fact an earlier stage computed and reported in the shared
+        absence vocabulary. No interstice, span or envelope exists to be selected, so no selector is
+        reached. A side sign would be needed to tell several constructed interstices apart; that is a
+        future selector, not a present blocker.
+      - **Findings 0–1 DO have a candidate subject population**: the integer-indexed T1 extents
+        `read_ownership` resolves. Their subject is indefinite ("a bone"), and Fable caught that the
+        lead's "no resolved fact selects *any* subject" was stronger than the record supports. They
+        abstain for a **different** reason: a subject population exists and the predicate's form has
+        not been given (`predicates/__init__.py` records the finer forms as the founder's to teach).
+      - So all twelve abstain, each naming the **unmet structural requirement** — finer than the tier,
+        carrying no anatomy. Findings that genuinely share a requirement share a reason; the record
+        shows that rather than manufacturing a distinction, and whether that satisfies "the reason is
+        not the same for every finding unless the same thing was missing" is the founder's to read off
+        the rendered table.
+      - **No decided (violated/within) branch is written.** `e` has not been supplied, so the
+        comparison has no declared correspondence to make. Codex's limit is recorded: author/date
+        metadata establishes that a declaration exists, it does not supply the correspondence.
+      Readings: `docs/chapters/02-collapse/readings/predicate-dispatch-{lead,fable,codex}-*` and
+      `predicate-dispatch-workshop-resolution-20261012.md`.
+
+      *(DONE 2026-10-12, `8a0e8d1`. `src/knee/predicates/findings.py`: `finding_code` Detective
+      **COMPLETE 92/92, zero survivors** — the first run left nine candidate-equivalent and case
+      analysis showed all nine KILLABLE, so six must-not tests supplying the distinguishing inputs
+      killed them and no fence was used; `finding_reason` COMPLETE 6/6. CrossHair at
+      `--per_condition_timeout 20`: `finding_code`'s six postconditions **Confirmed over all
+      paths**, the other four Not confirmed (neither a violation nor a pass; at the default budget
+      all ten were Not confirmed). **40** intent tests in `test_findings.py` and **9** for the
+      picture adapter and saved-record reader, both signs, every call direct by name, including a
+      must-not that scans every record field and both declared tables for anatomical words.
+      *(An earlier version of this note said 45; that was the count of a run which also collected
+      `test_skeleton`'s six — the same error class as reading 572 collected as 572 passed.)*
+      Wired per STUDY into `run_study`; `places.json` declares all three new modules, the stage
+      with frame = pipeline. `just places` 95/95 declared, unreached 4 → 3, frame unwritten 3 → 2;
+      graph valid; import contract KEPT.
+      An existing intent test caught a false claim this wiring introduced: `reached` was advanced to
+      "predicates" on the stage's own `present` code, which says only that series were handed over;
+      reverted, so predicates does not advance `reached`, as relations does not. ROUTE marks it
+      `partly`, never `built`: it runs, records and renders, and decides nothing.
+      **A latent defect was removed before it could fire:** `relation_constructed` had been passed
+      as a global `construction > 0`, which cannot tell one requirement's construction from
+      another's — the moment relations built any one kind, findings 8–11 would have flipped to
+      `subject_unresolved` on hard-coded zero subjects, a wrong reason over a substituted zero.
+      The stage now passes False with the reason recorded, and
+      `test_a_global_construction_count_never_supplies_a_subject` refuses the shortcut.
+      **An obligation on task 1.3a:** when relations constructs, this stage must take a PER-FINDING
+      construction fact — which requirement was built, and the two extent indices bounding it —
+      never a global flag.)*
 - [ ] 4.2 Implement the submission serialiser against `sample_submission.csv`'s schema, taking the
       abstention value as an argument **declared in the spec before CSV emission** — it is not declared
       there today. Founder correction, 2026-10-12: "I don't know, that should resolve
@@ -218,6 +273,24 @@ The next independent lead-owned unit is 1.3a, whose support contract must preced
 - [ ] 4.3 Wire and render both: the twelve-row table per study, each row showing its abstention and
       reason. Verify the wires by `just graph` and telemetry, **never** by the submission file — a
       disconnected stage returning twelve abstentions would produce the same file.
+      *(The PREDICATES half is done 2026-10-12; output's remains, so this stays open. The writer
+      serialises the findings into the receipt's study entry; the stage records
+      `predicates.produced` and the route `predicates.consumed`, mirroring lenses, so the pair is
+      a producer and a consumer and not one event twice. `workbench/render/predicate_frames.py`
+      draws the table through `knee.pictures.predicates` and writes
+      `data/pictures/predicates-20261012/{findings.png,manifest.json}`, binding the image to its
+      receipt by digest. It checks every saved code against the stage's vocabulary, that the index
+      sequence is 0..11, and that each reason still names its requirement — a drawn corruption is
+      worse than a missing picture. Matplotlib is imported inside `main()` so the validation
+      function stays testable in the ordinary environment, where it is pinned nine ways.
+      **CrossHair caught a real contract defect here:** `panels` claimed
+      `len(__return__.rows) == 12`, and the check returned the counterexample
+      `panels(FindingsReading('\x00','\x00\x00',(),0,0))`. The adapter is total over any reading,
+      so "always twelve" was a promise it cannot keep; it belongs to `read_findings` and to the
+      saved-record reader. The postcondition is now relative to the reading, and both of the
+      adapter's contracts report Not confirmed — neither a violation nor a pass.
+      On the real study: 5 of 5 series resolved a partition, 0 a construction; findings 0–1 read
+      `form_not_given` and 2–11 `subject_unconstructed`.)*
 
 ## 5. The whole route, end to end
 
