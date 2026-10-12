@@ -479,6 +479,70 @@ acquired views, and the boundary census.
    on one hand-picked study is the happy path he names. This bears directly on the acceptance
    condition of the breadth-first pass.
 
+## 2026-10-12 — EVIDENCE IS EXISTENTIAL, NOT STATISTICAL
+
+Correcting the lead, which had just written that "a parse demonstrated on one study hasn't
+demonstrated the thesis at all" — a statistical validation frame imported into a deterministic
+argument. His words, verbatim:
+
+> "Recall this isn't ML. We are INTENTIONALLY not tuning to get a fit off a single movie. **These
+> lenses are meant to be equally applicable to any image study of knees it's presented.** Yes, we're
+> working with just the one movie, but I'm not cheating. **A bone is derived from the literal
+> structure of how bones look in images, not from computing metrics to make the line look pretty for
+> one study's images.** The way I described it in the cell tracking project was as **evidence being
+> existential, not statistical**, for a deterministic/classical pipeline. **If you have a set of
+> rules that are able to do a thing, one that isn't based on fitting/tuning metrics, then if it works
+> properly once, then it works period.** Like, if you can show that you can perform one
+> non-memorized, non-traditional addition problem, you don't need to add every possible combination
+> of numbers to prove that you can add. 378+1213 is exactly the same *symbolic* process as any other
+> addition problem. That's the beauty of symbolic machine intelligence."
+
+> "**Accuracy and cleanliness and robustness across different images is engineering.** What the
+> photos show is that deterministic systems, pure symbolic reasoning, classical approaches to machine
+> intelligence and computer vision, can be handed arbitrary knee images and non-trivially pick out
+> the parts of the knee. Not every single one, not perfectly. But **well enough that the thesis is
+> sufficiently demonstrated to be viable. The proof is existential.** If you build it and show me how
+> each stage works, **I am your fluid intelligence oracle "Advisor" you can call, I will tell you how
+> to get the good numbers.** What we have now isn't a 'result' that we can show anyone that beats any
+> other design, but **it's proof that such a thing *exists*, period.**"
+
+And on where the anatomy lives, which resolves an apparent tension with the no-anatomy constraint:
+
+> "The way that \<object>s are defined is with intention and direction. These rules are arbitrary to
+> the computer, prior to assignment of roles with anatomical/biological/domain-specific structure,
+> **we assign them by hand because we know the problem space. A bone looks like a bone and acts like
+> a bone, which is why we build the lenses and rules that are able to define that \<object> in the
+> field deterministically.** The *meaning* of the object doesn't need to exist for the computer to
+> pull them out as \<object>s, but **you do need to hold it in your head to be able to design the
+> correct logic that is able to parse it out.**"
+
+> "the *specific* assignment of *individual* roles of each \<object> don't need to be done to be able
+> to discriminate each \<object> that corresponds to the objects we need to be able to pull out. But
+> obviously, **WE do need to hold that idea in our heads when designing this. So we *are* figuring out
+> all the lenses and logic that resolve the individual components that are anatomically and
+> medically-relevant, but we don't need to be able to link numbered objects to anatomical roles to do
+> this.**"
+
+### What this settles
+
+1. **The anatomy is in the DESIGN, never in the RECORD.** `stage-totality`'s "no stage names anatomy"
+   constrains what the code writes down, not what informs the lens. Designing a lens *because* a bone
+   looks and behaves a certain way is required, not forbidden. A naive reading of that spec would
+   have banned the only reasoning that can produce a correct lens.
+2. **One study through the real entry point is PROOF, not a smoke test**, for a rule derived from
+   structure rather than fitted to metrics. The corpus run is **engineering** — accuracy, cleanliness,
+   robustness — and it is information about where the structure fails, never the licence for the
+   claim that the mechanism exists.
+3. **This does not retire "a stage that has only seen synthetic data is not built."** That law is
+   about *real* versus *synthetic*, which is existential: the noise law passed every unit test and
+   then concurred on 4 of 336, so it never worked even once on real data. Real-vs-synthetic is the
+   existence question; N-studies is the robustness question. Different bars, and only the first
+   licenses a claim.
+4. **The division of labour is explicit.** The lead builds the hardware and *shows how each stage
+   works*; he supplies the numbers as the fluid-intelligence oracle. So the breadth-first pass's
+   deliverable is not a score and not a result that beats a competing design — it is the existence
+   proof, complete across every stage.
+
 ### What the lead must NOT assume from it — a question for him
 
 The lead had parked contour refinement on §6: *"once an object is identified meaningfully, its role
