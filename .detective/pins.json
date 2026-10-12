@@ -513,6 +513,25 @@
       ]
     }
   ],
+  "src/knee/ownership/claims.py::ownership_code::14b86ed8dac6a8f6": [],
+  "src/knee/ownership/claims.py::read_ownership::e940ee21aa8b140f": [
+    {
+      "assertion_code": "result = read_ownership(interiors=None)\nassert repr(result) == \"OwnershipReading(code='predecessor_absent', why='no interiors reading was handed to this stage', claims=array([], shape=(0, 0), dtype=bool), residual=array([], shape=(0, 0), dtype=bool), claimed_places=0, residual_places=0, unavailable_places=0, objects=0)\"",
+      "category": "VALUE",
+      "confidence": 0.9,
+      "function_key": "",
+      "golden_case": null,
+      "mutant_id": "",
+      "needs_oracle": false,
+      "preconditions": [
+        "golden capture (pure + deterministic)"
+      ],
+      "setup_code": "from knee.ownership.claims import read_ownership",
+      "source_lenses": [
+        "golden_capture"
+      ]
+    }
+  ],
   "src/knee/relations/shell.py::read_relations::4cc5f3891fc63eb7": [
     {
       "assertion_code": "result = read_relations(interiors=None)\nassert repr(result) == \"RelationsReading(code='construction_absent', why='The facing-pair construction (task 1.3a) has not been built: no record says which two objects face each other across a border, so no interstice is constructed in this build.', interstices=())\"",
