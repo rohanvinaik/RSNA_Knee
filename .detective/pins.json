@@ -480,6 +480,26 @@
       ]
     }
   ],
+  "src/knee/output/projection.py::output_code::f84bd557fa1f458d": [],
+  "src/knee/ownership/claims.py::comparison_code::c3112d19c51eb4a3": [
+    {
+      "assertion_code": "result = comparison_code(first_places=0, second_places=-1, same_shape=False)\nassert result == 'invalid_count'",
+      "category": "VALUE",
+      "confidence": 0.95,
+      "function_key": "",
+      "golden_case": null,
+      "mutant_id": "",
+      "needs_oracle": false,
+      "preconditions": [
+        "distinguishing witness (equivalence search)"
+      ],
+      "setup_code": "from knee.ownership.claims import comparison_code",
+      "source_lenses": [
+        "witness"
+      ]
+    }
+  ],
+  "src/knee/ownership/claims.py::members_code::5bf873f55b566982": [],
   "src/knee/ownership/claims.py::ownership_code::14b86ed8dac6a8f6": [],
   "src/knee/ownership/claims.py::read_ownership::e940ee21aa8b140f": [
     {
@@ -499,7 +519,7 @@
       ]
     }
   ],
-  "src/knee/predicates/findings.py::finding_code::b320979d7abda64e": [],
+  "src/knee/predicates/findings.py::finding_code::5bc300e5f52868ba": [],
   "src/knee/predicates/findings.py::finding_reason::972dcb9ca98915a7": [
     {
       "assertion_code": "result = finding_reason(requirement='an envelope', code='subject_unconstructed')\nassert result == 'requires an envelope; no such relation is constructed in this build'",
@@ -575,9 +595,9 @@
     }
   ],
   "src/knee/relations/pairings.py::footprint_labels_reference::55e517e2226b89dc": [],
-  "src/knee/relations/shell.py::read_relations::4cc5f3891fc63eb7": [
+  "src/knee/relations/shell.py::read_relations::055ac1a06ff83e35": [
     {
-      "assertion_code": "result = read_relations(interiors=None)\nassert repr(result) == \"RelationsReading(code='construction_absent', why='The facing-pair construction (task 1.3a) has not been built: no record says which two objects face each other across a border, so no interstice is constructed in this build.', interstices=())\"",
+      "assertion_code": "result = read_relations(None)\nassert repr(result) == 'RelationsReading(code=\\'construction_absent\\', why=\"The complete interstice extent (task 1.3a\\'s second obligation) has not been built: sample-supported pairs across dark brackets are retained in `pairings`, but no record yet says the extent, walls, fill or contents of the space between two objects, so no interstice is constructed in this build.\", interstices=(), pairings=PairingReading(code=\\'predecessor_absent\\', why=\\'predecessor_absent\\', source_labels=array([], dtype=int32), far_labels=array([], dtype=int32), trace_codes=array([], dtype=uint8), outcome_codes=array([], dtype=uint8), positions_rc=array([], shape=(0, 2, 2), dtype=float64), contributor_labels=array([], shape=(0, 2, 4), dtype=int32), band_limits_mm=array([], shape=(0, 2), dtype=float64), counts=mappingproxy({\\'paired\\': 0, \\'profile_unbracketed\\': 0, \\'item_unread\\': 0, \\'invalid_measurement\\': 0, \\'source_unassigned\\': 0, \\'far_unassigned\\': 0, \\'source_ambiguous\\': 0, \\'far_ambiguous\\': 0, \\'source_mismatch\\': 0, \\'same_object\\': 0}), scope=\\'selected-plane sample-supported pairs; complete interstice extent unresolved\\'))'",
       "category": "VALUE",
       "confidence": 0.9,
       "function_key": "",
@@ -590,6 +610,45 @@
       "setup_code": "from knee.relations.shell import read_relations",
       "source_lenses": [
         "golden_capture"
+      ]
+    }
+  ],
+  "src/knee/vectors/bundles.py::bank_status_code::a57bd61b0c9d92a7": [],
+  "src/knee/vectors/bundles.py::count_by_extent::94be047ad879b824": [],
+  "src/knee/vectors/bundles.py::stage_code::b4f32508a1579bec": [
+    {
+      "assertion_code": "result = stage_code(ownership_code='abc', subject_returned=True, subject_readable=True, extents=1)\nassert result == 'invalid_count'",
+      "category": "VALUE",
+      "confidence": 0.9,
+      "function_key": "",
+      "golden_case": [
+        "('abc', True, True, 1)",
+        "'invalid_count'"
+      ],
+      "mutant_id": "",
+      "needs_oracle": false,
+      "preconditions": [
+        "golden capture (pure + deterministic)"
+      ],
+      "setup_code": "from knee.vectors.bundles import stage_code",
+      "source_lenses": [
+        "golden_capture"
+      ]
+    },
+    {
+      "assertion_code": "result = stage_code(ownership_code='present', subject_returned=True, subject_readable=False, extents=2)\nassert result == 'invalid_count'",
+      "category": "VALUE",
+      "confidence": 0.95,
+      "function_key": "",
+      "golden_case": null,
+      "mutant_id": "",
+      "needs_oracle": false,
+      "preconditions": [
+        "distinguishing witness (equivalence search)"
+      ],
+      "setup_code": "from knee.vectors.bundles import stage_code",
+      "source_lenses": [
+        "witness"
       ]
     }
   ]

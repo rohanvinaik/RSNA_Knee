@@ -433,17 +433,25 @@ def test_saved_annotation_uses_the_production_background_reading(
         for event in events
         if event["name"] == "lenses.produced"
     ]
+    assert produced == [3 * 16 * 16, 0]
+    # Consumption is recorded by the CONSUMER since task 6.5: the bundles stage records that it
+    # read the lens record, once per series. (Until 2026-10-12 the route wrote `lenses.consumed`
+    # itself, right after production, which said nothing about any reader.)
     consumed = [
-        event["counts"]["places"]
+        event["counts"]["readings"]
         for event in events
-        if event["name"] == "lenses.consumed"
+        if event["name"] == "lenses.consumed_by.vectors"
     ]
-    assert produced == consumed == [3 * 16 * 16, 0]
+    assert consumed == [1, 1]
     record = receipt["records"][0]
     assert record["ownership"]["code"] == "predecessor_absent"
+    assert [m["parse"] for m in record["ownership"]["members"]] == ["solitary"]
     assert record["relations"]["code"] == "construction_absent"
     assert record["pairings"]["code"] == "predecessor_absent"
     assert "task 1.3a" in record["relations"]["why"]
+    assert receipt["studies"][0]["output"]["code"] == "projection_undeclared"
+    assert receipt["studies"][0]["output"]["submission_rows"] is None
+    assert [s for s, _ in receipt["studies"][0]["attendance"]] == list(pipeline.STAGES)
     # EVERY seated member is saved, each naming its own population, and the standing between
     # them beside them. No key here holds "the" reading, because the pipeline keeps everything
     # it computes and resolution is the founder's.
@@ -465,8 +473,9 @@ def test_saved_annotation_uses_the_production_background_reading(
             assert arrays[member["digits_array"]].shape == (16, 16)
         assert arrays["lens_standings"].dtype == np.uint8
         assert arrays["lens_standings"].shape == (16, 16)
-        assert arrays["ownership_claims"].shape == (0, 0)
-        assert arrays["ownership_residual"].shape == (0, 0)
+        assert arrays["ownership_solitary_claims"].shape == (0, 0)
+        assert arrays["ownership_solitary_residual"].shape == (0, 0)
+        assert arrays["ownership_disagreement"].shape == (0, 0)
         if np.isfinite(split):
             assert record["background_split"] == split
             assert record["background_annotation_code"] == "measured"

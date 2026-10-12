@@ -184,7 +184,6 @@ def main() -> None:
             with recording() as run_ledger:
                 result = run_study(corpus, uid, request)
             events = [asdict(event) for event in run_ledger.events()]
-            conversations = {r.series_uid: r for r in result.conversations}
             for series in result.series:
                 measurement = series.measurements
                 if measurement is None:
@@ -203,13 +202,23 @@ def main() -> None:
                     "requested_backend": args.backend,
                     "effective_backend": "not_invoked",
                 }
-                # THE WHOLE REGIME KEY, not one field of it. It is sixteen readings the field
-                # stage already computed once per series, and until 2026-10-12 this writer took
-                # `background_split` and dropped the other fifteen. The founder: "we compute the
-                # required object, we drop it ... any compute process here is done for the purpose
-                # of visual reasoning. If the lenses don't have information that they can literally
-                # show, then what are we doing?" A reading the field could not make stays None.
+                # THE WHOLE REGIME KEY, not one field of it. It is every reading the field stage
+                # already computed once per series (twenty-three since the second member was
+                # seated), and until 2026-10-12 this writer took `background_split` and dropped
+                # the rest. The founder: "we compute the required object, we drop it ... any
+                # compute process here is done for the purpose of visual reasoning. If the lenses
+                # don't have information that they can literally show, then what are we doing?"
+                # A reading the field could not make stays None.
                 regime = series.regime
+                # THE STUDY STAGE'S OWN RECORD (task 6.9): the series' stack codes, its per-slice
+                # codes, and the walk through the stack the stage retains -- which the writer never
+                # saved, so the study frame could draw only the objects stage's selected plane.
+                record["stack"] = list(series.stack)
+                record["study"] = {
+                    "slice_codes": list(series.slice_codes),
+                    "walk_indices": list(series.walk_indices),
+                    "walk_array": "study_walk" if series.walk is not None else None,
+                }
                 record["regime"] = {
                     "code": "read" if regime is not None else "regime_unreadable",
                     "why": series.why,
@@ -237,8 +246,14 @@ def main() -> None:
                     else "unavailable"
                 )
                 arrays = {}
-                if series.pairings is not None:
-                    pairings = series.pairings
+                if series.walk is not None:
+                    arrays["study_walk"] = series.walk
+                # The pairing reading is the relations stage's own since task 6.3; it is saved
+                # under its own key, exactly as before, from where the stage keeps it.
+                pairings = (
+                    series.relations.pairings if series.relations is not None else None
+                )
+                if pairings is not None:
                     record["pairings"] = {
                         "code": pairings.code,
                         "why": pairings.why,
@@ -320,25 +335,82 @@ def main() -> None:
                         else np.empty((0, 0), dtype=np.uint8)
                     )
                 if series.ownership is not None:
+                    # EVERY SEATED MEMBER, one partition per parse (task 6.2), each under its
+                    # own arrays, plus where the solitary and concurrent claims disagree. No
+                    # key holds "the" partition: the pipeline keeps everything it computes.
                     ownership = series.ownership
                     record["ownership"] = {
                         "code": ownership.code,
                         "why": ownership.why,
-                        "claimed_places": ownership.claimed_places,
-                        "residual_places": ownership.residual_places,
-                        "unavailable_places": ownership.unavailable_places,
-                        "objects": int(ownership.objects),
+                        "comparison": ownership.comparison,
+                        "disagreeing_places": ownership.disagreeing_places,
+                        "disagreement_array": "ownership_disagreement",
+                        "members": [
+                            {
+                                "parse": member.parse,
+                                "code": member.reading.code,
+                                "why": member.reading.why,
+                                "claimed_places": member.reading.claimed_places,
+                                "residual_places": member.reading.residual_places,
+                                "unavailable_places": member.reading.unavailable_places,
+                                "objects": int(member.reading.objects),
+                                "claims_array": f"ownership_{member.parse}_claims",
+                                "residual_array": f"ownership_{member.parse}_residual",
+                            }
+                            for member in ownership.members
+                        ],
                     }
-                    arrays.update(
-                        ownership_claims=ownership.claims,
-                        ownership_residual=ownership.residual,
-                    )
+                    for member in ownership.members:
+                        arrays[f"ownership_{member.parse}_claims"] = (
+                            member.reading.claims
+                        )
+                        arrays[f"ownership_{member.parse}_residual"] = (
+                            member.reading.residual
+                        )
+                    arrays["ownership_disagreement"] = ownership.disagreement
                 if series.relations is not None:
                     relations = series.relations
                     record["relations"] = {
                         "code": relations.code,
                         "why": relations.why,
-                        "interstices": relations.interstices,
+                        "interstices": [
+                            {
+                                "kind": item.kind,
+                                "first": item.first,
+                                "second": item.second,
+                                "series_uid": item.series_uid,
+                                "provenance": item.provenance,
+                            }
+                            for item in relations.interstices
+                        ],
+                        "pairings_code": pairings.code
+                        if pairings is not None
+                        else None,
+                    }
+                if series.bundles is not None:
+                    bundles = series.bundles
+                    record["vectors"] = {
+                        "code": bundles.code,
+                        "why": bundles.why,
+                        "subject_kind": bundles.subject_kind,
+                        "planes_read": bundles.planes_read,
+                        "profiles": [
+                            {
+                                "index": profile.index,
+                                "places": profile.places,
+                                "banks": [
+                                    {
+                                        "name": bank.name,
+                                        "source_stage": bank.source_stage,
+                                        "status": bank.status,
+                                        "rows": dict(bank.rows),
+                                        "why": bank.why,
+                                    }
+                                    for bank in profile.banks
+                                ],
+                            }
+                            for profile in bundles.profiles
+                        ],
                     }
                 if record["background_annotation_code"] == "measured":
                     arrays["background_mask"] = measurement.acquired_plane <= split
@@ -395,9 +467,9 @@ def main() -> None:
                         measurement.boundaries
                     )
                     arrays.update(boundary_arrays)
-                if series.series_uid in conversations:
+                if series.conversation is not None:
                     record["conversation"], conversation_arrays = conversation_record(
-                        conversations[series.series_uid], args.backend
+                        series.conversation, args.backend
                     )
                     arrays.update(conversation_arrays)
                 record["arrays"] = {
@@ -431,28 +503,61 @@ def main() -> None:
                 "code": "complete",
                 "series_written": len(records) - start,
                 "reached": result.reached,
+                # The roster: every stage with the code it returned (task 6.6). Coverage is a
+                # population; `reached` beside it is only the telemetry scalar it always was.
+                "attendance": [list(entry) for entry in result.attendance],
                 "ledger": events,
             }
             if result.findings is not None:
                 # PER STUDY, not per series: a finding is a statement about the knee. Serialised
-                # as returned -- index, structural requirement, named code and reason. No number
-                # is written for any finding, because a confidence is knee.output's lossy
-                # projection of this record and the projection has not been declared.
+                # as returned -- index, structural requirement, named code, reason, and the
+                # subject facts it READ from relations (task 6.4). No number is written for any
+                # finding, because a confidence is knee.output's lossy projection of this record
+                # and the projection has not been declared.
                 study_entry["findings"] = {
                     "code": result.findings.code,
                     "why": result.findings.why,
                     "code_names": FINDING_CODES,
                     "series_with_population": result.findings.series_with_population,
                     "series_with_construction": result.findings.series_with_construction,
+                    "series_with_profiles": result.findings.series_with_profiles,
                     "findings": [
                         {
                             "index": finding.index,
                             "requirement": finding.requirement,
                             "code": finding.code,
                             "reason": finding.reason,
+                            "subjects": list(finding.subjects),
+                            "candidates": finding.candidates,
+                            "profiles": finding.profiles,
                         }
                         for finding in result.findings.findings
                     ],
+                }
+            if result.output is not None:
+                # THE COMPANION RECORD, written in the same run (task 6.8): the twelve joined to
+                # the competition's columns by the declared table. Rows are refused by name
+                # while the projection is undeclared, and that refusal is saved as the fact.
+                study_entry["output"] = {
+                    "code": result.output.code,
+                    "why": result.output.why,
+                    "projection": None
+                    if result.output.projection is None
+                    else asdict(result.output.projection),
+                    "companion": [
+                        {
+                            "index": row.index,
+                            "column": row.column,
+                            "code": row.code,
+                            "reason": row.reason,
+                            "subjects": list(row.subjects),
+                            "candidates": row.candidates,
+                        }
+                        for row in result.output.companion
+                    ],
+                    "submission_rows": None
+                    if result.output.rows is None
+                    else [[column, value] for column, value in result.output.rows],
                 }
             studies.append(study_entry)
             print(f"measured {uid}: {len(result.series)} series", flush=True)

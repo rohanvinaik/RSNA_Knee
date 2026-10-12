@@ -139,6 +139,24 @@
     "refusal": "",
     "standing": "complete"
   },
+  "src/knee/output/projection.py::output_code": {
+    "cut_reasons": [],
+    "function_digest": "f84bd557fa1f458d",
+    "refusal": "",
+    "standing": "complete"
+  },
+  "src/knee/ownership/claims.py::comparison_code": {
+    "cut_reasons": [],
+    "function_digest": "c3112d19c51eb4a3",
+    "refusal": "",
+    "standing": "complete"
+  },
+  "src/knee/ownership/claims.py::members_code": {
+    "cut_reasons": [],
+    "function_digest": "5bf873f55b566982",
+    "refusal": "",
+    "standing": "complete"
+  },
   "src/knee/ownership/claims.py::ownership_code": {
     "cut_reasons": [],
     "function_digest": "14b86ed8dac6a8f6",
@@ -155,7 +173,7 @@
   },
   "src/knee/predicates/findings.py::finding_code": {
     "cut_reasons": [],
-    "function_digest": "b320979d7abda64e",
+    "function_digest": "5bc300e5f52868ba",
     "refusal": "",
     "standing": "complete"
   },
@@ -181,7 +199,27 @@
   },
   "src/knee/relations/shell.py::read_relations": {
     "cut_reasons": [],
-    "function_digest": "4cc5f3891fc63eb7",
+    "function_digest": "055ac1a06ff83e35",
+    "refusal": "",
+    "standing": "complete"
+  },
+  "src/knee/vectors/bundles.py::bank_status_code": {
+    "cut_reasons": [],
+    "function_digest": "a57bd61b0c9d92a7",
+    "refusal": "",
+    "standing": "complete"
+  },
+  "src/knee/vectors/bundles.py::count_by_extent": {
+    "cut_reasons": [
+      "mutant_construction_failed"
+    ],
+    "function_digest": "94be047ad879b824",
+    "refusal": "",
+    "standing": "ungateable"
+  },
+  "src/knee/vectors/bundles.py::stage_code": {
+    "cut_reasons": [],
+    "function_digest": "b4f32508a1579bec",
     "refusal": "",
     "standing": "complete"
   }

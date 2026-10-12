@@ -29,7 +29,10 @@ four capacity properties hold:
 2. **a language exists** — every place carries a ternary digit per acquisition against a pair of
    edges from that series' own distribution, silence distinct from the middle digit;
 3. **reasoning composes** — every decision is a named code, total over its arguments, every bar an
-   argument, **and the decision reads a RELATION between its subjects rather than a property of one**;
+   argument, **and where the object model gives a finding a relation as its subject, the decision
+   reads that RELATION between its two subjects rather than a property of one** (scoped 2026-10-12
+   by the founder's Fracture sentence, which makes a fracture a predicate on one object;
+   `docs/PIPELINE_AS_OBJECT.md`);
 4. **the correspondence is named** — the expected reading `e` is declared as a hand-given
    correspondence with its author and date, never computed and never fitted.
 
@@ -41,12 +44,9 @@ Per the founder, the check reports provenance and never rules on generality, bec
 by eye is legitimate when its rule describes how the anatomy presents *generally*. The guard against
 over-fitting is his.
 
-Interpretation still to reconcile: the universal relational wording above is the
-lead/second-reader capacity operationalization. The full object model explicitly
-contains predicates on individual objects. It must not silently replace those
-subjects or require every scalar helper to take two objects; the exact scope
-remains an explicit question in `docs/PIPELINE_AS_OBJECT.md`. No task is closed
-on that unresolved interpretation.
+The universal relational wording this item once carried was the lead's, not the founder's, and
+his own sentence contradicted it; it is scoped as above, and `knee.predicates` reads a relation
+for the ten construction-subject findings and a population for the two object-subject ones.
 
 ## The dispatch question, which binds tasks 2.4, 3.1 and 4.1
 
@@ -369,6 +369,109 @@ Seven drawings, one named failure, three `no_drawer` stages; conversation 4 meas
       (object–interstice–object with its boundary provenance visible). Not the predicates — grading
       those first would be grading words before letters. **This is the point of the change**: he
       assigns meaning to what the tooling shows, and nothing here may assign it for him.
+
+## 6. The composition repairs — `docs/HANDOFF_WIRING.md` and its Codex reading, 2026-10-12
+
+The founder, 2026-10-12: *"So much of the work needed for me to actually perform reasoning and
+design is just not built right. I need the thing to actually work and be wired right, after which
+I can actually do the REAL work."* Declared before any code. The capability is
+`specs/route-composition/spec.md`. Each item names what consumes what, and the verification is
+the re-run's ledger and the gate, never the artifact (design.md, correction two).
+
+Corrected from source before declaring, because the handoff was written to guide this fix and a
+fix-guiding note goes stale: both 4b.1 defects are already repaired in `object_packet.py`
+(`CENTRE_OF_THE_FRAME` is a declared display default, `main()` catches `ArgumentRefusal` only),
+and `REQUIREMENTS` in `findings.py` follows the object model's table order, not the competition's
+column order its comment claimed — the index-to-column correspondence is `knee.output`'s.
+
+- [x] 6.1 **The route runs in dependency order.** *(DONE 2026-10-12; measured on the real study:
+      `conversation.produced` at ledger index 47, first `ownership.produced` at 53 —
+      `measurements/composition-repair-20261012.md`.)* `run_study` measures every series, then
+      converses, then partitions, relates, bundles, predicates and projects — so the conversation's
+      refined parse is an INPUT to ownership and relations instead of a record computed after the
+      findings. `SeriesRun` carries its own conversation reading and `StudyRun.conversations` is
+      derived from it. Verify by the ledger: `conversation.produced` precedes `ownership.produced`
+      and ownership records `conversation.consumed_by.ownership`.
+- [x] 6.2 **Ownership seats one member per parse.** *(DONE 2026-10-12: three members on every
+      series of the real study, disagreeing places 225/464/290/215/0; `members_code` and
+      `comparison_code` Detective-COMPLETE, `comparison_code` CrossHair-confirmed.)* The solitary parse (`interiors.labels`) and,
+      where the conversation read the series, its concurrent and conditional subdivisions, each
+      read with the same `read_ownership` and kept; the disagreement between solitary and
+      concurrent claims retained as a mask and a count. No member is a fallback and no field
+      names a winner (founder: "keep everything, including where things conflict"). Pure
+      decisions `members_code` and `comparison_code`, pinned two-sign. Verify: a series the
+      conversation could not read seats one member; a measured one seats three; the writer saves
+      each and `partition_frames` draws each.
+- [x] 6.3 **Relations carries its pairings.** *(DONE 2026-10-12: the same 597 pairs on the real
+      study; `read_relations` Detective-COMPLETE modulo 7 unproven ledger survivors and 10 flagged
+      with proofs — standing in `measurements/composition-repair-20261012.md`.)* `read_relations(interiors, spacing_rc)` calls
+      `read_pairings` itself and returns the reading as `RelationsReading.pairings`; `code` stays
+      `construction_absent` for the interstice extent, which is still unbuilt, and `why`
+      inventories what IS retained. `SeriesRun.pairings` is removed; the writer, the graph and
+      `pair_frames` read `relations.pairings`. `Interstice` and `KINDS` are declared so the
+      construction, when built, fills a shape predicates already read. `read_pairings` becomes
+      total over a malformed predecessor (`invalid_count`), as `read_ownership` is. Verify the
+      shell's must-nots still hold and the real run retains the same 597 pairs.
+- [ ] 6.3a **Pairings under the conversed parses** — declared, not built here. Each edge's source
+      label must be translated to the piece containing its territory-side pixel (the edge point
+      minus half the sign of its normal, which is exact) before the same `read_pairings` can run
+      on a subdivided parse; without that, every near footprint reads `source_mismatch`. Its own
+      unit, its own contract, pinned two-sign.
+- [x] 6.4 **Predicates read per-finding construction facts.** *(DONE 2026-10-12; `finding_code`
+      Detective-COMPLETE 112/112; the must-not still holds; `dispatch_undeclared` reachable only
+      with several candidates.)* Each requirement names the KIND of
+      construction it selects from; `_one_finding` reads the study's `Interstice` records of that
+      kind from relations — none → `subject_unconstructed`, read and never hardcoded; one → its
+      two indices; several → `dispatch_undeclared`, the selection rule being the founder's (4.1).
+      `finding_code` takes the candidate count in place of a boolean. Verify the must-not
+      `test_a_global_construction_count_never_supplies_a_subject` still holds and the new code is
+      reachable only with several candidates.
+- [x] 6.5 **A consumed event is recorded by the consumer.** *(DONE 2026-10-12: on the real run
+      every producer but `output` has a consumer and no consumer lacks a producer;
+      `tests/knee/test_pipeline_composition.py`.)* `<producer>.consumed_by.<consumer>`,
+      recorded inside the consuming stage at the point of reading, never by the route after
+      production; the route records only the two pinned multi-exit readers (`read_study`,
+      `read_regime`). A composition test over the synthetic corpus checks every `<stage>.produced`
+      has a consumer event. Verify by the real run's ledger sources.
+- [x] 6.6 **The attendance roster.** *(DONE 2026-10-12; saved in the receipt.)* `StudyRun.attendance` names every stage with its own code
+      (the conclave reading: coverage is a population, not a high-water mark); `reached` stays as
+      the telemetry scalar it is. Saved in the receipt.
+- [x] 6.7 **The bundles stage, first increment (§3).** *(DONE 2026-10-12 as a first increment: 51
+      profiles on the real study; `stage_code` and `bank_status_code` Detective-COMPLETE;
+      `count_by_extent` Detective-UNGATEABLE (engine defect reported, no retry, no waiver), its
+      CrossHair blocked by the audit wall. Body by a scoped Sonnet builder, read whole by the lead.)* Dispatch answer, recorded first: the
+      subject kind is the indexed extent of the selected native plane, which ownership's solitary
+      member resolved — a relational fact, not a kind-label, so the task proceeds. Banks this
+      build can write, each naming its source stage: the place's own reading per seated lens
+      member (counts over the digit codes at the object's places); the members' standing; how
+      the object came out (its edge kinds and its profile trace codes); and through-plane support
+      per other acquisition (counts over `SLAB_CODES`, which is the slab rule's first consumer).
+      Banks it cannot write are carried as `unavailable` with the reason, never as zeros. One
+      plane read, recorded. Verify a zero count can only mean a reading was made and found
+      nothing, and that `slabs.py` is reached from the route.
+- [x] 6.8 **The output stage, first increment (4.2).** *(DONE 2026-10-12; `output_code`
+      Detective-COMPLETE and CrossHair-confirmed; the bijection test holds; no row written.)* The declared index-to-column table, checked
+      as a bijection onto `LABELS`; the companion record on every run; submission rows refused
+      with `projection_undeclared` while the value is undeclared (founder: "that should resolve
+      experientially"). Verify a submission without its companion is refused, and that no row is
+      written today.
+- [x] 6.9 **Every stage draws.** *(DONE 2026-10-12: 12 drawn, 0 not drawn, no stage without a
+      drawer on the real study; the study stage retains its walk and per-slice codes.
+      `panels()`/`over()` in `pictures/collapse.py` untouched, the founder's ruling.)* `collapse` from the saved regime key and squint, leaving
+      `pictures/collapse.py`'s `panels()` and `over()` untouched pending the founder's ruling on
+      the leg and profile panels; `study` from a saved walk through the stack with per-slice codes
+      the stage records; `vectors` and `output` from their records; `DRAWINGS` files
+      `object_packet` under `objects`, where its values come from, so `knee.pictures.study` is
+      the study stage's one drawer. Verify `route_stages_without_a_drawer` is empty.
+- [x] 6.10 **The record corrections of HANDOFF §8.** *(DONE 2026-10-12.)* `OBJECT_MODEL.md` and `PIPELINE_AS_OBJECT.md`
+      no longer say the four diagnosis packages are deferred "by his ruling"; the universal
+      relational clause is scoped to relation-subject findings by his own Fracture sentence;
+      `places.json` drops `runs_on_import`; `wiring-gaps-fable.md` Q2 is annotated struck;
+      `WIRING_GAPS.md` is marked superseded with its false tooling claim corrected.
+- [x] 6.11 **The real run, the gate, the profile.** *(DONE 2026-10-12; the run, the gate log and
+      the profile are named in `measurements/composition-repair-20261012.md`; budgets undeclared.)* `just analyze-objects` on the demonstration
+      study; `just gate`; `just profile-tree` on the one command; counted work per stage read
+      from the ledger and reported; budgets left undeclared because a budget is a bar.
 
 ## Beside this change, unparked rather than duplicated
 

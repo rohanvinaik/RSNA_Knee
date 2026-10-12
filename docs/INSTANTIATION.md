@@ -15,8 +15,8 @@ status/join is [archived](../archive/docs/planning/20261012/INSTANTIATION.md).
 | §5 | deterministic resolution of visual subsets | `objects`: interiors, boundaries, native readings and conversation; indexed extents are not anatomical declarations |
 | §6 | refine boundaries given a resolved structural role | work inside `objects`; supported contour chains in toolkit 3.8a–3.12, unparked but with support prerequisites |
 | §7 | raw pixels in a shared deterministic language | `lenses` writes digits; `vectors` builds bank/row counts; cross-acquisition correspondence and local normalisation remain explicit obligations |
-| §8 | memory and buckets | `memory`, deferred to diagnosis; no recall during the object parse |
-| §9 | teaching regime and confirmed cases | `expert`, diagnosis-stage calls/cases |
+| §8 | memory and buckets | `memory`; no recall during the object parse (his 2026-10-11 sequencing remark); the package's disposition is open and his to settle — no ruling deferred it |
+| §9 | teaching regime and confirmed cases | `expert`, diagnosis-stage calls/cases; disposition likewise open |
 | §10 | residual becomes easier as known material is pulled out | `ownership`: partition and retained residual; repeated scheduling is distinct from a single partition |
 | §11 | society of agencies and concurrence | `predicates` and diagnosis-stage `agencies`/`record`; disagreement and abstention retained |
 | §12 | operations on resolved objects | tracking, following and division are out of scope by founder ruling |

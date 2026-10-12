@@ -64,7 +64,8 @@ Ranking that follows from his words, not mine:
 
 **Q1.** What does admitting the 597-pair candidate as a construction require — the H5 merge rule, a contract he must see, or nothing but wiring? The list says "not admitted" without the reason, and the review cannot rank `relations` without it.
 
-**Q2.** "Two seated populations with their disagreement retained" — which founder sentence authorises it? If it is the answer to 09:19, note he asked for the background lens to *resolve* air out of the population, not for two populations kept in parallel; retaining the disagreement is the three-legged-stool move, which he reserved for two *correct* lenses, not for one population that includes air.
+**Q2.** ~~"Two seated populations with their disagreement retained" — which founder sentence authorises it? If it is the answer to 09:19, note he asked for the background lens to *resolve* air out of the population, not for two populations kept in parallel; retaining the disagreement is the three-legged-stool move, which he reserved for two *correct* lenses, not for one population that includes air.~~
+*Struck 2026-10-12 (`docs/HANDOFF_WIRING.md` §8): the premise is false. Every lens is correct by definition (the rigid oracle, point 1), and air is a positively assigned structural class, not contamination; a population containing air is not disqualified from the stool. The sentence that authorises two seated members is his of the same day: "we always keep information we compute ... the pipeline should keep everything, including where things conflict." The rest of this reading stands.*
 
 **Q3.** Of the 51 non-route modules, how many are `workbench/`, and do any of them draw a production stage (the spine shows the census drawer committed under `workbench/render/`)?
 

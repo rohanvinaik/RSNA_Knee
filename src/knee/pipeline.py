@@ -5,8 +5,23 @@ nothing itself. Every judgement belongs to the stage it came from.
 
 It is the object model's route, in order (`docs/OBJECT_MODEL.md`, `docs/PIPELINE_AS_OBJECT.md`), and
 it is honest about its own state: a stage that is built runs and reports what it read; a stage that
-is not built reports `not_built` and the route carries on. So this file is readable as the project's
-table of contents, and `just run` over the corpus says exactly how far the pipeline reaches today.
+is not built reports its named absence and the route carries on. So this file is readable as the
+project's table of contents.
+
+**The order is the dependency order, and the conversation sits where its readers are** (task 6.1,
+`specs/route-composition`). Until 2026-10-12 the route partitioned, related and predicated every
+series and THEN conversed, so the conversation's refined parse reached nothing -- the Codex
+reading of the handoff: "Its subdivisions and disagreements are retained and rendered, but cannot
+affect those earlier decisions." Now every series is measured first, the acquisitions converse,
+and only then do ownership, relations and the bundles read the parse, each seating what the
+conversation gave it beside the solitary reading. The founder's standard sentence names this:
+"the combined sum total of all the analyses we have in conversation with one another".
+
+**Who records what.** A stage records its own `<stage>.produced`, and a CONSUMER records
+`<producer>.consumed_by.<consumer>` at the point it reads the record (task 6.5) -- never the route
+after production, which said a value was consumed when nothing had read it. The route records only
+for the two pinned multi-exit readers, `read_study` and `read_regime`, so no side effect threads
+through a pinned decision.
 
 The impure edge stays thin (SS13.7: "reading a movie, writing the output, drawing pictures"). This
 module reads studies and returns values. It writes nothing and draws nothing; `knee.pictures` is a
@@ -18,16 +33,19 @@ from __future__ import annotations
 from dataclasses import dataclass, field
 from pathlib import Path
 
+import numpy as np
+
 from knee.collapse.regime import RegimeKey, read_regime
 from knee.lenses.places import LensesReading, read_lenses
 from knee.objects.analysis import AnalysisRequest, SeriesMeasurement, measure_series
 from knee.objects.conversation import ConversationInput, SeriesConversation, converse
-from knee.ownership.claims import OwnershipReading, read_ownership
+from knee.output.projection import OutputReading, Projection, read_output
+from knee.ownership.claims import OwnershipMembers, read_ownership_members
 from knee.predicates.findings import FindingsReading, read_findings
-from knee.relations.pairings import PairingReading, read_pairings
 from knee.relations.shell import RelationsReading, read_relations
-from knee.study.corpus import Corpus, Study, read_study
+from knee.study.corpus import Corpus, Series, Study, read_study
 from knee.telemetry import ledger
+from knee.vectors.bundles import BundlesReading, read_bundles
 
 # The object model's route, in order, with the state of each stage. A stage is "built" when it runs
 # over a real study through Chapter 1's entry point -- never when its unit tests pass. That
@@ -43,15 +61,22 @@ ROUTE: tuple[tuple[str, str], ...] = (
     ("collapse", "partly"),  # the FIELD: regime, noise law, physical frame, the squint
     ("lenses", "not_built"),  # every place, every acquisition, one ternary digit
     ("objects", "partly"),  # the <object>s, and SS6's refinement of their borders
-    ("relations", "not_built"),  # rendered shell; facing-pair construction still absent
-    ("ownership", "built"),  # real-study partition, consumed and rendered
-    ("vectors", "not_built"),  # the BUNDLES: each <object>'s profile as row counts
-    # `partly`: it runs per study, returns twelve named standings and renders them, but it DECIDES
-    # nothing -- no subject is constructed for ten of the twelve and no correspondence is declared
-    # for any. It produces its record; what it does not do is read a knee.
+    ("relations", "not_built"),  # carries its pairings; interstice extent still absent
+    ("ownership", "built"),  # one member per parse, consumed and rendered
+    # `partly`: the first increment ran over the real study (51 profiles, 2026-10-12) and
+    # renders; the conjunction, composite, dome-link and ring banks are carried unavailable.
+    ("vectors", "partly"),  # the BUNDLES: each <object>'s profile as row counts
+    # `partly`: it runs per study, reads its subject facts from relations, ownership and the
+    # bundles, returns twelve named standings and renders them, but it DECIDES nothing -- no
+    # construction exists for ten of the twelve and no correspondence is declared for any.
     ("predicates", "partly"),  # the twelve, each on its named subject
-    ("output", "not_built"),  # twelve confidences, with the kept record behind them
+    # `partly`: the companion record is written and drawn on every run; submission rows are
+    # refused by name while the numeric projection is the founder's to declare.
+    ("output", "partly"),  # the companion record, and the refused projection
 )
+
+#: The stages in route order, for the attendance roster.
+STAGES: tuple[str, ...] = tuple(stage for stage, _ in ROUTE)
 
 
 @dataclass(frozen=True, slots=True)
@@ -61,10 +86,13 @@ class SeriesRun:
     `regime` is the series' regime key when the collapse could read one, else None with `why`
     saying which named code stopped it. A reading not made is never a reading of zero.
 
-    `ownership` and `relations` are ALWAYS present, never None, because both stages are total over
-    a missing predecessor: each returns a record or a named absence from the one shared vocabulary
-    (`knee.absence`). That is what lets the route run end to end whatever is missing, and it is why
-    the absence vocabulary had to be declared before either stage was built.
+    `conversation` is this series' own reading from the same-orientation conversation, or None
+    when none was requested; it is carried HERE, on the series it is about, because ownership and
+    relations read it, and a value is kept where its consumers find it.
+
+    `ownership`, `relations` and `bundles` are ALWAYS present, never None, because each stage is
+    total over a missing predecessor: each returns a record or a named absence from the one shared
+    vocabulary (`knee.absence`). That is what lets the route run end to end whatever is missing.
     """
 
     series_uid: str
@@ -73,162 +101,219 @@ class SeriesRun:
     regime: RegimeKey | None
     why: str
     measurements: SeriesMeasurement | None = None
-    ownership: OwnershipReading | None = None
+    conversation: SeriesConversation | None = None
+    ownership: OwnershipMembers | None = None
     relations: RelationsReading | None = None
     lenses: LensesReading | None = None
-    pairings: PairingReading | None = None
+    bundles: BundlesReading | None = None
+    # The study stage's own retained picture content (task 6.9): its per-slice codes, and the
+    # walk through the stack it keeps so the writer can save it without the whole volume.
+    slice_codes: tuple[str, ...] = ()
+    walk_indices: tuple[int, ...] = ()
+    walk: np.ndarray | None = None
 
 
 @dataclass(frozen=True, slots=True)
 class StudyRun:
-    """One study's whole route, as far as the pipeline reaches.
+    """One study's whole route, with every stage's attendance.
 
-    `reached` is the last stage that did anything; `series` holds one `SeriesRun` each, in the
-    table's order. Stages beyond `reached` are not failures -- they are unbuilt, and the route
-    names them so that what is missing is as legible as what is present.
+    `series` holds one `SeriesRun` each, in the table's order. `findings` is the twelve, per STUDY
+    rather than per series, because a finding is a statement about the knee; `output` is the
+    companion record and the projection's standing. Neither is ever None: both stages are total.
 
-    `findings` is the twelve, per STUDY rather than per series, because a finding is a statement
-    about the knee and the series are the acquisitions it was read from. It is never None: the
-    stage is total over the series tuple and returns twelve named standings whatever it met.
+    `attendance` names every route stage with the code that stage itself returned for this study
+    -- the conclave reading, in which coverage is a population and never a high-water mark.
+    `reached` survives beside it as the telemetry scalar it always was: the furthest stage that
+    read something, which says nothing about which members supplied readings.
     """
 
     uid: str
     split: str
     series: tuple[SeriesRun, ...] = field(default_factory=tuple)
     reached: str = "study"
-    conversations: tuple[SeriesConversation, ...] = field(default_factory=tuple)
     findings: FindingsReading | None = None
+    output: OutputReading | None = None
+    attendance: tuple[tuple[str, str], ...] = field(default_factory=tuple)
+
+    @property
+    def conversations(self) -> tuple[SeriesConversation, ...]:
+        """Every series' conversation reading, in series order, for a caller that wants them together."""
+        return tuple(
+            run.conversation for run in self.series if run.conversation is not None
+        )
+
+
+def _measure(
+    series: Series, analysis: AnalysisRequest | None, key: RegimeKey | None
+) -> SeriesMeasurement | None:
+    """The objects stage over one series, when an analysis was requested."""
+    if analysis is None:
+        return None
+    if analysis.prominence_mm is None:
+        return measure_series(series, analysis)
+    return measure_series(
+        series,
+        analysis,
+        background_split=key.background_split if key is not None else float("nan"),
+    )
+
+
+def _attendance(
+    runs: tuple[SeriesRun, ...], findings: FindingsReading, output: OutputReading
+) -> tuple[tuple[str, str], ...]:
+    """Every stage with the code it returned: `present` if any series read, else the first silence."""
+
+    def over_series(codes: list[str]) -> str:
+        if not codes:
+            return "predecessor_absent"
+        return "present" if "present" in codes else codes[0]
+
+    lens_codes = [
+        "present"
+        if any(m.code == "present" for m in run.lenses.members)
+        else run.lenses.members[0].code
+        for run in runs
+        if run.lenses is not None and run.lenses.members
+    ]
+    return (
+        ("study", "present" if runs else "predecessor_empty"),
+        (
+            "collapse",
+            over_series(["present" if r.regime is not None else r.why for r in runs]),
+        ),
+        ("lenses", over_series(lens_codes)),
+        (
+            "objects",
+            over_series(
+                [
+                    "present"
+                    if r.measurements.code == "measured"
+                    else r.measurements.code
+                    for r in runs
+                    if r.measurements is not None
+                ]
+            ),
+        ),
+        ("relations", over_series([r.relations.code for r in runs if r.relations])),
+        ("ownership", over_series([r.ownership.code for r in runs if r.ownership])),
+        ("vectors", over_series([r.bundles.code for r in runs if r.bundles])),
+        ("predicates", findings.code),
+        ("output", output.code),
+    )
 
 
 def run_study(
-    corpus: Corpus, uid: str, analysis: AnalysisRequest | None = None
+    corpus: Corpus,
+    uid: str,
+    analysis: AnalysisRequest | None = None,
+    projection: Projection | None = None,
 ) -> StudyRun:
-    """Walk one study down the object model's route, as far as the build reaches.
+    """Walk one study down the object model's route, in dependency order.
 
-    Chapter 1 reads the study whole at stored fidelity. The collapse then reads each series' regime
-    key -- the cheap whole-field readings that say what a series IS before any expensive work runs.
-    Beyond that the route is unbuilt, and `StudyRun.reached` says so.
+    1. Chapter 1 reads the study whole at stored fidelity; per series the collapse reads the regime
+       key, the lenses read every place against it, and the objects stage measures the plane.
+    2. The same-orientation acquisitions converse, each series receiving its refined parse.
+    3. Per series, ownership seats one member per parse, relations reads its pairings, and the
+       bundles read what the lenses and the partition said about each object.
+    4. Per study, the predicates read their subject facts from ownership and relations, and the
+       output joins the twelve to the competition's columns -- refusing rows while the projection
+       is undeclared.
+
+    `projection` is the declared numeric value with its author and date, and it is None today.
     """
     study: Study = read_study(corpus, uid)
-    # WHO RECORDS WHAT. A stage with one natural exit records its own `produced` -- lenses,
-    # pairings, ownership, relations do. `read_study` and `read_regime` have several exits and are
-    # pinned, so the route counts them here rather than threading a side effect through a pinned
-    # decision; the route can see exactly what came back. Either way every stage is counted, so a
-    # stage that ran can be told from one that never executed.
     ledger.record("study.produced", series=len(study.series))
-    runs: list[SeriesRun] = []
+
+    # 1. Measure every series. The route counts the two pinned multi-exit readers here; every
+    # other stage records its own production, and every consumer its own consumption.
+    measured: list[
+        tuple[Series, RegimeKey | None, LensesReading, SeriesMeasurement | None]
+    ] = []
     for series in study.series:
-        row = series.row
+        ledger.record(
+            "study.consumed_by.collapse", volume=1 if series.volume is not None else 0
+        )
         key = read_regime(series) if series.volume is not None else None
         ledger.record("collapse.produced", regime=1 if key is not None else 0)
-        ledger.record("collapse.consumed", regime=1 if key is not None else 0)
         lenses = read_lenses(series.volume, key)
-        ledger.record(
-            "lenses.consumed",
-            members=len(lenses.members),
-            places=int(lenses.standings.size),
-        )
-        measurements = None
-        if analysis is not None:
-            measurements = (
-                measure_series(series, analysis)
-                if analysis.prominence_mm is None
-                else measure_series(
-                    series,
-                    analysis,
-                    background_split=key.background_split
-                    if key is not None
-                    else float("nan"),
-                )
+        measured.append((series, key, lenses, _measure(series, analysis, key)))
+
+    # 2. The conversation, over every ordered same-orientation pair, BEFORE anything reads a parse.
+    conversation_of: dict[str, SeriesConversation] = {}
+    if analysis is not None and analysis.conversation:
+        inputs = tuple(
+            ConversationInput(
+                series.row.series_uid,
+                series.row.anatomical_plane,
+                measurement,
+                key.background_split if key is not None else float("nan"),
             )
-        view = (row.anatomical_plane, row.fluid_sensitive, row.fat_suppression)
-        # Both stages are TOTAL over a missing predecessor, so both run unconditionally and
-        # neither is guarded by an `if`. A guard here would be the route deciding, and the route
-        # decides nothing (SS13.7); the stage names its own silence.
-        interiors = getattr(measurements, "interiors", None)
-        ownership = read_ownership(interiors)
-        ledger.record("ownership.consumed", objects=int(ownership.objects))
-        relations = read_relations(interiors)
-        ledger.record("relations.consumed", interstices=len(relations.interstices))
-        frame = getattr(measurements, "frame", None)
-        pairings = read_pairings(
-            interiors, frame.spacing_rc if frame is not None else None
+            for series, key, _, measurement in measured
         )
-        ledger.record("pairings.consumed", profiles=int(pairings.outcome_codes.size))
-        if series.volume is None:
-            runs.append(
-                SeriesRun(
-                    row.series_uid,
-                    view,
-                    series.stack,
-                    None,
-                    "no_stacked_volume",
-                    measurements,
-                    ownership,
-                    relations,
-                    lenses,
-                    pairings,
-                )
-            )
-            continue
+        for reading in converse(
+            inputs, np.asarray(analysis.offsets_mm), analysis.backend
+        ):
+            conversation_of[reading.series_uid] = reading
+
+    # 3. Per series, the stages that read the parse. Each is TOTAL over a missing predecessor, so
+    # each runs unconditionally and none is guarded by an `if`: a guard here would be the route
+    # deciding, and the route decides nothing (SS13.7); the stage names its own silence.
+    runs: list[SeriesRun] = []
+    for series, key, lenses, measurement in measured:
+        row = series.row
+        conversation = conversation_of.get(row.series_uid)
+        interiors = getattr(measurement, "interiors", None)
+        frame = getattr(measurement, "frame", None)
+        ownership = read_ownership_members(interiors, conversation)
+        relations = read_relations(interiors, frame.spacing_rc if frame else None)
+        others = tuple(
+            (other, other_measurement)
+            for other, _, _, other_measurement in measured
+            if other.row.series_uid != row.series_uid
+        )
+        bundles = read_bundles(ownership, lenses, measurement, others)
         runs.append(
             SeriesRun(
                 series_uid=row.series_uid,
-                view=view,
+                view=(row.anatomical_plane, row.fluid_sensitive, row.fat_suppression),
                 stack=series.stack,
                 regime=key,
-                why="read" if key is not None else "regime_unreadable",
-                measurements=measurements,
+                why="no_stacked_volume"
+                if series.volume is None
+                else ("read" if key is not None else "regime_unreadable"),
+                measurements=measurement,
+                conversation=conversation,
                 ownership=ownership,
                 relations=relations,
                 lenses=lenses,
-                pairings=pairings,
+                bundles=bundles,
+                slice_codes=series.slice_codes,
+                walk_indices=series.walk_indices,
+                walk=series.walk,
             )
         )
-    # The furthest stage that actually read something. Ownership advances it only where it
-    # returned a reading; relations never does, because its construction is unbuilt and saying
-    # otherwise would claim a stage the build has not reached.
+
+    # 4. Per study: the predicates over every series' facts, and the output over the twelve.
+    series_runs = tuple(runs)
+    findings = read_findings(series_runs)
+    output = read_output(findings, projection)
+
+    # The furthest stage that actually read something -- a scalar kept for telemetry. Ownership
+    # advances it only where a member returned a reading; relations never does, because its
+    # construction is unbuilt, and predicates never does, because it resolves nothing
+    # (`test_open_and_run_attaches_real_measurements_and_reads_each_series_once` caught the case
+    # where wiring it reported "predicates" for a study whose regime was all it read).
     reached = "collapse" if any(r.regime is not None for r in runs) else "study"
     if any(r.ownership is not None and r.ownership.code == "present" for r in runs):
         reached = "ownership"
-    # THE PREDICATES, per study: a finding is a statement about the knee, so the twelve are
-    # evaluated once over all its series rather than once per acquisition. Total over the tuple,
-    # so it runs unconditionally and names its own silence -- the route decides nothing (SS13.7).
-    findings = read_findings(tuple(runs))
-    ledger.record("predicates.consumed", findings=len(findings.findings))
-    # It does NOT advance `reached`, for the reason relations does not: it runs and resolves
-    # nothing, so naming it would claim a stage the build has not reached. Its own code says
-    # only whether series were handed over, which is true of almost every study -- wiring it
-    # to `reached` made the route report "predicates" for a study whose regime was all it read,
-    # and `test_open_and_run_attaches_real_measurements_and_reads_each_series_once` caught it.
-    conversations = ()
-    if analysis is not None and analysis.conversation:
-        import numpy as np
-
-        inputs = tuple(
-            ConversationInput(
-                r.series_uid,
-                r.view[0],
-                r.measurements,
-                r.regime.background_split if r.regime is not None else float("nan"),
-            )
-            for r in runs
-        )
-        conversations = converse(
-            inputs, np.asarray(analysis.offsets_mm), analysis.backend
-        )
-        ledger.record("conversation.produced", series=len(conversations))
-        ledger.record(
-            "conversation.consumed",
-            exchanges=sum(len(c.exchanges) for c in conversations),
-        )
     return StudyRun(
         uid=study.row.uid,
         split=study.row.split,
-        series=tuple(runs),
+        series=series_runs,
         reached=reached,
-        conversations=conversations,
         findings=findings,
+        output=output,
+        attendance=_attendance(series_runs, findings, output),
     )
 
 
@@ -238,9 +323,12 @@ def route_state() -> tuple[tuple[str, str], ...]:
 
 
 def open_and_run(
-    root: Path, uid: str, analysis: AnalysisRequest | None = None
+    root: Path,
+    uid: str,
+    analysis: AnalysisRequest | None = None,
+    projection: Projection | None = None,
 ) -> StudyRun:
     """Open the corpus at `root` and run one study. The one call a caller needs."""
     from knee.study.corpus import open_corpus
 
-    return run_study(open_corpus(root), uid, analysis)
+    return run_study(open_corpus(root), uid, analysis, projection)

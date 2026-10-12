@@ -183,7 +183,21 @@ def test_map_counts_and_ledger_are_computed_from_codes_once() -> None:
         assert sum(member.counts) == member.codes.size
         assert len(member.counts) == len(DIGIT_CODES)
     assert sum(reading.standing_counts) == reading.standings.size
-    assert ledger.totals() == {"members": 2, "places": 4, "output_bytes": 20}
+    # The stage records what it PRODUCED and, since task 6.5 (`specs/route-composition`), what it
+    # CONSUMED -- the volume from Chapter 1 and the regime key from the field -- at the point it
+    # reads them. Both readings here are counted once, as the one event each.
+    assert ledger.totals() == {
+        "members": 2,
+        "places": 4,
+        "output_bytes": 20,
+        "volume": 1,
+        "regime": 1,
+    }
+    assert [event.name for event in ledger.events()] == [
+        "study.consumed_by.lenses",
+        "collapse.consumed_by.lenses",
+        "lenses.produced",
+    ]
 
 
 def test_no_field_of_the_reading_records_a_resolved_digit() -> None:

@@ -49,6 +49,33 @@ class SeriesGeometry:
     orientation_spread: float
 
 
+#: How many slices the stage's walk through a stack keeps: the first, the last, and the rest evenly
+#: between them. The walk is what this stage's picture shows (`knee.pictures.study`), retained here
+#: so the writer can save it and the drawer can arrange it without the whole volume.
+WALK_COUNT = 8
+
+#: The per-slice codes this stage records. `stack_codes` counts the second across the series; the
+#: per-slice record keeps WHICH slice, so the walk can label each one.
+SLICE_CODES: tuple[str, ...] = ("decoded", "pixels_not_2d")
+
+
+def walk_indices(slices: int, walk_count: int = WALK_COUNT) -> tuple[int, ...]:
+    """The stack indices a walk through `slices` slices visits: evenly spaced, ends included.
+
+    A stack with at most `walk_count` slices is walked whole. Empty when there is nothing to walk.
+    This is the ONE rule for which slices a walk shows; the picture adapter reads it from here.
+
+    post: len(__return__) == min(max(slices, 0), max(walk_count, 0))
+    post: all(0 <= i < slices for i in __return__)
+    """
+    if slices <= 0 or walk_count <= 0:
+        return ()
+    count = min(walk_count, slices)
+    return tuple(
+        int(index) for index in np.linspace(0, slices - 1, count).round().astype(int)
+    )
+
+
 @dataclass(frozen=True, slots=True)
 class Series:
     """One series, whole.
@@ -58,6 +85,11 @@ class Series:
     volume: when stack is ("stackable",), the slices' pixels stacked in stack order, (n, rows, columns) in the
     stored dtype, axis 0 ascending along the normal; else None. geometry: when every slice's position, orientation
     and pixel spacing are present; else None.
+
+    slice_codes: one of `SLICE_CODES` per slice, in the same order as `slices`. walk_indices and walk: the
+    stack indices `walk_indices` visits and the volume's slices at them, (len(walk_indices), rows, columns) in
+    the stored dtype -- the stage's own picture content, retained so it is never recomputed from a re-read
+    volume; None when there is no volume.
     """
 
     row: SeriesRow
@@ -66,6 +98,9 @@ class Series:
     stack: tuple[str, ...]
     volume: np.ndarray | None
     geometry: SeriesGeometry | None
+    slice_codes: tuple[str, ...] = ()
+    walk_indices: tuple[int, ...] = ()
+    walk: np.ndarray | None = None
 
 
 def read_series(directory: Path, row: SeriesRow) -> Series:
@@ -116,6 +151,7 @@ def read_series(directory: Path, row: SeriesRow) -> Series:
         )
         slices = [slices[i] for i in order]
     volume = np.stack([s.pixels for s in slices]) if codes == ("stackable",) else None
+    indices = walk_indices(len(volume)) if volume is not None else ()
     return Series(
         row=row,
         directory=directory,
@@ -123,6 +159,11 @@ def read_series(directory: Path, row: SeriesRow) -> Series:
         stack=codes,
         volume=volume,
         geometry=geometry,
+        slice_codes=tuple(
+            "decoded" if s.pixels.ndim == 2 else "pixels_not_2d" for s in slices
+        ),
+        walk_indices=indices,
+        walk=volume[list(indices)] if volume is not None else None,
     )
 
 

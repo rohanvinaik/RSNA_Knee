@@ -79,8 +79,48 @@ def footprint_labels_reference(labels, available, positions_rc):
     return handed_on(output)
 
 
-def read_pairings(interiors: InteriorReading | None, spacing_rc) -> PairingReading:
-    """Construct flanking samples from existing profile offsets; retain every outcome."""
+def unreadable_pairing() -> PairingReading:
+    """The record for a predecessor that does not read as an interiors reading at all.
+
+    `invalid_count` is `absence_code`'s own word for an argument that cannot be read, as
+    `read_ownership` uses it; it names no silence about the study, and every array is empty
+    because no profile row was handed over in a form this unit can count.
+    """
+    counts = {name: 0 for name in CODES}
+    ledger.record(
+        "pairings.produced", profiles=0, paired=0, footprint_read_upper_bound=0
+    )
+    return PairingReading(
+        code="invalid_count",
+        why="the interiors reading handed over does not read as one",
+        source_labels=handed_on(np.zeros(0, dtype=np.int32)),
+        far_labels=handed_on(np.zeros(0, dtype=np.int32)),
+        trace_codes=handed_on(np.zeros(0, dtype=np.uint8)),
+        outcome_codes=handed_on(np.zeros(0, dtype=np.uint8)),
+        positions_rc=handed_on(np.full((0, 2, 2), np.nan)),
+        contributor_labels=handed_on(np.full((0, 2, 4), -2, dtype=np.int32)),
+        band_limits_mm=handed_on(np.full((0, 2), np.nan)),
+        counts=MappingProxyType(counts),
+    )
+
+
+def read_pairings(interiors: object, spacing_rc: object) -> PairingReading:
+    """Construct flanking samples from existing profile offsets; retain every outcome.
+
+    The intended argument is an `InteriorReading` or None, and the annotation is wider on
+    purpose, as in `read_ownership`: the house requires a stage to be total, and a malformed
+    record is part of the contract rather than a promise the tests break (`docs/TOOLING.md`).
+    Anything that is not an interiors reading is refused by name before a field of it is read.
+    """
+    if interiors is not None and not isinstance(interiors, InteriorReading):
+        return unreadable_pairing()
+    return pairings_of(interiors, spacing_rc)
+
+
+def pairings_of(
+    interiors: InteriorReading | None, spacing_rc: object
+) -> PairingReading:
+    """The pairing reading of one interiors reading, or the silence it met."""
     count = 0 if interiors is None else len(interiors.trace_codes)
     positions = np.full((count, 2, 2), np.nan)
     contributors = np.full((count, 2, 4), -2, dtype=np.int32)

@@ -1,28 +1,44 @@
 # The current pipeline route
 
 This is the interface map, reconciled 2026-10-12 against `knee.pipeline.run_study` and
-`ROUTE`. Intent is in [OBJECT_MODEL.md](OBJECT_MODEL.md) and
+`ROUTE` after the composition repairs (`openspec/changes/every-stage-renders/tasks.md` §6,
+`specs/route-composition/spec.md`). Intent is in [OBJECT_MODEL.md](OBJECT_MODEL.md) and
 [PIPELINE_AS_OBJECT.md](PIPELINE_AS_OBJECT.md); the workflow is in [SPINE.md](SPINE.md).
 The original 2026-10-10 Figure 8 route is [archived](../archive/docs/planning/20261012/PIPELINE.md).
 
-## Nine stages, ten operations
+## Nine stages, in dependency order
+
+`run_study` runs in four passes: every series is measured (study, collapse, lenses, objects); the
+same-orientation acquisitions converse; every series is then partitioned, related and bundled
+with the conversation's parse as an input; then the study's predicates and output run once.
+Until 2026-10-12 the conversation ran LAST and its refined parse reached nothing.
 
 | route package | intended output | current connection to inspect |
 |---|---|---|
-| `study` | acquired series, slices and LPS geometry at stored fidelity | `read_study` → `StudyRun.study` |
-| `collapse` | regime, physical field and squint | `read_regime`; optional `measure_series` |
-| `lenses` | per-place ternary readings per acquisition, silence distinct | `read_lenses` → `SeriesRun.lenses`; candidate native-volume map, `normalisation: none` |
-| `objects` | indexed extents, boundaries and role-supported border refinement | optional measurement packet → interiors and boundary census; later same-orientation conversation |
-| `relations` | constructed interstices, their extents, walls, fill and contents | shell → `SeriesRun.relations`; sampled dark-bounded pairings retained separately as `SeriesRun.pairings` |
-| `ownership` | claims, disputes and unassigned material; residual rounds | `read_ownership` → `SeriesRun.ownership`; partition exists, residual scheduler remains owed |
-| `vectors` | bundles as counts over banks, unavailable banks named | route declaration and package; not called by `run_study` |
-| `predicates` | twelve subject-scoped named decisions | `read_findings` → `StudyRun.findings`; current implementation emits twelve abstentions |
-| `output` | competition-shaped confidences with a companion record | route declaration and package; no numeric submission projection yet |
+| `study` | acquired series, slices and LPS geometry at stored fidelity | `read_study` → `Study`; the route records `study.produced` |
+| `collapse` | regime, physical field and squint | `read_regime` → `SeriesRun.regime`; `measure_series` reads `background_split` and records `collapse.consumed_by.objects` |
+| `lenses` | per-place ternary readings per acquisition, silence distinct | `read_lenses` → `SeriesRun.lenses`; records `study.consumed_by.lenses`, `collapse.consumed_by.lenses`; candidate native-volume map, `normalisation: none` |
+| `objects` | indexed extents, boundaries, native readings and the same-orientation conversation | `measure_series` → `SeriesRun.measurements`; `converse` → `SeriesRun.conversation` (per series, with `StudyRun.conversations` derived from it) |
+| `relations` | constructed interstices, their extents, walls, fill and contents | `read_relations(interiors, spacing_rc)` → `SeriesRun.relations`, which reads and CARRIES `pairings` (the sample-supported pairs) and declares the `Interstice` record; `code` stays `construction_absent` because the extent is unbuilt |
+| `ownership` | claims, disputes and unassigned material; residual rounds | `read_ownership_members(interiors, conversation)` → `SeriesRun.ownership`: one `OwnershipReading` per parse (solitary; concurrent and conditional where the conversation read the series) and the disagreement mask between the first two |
+| `vectors` | bundles as counts over banks, unavailable banks named | `read_bundles(ownership, lenses, measurements, others)` → `SeriesRun.bundles`; record shape, dispatch answer and banks declared (task 6.7), body owed |
+| `predicates` | twelve subject-scoped named decisions | `read_findings(series)` → `StudyRun.findings`; reads constructions by KIND from each relations record, the population from ownership, and the profiles from the bundles; twelve abstentions with the subjects and candidate counts it read |
+| `output` | competition-shaped confidences with a companion record | `read_output(findings, projection)` → `StudyRun.output`: the declared index-to-column table, the companion record every run, rows refused with `projection_undeclared` |
 
 `field` means `collapse`; `bundles` means `vectors`. Border refinement is work inside
 `objects`, not a tenth stage. `ROUTE` is a declaration of stage standing, not an execution trace.
-`StudyRun.reached` is a coarse marker and currently does not advance for every invoked stage.
-Use source/callers, returned records, ledger events and gallery outcomes together.
+`StudyRun.attendance` names every stage with the code it returned for the study; `StudyRun.reached`
+beside it is a telemetry scalar and nothing more. Use source/callers, returned records, ledger
+events and gallery outcomes together.
+
+## Telemetry: who records what
+
+A stage records its own `<stage>.produced`. A CONSUMER records `<producer>.consumed_by.<consumer>`
+inside itself at the point it reads the record; the route records only for the two pinned
+multi-exit readers (`read_study`, `read_regime`). `tests/knee/test_pipeline_composition.py` checks
+over the synthetic corpus that every producer has a consumer and every consumer a producer, and
+that the conversation precedes ownership and relations. Routes that log consumption right after
+production — the shape the handoff's Codex reading found — are refused by that test.
 
 ## The real entry point and drawing edge
 
@@ -32,27 +48,20 @@ Use source/callers, returned records, ledger events and gallery outcomes togethe
 conversation is on by default and requires `--prominence-mm`. `--no-conversation` and
 `--no-pictures` are explicit execution switches. See [TOOLING.md](TOOLING.md).
 
-The joiner collects eight drawing adapters and lists every route stage either through a
-drawing outcome or `no_drawer`. Adapter presence, successful drawing and stage acceptance
-are different facts. The latest [dated run](chapters/02-collapse/measurements/documentation-reconciliation-20261012.md)
-records seven drawings, a packet failure for the missing probe fraction, and no joined
-drawer for collapse, vectors or output. It does not certify full symbolic capacity.
+The writer saves, per series, every ownership member's masks and the disagreement mask, the
+pairing reading under its own key, the relations record with its interstices and pairing code,
+and the bundles record; per study, the findings with the subjects they read, the attendance
+roster and the output's companion record with the refusal of its rows.
 
 ## Values, layers and scope
 
 The route moves retained records; measurements, pure named-code decisions and orchestration
 remain separate. `compute` and `telemetry` support the route; `pictures` arranges its values.
-Production imports no drawing or development observer. Memory, expert, agencies and record
-are diagnosis-stage responsibilities, not recall in the object parse. §12's tracking/following/division
-operations are outside this project's recognition scope.
+Production imports no drawing or development observer. The disposition of `memory`, `expert`,
+`agencies` and `record` is open and the founder's (`docs/HANDOFF_WIRING.md` §8). §12's
+tracking/following/division operations are outside this project's recognition scope.
 
 Touching-pair census, sampled pairs across dark and complete interstices are three different
-records. The current shell does not consume sampled pairings to construct an extent; predicates
-currently count ownership/relation status and do not select subjects from the retained pairs.
-Those are open wiring/contract obligations, not evidence that the available pairing record is empty.
-
-The shell’s retained `why` message still broadly says no record names which objects face
-across a border. That wording predates the sampled-pair candidate and is not an inventory
-of all available evidence: this run retains both touching pairs and sampled dark pairs.
-Complete interstice construction and its consumption remain absent. This reconciliation
-documents the stale message without changing domain behavior or its source digest.
+records. Relations now carries the second; the third remains unconstructed, and the predicates
+read the relations record's constructions by kind — none today — rather than a flag. Pairings
+under the conversed parses are declared (task 6.3a) and not built.

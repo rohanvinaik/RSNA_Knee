@@ -102,7 +102,13 @@ def lens_counts(lens_readings: tuple[LensesReading, ...]) -> dict[str, int]:
 
 
 def pairing_readings(study_run: StudyRun) -> tuple[PairingReading, ...]:
-    return tuple(s.pairings for s in study_run.series if s.pairings is not None)
+    # The pairing reading lives inside the relations record since task 6.3: the stage reads it
+    # itself and carries it, so the graph reads it from where the stage keeps it.
+    return tuple(
+        s.relations.pairings
+        for s in study_run.series
+        if s.relations is not None and s.relations.pairings is not None
+    )
 
 
 def pairing_counts(pairing_readings: tuple[PairingReading, ...]) -> dict[str, int]:

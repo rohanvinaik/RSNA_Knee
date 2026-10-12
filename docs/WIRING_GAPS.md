@@ -1,5 +1,15 @@
 # The wiring gaps: what is built, what is connected, and what is neither
 
+> **SUPERSEDED 2026-10-12.** This list was written to guide a repair and the repair landed
+> (`openspec/changes/every-stage-renders/tasks.md` §6, `specs/route-composition/spec.md`), so its
+> claims about the route are now anti-correlated with the source. `docs/HANDOFF_WIRING.md` §8 names
+> this file as one whose characterisations were wrong more than once in a session, and Codex's
+> reading (`chapters/02-collapse/readings/wiring-gaps-codex.md`) found one claim in §F false within
+> the document itself: Hypothesis HAD run before 2026-10-12 — the preserved record invokes
+> `--hypothesis-seed` and a commit records "Hypothesis falsified B1's topology invariant". Recompute
+> state with `just unit`, `just places`, `just graph <out>` and the composition test; read nothing
+> below as current.
+
 Computed 2026-10-12 at `4412145` plus the working tree, with the tools the founder specified and
 which this lead had not been running. Every number below came from a command, not from a reading of
 the code. The commands are named so each line can be recomputed.

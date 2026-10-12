@@ -1,5 +1,13 @@
 # Resume: the breadth-first build
 
+**2026-10-12, the composition repair — start here.** The route now runs in dependency order with
+the conversation before ownership and relations, every producer has a consumer in the ledger, every
+stage draws, and the bundles and output stages have their first increments. The complete dated
+record, with every measurement and every verification standing, is
+[composition-repair-20261012.md](measurements/composition-repair-20261012.md); the declared tasks
+are `openspec/changes/every-stage-renders/tasks.md` §6, and what is owed and what is the founder's
+are listed at the end of the record. Recompute with `just unit`, `just places`, `just gate`.
+
 Run `just unit`. Then read [OBJECT_MODEL](../../OBJECT_MODEL.md),
 [PIPELINE_AS_OBJECT](../../PIPELINE_AS_OBJECT.md), the [current route](../../PIPELINE.md),
 [build plan](../../BUILD_PLAN.md) and the complete relevant teaching/spec units.

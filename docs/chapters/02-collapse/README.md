@@ -1,5 +1,10 @@
 # Chapter 2 — `collapse`. Where it stands.
 
+**2026-10-12, the composition repair.** The route's stages now compose: see
+[measurements/composition-repair-20261012.md](measurements/composition-repair-20261012.md) for what
+changed, what was measured on the real study, every Detective and CrossHair standing, and the rulings
+that are the founder's. [RESUME.md](RESUME.md) points there first.
+
 For the accepted object-resolution toolkit build and an interrupted-session handoff,
 start at [RESUME.md](RESUME.md), [the build index](../../BUILD_PLAN.md), and
 [B2's evidence record](measurements/same-knee-conversation-b2.md). The
