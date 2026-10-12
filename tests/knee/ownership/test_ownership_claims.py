@@ -15,7 +15,15 @@ import numpy as np
 
 from knee.absence import CODES
 from knee.objects.interiors import read_interiors
-from knee.ownership.claims import OwnershipReading, ownership_code, read_ownership
+from knee.ownership.claims import (
+    COMPARISONS,
+    OwnershipReading,
+    comparison_code,
+    members_code,
+    ownership_code,
+    read_ownership,
+    read_ownership_members,
+)
 
 OFFSETS = np.array([-2.0, -1.0, 0.0, 1.0, 2.0])
 
@@ -144,3 +152,119 @@ def test_it_never_reports_present_over_a_field_it_could_not_read() -> None:
         read_ownership(_Reading(np.zeros((2, 2)), np.zeros((2, 2)))).code != "present"
     )
     assert read_ownership(None).code != "present"
+
+
+# --------------------------------------------------------------------------------------------
+# The members: one partition per parse (task 6.2). Both signs, every call direct by name.
+# --------------------------------------------------------------------------------------------
+
+
+@dataclass
+class _Conversation:
+    """A stand-in for one SeriesConversation, carrying only the fields the members read."""
+
+    code: str
+    concurrent_labels: object
+    conditional_labels: object
+
+
+def _conversed(interiors, code: str = "measured") -> _Conversation:
+    """A conversation whose concurrent parse splits the first territory in two."""
+    concurrent = interiors.labels.copy()
+    rows, cols = np.nonzero(concurrent == 1)
+    if len(rows):
+        concurrent[rows[0], cols[0]] = 0  # one barrier cell, read and left unclaimed
+    return _Conversation(code, concurrent, interiors.labels.copy())
+
+
+def test_without_a_conversation_only_the_solitary_parse_is_seated() -> None:
+    members = read_ownership_members(_two_bodies(), None)
+    assert [m.parse for m in members.members] == ["solitary"]
+    assert members.code == "present"
+    assert members.comparison == "member_absent"
+    assert members.disagreement.shape == (0, 0)
+    assert "no conversation" in members.why
+
+
+def test_a_measured_conversation_seats_three_members_and_keeps_their_disagreement() -> (
+    None
+):
+    interiors = _two_bodies()
+    members = read_ownership_members(interiors, _conversed(interiors))
+    assert [m.parse for m in members.members] == [
+        "solitary",
+        "concurrent",
+        "conditional",
+    ]
+    assert members.comparison == "compared"
+    assert members.disagreeing_places == 1
+    assert members.disagreement.shape == interiors.labels.shape
+    solitary, concurrent = members.members[0].reading, members.members[1].reading
+    assert solitary.claimed_places == concurrent.claimed_places + 1
+
+
+def test_a_conversation_that_did_not_read_the_series_seats_nothing_from_it() -> None:
+    interiors = _two_bodies()
+    unread = _Conversation("recipient_unavailable", np.zeros((0, 0), np.int32), None)
+    members = read_ownership_members(interiors, unread)
+    assert [m.parse for m in members.members] == ["solitary"]
+    assert "recipient_unavailable" in members.why
+
+
+def test_the_pure_decisions_name_each_case_both_signs() -> None:
+    assert members_code(()) == "predecessor_absent"
+    assert members_code(("predecessor_empty", "present")) == "present"
+    assert members_code(("predecessor_absent",)) == "predecessor_absent"
+    assert (
+        members_code(("predecessor_empty", "predecessor_empty")) == "predecessor_empty"
+    )
+    assert members_code(("present", "nonsense")) == "invalid_count"
+    assert comparison_code(4, 4, True) == "compared"
+    assert comparison_code(0, 4, True) == "member_absent"
+    assert comparison_code(4, 0, True) == "member_absent"
+    assert comparison_code(4, 4, False) == "shape_mismatch"
+    assert comparison_code(-1, 4, True) == "invalid_count"
+
+
+def test_the_stages_silence_is_the_solitary_members_never_a_later_ones() -> None:
+    # MUST NOT: with no member present, the stage names the FIRST member's silence -- the
+    # solitary parse's, which names the predecessor -- and never a later member's.
+    assert members_code(("predecessor_empty", "item_unread")) == "predecessor_empty"
+    assert members_code(("item_unread", "predecessor_empty")) == "item_unread"
+    assert (
+        members_code(("predecessor_absent", "predecessor_empty", "item_unread"))
+        == "predecessor_absent"
+    )
+
+
+def test_no_member_is_ever_filled_from_another() -> None:
+    """MUST NOT: a conversed parse of the wrong shape is not seated, and the solitary member's
+    reading is what `read_ownership` returns for the interiors alone -- never a blend."""
+    interiors = _two_bodies()
+    wrong = _Conversation(
+        "measured", np.zeros((3, 3), np.int32), np.zeros((3, 3), np.int32)
+    )
+    members = read_ownership_members(interiors, wrong)
+    assert [m.parse for m in members.members] == ["solitary"]
+    direct = read_ownership(interiors)
+    assert members.members[0].reading.claimed_places == direct.claimed_places
+    np.testing.assert_array_equal(members.members[0].reading.claims, direct.claims)
+
+
+def test_members_never_raise_however_malformed_the_arguments() -> None:
+    for interiors in (None, object(), _Reading(None, None), _two_bodies()):
+        for conversation in (None, object(), 0, _Conversation("measured", None, None)):
+            members = read_ownership_members(interiors, conversation)
+            assert members.code in CODES
+            assert members.comparison in COMPARISONS
+            assert len(members.members) >= 1
+
+
+def test_the_disagreement_is_a_measurement_and_never_a_resolution() -> None:
+    """MUST NOT: nothing in the record names a preferred parse or a resolved claim."""
+    interiors = _two_bodies()
+    members = read_ownership_members(interiors, _conversed(interiors))
+    for name in ("winner", "resolved", "preferred", "merged"):
+        assert not hasattr(members, name)
+    assert members.disagreement.dtype == np.bool_
+    assert not members.disagreement.flags.writeable

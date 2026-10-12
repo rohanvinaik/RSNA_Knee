@@ -8,7 +8,7 @@ import pytest
 from knee.ownership.claims import OwnershipReading, read_ownership
 from knee.pictures.ownership import panels as ownership_panels
 from knee.pictures.relations import panels as relations_panels
-from knee.relations.shell import RelationsReading, read_relations
+from knee.relations.shell import Interstice, RelationsReading, read_relations
 
 
 @pytest.mark.parametrize(
@@ -92,8 +92,9 @@ def test_relations_absence_is_not_drawn_as_a_study_without_interstices(source) -
 
 
 def test_relations_renderer_does_not_replace_a_future_reading_with_the_shell() -> None:
-    subjects = ((3, 7),)
+    subjects = (Interstice("facing_pair", 3, 7, "series", "a future construction"),)
     frame = relations_panels(RelationsReading("present", "given reading", subjects))
     assert frame.code == "present"
     assert frame.why == "given reading"
     assert frame.interstices is subjects
+    assert frame.pairings is None

@@ -35,7 +35,9 @@ from pathlib import Path
 #: it. Several belong to one route stage -- `objects` is drawn four ways, because four different
 #: things were resolved there and one picture cannot show them.
 DRAWINGS: tuple[tuple[str, str, str], ...] = (
-    ("study", "packet", "object_packet"),
+    ("study", "recorded", "study_frames"),
+    ("collapse", "field", "field_frames"),
+    ("objects", "packet", "object_packet"),
     ("objects", "interiors", "object_interiors"),
     ("objects", "boundaries", "object_boundaries"),
     ("objects", "conversation", "object_conversation"),
@@ -43,6 +45,8 @@ DRAWINGS: tuple[tuple[str, str, str], ...] = (
     ("ownership", "partition", "partition_frames"),
     ("relations", "pairings", "pair_frames"),
     ("predicates", "findings", "predicate_frames"),
+    ("vectors", "bundles", "bundle_frames"),
+    ("output", "companion", "output_frames"),
 )
 
 

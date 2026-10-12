@@ -16,6 +16,7 @@ from knee.objects.band_raster import raster_bands
 from knee.objects.exchange_codes import exchange_code
 from knee.objects.interiors import TRACE_CODES
 from knee.objects.profiles import ProfileReading, sample_profiles
+from knee.telemetry import ledger
 
 EXCHANGE_CODES = {
     name: index + 1
@@ -403,6 +404,16 @@ def converse(
         raise ValueError("invalid_backend")
     if len({item.series_uid for item in inputs}) != len(inputs):
         raise ValueError("duplicate_series_identity")
+    # Recorded by the CONSUMER at the point of reading (`specs/route-composition`).
+    ledger.record(
+        "objects.consumed_by.conversation",
+        series=len(inputs),
+        with_interiors=sum(
+            1
+            for item in inputs
+            if item.measurement is not None and item.measurement.interiors is not None
+        ),
+    )
     results = []
     for recipient in inputs:
         measurement = recipient.measurement
@@ -456,4 +467,10 @@ def converse(
                 conditional_parents,
             )
         )
+    ledger.record(
+        "conversation.produced",
+        series=len(results),
+        exchanges=sum(len(reading.exchanges) for reading in results),
+        measured=sum(1 for reading in results if reading.code == "measured"),
+    )
     return tuple(results)

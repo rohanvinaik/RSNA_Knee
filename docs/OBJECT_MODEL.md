@@ -353,7 +353,9 @@ standing with `just unit`, then check actual invocation/consumption and drawing 
 through [PIPELINE.md](PIPELINE.md) and the real entry point.
 
 Beside the route: **memory** and **expert** (diagnosis-stage recall of presentations), **record**,
-**agencies**.
+**agencies**. Their disposition is open and the founder's to settle: his sequencing remark above
+says when recall is used, and no ruling has deferred, kept or removed the four packages
+(`docs/HANDOFF_WIRING.md` §8).
 
 The conversation between series is same-orientation only, and that is its purpose — founder,
 2026-10-11: "the same view/orientation of the knee in two image series to be able to help resolve

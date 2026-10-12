@@ -215,6 +215,10 @@ def read_lenses(volume: object, regime: object) -> LensesReading:
     here chooses between them, and `LensesReading` has no field in which a choice could be
     recorded.
     """
+    # Recorded by the CONSUMER at the point of reading (`specs/route-composition`): what this
+    # stage took from Chapter 1 and from the field, before it reads either.
+    ledger.record("study.consumed_by.lenses", volume=1 if volume is not None else 0)
+    ledger.record("collapse.consumed_by.lenses", regime=1 if regime is not None else 0)
     members = tuple(read_member(volume, regime, *member) for member in MEMBERS)
     first, second = members[0], members[1]
     standings = handed_on(STANDING_TABLE[first.codes, second.codes])

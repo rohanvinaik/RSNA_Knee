@@ -23,6 +23,8 @@ from dataclasses import dataclass
 
 import numpy as np
 
+from knee.study.series import walk_indices
+
 
 @dataclass(frozen=True, slots=True)
 class StudyPanels:
@@ -55,15 +57,16 @@ def panels(
 
     `volume` is the stacked series as Chapter 1 returned it, `codes` one named code per slice in the
     same order. Selecting the middle slice and sampling `walk_count` slices evenly is ARRANGING --
-    it chooses which stored values to show and alters none of them.
+    it chooses which stored values to show and alters none of them -- and WHICH slices the walk
+    visits is the study stage's own rule, `knee.study.series.walk_indices`, read from there so the
+    stage's retained walk and this picture can never disagree.
     """
     values = np.asarray(volume, dtype=np.float64)
     if values.ndim != 3:
         raise ValueError("invalid_study_volume")
     if len(codes) != values.shape[0]:
         raise ValueError("codes_do_not_match_slices")
-    count = min(walk_count, values.shape[0])
-    chosen = np.linspace(0, values.shape[0] - 1, count).round().astype(int)
+    chosen = list(walk_indices(values.shape[0], walk_count))
     unread = np.asarray(
         [not np.any(np.isfinite(values[index])) for index in range(values.shape[0])],
         dtype=bool,
@@ -75,4 +78,61 @@ def panels(
         codes=tuple(codes),
         spacing_mm=(float(spacing_mm[0]), float(spacing_mm[1])),
         thickness_mm=float(thickness_mm),
+    )
+
+
+@dataclass(frozen=True, slots=True)
+class RecordedPanels:
+    """The one stored plane a saved record holds, with the geometry that record states.
+
+    The saved-record form of this stage's picture (task 6.9 of `every-stage-renders`), beside
+    `StudyPanels`, which needs the whole stacked volume and per-slice codes that no saved record
+    carries yet. plane: (rows, columns) in the dtype it was saved in, exactly as stored (no window,
+    no rescale, not converted), or None when the record saved no plane. spacing_mm: (between rows,
+    between columns) in millimetres as the record states it, or None. thickness_mm: the slice
+    thickness the header stated, or None. slice_index: the plane's index in the stack's order, or
+    None. codes: the named codes the record carries that bear on this plane, in the order the
+    caller gives them, each already labelled by the caller with the stage that produced it. A value
+    the record does not carry is None or empty, never zero.
+    """
+
+    plane: np.ndarray | None
+    spacing_mm: tuple[float, float] | None
+    thickness_mm: float | None
+    slice_index: int | None
+    codes: tuple[str, ...]
+    walk: np.ndarray | None = None
+    walk_indices: tuple[int, ...] = ()
+    slice_codes: tuple[str, ...] = ()
+
+
+def recorded_panels(
+    plane: np.ndarray | None,
+    spacing_mm: tuple[float, float] | None,
+    thickness_mm: float | None,
+    slice_index: int | None,
+    codes: tuple[str, ...],
+    walk: np.ndarray | None = None,
+    walk_indices: tuple[int, ...] = (),
+    slice_codes: tuple[str, ...] = (),
+) -> RecordedPanels:
+    """Hand on one series' saved plane, its saved walk and the geometry the record states.
+
+    Every argument is a value a stage computed and the writer saved. This function packages them,
+    keeps the plane and the walk in their saved dtype, turns the saved pair and numbers into float
+    and int, and leaves an absent value absent. It selects nothing, windows nothing and derives no
+    geometry: `walk` is the study stage's own retained walk (`Series.walk`), `walk_indices` the
+    stack indices it visits and `slice_codes` the stage's code for every slice of the stack.
+    """
+    return RecordedPanels(
+        plane=None if plane is None else np.asarray(plane),
+        spacing_mm=None
+        if spacing_mm is None
+        else (float(spacing_mm[0]), float(spacing_mm[1])),
+        thickness_mm=None if thickness_mm is None else float(thickness_mm),
+        slice_index=None if slice_index is None else int(slice_index),
+        codes=tuple(str(code) for code in codes),
+        walk=None if walk is None else np.asarray(walk),
+        walk_indices=tuple(int(index) for index in walk_indices),
+        slice_codes=tuple(str(code) for code in slice_codes),
     )

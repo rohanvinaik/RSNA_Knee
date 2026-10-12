@@ -10,6 +10,7 @@ from knee.objects.boundaries import BoundaryCensus, boundary_census
 from knee.objects.interiors import InteriorReading, read_interiors
 from knee.objects.profiles import ProfileReading, sample_profiles
 from knee.study.series import Series
+from knee.telemetry import ledger
 
 
 @dataclass(frozen=True, slots=True)
@@ -87,6 +88,37 @@ class SeriesMeasurement:
 
 def measure_series(
     series: Series, request: AnalysisRequest, *, background_split: float = float("nan")
+) -> SeriesMeasurement:
+    """One measurement pass, with what it consumed and produced recorded by this stage itself.
+
+    The consumer records consumption at the point of reading (`specs/route-composition`): the
+    volume and geometry from Chapter 1, and the background split from the field.
+    """
+    ledger.record(
+        "study.consumed_by.objects",
+        volume=1 if series.volume is not None else 0,
+        geometry=1 if series.geometry is not None else 0,
+    )
+    ledger.record(
+        "collapse.consumed_by.objects",
+        background_split=1 if np.isfinite(background_split) else 0,
+    )
+    measurement = _measure_series(series, request, background_split)
+    interiors = measurement.interiors
+    ledger.record(
+        "objects.produced",
+        measured=1 if measurement.code == "measured" else 0,
+        interiors=1 if interiors is not None else 0,
+        territories=int(interiors.labels.max(initial=0))
+        if interiors is not None
+        else 0,
+        edges=len(interiors.edge_regions) if interiors is not None else 0,
+    )
+    return measurement
+
+
+def _measure_series(
+    series: Series, request: AnalysisRequest, background_split: float
 ) -> SeriesMeasurement:
     if series.volume is None:
         return SeriesMeasurement("no_stacked_volume")

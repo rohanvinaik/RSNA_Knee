@@ -63,15 +63,14 @@ checked without judging whether any particular rule is good yet:
 |---|---|
 | **symbols exist** | the field is parsed into `<object>`s with extents and boundaries, and every place is owned by one or named unassigned |
 | **a language exists** | every place carries a balanced-ternary digit per acquisition against a pair of edges from that series' own distribution, with silence kept distinct from the middle digit |
-| **reasoning composes** | every decision is a **named code**, total over its arguments, with every bar an **argument** and never a constant — **and the decision reads a RELATION between its subjects, not a property of one.** The relational clause was added 2026-10-12 after both readers independently found the property too weak: *"'Reasoning composes' as written admits a predicate over a single object; his sentence is intrinsically relational"* (Fable); *"passing two objects … into a total function is different from demonstrating that the function reasons with their relationship"* (Codex) |
+| **reasoning composes** | every decision is a **named code**, total over its arguments, with every bar an **argument** and never a constant — **and where the object model gives a finding a relation as its subject, the decision reads that RELATION between its two subjects, not a property of one.** The relational clause was added 2026-10-12 after both readers independently found the property too weak: *"'Reasoning composes' as written admits a predicate over a single object; his sentence is intrinsically relational"* (Fable); *"passing two objects … into a total function is different from demonstrating that the function reasons with their relationship"* (Codex). **Scoped the same day**, because the universal form the lead first wrote — *every* decision reads a relation — contradicted the founder's own sentence, *"A fracture isn't some vague line-y thing you look for in a whole study/image — it's a break in the structural coherence of a 'bone' object"*: Fracture and Contusion take a single object in `docs/OBJECT_MODEL.md`'s own table, and a clause that forbids a predicate on one object forbids his example. A quoted contradiction is provable under `AGENTS.md` law 9, so the clause is scoped rather than referred |
 | **the correspondence is named** | the **expected reading `e`** exists and is declared as a hand-given correspondence with its author and date — not computed, not fitted, and not silently a magic number. Added 2026-10-12: `e` appeared in the finished sentence and in none of the properties, which left the one thing the founder's own argument *requires* to be hand-given looking like a violation of the rule above |
 
 These four properties are the lead/second-reader operationalization of the founder’s
-capacity request, not permission to replace the full object model. The universal
-wording of the relational clause must be reconciled with OBJECT_MODEL’s predicates
-on individual objects (Fracture/Contusion); the complete sentence is relational,
-but that alone does not settle every helper/predicate’s scope. This remains an
-explicit interpretation question, not a new design decision.
+capacity request, not permission to replace the full object model. The relational clause
+is scoped above to relation-subject findings, by his Fracture sentence; `knee.predicates`
+reads a relation for the ten findings whose subject is a construction and a population
+for the two whose subject is an object.
 
 A pipeline with all four has the capacity, even while every rule in it is still crude. A pipeline
 missing any one of them does not, however good its numbers.
@@ -160,9 +159,12 @@ output in the only form that demonstrates visual reasoning.
 
 **Beside the route, and not stages:** `compute` (the `ComputeContract` each kernel carries, and
 `handed_on`), `telemetry` (the ledger: counted work, and what was recomputed), `pictures` (the
-drawing layer, switchable off without the run noticing). **Deferred to diagnosis, by his ruling:**
-`memory`, `expert`, `agencies`, `record` — *"we should be able to isolate the components of the knee
-with NO recognition, pure math."*
+drawing layer, switchable off without the run noticing). **Their disposition open, and the
+founder's to settle:** `memory`, `expert`, `agencies`, `record`. An earlier draft of this page said
+these were "deferred to diagnosis, by his ruling". **No such ruling exists** (`docs/HANDOFF_WIRING.md`
+§8). What exists is his sequencing remark of 2026-10-11 — *"get EVERY `<object>` cleanly, then work
+on diagnosis, which is where recall of specific presentations will matter"* — which says when recall
+is used and nothing about whether these four packages stay, move or go.
 
 **Out of scope by his word:** §12, operations *on* resolved objects. *"this knee project stops at
 recognition, so this part is literally extra!"*
