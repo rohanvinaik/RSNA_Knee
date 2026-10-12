@@ -178,13 +178,19 @@ or certified. The dated reconciliation run and `docs/BUILD_PLAN.md` locate curre
 
 ## 2. The lenses MVP — delegable
 
-- [ ] 2.1 Correct `knee.lenses.digits.digit_code` to take a **low and a high edge**, both belonging to
+- [x] 2.1 Correct `knee.lenses.digits.digit_code` to take a **low and a high edge**, both belonging to
       the middle row, replacing the withdrawn witness-middle-plus-spread-band shape. Re-pin it
       two-sign; verify no bar is a literal in the body.
-- [ ] 2.2 Implement the per-series edge pair from the series' own foreground, reading
+      *(DONE before 2026-10-12's audit: the signature is `digit_code(place_value, low_edge,
+      high_edge, population_count, minimum_population)`; certificate `complete` at digest
+      `004f24d94763e508`. Box reconciled 2026-10-12.)*
+- [x] 2.2 Implement the per-series edge pair from the series' own foreground, reading
       `RegimeKey.terciles`, and refuse with a named code where the population is too small to place a
       pair. Verify two acquisitions of one knee are each read against their own edges.
-- [ ] 2.2a **Seat the second member: the background-split population.** Founder's ruling 2026-10-12,
+      *(DONE before 2026-10-12's audit, evidenced by the writer: every seated member carries its own
+      `low_edge`, `high_edge`, `population_count` and `minimum_population` per series and refuses by
+      name; `standing_code` and `is_retained` certificates complete. Box reconciled 2026-10-12.)*
+- [x] 2.2a **Seat the second member: the background-split population.** Founder's ruling 2026-10-12,
       after both readers showed a fallback would be a *default* and project law 3 forbids one: "we
       always keep information we compute. I'll resolve what we report and how we do it, but the
       pipeline should keep everything, including where things conflict". So the terciles over the
@@ -206,6 +212,9 @@ or certified. The dated reconciliation run and `docs/BUILD_PLAN.md` locate curre
       of the record names a single edge pair for the series. The quorum question — what coverage is
       *sufficient* — is NOT settled by this task: both readers showed counts are the input to that
       judgement and not the judgement, and the judgement is the founder's.
+      *(DONE 2026-10-12, `bd9e9b0`, before the audit: both members seated per series with their own
+      edges and populations, and the standing between them per place retained. Box reconciled
+      2026-10-12.)*
 - [ ] 2.3 Write the digits for every place of every acquisition, recording `normalisation: none` and
       keeping an unread place **silent** rather than writing it as the middle digit. Verify silence
       and the middle digit are distinguishable in the record.
@@ -217,24 +226,41 @@ or certified. The dated reconciliation run and `docs/BUILD_PLAN.md` locate curre
       acquisition, with silence drawn as silence. **Record the dispatch answer first.** Verify the
       renderer arranges only what the stage computed, then run it over one study through the real
       entry point.
+      *(Dispatch answer, recorded 2026-10-12: the digit map is keyed on the native place index of
+      the series' own volume, and each member's edges come from a population the regime measured
+      (the noise-law foreground, the background split) — relational facts an earlier stage computed,
+      no kind-label anywhere, so the task proceeds. Wired: `read_lenses` runs in `run_study` and
+      `lenses.produced` is consumed by vectors; drawn by `lens_frames` through the one command. Open
+      as a candidate with 2.3 while `place_codes_reference` is UNGATEABLE.)*
 
 ## 3. The bundles MVP — delegable
 
-- [ ] 3.1 Implement the profile as row counts over named banks, with every bank present and the
+- [x] 3.1 Implement the profile as row counts over named banks, with every bank present and the
       unwritable ones carried as a **named unavailable status, never rows of zero**, and with **the
       subject kind it was keyed on recorded** so a consumer handed a territory-keyed profile can
       abstain rather than take the territory for its subject. **Record the dispatch answer first**:
       if "subject kind" is anatomical this task stops. Verify a zero count can only mean a reading
       was made and found nothing.
+      *(DONE 2026-10-12 under 6.7, where the dispatch answer is recorded: the subject kind is
+      `indexed_extent_of_the_selected_native_plane`, a relational fact ownership's solitary member
+      resolved; every reading carries `subject_kind`, and an unavailable bank carries a named
+      status. Box reconciled 2026-10-12.)*
 - [ ] 3.2 Write the two banks this build can honestly fill — the place's own reading (recorded as a
       single plane, never as a volume) and how the object came out (its seeds, its edge counts and
       the two typings of each edge). Verify the record names the stage each quantity came from.
+      *(PARTLY under 6.7: `own_reading:<member>` per seated lens member, `lens_standing`, `came_out`
+      with edge kinds and trace codes, and `through_plane:<uid>` are written, each naming its source
+      stage. The SEEDS are not in `came_out` and are owed. Candidate while `count_by_extent` is
+      UNGATEABLE.)*
 - [ ] 3.3 Wire and render it: the count table, with unavailable banks visible as unavailable. Verify
       no bank is written under the name of a bank whose definition is unsettled.
+      *(Wired and drawn under 6.7: `bundle_frames` draws one table per profile with unavailable banks
+      visible, and the four unsettled banks are carried by name in `UNAVAILABLE_BANKS`. Open with
+      3.2 under the candidate rule.)*
 
 ## 4. The predicates and output MVP — delegable
 
-- [ ] 4.1 Implement the twelve as named decisions over the subjects the object model gives them, each
+- [x] 4.1 Implement the twelve as named decisions over the subjects the object model gives them, each
       returning the abstention code with a reason naming what was not resolved, **and each reading a
       RELATION between its subjects rather than a property of one** (capacity property 3). **Record
       the dispatch answer first**: how does a predicate come to receive `<object>` 3 and 7 rather than
@@ -251,7 +277,14 @@ or certified. The dated reconciliation run and `docs/BUILD_PLAN.md` locate curre
 
       Code from that attempt is in `8a0e8d1`/`21f6b41` and still runs; whether it stays, is rewired
       to what the pipeline already computes, or comes out is the founder's call, not the lead's.
-- [ ] 4.2 Implement the submission serialiser against `sample_submission.csv`'s schema, taking the
+
+      *(DONE 2026-10-12 as 6.4, declared under the founder's instruction of that day to repair the
+      audit: the `21f6b41` code was REWIRED to what the pipeline computes. Dispatch answer, recorded:
+      a finding's subject is selected by the construction KIND the object model gives it, read from
+      the `Interstice` records relations produces — a relational fact an earlier stage computes,
+      never a kind-label; several of one kind return `dispatch_undeclared`. Capacity property 3 is
+      scoped as at the top of this file. Box reconciled 2026-10-12.)*
+- [x] 4.2 Implement the submission serialiser against `sample_submission.csv`'s schema, taking the
       abstention value as an argument **declared in the spec before CSV emission** — it is not declared
       there today. Founder correction, 2026-10-12: "I don't know, that should resolve
       experientially, when actually running and seeing it in action". Run and render the named
@@ -259,11 +292,13 @@ or certified. The dated reconciliation run and `docs/BUILD_PLAN.md` locate curre
       serialiser refuses CSV emission without it. Write the companion record of
       codes and reasons **in the same run**; the submission is its lossy projection. Verify a
       submission without its companion record is refused.
-- [ ] 4.3 Wire and render both: the twelve-row table per study, each row showing its abstention and
+      *(DONE 2026-10-12 as 6.8. Box reconciled 2026-10-12.)*
+- [x] 4.3 Wire and render both: the twelve-row table per study, each row showing its abstention and
       reason. Verify the wires by `just graph` and telemetry, **never** by the submission file — a
       disconnected stage returning twelve abstentions would produce the same file.
-      *(A picture and a writer for the predicates half exist from 2026-10-12 — see 4.1. They stand
-      or fall with it, and that is the founder's call.)*
+      *(DONE 2026-10-12: `predicate_frames` and `output_frames` draw both halves through the one
+      command; the wires are evidenced by the composition test and the real run's ledger, never by
+      the file. Box reconciled 2026-10-12.)*
 
 ## 4b. ONE COMMAND — the pipeline as a single object. Founder, 2026-10-12
 
@@ -290,7 +325,7 @@ predicates) with **study, collapse, ownership, relations and conversation record
 conversation one exchange on four of five series and `solitary` on the fifth; lenses `no_edges` on
 three of five; relations `construction_absent` on all five.
 
-- [ ] 4b.1 **Give every drawing module one entry a caller can use.** The eight renderers
+- [x] 4b.1 **Give every drawing module one entry a caller can use.** The eight renderers
       (`object_packet`, `object_interiors`, `object_conversation`, `object_boundaries`,
       `partition_frames`, `pair_frames`, `lens_frames`, `predicate_frames`) each expose only
       `main()` behind argparse, which is why nothing can join them. Each gains
@@ -312,6 +347,10 @@ three of five; relations `construction_absent` on all five.
         real `ValueError`s to propagate. **The joined run is unaffected** — the joiner calls
         `draw()` directly and records the true reason — so this degrades only the hand-typed
         command, and it is owed before this section is checked off.
+
+      *(DONE: both defects were repaired in `object_packet.py` before §6 was declared, as its
+      preamble records from source — `CENTRE_OF_THE_FRAME` is a declared display default, not a
+      measurement bar, and `main()` catches `ArgumentRefusal` only. Box reconciled 2026-10-12.)*
 - [x] 4b.2 **One joiner** that takes the saved run and draws every stage, collecting each
       renderer's manifest into a single gallery index. A stage whose reading is a named absence
       draws its absence and the joiner records it; **one renderer failing never fails the run**, it
@@ -324,15 +363,18 @@ three of five; relations `construction_absent` on all five.
 - [x] 4b.4 **The acquisitions converse by default**, not behind a flag — "the combined sum total of
       all the analyses we have in conversation with one another" is what the one command does.
       Mind `AnalysisRequest.__post_init__`, which couples `conversation` to `prominence_mm`.
-- [ ] 4b.5 **Telemetry everywhere.** The five silent stages — study, collapse, ownership, relations,
+- [x] 4b.5 **Telemetry everywhere.** The five silent stages — study, collapse, ownership, relations,
       conversation — each record what they produced and what was consumed, as lenses and pairings
       already do. Verify by re-running and counting ledger sources, not by reading the code.
+      *(DONE 2026-10-12 as 6.5, verified by the real run's ledger sources. Box reconciled
+      2026-10-12.)*
 - [x] 4b.6 **Run the one command and measure it against the five rows above.** Each row moves or is
       reported unmoved with its reason. Nothing here may call the pipeline coherent on the strength
       of one function; the evidence is the re-run.
 
-- [ ] 4b.7 **The field keeps what it computed, and draws it.** `collapse` computes two things per
-      series — the regime key (sixteen readings) and the squint — and the writer reads **one** field
+- [x] 4b.7 **The field keeps what it computed, and draws it.** `collapse` computes two things per
+      series — the regime key (sixteen readings when this was written; 23 since the second lens
+      member was seated) and the squint — and the writer reads **one** field
       off the regime key (`background_split`) and drops the other fifteen. The squint is saved and
       nothing draws it. The founder, 2026-10-12: *"we compute the required object, we drop it"*, and
       on why it matters: *"any compute process here is done for the purpose of visual reasoning. If
@@ -350,12 +392,15 @@ three of five; relations `construction_absent` on all five.
       regime could not be read still draws, naming the absence.
       *(Declared before any code was written. The founder: "This IS what the production pipeline is
       for ... do NOT make it some random script in a throwaway folder somewhere.")*
+      *(DONE 2026-10-12: the writer enumerates every regime field; `field_frames` draws the regime
+      key and the squint through `field_panels`, and the joined run reports `collapse` drawn.
+      `panels()` and `over()` are untouched, per 6.9 and 7.1. Box reconciled 2026-10-12.)*
 
 Joined-task evidence (4b.2/3/4/6): implemented in `92e5b7e`; fresh one-command
 run recorded in `docs/chapters/02-collapse/measurements/documentation-reconciliation-20261012.md`.
 Seven drawings, one named failure, three `no_drawer` stages; conversation 4 measured/1 solitary;
-60 ledger events. No capacity completion follows. 4b.1 remains open for its two stated defects;
-4b.5 remains open because `study.consumed` is absent. §5 remains wholly open.
+60 ledger events. No capacity completion follows. 4b.1 and 4b.5 closed under §6, as their notes
+say; §5 remains wholly open.
 
 ## 5. The whole route, end to end
 
@@ -383,6 +428,11 @@ fix-guiding note goes stale: both 4b.1 defects are already repaired in `object_p
 (`CENTRE_OF_THE_FRAME` is a declared display default, `main()` catches `ArgumentRefusal` only),
 and `REQUIREMENTS` in `findings.py` follows the object model's table order, not the competition's
 column order its comment claimed — the index-to-column correspondence is `knee.output`'s.
+
+**The candidate rule** (made explicit 2026-10-12 and applied retroactively to 6.7): a task whose
+numeric kernel Detective returns UNGATEABLE stays open as a candidate with its standing written
+beside it, exactly as 2.3 and 1.3a do. The engine defect is reported and never waived, and a green
+ordinary gate never closes the task.
 
 - [x] 6.1 **The route runs in dependency order.** *(DONE 2026-10-12; measured on the real study:
       `conversation.produced` at ledger index 47, first `ownership.produced` at 53 —
@@ -436,10 +486,12 @@ column order its comment claimed — the index-to-column correspondence is `knee
 - [x] 6.6 **The attendance roster.** *(DONE 2026-10-12; saved in the receipt.)* `StudyRun.attendance` names every stage with its own code
       (the conclave reading: coverage is a population, not a high-water mark); `reached` stays as
       the telemetry scalar it is. Saved in the receipt.
-- [x] 6.7 **The bundles stage, first increment (§3).** *(DONE 2026-10-12 as a first increment: 51
-      profiles on the real study; `stage_code` and `bank_status_code` Detective-COMPLETE;
-      `count_by_extent` Detective-UNGATEABLE (engine defect reported, no retry, no waiver), its
-      CrossHair blocked by the audit wall. Body by a scoped Sonnet builder, read whole by the lead.)* Dispatch answer, recorded first: the
+- [ ] 6.7 **The bundles stage, first increment (§3).** *(CANDIDATE 2026-10-12, open under the
+      candidate rule: built, wired, 51 profiles on the real study, drawn; `stage_code` and
+      `bank_status_code` Detective-COMPLETE; `count_by_extent` Detective-UNGATEABLE (engine defect
+      reported, no retry, no waiver), its CrossHair blocked by the audit wall. Body by a scoped
+      Sonnet builder, read whole by the lead. The seeds are not yet in the `came_out` bank, see
+      3.2.)* Dispatch answer, recorded first: the
       subject kind is the indexed extent of the selected native plane, which ownership's solitary
       member resolved — a relational fact, not a kind-label, so the task proceeds. Banks this
       build can write, each naming its source stage: the place's own reading per seated lens
@@ -472,6 +524,82 @@ column order its comment claimed — the index-to-column correspondence is `knee
       the profile are named in `measurements/composition-repair-20261012.md`; budgets undeclared.)* `just analyze-objects` on the demonstration
       study; `just gate`; `just profile-tree` on the one command; counted work per stage read
       from the ledger and reported; budgets left undeclared because a budget is a bar.
+
+## 7. The remaining gaps — declared 2026-10-12 from the computed list, under the founder's instruction
+
+The founder, 2026-10-12: *"The purpose of this session is to simply take that which already exists
+and is fully in-line with the thesis and design and simply make it a functional, production system,
+in the manner I had specified, using the tooling that I specified."* And: *"Reconcile the
+documentation/record drift, then, with detective two-sign and vulture and anything else that would
+be useful, start up some sonnet sub-agents (or workflow, if that helps), and knock out the remaining
+gaps."* The list below is the lead's computed inventory of that session (`just places`, both vulture
+scopes, Detective's certificates, a first LintGate run, deptry, ty), declared before any code. Each
+item is engineering on work that exists; none builds new design content, which stays with §1–§5 and
+the other changes. The delegation contract at the top of this file governs every packet.
+
+- [ ] 7.1 **Every probe becomes production.** Founder: *"I don't run ANY by hand. ALL probes are
+      supposed to be part of production."* For each of the five render probes `just places`
+      reports unwired (`seam`, `structure`, `objects`, `axial`, `look`): establish from a whole
+      reading what it computes and which stage's record holds, or would hold, that quantity. Where
+      the route already computes it, the probe's drawing joins `DRAWINGS` over the saved record.
+      Where it does not, the measurement moves into the stage as a unit with its contract and pure
+      decisions, is retained in the record, and is drawn by a renderer that only arranges. `seam`
+      and `structure` compute the leg, the superior–inferior axis and profile, and the seam that
+      `pictures/collapse.py`'s `panels()` and `over()` ask for, so they come first and those two
+      functions get their caller. A probe whose work is in production moves to `archive/workbench/`
+      under its path, the 0.6 precedent, and is never deleted. Verify by `just places` (the unwired
+      count falls by the probe) and by the real run's gallery.
+- [ ] 7.1a **The eight measurement probes** (`corpus_shape`, `noise_floor`, `regime_key`,
+      `regime_run`, `geometry_spread`, `object_toolkit_geometry`, `machinery_facts`, `reports`):
+      the same rule. The corpus-wide tabulations among them become a corpus summary the writer
+      computes from the per-study records when the one command runs without `--uid`, saved in the
+      receipt and drawn; a probe that only re-runs a stage over the corpus is superseded by that
+      run and archived.
+- [ ] 7.2 **Every production name vulture reports without a production caller gets its consumer, or
+      its archive.** The list, computed 2026-10-12 over `src workbench scripts`: `is_silence`,
+      `coil_count`, `signal_squared`, `was_measured`, `gap_fraction`, `carries_prominence`, `over`,
+      `parted_more_by`, `route_state`, `decoder_plugins`, `split_uids`, `READ_STANDINGS`,
+      `elapsed_ns`, `trace_points_rc`, `seed_quantile`, `LOCAL_ROOT`, `KAGGLE_ROOT`, the regime
+      constants `QUIET_SHARE` and `GAUSSIAN_SPREAD_RATIO`, and the four names §6 itself added
+      without a consumer: `STAGES`, `KINDS`, `COMPARISONS`, `SLICE_CODES`. Each is resolved by a
+      whole reading and a reference query into one of three: a consumer owed, which is built; a
+      dynamic consumer vulture cannot see (a field the writer enumerates, a name Hamilton resolves),
+      recorded in a vulture allowlist that names the reason beside the name; or dead, archived under
+      its path and never silently deleted. Founder's law on the first class: *"the lack of a
+      consumer IS the fucking problem."* Verify by both vulture scopes in the gate.
+- [ ] 7.3 **The compute contracts are read by a tool.** Every `ComputeContract` is declared on a
+      kernel and read by nothing. The receipt carries each kernel's contract beside the ledger's
+      counted work for that run, so the declared `work` and the measured count sit in one record
+      where a reader can compare them. A budget stays undeclared: it is a bar.
+- [ ] 7.4 **The real run's composition is a verb.** The producer/consumer check the lead ran with a
+      scratch probe becomes `scripts/composition_check.py <run>` and `just composition <run>`: every
+      `<stage>.produced` has a consumer, no consumer lacks a producer, and the conversation precedes
+      ownership, read from the receipt's ledger. Advisory in the gate like `places`; run after every
+      real run and its output kept with the measurement record.
+- [ ] 7.5 **6.3a built.** The edge-to-piece translation (the edge point minus half the sign of its
+      normal, exact) so `read_pairings` runs on the concurrent and conditional parses: one unit, its
+      contract, its pure decision pinned two-sign; the relations record carries one pairing reading
+      per seated parse; drawn beside the solitary pairing.
+- [ ] 7.6 **The unconverged readers converge.** `walk_indices`, `conversed_parses`,
+      `read_ownership_members`, `read_pairings`, `read_bundles`, `read_findings`, `read_output` and
+      `submission_rows` have no certificate. `just detective converge` each, every survivor judged by
+      the lead and never by a builder; the standing recorded here per digest. `read_ownership`'s
+      certificate is UNGATEABLE (`mutant_construction_failed`), which the record had not said.
+- [ ] 7.7 **LintGate's first run answered.** Run 2026-10-12: 8 blocking, 695 warnings, coherence
+      "systemic". The blockers: `scripts/places.py::main` (complexity 32) and
+      `lenses/places.py::read_member` (31) decomposed with behaviour unchanged, which the tests,
+      the pins and the receipt digests hold; the writer's four `attr-defined` findings traced to
+      their cause and fixed; `RegimeKey` and `BoundaryExchange` at 23 attributes each recorded as
+      the design's record shapes and not split for a style limit. The writer's one 585-line `main`
+      decomposed into per-stage record functions with the receipt byte-identical on the synthetic
+      corpus. The warnings read whole and triaged into this list or a reasoned allowlist.
+- [ ] 7.8 **deptry and ty.** `pandas` and `SimpleITK` are declared and imported by nothing; removed
+      from the declared dependencies with `uv lock`, under the global repo-hygiene reference, if
+      7.1 and 7.2 leave no production import of either. The two `src` ty diagnostics fixed; the
+      three in tests read and either fixed or recorded with their reason.
+- [ ] 7.9 **The profile read.** The `just profile-tree` output of the one command read whole for
+      work repeated across stages, the audit's own class of defect; each instance found becomes a
+      7.x task here; counted work per stage reported from the ledger beside it.
 
 ## Beside this change, unparked rather than duplicated
 

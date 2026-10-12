@@ -1,5 +1,14 @@
 # The wiring work, written for whoever picks this up next
 
+> **Answered 2026-10-12, later the same day.** The four gaps §5 names and the Codex reading of this
+> document confirmed were repaired under `openspec/changes/every-stage-renders/tasks.md` §6 and
+> measured on the real study; the dated record is
+> `docs/chapters/02-collapse/measurements/composition-repair-20261012.md`, and the remaining gaps
+> are declared in the same checklist's §7. The counts below (22 unwired, eight galleries, `vectors`
+> uncalled, `collapse` undrawn) are this document's measurements at the time it was written, not
+> current state: recompute with `just places` and `just unit`. The body is kept unchanged as the
+> record of what was found.
+
 Written 2026-10-12 by the outgoing lead, at the founder's instruction, for an agent with no prior
 context. Everything here was computed with a command rather than recalled, and every command is
 named so you can recompute it. Where this document asserts something it could not measure, it says

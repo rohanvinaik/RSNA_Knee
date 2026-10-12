@@ -100,9 +100,11 @@ intent tests are the specification, and removal is never automatic.
 ## The gate and the graph
 
 `just places`: 105 declared, none undeclared, none unreached, **17 unwired** (down from 22): the four
-diagnosis packages and the thirteen workbench probes. `just graph`: valid. Full suite: 759 passed,
-1 skipped. `ruff` clean. `ty`: 5 advisory diagnostics, all pre-existing patterns. The gate's own log
-is `scratch`-kept per run; the commit that follows this record ran it whole.
+diagnosis packages and the thirteen workbench probes. `just graph`: valid. The gate run that
+preceded commit `6a98d97`: 760 passed, 1 skipped (the commit message says 759, which was the
+full-suite count before the walk tests were added). `ruff` clean. `ty`: 5 advisory diagnostics, all
+pre-existing patterns. The gate's own log is scratchpad-kept per run and read whole before each
+commit.
 
 Profile: `just profile-tree data/profiles/composition-20261012.html …` on the one command, pictures
 off, exit 0. Counted work per stage is the ledger in the receipt; no budget is declared, because a
@@ -117,13 +119,20 @@ budget is a bar and bars are the founder's.
 - A shared home for the writer's digest check, now copied in six renderers (builder's flag).
 - The thirteen workbench probes and the four diagnosis packages: the founder's dispositions.
 
-## The founder's rulings this build did not take and could not
+## What the run leaves open, and shows
 
-1. The predicate dispatch rule among several constructions of one kind (4.1).
-2. The expected correspondence `e`, author and date.
-3. The numeric abstention projection, after inspecting the companion table.
-4. The local structural normalisation before the digits.
-5. The fate of `pictures/collapse.py`'s `panels()`/`over()` (the leg and the profile), and of the
-   `seam`/`structure` probes whose measurements they would draw.
-6. The disposition of `memory`, `expert`, `agencies`, `record`.
-7. Which parse ownership's consumers should read where members disagree — all three are kept.
+These are not asks. Each is a place the running pipeline exposes by name, where the build stops
+short by law and the picture carries the question. They resolve the way the founder said the
+projection would, "experientially, when actually running and seeing it in action", and not by a
+ruling taken in the abstract. (Rewritten 2026-10-12 after the founder struck the earlier heading,
+which listed these as rulings for him to issue.)
+
+1. Several constructions of one kind for one finding would return `dispatch_undeclared`, drawn in
+   the predicate frame. None arises today, because nothing is constructed.
+2. The expected correspondence `e` is carried undeclared in the companion record.
+3. The numeric projection is refused by name in the output frame.
+4. Every digit map is written with `normalisation: none`.
+5. The leg and profile panels of `pictures/collapse.py` stay uncalled until the field stage
+   computes what they ask for; the seam and structure probes compute it today outside the route.
+6. `memory`, `expert`, `agencies` and `record` are empty packages nothing reaches.
+7. Where ownership's members disagree, the disagreement mask is drawn and no member is preferred.
