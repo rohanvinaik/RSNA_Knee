@@ -215,22 +215,25 @@ Clarifying which view he meant by "the lateral view":
 
 ---
 
-## The four intensity instruments that failed
+## Removed 2026-10-12: "The four intensity instruments that failed"
 
-Listed so a fifth is not tried. The founder's lesson: these are **objects, not intensity classes**.
+A section with that title stood here. **It was not the founder's words** — it was lead analysis,
+filed inside the file whose header promises only his verbatim record. He rejected both its framing
+and one of its claims:
 
-1. **a quantile** (the lowest fifth by value) — truncates the population, so its moments stop being
-   the noise's. On a Rayleigh truncated near zero the density goes as x and the ratio is exactly
-   4/3, which the identity reads as three channels where the truth is one.
-2. **Otsu** — maximises between-class variance, which sits at the valley only when the two modes
-   carry comparable mass. A knee's background is a narrow spike against broad tissue, so it lands
-   far above the valley and drags tissue into the quiet population.
-3. **the histogram valley** (first local minimum after the first peak) — exact on synthetic bimodal
-   data, erratic on real knees, whose histograms carry several tissue modes.
-4. **the darkest fifth inside the leg**, meant to find cortical bone — found the leg's left and
-   right edges instead, and "the three largest bodies above it" was one blob.
+> "The 'chapter 2 record' sounds wrong to me. I don't remember claiming that precisely. That seems
+> to conflict with the 'there is no noise' principle. If it's erratic...that makes it seem like it's
+> providing some complex and valuable information. Again, truth is a *superposition*. I don't
+> *care* if its noisy. In fact, 'noisy' makes it seem like it can provide some informational
+> disagreement — the 'three-legged stool' principle?"
+
+It is rewritten as **"The intensity instruments, and what each one measures"** in this chapter's
+`README.md`, where lead analysis belongs. Nothing of his was changed or removed.
 
 ## What the rendered images showed
+
+*(Lead observations of the rendered output, not the founder's words — kept here for now, flagged
+2026-10-12 as sitting in the same wrong place as the section above.)*
 
 - **Air by connectivity to the frame's border** works, and cleanly: ~10–11% of the frame, tracing
   the leg's contour. A structural reading, so it holds whatever the values are.
@@ -756,6 +759,114 @@ the semantic role and the parking stands.
 
 This is not settled here, because getting it wrong either re-parks work that could proceed or
 restarts work that will hit the same wall a second time.
+
+## 2026-10-12 — THE CONCLAVE: the pipeline is not a chain, and quorum is a population
+
+Correcting the lead, which had reported that the digit lens was *blocked* because an upstream
+measurement abstained, and proposed finding it a different upstream.
+
+> "You built this in series. As in, the thing that allows for resolution of objects is not a
+> stateless resolution of image processing, but runs serially. We 'get the parsed image' 'after'
+> some step or the other runs. We are 'waiting' for some step or another to respond before we allow
+> anything to output. That's...not really the point. **Truth being resolved through superposition
+> means that information is *addative*.** Just because one lens, one part of the pipeline isn't able
+> to resolve sufficiently, doesn't mean the rest aren't able to say anything. **They're ALL talking,
+> and what we're doing is assembling a conclave of lenses for the image series in each study and
+> parsing out \<objects>.**"
+
+> "If you're having a conclave/meeting, **you don't achieve quorum by reading down the attendance
+> list alphabetically and throwing a tantrum when 'Abel Ackerman' is out sick again.** One lens, one
+> stage not providing sufficient information is...fine? Like, okay? One person being absent doesn't
+> make the whole meeting collapse, **quorum is a *population*-wide state.** It's 'stateless' in that
+> at a single instant, you are measuring if the body being seated has sufficient coverage that
+> calling the assembly a 'quorum' rather than 'two women who got lost on their way to the bathroom'
+> is an accurate description. **The point isn't to achieve a magical serial path that happens to
+> work, it's to get all the signals to produce legible output from their path whenever we want the
+> pipeline to run, and for us to assemble identity on the superposition of all these analyses at
+> each pipeline run. THAT'S what I mean by a 'single, production pipeline'.**"
+
+> "And see what I mean about the ADHD? I CANNOT describe what I mean by a 'production system', but
+> the example of 'Abel Ackerman' very neatly paints the picture here."
+
+### What this settles
+
+1. **A run is an instant's measurement of coverage, not a traversal.** Every lens reads what it can
+   and returns a reading or a named absence; identity is assembled over the population present.
+2. **One member's absence never halts the body** — but it is NOT forbidden for a member to depend on
+   a shared measurement. Both second readers refuted the lead's stronger version independently, and
+   Fable showed the lead's own two claims were jointly unsatisfiable: "every reading a named value
+   computed once and handed to every consumer" *means* a shared value's absence silences its
+   consumers. His words give way on the member side ("one lens not providing sufficient information
+   is...fine") and hold on the assembly side. Readings: `readings/the-conclave-{codex,fable}.md`;
+   the lead's own, written first, `readings/the-conclave-lead-20261012.md`.
+3. **"Slot in nicely" is not "are the same thing."** The lead had collapsed the conclave shape and
+   the SICP discipline into one requirement. They are two, compatible and mutually reinforcing.
+
+## 2026-10-12 — A LENS IS LOSSY BY INTENT, and the air reading is not a fault
+
+Correcting the lead for reporting that background air "eats a whole digit".
+
+> "The 'air eating a digit' problem has an obvious solution. Again, reasoning off images... **trying
+> to get one lens to do everything perfectly, magically, all on its own was *explicitly* something I
+> told you to stop doing, because a conversation with other analysis lenses can produce a clean
+> decomposition that *together* resolves a truth that definitionally-lossy lenses *obviously* can't
+> resolve on their own.**"
+
+> "**If there was a single magical number that could somehow identify key objects in a view, then
+> why are we here?** That would be like some sort of divine radiotagging, and we wouldn't ever need
+> to do anything, image processing would be handled via divine intervention. **It's not a problem,
+> it's the whole *point* of the thesis** that you've been pathologizing for DAYS — the actual
+> representation of the physical objects in visual data is **a superposition of a high-dimensional
+> representation across various physical traits that are defined to exist in specific
+> patterns/combinations.** A bone is 'bright' and 'smooth' and 'doesn't absorb radiation, so imaging
+> bounces back so it shows up on scans' and 'it's straight-ish' and 'takes up most of the image
+> space with a GIANT fucking THING that's the center object in the whole image' and 'there are two
+> of them, roughly split in the middle' and 'has a defined border'....etc, etc."
+
+On the record's claim that four intensity instruments had "failed":
+
+> "That seems to conflict with the 'there is no noise' principle. **If it's erratic...that makes it
+> seem like it's providing some complex and valuable information. Again, truth is a
+> *superposition*. I don't *care* if its noisy. In fact, 'noisy' makes it seem like it can provide
+> some informational disagreement — the 'three-legged stool' principle?**"
+
+That section was lead analysis sitting inside this file. It is rewritten as *"The intensity
+instruments, and what each one measures"* in this chapter's `README.md`.
+
+On method, when the lead answered a picture with statistics:
+
+> "Have you SEEN the pictures???? ... **I don't care if this ONE analysis is perfect and
+> unambiguous.** The whole 'unified encoding architecture' from the \<object> thesis puts things in
+> balanced ternary anyway. **Can you REALLY not use this to see the output ... and get an extremely
+> fine-grained boundary and fill for MOST of the components of the knee, independently for each of
+> the five views???**"
+
+And on his own role:
+
+> "Think of me like another agent consult you can call through a free API call. THIS agent is...a
+> fluid intelligence visual reasoning agent. You literally have the equivalent of AGI, specifically
+> tuned with *billions* of years of training on visual reasoning on objects in physical space. And
+> you're trying to solve this with numbers and words?"
+
+## 2026-10-12 — KEEP EVERYTHING, INCLUDING THE CONFLICT
+
+The ruling on whether a second population for the lens's edge pair is a **fallback** (one member,
+two sources) or a **second member** (two readings retained). Fable had shown a fallback would be a
+*default*, which project law 3 forbids. His answer:
+
+> "Yes, agree, **we always keep information we compute. I'll resolve what we report and how we do
+> it, but the pipeline should keep everything, including where things conflict**"
+
+### What this settles
+
+1. **Two members, not one with a fallback.** Where a reading can be made two structurally warranted
+   ways, both are seated and both write. Neither is a backup for the other.
+2. **The pipeline retains; it does not resolve.** Conflict between members is kept in the record as
+   conflict. No stage collapses two readings into one, and no stage picks a winner.
+3. **Resolution and reporting are his.** What is reported, and how a disagreement is read, is the
+   founder's ruling and never the pipeline's — which is the three-legged stool made structural:
+   "the places in which they seem to disagree are not noise to wipe away, but are some of the MOST
+   informative information we can have" (2026-10-10).
 
 ---
 

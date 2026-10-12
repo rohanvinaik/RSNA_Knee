@@ -41,6 +41,42 @@ fixed level, a corpus-wide value, or any quantity derived from a label or a scor
 - **WHEN** the series' population holds too few readings to place a pair of edges
 - **THEN** the stage returns a named code and writes no digits for that series
 
+### Requirement: Every structurally warranted population is a seated member, never a fallback
+The system SHALL read a digit map for EACH structurally warranted population a series affords, and
+SHALL retain every one with the population it was read from. A population SHALL NOT be consulted
+only when another is unavailable, and the system SHALL NOT select among them, rank them, average
+them, or record one as a substitute for another.
+
+#### Scenario: The two members warranted today
+- **WHEN** the seated populations are named
+- **THEN** they are the values above the noise-law foreground cut, which selects what carries signal
+  above the noise floor, and the values above the background split, which selects tissue against air
+- **AND** neither is recorded as the other's backup, because they encode different invariants and
+  the founder ruled that the pipeline keeps everything it computes, conflicts included
+
+#### Scenario: Both members can read
+- **WHEN** a series affords both populations
+- **THEN** both digit maps are written and retained, each carrying its own edge pair, its own
+  population count and the name of the population it was read from
+- **AND** no field records a single "the" edge pair for that series
+
+#### Scenario: One member cannot read
+- **WHEN** one population cannot place a pair and the other can
+- **THEN** the member that can read writes its digits, the member that cannot returns its named
+  absence, and the absent member's reading is NOT filled from the present one
+
+#### Scenario: The members disagree
+- **WHEN** both members write a digit for the same place and the digits differ
+- **THEN** both digits are retained with their members named, and no stage resolves them, picks
+  between them, or records a combined digit
+- **AND** the disagreement is reachable in the record as a disagreement, because overlapping correct
+  readings that differ are evidence rather than noise
+
+#### Scenario: A consumer asks for the digit at a place
+- **WHEN** a later stage reads a place's digit
+- **THEN** it receives the per-member readings and their standing, never a single resolved value,
+  because resolution is the founder's and not the pipeline's
+
 ### Requirement: The edge population has exact provenance
 The regime SHALL hand on the exact foreground count used for its existing terciles and the
 minimum population argument used by that measurement. The lenses SHALL consume these with the
