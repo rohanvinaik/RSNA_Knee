@@ -1,4 +1,6 @@
 {
+  "src/knee/absence.py::absence_code::cd010cfeaeb0c315": [],
+  "src/knee/absence.py::is_silence::86be4df0328ed42f": [],
   "src/knee/collapse/codes.py::coil_code::9831de1b1e68ee7f": [
     {
       "assertion_code": "result = coil_code(moment_ratio=1.0625, single_tolerance=1.0625)\nassert result == 'multi'",
