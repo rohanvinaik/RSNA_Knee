@@ -219,6 +219,93 @@ def test_every_contract_names_a_reference_and_a_proof_gate() -> None:
         )
 
 
+def _import_module(path, name: str):
+    """Import a module from a file, as the kernels' modules are imported, for the plain-form tests."""
+    import importlib.util
+
+    spec = importlib.util.spec_from_file_location(name, path)
+    assert spec is not None and spec.loader is not None
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    return module
+
+
+KERNEL_MODULE = """
+from knee.compute.contracts import ComputeContract, contracted
+
+CONTRACT = ComputeContract(
+    kind="probe", language="python reference", reads="one int", writes="one int",
+    allocation="none", work="one addition", parallel_unit="none",
+    reference="kernel", proof_gate="the plain-form test",
+)
+
+
+@contracted
+def kernel(value: int) -> int:
+    return value + 1
+"""
+
+
+def test_the_plain_form_reads_the_modules_one_contract_and_registers_the_kernel(
+    tmp_path,
+) -> None:
+    """Task 7.11: `@contracted` with no argument attaches the module's `CONTRACT` as data, returns
+    the kernel unwrapped, and records it under its dotted path."""
+    from knee.compute.contracts import declared_contracts
+
+    path = tmp_path / "plain_form_probe.py"
+    path.write_text(KERNEL_MODULE)
+    module = _import_module(path, "plain_form_probe")
+    assert module.kernel(1) == 2
+    assert module.kernel.__dict__["__contract__"] is module.CONTRACT
+    assert declared_contracts()["plain_form_probe.kernel"] is module.CONTRACT
+    assert unattached_contracts(vars(module)) == []
+
+
+def test_the_plain_form_refuses_a_module_that_declares_no_contract(tmp_path) -> None:
+    """MUST NOT: attach nothing silently. A kernel under `@contracted` in a module with no
+    `CONTRACT`, or with something else under that name, is refused by name at import."""
+    import pytest
+
+    bare = tmp_path / "no_contract_probe.py"
+    bare.write_text(
+        "from knee.compute.contracts import contracted\n\n"
+        "@contracted\ndef kernel(value: int) -> int:\n    return value\n"
+    )
+    with pytest.raises(ValueError, match="contract_undeclared"):
+        _import_module(bare, "no_contract_probe")
+    wrong = tmp_path / "wrong_contract_probe.py"
+    wrong.write_text(
+        "from knee.compute.contracts import contracted\n\nCONTRACT = 'not a contract'\n\n"
+        "@contracted\ndef kernel(value: int) -> int:\n    return value\n"
+    )
+    with pytest.raises(ValueError, match="contract_undeclared"):
+        _import_module(wrong, "wrong_contract_probe")
+
+
+def test_the_plain_form_takes_only_a_function() -> None:
+    import pytest
+
+    with pytest.raises(TypeError, match="contracted_expects_a_function"):
+        contracted("kernel")  # type: ignore[call-overload]
+
+
+def test_re_declaring_the_same_contract_is_idempotent_and_a_different_one_is_refused(
+    tmp_path,
+) -> None:
+    """A module reloaded re-declares what it declared; a second contract under one key is refused."""
+    import pytest
+
+    path = tmp_path / "reload_probe.py"
+    path.write_text(KERNEL_MODULE)
+    first = _import_module(path, "reload_probe")
+    second = _import_module(path, "reload_probe")
+    assert second.kernel.__dict__["__contract__"] == first.CONTRACT
+    different = _probe()
+    with pytest.raises(ValueError, match="duplicate_contract_key"):
+        contracted(different)(second.kernel)
+
+
 def test_contracts_are_data_and_never_wrap_the_measured_function() -> None:
     """SS13.5: attaching a contract must not put a wrapper on the hot path."""
     from knee.compute.contracts import contracted

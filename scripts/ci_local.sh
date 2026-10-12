@@ -53,14 +53,17 @@ ty check src tests || echo "ty: the findings above are leads, not a gate"
 #
 # It prints rather than failing, for one measured reason: dataclass fields and Hamilton's
 # name-resolved nodes are false positives here, so a blocking run would need a whitelist and a
-# whitelist is how a guard stops being read. The list is short enough to work through by hand.
+# whitelist is how a guard stops being read. Amended 2026-10-12 (task 7.2): `vulture_allowlist.py`
+# admits ONLY names whose consumer exists and vulture cannot see, each with that consumer's
+# location beside it, so what this prints is shorter and every line of it is an island or a
+# consumer still owed. A name whose consumer is owed is deliberately NOT in the allowlist.
 echo "== vulture (advisory) 1/2: nothing in PRODUCTION calls it -- test-only code shows here"
-vulture src workbench scripts ||
+vulture src workbench scripts vulture_allowlist.py ||
     echo "vulture: a name here that is used only by a test is an island (AGENTS.md: defined, imported and tested with no production caller)"
 
 echo "== vulture (advisory) 2/2: nothing ANYWHERE calls it, tests included"
-vulture src workbench scripts tests ||
-    echo "vulture: dataclass fields and Hamilton's name-resolved nodes are false positives; the rest are dead"
+vulture src workbench scripts tests vulture_allowlist.py ||
+    echo "vulture: every line here is an island whose consumer is owed, or dead code to archive; the allowlist names the dynamic consumers"
 
 if [ "$fail" -ne 0 ]; then
     echo "GATE: FAILED"

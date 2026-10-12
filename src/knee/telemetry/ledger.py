@@ -44,7 +44,7 @@ class Ledger:
     timed: bool = False
     _events: list[Event] = field(default_factory=list)
 
-    @contracted(CONTRACT)
+    @contracted
     def record(self, name: str, /, **counts: int) -> None:
         """Record one event. Returns immediately and allocates nothing when disabled.
 

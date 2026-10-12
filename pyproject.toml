@@ -83,6 +83,8 @@ extend-select = ["B"]
 # nowhere else. Everything that bears on CORRECTNESS (B905's silent zip truncation, the import
 # and format rules) still applies: a rough probe is allowed, a probe with a wrong number is not.
 "workbench/*" = ["BLE001"]
+# The vulture allowlist is bare names on purpose: that is how vulture reads a whitelist.
+"vulture_allowlist.py" = ["B018", "F821"]
 
 [tool.ruff.lint.isort]
 # `_out` is workbench/render's own sibling module (the pictures directory), resolved because a

@@ -14,6 +14,7 @@ from pydicom.uid import ExplicitVRLittleEndian, MRImageStorage, generate_uid
 
 import knee.study.corpus as corpus_module
 from knee import pipeline
+from knee.absence import CODES as ABSENCE_CODES
 from knee.lenses.places import STANDING_VALUES
 from knee.objects.analysis import AnalysisRequest
 from knee.study.tables import LABELS
@@ -165,6 +166,13 @@ def test_open_and_run_attaches_real_measurements_and_reads_each_series_once(
     assert unstacked.why == "no_stacked_volume"
     assert unstacked.measurements is not None
     assert unstacked.measurements.code == "no_stacked_volume"
+    # The field's structural reading rides with the request (task 7.1): read at the same slice
+    # the objects stage reads, total over a series without a volume.
+    assert stacked.structure is not None
+    assert stacked.structure.code in ABSENCE_CODES
+    assert stacked.structure.axis == "normal"
+    assert unstacked.structure is not None
+    assert unstacked.structure.code == "predecessor_absent"
 
 
 def test_axial_superior_inferior_parallel_to_slice_is_unavailable_without_row_fallback(
@@ -203,6 +211,7 @@ def test_default_entry_point_preserves_regime_and_does_not_run_measurement(
     assert reads == {STACKED_UID: 1, UNSTACKED_UID: 1}
     assert calls == []
     assert all(row.measurements is None for row in default.series)
+    assert all(row.structure is None for row in default.series)
     assert default.series[0].regime is not None
 
     explicit = pipeline.open_and_run(tmp_path, STUDY_UID, _request((1.0, 0.0, 0.0)))
@@ -394,7 +403,11 @@ def test_saved_annotation_uses_the_production_background_reading(
     out = tmp_path / "run"
     _write_corpus(root)
     reads = _count_series_reads(monkeypatch)
-    monkeypatch.setattr(regime_module, "background_split", lambda values: split)
+    # The regime reads its valley from the histogram it retains (task 7.1a), so the production
+    # reading is injected where the valley is read, not where the histogram is built.
+    monkeypatch.setattr(
+        regime_module, "histogram_valley", lambda counts, edges, smooth=5: split
+    )
     monkeypatch.setattr(
         sys,
         "argv",

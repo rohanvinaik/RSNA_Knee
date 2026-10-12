@@ -62,6 +62,7 @@ Run from the repository root. `just --list` lists the recipes and their argument
 | `just render <script.py> [arguments]` | workbench drawing, supplying Matplotlib per run |
 | `just unit` | whole open tasks, declared route metadata and structural place diagnostics |
 | `just places` | declared modules versus filesystem/import graph; advisory, not runtime certification |
+| `just composition <run>` | a saved run's composition from its receipt's ledger: every produced record consumed, no phantom consumer, the conversation before ownership; advisory, run after every real run |
 | `just plan-status [change]` / `just plan-check [change]` | artifact status / strict validation; default `every-stage-renders` |
 | `just plan-next [change]` | task checklist, default active breadth-first change; artifact completion is separate |
 | `just graph <output>` | static development DAG validation; execution commands with a UID observe an actual run |

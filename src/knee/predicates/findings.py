@@ -49,6 +49,7 @@ Record: `openspec/changes/every-stage-renders/specs/abstaining-findings/spec.md`
 
 from __future__ import annotations
 
+from collections.abc import Iterable
 from dataclasses import dataclass
 
 from knee.absence import absence_code
@@ -276,8 +277,12 @@ def _series_facts(series: object) -> _Facts:
     stage actually built and never from a flag. The profiles are counted off each row's bundles
     record: they are what a population finding's form reads, once the form is given.
     """
+    # Narrowed by name before it is iterated (task 7.8): an argument that is not iterable at all
+    # is the "nothing handed over" silence, and the type checker can now see it is never iterated.
+    if not isinstance(series, Iterable):
+        return _Facts(0, 0, -1, (), 0, 0)
     try:
-        rows = tuple(series)  # type: ignore[call-overload]
+        rows = tuple(series)
     except TypeError:
         return _Facts(0, 0, -1, (), 0, 0)
     population = 0
@@ -388,22 +393,25 @@ def read_findings(
     facts = _series_facts(series)
     rows = facts.rows
     # Recorded by the CONSUMER at the point of reading (route-composition): what this stage took
-    # from ownership, from relations and from the bundles, counted as the facts it read.
-    ledger.record(
-        "ownership.consumed_by.predicates",
-        series=max(rows, 0),
-        with_population=facts.population,
-    )
-    ledger.record(
-        "relations.consumed_by.predicates",
-        series=max(rows, 0),
-        constructions=len(facts.constructions),
-    )
-    ledger.record(
-        "vectors.consumed_by.predicates",
-        series=max(rows, 0),
-        profiles=facts.profiles,
-    )
+    # from ownership, from relations and from the bundles, counted as the facts it read -- and
+    # only when series records were handed over (task 7.14): with none, no ownership, relations
+    # or bundles record exists to have been read, and `code` below names that silence.
+    if rows > 0:
+        ledger.record(
+            "ownership.consumed_by.predicates",
+            series=rows,
+            with_population=facts.population,
+        )
+        ledger.record(
+            "relations.consumed_by.predicates",
+            series=rows,
+            constructions=len(facts.constructions),
+        )
+        ledger.record(
+            "vectors.consumed_by.predicates",
+            series=rows,
+            profiles=facts.profiles,
+        )
     code = absence_code(
         construction_built=True,
         predecessor_returned=rows >= 0,

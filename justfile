@@ -113,6 +113,11 @@ unit:
 places:
     PYTHONPATH=src .venv/bin/python scripts/places.py
 
+# A saved run's composition, from its receipt's ledger: every produced record has a consumer, no consumer
+# lacks a producer, the conversation precedes ownership. Advisory like `places`: it reports, never gates.
+composition RUN:
+    PYTHONPATH=.:src .venv/bin/python scripts/composition_check.py "$1"
+
 # Declared work lives in OpenSpec; client instruction generation is deliberately off. The change
 # defaults to every-stage-renders, the active breadth-first build. Name knee-object-model
 # for the full architecture or object-resolution-toolkit for its measurement/contour substrate.

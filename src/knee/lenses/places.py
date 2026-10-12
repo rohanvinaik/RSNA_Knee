@@ -99,7 +99,7 @@ class LensesReading:
     standing_counts: tuple[int, ...]
 
 
-@contracted(CONTRACT)
+@contracted
 def place_codes_reference(
     values: np.ndarray,
     low_edge: float | None,
@@ -128,6 +128,96 @@ def place_codes_reference(
     return handed_on(array)
 
 
+def _numeric_volume(volume: object) -> np.ndarray | None:
+    """The volume itself when it is a real numeric three-axis ndarray, else None.
+
+    Returned rather than judged (task 7.8): the caller then holds the array under its own name,
+    and the type checker sees what the kernel is handed instead of a bool beside an `object`.
+    """
+    if (
+        isinstance(volume, np.ndarray)
+        and volume.ndim == 3
+        and volume.dtype.kind in "iuf"
+    ):
+        return volume
+    return None
+
+
+def _edge_pair(edges: object) -> tuple | None:
+    """The edges when they are a tuple of exactly two, else None."""
+    return edges if isinstance(edges, tuple) and len(edges) == 2 else None
+
+
+def _is_plain_int(value: object) -> bool:
+    """Whether the value is an int that is not a bool."""
+    return isinstance(value, int) and not isinstance(value, bool)
+
+
+def _is_readable_pair(pair: tuple | None) -> bool:
+    """Whether a pair exists and each edge is an int or a float that is not a bool."""
+    return pair is not None and all(
+        isinstance(edge, (int, float)) and not isinstance(edge, bool) for edge in pair
+    )
+
+
+def _regime_facts(
+    regime: object, edges_field: str, count_field: str
+) -> tuple[bool, float | None, float | None, int | None, int | None]:
+    """Whether the member's pair, count and minimum all read, then the values taken from them."""
+    count = getattr(regime, count_field, None)
+    minimum = getattr(regime, "tercile_minimum_population", None)
+    edges = getattr(regime, edges_field, None)
+    pair = _edge_pair(edges)
+    readable_pair = _is_readable_pair(pair)
+    readable_count = _is_plain_int(count)
+    readable_minimum = _is_plain_int(minimum)
+    metadata_read = readable_pair and readable_count and readable_minimum
+    # A NaN edge is a readable pair carrying no pair -- which is how a member whose population
+    # could not be placed reports itself. `digit_code` then names it `no_edges`, per place.
+    low = float(pair[0]) if metadata_read and pair is not None else None
+    high = float(pair[1]) if metadata_read and pair is not None else None
+    population_count = int(count) if isinstance(count, int) else None
+    minimum_population = int(minimum) if isinstance(minimum, int) else None
+    return metadata_read, low, high, population_count, minimum_population
+
+
+def _input_absence_code(
+    volume: object,
+    regime: object,
+    numeric: bool,
+    shape: tuple[int, ...],
+    metadata_read: bool,
+) -> str:
+    """The named silence the member's inputs met, or `present` when they met none."""
+    return absence_code(
+        construction_built=True,
+        predecessor_returned=volume is not None and regime is not None,
+        item_count=int(np.prod(shape)) if numeric else 1,
+        item_read=numeric and metadata_read,
+    )
+
+
+def _present_code_and_why(
+    population: str,
+    low: float | None,
+    high: float | None,
+    population_count: int,
+    minimum_population: int,
+) -> tuple[str, str]:
+    """The member's own code and reason once its volume, pair and counts have all read."""
+    probe = digit_code(float("nan"), low, high, population_count, minimum_population)
+    code = "present" if probe == "place_unread" else probe
+    why = f"{population} population's own terciles; no spatial correction"
+    return code, why
+
+
+def _counts_per_code(codes: np.ndarray) -> tuple[int, ...]:
+    """One Python integer per named digit code: how many places carry it."""
+    return tuple(
+        int(np.count_nonzero(codes == index)) for index in range(len(DIGIT_CODES))
+    )
+
+
 def read_member(
     volume: object, regime: object, population: str, edges_field: str, count_field: str
 ) -> LensReading:
@@ -138,47 +228,25 @@ def read_member(
     read another member's pair -- a member that cannot place its own edges says so, and the
     silence is its own. Filling it from the other member would be a default (law 3).
     """
-    numeric = (
-        isinstance(volume, np.ndarray)
-        and volume.ndim == 3
-        and volume.dtype.kind in "iuf"
+    array = _numeric_volume(volume)
+    numeric = array is not None
+    shape = array.shape if array is not None else (0, 0, 0)
+    metadata_read, low, high, population_count, minimum_population = _regime_facts(
+        regime, edges_field, count_field
     )
-    shape = volume.shape if isinstance(volume, np.ndarray) and numeric else (0, 0, 0)
-    count = getattr(regime, count_field, None)
-    minimum = getattr(regime, "tercile_minimum_population", None)
-    edges = getattr(regime, edges_field, None)
-    pair = edges if isinstance(edges, tuple) and len(edges) == 2 else None
-    readable_pair = pair is not None and all(
-        isinstance(edge, (int, float)) and not isinstance(edge, bool) for edge in pair
-    )
-    readable_count = isinstance(count, int) and not isinstance(count, bool)
-    readable_minimum = isinstance(minimum, int) and not isinstance(minimum, bool)
-    metadata_read = readable_pair and readable_count and readable_minimum
-    # A NaN edge is a readable pair carrying no pair -- which is how a member whose population
-    # could not be placed reports itself. `digit_code` then names it `no_edges`, per place.
-    low = float(pair[0]) if metadata_read and pair is not None else None
-    high = float(pair[1]) if metadata_read and pair is not None else None
-    population_count = int(count) if isinstance(count, int) else None
-    minimum_population = int(minimum) if isinstance(minimum, int) else None
-    input_code = absence_code(
-        construction_built=True,
-        predecessor_returned=volume is not None and regime is not None,
-        item_count=int(np.prod(shape)) if numeric else 1,
-        item_read=numeric and metadata_read,
-    )
+    input_code = _input_absence_code(volume, regime, numeric, shape, metadata_read)
     if (
-        input_code == "present"
+        array is not None
+        and input_code == "present"
         and population_count is not None
         and minimum_population is not None
     ):
         codes = place_codes_reference(
-            volume, low, high, population_count, minimum_population
+            array, low, high, population_count, minimum_population
         )
-        probe = digit_code(
-            float("nan"), low, high, population_count, minimum_population
+        code, why = _present_code_and_why(
+            population, low, high, population_count, minimum_population
         )
-        code = "present" if probe == "place_unread" else probe
-        why = f"{population} population's own terciles; no spatial correction"
     else:
         low, high = (low, high) if metadata_read else (None, None)
         population_count = population_count if metadata_read else None
@@ -189,9 +257,7 @@ def read_member(
             "native volume or exact edge-population record was absent, empty or unread"
         )
     digits = handed_on(DIGIT_VALUES[codes])
-    counts = tuple(
-        int(np.count_nonzero(codes == index)) for index in range(len(DIGIT_CODES))
-    )
+    counts = _counts_per_code(codes)
     return LensReading(
         population,
         code,
@@ -216,9 +282,13 @@ def read_lenses(volume: object, regime: object) -> LensesReading:
     recorded.
     """
     # Recorded by the CONSUMER at the point of reading (`specs/route-composition`): what this
-    # stage took from Chapter 1 and from the field, before it reads either.
-    ledger.record("study.consumed_by.lenses", volume=1 if volume is not None else 0)
-    ledger.record("collapse.consumed_by.lenses", regime=1 if regime is not None else 0)
+    # stage took from Chapter 1 and from the field, before it reads either -- and only for a
+    # record handed over (task 7.14): a None predecessor was not produced for this series, and
+    # each member's own code names that silence.
+    if volume is not None:
+        ledger.record("study.consumed_by.lenses", volume=1)
+    if regime is not None:
+        ledger.record("collapse.consumed_by.lenses", regime=1)
     members = tuple(read_member(volume, regime, *member) for member in MEMBERS)
     first, second = members[0], members[1]
     standings = handed_on(STANDING_TABLE[first.codes, second.codes])

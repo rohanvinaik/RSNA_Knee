@@ -30,21 +30,18 @@ from knee.collapse.codes import (
     storage_code,
 )
 from knee.collapse.noise import (
-    background_split,
+    background_histogram,
     bright_sigma,
+    coil_count,
     coil_count_robust,
     dark_sigma,
     finite_values,
+    histogram_valley,
+    moment_ratio,
     quiet_population,
 )
 from knee.collapse.units import magnitude_moments, stabilizer, to_units
 from knee.study.series import Series
-
-# The share of a series' finite values taken as its quiet population. Measured basis: the zero
-# share over this corpus runs from 0.0001 to 0.60 with a median of 0.043, so a fifth is below the
-# masked fraction of the heaviest series and above the median by a wide margin. It is an argument
-# to `read_regime`, never a constant a decision reads.
-QUIET_SHARE = 0.2
 
 # The Gaussian value of (p95 - p5) / (p75 - p25). A spread at this value is as even as a normal;
 # above it the distribution carries more in its tails. Derived, not chosen.
@@ -61,7 +58,26 @@ class RegimeKey:
     cheap global readings: `zero_share` and `foreground_share` (the knee's density), the `terciles`
     of the above-dark values, `spread_ratio` and `skew` (the distribution's shape), and
     `depth_spread` (its profile along the stack). Every reading is in the series' own stored values
-    unless named otherwise. `background_split` retains the whole-series histogram valley\n    already used to read the quiet population, so downstream annotations use that same reading.\n    A reading not made is NaN, never zero.
+    unless named otherwise. `background_split` retains the whole-series histogram valley
+    already used to read the quiet population, so downstream annotations use that same reading.
+
+    The channel count is asked of the background twice, and both answers are kept. `coils` is the
+    robust reading, from the quartile ratio, and `coils_word` and the dark sigma are read from it.
+    `coils_moment` is a SECOND MEMBER of the same question, from the fourth-to-second moment ratio
+    through the identity (L + 1) / L, kept beside the first and never a fallback for it: the
+    founder, 2026-10-12, "we always keep information we compute ... the pipeline should keep
+    everything, including where things conflict". The identity refuses a ratio outside (1, 2], as
+    a contaminated fourth moment makes it, and then `coils_moment` is NaN while `coils` still
+    reads; that disagreement is the record, not an error.
+
+    `histogram_counts` and `histogram_edges` are the whole-series histogram the valley was read
+    from: one count per bin and one more edge than there are bins, as plain tuples of numbers so
+    the writer's enumeration of the fields saves them as it does every other reading. They are
+    kept so the field's picture draws the valley on the histogram it came from and no probe
+    recomputes one beside it. Both are empty where no histogram could be made, never a row of zero
+    counts.
+
+    A reading not made is NaN, never zero.
     """
 
     view: tuple[str, str, str]
@@ -94,6 +110,9 @@ class RegimeKey:
     # `every-stage-renders` task 2.2a.
     split_terciles: tuple[float, float] = (float("nan"), float("nan"))
     split_population_count: int | None = None
+    coils_moment: float = float("nan")
+    histogram_counts: tuple[int, ...] = ()
+    histogram_edges: tuple[float, ...] = ()
 
 
 def _shape_readings(
@@ -148,8 +167,11 @@ def read_regime(
         return None
 
     # The background is cut at the histogram's valley, never at a quantile: a quantile truncates
-    # the population and its moments stop being the noise's (see `background_split`).
-    split = background_split(values)
+    # the population and its moments stop being the noise's (see `background_split`). The
+    # histogram is made ONCE and the valley read from it, and the same one is kept on the key, so
+    # the valley is drawn on the histogram it came from.
+    counts, edges = background_histogram(values)
+    split = histogram_valley(counts, edges)
     quiet = quiet_population(values, split)
     n_zero = int(np.count_nonzero(quiet == 0.0))
     spread = float(np.std(quiet)) if quiet.size else float("nan")
@@ -165,6 +187,14 @@ def read_regime(
     # A coil count the identity refuses is not a reading; one channel is what a magnitude is at
     # minimum, and the dark estimator says so by abstaining rather than by assuming.
     dark = dark_sigma(quiet, coils)
+
+    # The SECOND MEMBER of the channel-count question: the moment-ratio reading of the same quiet
+    # population, kept beside the robust one and never a fallback for it. The identity refuses a
+    # ratio outside (1, 2] (`coil_count`), as a contaminated fourth moment makes it, and then this
+    # member is NaN while the robust one still reads. The word and the dark sigma stay with the
+    # robust member. Founder, 2026-10-12: "the pipeline should keep everything, including where
+    # things conflict".
+    coils_moment = coil_count(moment_ratio(quiet))
 
     # The bright estimator reads tissue, so its floor is the same valley: above it is tissue.
     middle = volume[volume.shape[0] // 2]
@@ -243,4 +273,7 @@ def read_regime(
         tercile_minimum_population=shape_minimum_population,
         split_terciles=split_terciles,
         split_population_count=int(above_split.size),
+        coils_moment=coils_moment,
+        histogram_counts=tuple(int(c) for c in counts),
+        histogram_edges=tuple(float(e) for e in edges),
     )

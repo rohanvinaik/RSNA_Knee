@@ -42,7 +42,7 @@ class PairingReading:
     )
 
 
-@contracted(CONTRACT)
+@contracted
 def footprint_labels_reference(labels, available, positions_rc):
     """Retain each positive-weight contributor; never interpolate categorical labels.
 

@@ -94,7 +94,7 @@ class Squint:
     tile_shape_rc: tuple[int, int]
 
 
-@contracted(CONTRACT)
+@contracted
 def physical_squint(
     plane: np.ndarray, spacing_rc: tuple[float, float], tile_mm: float
 ) -> Squint:

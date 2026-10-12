@@ -161,7 +161,7 @@ def empty_ownership(code: str, why: str) -> OwnershipReading:
     )
 
 
-@contracted(CONTRACT)
+@contracted
 def read_ownership(interiors: object) -> OwnershipReading:
     """Partition one field into claimed, residual and unread places, or name why it cannot.
 
@@ -360,13 +360,19 @@ def read_ownership_members(interiors: object, conversation: object) -> Ownership
     post: __return__.comparison in COMPARISONS
     post: len(__return__.members) >= 1
     """
-    ledger.record(
-        "objects.consumed_by.ownership",
-        interiors=1 if readable_field(interiors) is not None else 0,
-    )
+    # Consumption is recorded only for a record handed over (`specs/route-composition`, task
+    # 7.14): a predecessor handed over as None was not produced for this study, and recording a
+    # consumption of it would put a phantom producer in the ledger. The silence is named below in
+    # `why`, and in the solitary member's own code.
+    if interiors is not None:
+        ledger.record(
+            "objects.consumed_by.ownership",
+            interiors=1 if readable_field(interiors) is not None else 0,
+        )
     seated = [OwnershipMember("solitary", read_ownership(interiors))]
     conversed = conversed_parses(interiors, conversation)
-    ledger.record("conversation.consumed_by.ownership", parses=len(conversed))
+    if conversation is not None:
+        ledger.record("conversation.consumed_by.ownership", parses=len(conversed))
     seated.extend(
         OwnershipMember(parse.code.split(":")[0], read_ownership(parse))
         for parse in conversed

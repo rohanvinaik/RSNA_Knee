@@ -33,6 +33,57 @@ def finite_values(volume: np.ndarray) -> np.ndarray:
     return flat[np.isfinite(flat)]
 
 
+def background_histogram(
+    values: np.ndarray, bins: int = 512
+) -> tuple[np.ndarray, np.ndarray]:
+    """The histogram of `values` over their own range, which the valley is read from.
+
+    `bins` equal-width bins from the smallest value to the largest, so every value falls in exactly
+    one. It is made once and handed on: `histogram_valley` reads the split from it, and the regime
+    key keeps it, so the picture of the valley is drawn on the histogram the valley came from and
+    not on a second one recomputed beside it. `bins` is the caller's, declared.
+
+    Returns the counts, int64 of shape (bins,), and the edges, float64 of shape (bins + 1,), in the
+    values' own units. Two empty arrays where no histogram can be made -- no values, a range that is
+    not finite, or every value equal: a histogram not made, never a row of zero counts.
+    """
+    nothing = (np.empty(0, dtype=np.int64), np.empty(0, dtype=np.float64))
+    if values.size == 0:
+        return nothing
+    low, high = float(np.min(values)), float(np.max(values))
+    if not (np.isfinite(low) and np.isfinite(high)) or high <= low:
+        return nothing
+    counts, edges = np.histogram(values, bins=bins, range=(low, high))
+    return counts.astype(np.int64, copy=False), edges.astype(np.float64, copy=False)
+
+
+def histogram_valley(counts: np.ndarray, edges: np.ndarray, smooth: int = 5) -> float:
+    """The VALLEY after the background's mode, read from a histogram already made.
+
+    The rule `background_split` explains: the counts are smoothed by a moving average over `smooth`
+    bins (not at all when `smooth` is 1 or less), the first peak is located, and the first bin after
+    it that rises once the counts have begun to fall is the turn. The valley is the centre of the
+    bin before that one, from `edges`. `smooth` is the caller's, declared.
+
+    NaN when there are no counts, or when the counts fall away from the first peak without ever
+    turning back up: a histogram with no valley has no split, and saying so is a reading.
+    """
+    if counts.size == 0:
+        return float("nan")
+    centres = (edges[:-1] + edges[1:]) / 2.0
+    if smooth > 1:
+        window = np.ones(smooth) / smooth
+        counts = np.convolve(counts.astype(np.float64), window, mode="same")
+    peak = int(np.argmax(counts))
+    falling = False
+    for i in range(peak + 1, counts.size):
+        if counts[i] < counts[i - 1]:
+            falling = True
+        elif falling and counts[i] > counts[i - 1]:
+            return float(centres[i - 1])
+    return float("nan")
+
+
 def background_split(values: np.ndarray, bins: int = 512, smooth: int = 5) -> float:
     """The VALLEY after the background's mode: the first local minimum of the histogram past its
     first peak.
@@ -61,24 +112,7 @@ def background_split(values: np.ndarray, bins: int = 512, smooth: int = 5) -> fl
     its first peak without ever turning back up: a distribution with no valley has no split, and
     saying so is a reading.
     """
-    if values.size == 0:
-        return float("nan")
-    low, high = float(np.min(values)), float(np.max(values))
-    if not (np.isfinite(low) and np.isfinite(high)) or high <= low:
-        return float("nan")
-    counts, edges = np.histogram(values, bins=bins, range=(low, high))
-    centres = (edges[:-1] + edges[1:]) / 2.0
-    if smooth > 1:
-        window = np.ones(smooth) / smooth
-        counts = np.convolve(counts.astype(np.float64), window, mode="same")
-    peak = int(np.argmax(counts))
-    falling = False
-    for i in range(peak + 1, counts.size):
-        if counts[i] < counts[i - 1]:
-            falling = True
-        elif falling and counts[i] > counts[i - 1]:
-            return float(centres[i - 1])
-    return float("nan")
+    return histogram_valley(*background_histogram(values, bins), smooth)
 
 
 def quiet_population(values: np.ndarray, split: float) -> np.ndarray:

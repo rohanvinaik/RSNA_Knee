@@ -20,7 +20,7 @@ CONTRACT = ComputeContract(
 )
 
 
-@contracted(CONTRACT)
+@contracted
 def raster_bands_reference(quads, selected, rows, cols):
     out = np.zeros((rows, cols), dtype=np.bool_)
     visits = 0

@@ -19,11 +19,25 @@ territory for a named object.
                            seated lens member, from `knee.lenses` (the selected plane only)
     lens_standing          counts over what the two members jointly said at those places
     came_out               how the object came out: counts over its edge kinds and its profile
-                           trace codes, from `knee.objects` (the provenance bank, §6.6)
+                           trace codes, and its seeds (the places of the h-maxima plateaus it grew
+                           from, counted inside its extent), from `knee.objects` (the provenance
+                           bank, §6.6)
     through_plane:<uid>    for every OTHER acquisition of the study, counts over `SLAB_CODES` of
                            whether that acquisition's slabs measured each of this object's places
-                           -- the slab rule's first consumer (`knee.lenses.slabs`), and the
-                           geometric precondition of any conjunction across acquisitions
+                           -- the slab rule's first consumer, and the geometric precondition of
+                           any conjunction across acquisitions. The rule is called through its
+                           array twin (`knee.lenses.slab_kernels`: a plain reference or a Numba
+                           twin), selected by the backend the request names and refused by name
+                           when unavailable, never replaced; the scalar rule
+                           (`knee.lenses.slabs.slab_code`) stays the oracle the twin is pinned to
+
+**Beside the banks, one number per other acquisition** (`BundlesReading.slab_gaps`, task 7.2): the
+gap fraction of that acquisition's own stack, `knee.lenses.slabs.gap_fraction(thickness, pitch)`,
+which "belongs beside a conjunction as the prior probability that a foreign place falls into
+nothing". It is a property of the ACQUISITION and not a count at the object's places, so it is
+recorded on the reading beside the through-plane banks and not inside one. It uses the same pitch
+the through-plane bank does, and it is None where the thickness or the slice geometry was not read
+or is not one the function accepts, never a zero standing in for a reading not made.
 
 **Banks this build cannot write, carried as unavailable with the reason:** the conjunction across
 acquisitions (needs the local structural normalisation and a correspondence rule, both the
@@ -42,13 +56,14 @@ from dataclasses import dataclass
 
 import numpy as np
 
-from knee.absence import absence_code
+from knee.absence import absence_code, is_silence
 from knee.collapse.physical import PlaneFrame
 from knee.compute.contracts import ComputeContract, contracted, handed_on
 from knee.lenses.digits import DIGIT_CODES
 from knee.lenses.members import STANDING_CODES
 from knee.lenses.places import MEMBERS
-from knee.lenses.slabs import SLAB_CODES, slab_code
+from knee.lenses.slab_kernels import slab_codes
+from knee.lenses.slabs import SLAB_CODES, gap_fraction
 from knee.objects.interiors import EDGE_KINDS, TRACE_CODES
 from knee.telemetry import ledger
 
@@ -109,7 +124,12 @@ class BundlesReading:
     """Every object's profile for one series, with what the profiles were keyed on and read from.
 
     `subject_kind` is `SUBJECT_KIND`; `planes_read` is 1 because the selected native plane is the
-    only plane the partition exists on. `code` is from the shared vocabulary.
+    only plane the partition exists on. `code` is from the shared vocabulary. `backend` is the
+    backend the through-plane banks were REQUESTED to use, recorded on every path, silences
+    included, so a reading never claims a kernel nobody asked for or hides one that was refused.
+    `slab_gaps` holds one `(series uid, gap fraction)` pair per OTHER acquisition, in the order
+    they were handed over; a fraction is None where it could not be read, and the tuple is empty
+    on a silence, which read no acquisition.
     """
 
     code: str
@@ -117,6 +137,8 @@ class BundlesReading:
     subject_kind: str
     planes_read: int
     profiles: tuple[ObjectProfile, ...]
+    backend: str = "reference"
+    slab_gaps: tuple[tuple[str, float | None], ...] = ()
 
 
 def bank_status_code(source_present: bool, rows_countable: bool) -> str:
@@ -134,12 +156,13 @@ def bank_status_code(source_present: bool, rows_countable: bool) -> str:
 # every table, so nothing is recounted per object. Nothing below names what an extent is.
 # ---------------------------------------------------------------------------------------------
 
-#: The column of each slab code, so a code the scalar rule names becomes a row of its table.
-_SLAB_INDEX: dict[str, int] = {name: index for index, name in enumerate(SLAB_CODES)}
-
 CONTRACT = ComputeContract(
     kind="per_extent_value_counts",
-    language="NumPy vectorized reference, one bincount per bank; no accelerated twin",
+    language=(
+        "NumPy vectorized reference, one bincount per bank; the through-plane banks call the "
+        "slab rule through its array twin (knee.lenses.slab_kernels: Python reference or Numba "
+        "strict twin), selected by the requested backend, refused by name and never replaced"
+    ),
     reads=(
         "extent int (N,) dense extent index 0..U-1 of each claimed place; values int (N,) "
         "non-negative readings below the vocabulary; U and the vocabulary width as whole numbers"
@@ -154,14 +177,17 @@ CONTRACT = ComputeContract(
     ),
     work=(
         "kernel: one bincount pass over the N claimed places per bank, O(N + U*vocabulary). "
-        "Stage: each through-plane bank also calls the scalar slab rule once per distinct "
-        "(offset, in-plane) pair of those places, at most N Python calls per other acquisition; "
-        "there is no vectorized twin yet, so that call count is the reference's honest bound"
+        "Stage: each through-plane bank also evaluates the slab rule once per claimed place for "
+        "each other acquisition it is written against, N evaluations through the array twin, "
+        "counted in the ledger as slab_places on vectors.produced; an acquisition whose bank is "
+        "unavailable evaluates nothing and adds none. Each other acquisition also gets one "
+        "gap_fraction read from its own stack, O(slices), recorded on the reading as slab_gaps"
     ),
     parallel_unit="selected plane (not concurrently enabled)",
     reference=(
-        "count_by_extent; the slab rule's oracle is slab_code, which is called and "
-        "never re-implemented"
+        "count_by_extent; the slab rule's kernel is slab_codes_reference in "
+        "knee.lenses.slab_kernels, pinned element by element to the scalar slab_code, which "
+        "stays the oracle"
     ),
     proof_gate=(
         "direct intent tests against np.bincount of each extent's mask; "
@@ -170,7 +196,7 @@ CONTRACT = ComputeContract(
 )
 
 
-@contracted(CONTRACT)
+@contracted
 def count_by_extent(
     extent: np.ndarray, values: np.ndarray, extents: int, vocabulary: int
 ) -> np.ndarray:
@@ -204,17 +230,20 @@ def stage_code(
     """The stage's own code: ownership's silence when it is not `present`, else the field's.
 
     Ownership says whether any object was individuated; the interiors then say whether the extents
-    can be read. A silence is passed on unchanged, so `predecessor_empty` from a field that claimed
-    nothing stays `predecessor_empty` and is never renamed. A code outside the shared vocabulary is
-    `invalid_count`, an argument that cannot be read, and never a silence about the study.
-    `present` needs ownership present, the interiors handed over, their labels readable and at
-    least one extent.
+    can be read. A silence, as `knee.absence.is_silence` names it, is passed on unchanged, so
+    `predecessor_empty` from a field that claimed nothing stays `predecessor_empty` and is never
+    renamed. Any other code that is not `present` -- `invalid_count` itself, or a string outside the
+    shared vocabulary -- is `invalid_count`, an argument that cannot be read, and never a silence
+    about the study. `present` needs ownership present, the interiors handed over, their labels
+    readable and at least one extent.
 
     post: __return__ in CODES
     post: __return__ != "present" or (ownership_code == "present" and subject_returned and subject_readable and extents > 0)
     """
+    if is_silence(ownership_code):
+        return ownership_code
     if ownership_code != "present":
-        return ownership_code if ownership_code in CODES else "invalid_count"
+        return "invalid_count"
     return absence_code(
         construction_built=True,
         predecessor_returned=subject_returned,
@@ -239,10 +268,15 @@ class _Count:
     why: str
 
 
-def _silence(code: str, why: str) -> BundlesReading:
-    """The reading that holds no profile, naming the silence met."""
+def _silence(code: str, why: str, backend: str) -> BundlesReading:
+    """The reading that holds no profile, naming the silence met and the backend asked for."""
     return BundlesReading(
-        code=code, why=why, subject_kind=SUBJECT_KIND, planes_read=1, profiles=()
+        code=code,
+        why=why,
+        subject_kind=SUBJECT_KIND,
+        planes_read=1,
+        profiles=(),
+        backend=backend,
     )
 
 
@@ -466,27 +500,68 @@ def _edge_arrays(
     return regions, kinds, traces
 
 
-def _came_out(interiors: object, extent_labels: np.ndarray, extents: int) -> _Count:
-    """How each object came out: its edges by kind and by profile trace code, from the objects stage.
+def _markers(interiors: object, shape: tuple[int, ...]) -> np.ndarray | None:
+    """The objects stage's markers when they read as one integer or boolean field of this shape."""
+    markers = getattr(interiors, "markers", None)
+    if (
+        isinstance(markers, np.ndarray)
+        and markers.shape == shape
+        and markers.dtype.kind in "biu"
+    ):
+        return markers
+    return None
+
+
+def _came_out(
+    interiors: object,
+    claimed: np.ndarray,
+    extent_labels: np.ndarray,
+    extent_of: np.ndarray,
+    extents: int,
+) -> _Count:
+    """How each object came out: its edges by kind and trace code, and its seeds, from the objects stage.
 
     The provenance bank (§6.6). An edge is attributed to an extent through `edge_regions`, the label
     of the claimed place the edge leaves, and every region must be one of the extents profiled: an
     edge naming a region the labels do not hold is a record that disagrees with itself, and the
     bank is then carried unavailable rather than counted over a subset.
+
+    The seeds (task 3.2) are the places inside the extent where `markers` is non-zero: the h-maxima
+    plateaus the territory grew from. They are gathered at the claimed places, in the order every
+    other bank uses, so `extent_of` indexes them. Markers that are not an integer or boolean field
+    of the labels' shape cannot be counted, and then the WHOLE bank is carried unavailable and names
+    the markers, whether or not the edges also failed: a seeds row of zeros would assert a reading
+    that was never made.
     """
-    names = tuple(f"edge_kind:{name}" for name in EDGE_KINDS) + tuple(
-        f"trace:{name}" for name in TRACE_CODES
+    names = (
+        tuple(f"edge_kind:{name}" for name in EDGE_KINDS)
+        + tuple(f"trace:{name}" for name in TRACE_CODES)
+        + ("seeds",)
     )
-    written = "counts of this object's edges by kind and by profile trace code, from the objects stage"
+    written = (
+        "counts of this object's edges by kind and by profile trace code, and of the seed "
+        "places it grew from, from the objects stage"
+    )
     edges = _edge_arrays(interiors)
-    if edges is None:
+    markers = _markers(interiors, claimed.shape)
+    if edges is None or markers is None:
+        unread: list[str] = []
+        if edges is None:
+            unread.append(
+                "the objects stage's edge records were not handed over as three equal integer lists"
+            )
+        if markers is None:
+            unread.append(
+                "the objects stage's markers were not handed over as an integer or boolean "
+                "field of the labels' shape, so its seeds cannot be counted"
+            )
         return _Count(
             "came_out",
             "objects",
             names,
             bank_status_code(False, False),
             None,
-            "the objects stage's edge records were not handed over as three equal integer lists",
+            "; ".join(unread),
         )
     regions, kinds, traces = edges
     where = np.searchsorted(extent_labels, regions)
@@ -510,10 +585,14 @@ def _came_out(interiors: object, extent_labels: np.ndarray, extents: int) -> _Co
         )
     by_kind = count_by_extent(where, kinds, extents, max(EDGE_KINDS.values()) + 1)
     by_trace = count_by_extent(where, traces, extents, max(TRACE_CODES.values()) + 1)
+    seeded = count_by_extent(
+        extent_of, (markers[claimed] != 0).astype(np.uint8), extents, 2
+    )
     table = np.concatenate(
         (
             by_kind[:, list(EDGE_KINDS.values())],
             by_trace[:, list(TRACE_CODES.values())],
+            seeded[:, 1:],
         ),
         axis=1,
     )
@@ -577,22 +656,38 @@ def _stack(
     return normal, position, heights
 
 
+def _pitch(centres: np.ndarray, thickness: float) -> float:
+    """An acquisition's pitch: the median gap between its slice centres, or its thickness for one.
+
+    `centres` are the slice heights along the normal, sorted ascending. With a single slice the
+    pitch is taken to be the thickness, so that no gap exists. The ONE derivation, used by the
+    through-plane codes and by the gap fraction alike. Callers hold `np.errstate`: heights large
+    enough to overflow a difference make an infinite pitch, which the slab rule and `gap_fraction`
+    each refuse by name.
+    """
+    return float(np.median(np.diff(centres))) if centres.size >= 2 else thickness
+
+
 def _slab_codes(
     place_lps: np.ndarray,
     stack: tuple[np.ndarray, np.ndarray, np.ndarray],
     frame: PlaneFrame,
     shape: tuple[int, ...],
     thickness: float,
+    backend: str,
 ) -> np.ndarray | None:
     """The slab code of every place against ONE other acquisition, as indices into SLAB_CODES.
 
     Each place is matched to the nearest slice centre along that acquisition's normal (a tie goes
     to the lower slice), its signed offset from that slice's position is `(place - position) .
-    normal`, and `slab_code` -- the one decision, called here and never re-implemented -- names what
-    that slab did with it, given the acquisition's own thickness, its pitch (the median gap between
-    its slice centres, or its thickness when it has one slice, so that no gap exists) and whether
-    the place falls inside its in-plane rectangle [0, R-1] x [0, C-1]. The rule depends only on
-    the offset and that flag, so it is called once per distinct pair, not once per place.
+    normal`, and the slab rule names what that slab did with it, given the acquisition's own
+    thickness, its pitch (`_pitch`, the same one the gap fraction uses) and whether the place falls
+    inside its in-plane rectangle [0, R-1] x [0, C-1]. The rule is applied to every place in ONE
+    call of its array twin, `knee.lenses.slab_kernels.slab_codes`, on the backend the request
+    names. That twin restates the scalar `slab_code` over arrays and is pinned to it element by
+    element, so `slab_code` stays the oracle and is not called here. The twin's refusals -- a
+    backend outside the registry, or one that cannot be built -- are raised by name and are not
+    caught here.
 
     None when the other acquisition's frame cannot place these places. A coordinate too large to
     hold is a non-finite offset, which the rule names `invalid_geometry`; it is no warning here.
@@ -618,23 +713,8 @@ def _slab_codes(
         nearer = np.abs(along - centres[below]) <= np.abs(along - centres[above])
         nearest = order[np.where(nearer, below, above)]
         offset = (place_lps - position[nearest]) @ normal
-        pitch = float(np.median(np.diff(centres))) if centres.size >= 2 else thickness
-        codes = np.zeros(offset.shape, dtype=np.uint8)
-        for flag in (True, False):
-            chosen = in_plane == flag
-            if not chosen.any():
-                continue
-            distinct, back = np.unique(offset[chosen], return_inverse=True)
-            named = np.fromiter(
-                (
-                    _SLAB_INDEX[slab_code(float(value), thickness, pitch, flag)]
-                    for value in distinct
-                ),
-                dtype=np.uint8,
-                count=distinct.size,
-            )
-            codes[chosen] = named[back]
-    return codes
+        pitch = _pitch(centres, thickness)
+        return slab_codes(offset, thickness, pitch, in_plane, backend)
 
 
 def _slab_table(
@@ -643,6 +723,7 @@ def _slab_table(
     extents: int,
     series: object,
     measurement: object,
+    backend: str,
 ) -> tuple[np.ndarray | None, str]:
     """What one OTHER acquisition's slabs did about every claimed place, or why it cannot say.
 
@@ -650,6 +731,10 @@ def _slab_table(
     acquisition's slice geometry, plane frame, plane and slice thickness -- so a bank is never
     written against a geometry that was not read. The counting is `count_by_extent` over the codes
     `_slab_codes` names.
+
+    The array twin's refusals, `ValueError` for a backend outside the registry and `RuntimeError`
+    for one that cannot be built, are caught here and nowhere else, and become the bank's reason by
+    name. The stage stays total, and it never runs the reference in place of a refused backend.
     """
     if place_lps is None:
         return (
@@ -668,7 +753,13 @@ def _slab_table(
     thickness = _finite(getattr(measurement, "slice_thickness_mm", None))
     if thickness is None:
         return None, "the other acquisition's slice thickness was not read"
-    codes = _slab_codes(place_lps, stack, frame, plane.shape, thickness)
+    try:
+        codes = _slab_codes(place_lps, stack, frame, plane.shape, thickness, backend)
+    except (ValueError, RuntimeError) as error:
+        return (
+            None,
+            f"{error}: the through-plane bank is not written against a backend the registry refused",
+        )
     if codes is None:
         return None, "the other acquisition's frame could not place this plane's places"
     return count_by_extent(extent_of, codes, extents, len(SLAB_CODES)), ""
@@ -698,12 +789,23 @@ def _through_plane_counts(
     extent_of: np.ndarray,
     extents: int,
     acquisitions: tuple[tuple[str, object, object], ...],
-) -> list[_Count]:
-    """One through-plane bank per OTHER acquisition, in the order they were handed over."""
+    backend: str,
+) -> tuple[list[_Count], int]:
+    """One through-plane bank per OTHER acquisition, in the order they were handed over.
+
+    Also the counted work of those banks: the places the slab kernel evaluated, which is every
+    claimed place for each acquisition whose bank was written and none for one that was carried
+    unavailable, whatever the reason. A refused backend therefore adds nothing.
+    """
     place_lps = _places_in_patient(frame, claimed) if acquisitions else None
     counts = []
+    evaluated = 0
     for uid, series, measurement in acquisitions:
-        table, why = _slab_table(place_lps, extent_of, extents, series, measurement)
+        table, why = _slab_table(
+            place_lps, extent_of, extents, series, measurement, backend
+        )
+        if table is not None:
+            evaluated += int(extent_of.size)
         counts.append(
             _Count(
                 f"through_plane:{uid}",
@@ -717,7 +819,42 @@ def _through_plane_counts(
                 else why,
             )
         )
-    return counts
+    return counts, evaluated
+
+
+def _slab_gap(series: object, measurement: object) -> float | None:
+    """One other acquisition's gap fraction from its own slice thickness and its pitch, or None.
+
+    The pitch is `_pitch`'s, the one the through-plane bank uses, so the number and the bank can
+    never disagree about the stack. None when the thickness or the slice geometry was not read;
+    when either extent is not positive, because `gap_fraction` states `> 0` for both and the slab
+    rule refuses such a geometry too, so a number here would contradict the bank; and when
+    `gap_fraction` refuses the geometry. Its `ValueError` is a non-finite pitch, which an
+    overflowing difference of huge heights can make. It reads nothing of this plane, of the other
+    acquisition's frame or of its plane: the fraction is a property of its stack alone.
+    """
+    stack = _stack(getattr(series, "geometry", None))
+    thickness = _finite(getattr(measurement, "slice_thickness_mm", None))
+    if stack is None or thickness is None:
+        return None
+    with np.errstate(all="ignore"):
+        pitch = _pitch(np.sort(stack[2]), thickness)
+    if not (thickness > 0.0 and pitch > 0.0):
+        return None
+    try:
+        return gap_fraction(thickness, pitch)
+    except ValueError:
+        return None
+
+
+def _slab_gaps(
+    acquisitions: tuple[tuple[str, object, object], ...],
+) -> tuple[tuple[str, float | None], ...]:
+    """The gap fraction of every OTHER acquisition, as (uid, fraction), in the order handed over."""
+    return tuple(
+        (uid, _slab_gap(series, measurement))
+        for uid, series, measurement in acquisitions
+    )
 
 
 def _profiles(
@@ -765,37 +902,44 @@ def _write(
     lenses: object,
     measurements: object,
     acquisitions: tuple[tuple[str, object, object], ...],
-) -> tuple[BundlesReading, int]:
-    """The reading, and how many places of the lens maps it read to write it."""
+    backend: str,
+) -> tuple[BundlesReading, int, int]:
+    """The reading, the lens-map places it read, and the places the slab kernel evaluated.
+
+    The first count is the places of the lens maps read to write the reading. The second is the
+    places the slab kernel evaluated, summed over every other acquisition whose bank was written.
+    """
     standing = _ownership_standing(ownership)
     if standing != "present":
         code = stage_code(standing, True, True, 0)
-        return _silence(code, _ownership_why(ownership, code)), 0
+        return _silence(code, _ownership_why(ownership, code), backend), 0, 0
     interiors = getattr(measurements, "interiors", None)
     labels = _labels(interiors)
     if labels is None:
         code = stage_code("present", interiors is not None, False, 0)
-        return _silence(code, _SUBJECT_WHY.get(code, "the extents cannot be read")), 0
+        why = _SUBJECT_WHY.get(code, "the extents cannot be read")
+        return _silence(code, why, backend), 0, 0
     claimed = labels > 0
     extent_labels, extent_of = np.unique(labels[claimed], return_inverse=True)
     extents = int(extent_labels.size)
     code = stage_code("present", True, True, extents)
     if code != "present":
-        return _silence(code, _SUBJECT_WHY.get(code, "the extents cannot be read")), 0
+        why = _SUBJECT_WHY.get(code, "the extents cannot be read")
+        return _silence(code, why, backend), 0, 0
     places = np.bincount(extent_of, minlength=extents)
     counts = _lens_counts(
         lenses, _plane_index(measurements), labels.shape, claimed, extent_of, extents
     )
-    counts.append(_came_out(interiors, extent_labels, extents))
-    counts.extend(
-        _through_plane_counts(
-            claimed,
-            getattr(measurements, "frame", None),
-            extent_of,
-            extents,
-            acquisitions,
-        )
+    counts.append(_came_out(interiors, claimed, extent_labels, extent_of, extents))
+    through_plane, slab_places = _through_plane_counts(
+        claimed,
+        getattr(measurements, "frame", None),
+        extent_of,
+        extents,
+        acquisitions,
+        backend,
     )
+    counts.extend(through_plane)
     lens_read = any(
         c.source_stage == "lenses" and c.status == "written" for c in counts
     )
@@ -808,8 +952,10 @@ def _write(
         subject_kind=SUBJECT_KIND,
         planes_read=1,
         profiles=_profiles(extent_labels, places, counts),
+        backend=backend,
+        slab_gaps=_slab_gaps(acquisitions),
     )
-    return reading, int(places.sum()) if lens_read else 0
+    return reading, (int(places.sum()) if lens_read else 0), slab_places
 
 
 def read_bundles(
@@ -817,6 +963,7 @@ def read_bundles(
     lenses: object,
     measurements: object,
     others: tuple[object, ...] = (),
+    backend: str = "reference",
 ) -> BundlesReading:
     """Write every object's profile, or name the silence met instead.
 
@@ -826,22 +973,32 @@ def read_bundles(
     ownership's own code with no profile. Each bank counts the one quantity it names, and a bank
     whose source is absent is carried `unavailable` with the reason, never as rows of zero.
 
-    Every event is recorded here, once, on every path: the route reaches this stage unconditionally
-    and a silent stage must still say what it read.
+    `backend` names the kernel the through-plane banks use for the slab rule, "reference" or "jit",
+    and is recorded on the reading as requested. A backend the registry refuses makes those banks
+    unavailable with the refusal by name; the stage neither raises nor runs the reference in its
+    place, and the banks that need no kernel are unaffected.
+
+    The reading also carries `slab_gaps`: one gap fraction per other acquisition, read from that
+    acquisition's own stack alone, so it does not depend on the backend or on this plane's frame.
+
+    `vectors.produced` is recorded on every path: the route reaches this stage unconditionally
+    and a silent stage must still say what it produced. It carries the counted work of the
+    through-plane banks, `slab_places`: the places the slab kernel evaluated. A consumption is
+    recorded only for a record handed over (`specs/route-composition`, task 7.14): a None
+    predecessor was not produced, and the reading's own code names that silence.
     """
     acquisitions = _acquisitions(others)
-    reading, places = _write(ownership, lenses, measurements, acquisitions)
-    ledger.record(
-        "ownership.consumed_by.vectors", readings=1 if ownership is not None else 0
+    reading, places, slab_places = _write(
+        ownership, lenses, measurements, acquisitions, backend
     )
-    ledger.record(
-        "lenses.consumed_by.vectors",
-        readings=1 if lenses is not None else 0,
-        places=places,
-    )
-    ledger.record(
-        "objects.consumed_by.vectors", readings=1 if measurements is not None else 0
-    )
+    if ownership is not None:
+        ledger.record("ownership.consumed_by.vectors", readings=1)
+    if lenses is not None:
+        ledger.record("lenses.consumed_by.vectors", readings=1, places=places)
+    if measurements is not None:
+        ledger.record("objects.consumed_by.vectors", readings=1)
     ledger.record("study.consumed_by.vectors", acquisitions=len(acquisitions))
-    ledger.record("vectors.produced", profiles=len(reading.profiles))
+    ledger.record(
+        "vectors.produced", profiles=len(reading.profiles), slab_places=slab_places
+    )
     return reading

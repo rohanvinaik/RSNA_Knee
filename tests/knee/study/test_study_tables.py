@@ -104,6 +104,22 @@ def test_only_fully_labeled_studies_are_labeled(root: Path) -> None:
     assert split_uids(tables, "train") == ("s1", "s2", "s3")
 
 
+def test_opening_the_corpus_counts_its_shape_once(root: Path) -> None:
+    """Task 7.1a: the shape is the corpus's own reading, made when it opens, read by no decision."""
+    from knee.study.corpus import open_corpus
+
+    corpus = open_corpus(root)
+    assert corpus.shape.labeled == 1
+    assert dict(corpus.shape.studies) == {"train": 3, "test": 1}
+    assert corpus.shape.orphan_series == 1
+    # equal counts sort by the triple, so Axial precedes Sagittal
+    assert corpus.shape.views == (
+        (("Axial", "0", "0"), 1, 1),
+        (("Sagittal", "1", "1"), 1, 1),
+    )
+    assert dict(corpus.shape.reports) == {"present": 3, "blank": 0, "not_given": 0}
+
+
 def test_a_changed_header_is_refused(root: Path) -> None:
     write_csv(root / "test.csv", ("StudyInstanceUID", "Extra"), [["t1", "x"]])
     with pytest.raises(ValueError, match="columns"):

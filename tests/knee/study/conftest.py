@@ -32,9 +32,11 @@ def write_slice(
     spacing: tuple[str, ...] | None = ("0.5", "0.5"),
     instance: int = 1,
     syntax: UID = ExplicitVRLittleEndian,
+    thickness: str | None = "3.0",
 ) -> Path:
     """One uncompressed single-frame MR slice. A geometry tag given as None is left out; any other value is
-    written as given, so a malformed tag can be written on purpose."""
+    written as given, so a malformed tag can be written on purpose. `thickness` is SliceThickness, the
+    same way."""
     meta = FileMetaDataset()
     meta.MediaStorageSOPClassUID = MRImageStorage
     meta.MediaStorageSOPInstanceUID = generate_uid()
@@ -59,6 +61,8 @@ def write_slice(
         ds.ImageOrientationPatient = list(orientation)
     if spacing is not None:
         ds.PixelSpacing = list(spacing)
+    if thickness is not None:
+        ds.SliceThickness = thickness
     ds.PixelData = pixels.tobytes()
     ds.save_as(path, enforce_file_format=True)
     return path

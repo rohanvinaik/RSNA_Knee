@@ -151,12 +151,22 @@ class BoundaryCensus:
         where = np.searchsorted(self.labels, self.pair_labels)
         heights = self.peak_mm[where]
         out = heights - self.pair_saddle_mm[:, None]
-        unread = self.pair_codes != PAIR_CODE_VALUES["read"]
+        # Through `carries_prominence`, the one place the distinction is made (task 7.2): this
+        # method compared the stored value directly and was exactly the drift that function's
+        # docstring warns of. A code value outside the vocabulary carries nothing.
+        names = {value: name for name, value in PAIR_CODE_VALUES.items()}
+        unread = np.array(
+            [
+                not carries_prominence(names.get(int(code), ""))
+                for code in self.pair_codes
+            ],
+            dtype=bool,
+        )
         out[unread] = np.nan
         return handed_on(out)
 
 
-@contracted(CONTRACT)
+@contracted
 def boundary_census(
     labels: np.ndarray,
     distance_mm: np.ndarray,

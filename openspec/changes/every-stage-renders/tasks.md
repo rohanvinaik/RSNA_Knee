@@ -567,15 +567,58 @@ the other changes. The delegation contract at the top of this file governs every
       recorded in a vulture allowlist that names the reason beside the name; or dead, archived under
       its path and never silently deleted. Founder's law on the first class: *"the lack of a
       consumer IS the fucking problem."* Verify by both vulture scopes in the gate.
+      *(Triage 2026-10-12, each by a whole reading and a Serena reference query. CONSUMER BUILT:
+      `STAGES` orders the attendance roster; `route_state` is what `scripts/unit_loop.py` prints
+      the route from; `KINDS` is checked by `Interstice.__post_init__`; `COMPARISONS` is checked
+      by `partition_frames.saved_panels`; `SLICE_CODES` is the vocabulary `read_series` writes
+      from; `carries_prominence` is called by `BoundaryCensus.prominences_mm`, whose inline
+      comparison was the drift its docstring warned of; `LOCAL_ROOT` is the writer's `--root`
+      default and `split_uids` its `--split` (7.7's writer packet); `is_silence` routes
+      `bundles.stage_code`; `gap_fraction` is recorded per other acquisition as
+      `BundlesReading.slab_gaps`; `coil_count` seats the moment-ratio channel count beside the
+      robust one as `RegimeKey.coils_moment` (7.1a's regime packet); `over` and `panels` get
+      their caller from the structural reading (7.1); `GAUSSIAN_SPREAD_RATIO` and
+      `parted_more_by` get theirs from the drawers (7.1, drawer packet). DYNAMIC CONSUMER, in
+      `vulture_allowlist.py` with its location: `trace_points_rc`, the six regime fields, the
+      two conversation label maps, the six per-exchange arrays, the two Hamilton nodes, the
+      seven `ComputeContract` fields, `elapsed_ns`. CONSUMER OWED AND VISIBLE IN THE GATE BY
+      DESIGN: `was_measured` and `READ_STANDINGS` (the conjunction bank, unavailable while the
+      normalisation is the founder's), `signal_squared` (the local normalisation), `KAGGLE_ROOT`
+      (knee-object-model 6.2, DEPLOY). DEAD, REMOVED WITH THE REASON: `QUIET_SHARE`, whose comment
+      called it an argument to `read_regime`, which takes none; the valley replaced its rule.
+      `seed_quantile` was a parameter the `structure` probe declared and never read; it goes with
+      the probe. `declared_contracts` and `decoder_plugins` get their consumer in the receipt
+      once the writer's decomposition lands.)*
 - [ ] 7.3 **The compute contracts are read by a tool.** Every `ComputeContract` is declared on a
       kernel and read by nothing. The receipt carries each kernel's contract beside the ledger's
       counted work for that run, so the declared `work` and the measured count sit in one record
       where a reader can compare them. A budget stays undeclared: it is a bar.
-- [ ] 7.4 **The real run's composition is a verb.** The producer/consumer check the lead ran with a
+      *(HALF 2026-10-12: `contracted` records every kernel it decorates and `declared_contracts()`
+      returns the read-only view (builder, read whole by the lead; re-declaring the same contract
+      under the same key is idempotent, a different one raises `duplicate_contract_key`). The
+      receipt's `compute_contracts` block lands with the writer's decomposition.)*
+- [x] 7.4 **The real run's composition is a verb.** The producer/consumer check the lead ran with a
       scratch probe becomes `scripts/composition_check.py <run>` and `just composition <run>`: every
       `<stage>.produced` has a consumer, no consumer lacks a producer, and the conversation precedes
       ownership, read from the receipt's ledger. Advisory in the gate like `places`; run after every
       real run and its output kept with the measurement record.
+      *(DONE 2026-10-12: on `data/measurements/composition-20261012` it reads `COMPOSITION:
+      composed`, twelve produced events all consumed but `output`, no phantom, conversation at 47
+      before ownership at 53; `objects.boundary_census` is listed as in neither vocabulary. The
+      builder's additions, accepted: an `ownership_absent` order code, every conversation index
+      listed, the last conversation event before the first ownership one, refusals for an empty
+      ledger or studies list and a `refused:<code>` final line.)*
+- [ ] 7.11 **The one contract form becomes the plain decorator, measured.** Declared 2026-10-12
+      from `measurements/detective-call-form-decorator-20261012.md`: a call-form decorator makes
+      Detective add two mutants it cannot build and return UNGATEABLE for ANY function under it,
+      while a plain decorator converges; every kernel here carries `@contracted(CONTRACT)`, so the
+      four UNGATEABLE standings were this syntax and never array shapes. The one form (task 0.3,
+      the founder: "only one") keeps its structure — one module-level `CONTRACT`, applied on the
+      reference — and changes its spelling to `@contracted`, which reads the module's `CONTRACT`
+      and refuses `contract_undeclared` when there is none; the places check verifies the new
+      idiom and refuses the old. Every site migrates in one commit once the builders are off
+      their files. Verify by converging `count_by_extent`, `footprint_labels_reference`,
+      `place_codes_reference` and `read_ownership` again and recording what they now return.
 - [ ] 7.5 **6.3a built.** The edge-to-piece translation (the edge point minus half the sign of its
       normal, exact) so `read_pairings` runs on the concurrent and conditional parses: one unit, its
       contract, its pure decision pinned two-sign; the relations record carries one pairing reading
@@ -597,9 +640,68 @@ the other changes. The delegation contract at the top of this file governs every
       from the declared dependencies with `uv lock`, under the global repo-hygiene reference, if
       7.1 and 7.2 leave no production import of either. The two `src` ty diagnostics fixed; the
       three in tests read and either fixed or recorded with their reason.
-- [ ] 7.9 **The profile read.** The `just profile-tree` output of the one command read whole for
+- [x] 7.9 **The profile read.** The `just profile-tree` output of the one command read whole for
       work repeated across stages, the audit's own class of defect; each instance found becomes a
       7.x task here; counted work per stage reported from the ledger beside it.
+      *(DONE 2026-10-12 with `just profile-calls`, read whole:
+      `measurements/profile-20261012.md`. No stage recomputes another's work; the one finding is
+      7.10. The writer's compression is a quarter of the wall time and the route is 5.5 s of 8.3 s.)*
+- [ ] 7.10 **The slab rule's vectorised twin.** Measured 2026-10-12: the through-plane bank calls
+      the scalar `slab_code` 1,888,948 times on the real study, 2.75 s of `run_study`'s 5.47 s, from
+      a generator in `bundles._slab_codes`. The house rule (AGENTS.md, override 2): a reference
+      first, then an accelerated twin that answers to SAME. The founder, 2026-10-12, on this
+      finding: *"yeah, JIT/C++ for memory management"* — so the twin is a **Numba JIT kernel**
+      over arrays of signed offsets and in-plane flags (`fastmath=False`, `nogil=True`, as the
+      profile and raster twins are), with `slab_code` as its oracle on every captured input (codes
+      must match exactly, boundary cases to the reference), carried under the existing `CONTRACT`
+      as its twin, selected by the backend the request names and never silently; the reference
+      stays. C/C++ is for memory-bound work, which this loop is not; the only memory-bound cost
+      the profile shows is the writer's compression, the artifact's and not a kernel's. Verify with
+      a SAME comparison over the real study's receipts and the counted calls in the ledger.
+
+The four below were declared 2026-10-12 from the Codex re-review of the tree and the gate run that
+checked it, each confirmed by the lead reading the enclosing unit whole before declaring. The
+founder's go, the same day: *"we have code, each of the pieces of code is capable of doing useful
+things, I want this to be a coherent and functional pipeline that works to perform the intended
+task as a single artifact (to the extent that it has been built thus far)"*.
+
+- [ ] 7.12 **The slab lookup's shared-frame precondition.** Confirmed in `bundles._slab_codes`:
+      the in-plane test projects every place into the other acquisition's SELECTED plane frame
+      while the depth test picks the nearest slice, so one slice's in-plane origin is applied to
+      the whole stack, and nothing in Chapter 1 checks that slice origins differ only along the
+      normal. Codex's counterexample (displaced origins: a measured place reads `outside_frame`,
+      an outside place `measured`) follows from the code; its prevalence in the corpus is
+      unmeasured. Repair, no new bar: project each place against its NEAREST slice's own origin
+      with the shared basis, which is exact for origins; Chapter 1 measures and records the
+      in-plane spread of the slice origins beside `orientation_spread`, measured and never judged;
+      the orientation spread is the stated precondition for sharing the basis and is carried in
+      the record. Verify by a must-not test with displaced origins and by the geometry record over
+      the 58 for prevalence.
+- [ ] 7.13 **The output reader is total, and complete means the twelve.** Confirmed in
+      `read_output`: twelve rows of index 0 pass as complete; a non-numeric index or a row without
+      a reason raises, against the docstring's promise that nothing raises; the CSV path would
+      refuse the first case by column set but the companion record and the stage code claim
+      completeness. The pinned decision `output_code` is right and what feeds it was unchecked.
+      Repair: a row reader that returns None for anything unreadable; completeness is the twelve
+      distinct indices, each once; the count is -1 otherwise so the stage names `invalid_count`.
+      Two must-not tests. `output_code` unchanged.
+- [ ] 7.14 **Consumption is recorded only for a record handed over.** Confirmed in
+      `read_ownership_members`: `conversation.consumed_by.ownership` is recorded with the
+      conversation off, parses zero, and `just composition` reports `phantom:conversation` on
+      such a run. A zero-parse consumption of a conversation that ran and a conversation that
+      never ran are different silences and the ledger must keep them apart. The rule, written
+      into `specs/route-composition/spec.md`: a consumer records `<producer>.consumed_by.
+      <consumer>` only when a record (not None) was handed over; a None predecessor records
+      nothing, and its silence stays in the stage's `why`. Every consumer audited against it.
+      Verify by a conversation-off ledger test and `just composition` reading `composed` on a
+      `--no-conversation` run.
+- [ ] 7.15 **The slab rule has one statement, and production runs it.** Measured in the gate
+      after 7.10: vulture lists `slab_code` with no production caller, because
+      `slab_codes_reference` restates its arithmetic instead of calling it, so the rule has two
+      statements pinned to each other only by tests. Repair: the reference calls `slab_code` per
+      place, the decision applied and slow by design; the compiled body is the twin, pinned SAME
+      to the reference on captured and boundary inputs, with the element-wise pin to the scalar
+      kept. Verify by both vulture scopes and the SAME test.
 
 ## Beside this change, unparked rather than duplicated
 

@@ -13,13 +13,14 @@ extent of the selected plane, read off `interiors.labels`.
 from types import SimpleNamespace
 
 import numpy as np
+import pytest
 
 from knee.absence import CODES as ABSENCE_CODES
 from knee.collapse.physical import PlaneFrame
 from knee.lenses.digits import DIGIT_CODES
 from knee.lenses.members import STANDING_CODES
 from knee.lenses.places import MEMBERS, read_lenses
-from knee.lenses.slabs import SLAB_CODES
+from knee.lenses.slabs import SLAB_CODES, gap_fraction
 from knee.objects.interiors import EDGE_KINDS, TRACE_CODES, read_interiors
 from knee.ownership.claims import read_ownership_members
 from knee.study.series import SeriesGeometry
@@ -94,12 +95,16 @@ def _other(uid: str, heights, thickness: float = 3.0, shape=(24, 24)):
     return series, measurement
 
 
-def _bundle(plane=None, key=BOTH, others=(), z: float = 0.0):
+def _bundle(
+    plane=None, key=BOTH, others=(), z: float = 0.0, backend: str = "reference"
+):
     plane = _plane() if plane is None else plane
     interiors = _interiors(plane)
     ownership = read_ownership_members(interiors, None)
     lenses = read_lenses(plane[None], key)
-    reading = read_bundles(ownership, lenses, _measurement(plane, interiors, z), others)
+    reading = read_bundles(
+        ownership, lenses, _measurement(plane, interiors, z), others, backend=backend
+    )
     return reading, interiors, lenses
 
 
@@ -162,9 +167,52 @@ def test_came_out_bank_counts_the_objects_edge_kinds_and_trace_codes() -> None:
             assert bank.rows[f"trace:{name}"] == int(
                 (mine & (interiors.trace_codes == value)).sum()
             )
-        assert set(bank.rows) == {f"edge_kind:{n}" for n in EDGE_KINDS} | {
-            f"trace:{n}" for n in TRACE_CODES
-        }
+        assert set(bank.rows) == (
+            {f"edge_kind:{n}" for n in EDGE_KINDS}
+            | {f"trace:{n}" for n in TRACE_CODES}
+            | {"seeds"}
+        )
+
+
+def test_came_out_bank_counts_the_objects_seeds() -> None:
+    """Task 3.2: how the object came out includes its seeds, the prominence-marker places the
+    objects stage grew it from, counted inside the extent and from the markers field only."""
+    reading, interiors, _ = _bundle()
+    assert interiors.markers.shape == interiors.labels.shape
+    for profile in reading.profiles:
+        bank = _bank(profile, "came_out")
+        inside = interiors.labels == profile.index
+        assert bank.rows["seeds"] == int((inside & (interiors.markers != 0)).sum())
+    assert sum(_bank(p, "came_out").rows["seeds"] for p in reading.profiles) >= 2
+
+
+def test_came_out_is_unavailable_when_the_markers_do_not_read_as_this_field() -> None:
+    """MUST NOT: count seeds from a markers field of another shape, or write the bank without them."""
+    plane = _plane()
+    interiors = _interiors(plane)
+    ownership = read_ownership_members(interiors, None)
+    broken = SimpleNamespace(
+        **{
+            name: getattr(interiors, name)
+            for name in ("labels", "edge_regions", "edge_kinds", "trace_codes")
+        },
+        markers=np.zeros((2, 2), dtype=np.int32),
+    )
+    measurement = SimpleNamespace(
+        code="measured",
+        slice_index=0,
+        frame=_frame(),
+        acquired_plane=plane,
+        interiors=broken,
+        slice_thickness_mm=3.0,
+    )
+    reading = read_bundles(ownership, read_lenses(plane[None], BOTH), measurement, ())
+    assert reading.code == "present"
+    for profile in reading.profiles:
+        bank = _bank(profile, "came_out")
+        assert bank.status == "unavailable"
+        assert dict(bank.rows) == {}
+        assert "markers" in bank.why
 
 
 def test_through_plane_bank_consumes_the_slab_rule_for_every_other_acquisition() -> (
@@ -199,6 +247,32 @@ def test_a_place_outside_the_other_acquisitions_frame_is_outside_frame() -> None
         inside = int(((rows <= 3) & (cols <= 3)).sum())
         assert bank.rows["measured"] == inside
         assert bank.rows["outside_frame"] == profile.places - inside
+
+
+def test_the_reading_carries_each_other_acquisitions_gap_fraction() -> None:
+    """Task 7.2: `gap_fraction` is a property of the ACQUISITION that "belongs beside a
+    conjunction as the prior probability that a foreign place falls into nothing" (its own
+    docstring), so the stage records it per other acquisition from that acquisition's thickness
+    and pitch, and None where either was not read. The slab rule's second consumer."""
+    others = (
+        _other("B", [0.0, 10.0], thickness=3.0),
+        _other("C", [0.0, 2.0, 4.0], thickness=4.0),
+    )
+    reading, _, _ = _bundle(others=others)
+    assert dict(reading.slab_gaps) == {"B": gap_fraction(3.0, 10.0), "C": 0.0}
+    series = SimpleNamespace(
+        row=SimpleNamespace(series_uid="D"), geometry=None, volume=None
+    )
+    measurement = SimpleNamespace(
+        code="no_stacked_volume",
+        slice_index=None,
+        frame=None,
+        interiors=None,
+        acquired_plane=None,
+        slice_thickness_mm=None,
+    )
+    reading, _, _ = _bundle(others=((series, measurement),))
+    assert dict(reading.slab_gaps) == {"D": None}
 
 
 def test_unavailable_banks_are_carried_by_name_with_their_reason_and_no_rows() -> None:
@@ -236,6 +310,46 @@ def test_the_ledger_records_what_the_stage_read_and_wrote() -> None:
     )
     assert "ownership.consumed_by.vectors" in events
     assert "objects.consumed_by.vectors" in events
+
+
+def test_the_ledger_counts_the_slab_rules_work_as_places_times_acquisitions() -> None:
+    """Task 7.10: the counted work of the through-plane banks, read from the ledger and never
+    from a profiler: one kernel evaluation per claimed place per other acquisition read."""
+    plane = _plane()
+    interiors = _interiors(plane)
+    ownership = read_ownership_members(interiors, None)
+    lenses = read_lenses(plane[None], BOTH)
+    others = (_other("B", [0.0, 10.0]), _other("C", [0.0, 10.0]))
+    with recording() as run:
+        reading = read_bundles(
+            ownership, lenses, _measurement(plane, interiors), others
+        )
+    events = {event.name: event.counts for event in run.events()}
+    places = sum(p.places for p in reading.profiles)
+    assert places > 0
+    assert events["vectors.produced"]["slab_places"] == 2 * places
+
+
+def test_the_jit_twin_writes_the_same_through_plane_rows_as_the_reference() -> None:
+    """Task 7.10, SAME: the twin is admitted only by agreeing with the reference on every row of
+    every through-plane bank, on a plane that falls in a slab of one acquisition and in the gap
+    of another."""
+    pytest.importorskip("numba")
+    others = (
+        _other("B", [0.0, 10.0]),
+        _other("C", [-2.5, 2.5, 7.5], thickness=4.0),
+    )
+    reference, _, _ = _bundle(others=others, z=1.0, backend="reference")
+    twin, _, _ = _bundle(others=others, z=1.0, backend="jit")
+    assert reference.backend == "reference"
+    assert twin.backend == "jit"
+    assert len(reference.profiles) == len(twin.profiles) >= 2
+    for first, second in zip(reference.profiles, twin.profiles, strict=True):
+        for uid in ("B", "C"):
+            assert dict(_bank(first, f"through_plane:{uid}").rows) == dict(
+                _bank(second, f"through_plane:{uid}").rows
+            )
+            assert _bank(first, f"through_plane:{uid}").status == "written"
 
 
 # ---------------------------------------------------------------- negative
@@ -293,6 +407,21 @@ def test_an_other_acquisition_without_geometry_is_an_unavailable_bank() -> None:
         bank = _bank(profile, "through_plane:C")
         assert bank.status == "unavailable"
         assert dict(bank.rows) == {}
+
+
+def test_a_backend_outside_the_registry_never_falls_back_and_never_raises() -> None:
+    """MUST NOT (task 7.10): a total stage neither raises on a backend it does not know nor runs
+    the reference in its place. The through-plane banks are carried unavailable with the refusal
+    by name; the banks that need no kernel are unaffected; the request is recorded as made."""
+    reading, _, _ = _bundle(others=(_other("B", [0.0, 10.0]),), backend="gpu")
+    assert reading.code == "present"
+    assert reading.backend == "gpu"
+    for profile in reading.profiles:
+        bank = _bank(profile, "through_plane:B")
+        assert bank.status == "unavailable"
+        assert "invalid_backend" in bank.why
+        assert dict(bank.rows) == {}
+        assert _bank(profile, "lens_standing").status == "written"
 
 
 def test_no_profile_ever_names_anatomy_or_a_resemblance() -> None:

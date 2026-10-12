@@ -22,7 +22,7 @@ ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(ROOT / "src"))
 
 from knee.pictures import __file__ as pictures_file
-from knee.pipeline import ROUTE
+from knee.pipeline import route_state
 
 STEPS = (
     (
@@ -218,7 +218,9 @@ def main() -> None:
         for path in Path(pictures_file).parent.glob("*.py")
         if path.stem != "__init__"
     }
-    for stage, state in ROUTE:
+    # The route's declared standing comes through its one accessor (task 7.2), so this script and
+    # the route cannot disagree about what the map is.
+    for stage, state in route_state():
         mark = "renderer module present" if stage in drawn else "NO RENDERER MODULE"
         print(f"  {stage:<16} {state:<12} {mark}")
     print(

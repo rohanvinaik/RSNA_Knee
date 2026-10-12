@@ -9,7 +9,13 @@ import numpy as np
 import pytest
 from conftest import pattern, write_slice
 
-from knee.study.series import WALK_COUNT, read_series, walk_indices
+from knee.study.series import (
+    WALK_COUNT,
+    read_series,
+    selected_slice,
+    slice_thickness,
+    walk_indices,
+)
 from knee.study.tables import SeriesRow
 
 ROW = SeriesRow("study", "series", "1", "1", "Axial")
@@ -194,6 +200,70 @@ def test_an_unstackable_series_keeps_its_slice_codes_and_no_walk(
     assert series.volume is None and series.walk is None
     assert series.walk_indices == ()
     assert series.slice_codes == ("decoded",) * 4
+
+
+def test_the_slice_thickness_is_read_once_here_and_kept_per_slice(
+    tmp_path: Path,
+) -> None:
+    """Task 7.2: the stage that owns the headers reads SliceThickness; the objects stage consumes
+    it from the series instead of opening the header again."""
+    directory = tmp_path / "s"
+    directory.mkdir()
+    # A non-numeric thickness cannot be written to a file at all (pydicom refuses the DS), so
+    # that case is the header-level test's below; here: given, absent, non-positive, given.
+    for name, z, thickness in (
+        ("a", "0", "3.0"),
+        ("b", "1", None),
+        ("c", "2", "-1"),
+        ("d", "3", "0"),
+        ("e", "4", "2.5"),
+    ):
+        write_slice(
+            directory / f"{name}.dcm",
+            pattern(ROWS, COLUMNS, np.uint16),
+            position=("0", "0", z),
+            thickness=thickness,
+        )
+    series = read_series(directory, ROW)
+    assert series.slice_thickness_mm == (3.0, None, None, None, 2.5)
+    assert len(series.slice_thickness_mm) == len(series.slices)
+
+
+def test_slice_thickness_never_invents_a_number() -> None:
+    """MUST NOT: a missing, malformed or non-positive thickness is None, never zero or a default."""
+
+    class Header:
+        def __init__(self, value: object) -> None:
+            self.value = value
+
+        def get(self, _name: str, default: object = None) -> object:
+            return self.value if self.value is not None else default
+
+    for value in (None, "", "abc", "0", "-2", float("nan"), float("inf"), object()):
+        assert slice_thickness(Header(value)) is None
+    assert slice_thickness(Header("3.5")) == 3.5
+    assert slice_thickness(object()) is None
+
+
+def test_the_route_reads_one_selected_slice_by_one_rule() -> None:
+    assert selected_slice(5, None) == 2
+    assert selected_slice(4, None) == 2
+    assert selected_slice(1, None) == 0
+    assert selected_slice(5, 4) == 4
+    assert selected_slice(5, 0) == 0
+
+
+def test_the_selected_slice_is_never_outside_the_stack() -> None:
+    """MUST NOT: read past the end, before the start, or from nothing; a bool is not an index."""
+    assert selected_slice(0, None) is None
+    assert selected_slice(-1, None) is None
+    assert selected_slice(5, 5) is None
+    assert selected_slice(5, -1) is None
+    assert selected_slice(5, True) is None  # type: ignore[arg-type]
+    for count in range(12):
+        for requested in (None, *range(-2, 14)):
+            index = selected_slice(count, requested)
+            assert index is None or 0 <= index < count
 
 
 def test_the_picture_walks_the_same_slices_the_stage_retains(tmp_path: Path) -> None:
