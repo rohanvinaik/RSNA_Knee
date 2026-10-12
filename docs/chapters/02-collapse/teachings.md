@@ -607,6 +607,70 @@ argument, which is the shape of this project's own named failure mode.
    study is brittle; one that does not is a correspondence.** That is checkable, and it is the
    criterion the lead will use rather than a score.
 
+## 2026-10-12 — WHAT "FITTING" ACTUALLY MEANS, and it is narrower than the lead had it
+
+Ruling on the first grading round — show him the digit alphabet and the measured boundary, **or** the
+whole object–interstice–object sentence? His answer: **"Por que no los dos?"** And the correction
+that came with it, which matters more than the ordering:
+
+> "Fable is being too precious about 'not fitting to the problem', but **looking at the output and
+> coming up with arbitrary lenses/analyses that make the \<object> recognition work *is* valid.
+> 'Fitting' would be choosing specific metrics and numbers that work on one image.** It's fine to look
+> at a half-working process, see that one lens isn't quite able to resolve one thing, then come up
+> with a random new lens--'okay, that one, but also subtract this other lens out where it shows up in
+> the fat-bright/fat-dark view, and draw a line when there's a white line that's less than X pixels
+> wide with a "grey" pixel on the "inside" of the object and "black" pixel on the other side'.
+> **Arbitrary, entirely hand-built by looking at the actual image, but it's a *general* lens that
+> applies *anywhere* that pattern appears, and the pattern is about the way the anatomical object
+> shows up in the images generally, not THIS image specifically.**"
+
+> "**Its why I want to see the actual processing output as much as possible; this is how I'll give you
+> the 'Arbitrary' structure that can solve this cleanly. It's on me to not over-fit to a specific
+> image, and I'm pretty good about that.**"
+
+### What this corrects
+
+**The provenance check, as the lead committed it, was wrong.** Both second readers had replaced the
+lead's unreadable generativity bar with: *every threshold has a declared provenance — the series' own
+distribution, or a named design constant — and nothing was set by looking at this study.* That last
+clause forbids the founder's actual design method, under which a constant arrived at by looking at an
+image is legitimate so long as what it encodes is general.
+
+**The line is not where the number came from. It is what the rule is about.**
+
+| legitimate | over-fitting |
+|---|---|
+| a rule about **how the anatomy presents in images generally**, whose constants were found by looking | **specific metrics and numbers that work on one image** |
+| "a white line under X px with grey inside and black outside" — X found by eye, the *pattern* general | a level chosen because it separates this study's territories |
+
+**And the guard is him, by his own statement**, not a mechanical check: *"It's on me to not over-fit to
+a specific image, and I'm pretty good about that."* So the check reports provenance; it never rules
+on generality.
+
+**Which makes rendering the load-bearing channel, not a nicety.** *"This is how I'll give you the
+'Arbitrary' structure that can solve this cleanly."* Every stage's picture is the medium through which
+the oracle supplies the next lens. A stage that does not render is not merely unfinished — it is
+closed to the only input that can improve it.
+
+### The first grading round: both
+
+The alphabet (the digit map with silence drawn as silence; the parse with measured boundary
+distinguished from constructed) **and** the first complete sentence (object–interstice–object with its
+boundary provenance visible). Fable's atoms and Codex's relational unit, together.
+
+## 2026-10-12 — TWO SCAFFOLD RULINGS
+
+**One compute-contract idiom, not two.** His words: *"Oof. Um...hm...I guess only one? Yes it's a bit
+confusing, but knowing you, **the bigger risk is you forgetting that there are two formats than you
+being unable to see if its a module or a function**."* The choice of which is the lead's; the ruling
+is that the codebase carries one.
+
+**The five shelf packages are archived.** His words: *"**Begone, Satan!** Yes, I want the codebase to
+be clean and unambiguous. **I'd rather lose work and have to re-do it than have you be constantly
+confused when you encounter old things we haven't structured properly.**"* So `loop`, `candidates`,
+`cleanup`, `every_object` and `assignment` go to `archive/`, and `ownership` is created fresh as a
+real package rather than inheriting a placeholder. Losing the work is explicitly accepted.
+
 ## 2026-10-12 — EVIDENCE IS EXISTENTIAL, NOT STATISTICAL
 
 Correcting the lead, which had just written that "a parse demonstrated on one study hasn't

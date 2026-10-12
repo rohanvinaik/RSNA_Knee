@@ -86,15 +86,39 @@ It survives as a **design principle** and is replaced, as a check, by what both 
 independently — **read the procedure, not repeated trials**:
 
 > **The provenance check.** Every threshold a lens reads has a declared provenance: either computed
-> from that series' own distribution, or a named design constant (`e` and its kin). Nothing was set
-> by looking at this study. That is a property of the code and the record, readable in **one** run.
+> from that series' own distribution, or a **named design constant declared together with the general
+> pattern it encodes**. That is a property of the code and the record, readable in **one** run.
 
 This is the same thing the founder's addition analogy already says: you confirm long addition by
 inspecting that no step depends on the particular digits, then watching it run once.
 
+**Corrected 2026-10-12 by the founder, because both readers drafted it too strictly.** Their version
+ended "and nothing was set by looking at this study" — which forbids his actual design method. His
+ruling:
+
+> "looking at the output and coming up with arbitrary lenses/analyses that make the `<object>`
+> recognition work **is** valid. **'Fitting' would be choosing specific metrics and numbers that work
+> on one image.** … 'draw a line when there's a white line that's less than X pixels wide with a
+> "grey" pixel on the "inside" of the object and "black" pixel on the other side'. **Arbitrary,
+> entirely hand-built by looking at the actual image, but it's a *general* lens that applies
+> *anywhere* that pattern appears, and the pattern is about the way the anatomical object shows up in
+> the images generally, not THIS image specifically.**"
+
+So **the line is not where a number came from — it is what the rule is about.** A constant found by
+eye is legitimate when the rule it serves describes how the anatomy presents in images *generally*;
+it is over-fitting when it is a value that happens to separate *this* study. The check reports
+provenance and never rules on generality, **because the guard is him**: *"It's on me to not over-fit
+to a specific image, and I'm pretty good about that."*
+
 **It is necessary and not sufficient**, which only Codex caught: *"absence of retuning alone does not
 establish generativity: a fixed procedure can consistently fail to perform its promised
 association."* So a clean provenance check never shows that a lens works — only that it is not tuned.
+
+**And this is why rendering is load-bearing rather than a nicety.** *"Its why I want to see the actual
+processing output as much as possible; this is how I'll give you the 'Arbitrary' structure that can
+solve this cleanly."* Every stage's picture is the channel through which the oracle supplies the next
+lens. A stage that does not render is not merely unfinished — it is closed to the only input that can
+improve it.
 
 **And evidence is existential, not statistical.** *"If you have a set of rules that are able to do a
 thing, one that isn't based on fitting/tuning metrics, then if it works properly once, then it works
