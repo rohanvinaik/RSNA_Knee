@@ -21,6 +21,8 @@ from pathlib import Path
 from knee.collapse.regime import RegimeKey, read_regime
 from knee.objects.analysis import AnalysisRequest, SeriesMeasurement, measure_series
 from knee.objects.conversation import ConversationInput, SeriesConversation, converse
+from knee.ownership.claims import OwnershipReading, read_ownership
+from knee.relations.shell import RelationsReading, read_relations
 from knee.study.corpus import Corpus, Study, read_study
 
 # The object model's route, in order, with the state of each stage. A stage is "built" when it runs
@@ -51,6 +53,11 @@ class SeriesRun:
 
     `regime` is the series' regime key when the collapse could read one, else None with `why`
     saying which named code stopped it. A reading not made is never a reading of zero.
+
+    `ownership` and `relations` are ALWAYS present, never None, because both stages are total over
+    a missing predecessor: each returns a record or a named absence from the one shared vocabulary
+    (`knee.absence`). That is what lets the route run end to end whatever is missing, and it is why
+    the absence vocabulary had to be declared before either stage was built.
     """
 
     series_uid: str
@@ -59,6 +66,8 @@ class SeriesRun:
     regime: RegimeKey | None
     why: str
     measurements: SeriesMeasurement | None = None
+    ownership: OwnershipReading | None = None
+    relations: RelationsReading | None = None
 
 
 @dataclass(frozen=True, slots=True)
@@ -105,6 +114,12 @@ def run_study(
                 )
             )
         view = (row.anatomical_plane, row.fluid_sensitive, row.fat_suppression)
+        # Both stages are TOTAL over a missing predecessor, so both run unconditionally and
+        # neither is guarded by an `if`. A guard here would be the route deciding, and the route
+        # decides nothing (SS13.7); the stage names its own silence.
+        interiors = getattr(measurements, "interiors", None)
+        ownership = read_ownership(interiors)
+        relations = read_relations(interiors)
         if series.volume is None:
             runs.append(
                 SeriesRun(
@@ -114,6 +129,8 @@ def run_study(
                     None,
                     "no_stacked_volume",
                     measurements,
+                    ownership,
+                    relations,
                 )
             )
             continue
@@ -125,9 +142,16 @@ def run_study(
                 regime=key,
                 why="read" if key is not None else "regime_unreadable",
                 measurements=measurements,
+                ownership=ownership,
+                relations=relations,
             )
         )
+    # The furthest stage that actually read something. Ownership advances it only where it
+    # returned a reading; relations never does, because its construction is unbuilt and saying
+    # otherwise would claim a stage the build has not reached.
     reached = "collapse" if any(r.regime is not None for r in runs) else "study"
+    if any(r.ownership is not None and r.ownership.code == "present" for r in runs):
+        reached = "ownership"
     conversations = ()
     if analysis is not None and analysis.conversation:
         import numpy as np

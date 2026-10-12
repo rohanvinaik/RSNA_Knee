@@ -49,7 +49,9 @@ def _resolves_nothing():
 def test_a_real_field_partitions_into_claimed_residual_and_unread() -> None:
     reading = read_ownership(_two_bodies())
     assert reading.code == "present"
-    total = reading.claimed_places + reading.residual_places + reading.unavailable_places
+    total = (
+        reading.claimed_places + reading.residual_places + reading.unavailable_places
+    )
     assert total == reading.claims.size
     assert reading.objects >= 1
 
@@ -78,7 +80,9 @@ def test_a_missing_reading_is_named_and_holds_no_places() -> None:
 
 
 def test_a_field_that_cannot_be_read_as_one_field_is_named() -> None:
-    mismatched = _Reading(np.zeros((2, 2), dtype=np.int32), np.zeros((3, 3), dtype=bool))
+    mismatched = _Reading(
+        np.zeros((2, 2), dtype=np.int32), np.zeros((3, 3), dtype=bool)
+    )
     assert read_ownership(mismatched).code == "invalid_count"
 
 
@@ -136,5 +140,7 @@ def test_it_never_raises_however_malformed_the_record() -> None:
 
 
 def test_it_never_reports_present_over_a_field_it_could_not_read() -> None:
-    assert read_ownership(_Reading(np.zeros((2, 2)), np.zeros((2, 2)))).code != "present"
+    assert (
+        read_ownership(_Reading(np.zeros((2, 2)), np.zeros((2, 2)))).code != "present"
+    )
     assert read_ownership(None).code != "present"
