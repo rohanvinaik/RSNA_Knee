@@ -57,24 +57,24 @@ earlier stage produced, identity is not assumed. If it is a kind-label, it is, a
 - [x] 0.2 Teach the place check **both** idioms the codebase uses to declare a compute contract.
 - [x] 0.5 Write the 25 unwritten roles by **reading each module whole**, a reading agent returning
       facts and the lead writing the sentence. Verified: 0 of 83 unwritten, computed by `just places`.
-- [ ] 0.3 **Unify to one compute-contract form.** Founder's ruling 2026-10-12: *"I guess only one? …
+- [x] 0.3 **Unify to one compute-contract form.** Founder's ruling 2026-10-12: *"I guess only one? …
       the bigger risk is you forgetting that there are two formats."* The form is
       `CONTRACT = ComputeContract(...)` at module level **applied with `@contracted(CONTRACT)` on the
       reference kernel** — which `boundaries.py` already does, and which is the only form that both
       names the contract where a reader meets it and attaches it to the function it describes.
       Verify `contracted` still returns the kernel unwrapped (§13.5), and that each module carries
       exactly one contract, on its **reference** and not on its twin or its orchestrator.
-- [ ] 0.3a **Read `interiors.py` and `ledger.py` whole and establish whether their declared
+- [x] 0.3a **Read `interiors.py` and `ledger.py` whole and establish whether their declared
       `CONTRACT` is attached to anything.** `find_referencing_symbols` on `contracted` returns six
       files and neither is among them, while `places.json` declares both as carrying a contract — so
       their contract is likely declared and never attached, which links it to no kernel. Verify by
       reading, not by the reference query alone, since absence there is not proof.
-- [ ] 0.3b Make the obligation structural rather than remembered: a check that every module holding a
+- [x] 0.3b Make the obligation structural rather than remembered: a check that every module holding a
       reference/twin pair declares a `ComputeContract` in the one form. **Enumerate the kernels and
       reference/twin pairs first** — Codex: *"the reported six compute contracts do not establish how
       many contracts are missing; the text does not identify every numeric kernel."* Verify it fails
       on a kernel whose contract is removed, and on one whose contract is declared but unattached.
-- [ ] 0.4 Add `renders` to the place registry and check it: a stage names the picture module that
+- [x] 0.4 Add `renders` to the place registry and check it: a stage names the picture module that
       draws it, and the check verifies that module exists and sits in the drawing layer. Verify a
       stage claiming `built` with no renderer is reported. **Also record, per stage, whether its frame
       arranges values computed from the STUDY or values about the PIPELINE** — Fable: *"a stage is not
