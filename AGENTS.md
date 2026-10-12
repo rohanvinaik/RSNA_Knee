@@ -303,6 +303,7 @@ Repository tooling commands and environment setup: `docs/TOOLING.md` (global own
 | If the task is… | read first | then |
 |---|---|---|
 | **building anything** | **`docs/OBJECT_MODEL.md`** — the project's structure: objects → relations → predicates → output | `openspec/changes/knee-object-model/` for the declared change and its tasks; then the stage's package in `src/knee/` |
+| which thesis section a stage instantiates, and what it still owes | `docs/INSTANTIATION.md` — the section → stage → package join, the three first-order requirements, what a sub-agent may build, and every open ruling that is the founder's | `docs/THESIS_AS_IDEAS.md` for what each section IS in his own words |
 | the way of working | `docs/SPINE.md` — the PI–undergrad pass, the working loop, the oracles, the corpus. **Its chapter table is superseded** | the thesis sections it names, when a stage needs the oracle |
 | the earlier design, dug from as needed | `archive/docs/THEORY_OF_THE_CASE.md` | `archive/docs/book/THE_KNEE.md`, `archive/docs/KNEE_ARCHITECTURE.md` |
 | a tool choice: properties, contracts, layers, profiling, Rust/C, SICP | the global `code-verification.md` → *The toolkit* | `~/Projects/SquishOS/docs/home/TOOLKIT.md` |

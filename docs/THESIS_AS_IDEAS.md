@@ -5,6 +5,10 @@ because it says what the thesis is *for*, which no amount of reading its mechani
 own. Read it before reading any section of the thesis, and before porting anything from the
 cell-tracking build.
 
+> **For what each section actually BUILDS here, read `docs/INSTANTIATION.md`** — the join this page
+> does not carry: section → stage → package → computed state → what it owes, with every open ruling
+> that is the founder's listed rather than invented.
+
 > "This is a thesis of a type of *machine intelligence*, not a pile of scripts. That's why I wrote
 > the thesis that way. The cell tracking and this knee project are completely different projects. Yet
 > they are both perfectly coherent expressions of the thesis. Each section of the thesis isn't about
