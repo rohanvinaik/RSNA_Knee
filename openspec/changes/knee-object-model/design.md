@@ -20,8 +20,15 @@ This also removes the compartment problem. Medial, lateral, intercondylar and pa
 enumerated by which bone surfaces face each other. A compartment cannot be missed, because the bones
 produce it; and none can be hallucinated, because each requires its two walls.
 
-Consequence for the build: **the bones are scaffolding.** Zero of the twelve findings is about a bone
-as such, yet the bones must be resolved first because every other subject is defined against them.
+Consequence for the build: **the bones are scaffolding.** **Ten** of the twelve take a non-bone
+subject; **Fracture and Contusion take a bone.** All twelve depend on the bones, because the other
+ten's subjects are constructed from them, so the bones are resolved first either way.
+
+*(Corrected 2026-10-12. This read "Zero of the twelve findings is about a bone as such", which
+contradicts `docs/OBJECT_MODEL.md`'s own predicate table — Fracture is "break in the structural
+coherence of its outline/interior" on a bone (T1), Contusion is "interior (marrow) signal anomaly,
+boundary intact" on a bone. `OBJECT_MODEL.md` had already been corrected when Codex reported the
+contradiction with both passages quoted; the fix never reached this file.)*
 
 ## Why recognition stays mechanical
 

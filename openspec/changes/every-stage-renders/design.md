@@ -16,17 +16,40 @@ So the change is split by **whether a stage's record shape is settled**:
 
 | shape settled → build the content | shape unsettled → build an honest shell |
 |---|---|
-| lenses, bundles, predicates, output | relations, ownership |
+| lenses, bundles, predicates, output, **ownership** | **relations, until its pairing is constructed** |
 
 A shell runs, returns a named absence saying *why* (not merely *that*), and renders a frame that
 shows it. That is the MVP for a stage whose contract would otherwise be written from a guess.
+
+**Revised 2026-10-12, and the two halves came apart.** The founder ruled that an interstice is
+defined between two `<object>`s — *"a resolvable sub-set of the visual field"* — and not between two
+role-bearing objects, so **identity was never the blocker**. The lead then wrote in task 1.3 that
+relations was therefore constructible "from the facing-pair graph the boundary census already
+computes". **That claim is false**, and the section below says why in source terms. So:
+
+- **`ownership` moves to settled.** Every place claimed by one `<object>` or named `unassigned` is
+  `interiors.labels` read directly: a non-zero label is a claim, a zero inside the available field is
+  the residual. No identity, no new record shape, no construction. It becomes thin and real.
+- **`relations` stays a shell for one more step**, not because of identity but because the pairing it
+  needs is not in any record yet.
 
 **Correction two.** The proposal's earlier claim that an end-to-end run "proves every wire" is false,
 and Codex gives the counterexample: *"a disconnected predicates stage that always returns twelve
 abstentions produces the same final file."* The wires are evidenced by `just graph` showing nothing
 dangling, `just imports` holding the layer contract, and ledger telemetry — never by the artifact.
 
-## Why relations is a shell and not content
+## Why relations still needs a construction step — confirmed in source 2026-10-12
+
+**This survives the founder's `<object>` ruling untouched, because it is not about identity.** The
+lead re-read `interiors.py` whole on 2026-10-12 and both of Fable's claims hold exactly:
+`boundary_edges` does `regions.append(labels[rows, cols])` — the territory's **own** label — and uses
+the neighbour only at `kind[padded[nr, nc] > 0] = EDGE_KINDS["peer_territory"]`, to set the edge
+kind. The far side is genuinely not recorded.
+
+So an interstice between two `<object>`s is constructible **in principle** today, and is **not a
+lookup**: something must first record, per bracketed profile, which territory it reached across the
+dark. That is a real unit of work with its own contract, and writing relations before it exists would
+write a contract that changes under its feet.
 
 The plan said relations' "places between" were *all already measured*. They are not. Fable:
 
