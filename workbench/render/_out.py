@@ -15,6 +15,19 @@ from pathlib import Path
 PROJECT = Path(__file__).resolve().parents[2]
 
 
+class ArgumentRefusal(ValueError):
+    """An argument a hand-typed command supplied wrongly — and NOTHING else.
+
+    A renderer's `main()` catches this and turns it into argparse's exit-2 usage error. It must
+    never catch plain `ValueError`, because the same renderers raise that for
+    `saved_array_digest_mismatch` and for a malformed receipt: a corruption signal dressed as a
+    typo is worse than a crash, since the exit status then says the user mistyped something.
+
+    Declared once here rather than per renderer so every drawing module can tell the two apart the
+    same way (`every-stage-renders` task 4b.1, the second of its two owed defects).
+    """
+
+
 def pictures_dir() -> Path:
     """The directory this run's pictures go in, created if absent."""
     directory = PROJECT / "data" / "pictures"
