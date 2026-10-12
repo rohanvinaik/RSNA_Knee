@@ -14,9 +14,10 @@ contract is worse than none because it reads as a guarantee.
 
 import importlib
 import pkgutil
+from collections.abc import Mapping
 
 import knee
-from knee.compute.contracts import ComputeContract
+from knee.compute.contracts import ComputeContract, contracted
 
 # Every field is load-bearing. `language` records the computation shape's chosen language, which is
 # the decision AGENTS.md override 3 makes at design time; `reference` names the plain implementation
@@ -44,6 +45,150 @@ def _contracts() -> list[tuple[str, ComputeContract]]:
                 if isinstance(value, ComputeContract):
                     found.append((f"{info.name}.{name}", value))
     return found
+
+
+def _modules() -> list[tuple[str, object]]:
+    """Every module under knee/, with its namespace, for the two structural checks below."""
+    found: list[tuple[str, object]] = []
+    for stage in (m.name for m in pkgutil.iter_modules(knee.__path__) if m.ispkg):
+        package = importlib.import_module(f"knee.{stage}")
+        for info in pkgutil.walk_packages(package.__path__, prefix=f"knee.{stage}."):
+            found.append((info.name, importlib.import_module(info.name)))
+    return found
+
+
+def _carried(value: object) -> list[int]:
+    """The contract this callable carries, by identity, or nothing."""
+    attached = getattr(value, "__dict__", None)
+    if not isinstance(attached, Mapping):
+        return []
+    contract = attached.get("__contract__")
+    return [id(contract)] if isinstance(contract, ComputeContract) else []
+
+
+def unattached_contracts(namespace: Mapping[str, object]) -> list[str]:
+    """Contracts declared in a namespace that no callable in it carries.
+
+    This is the check three contracts survived without. `interiors`, `ledger` and
+    `conversation` each declared `CONTRACT = ComputeContract(...)` and never applied it,
+    while `places.json` reported `contract: true` and `contract_disagrees: none` -- both
+    true at MODULE scale, and both blind to the fact that no function carried it. SS13.5
+    wants a contract to be data attached to the measured function; an unattached module
+    constant is a comment.
+
+    Classes are searched as well as functions, because `Ledger.record` is where the
+    telemetry ledger's contract belongs.
+    """
+    attached: list[int] = []
+    for value in namespace.values():
+        attached.extend(_carried(value))
+        if isinstance(value, type):
+            for member in vars(value).values():
+                attached.extend(_carried(member))
+    return sorted(
+        name
+        for name, value in namespace.items()
+        if isinstance(value, ComputeContract) and id(value) not in attached
+    )
+
+
+def reference_twin_without_a_contract(namespace: Mapping[str, object]) -> bool:
+    """Whether this namespace holds a reference/twin pair and declares no contract.
+
+    The pair is recognised by the house's naming -- a `*_reference` kernel beside a
+    `jit_*` builder -- which is a CONVENTION and not a proof. A twin that breaks the
+    convention is invisible to this check, and that limit is stated rather than implied.
+    """
+    references = [
+        name
+        for name, value in namespace.items()
+        if name.endswith("_reference") and callable(value)
+    ]
+    twins = [
+        name
+        for name, value in namespace.items()
+        if name.startswith("jit_") and callable(value)
+    ]
+    if not (references and twins):
+        return False
+    return not any(isinstance(value, ComputeContract) for value in namespace.values())
+
+
+def _probe() -> ComputeContract:
+    return ComputeContract(
+        kind="probe",
+        language="python reference",
+        reads="one int",
+        writes="one int",
+        allocation="none",
+        work="one addition",
+        parallel_unit="none",
+        reference="kernel itself",
+        proof_gate="this test",
+    )
+
+
+def test_every_declared_contract_reaches_its_kernel() -> None:
+    """A contract that is declared and never attached links to nothing it describes."""
+    offenders = [
+        f"{name}.{declared}"
+        for name, module in _modules()
+        for declared in unattached_contracts(vars(module))
+    ]
+    assert not offenders, (
+        f"these contracts are declared and attached to no callable: {offenders}. "
+        "Apply it with @contracted(CONTRACT) to the kernel its `reference` field names."
+    )
+
+
+def test_every_reference_twin_pair_declares_a_contract() -> None:
+    """A twin is admitted only against a named reference, so the pair owes a contract."""
+    offenders = [
+        name
+        for name, module in _modules()
+        if reference_twin_without_a_contract(vars(module))
+    ]
+    assert not offenders, (
+        f"these modules hold a reference/twin pair and declare no contract: {offenders}"
+    )
+
+
+def test_the_unattached_check_catches_a_contract_nothing_carries() -> None:
+    """The check itself is checked: it must fail on the shape it exists to refuse."""
+    contract = _probe()
+
+    def kernel(value: int) -> int:
+        return value + 1
+
+    bare = {"CONTRACT": contract, "kernel": kernel}
+    assert unattached_contracts(bare) == ["CONTRACT"]
+    attached = contracted(contract)(kernel)
+    assert unattached_contracts({"CONTRACT": contract, "kernel": attached}) == []
+
+
+def test_the_unattached_check_sees_a_contract_carried_by_a_method() -> None:
+    """`Ledger.record` carries its module's contract, so a class member must count."""
+    contract = _probe()
+
+    class Holder:
+        @contracted(contract)
+        def record(self) -> None: ...
+
+    assert unattached_contracts({"CONTRACT": contract, "Holder": Holder}) == []
+
+
+def test_the_pair_check_catches_a_twin_whose_contract_was_removed() -> None:
+    """The second check is checked the same way, both signs."""
+
+    def thing_reference(value: int) -> int:
+        return value
+
+    def jit_thing() -> None: ...
+
+    without = {"thing_reference": thing_reference, "jit_thing": jit_thing}
+    assert reference_twin_without_a_contract(without)
+    assert not reference_twin_without_a_contract({**without, "CONTRACT": _probe()})
+    assert not reference_twin_without_a_contract({"thing_reference": thing_reference})
 
 
 def test_the_pipeline_declares_compute_contracts() -> None:
