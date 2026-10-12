@@ -36,7 +36,8 @@
 
     "src/knee/lenses/__init__.py": {"where": "route:lenses", "role": "every place read in every acquisition, in one language", "contract": false, "renders": "lenses", "frame": "study"},
     "src/knee/lenses/digits.py": {"where": "route:lenses", "role": "one place's named reading against supplied low/high edges, inclusive middle and distinct silences", "contract": false},
-    "src/knee/lenses/places.py": {"where": "route:lenses", "role": "writes every native series place against the regime's existing terciles and exact foreground population; normalisation none, no anatomy or cross-acquisition correspondence", "contract": true},
+    "src/knee/lenses/members.py": {"where": "route:lenses", "role": "task 2.2a: what two SEATED MEMBERS said about one place — concur, dissent, one-only or neither-read — and deliberately no code meaning resolved, preferred or combined, because a disagreement between overlapping correct readings is the three-legged stool's informative case and its resolution is the founder's, never the pipeline's", "contract": false},
+    "src/knee/lenses/places.py": {"where": "route:lenses", "role": "seats EVERY structurally warranted member and writes each one's native map against its OWN population's terciles — the noise-law cut and the background split, neither a fallback for the other — plus their standing per place; normalisation none, no anatomy, no cross-acquisition correspondence, and no field in which a winner could be recorded", "contract": true},
     "src/knee/lenses/slabs.py": {"where": "route:lenses", "role": "the through-plane slab rule", "contract": false},
 
     "src/knee/objects/__init__.py": {"where": "route:objects", "role": "docstring only, no code: declares the objects stage — what each module in it does, why it was split out of collapse, and that the residual pull-out is still owed", "contract": false, "renders": "objects", "frame": "study"},

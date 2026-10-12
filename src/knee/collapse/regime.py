@@ -85,6 +85,15 @@ class RegimeKey:
     background_split: float = float("nan")
     foreground_count: int | None = None
     tercile_minimum_population: int = 8
+    # THE SECOND SEATED MEMBER's population, and it is not a fallback for the first. `terciles`
+    # above is read over the values that carry signal above the noise floor; these are read over the
+    # values above the background split, which separates tissue from air. Different invariants, so
+    # different populations, so two readings -- which is why both are carried and neither is
+    # consulted only when the other is missing. Founder, 2026-10-12: "we always keep information we
+    # compute ... the pipeline should keep everything, including where things conflict."
+    # `every-stage-renders` task 2.2a.
+    split_terciles: tuple[float, float] = (float("nan"), float("nan"))
+    split_population_count: int | None = None
 
 
 def _shape_readings(
@@ -187,6 +196,15 @@ def read_regime(
         above = values[values > cut]
     terciles, spread_ratio, skew = _shape_readings(above, shape_minimum_population)
 
+    # The second member's population, read with the SAME function over a different structural
+    # selection: everything above the background split rather than above the noise-law cut. It is
+    # computed whether or not the first member resolved, because a seated member does not wait on
+    # another's attendance -- measured 2026-10-12, the first places a pair on 2 of 5 acquisitions of
+    # one study and this on 5 of 5, and where both read they agreed to within one stored unit. That
+    # agreement is overlap, NOT interchangeability (both second readers, independently).
+    above_split = values[values > split] if np.isfinite(split) else np.empty(0)
+    split_terciles, _, _ = _shape_readings(above_split, shape_minimum_population)
+
     # The profile along the stack: how much each slice's own foreground share departs from the
     # series', which is SS5.1's "profile down the depth" without a depth model.
     per_slice = np.array(
@@ -223,4 +241,6 @@ def read_regime(
         background_split=split,
         foreground_count=int(above.size),
         tercile_minimum_population=shape_minimum_population,
+        split_terciles=split_terciles,
+        split_population_count=int(above_split.size),
     )

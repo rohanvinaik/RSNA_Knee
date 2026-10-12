@@ -19,7 +19,7 @@ from dataclasses import dataclass, field
 from pathlib import Path
 
 from knee.collapse.regime import RegimeKey, read_regime
-from knee.lenses.places import LensReading, read_lenses
+from knee.lenses.places import LensesReading, read_lenses
 from knee.objects.analysis import AnalysisRequest, SeriesMeasurement, measure_series
 from knee.objects.conversation import ConversationInput, SeriesConversation, converse
 from knee.ownership.claims import OwnershipReading, read_ownership
@@ -75,7 +75,7 @@ class SeriesRun:
     measurements: SeriesMeasurement | None = None
     ownership: OwnershipReading | None = None
     relations: RelationsReading | None = None
-    lenses: LensReading | None = None
+    lenses: LensesReading | None = None
     pairings: PairingReading | None = None
 
 
@@ -123,7 +123,11 @@ def run_study(
         ledger.record("collapse.produced", regime=1 if key is not None else 0)
         ledger.record("collapse.consumed", regime=1 if key is not None else 0)
         lenses = read_lenses(series.volume, key)
-        ledger.record("lenses.consumed", places=int(lenses.codes.size))
+        ledger.record(
+            "lenses.consumed",
+            members=len(lenses.members),
+            places=int(lenses.standings.size),
+        )
         measurements = None
         if analysis is not None:
             measurements = (

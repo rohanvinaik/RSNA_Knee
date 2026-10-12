@@ -13,6 +13,7 @@ import numpy as np
 
 from knee import collapse
 from knee.lenses.digits import DIGIT_CODES
+from knee.lenses.members import STANDING_CODES
 from knee.lenses.places import SILENT
 from knee.objects.analysis import AnalysisRequest
 from knee.pipeline import run_study
@@ -221,39 +222,64 @@ def main() -> None:
                         pairing_band_limits_mm=pairings.band_limits_mm,
                     )
                 if series.lenses is not None:
-                    lenses = series.lenses
+                    # EVERY SEATED MEMBER is serialised, each naming its own population, plus
+                    # the standing between them per place. No field holds "the" reading: the
+                    # founder, 2026-10-12, "the pipeline should keep everything, including
+                    # where things conflict", so a consumer that wants one digit per place
+                    # must come to him for the rule rather than find one written here.
+                    reading = series.lenses
                     plane_index = measurement.slice_index
-                    plane_read = (
-                        plane_index is not None
-                        and 0 <= plane_index < lenses.codes.shape[0]
-                    )
+                    depth = reading.members[0].codes.shape[0] if reading.members else 0
+                    plane_read = plane_index is not None and 0 <= plane_index < depth
                     record["lenses"] = {
-                        "code": lenses.code,
-                        "why": lenses.why,
-                        "low_edge": lenses.low_edge
-                        if lenses.low_edge is not None and np.isfinite(lenses.low_edge)
-                        else None,
-                        "high_edge": lenses.high_edge
-                        if lenses.high_edge is not None
-                        and np.isfinite(lenses.high_edge)
-                        else None,
-                        "population_count": lenses.population_count,
-                        "minimum_population": lenses.minimum_population,
-                        "normalisation": lenses.normalisation,
+                        "members": [
+                            {
+                                "population": member.population,
+                                "code": member.code,
+                                "why": member.why,
+                                "low_edge": member.low_edge
+                                if member.low_edge is not None
+                                and np.isfinite(member.low_edge)
+                                else None,
+                                "high_edge": member.high_edge
+                                if member.high_edge is not None
+                                and np.isfinite(member.high_edge)
+                                else None,
+                                "population_count": member.population_count,
+                                "minimum_population": member.minimum_population,
+                                "normalisation": member.normalisation,
+                                "counts": member.counts,
+                                "picture_code": member.code
+                                if plane_read
+                                else "item_unread",
+                                "codes_array": f"lens_codes_{member.population}",
+                                "digits_array": f"lens_digits_{member.population}",
+                            }
+                            for member in reading.members
+                        ],
                         "code_names": DIGIT_CODES,
+                        "standing_names": STANDING_CODES,
+                        "standing_counts": reading.standing_counts,
+                        "standings_array": "lens_standings",
                         "digit_silence": SILENT,
-                        "counts": lenses.counts,
                         "map_scope": "complete native volume (slice,row,column)",
                         "saved_scope": "selected native plane (row,column)",
-                        "picture_code": lenses.code if plane_read else "item_unread",
                     }
-                    arrays.update(
-                        lens_codes=lenses.codes[plane_index]
+                    for member in reading.members:
+                        arrays[f"lens_codes_{member.population}"] = (
+                            member.codes[plane_index]
+                            if plane_read
+                            else np.empty((0, 0), dtype=np.uint8)
+                        )
+                        arrays[f"lens_digits_{member.population}"] = (
+                            member.digits[plane_index]
+                            if plane_read
+                            else np.empty((0, 0), dtype=np.int8)
+                        )
+                    arrays["lens_standings"] = (
+                        reading.standings[plane_index]
                         if plane_read
-                        else np.empty((0, 0), dtype=np.uint8),
-                        lens_digits=lenses.digits[plane_index]
-                        if plane_read
-                        else np.empty((0, 0), dtype=np.int8),
+                        else np.empty((0, 0), dtype=np.uint8)
                     )
                 if series.ownership is not None:
                     ownership = series.ownership

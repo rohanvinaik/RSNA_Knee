@@ -42,7 +42,7 @@ def panels(
     high_edge: float | None,
     normalisation: str,
 ) -> LensPanels:
-    """Hand on the supplied plane and metadata without changing any field."""
+    """Hand on ONE seated member's supplied plane and metadata without changing any field."""
     return LensPanels(
         code=code,
         why=why,
@@ -52,3 +52,27 @@ def panels(
         high_edge=high_edge,
         normalisation=normalisation,
     )
+
+
+@dataclass(frozen=True, slots=True)
+class StandingPanels:
+    """What the seated members jointly said about each place of the selected plane.
+
+    `populations` names the members in the order the standings were computed, so a reader
+    knows which member `first_only` and `second_only` refer to. Nothing here resolves a
+    `dissent`: the picture shows the disagreement as a disagreement, because that is the
+    informative case (`chapters/02-collapse/teachings.md`, KEEP EVERYTHING).
+    """
+
+    standings: np.ndarray
+    counts: tuple[int, ...]
+    populations: tuple[str, ...]
+
+
+def standing_panels(
+    standings: np.ndarray,
+    counts: tuple[int, ...],
+    populations: tuple[str, ...],
+) -> StandingPanels:
+    """Hand on the supplied standing plane and its counts without changing any field."""
+    return StandingPanels(standings=standings, counts=counts, populations=populations)

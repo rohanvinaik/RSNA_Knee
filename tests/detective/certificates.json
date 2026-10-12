@@ -65,6 +65,18 @@
     "refusal": "",
     "standing": "complete"
   },
+  "src/knee/lenses/members.py::is_retained": {
+    "cut_reasons": [],
+    "function_digest": "ad63af29ebb8499c",
+    "refusal": "",
+    "standing": "complete"
+  },
+  "src/knee/lenses/members.py::standing_code": {
+    "cut_reasons": [],
+    "function_digest": "3d34afd7191c8e7a",
+    "refusal": "",
+    "standing": "complete"
+  },
   "src/knee/lenses/places.py::place_codes_reference": {
     "cut_reasons": [
       "mutant_construction_failed"
