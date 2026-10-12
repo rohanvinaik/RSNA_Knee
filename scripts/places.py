@@ -70,14 +70,19 @@ def imports_of(path: Path) -> set[str]:
 
 
 def declares_contract(path: Path) -> bool:
-    """Whether the module declares a compute contract, in EITHER of the two idioms the codebase uses.
+    """Whether the module declares a compute contract at all.
 
-    There are two, and a check that knew only the first reported two contracted kernels as missing
-    theirs on 2026-10-11, which the lead then repeated to the founder as a defect. The literal
-    reading of one idiom is not the obligation:
+    The codebase now uses ONE form, settled by the founder 2026-10-12 ("I guess only one? … the
+    bigger risk is you forgetting that there are two formats"):
 
-      CONTRACT = ComputeContract(...)        at module level (interiors, boundaries, ledger)
-      @contracted(ComputeContract(...))      on the kernel  (profiles, band_raster)
+      CONTRACT = ComputeContract(...)        named at module level, where a reader meets it
+      @contracted(CONTRACT)                  applied to the kernel its `reference` field names
+
+    Both halves are still recognised here, deliberately, because this check must keep seeing a
+    module that has only one of them -- that is the half-built state, not a passing one. It is
+    MODULE-scale and therefore blind to the defect that mattered: a CONTRACT declared and attached
+    to nothing, which three modules carried in production. `tests/knee/test_compute_contracts.py`
+    is what refuses that, and it gates.
     """
     tree = ast.parse(path.read_text())
     for node in tree.body:
@@ -135,8 +140,15 @@ def main(argv: list[str]) -> int:
         "unreached": [],
         "misplaced": [],
         "contract_disagrees": [],
+        "renders_missing": [],
     }
     roles_unwritten: list[str] = []
+    frames_unwritten: list[str] = []
+    stages = sum(
+        1
+        for relative, entry in declared.items()
+        if entry["where"].startswith("route:") and relative.endswith("__init__.py")
+    )
 
     for relative, entry in sorted(declared.items()):
         if relative not in on_disk:
@@ -161,9 +173,36 @@ def main(argv: list[str]) -> int:
             findings["misplaced"].append(
                 f"{relative}: declared shelf, yet the route reaches it"
             )
+        if not (where.startswith("route:") and relative.endswith("__init__.py")):
+            continue
+        # A stage names the picture module that draws it. The name is checkable; whether that
+        # picture arranges STUDY values or PIPELINE state is not, so `frame` is counted below.
+        if entry.get("frame") is None:
+            frames_unwritten.append(relative)
+        drawn = entry.get("renders")
+        if drawn is None:
+            continue
+        picture = f"src/knee/pictures/{drawn}.py"
+        if picture not in on_disk:
+            findings["renders_missing"].append(
+                f"{relative}: declares renders={drawn}, but {picture} does not exist"
+            )
+        elif declared.get(picture, {}).get("where") != "pictures":
+            findings["renders_missing"].append(
+                f"{relative}: {picture} is not declared in the drawing layer"
+            )
 
     if "--json" in argv:
-        print(json.dumps({**findings, "roles_unwritten": roles_unwritten}, indent=2))
+        print(
+            json.dumps(
+                {
+                    **findings,
+                    "roles_unwritten": roles_unwritten,
+                    "frames_unwritten": frames_unwritten,
+                },
+                indent=2,
+            )
+        )
         return 1 if any(findings.values()) else 0
 
     print(f"PLACES, computed against {REGISTRY.relative_to(ROOT)}\n")
@@ -180,6 +219,11 @@ def main(argv: list[str]) -> int:
     print(
         f"\n  role unwritten       {len(roles_unwritten)} of {len(declared)} "
         "-- nothing can check a role sentence, so it is counted, never passed"
+    )
+    print(
+        f"  frame unwritten      {len(frames_unwritten)} of {stages} stages "
+        "-- whether a stage's picture arranges STUDY values or PIPELINE state;\n"
+        "                       also uncheckable, so also counted and never passed"
     )
     print(
         "\n  NOT measured here: whether a reached module's work is consumed (`just graph`),\n"
