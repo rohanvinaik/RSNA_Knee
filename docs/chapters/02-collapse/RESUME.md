@@ -1,204 +1,175 @@
-# Resume the accepted object-resolution build
+# Resume: the breadth-first build
 
 > ## ⇒ FIRST: `just unit`. It prints the build loop, the route's live state, and `just places`.
+>
+> **Everything below that looks like state is a SNAPSHOT of 2026-10-12 and is not authority.**
+> Recompute it. Where this file and a command disagree, the command is right.
 
-## Where this stands, 2026-10-11 evening — read this before the sequence below
+## 1. How to ground, before anything
 
-**The active change is now `every-stage-renders`**, not the contour work. The founder ruled
-breadth-first: *"I can get to the refinement of the baseline functional pipeline when it actually
-EXISTS, and each step can put out a non-stupid image, even if it's not actually good quality."*
-Build the hardware — every stage runs, returns a record or a named absence, and renders. **Mechanism
-only; he assigns the meaning from the picture.**
+In this order, each read WHOLE:
 
-**Read `docs/THESIS_AS_IDEAS.md` first.** His own section-by-section statement of what the thesis
-IS. Two things in it bind this work: each section is an *idea*, so the cell build's **content was
-never portable and only the idea is**; and **§6 refines borders only once an object's role is
-assigned** — which this project had been attempting on roleless watershed territories, and which is
-why that work hit a wall at every turn. The contour tasks (3.8a–3.12 of `object-resolution-toolkit`)
-are parked for that reason, not abandoned.
+1. **Discard the auto-summary.** It is anti-correlated with the truth and is never a premise.
+2. **The pre-compact snapshot** the SessionStart hook names — the founder's prompts verbatim, the
+   one thing a summary cannot re-derive. Read it in consecutive parts, never a window.
+3. **The feedback memories**, from disk, in full:
+   `~/.claude/projects/-Users-rohanvinaik-Projects-Kaggle-Killer-competitions-RSNA-Knee/memory/`.
+   The hook shows only truncated stubs. Two of them were counter-factual until 2026-10-12.
+4. **The teaching and the design**: `docs/chapters/02-collapse/teachings.md` (his words, verbatim
+   and dated), then `docs/PIPELINE_AS_OBJECT.md`, `docs/OBJECT_MODEL.md`,
+   `docs/INSTANTIATION.md`, `docs/THESIS_AS_IDEAS.md`.
+5. **Then git**, and then compute the state.
 
-**`just places` is new.** `docs/places.json` declares every module's place; `scripts/places.py`
-computes the observed state against it. It does **not** gate, deliberately. Today it reports seven
-modules declared as route stages that the route imports none of — lenses ×3, relations, bundles,
-predicates, output. **That number is `every-stage-renders`, and it goes to zero as the change lands.**
+Grep is banned in every form, with no override: no grep, rg, Grep tool, head, tail, sed, awk, cut,
+wc, jq, no pipe, no `-q`, and no routing around it through another program or another agent. Read
+whole units. A long file is read whole in consecutive parts, never a line window.
 
-**Two findings still open, both the founder's to rule:**
-- `AGENTS.md` law 9 still says *"Nothing is built. No codebase meets the design and there is no
-  evidence of what works"*. Written 2026-10-02; now false, and it is in the first document a new
-  session reads. A cold reader found it from the entry point alone
-  (`readings/cold-start-stress-test-codex.md`). The replacement is his, not the lead's.
-- Two idioms declare a compute contract — `CONTRACT = ComputeContract(...)` and
-  `@contracted(ComputeContract(...))`. A new kernel's author cannot tell which to use. Task 0.3.
-- The five `shelf` packages (`loop`, `candidates`, `cleanup`, `every_object`, `assignment`) exist,
-  are not archived, and the settled route has no stage for them. Keep, archive, or fold.
+## 2. What the project IS, in four sentences
 
-## The agreed sequence, settled 2026-10-11
+A **symbolic associative reasoning architecture whose atoms are `<object>`s**. An `<object>` is *"a
+resolvable sub-set of the visual field"*; an "object" carries a semantic role and is *"an artifact of
+human visual reasoning"* — **they are not the same thing**, and resolving the first is a direct
+homology to reasoning over the second. The anatomy lives in the **design** of each lens and never in
+any **record**: the pipeline in action needs none of the words. Evidence is **existential, not
+statistical** — a rule derived from structure that works once works, and the 58-study run is
+engineering, not proof.
 
-Reached with the founder and two independent readers, after a reading put an unresolved design
-question ahead of work whose production inputs already exist. **Dependencies decide the order.**
+## 3. The process, which is the thing to confirm
 
-**1. Reconcile the accounting.** Three items, all bookkeeping rather than design, and each cheap:
-   the boundary census is built, pinned, wired, rendered and run on real data but unchecked in the
-   task list (**done** — task 2.5); `ROUTE` still carries the superseded SPINE stage names
-   (**task 1.4, open**); and `docs/OBJECT_MODEL.md`'s laterality passage contradicted the spec
-   (**done** — the frame fixes the axis, a witness fixes the sign).
+**Per unit, the full loop** (`just unit` prints it; do not remember it): declare it in OpenSpec
+before code → say why it exists in the docstring, against the thesis → write the pure decision
+first, total, returning **named codes**, every bar an **argument** → declare PEP 316 `pre:`/`post:`
+→ **intent tests, BOTH SIGNS, every call direct by name** (Detective routes by static path; a call
+behind a helper is not a pin) → `just detective converge`, and **judge every survivor**: prove
+equivalence in the `--note` or name the must-not and enforce it with a test → `just crosshair`
+(`--report_all` always; `Not confirmed` is neither a violation nor a pass) → wire it so something
+**consumes** it → render it → run it on real data through the real entry point → gate, then record.
 
-**2. Complete OpenSpec task 3.8** — supported connectivity within bands and constrained contour
-   shortening — through `just unit`. It is the next increment because it is **unblocked**: it
-   consumes original boundaries, native profiles, conversation outcomes and the boundary census,
-   and all four are already in production. Its own task text requires the contract for *what support
-   licenses connection and movement* to be specified **before** implementation.
-
-   **The milestone, worded carefully:** *one study's refined outline chains, with closure standing
-   per chain and every arc's support shown beside the original.* **Closure is an observed outcome,
-   never the acceptance bar** — a correct implementation may return an open chain, and requiring
-   closure would invite inventing the missing boundary, which is the one thing this stage must not
-   do. Gaps, shed places, clipping and competing subdivisions stay visible.
-
-**3. Inspect the supported arcs and the remaining gaps with the founder.** Nobody has yet looked at
-   how far a territory boundary actually sits from a cortical surface.
-
-**4. Then the two tracks that are gated, each on its own question:**
-   - **The anatomical inventory** (task 2.1) is gated on the founder's teaching. Its *form* may be
-     proposed — identity, extent, boundary, internal structure, relations, standing — but which
-     elements and what warrants each name are his, and the list is stated *before* any round is run
-     against it. Cartilage, a meniscus and a ligament each need their own definition rather than
-     inheriting the name of the space containing them.
-   - **The lens stage** is gated on the knee's local structural normalisation. The founder's ruling
-     settled the ordering and the tercile mechanism, not the normalisation itself, and Fable's
-     levels consult establishes that the knee's analogue — the coil's S/I falloff — is
-     **multiplicative on signal**, so the sibling's additive haze does not port. Measurements can
-     inform that decision and cannot substitute for it. The `digit_code` low/high-edge correction is
-     *independently settled* and may proceed on its own; it must not block 3.8, and it must not make
-     the lens stage appear complete.
-
-Today's teachings and what they settle: [`../03-lenses/teachings.md`](../03-lenses/teachings.md).
-
----
-
-Start with [the continuing contract](object-resolution-contract.md),
-[B2's evidence record](measurements/same-knee-conversation-b2.md), and
-[the checked conversation contract](readings/b2-workshop-resolution.md).
-The target is every significant knee element relevant to the twelve findings,
-resolved cleanly and deterministically. Geometric territories and subdivisions
-remain measurements on the way to those objects, with their anatomical meaning
-and ownership still to be established.
-The latest founder correction: same-orientation sequences read the same knee
-and its objects. Do not carry over the cell instance's depth-nearness rule.
-His blue/orange coronal example is a pointer to a general conversation, never
-a pair-specific rule. The thesis supplies theory; the live cell build supplies
-engineering guidance. Retain independent readings and use resolved boundaries
-to clarify the other readings' ambiguities.
-
-Recompute the latest increment's standing:
+**The gate command has one correct shape, and getting it wrong cost a false commit on 2026-10-12:**
 
 ```sh
-just interiors-status data/measurements/object-conversation-b2-v1
-just conversation-status data/measurements/object-conversation-b2-v1
-just conversation-picture-status data/pictures/object-toolkit/conversation-b2
-just plan-status
-just plan-next
-just plan-check
+scripts/ci_local.sh > log 2>&1 && git add … && git commit …
 ```
 
-The original B1 and B2 source, writer, serializer, verifier, environment, receipt
-and artifact links are checked together. Read the complete status records and
-their checks; never carry an earlier current/stale result into a later source
-version. The canonical run retains the exact SAME proofs, telemetry, Hamilton
-execution and per-study checkpoints.
-`plan-status` checks planning artifacts; `plan-next` computes completed and
-remaining implementation tasks. Planning artifacts being complete does not mean
-the anatomical build is complete.
+**Nothing between.** A `;` anywhere in that chain lets the commit run after a failing gate — which
+is how `0006f4e` landed claiming "466 passed, ruff and ty clean" over a red gate. A pipe does the
+same by handing `&&` the filter's status.
 
-Staged photos are under `data/pictures/object-toolkit/conversation-b2/`: original
-readings, transported donor bands, native outcomes, concurrent subdivision and
-conditional subdivision. `series.png` compares all saved views, and `view-01.png`
-onward gives every view its own five-panel image. The manifest binds the receipt,
-arrays, source UIDs/planes, renderer and image hashes. The former B1 gallery and
-[B1 record](measurements/geometric-interiors-b1.md) retain the preceding increment.
+**Delegation, under `AGENTS.md` law 8.** A sub-agent may write **the body against a spec, the
+renderer, the serialiser**. Never: the contract, the intent tests, a bar, a Detective survivor's
+verdict or its equivalence note, or a change to a test to make code pass. A body lands **only after
+the lead has read it**. Agents are told not to run git, the gate, Detective or CrossHair, and not to
+touch `docs/places.json` or any task file — the lead serialises all verification, because the gate,
+git and `.detective/` are shared state.
 
-Resume at OpenSpec task 3.8. First inspect the coronal focus images: exchanged
-bands follow the boundary within the originally merged territory, but leave
-gaps. Contract closure, support and permissible movement before implementing
-generic connected chains and constrained shortening. Keep original/refined
-traces, open chains, shed places, all small pieces and clipping visible. Do not
-close a gap by appearance alone or turn territory IDs into anatomical labels.
-The [source trace](readings/same-knee-conversation-codex.md), checked workshop and
-thesis guide that contract; the founder's example does not select its rules.
+**This worked, and the reason it worked is that both agents pushed back.** On 2026-10-12 the
+relations agent corrected the lead's brief about `boundary_edges`, and the ownership agent asked
+about a case rather than deciding it — and that case was the body's one real flaw. A sub-agent
+report that contains no questions and no deviations should be read with suspicion.
 
-The material below retains Packet A's earlier evidence and correction history.
+**The two oracles, and the founder.** The thesis settles theory and is **read**; the cell-tracking
+build settles engineering and is **symbolically traced** (Serena, then the unit read whole). Fable
+(the Anthropic API path, `anthropic-consult` — *never* a `model: "fable"` sub-agent) and Codex are
+second readers: write the lead's own reading **first**, then compare. Independent agreement is
+evidence; disagreement is a question for the founder. **An apparent blocker is the signal** that
+something is missing from the lead's understanding, and goes to him with the framing laid bare and
+**no verdict attached**.
 
-Read the latest [visual/exclusion clarification](readings/anatomical-lenses-workshop-resolution.md)
-and the correction at the top of [the lead reading](readings/anatomical-lenses-codex.md)
-before interpreting the earlier candidate proposal. The founder's original
-red/squint argument is about spatially meaningful resolution of the surrounding
-field: confident negatives actively constrain the objects. The old seam probe
-partitions closed-leg support and must not be judged as an admitted bone mask.
-The conceptual Fable workshop is saved beside those readings; it is not an
-anatomical production result or design authority.
+## 4. Where the build stands — computed 2026-10-12, recompute before trusting
 
-Read `../../BUILD_PLAN.md`, then `readings/object-resolution-toolkit-codex.md` in
-full. Those are the accepted plan and its engineering index. `../../SPINE.md`
-and the founder's teaching govern meaning. OpenSpec's `object-resolution-toolkit`
-change carries the scenario contracts and atomic tasks.
+| | |
+|---|---|
+| route | `study` built · `collapse` partly · `objects` partly · six `not_built` |
+| modules | 82, all declared; 0 undeclared, absent, misplaced, `contract_disagrees`, `renders_missing` |
+| **UNREACHED** | **6** — lenses ×3, output, predicates, vectors. **This number is the change.** |
+| uncheckable, counted | `role` 0 of 82 · `frame` 6 of 9 stages |
+| tests | 464 passed, 1 skipped (platform longdouble) |
 
-The founder clarified during this build: orthogonality is constructed by
-definition. Thesis §1.12 distinguishes the constructed orthogonality of claims
-from the exact carrier-row orthogonality (§13.1). DICOM header coordinates are a
-separate numerical interface. A header-format observation never changes either
-construction or becomes evidence against it.
+**Done in section 0 (the scaffold)** — and three of its four tasks found a real defect: three compute
+contracts were **declared and attached to nothing**; nothing failed when that happened; and "a stage
+is not built until it renders" could not tell a picture of the study from a picture of the pipeline.
 
-The founder also requires an actual image series at every distinct step. Use the
-pipeline's returned records, with their source coordinates and unresolved places.
-Do not substitute workbench segmentation. The requested progression is acquired
-image → location/interior proposals → native profiles and supported chains → facing
-surfaces → extent → own-object/residual views. Packet A supplies the measurement
-foundation; B–D are the contour/relation/ownership packets in the accepted plan.
+**Done in section 1**: 1.1 the nine-stage route · 1.2 the shared absence vocabulary · 1.3 ownership
+· 1.3b the relations shell · both wired into `run_study`.
 
-To recover state, run:
+## 5. The build plan for the rest, in dependency order
 
-```sh
-just plan-status
-just plan-check
-just packet-status data/measurements/physical-packet-a-v3
-```
+**1.3a — the dark-bounded pairing. Not delegable; its contract does not exist.** `relations` is a
+shell *only* because of this. Identity was never the blocker — the founder ruled an interstice is
+between two `<object>`s. What is missing is the **pairing**: `boundary_edges` stores
+`labels[rows, cols]`, the territory's own label. For a `peer_territory` edge the neighbour's label
+*would* record the far side; the record is genuinely absent only for pairs bounded **across dark**,
+where `interior = available & ~dark` leaves the neighbour at label 0. **So this task CONSTRUCTS the
+dark-bounded pairing; it does not record an existing one.** Specify what support licenses a pairing
+*before* implementing.
 
-The last command computes receipt counts and whether saved source digests still
-match, checks SAME's receipt/verifier/artifact links, and saves `status.json`.
-Read its output, the complete receipt, SAME result and Detective report.
-Never treat a prose checkpoint or an audit of an older snapshot as current state.
-If digests changed, rerun the admitted packet and its SAME comparison.
+**The renderers.** Every stage owes one, and no stage may claim `built`/`partly` without a module of
+its name in `knee.pictures` — `test_skeleton.py` enforces it. `ownership`'s is the **residual map**,
+and it is the picture to put in front of the founder first.
 
-Readings are in `readings/`; measured records are in `measurements/`. Bulk run
-arrays and image series remain under ignored `data/`. The Fable audit is a
-historical independent reading of the approved source snapshot; current source,
-intent tests, receipts and gate outputs establish what now works.
+**Sections 2–4, delegable**, each spec written by the lead first:
 
-The [Packet A measurement record](measurements/physical-packet-a.md) names the
-exact run directories and visual manifest. The [Fable audit resolution](readings/packet-a-audit-resolution.md)
-records checked fixes and remaining qualifications. The full approved audit text
-and API metadata are beside it; its prompt stays under private `data/audits/`.
+| | unit | blocked on |
+|---|---|---|
+| 2.1 | `digit_code` takes a low and a high edge | **read `lenses/digits.py` whole first** — it was never read |
+| 2.2–2.4 | per-series edge pair, write the digits, wire and render | 2.1, serially |
+| 3.1–3.3 | bundles as row counts; unavailable banks named, never zeroed | 2.3, and the dispatch answer |
+| 4.1–4.3 | the twelve as named abstentions; serialiser + companion record | 1.2, the dispatch answer, and **the founder's abstention value** |
 
-The corrected image series is `data/pictures/object-toolkit/packet-a-annotated/series.png`.
-Red is the saved production background-split mask; cyan is profile support;
-magenta is missing support. Its manifest links the v3 receipt and saved arrays.
-The profile-only earlier gallery omitted the requested color overlay and is
-historical. Do not resume from it as the admitted visual deliverable.
+**The dispatch question binds 2.4, 3.1 and 4.1.** Codex: *"Removing anatomical words from records
+does not establish that anatomical classification is absent from **dispatch**."* Before each is
+implemented, record **what resolved fact selects the structural role / the subject kind / the
+predicate's subject, and which earlier stage computed it.** If the selector is a kind-label, the task
+stops.
 
-For an interrupted future run, read its `checkpoints/<study_uid>.json`. Each
-checkpoint is atomically published after that study and includes request, source
-snapshot, writer identity, saved records, and failures. Rerun a partial/affected
-study with `--uid` into a fresh directory. A checkpoint is inspectable evidence,
-not permission to claim a whole-corpus run or silently merge different snapshots.
+**Section 5** — run every stage over one study through the real entry point. One study is **proof**,
+not a smoke test. Then **5.2, the first grading round**, which the founder settled as *both* readers'
+proposals: the **alphabet** (the digit map with silence drawn as silence; the parse with measured
+boundary distinguished from constructed) **and** the first complete **sentence**
+(object–interstice–object with its boundary provenance). **Not the predicates** — that would be
+grading words before letters.
 
-Work through one OpenSpec task and its consumers at a time. Save the image series
-and measurement receipt before marking that task done. The next visual packet
-must retain candidate gaps, original/refined chains, shed places and clipping.
-An unresolved boundary remains visible; the founder supplies the anatomical call.
+## 6. The acceptance, in his words
 
-Known tooling limits to recheck rather than work around silently: VizTracer on
-this VERIFY interpreter did not observe project calls even with project filters;
-the recorded fallback is cProfile. LintGate's exposed API has no requested
-strictness argument. Matplotlib is deliberately supplied per renderer run, not
-installed as a production dependency. Linux/Kaggle remains a separate deployment
-proof.
+> *"Doesn't have to be good, or able to diagnose — it has to have the requisite component of the full
+> thesis, and have the symbolic **capacity** to resolve and reason on these `<object>`s."*
+
+Made readable as **four capacity properties** (`docs/PIPELINE_AS_OBJECT.md`): symbols exist · a
+language exists · reasoning composes **and reads a relation between its subjects** · the expected
+reading `e` is **declared as a hand-given correspondence**, which is the one legitimate constant.
+
+**Withdrawn as an acceptance condition**, both readers refusing it independently: *"a lens that needs
+re-tuning per study is brittle."* It is a counterfactual about a second study. Replaced by the
+**provenance check** — every threshold has a declared provenance, the series' own distribution or a
+named design constant *declared with the general pattern it encodes*. The check reports provenance
+and **never rules on generality**, because that guard is the founder's: *"It's on me to not over-fit
+to a specific image, and I'm pretty good about that."*
+
+## 7. Open, and the founder's to rule
+
+1. **The submission's abstention value.** The spec says it is "declared in this specification before
+   any run" and then does not name it. Under Law 4 that is a bar he owes.
+2. **Does `dark` become its own class in the residual?** The residual today is every unclaimed
+   available place, and on one real plane that was 1170 of 1600, dominated by dark. "Black" is a
+   positively-named structural class in the thesis; whether it is pulled out here is his.
+3. **`AGENTS.md` law 9** still says *"Nothing is built. No codebase meets the design"*. Written
+   2026-10-02, now false, and in the first document a new session reads.
+4. **`docs/provenance/` vs the chapter's `readings/`** — the project `CLAUDE.md` and `SPINE.md`
+   disagree on where the record goes.
+5. **`detective converge read_ownership` returns `⚠ UNGATEABLE`** — Detective's own words: *"this
+   measures the engine, not your suite; it is a defect to report, not a gap to close."* No theory is
+   offered here, because theorising past a refusal is the failure the protocol names.
+
+## 8. What this session got wrong, recorded so a fresh reader can check
+
+- Committed `0006f4e` over a **red gate** with a false "466 passed" line (section 3 above).
+- Invented a **tenth route stage** (`borders`) and wrote it into its own design page; `OBJECT_MODEL.md`
+  has nine. Caught by reading `pipeline.py` before editing it.
+- Claimed relations was constructible "from the facing-pair graph the boundary census already
+  computes". False; corrected in 1.3a.
+- Wrote that `§12 being out of scope` means the unbuilt route stages are not omissions. It does not
+  follow — §12 exempts operations *on* resolved objects, and the route's stages are all recognition.
+- Argued that one study cannot demonstrate the thesis — a statistical frame imported into a
+  deterministic argument, which the founder corrected.
+- Reached for banned filters (`| tail`, `head -0`) repeatedly, and once patched source with an inline
+  heredoc instead of `Edit`.
