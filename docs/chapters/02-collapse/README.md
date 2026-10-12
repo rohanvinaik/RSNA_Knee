@@ -95,8 +95,35 @@ Over all 336 series the two noise estimators concur on **4**. The ratio between 
 5.5× to 0.2× across a rebuild, so the instrument moved and the disagreement did not resolve.
 See `measurements/the-noise-law-fails-on-real-data.md`.
 
-**Do not resume by trying a fifth intensity instrument.** Four have failed, each for a different
-reason, and they are listed in `teachings.md`. These are objects, not intensity classes.
+## The intensity instruments, and what each one measures
+
+**Not a list of failures**, and it used to be one. Each is a lens: a lossy measurement that is
+correct about what it measures, and the places where two disagree are information rather than noise.
+The founder, 2026-10-12, rejecting the earlier framing:
+
+> "If it's erratic...that makes it seem like it's providing some complex and valuable information.
+> Again, truth is a *superposition*. I don't *care* if its noisy. In fact, 'noisy' makes it seem
+> like it can provide some informational disagreement — the 'three-legged stool' principle?"
+
+| instrument | what it measures | where it disagrees, measured |
+|---|---|---|
+| **a quantile** (lowest fifth by value) | the lower tail of the distribution | it truncates, so its moments are a tail's and not the whole population's. On a Rayleigh cut near zero the density goes as `x` and the fourth-to-second moment ratio is exactly 4/3, which the channel identity reads as three channels where the truth is one. Over 336 series it put the median channel count at 1.86 and made the dark estimator abstain on half. This one is **provable arithmetic**, and it is why the channel count is not read this way. |
+| **Otsu** | the level maximising between-class variance | sits at the valley only where the two modes carry comparable mass and spread. A knee's background is a narrow spike against broad tissue, so it lands far above the valley. Over the same 336 series the dark sigma read 87.3 against the valley's 4.2 — a twentyfold disagreement **with a named scope**, not a verdict. |
+| **the histogram valley** | the first local minimum past the background's mode: the air/tissue boundary | **This one is in production.** It is `knee.collapse.noise.background_split`; it feeds the quiet population and the interiors stage's leg mask, and on 2026-10-12 it resolved on all five acquisitions of the measured study while the noise-law chain resolved on two. |
+| **the darkest fifth inside the leg** | the lowest-valued places within the leg mask | meant to find cortical bone; found the leg's left and right edges, and "the three largest bodies above it" was one blob. It measured what it measures, and the reading says the darkest places are the edges — a fact about the field rather than a fault in the instrument. |
+
+**What was here before, and why it was wrong.** This stood in `teachings.md` as "The four intensity
+instruments that failed", introduced "listed so a fifth is not tried". Three defects: it was lead
+analysis filed inside the file that carries only the founder's verbatim words; "failed" contradicts
+*there is no noise* and the three-legged stool, under which an incomplete but correct source's
+disagreement is among the most informative data available; and its third row filed as failed an
+instrument the pipeline **runs in production**. Its claim that the valley is "erratic on real knees,
+whose histograms carry several tissue modes" is withdrawn — several tissue modes bear on a valley
+sought *deeper* in the distribution, not on the first one past the air spike.
+
+**The caution that does survive:** an intensity level alone does not resolve an `<object>`. Not
+because these instruments fail, but because no single lossy lens can carry an object. The object is
+a superposition across lenses in conversation.
 
 The earlier noise-law record put three options to him; this historical discussion
 does not override the later structural-object/breadth-first rulings:
@@ -132,7 +159,7 @@ rendered series** whose air was nearly all zeros. The 336-series run reported **
 
 | | |
 |---|---|
-| `teachings.md` | the founder's words, verbatim and dated, including the four failed instruments |
+| `teachings.md` | the founder's words, verbatim and dated. Lead analysis does not belong here; one section that had drifted in was moved out 2026-10-12 |
 | `design.md` | the chapter's design, with provenance per element |
 | `readings/` | what the oracles say — the thesis read, the sibling build traced, the second readers |
 | `measurements/` | what was measured on the real corpus, through Chapter 1's entry point |

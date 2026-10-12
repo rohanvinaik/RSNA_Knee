@@ -184,6 +184,28 @@ or certified. The dated reconciliation run and `docs/BUILD_PLAN.md` locate curre
 - [ ] 2.2 Implement the per-series edge pair from the series' own foreground, reading
       `RegimeKey.terciles`, and refuse with a named code where the population is too small to place a
       pair. Verify two acquisitions of one knee are each read against their own edges.
+- [ ] 2.2a **Seat the second member: the background-split population.** Founder's ruling 2026-10-12,
+      after both readers showed a fallback would be a *default* and project law 3 forbids one: "we
+      always keep information we compute. I'll resolve what we report and how we do it, but the
+      pipeline should keep everything, including where things conflict". So the terciles over the
+      values above `RegimeKey.background_split` are a SECOND member seated beside the terciles over
+      the noise-law cut — not a source the lens falls back to.
+
+      **Measured 2026-10-12, before the task was written**, one study, five acquisitions, drawn in
+      `data/pictures/two-populations-20261012/`: the noise-law member places a pair on 2 of 5; the
+      background-split member places one on 5 of 5. Where both read they agree to within one stored
+      unit (80.0/120.0 against 79.0/119.0) and are identical on another (80.0/121.0, population
+      1,581,244 both). **That agreement is NOT interchangeability** — both readers said so
+      independently, Codex: "agreement on two acquisitions is evidence of agreement there, not proof
+      of interchangeability"; Fable: "what they say on the rest is the information". The two
+      populations encode different invariants: carries-signal-above-the-noise-floor, and
+      tissue-against-air.
+
+      Its own unit, its own contract, pinned two-sign. Verify that neither member is read only when
+      the other is absent, that a place where the two digits differ retains both, and that no field
+      of the record names a single edge pair for the series. The quorum question — what coverage is
+      *sufficient* — is NOT settled by this task: both readers showed counts are the input to that
+      judgement and not the judgement, and the judgement is the founder's.
 - [ ] 2.3 Write the digits for every place of every acquisition, recording `normalisation: none` and
       keeping an unread place **silent** rather than writing it as the middle digit. Verify silence
       and the middle digit are distinguishable in the record.
