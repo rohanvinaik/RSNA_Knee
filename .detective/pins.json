@@ -512,5 +512,23 @@
         "golden_capture"
       ]
     }
+  ],
+  "src/knee/relations/shell.py::read_relations::4cc5f3891fc63eb7": [
+    {
+      "assertion_code": "result = read_relations(interiors=None)\nassert repr(result) == \"RelationsReading(code='construction_absent', why='The facing-pair construction (task 1.3a) has not been built: no record says which two objects face each other across a border, so no interstice is constructed in this build.', interstices=())\"",
+      "category": "VALUE",
+      "confidence": 0.9,
+      "function_key": "",
+      "golden_case": null,
+      "mutant_id": "",
+      "needs_oracle": false,
+      "preconditions": [
+        "golden capture (pure + deterministic)"
+      ],
+      "setup_code": "from knee.relations.shell import read_relations",
+      "source_lenses": [
+        "golden_capture"
+      ]
+    }
   ]
 }

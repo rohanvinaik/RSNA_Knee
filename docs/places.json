@@ -50,6 +50,7 @@
     "src/knee/objects/profile_codes.py": {"where": "route:objects", "role": "the pure named decision for profile support", "contract": false},
 
     "src/knee/relations/__init__.py": {"where": "route:relations", "role": "interstices per facing pair, constructed and never detected", "contract": false, "renders": null, "frame": null},
+    "src/knee/relations/shell.py": {"where": "route:relations", "role": "task 1.3b: the stage RUNS and names the one unit it waits for — `construction_absent` for every input including a perfectly good one, because the silence is about the missing facing-pair construction (1.3a) and not about the study; an empty interstice tuple is silence and never a finding of 'no interstice'", "contract": false},
     "src/knee/ownership/__init__.py": {"where": "route:ownership", "role": "every place claimed by one <object> or named unassigned — a partition, never an identification; its picture is the residual map, which is the channel the founder reads to supply the next lens", "contract": false, "renders": null, "frame": null},
     "src/knee/predicates/__init__.py": {"where": "route:predicates", "role": "the twelve findings, each a predicate on its subject", "contract": false, "renders": null, "frame": null},
     "src/knee/output/__init__.py": {"where": "route:output", "role": "twelve confidences per study, with the kept record behind them", "contract": false, "renders": null, "frame": null},

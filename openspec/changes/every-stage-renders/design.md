@@ -41,14 +41,21 @@ dangling, `just imports` holding the layer contract, and ledger telemetry — ne
 ## Why relations still needs a construction step — confirmed in source 2026-10-12
 
 **This survives the founder's `<object>` ruling untouched, because it is not about identity.** The
-lead re-read `interiors.py` whole on 2026-10-12 and both of Fable's claims hold exactly:
-`boundary_edges` does `regions.append(labels[rows, cols])` — the territory's **own** label — and uses
-the neighbour only at `kind[padded[nr, nc] > 0] = EDGE_KINDS["peer_territory"]`, to set the edge
-kind. The far side is genuinely not recorded.
+lead re-read `interiors.py` whole on 2026-10-12 and Fable's claim holds: `boundary_edges` does
+`regions.append(labels[rows, cols])` — the territory's **own** label — and reads the neighbour only
+to decide *that* a place is an edge and of which *kind*. The far side is not recorded.
 
-So an interstice between two `<object>`s is constructible **in principle** today, and is **not a
-lookup**: something must first record, per bracketed profile, which territory it reached across the
-dark. That is a real unit of work with its own contract, and writing relations before it exists would
+**Sharpened the same day, by the sub-agent that wrote the shell, and the refinement matters.** Two
+imprecisions in the lead's version: the neighbour is also read to *select* which places are edges
+(`neighbor != labels`), not only to set a kind; and, more consequentially, **for a `peer_territory`
+edge the neighbour's label *would* record the far side.** The record is only genuinely absent for the
+pairs this stage actually wants — those bounded **across dark** — because `read_interiors` labels
+only `interior = available & ~dark` and runs watershed with `mask=interior`, so across a dark band
+the neighbour is a dark place whose label is **0**.
+
+So the missing unit is not "store the far side". It is **construct the dark-bounded pairing**, which
+is a different and harder operation. An interstice between two `<object>`s is constructible **in
+principle** today and is **not a lookup**; writing relations before that construction exists would
 write a contract that changes under its feet.
 
 The plan said relations' "places between" were *all already measured*. They are not. Fable:
