@@ -7,7 +7,7 @@ from collections.abc import Generator, Mapping
 from contextlib import contextmanager
 from dataclasses import dataclass, field
 
-from knee.compute.contracts import ComputeContract
+from knee.compute.contracts import ComputeContract, contracted
 
 CONTRACT = ComputeContract(
     kind="run_ledger_of_counted_work",
@@ -44,6 +44,7 @@ class Ledger:
     timed: bool = False
     _events: list[Event] = field(default_factory=list)
 
+    @contracted(CONTRACT)
     def record(self, name: str, /, **counts: int) -> None:
         """Record one event. Returns immediately and allocates nothing when disabled.
 

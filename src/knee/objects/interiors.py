@@ -14,7 +14,7 @@ from skimage.morphology import h_maxima
 from skimage.segmentation import watershed
 
 from knee.collapse.physical import numeric_plane, spacing_pair
-from knee.compute.contracts import ComputeContract, handed_on
+from knee.compute.contracts import ComputeContract, contracted, handed_on
 from knee.objects.border_codes import border_code
 from knee.objects.profiles import ProfileReading, sample_profiles
 
@@ -148,6 +148,7 @@ def prominent_peaks(distance: np.ndarray, prominence_mm: float) -> np.ndarray:
         )
 
 
+@contracted(CONTRACT)
 def read_interiors(
     plane: np.ndarray,
     spacing_rc: tuple[float, float],
