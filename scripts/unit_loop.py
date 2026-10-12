@@ -217,16 +217,21 @@ def main() -> None:
         f"\n  {len(drawn)} renderer(s) in knee.pictures; a stage may not claim built or "
         "partly without one\n"
     )
-    # The change is NAMED in every command: the verbs default to knee-object-model, while the
-    # agreed increment (tasks 3.8-3.12) lives in object-resolution-toolkit, so an unqualified
-    # command would send a fresh session to the wrong checklist.
+    # The change is NAMED in every command: the verbs default to knee-object-model, so an
+    # unqualified command sends a fresh session to the wrong checklist. Corrected 2026-10-12 --
+    # this footer still pointed at object-resolution-toolkit as "the next work" after the
+    # breadth-first change superseded it, and still said knee-object-model 1.4 was open after it
+    # was done. A fresh confirming agent caught the same class of staleness one layer up.
     print("NEXT, with the change named so you reach the right checklist:")
-    print("  just plan-status object-resolution-toolkit   the increment's artifacts")
     print(
-        "  just plan-next   object-resolution-toolkit   tasks 3.8-3.12, the next work"
+        "  just plan-next   every-stage-renders         THE ACTIVE CHANGE: the next work"
+    )
+    print("  just plan-status every-stage-renders         its artifacts")
+    print(
+        "  just plan-status knee-object-model           the structure's tasks (2.1 is HIS to teach)"
     )
     print(
-        "  just plan-status knee-object-model           the structure's own tasks (1.4 open)"
+        "  just plan-next   object-resolution-toolkit   the contour work, PARKED behind 1.3a"
     )
     print("  just graph <out>                             is anything dangling")
     print("  just gate                                    before every commit")
