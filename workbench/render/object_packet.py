@@ -2,13 +2,23 @@
 
 import argparse
 import json
+from collections.abc import Sequence
 from hashlib import sha256
 from pathlib import Path
 
-import matplotlib.pyplot as plt
 import numpy as np
 
-from workbench.render.object_profiles import draw_record
+from workbench.render._out import ArgumentRefusal
+
+#: Where in the frame the detail panel looks, as a (row, column) fraction. The nearest ALREADY
+#: MEASURED profile site to that point is the one drawn large.
+#:
+#: THIS IS NOT A BAR, and an earlier agent refused to supply one because it read it as one. A bar
+#: is a threshold a DECISION reads, and no decision reads this: it selects which of the stage's own
+#: measured profiles the picture zooms in on, and changes no reading, no named code and no
+#: measurement. The centre of the frame is a display default, and the manifest records whichever
+#: value was used, so the choice is visible rather than assumed.
+CENTRE_OF_THE_FRAME: tuple[float, float] = (0.5, 0.5)
 
 
 def draw(
@@ -16,7 +26,7 @@ def draw(
     study_uid: str,
     out: Path,
     *,
-    probe_fraction_rc: list[float],
+    probe_fraction_rc: Sequence[float] = CENTRE_OF_THE_FRAME,
 ) -> dict:
     """Draw this stage from the saved run and return its manifest.
 
@@ -24,13 +34,13 @@ def draw(
     renderer's argument spelling. `main()` is a thin wrapper over it, so the hand-typed command
     and the joined run draw the same thing from the same code.
     """
-    fraction = np.asarray(probe_fraction_rc)
+    fraction = np.asarray(probe_fraction_rc, dtype=np.float64)
     if (
         not np.all(np.isfinite(fraction))
         or np.any(fraction < 0)
         or np.any(fraction > 1)
     ):
-        raise ValueError("probe fractions must lie in [0,1]")
+        raise ArgumentRefusal("probe fractions must lie in [0,1]")
     receipt_path = run / "receipt.json"
     receipt = json.loads(receipt_path.read_text())
     records = [
@@ -39,7 +49,16 @@ def draw(
         if r["study_uid"] == study_uid and "acquired_plane" in r["arrays"]
     ]
     if not records:
-        raise ValueError("no saved acquired planes for this study")
+        raise ArgumentRefusal("no saved acquired planes for this study")
+
+    # Imported HERE, after every refusal this function can make, and not at module scope. That is
+    # the form `pair_frames` already uses: the module then imports without Matplotlib, so the
+    # ordinary gate can test its argument handling, and a run with pictures off never loads it.
+    # Matplotlib is supplied per run and is never a production dependency (`docs/STAGE_CONTRACT.md`).
+    import matplotlib.pyplot as plt
+
+    from workbench.render.object_profiles import draw_record
+
     out.mkdir(parents=True, exist_ok=True)
     gallery, axes = plt.subplots(
         len(records),
@@ -129,7 +148,10 @@ def main() -> None:
             args.out,
             probe_fraction_rc=args.probe_fraction_rc,
         )
-    except ValueError as refusal:
+    # ONLY the argument refusals. A bare `except ValueError` here swallowed
+    # `saved_array_digest_mismatch` and a malformed receipt into an exit-2 usage error, which
+    # dresses a corruption signal as a typo. Those propagate.
+    except ArgumentRefusal as refusal:
         parser.error(str(refusal))
     print(
         json.dumps(
