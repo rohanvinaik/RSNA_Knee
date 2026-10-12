@@ -1,6 +1,10 @@
 {
   "schema": "knee.places/1",
-  "about": "Every module's PLACE: where it sits in the pipeline, whether it carries a compute contract, and what draws it. Declared here; `just places` computes the observed state against it and reports drift. Facts that live elsewhere are NOT copied here: a kernel's reads and writes belong to its ComputeContract, a stage's state to the route, a bar to the spec that declared it. The one field no check can read is `role`, and it is marked as such rather than pretended otherwise: a null role is reported as a count, never as a pass.",
+  "about": "Every module's PLACE: where it sits in the pipeline, whether it carries a compute contract, and what draws it. Declared here; `just places` computes the observed state against it and reports drift. Facts that live elsewhere are NOT copied here: a kernel's reads and writes belong to its ComputeContract, a stage's state to the route, a bar to the spec that declared it. TWO fields no check can read are `role` and `frame`, and both are marked as such rather than pretended otherwise: each is reported as a count, never as a pass. The rule both second readers reached independently on 2026-10-12 — declare a property only where a disagreement would sometimes be resolved by changing the CODE; a property whose disagreement is always resolved by editing the declaration is a fact and belongs to a computation, not to this file.",
+  "stage_fields": {
+    "renders": "the module in knee.pictures that draws this stage, or null if it has none. CHECKED: the named module must exist and be declared in the drawing layer. Only on a route stage's __init__.py.",
+    "frame": "whether that picture arranges values computed from the STUDY or values about the PIPELINE's own state. NOT checkable, and counted. Fable, 2026-10-12: 'a stage is not built until it renders' cannot tell the two apart, so without this the route reports a stage as built while its purpose is unserved."
+  },
   "where": {
     "route:<stage>": "runs inside the production route, in that stage of docs/OBJECT_MODEL.md",
     "beside": "cross-cutting or beside the route, per the object model's 'beside the route'",
@@ -13,7 +17,7 @@
     "src/knee/__init__.py": {"where": "beside", "role": "the package root", "contract": false},
     "src/knee/pipeline.py": {"where": "beside", "role": "the route itself: moves values between stages and decides nothing", "contract": false},
 
-    "src/knee/study/__init__.py": {"where": "route:study", "role": "docstring only, no code: Figure 8's A MOVIE text, the founder's 2026-10-10 words on the 58, and what the stage hands on", "contract": false},
+    "src/knee/study/__init__.py": {"where": "route:study", "role": "docstring only, no code: Figure 8's A MOVIE text, the founder's 2026-10-10 words on the 58, and what the stage hands on", "contract": false, "renders": "study", "frame": "study"},
     "src/knee/study/corpus.py": {"where": "route:study", "role": "opens the corpus and reads one study whole at stored fidelity", "contract": false},
     "src/knee/study/series.py": {"where": "route:study", "role": "one series assembled from every .dcm in its directory, reordered along the slice normal, carrying named stack codes; returns a Series on BOTH paths, with volume and geometry None where it cannot stack", "contract": false},
     "src/knee/study/slices.py": {"where": "route:study", "role": "one DICOM file read whole: the header as stored minus Pixel Data, whose content becomes `pixels` at stored fidelity", "contract": false},
@@ -22,18 +26,18 @@
     "src/knee/study/tables.py": {"where": "route:study", "role": "the competition's tables read as given, every cell a raw string and a blank kept as a blank, joined into studies with their series and the orphans kept; raises rather than guessing on a header mismatch, a duplicate study or a None cell", "contract": false},
     "src/knee/study/codes.py": {"where": "route:study", "role": "the study stage's named decisions", "contract": false},
 
-    "src/knee/collapse/__init__.py": {"where": "route:field", "role": "the field: what a series IS before any expensive work runs", "contract": false},
+    "src/knee/collapse/__init__.py": {"where": "route:field", "role": "the field: what a series IS before any expensive work runs", "contract": false, "renders": "collapse", "frame": "study"},
     "src/knee/collapse/regime.py": {"where": "route:field", "role": "one series' regime key, read once from its own values and no label", "contract": false},
     "src/knee/collapse/noise.py": {"where": "route:field", "role": "the noise law, read two independent ways per series", "contract": false},
     "src/knee/collapse/units.py": {"where": "route:field", "role": "the variance-stabilising transform", "contract": false},
     "src/knee/collapse/physical.py": {"where": "route:field", "role": "the physical frame and the squint", "contract": true},
     "src/knee/collapse/codes.py": {"where": "route:field", "role": "the field stage's named decisions", "contract": false},
 
-    "src/knee/lenses/__init__.py": {"where": "route:lenses", "role": "every place read in every acquisition, in one language", "contract": false},
+    "src/knee/lenses/__init__.py": {"where": "route:lenses", "role": "every place read in every acquisition, in one language", "contract": false, "renders": null, "frame": null},
     "src/knee/lenses/digits.py": {"where": "route:lenses", "role": "one place's ternary digit against a static middle", "contract": false},
     "src/knee/lenses/slabs.py": {"where": "route:lenses", "role": "the through-plane slab rule", "contract": false},
 
-    "src/knee/objects/__init__.py": {"where": "route:objects", "role": "docstring only, no code: declares the objects stage — what each module in it does, why it was split out of collapse, and that the residual pull-out is still owed", "contract": false},
+    "src/knee/objects/__init__.py": {"where": "route:objects", "role": "docstring only, no code: declares the objects stage — what each module in it does, why it was split out of collapse, and that the residual pull-out is still owed", "contract": false, "renders": "objects", "frame": "study"},
     "src/knee/objects/analysis.py": {"where": "route:objects", "role": "measures one series through the route: squint, interiors, boundary census", "contract": false},
     "src/knee/objects/interiors.py": {"where": "route:objects", "role": "geometric interiors and observed dark borders, with no anatomical assignment", "contract": true},
     "src/knee/objects/boundaries.py": {"where": "route:objects", "role": "what bounds each territory, and the relief between those that touch", "contract": true},
@@ -44,11 +48,11 @@
     "src/knee/objects/exchange_codes.py": {"where": "route:objects", "role": "the pure named decision for a boundary exchange", "contract": false},
     "src/knee/objects/profile_codes.py": {"where": "route:objects", "role": "the pure named decision for profile support", "contract": false},
 
-    "src/knee/relations/__init__.py": {"where": "route:relations", "role": "interstices per facing pair, constructed and never detected", "contract": false},
-    "src/knee/ownership/__init__.py": {"where": "route:ownership", "role": "every place claimed by one <object> or named unassigned — a partition, never an identification; its picture is the residual map, which is the channel the founder reads to supply the next lens", "contract": false},
-    "src/knee/predicates/__init__.py": {"where": "route:predicates", "role": "the twelve findings, each a predicate on its subject", "contract": false},
-    "src/knee/output/__init__.py": {"where": "route:output", "role": "twelve confidences per study, with the kept record behind them", "contract": false},
-    "src/knee/vectors/__init__.py": {"where": "route:bundles", "role": "every place written in one language; an object's profile is the bundle of its places", "contract": false},
+    "src/knee/relations/__init__.py": {"where": "route:relations", "role": "interstices per facing pair, constructed and never detected", "contract": false, "renders": null, "frame": null},
+    "src/knee/ownership/__init__.py": {"where": "route:ownership", "role": "every place claimed by one <object> or named unassigned — a partition, never an identification; its picture is the residual map, which is the channel the founder reads to supply the next lens", "contract": false, "renders": null, "frame": null},
+    "src/knee/predicates/__init__.py": {"where": "route:predicates", "role": "the twelve findings, each a predicate on its subject", "contract": false, "renders": null, "frame": null},
+    "src/knee/output/__init__.py": {"where": "route:output", "role": "twelve confidences per study, with the kept record behind them", "contract": false, "renders": null, "frame": null},
+    "src/knee/vectors/__init__.py": {"where": "route:bundles", "role": "every place written in one language; an object's profile is the bundle of its places", "contract": false, "renders": null, "frame": null},
 
     "src/knee/memory/__init__.py": {"where": "beside", "role": "the memory and its buckets; recall arrives at diagnosis, not at the parse", "contract": false},
     "src/knee/expert/__init__.py": {"where": "beside", "role": "the expert's calls become cases", "contract": false},
