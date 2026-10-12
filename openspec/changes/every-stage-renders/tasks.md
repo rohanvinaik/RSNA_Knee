@@ -116,10 +116,16 @@ earlier stage produced, identity is not assumed. If it is a kind-label, it is, a
 - [ ] 1.3a **Record which territory each bracketed profile reached across the dark.** This is the
       pairing `relations` needs and **it does not exist in any record**. Confirmed in source
       2026-10-12 by reading `interiors.py` whole: `boundary_edges` does
-      `regions.append(labels[rows, cols])` — the territory's **own** label — and uses the neighbour
-      only at `kind[padded[nr, nc] > 0] = EDGE_KINDS["peer_territory"]`, to set the edge kind. So the
-      far side is genuinely unrecorded, and the pairs the thesis wants are bounded **across dark**,
-      which are precisely the pairs that are *not* watershed-adjacent. Its own unit, its own contract,
+      `regions.append(labels[rows, cols])` — the territory's **own** label — and reads the neighbour
+      only to decide *that* a place is an edge (`neighbor != labels`) and of which *kind*. **Sharpened
+      the same day by the sub-agent that wrote 1.3b, and the refinement changes what this task is:**
+      for a `peer_territory` edge the neighbour's label *would* record the far side, so merely
+      storing it is not the job. The pairs the thesis wants are bounded **across dark**, and there
+      `interior = available & ~dark` with watershed `mask=interior`, so the neighbour is a dark place
+      whose label is **0** — there is no far-side label to store. `dark_bands` records where a band
+      lies (a position) and never which territory a profile reached beyond it. **So this task is to
+      CONSTRUCT the dark-bounded pairing, not to record an existing one.** Its own unit, its own
+      contract,
       pinned two-sign. **Corrects a false claim this lead wrote into task 1.3 on 2026-10-12** — that
       relations was constructible "from the facing-pair graph the boundary census already computes".
       It is constructible in principle and it is **not a lookup**.
