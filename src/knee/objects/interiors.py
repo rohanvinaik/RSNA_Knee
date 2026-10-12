@@ -148,7 +148,7 @@ def prominent_peaks(distance: np.ndarray, prominence_mm: float) -> np.ndarray:
         )
 
 
-@contracted(CONTRACT)
+@contracted
 def read_interiors(
     plane: np.ndarray,
     spacing_rc: tuple[float, float],

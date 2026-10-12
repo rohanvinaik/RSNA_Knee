@@ -384,7 +384,7 @@ def exchange(
     )
 
 
-@contracted(CONTRACT)
+@contracted
 def converse(
     inputs: tuple[ConversationInput, ...],
     offsets_mm: np.ndarray,

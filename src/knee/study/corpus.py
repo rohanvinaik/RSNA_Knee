@@ -7,6 +7,7 @@ from pathlib import Path
 
 from knee.study.decoders import require_decoders
 from knee.study.series import Series, read_series
+from knee.study.shape import CorpusShape, corpus_shape
 from knee.study.tables import SPLIT_FOLDER, SeriesRow, StudyRow, Tables, read_tables
 
 LOCAL_ROOT = Path("data/raw")
@@ -16,10 +17,12 @@ KAGGLE_ROOT = Path("/kaggle/input/competitions/rsna-knee-abnormality-detection")
 
 @dataclass(frozen=True, slots=True)
 class Corpus:
-    """The competition's files under `root`, in Kaggle's own layout, and its tables as given."""
+    """The competition's files under `root`, in Kaggle's own layout, its tables as given, and
+    their shape (`knee.study.shape`), counted once here so every run carries it in its receipt."""
 
     root: Path
     tables: Tables
+    shape: CorpusShape
 
 
 @dataclass(frozen=True, slots=True)
@@ -33,7 +36,8 @@ class Study:
 def open_corpus(root: Path) -> Corpus:
     """Refuse a missing decoder first, then read the tables. `root` is LOCAL_ROOT here, KAGGLE_ROOT in the kernel."""
     require_decoders()
-    return Corpus(root=root, tables=read_tables(root))
+    tables = read_tables(root)
+    return Corpus(root=root, tables=tables, shape=corpus_shape(tables))
 
 
 def series_directory(corpus: Corpus, study: StudyRow, series: SeriesRow) -> Path:

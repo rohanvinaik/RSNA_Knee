@@ -15,6 +15,7 @@ positive sign now checks that what it carries is exactly what the pairing unit r
 from dataclasses import replace
 
 import numpy as np
+import pytest
 
 from knee.absence import CODES, is_silence
 from knee.objects.interiors import EDGE_KINDS, dark_bands, read_interiors
@@ -124,11 +125,16 @@ def test_the_ledger_records_exactly_what_the_stage_read_and_produced() -> None:
     ]
 
 
-def test_the_ledger_counts_nothing_read_when_nothing_was_handed_over() -> None:
+def test_the_ledger_records_no_consumption_of_a_predecessor_that_was_not_handed_over() -> (
+    None
+):
+    """Task 7.14: a None predecessor was not produced, so no `objects.consumed_by.relations` is
+    recorded for it; until then the stage wrote one with a zero count, which the composition
+    check reads as a phantom producer. The pairing unit is total and still runs on None, and
+    ITS record is handed over, so that consumption is recorded."""
     with recording() as run:
         read_relations(None)
     assert [(e.name, dict(e.counts)) for e in run.events()] == [
-        ("objects.consumed_by.relations", {"interiors": 0}),
         (
             "pairings.produced",
             {"profiles": 0, "paired": 0, "footprint_read_upper_bound": 0},
@@ -140,12 +146,13 @@ def test_the_ledger_counts_nothing_read_when_nothing_was_handed_over() -> None:
 
 def test_the_ledger_records_no_pairing_attempt_for_a_malformed_predecessor() -> None:
     # MUST NOT: a malformed predecessor is counted as nothing read, and no pairing is produced;
-    # a truthy non-reading (the integer 1) must not be counted as an interiors reading.
+    # a truthy non-reading (the integer 1) must not be counted as an interiors reading. It WAS
+    # handed over, so its consumption is recorded with nothing read; no pairing record exists,
+    # so none is recorded as consumed (task 7.14).
     with recording() as run:
         read_relations(1, (1.0, 1.0))
     assert [(e.name, dict(e.counts)) for e in run.events()] == [
         ("objects.consumed_by.relations", {"interiors": 0}),
-        ("pairings.consumed_by.relations", {"profiles": 0, "paired": 0}),
         ("relations.produced", {"interstices": 0, "pairs": 0}),
     ]
 
@@ -158,6 +165,15 @@ def test_the_interstice_record_and_its_kinds_are_declared_structurally() -> None
     )
     for word in ("femur", "tibia", "patella", "meniscus", "medial", "lateral", "bone"):
         assert all(word not in kind for kind in KINDS)
+
+
+def test_every_declared_kind_builds_a_record_and_an_unresolved_side_is_zero() -> None:
+    """Task 7.2: the record is `KINDS`' consumer. Every kind it declares is admissible, and 0 is
+    the one index that means 'this side the construction could not resolve'."""
+    for kind in KINDS:
+        record = Interstice(kind, 0, 4, "series", "test")
+        assert record.kind == kind
+        assert record.first == 0
 
 
 # --------------------------------------------------------------------------------------------
@@ -211,6 +227,21 @@ def test_an_empty_interstice_tuple_is_never_a_finding_of_no_interstice() -> None
         "an empty tuple beside a non-silent code would read as 'this knee has no interstice', "
         "which is a negative invented from a missing reading"
     )
+
+
+def test_an_interstice_never_carries_a_kind_relations_does_not_declare() -> None:
+    """MUST NOT: a construction of a kind outside `KINDS` is a record the predicates could never
+    select from, and an anatomical word is exactly the kind that must not get in this way."""
+    for kind in ("femur_gap", "", "FACING_PAIR", "medial_compartment"):
+        with pytest.raises(ValueError, match="invalid_interstice_kind"):
+            Interstice(kind, 1, 2, "series", "test")
+
+
+def test_an_interstice_never_carries_an_extent_that_is_not_a_whole_index() -> None:
+    """MUST NOT: a negative, fractional or boolean index is not an `<object>` index."""
+    for first, second in ((-1, 2), (1.5, 2), (True, 2), (1, None), ("3", 2)):
+        with pytest.raises(ValueError, match="invalid_interstice_extent_index"):
+            Interstice("facing_pair", first, second, "series", "test")  # type: ignore[arg-type]
 
 
 def test_a_retained_pair_never_becomes_an_interstice() -> None:

@@ -81,6 +81,20 @@ class Interstice:
     series_uid: str
     provenance: str
 
+    def __post_init__(self) -> None:
+        # The record is `KINDS`' consumer (task 7.2): a construction can only be of a kind the
+        # object model's tiers name, and an extent index is a whole number (0 = unresolved side).
+        # This is a contract on the record, not a decision about a study, so it refuses by name.
+        if self.kind not in KINDS:
+            raise ValueError(f"invalid_interstice_kind:{self.kind}")
+        # `bool` is an `int` to Python and is excluded by name: a must-not test caught `True`
+        # passing as extent 1, which is the kind of silent coercion a record exists to refuse.
+        if not all(
+            isinstance(index, int) and not isinstance(index, bool) and index >= 0
+            for index in (self.first, self.second)
+        ):
+            raise ValueError("invalid_interstice_extent_index")
+
 
 @dataclass(frozen=True, slots=True)
 class RelationsReading:
@@ -118,14 +132,20 @@ def read_relations(interiors: object, spacing_rc: object = None) -> RelationsRea
     post: __return__.interstices == ()
     """
     readable = interiors is None or isinstance(interiors, InteriorReading)
-    ledger.record(
-        "objects.consumed_by.relations",
-        interiors=1 if isinstance(interiors, InteriorReading) else 0,
-    )
+    # Consumption is recorded only for a record handed over (`specs/route-composition`, task
+    # 7.14): a None predecessor was not produced, and the code below names that silence.
+    if interiors is not None:
+        ledger.record(
+            "objects.consumed_by.relations",
+            interiors=1 if isinstance(interiors, InteriorReading) else 0,
+        )
     pairings = read_pairings(interiors, spacing_rc) if readable else None
     paired = int(pairings.counts.get("paired", 0)) if pairings is not None else 0
     profiles = int(pairings.outcome_codes.size) if pairings is not None else 0
-    ledger.record("pairings.consumed_by.relations", profiles=profiles, paired=paired)
+    if pairings is not None:
+        ledger.record(
+            "pairings.consumed_by.relations", profiles=profiles, paired=paired
+        )
     # Recorded even though it constructs nothing: a stage that is silent still ran, and a ledger
     # with no row for it cannot be told from a stage that never executed.
     ledger.record("relations.produced", interstices=0, pairs=paired)

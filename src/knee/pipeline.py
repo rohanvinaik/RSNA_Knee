@@ -36,6 +36,7 @@ from pathlib import Path
 import numpy as np
 
 from knee.collapse.regime import RegimeKey, read_regime
+from knee.collapse.structure import StructureReading, read_structure, told_sign
 from knee.lenses.places import LensesReading, read_lenses
 from knee.objects.analysis import AnalysisRequest, SeriesMeasurement, measure_series
 from knee.objects.conversation import ConversationInput, SeriesConversation, converse
@@ -44,6 +45,7 @@ from knee.ownership.claims import OwnershipMembers, read_ownership_members
 from knee.predicates.findings import FindingsReading, read_findings
 from knee.relations.shell import RelationsReading, read_relations
 from knee.study.corpus import Corpus, Series, Study, read_study
+from knee.study.series import selected_slice
 from knee.telemetry import ledger
 from knee.vectors.bundles import BundlesReading, read_bundles
 
@@ -107,10 +109,16 @@ class SeriesRun:
     lenses: LensesReading | None = None
     bundles: BundlesReading | None = None
     # The study stage's own retained picture content (task 6.9): its per-slice codes, and the
-    # walk through the stack it keeps so the writer can save it without the whole volume.
+    # walk through the stack it keeps so the writer can save it without the whole volume; and
+    # (task 7.2) each slice's thickness as the study stage read it from the header it owns.
     slice_codes: tuple[str, ...] = ()
     walk_indices: tuple[int, ...] = ()
     walk: np.ndarray | None = None
+    slice_thickness_mm: tuple[float | None, ...] = ()
+    # The field's structural reading (task 7.1): air, the leg, the axis, the profile, the basins
+    # and the seam, read from the selected plane; None when no analysis named a tile, as
+    # `measurements` is.
+    structure: StructureReading | None = None
 
 
 @dataclass(frozen=True, slots=True)
@@ -158,10 +166,56 @@ def _measure(
     )
 
 
+def _structure(
+    series: Series, analysis: AnalysisRequest | None
+) -> StructureReading | None:
+    """The field's structural reading of the selected plane, when an analysis names the tile.
+
+    Read by the same rule as the objects stage: the plane is `selected_slice`'s, and without an
+    analysis request there is no tile to squint at, so the reading is not made, as the objects
+    stage's is not. The reading itself is total: a series without a volume, without a geometry
+    or with a request outside its stack is handed None for the plane or the header and names
+    that silence itself. The told sign is the series table's flag, never the pixels.
+    """
+    if analysis is None:
+        return None
+    volume, geometry = series.volume, series.geometry
+    index = selected_slice(0 if volume is None else len(volume), analysis.slice_index)
+    plane = None if volume is None or index is None else volume[index]
+    header_read = geometry is not None and index is not None
+    orientation = geometry.orientation[index] if header_read else None
+    normal = None if geometry is None else geometry.normal
+    spacing = (
+        (float(geometry.spacing[index][0]), float(geometry.spacing[index][1]))
+        if header_read
+        else (float("nan"), float("nan"))
+    )
+    return read_structure(
+        plane,
+        orientation,
+        normal,
+        spacing,
+        analysis.tile_mm,
+        told_sign(series.row.fluid_sensitive),
+        analysis.structure_bars,
+    )
+
+
+@dataclass(frozen=True, slots=True)
+class _Measured:
+    """One series after step 1: what the field, the lenses and the objects stage read from it."""
+
+    series: Series
+    key: RegimeKey | None
+    lenses: LensesReading
+    measurement: SeriesMeasurement | None
+    structure: StructureReading | None
+
+
 def _attendance(
     runs: tuple[SeriesRun, ...], findings: FindingsReading, output: OutputReading
 ) -> tuple[tuple[str, str], ...]:
-    """Every stage with the code it returned: `present` if any series read, else the first silence."""
+    """Every stage with the code it returned, in `STAGES` order: `present` if any series read, else the first silence."""
 
     def over_series(codes: list[str]) -> str:
         if not codes:
@@ -175,31 +229,28 @@ def _attendance(
         for run in runs
         if run.lenses is not None and run.lenses.members
     ]
-    return (
-        ("study", "present" if runs else "predecessor_empty"),
-        (
-            "collapse",
-            over_series(["present" if r.regime is not None else r.why for r in runs]),
+    by_stage = {
+        "study": "present" if runs else "predecessor_empty",
+        "collapse": over_series(
+            ["present" if r.regime is not None else r.why for r in runs]
         ),
-        ("lenses", over_series(lens_codes)),
-        (
-            "objects",
-            over_series(
-                [
-                    "present"
-                    if r.measurements.code == "measured"
-                    else r.measurements.code
-                    for r in runs
-                    if r.measurements is not None
-                ]
-            ),
+        "lenses": over_series(lens_codes),
+        "objects": over_series(
+            [
+                "present" if r.measurements.code == "measured" else r.measurements.code
+                for r in runs
+                if r.measurements is not None
+            ]
         ),
-        ("relations", over_series([r.relations.code for r in runs if r.relations])),
-        ("ownership", over_series([r.ownership.code for r in runs if r.ownership])),
-        ("vectors", over_series([r.bundles.code for r in runs if r.bundles])),
-        ("predicates", findings.code),
-        ("output", output.code),
-    )
+        "relations": over_series([r.relations.code for r in runs if r.relations]),
+        "ownership": over_series([r.ownership.code for r in runs if r.ownership]),
+        "vectors": over_series([r.bundles.code for r in runs if r.bundles]),
+        "predicates": findings.code,
+        "output": output.code,
+    }
+    # `STAGES` orders the roster (task 7.2): a stage added to ROUTE without a reading here is a
+    # KeyError on the first run, never a roster that silently omits it.
+    return tuple((stage, by_stage[stage]) for stage in STAGES)
 
 
 def run_study(
@@ -211,7 +262,8 @@ def run_study(
     """Walk one study down the object model's route, in dependency order.
 
     1. Chapter 1 reads the study whole at stored fidelity; per series the collapse reads the regime
-       key, the lenses read every place against it, and the objects stage measures the plane.
+       key and the structure of the selected plane, the lenses read every place against the key,
+       and the objects stage measures the plane.
     2. The same-orientation acquisitions converse, each series receiving its refined parse.
     3. Per series, ownership seats one member per parse, relations reads its pairings, and the
        bundles read what the lenses and the partition said about each object.
@@ -225,30 +277,37 @@ def run_study(
     ledger.record("study.produced", series=len(study.series))
 
     # 1. Measure every series. The route counts the two pinned multi-exit readers here; every
-    # other stage records its own production, and every consumer its own consumption.
-    measured: list[
-        tuple[Series, RegimeKey | None, LensesReading, SeriesMeasurement | None]
-    ] = []
+    # other stage records its own production, and every consumer its own consumption. The field
+    # reads two things per series, the regime key and the structural reading of the selected
+    # plane (task 7.1), and records both under its one `collapse.produced`.
+    measured: list[_Measured] = []
     for series in study.series:
         ledger.record(
             "study.consumed_by.collapse", volume=1 if series.volume is not None else 0
         )
         key = read_regime(series) if series.volume is not None else None
-        ledger.record("collapse.produced", regime=1 if key is not None else 0)
+        structure = _structure(series, analysis)
+        ledger.record(
+            "collapse.produced",
+            regime=1 if key is not None else 0,
+            structure=1 if structure is not None and structure.code == "present" else 0,
+        )
         lenses = read_lenses(series.volume, key)
-        measured.append((series, key, lenses, _measure(series, analysis, key)))
+        measured.append(
+            _Measured(series, key, lenses, _measure(series, analysis, key), structure)
+        )
 
     # 2. The conversation, over every ordered same-orientation pair, BEFORE anything reads a parse.
     conversation_of: dict[str, SeriesConversation] = {}
     if analysis is not None and analysis.conversation:
         inputs = tuple(
             ConversationInput(
-                series.row.series_uid,
-                series.row.anatomical_plane,
-                measurement,
-                key.background_split if key is not None else float("nan"),
+                read.series.row.series_uid,
+                read.series.row.anatomical_plane,
+                read.measurement,
+                read.key.background_split if read.key is not None else float("nan"),
             )
-            for series, key, _, measurement in measured
+            for read in measured
         )
         for reading in converse(
             inputs, np.asarray(analysis.offsets_mm), analysis.backend
@@ -259,7 +318,13 @@ def run_study(
     # each runs unconditionally and none is guarded by an `if`: a guard here would be the route
     # deciding, and the route decides nothing (SS13.7); the stage names its own silence.
     runs: list[SeriesRun] = []
-    for series, key, lenses, measurement in measured:
+    for read in measured:
+        series, key, lenses, measurement = (
+            read.series,
+            read.key,
+            read.lenses,
+            read.measurement,
+        )
         row = series.row
         conversation = conversation_of.get(row.series_uid)
         interiors = getattr(measurement, "interiors", None)
@@ -267,11 +332,19 @@ def run_study(
         ownership = read_ownership_members(interiors, conversation)
         relations = read_relations(interiors, frame.spacing_rc if frame else None)
         others = tuple(
-            (other, other_measurement)
-            for other, _, _, other_measurement in measured
-            if other.row.series_uid != row.series_uid
+            (other.series, other.measurement)
+            for other in measured
+            if other.series.row.series_uid != row.series_uid
         )
-        bundles = read_bundles(ownership, lenses, measurement, others)
+        # The backend the request names selects the slab rule's twin (task 7.10); with no
+        # request there is no kernel path to select, and the reference is the stage's default.
+        bundles = read_bundles(
+            ownership,
+            lenses,
+            measurement,
+            others,
+            backend=analysis.backend if analysis is not None else "reference",
+        )
         runs.append(
             SeriesRun(
                 series_uid=row.series_uid,
@@ -290,6 +363,8 @@ def run_study(
                 slice_codes=series.slice_codes,
                 walk_indices=series.walk_indices,
                 walk=series.walk,
+                slice_thickness_mm=series.slice_thickness_mm,
+                structure=read.structure,
             )
         )
 

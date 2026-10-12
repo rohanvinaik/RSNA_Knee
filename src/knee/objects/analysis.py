@@ -1,15 +1,16 @@
 """One physical measurement pass over a loaded series; no anatomical assignments."""
 
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 
 import numpy as np
 
 from knee.collapse.physical import PlaneFrame, Squint, physical_squint
+from knee.collapse.structure import StructureBars
 from knee.compute.contracts import handed_on
 from knee.objects.boundaries import BoundaryCensus, boundary_census
 from knee.objects.interiors import InteriorReading, read_interiors
 from knee.objects.profiles import ProfileReading, sample_profiles
-from knee.study.series import Series
+from knee.study.series import Series, selected_slice
 from knee.telemetry import ledger
 
 
@@ -17,9 +18,11 @@ from knee.telemetry import ledger
 class AnalysisRequest:
     """Explicit settings, never object admission bars.
 
-    None selects floor(n/2) in Chapter 1's spatial stack order. Offsets run along
-    the recorded in-plane unit patient vector, not the unprojected requested axis.
-    Probe sites are native pixel-centres of all tiles, including remainder tiles.
+    None selects floor(n/2) in Chapter 1's spatial stack order (`selected_slice`, the one rule,
+    shared with the field's structural reading). Offsets run along the recorded in-plane unit
+    patient vector, not the unprojected requested axis. Probe sites are native pixel-centres of
+    all tiles, including remainder tiles. `structure_bars` are the field's structural reading's
+    bars (task 7.1), every one an argument with its provenance in `StructureBars`.
     """
 
     tile_mm: float
@@ -30,6 +33,7 @@ class AnalysisRequest:
     prominence_mm: float | None = None
     conversation: bool = False
     minimum_divide_sites: int = 1
+    structure_bars: StructureBars = field(default_factory=StructureBars)
 
     def __post_init__(self) -> None:
         if not np.isfinite(self.tile_mm) or self.tile_mm <= 0:
@@ -124,12 +128,14 @@ def _measure_series(
         return SeriesMeasurement("no_stacked_volume")
     if series.geometry is None:
         return SeriesMeasurement("geometry_unreadable")
-    index = (
-        len(series.volume) // 2 if request.slice_index is None else request.slice_index
-    )
-    if not 0 <= index < len(series.volume):
+    # The ONE rule for which slice a study is read at (task 7.1), shared with the field's
+    # structural reading; a request outside the stack is named, never clamped.
+    index = selected_slice(len(series.volume), request.slice_index)
+    if index is None:
         return SeriesMeasurement(
-            "slice_unavailable", index, validation_code="invalid_slice_index"
+            "slice_unavailable",
+            request.slice_index,
+            validation_code="invalid_slice_index",
         )
     geometry = series.geometry
     source = series.slices[index].path.name
@@ -147,13 +153,13 @@ def _measure_series(
             source_plane=source,
             orientation_spread=geometry.orientation_spread,
         )
-    try:
-        thickness = float(
-            series.slices[index].header.get("SliceThickness", float("nan"))
-        )
-    except (TypeError, ValueError):
-        thickness = float("nan")
-    thickness = thickness if np.isfinite(thickness) and thickness > 0 else None
+    # The study stage read the thickness once, from the header it owns (task 7.2); this stage
+    # consumes that reading rather than opening the header a second time.
+    thickness = (
+        series.slice_thickness_mm[index]
+        if index < len(series.slice_thickness_mm)
+        else None
+    )
     plane = series.volume[index]
     squint = physical_squint(plane, frame.spacing_rc, request.tile_mm)
     direction = np.asarray(request.direction_lps, dtype=np.float64)

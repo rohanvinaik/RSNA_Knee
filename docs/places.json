@@ -26,6 +26,7 @@
     "src/knee/study/geometry.py": {"where": "route:study", "role": "slice geometry in the patient's LPS frame from the tags as stored; every reader returns a named status with its values, naming WHICH zero it found (absent, empty, malformed, degenerate) rather than defaulting one", "contract": false},
     "src/knee/study/tables.py": {"where": "route:study", "role": "the competition's tables read as given, every cell a raw string and a blank kept as a blank, joined into studies with their series and the orphans kept; raises rather than guessing on a header mismatch, a duplicate study or a None cell", "contract": false},
     "src/knee/study/codes.py": {"where": "route:study", "role": "the study stage's named decisions", "contract": false},
+    "src/knee/study/shape.py": {"where": "route:study", "role": "task 7.1a: the corpus's shape from the tables alone — studies and series per split, the view triples the labeled studies carry, the label codes per finding, the report column's presence and length — counted once when the corpus opens, written in the receipt and drawn; read by no decision", "contract": false},
 
     "src/knee/collapse/__init__.py": {"where": "route:field", "role": "the field: what a series IS before any expensive work runs", "contract": false, "renders": "collapse", "frame": "study"},
     "src/knee/collapse/regime.py": {"where": "route:field", "role": "one series' regime key, read once from its own values and no label", "contract": false},
@@ -33,12 +34,14 @@
     "src/knee/collapse/units.py": {"where": "route:field", "role": "the variance-stabilising transform", "contract": false},
     "src/knee/collapse/physical.py": {"where": "route:field", "role": "the physical frame and the squint", "contract": true},
     "src/knee/collapse/codes.py": {"where": "route:field", "role": "the field stage's named decisions", "contract": false},
+    "src/knee/collapse/structure.py": {"where": "route:field", "role": "task 7.1: the field's structural reading, which replaced the seam, structure and objects probes — air by connectivity to the border, the leg closed, the air histogram, the squint inside the leg, the superior–inferior axis from the header as a named code, the profile along it superior first with its dip, two basins seeded by the axis alone with the seam between them under the told sign, the darkest places and the largest bright bodies — every bar an argument with its provenance, every value retained, a member beside B1's interiors", "contract": true},
 
     "src/knee/lenses/__init__.py": {"where": "route:lenses", "role": "every place read in every acquisition, in one language", "contract": false, "renders": "lenses", "frame": "study"},
     "src/knee/lenses/digits.py": {"where": "route:lenses", "role": "one place's named reading against supplied low/high edges, inclusive middle and distinct silences", "contract": false},
     "src/knee/lenses/members.py": {"where": "route:lenses", "role": "task 2.2a: what two SEATED MEMBERS said about one place — concur, dissent, one-only or neither-read — and deliberately no code meaning resolved, preferred or combined, because a disagreement between overlapping correct readings is the three-legged stool's informative case and its resolution is the founder's, never the pipeline's", "contract": false},
     "src/knee/lenses/places.py": {"where": "route:lenses", "role": "seats EVERY structurally warranted member and writes each one's native map against its OWN population's terciles — the noise-law cut and the background split, neither a fallback for the other — plus their standing per place; normalisation none, no anatomy, no cross-acquisition correspondence, and no field in which a winner could be recorded", "contract": true},
     "src/knee/lenses/slabs.py": {"where": "route:lenses", "role": "the through-plane slab rule", "contract": false},
+    "src/knee/lenses/slab_kernels.py": {"where": "route:lenses", "role": "task 7.10: the slab rule over arrays — a plain Python reference and its Numba twin, the same body compiled, each pinned element by element to the scalar `slab_code`, which stays the oracle; selected by the requested backend and never a silent fallback; the through-plane bank's kernel", "contract": true},
 
     "src/knee/objects/__init__.py": {"where": "route:objects", "role": "docstring only, no code: declares the objects stage — what each module in it does, why it was split out of collapse, and that the residual pull-out is still owed", "contract": false, "renders": "objects", "frame": "study"},
     "src/knee/objects/analysis.py": {"where": "route:objects", "role": "measures one series through the route: squint, interiors, boundary census", "contract": false},
@@ -69,7 +72,7 @@
     "src/knee/agencies/__init__.py": {"where": "beside", "role": "the four agencies, each marked where it acts", "contract": false},
     "src/knee/record/__init__.py": {"where": "beside", "role": "the kept record of findings, where the agencies meet", "contract": false},
     "src/knee/compute/__init__.py": {"where": "beside", "role": "the project-wide compute discipline below every stage: the ComputeContract each kernel carries, and handed_on, which freezes output storage so a consumer cannot write through a reading it was handed; defines nothing itself, re-exports three names", "contract": false},
-    "src/knee/compute/contracts.py": {"where": "beside", "role": "the ComputeContract itself, and handed_on", "contract": false},
+    "src/knee/compute/contracts.py": {"where": "beside", "role": "the ComputeContract itself, `contracted` (which attaches it as data, records the kernel in the registry `declared_contracts` reads, and returns the function unwrapped), and handed_on", "contract": false},
     "src/knee/telemetry/__init__.py": {"where": "beside", "role": "where the compute went and what was recomputed: counted work, not wall time, in plain stdlib because this sits on the production import path and no profiler may reach a Kaggle kernel; off by default, defines nothing itself, re-exports four names", "contract": false},
     "src/knee/telemetry/ledger.py": {"where": "beside", "role": "the ledger every stage records its work to", "contract": true},
 
@@ -121,6 +124,7 @@
 
     "scripts/places.py": {"where": "script", "role": "computes every module's observed place against this file, and reports the drift", "contract": false},
     "scripts/unit_loop.py": {"where": "script", "role": "prints the build loop with the route's live state", "contract": false},
+    "scripts/composition_check.py": {"where": "script", "role": "task 7.4: reads a real run's receipt and says whether its stages composed — every `produced` consumed, no phantom consumer, the conversation before ownership — from the ledger and never from the artifact; advisory, run after every real run", "contract": false},
     "scripts/object_graph.py": {"where": "script", "role": "the dependency graph over the production route; a value nothing consumes shows as dangling", "contract": false},
     "scripts/object_status.py": {"where": "script", "role": "recomputes a saved packet's source standing", "contract": false},
     "scripts/detective_resolution.py": {"where": "script", "role": "proves Detective and Wesker resolve to the local checkouts", "contract": false},

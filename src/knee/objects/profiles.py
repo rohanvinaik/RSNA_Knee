@@ -23,7 +23,7 @@ CONTRACT = ComputeContract(
 )
 
 
-@contracted(CONTRACT)
+@contracted
 def profile_samples_reference(plane, points, normals, offsets, spacing):
     samples = np.full((len(points), len(offsets)), np.nan, dtype=np.float64)
     valid = np.zeros(samples.shape, dtype=np.bool_)

@@ -156,3 +156,48 @@ def test_the_companion_carries_the_subjects_the_predicates_read():
 def test_it_never_raises_however_malformed_the_argument():
     for argument in (object(), 0, "", [], {"findings": 3}):
         assert read_output(argument).code in CODES
+
+
+def test_twelve_rows_of_one_finding_are_not_the_twelve():
+    # MUST NOT: completeness is every declared index exactly once -- never twelve rows of one
+    # finding under one column, never eleven, never thirteen. Codex re-review 2026-10-12 found
+    # twelve copies of finding zero accepted as a complete companion (task 7.13).
+    twelve = read_findings((_Row(),)).findings
+    projection = Projection(0.5, "a test, not the founder", "2026-10-12")
+    for rows in (tuple(twelve[0] for _ in twelve), twelve[:11], (*twelve, twelve[3])):
+        reading = read_output(type("F", (), {"findings": rows})(), projection)
+        assert reading.code == "invalid_count", len(rows)
+        assert reading.rows is None
+    assert (
+        read_output(type("F", (), {"findings": twelve})(), projection).code == "present"
+    )
+
+
+def test_a_row_that_does_not_read_as_one_is_named_never_raised():
+    # MUST NOT: raise on a row without a reason, with a non-numeric or bool index, or with
+    # subjects that are not two whole numbers. The contract says nothing here raises; the
+    # readable rows are kept and the record is named unreadable, never shortened (task 7.13).
+    good = read_findings((_Row(),)).findings
+    projection = Projection(0.5, "a test, not the founder", "2026-10-12")
+
+    class NoReason:
+        index, code, subjects, candidates = 0, "form_not_given", (0, 0), 0
+
+    class TextIndex:
+        index, code, reason = "zero", "form_not_given", "a reason"
+        subjects, candidates = (0, 0), 0
+
+    class BoolIndex:
+        index, code, reason = True, "form_not_given", "a reason"
+        subjects, candidates = (0, 0), 0
+
+    class OddSubjects:
+        index, code, reason = 0, "form_not_given", "a reason"
+        subjects, candidates = ("left", "right"), 0
+
+    for odd in (NoReason(), TextIndex(), BoolIndex(), OddSubjects()):
+        handed = type("F", (), {"findings": (odd, *good[1:])})()
+        reading = read_output(handed, projection)
+        assert reading.code == "invalid_count", type(odd).__name__
+        assert reading.rows is None
+        assert len(reading.companion) == 11

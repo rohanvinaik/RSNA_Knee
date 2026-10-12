@@ -124,11 +124,53 @@ def output_code(
     return "present" if projection_declared else "projection_undeclared"
 
 
-def _pair(value: object) -> tuple[int, int]:
-    """Two subject indices as the record carries them, or (0, 0) for anything that is not two."""
-    if isinstance(value, tuple) and len(value) == 2:
-        return int(value[0]), int(value[1])
-    return 0, 0
+def _whole(value: object) -> int | None:
+    """A whole number as an int; None for a bool, a float, a string or anything else."""
+    if isinstance(value, bool) or not isinstance(value, int):
+        return None
+    return value
+
+
+def _pair(value: object) -> tuple[int, int] | None:
+    """Two whole subject indices as the record carries them, or None for anything else.
+
+    Until task 7.13 anything that was not two came back as (0, 0): a default standing in for a
+    reading not made. Now a row whose subjects cannot be read is not a row.
+    """
+    if not isinstance(value, tuple) or len(value) != 2:
+        return None
+    first, second = _whole(value[0]), _whole(value[1])
+    if first is None or second is None:
+        return None
+    return first, second
+
+
+def _row(finding: object, by_index: dict[int, str]) -> CompanionRow | None:
+    """One finding as the companion carries it, or None when it does not read as one.
+
+    A row needs a whole index, a code and a reason that are strings, two whole subject indices
+    and a whole candidate count. Anything else is not a row: the reader returns None and the
+    stage names the record `invalid_count` (task 7.13) instead of raising, as its contract
+    promises. The Codex re-review of 2026-12-12 reproduced both a row without a reason and a
+    non-numeric index raising out of this stage.
+    """
+    index = _whole(getattr(finding, "index", None))
+    code = getattr(finding, "code", None)
+    reason = getattr(finding, "reason", None)
+    subjects = _pair(getattr(finding, "subjects", None))
+    candidates = _whole(getattr(finding, "candidates", None))
+    if index is None or not isinstance(code, str) or not isinstance(reason, str):
+        return None
+    if subjects is None or candidates is None:
+        return None
+    return CompanionRow(
+        index=index,
+        column=by_index.get(index, "unmapped"),
+        code=code,
+        reason=reason,
+        subjects=subjects,
+        candidates=candidates,
+    )
 
 
 def read_output(
@@ -137,7 +179,9 @@ def read_output(
     """Join the twelve to the competition's columns; refuse the rows while the number is undeclared.
 
     Total over `findings`: None, a malformed object and a reading with no rows all return a named
-    code over an empty companion, and nothing here raises.
+    code over an empty companion, and nothing here raises. A record holding a row that does not
+    read as one keeps its readable rows in the companion and is named `invalid_count`: the
+    companion is never silently shorter than the twelve.
 
     post: __return__.code in CODES
     post: __return__.rows is None or __return__.code == "present"
@@ -145,26 +189,27 @@ def read_output(
     rows = getattr(findings, "findings", None)
     standings = tuple(rows) if isinstance(rows, tuple) else ()
     by_index = {index: column for index, column in COLUMN_BY_INDEX}
-    companion = tuple(
-        CompanionRow(
-            index=int(finding.index),
-            column=by_index.get(int(finding.index), "unmapped"),
-            code=str(finding.code),
-            reason=str(finding.reason),
-            subjects=_pair(getattr(finding, "subjects", (0, 0))),
-            candidates=int(getattr(finding, "candidates", 0)),
+    read = tuple(_row(finding, by_index) for finding in standings)
+    companion = tuple(row for row in read if row is not None)
+    # Complete means THE TWELVE: every declared index exactly once, each under a mapped column
+    # with an admitted code. Twelve rows of one finding once passed this check, and a row that
+    # did not read as one made the companion shorter instead of the record unreadable (7.13).
+    complete = (
+        all(row is not None for row in read)
+        and sorted(row.index for row in companion)
+        == [index for index, _ in COLUMN_BY_INDEX]
+        and all(
+            row.column != "unmapped" and row.code in FINDING_CODES for row in companion
         )
-        for finding in standings
-        if hasattr(finding, "index") and hasattr(finding, "code")
     )
-    complete = len(companion) == len(COLUMN_BY_INDEX) and all(
-        row.column != "unmapped" and row.code in FINDING_CODES for row in companion
-    )
-    ledger.record(
-        "predicates.consumed_by.output",
-        findings=len(companion),
-        complete=1 if complete else 0,
-    )
+    if findings is not None:
+        # Consumption is recorded only for a record handed over (`specs/route-composition`,
+        # task 7.14): None was not produced, and the code below names that silence.
+        ledger.record(
+            "predicates.consumed_by.output",
+            findings=len(companion),
+            complete=1 if complete else 0,
+        )
     # The count the decision reads: -1 when what was handed over cannot be read as findings at
     # all (no `findings` tuple, or rows that are not the twelve), 0 when a findings tuple was
     # handed over and held nothing, else the twelve. Those are three silences with three

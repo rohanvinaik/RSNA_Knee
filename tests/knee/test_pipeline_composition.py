@@ -43,8 +43,8 @@ def _events(
     return [event.name for event in run_ledger.events()], result
 
 
-def test_every_produced_record_has_a_consumer(tmp_path: Path) -> None:
-    names, _ = _events(tmp_path, _conversing_request())
+def _unread_and_phantom(names: list[str]) -> tuple[list[str], list[str]]:
+    """The producers no stage read, and the consumptions of a record no stage produced."""
     # A producer is the STAGE that produced -- `ownership.member.produced` is ownership's own
     # sub-unit, and `pairings.produced` is the relations stage's unit read by the relations stage.
     produced = {name.split(".")[0] for name in names if name.endswith(".produced")}
@@ -53,11 +53,30 @@ def test_every_produced_record_has_a_consumer(tmp_path: Path) -> None:
     }
     # The output stage is the route's last reader; the output file is its consumer and is written
     # by the impure edge, outside the ledger. Every other producer must be read by a stage.
-    unread = sorted(produced - consumed - {"output"})
+    return sorted(produced - consumed - {"output"}), sorted(consumed - produced)
+
+
+def test_every_produced_record_has_a_consumer(tmp_path: Path) -> None:
+    names, _ = _events(tmp_path, _conversing_request())
+    unread, phantom = _unread_and_phantom(names)
     assert not unread, f"produced and read by no stage: {unread}"
     # And the reverse: nothing claims to have consumed a record no stage produced.
-    phantom = sorted(consumed - produced)
     assert not phantom, f"consumed but produced by no stage: {phantom}"
+
+
+def test_a_producer_that_did_not_run_has_no_consumer_in_the_ledger(
+    tmp_path: Path,
+) -> None:
+    # MUST NOT: record the consumption of a record no stage produced. With no analysis request
+    # the objects stage never measures and the conversation never runs, and until task 7.14
+    # ownership, relations and the bundles recorded having read both (Codex re-review
+    # 2026-10-12: "Ownership unconditionally records `conversation.consumed_by.ownership`").
+    names, _ = _events(tmp_path, None)
+    assert "objects.produced" not in names
+    assert "conversation.produced" not in names
+    unread, phantom = _unread_and_phantom(names)
+    assert not phantom, f"consumed but produced by no stage: {phantom}"
+    assert not unread, f"produced and read by no stage: {unread}"
 
 
 def test_the_conversation_precedes_the_stages_that_read_the_parse(
@@ -104,6 +123,9 @@ def test_without_a_conversation_ownership_seats_the_solitary_parse_only(
         ),
     )
     assert "conversation.produced" not in names
+    # Nothing claims to have read a conversation that never ran (task 7.14): the ledger keeps a
+    # producer that did not run apart from one that ran and handed over nothing.
+    assert not [name for name in names if name.startswith("conversation.consumed_by.")]
     for run in result.series:
         assert run.conversation is None
         assert run.ownership is not None

@@ -98,3 +98,117 @@ def test_relations_renderer_does_not_replace_a_future_reading_with_the_shell() -
     assert frame.why == "given reading"
     assert frame.interstices is subjects
     assert frame.pairings is None
+
+
+def _saved_record(tmp_path, comparison: str, interstices: list[dict]) -> tuple:
+    """A minimal saved record for `partition_frames.saved_panels`: one member, every array real."""
+    claims = np.array([[True, False], [False, True]])
+    residual = ~claims
+    disagreement = np.zeros((2, 2), dtype=bool)
+    arrays = {
+        "ownership_solitary_claims": claims,
+        "ownership_solitary_residual": residual,
+        "ownership_disagreement": disagreement,
+    }
+    artifact = tmp_path / "series.npz"
+    np.savez_compressed(artifact, allow_pickle=False, **arrays)
+    from hashlib import sha256
+
+    descriptors = {
+        name: {
+            "shape": list(a.shape),
+            "dtype": a.dtype.str,
+            "digest": sha256(
+                a.dtype.str.encode() + str(a.shape).encode() + a.tobytes()
+            ).hexdigest(),
+        }
+        for name, a in arrays.items()
+    }
+    metadata = {
+        "artifact": "series.npz",
+        "arrays": descriptors,
+        "ownership": {
+            "code": "present",
+            "why": "measured",
+            "comparison": comparison,
+            "disagreeing_places": 0,
+            "disagreement_array": "ownership_disagreement",
+            "members": [
+                {
+                    "parse": "solitary",
+                    "code": "present",
+                    "why": "measured",
+                    "claimed_places": 2,
+                    "residual_places": 2,
+                    "unavailable_places": 0,
+                    "objects": 2,
+                    "claims_array": "ownership_solitary_claims",
+                    "residual_array": "ownership_solitary_residual",
+                }
+            ],
+        },
+        "relations": {
+            "code": "construction_absent",
+            "why": "nothing built",
+            "interstices": interstices,
+            "pairings_code": None,
+        },
+    }
+    return tmp_path, metadata
+
+
+def test_the_partition_renderer_rebuilds_a_saved_interstice_as_the_stages_record(
+    tmp_path,
+) -> None:
+    """Task 7.2: a saved interstice comes back as an `Interstice`, never as a bare dict."""
+    partition_frames = pytest.importorskip("workbench.render.partition_frames")
+    run, metadata = _saved_record(
+        tmp_path,
+        "member_absent",
+        [
+            {
+                "kind": "facing_pair",
+                "first": 1,
+                "second": 2,
+                "series_uid": "s",
+                "provenance": "test",
+            }
+        ],
+    )
+    _, members, _, relations_frame = partition_frames.saved_panels(run, metadata)
+    assert [parse for parse, _ in members] == ["solitary"]
+    assert relations_frame.interstices == (
+        Interstice("facing_pair", 1, 2, "s", "test"),
+    )
+
+
+def test_the_partition_renderer_never_draws_a_comparison_code_it_does_not_know(
+    tmp_path,
+) -> None:
+    """MUST NOT: a saved comparison word outside `COMPARISONS` is refused by name, not drawn."""
+    partition_frames = pytest.importorskip("workbench.render.partition_frames")
+    run, metadata = _saved_record(tmp_path, "resolved_in_favour_of_solitary", [])
+    with pytest.raises(ValueError, match="saved_comparison_code_unknown"):
+        partition_frames.saved_panels(run, metadata)
+
+
+def test_the_partition_renderer_never_draws_an_interstice_of_an_undeclared_kind(
+    tmp_path,
+) -> None:
+    """MUST NOT: a saved construction with an anatomical kind is refused by the record itself."""
+    partition_frames = pytest.importorskip("workbench.render.partition_frames")
+    run, metadata = _saved_record(
+        tmp_path,
+        "compared",
+        [
+            {
+                "kind": "femur_tibia",
+                "first": 1,
+                "second": 2,
+                "series_uid": "s",
+                "provenance": "test",
+            }
+        ],
+    )
+    with pytest.raises(ValueError, match="invalid_interstice_kind"):
+        partition_frames.saved_panels(run, metadata)

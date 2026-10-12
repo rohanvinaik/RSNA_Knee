@@ -59,6 +59,41 @@ WALK_COUNT = 8
 SLICE_CODES: tuple[str, ...] = ("decoded", "pixels_not_2d")
 
 
+def selected_slice(count: int, requested: int | None) -> int | None:
+    """The one slice the route reads a plane from: the middle of the stack unless one is requested.
+
+    `requested` is the caller's explicit index; None selects floor(count / 2) in the stack's
+    order. None back when the stack is empty or the request lies outside it, so the caller names
+    `slice_unavailable` rather than reading past the end. This is the ONE rule for which slice a
+    study is read at (task 7.1); the objects stage and the field's structural reading share it.
+
+    post: __return__ is None or (0 <= __return__ < count)
+    """
+    if count <= 0:
+        return None
+    index = count // 2 if requested is None else requested
+    if not isinstance(index, int) or isinstance(index, bool):
+        return None
+    return index if 0 <= index < count else None
+
+
+def slice_thickness(header: object) -> float | None:
+    """One slice's SliceThickness as stored, in millimetres: finite and positive, else None.
+
+    Read here, once, by the stage that owns the headers (task 7.2). The slab rule
+    (`knee.lenses.slabs`) bounds a slab by THICKNESS and never by spacing, so this is the one
+    number it needs from the acquisition, and the objects stage consumes it from the series.
+    """
+    reader = getattr(header, "get", None)
+    if not callable(reader):
+        return None
+    try:
+        value = float(reader("SliceThickness", float("nan")))
+    except (TypeError, ValueError):
+        return None
+    return value if np.isfinite(value) and value > 0.0 else None
+
+
 def walk_indices(slices: int, walk_count: int = WALK_COUNT) -> tuple[int, ...]:
     """The stack indices a walk through `slices` slices visits: evenly spaced, ends included.
 
@@ -89,7 +124,8 @@ class Series:
     slice_codes: one of `SLICE_CODES` per slice, in the same order as `slices`. walk_indices and walk: the
     stack indices `walk_indices` visits and the volume's slices at them, (len(walk_indices), rows, columns) in
     the stored dtype -- the stage's own picture content, retained so it is never recomputed from a re-read
-    volume; None when there is no volume.
+    volume; None when there is no volume. slice_thickness_mm: each slice's SliceThickness as stored, in
+    the same order as `slices`, None where the tag is absent or not a positive finite number.
     """
 
     row: SeriesRow
@@ -101,6 +137,7 @@ class Series:
     slice_codes: tuple[str, ...] = ()
     walk_indices: tuple[int, ...] = ()
     walk: np.ndarray | None = None
+    slice_thickness_mm: tuple[float | None, ...] = ()
 
 
 def read_series(directory: Path, row: SeriesRow) -> Series:
@@ -152,6 +189,9 @@ def read_series(directory: Path, row: SeriesRow) -> Series:
         slices = [slices[i] for i in order]
     volume = np.stack([s.pixels for s in slices]) if codes == ("stackable",) else None
     indices = walk_indices(len(volume)) if volume is not None else ()
+    # The per-slice code comes from the stage's own vocabulary (task 7.2), so the record and the
+    # declaration cannot drift apart.
+    decoded, not_2d = SLICE_CODES
     return Series(
         row=row,
         directory=directory,
@@ -159,11 +199,10 @@ def read_series(directory: Path, row: SeriesRow) -> Series:
         stack=codes,
         volume=volume,
         geometry=geometry,
-        slice_codes=tuple(
-            "decoded" if s.pixels.ndim == 2 else "pixels_not_2d" for s in slices
-        ),
+        slice_codes=tuple(decoded if s.pixels.ndim == 2 else not_2d for s in slices),
         walk_indices=indices,
         walk=volume[list(indices)] if volume is not None else None,
+        slice_thickness_mm=tuple(slice_thickness(s.header) for s in slices),
     )
 
 

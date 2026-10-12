@@ -19,9 +19,9 @@ from textwrap import fill
 import matplotlib.pyplot as plt
 import numpy as np
 
-from knee.ownership.claims import OwnershipReading
+from knee.ownership.claims import COMPARISONS, OwnershipReading
 from knee.pictures import ownership, relations
-from knee.relations.shell import RelationsReading
+from knee.relations.shell import Interstice, RelationsReading
 
 
 def saved_mask(
@@ -59,6 +59,12 @@ def saved_panels(run: Path, metadata: dict) -> tuple:
     saved_ownership = metadata["ownership"]
     if not saved_ownership.get("members"):
         raise ValueError("missing_saved_members")
+    # A saved comparison code is checked against the stage's own vocabulary (task 7.2): a word
+    # this renderer does not know is a record it must not draw as if it did.
+    if saved_ownership.get("comparison") not in COMPARISONS:
+        raise ValueError(
+            f"saved_comparison_code_unknown:{saved_ownership.get('comparison')}"
+        )
     artifact = run / metadata["artifact"]
     members = []
     with np.load(artifact, allow_pickle=False) as arrays:
@@ -82,10 +88,14 @@ def saved_panels(run: Path, metadata: dict) -> tuple:
             arrays, metadata["arrays"], saved_ownership["disagreement_array"]
         )
     saved_relations = metadata["relations"]
+    # Saved interstices are rebuilt as the stage's own record, so a kind or an index the record
+    # refuses is refused here too rather than drawn from a bare dict.
     relations_reading = RelationsReading(
         code=saved_relations["code"],
         why=saved_relations["why"],
-        interstices=tuple(saved_relations["interstices"]),
+        interstices=tuple(
+            Interstice(**item) for item in saved_relations["interstices"]
+        ),
     )
     return artifact, tuple(members), disagreement, relations.panels(relations_reading)
 

@@ -24,6 +24,8 @@ from dataclasses import dataclass
 
 import numpy as np
 
+from knee.collapse.structure import AXIS_CODES, SUPERIOR_CODES, StructureReading
+
 
 @dataclass(frozen=True, slots=True)
 class CollapsePanels:
@@ -82,6 +84,86 @@ def over(
     rgb = np.dstack([np.nan_to_num(grey)] * 3)
     rgb[np.asarray(mask, dtype=bool)] = colour
     return rgb
+
+
+#: The image axis each in-plane axis code names; `normal`, `ambiguous` and `unreadable` name none.
+IMAGE_AXIS: Mapping[str, int] = {"rows": 0, "columns": 1}
+
+
+@dataclass(frozen=True, slots=True)
+class StructurePanels:
+    """The field's structural reading (task 7.1), ready for the workbench to arrange.
+
+    Every field is the stage's value handed on unchanged, so a drawer draws what the stage read and
+    never what it would have liked: `plane` as recorded; `air` and `leg` at native scale; the
+    squint inside the leg (`squint`, NaN outside) with `inside`; the profile superior first with
+    the tile each step came from and its `dip` (-1 when none); the `basins` and the `seam`; the
+    `dark` tiles and the ranked `bodies`; the air `histogram` as (counts, edges); the codes.
+    `axis` is the image axis the axis code names, None when the axis is not in-plane, and `sign` is
+    the number `CollapsePanels` carries: -1.0 when an increasing index goes superior (so the
+    profile was reversed to put superior first), +1.0 when it goes inferior, 0.0 when unreadable.
+    """
+
+    code: str
+    why: str
+    axis_code: str
+    superior_code: str
+    axis: int | None
+    sign: float
+    plane: np.ndarray
+    air: np.ndarray
+    leg: np.ndarray
+    air_level: float
+    squint: np.ndarray | None
+    inside: np.ndarray
+    profile: np.ndarray
+    profile_tiles: np.ndarray
+    dip: int
+    basins: np.ndarray
+    seam: np.ndarray
+    dark_level: float
+    dark: np.ndarray
+    bodies: np.ndarray
+    histogram: tuple[np.ndarray, np.ndarray]
+    counts: Mapping[str, int]
+
+
+def structure_panels(plane: np.ndarray, reading: StructureReading) -> StructurePanels:
+    """Hand on the structural reading beside the plane it was read from, arranging nothing.
+
+    `plane` is the slice the stage read, as Chapter 1 recorded it; `reading` is the stage's own
+    record. A code outside the stage's vocabulary is refused by name rather than drawn: a picture
+    labelled with a word the stage never says would be the drawer speaking for the stage.
+    """
+    if reading.axis not in AXIS_CODES:
+        raise ValueError(f"unknown_axis_code:{reading.axis}")
+    if reading.superior not in SUPERIOR_CODES:
+        raise ValueError(f"unknown_superior_code:{reading.superior}")
+    sign = {"increasing": -1.0, "decreasing": 1.0}.get(reading.superior, 0.0)
+    return StructurePanels(
+        code=reading.code,
+        why=reading.why,
+        axis_code=reading.axis,
+        superior_code=reading.superior,
+        axis=IMAGE_AXIS.get(reading.axis),
+        sign=sign,
+        plane=np.asarray(plane, dtype=np.float64),
+        air=reading.air,
+        leg=reading.leg,
+        air_level=reading.air_level,
+        squint=None if reading.squint is None else reading.squint.median,
+        inside=reading.inside,
+        profile=reading.profile,
+        profile_tiles=reading.profile_tiles,
+        dip=reading.dip,
+        basins=reading.basins,
+        seam=reading.seam,
+        dark_level=reading.dark_level,
+        dark=reading.dark,
+        bodies=reading.bodies,
+        histogram=(reading.histogram_counts, reading.histogram_edges),
+        counts=reading.counts,
+    )
 
 
 @dataclass(frozen=True, slots=True)

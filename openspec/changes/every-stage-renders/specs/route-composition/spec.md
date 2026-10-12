@@ -69,9 +69,21 @@ The system SHALL record `<producer>.consumed_by.<consumer>` inside the consuming
 it reads the producer's record, and SHALL NOT record consumption from the route after production.
 Every `<stage>.produced` event of a full run SHALL have at least one consumer event.
 
+A consumer SHALL record consumption only when the producer's record was handed to it: a
+predecessor handed over as None was not produced, and the consumer records nothing for it, naming
+the silence in its own `why` and in its code instead (task 7.14, 2026-10-12). A consumption event
+with a zero count therefore means a record was read and held nothing; it never stands for a
+producer that did not run, and the two silences stay apart in the ledger.
+
 #### Scenario: A stage produces a record nothing reads
 - **WHEN** a run's ledger holds `<stage>.produced` and no `<stage>.consumed_by.<other>`
 - **THEN** the composition test fails naming that stage
+
+#### Scenario: A producer did not run
+- **WHEN** a study runs without the conversation, or without an analysis request so the objects
+  stage never measures
+- **THEN** the ledger holds no `conversation.consumed_by.<stage>` or `objects.consumed_by.<stage>`
+  event, and the composition check reports `composed` with no phantom
 
 ### Requirement: Every stage is named in the attendance roster
 The system SHALL return, per study, a roster naming every route stage with the code that stage
