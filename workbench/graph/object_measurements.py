@@ -2,7 +2,7 @@
 
 from pathlib import Path
 
-from knee.lenses.places import LensReading
+from knee.lenses.places import STANDING_VALUES, LensesReading
 from knee.objects.analysis import AnalysisRequest, SeriesMeasurement
 from knee.objects.boundaries import PAIR_CODE_VALUES
 from knee.objects.conversation import SeriesConversation
@@ -77,15 +77,26 @@ def conversations(study_run: StudyRun) -> tuple[SeriesConversation, ...]:
     return study_run.conversations
 
 
-def lens_readings(study_run: StudyRun) -> tuple[LensReading, ...]:
+def lens_readings(study_run: StudyRun) -> tuple[LensesReading, ...]:
     return tuple(s.lenses for s in study_run.series if s.lenses is not None)
 
 
-def lens_counts(lens_readings: tuple[LensReading, ...]) -> dict[str, int]:
+def lens_counts(lens_readings: tuple[LensesReading, ...]) -> dict[str, int]:
+    # Counted over SEATED MEMBERS, not over series: the work is per member, and a member that
+    # could not place its pair still wrote a map of its own named silence. `dissenting_places`
+    # is kept as counted work in its own right -- it is where two correct overlapping readings
+    # differ, which the founder names as the most informative case rather than an error rate.
+    members = [member for reading in lens_readings for member in reading.members]
     return {
-        "lens_native_places": sum(r.codes.size for r in lens_readings),
+        "lens_seated_members": len(members),
+        "lens_native_places": sum(member.codes.size for member in members),
         "lens_output_bytes": sum(
-            r.codes.nbytes + r.digits.nbytes for r in lens_readings
+            member.codes.nbytes + member.digits.nbytes for member in members
+        )
+        + sum(reading.standings.nbytes for reading in lens_readings),
+        "lens_dissenting_places": sum(
+            reading.standing_counts[STANDING_VALUES["dissent"]]
+            for reading in lens_readings
         ),
     }
 

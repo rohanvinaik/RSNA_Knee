@@ -390,6 +390,8 @@
   ],
   "src/knee/lenses/digits.py::digit_code::004f24d94763e508": [],
   "src/knee/lenses/digits.py::is_read::0e958d5e211bfb4c": [],
+  "src/knee/lenses/members.py::is_retained::ad63af29ebb8499c": [],
+  "src/knee/lenses/members.py::standing_code::3d34afd7191c8e7a": [],
   "src/knee/lenses/places.py::place_codes_reference::6db9e8c59715baf0": [],
   "src/knee/lenses/slabs.py::gap_fraction::0d7066709ec64249": [
     {

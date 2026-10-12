@@ -14,6 +14,7 @@ from pydicom.uid import ExplicitVRLittleEndian, MRImageStorage, generate_uid
 
 import knee.study.corpus as corpus_module
 from knee import pipeline
+from knee.lenses.places import STANDING_VALUES
 from knee.objects.analysis import AnalysisRequest
 from knee.study.tables import LABELS
 
@@ -285,13 +286,36 @@ def test_hamilton_graph_returns_the_production_measurements_and_derived_work_cou
             "no_stacked_volume",
         )
     )
+    # Counted over SEATED MEMBERS and derived from the run, never written down: the intent is
+    # that the development graph reports what production produced, and a hardcoded total stops
+    # checking that the moment a member is seated or unseated.
+    seated = tuple(
+        member
+        for series in study_run.series
+        if series.lenses is not None
+        for member in series.lenses.members
+    )
+    readings = tuple(
+        series.lenses for series in study_run.series if series.lenses is not None
+    )
+    expected_lenses = {
+        "lens_seated_members": len(seated),
+        "lens_native_places": sum(member.codes.size for member in seated),
+        "lens_output_bytes": sum(
+            member.codes.nbytes + member.digits.nbytes for member in seated
+        )
+        + sum(reading.standings.nbytes for reading in readings),
+        "lens_dissenting_places": sum(
+            reading.standing_counts[STANDING_VALUES["dissent"]] for reading in readings
+        ),
+    }
+    assert expected_lenses["lens_seated_members"] == 2 * len(study_run.series)
     assert outputs["work_counts"] == {
         "profile_coordinate_evaluations": expected_native_samples,
         "source_read_upper_bound": 4 * expected_native_samples,
         "profile_sample_output_bytes": 9 * expected_native_samples,
         "squint_tiles": expected_squint_tiles,
-        "lens_native_places": 3 * 16 * 16,
-        "lens_output_bytes": 2 * 3 * 16 * 16,
+        **expected_lenses,
         "pairing_profiles": 0,
         "sample_supported_pairs": 0,
     }
@@ -300,8 +324,7 @@ def test_hamilton_graph_returns_the_production_measurements_and_derived_work_cou
         "source_read_upper_bound": 4 * expected_samples,
         "profile_sample_output_bytes": 9 * expected_samples,
         "squint_tiles": 16,
-        "lens_native_places": 3 * 16 * 16,
-        "lens_output_bytes": 2 * 3 * 16 * 16,
+        **expected_lenses,
         "pairing_profiles": 0,
         "sample_supported_pairs": 0,
     }
@@ -421,13 +444,27 @@ def test_saved_annotation_uses_the_production_background_reading(
     assert record["relations"]["code"] == "construction_absent"
     assert record["pairings"]["code"] == "predecessor_absent"
     assert "task 1.3a" in record["relations"]["why"]
-    assert record["lenses"]["normalisation"] == "none"
+    # EVERY seated member is saved, each naming its own population, and the standing between
+    # them beside them. No key here holds "the" reading, because the pipeline keeps everything
+    # it computes and resolution is the founder's.
+    members = record["lenses"]["members"]
+    assert [member["population"] for member in members] == [
+        "noise_law_cut",
+        "background_split",
+    ]
+    assert all(member["normalisation"] == "none" for member in members)
+    assert "normalisation" not in record["lenses"]
+    assert "counts" not in record["lenses"]
     assert record["lenses"]["saved_scope"] == "selected native plane (row,column)"
-    assert sum(record["lenses"]["counts"]) == 3 * 16 * 16
+    assert all(sum(member["counts"]) == 3 * 16 * 16 for member in members)
+    assert sum(record["lenses"]["standing_counts"]) == 3 * 16 * 16
     with np.load(out / record["artifact"], allow_pickle=False) as arrays:
-        assert arrays["lens_codes"].dtype == np.uint8
-        assert arrays["lens_digits"].dtype == np.int8
-        assert arrays["lens_digits"].shape == (16, 16)
+        for member in members:
+            assert arrays[member["codes_array"]].dtype == np.uint8
+            assert arrays[member["digits_array"]].dtype == np.int8
+            assert arrays[member["digits_array"]].shape == (16, 16)
+        assert arrays["lens_standings"].dtype == np.uint8
+        assert arrays["lens_standings"].shape == (16, 16)
         assert arrays["ownership_claims"].shape == (0, 0)
         assert arrays["ownership_residual"].shape == (0, 0)
         if np.isfinite(split):
