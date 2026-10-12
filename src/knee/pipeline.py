@@ -23,6 +23,7 @@ from knee.lenses.places import LensReading, read_lenses
 from knee.objects.analysis import AnalysisRequest, SeriesMeasurement, measure_series
 from knee.objects.conversation import ConversationInput, SeriesConversation, converse
 from knee.ownership.claims import OwnershipReading, read_ownership
+from knee.predicates.findings import FindingsReading, read_findings
 from knee.relations.pairings import PairingReading, read_pairings
 from knee.relations.shell import RelationsReading, read_relations
 from knee.study.corpus import Corpus, Study, read_study
@@ -45,7 +46,10 @@ ROUTE: tuple[tuple[str, str], ...] = (
     ("relations", "not_built"),  # rendered shell; facing-pair construction still absent
     ("ownership", "built"),  # real-study partition, consumed and rendered
     ("vectors", "not_built"),  # the BUNDLES: each <object>'s profile as row counts
-    ("predicates", "not_built"),  # the twelve, each on its named subject
+    # `partly`: it runs per study, returns twelve named standings and renders them, but it DECIDES
+    # nothing -- no subject is constructed for ten of the twelve and no correspondence is declared
+    # for any. It produces its record; what it does not do is read a knee.
+    ("predicates", "partly"),  # the twelve, each on its named subject
     ("output", "not_built"),  # twelve confidences, with the kept record behind them
 )
 
@@ -82,6 +86,10 @@ class StudyRun:
     `reached` is the last stage that did anything; `series` holds one `SeriesRun` each, in the
     table's order. Stages beyond `reached` are not failures -- they are unbuilt, and the route
     names them so that what is missing is as legible as what is present.
+
+    `findings` is the twelve, per STUDY rather than per series, because a finding is a statement
+    about the knee and the series are the acquisitions it was read from. It is never None: the
+    stage is total over the series tuple and returns twelve named standings whatever it met.
     """
 
     uid: str
@@ -89,6 +97,7 @@ class StudyRun:
     series: tuple[SeriesRun, ...] = field(default_factory=tuple)
     reached: str = "study"
     conversations: tuple[SeriesConversation, ...] = field(default_factory=tuple)
+    findings: FindingsReading | None = None
 
 
 def run_study(
@@ -168,6 +177,16 @@ def run_study(
     reached = "collapse" if any(r.regime is not None for r in runs) else "study"
     if any(r.ownership is not None and r.ownership.code == "present" for r in runs):
         reached = "ownership"
+    # THE PREDICATES, per study: a finding is a statement about the knee, so the twelve are
+    # evaluated once over all its series rather than once per acquisition. Total over the tuple,
+    # so it runs unconditionally and names its own silence -- the route decides nothing (SS13.7).
+    findings = read_findings(tuple(runs))
+    ledger.record("predicates.consumed", findings=len(findings.findings))
+    # It does NOT advance `reached`, for the reason relations does not: it runs and resolves
+    # nothing, so naming it would claim a stage the build has not reached. Its own code says
+    # only whether series were handed over, which is true of almost every study -- wiring it
+    # to `reached` made the route report "predicates" for a study whose regime was all it read,
+    # and `test_open_and_run_attaches_real_measurements_and_reads_each_series_once` caught it.
     conversations = ()
     if analysis is not None and analysis.conversation:
         import numpy as np
@@ -190,6 +209,7 @@ def run_study(
         series=tuple(runs),
         reached=reached,
         conversations=conversations,
+        findings=findings,
     )
 
 
