@@ -12,10 +12,14 @@ from pathlib import Path
 import numpy as np
 
 from knee import collapse
+from knee.lenses.digits import DIGIT_CODES
+from knee.lenses.places import SILENT
 from knee.objects.analysis import AnalysisRequest
 from knee.pipeline import run_study
+from knee.relations.pair_codes import CODES as PAIRING_CODES
 from knee.study.corpus import open_corpus
 from knee.study.tables import labeled_uids
+from knee.telemetry import recording
 from workbench.measure.boundary_records import boundary_record
 from workbench.measure.conversation_records import conversation_record
 from workbench.measure.interior_records import interior_record
@@ -135,7 +139,9 @@ def main() -> None:
     for uid in uids:
         start = len(records)
         try:
-            result = run_study(corpus, uid, request)
+            with recording() as run_ledger:
+                result = run_study(corpus, uid, request)
+            events = [asdict(event) for event in run_ledger.events()]
             conversations = {r.series_uid: r for r in result.conversations}
             for series in result.series:
                 measurement = series.measurements
@@ -169,6 +175,84 @@ def main() -> None:
                     else "unavailable"
                 )
                 arrays = {}
+                if series.pairings is not None:
+                    pairings = series.pairings
+                    record["pairings"] = {
+                        "code": pairings.code,
+                        "why": pairings.why,
+                        "scope": pairings.scope,
+                        "counts": dict(pairings.counts),
+                        "outcome_names": PAIRING_CODES,
+                        "side_order": ["near", "far"],
+                        "corner_order": ["00", "01", "10", "11"],
+                        "inactive_contributor": -1,
+                        "unread_contributor": -2,
+                    }
+                    arrays.update(
+                        pairing_source_labels=pairings.source_labels,
+                        pairing_far_labels=pairings.far_labels,
+                        pairing_trace_codes=pairings.trace_codes,
+                        pairing_outcome_codes=pairings.outcome_codes,
+                        pairing_positions_rc=pairings.positions_rc,
+                        pairing_contributor_labels=pairings.contributor_labels,
+                        pairing_band_limits_mm=pairings.band_limits_mm,
+                    )
+                if series.lenses is not None:
+                    lenses = series.lenses
+                    plane_index = measurement.slice_index
+                    plane_read = (
+                        plane_index is not None
+                        and 0 <= plane_index < lenses.codes.shape[0]
+                    )
+                    record["lenses"] = {
+                        "code": lenses.code,
+                        "why": lenses.why,
+                        "low_edge": lenses.low_edge
+                        if lenses.low_edge is not None and np.isfinite(lenses.low_edge)
+                        else None,
+                        "high_edge": lenses.high_edge
+                        if lenses.high_edge is not None
+                        and np.isfinite(lenses.high_edge)
+                        else None,
+                        "population_count": lenses.population_count,
+                        "minimum_population": lenses.minimum_population,
+                        "normalisation": lenses.normalisation,
+                        "code_names": DIGIT_CODES,
+                        "digit_silence": SILENT,
+                        "counts": lenses.counts,
+                        "map_scope": "complete native volume (slice,row,column)",
+                        "saved_scope": "selected native plane (row,column)",
+                        "picture_code": lenses.code if plane_read else "item_unread",
+                    }
+                    arrays.update(
+                        lens_codes=lenses.codes[plane_index]
+                        if plane_read
+                        else np.empty((0, 0), dtype=np.uint8),
+                        lens_digits=lenses.digits[plane_index]
+                        if plane_read
+                        else np.empty((0, 0), dtype=np.int8),
+                    )
+                if series.ownership is not None:
+                    ownership = series.ownership
+                    record["ownership"] = {
+                        "code": ownership.code,
+                        "why": ownership.why,
+                        "claimed_places": ownership.claimed_places,
+                        "residual_places": ownership.residual_places,
+                        "unavailable_places": ownership.unavailable_places,
+                        "objects": int(ownership.objects),
+                    }
+                    arrays.update(
+                        ownership_claims=ownership.claims,
+                        ownership_residual=ownership.residual,
+                    )
+                if series.relations is not None:
+                    relations = series.relations
+                    record["relations"] = {
+                        "code": relations.code,
+                        "why": relations.why,
+                        "interstices": relations.interstices,
+                    }
                 if record["background_annotation_code"] == "measured":
                     arrays["background_mask"] = measurement.acquired_plane <= split
                 if measurement.acquired_plane is not None:
@@ -260,6 +344,8 @@ def main() -> None:
                     "study_uid": uid,
                     "code": "complete",
                     "series_written": len(records) - start,
+                    "reached": result.reached,
+                    "ledger": events,
                 }
             )
             print(f"measured {uid}: {len(result.series)} series", flush=True)

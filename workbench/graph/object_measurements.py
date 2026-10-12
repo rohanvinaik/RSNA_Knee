@@ -2,10 +2,12 @@
 
 from pathlib import Path
 
+from knee.lenses.places import LensReading
 from knee.objects.analysis import AnalysisRequest, SeriesMeasurement
 from knee.objects.boundaries import PAIR_CODE_VALUES
 from knee.objects.conversation import SeriesConversation
 from knee.pipeline import StudyRun, open_and_run
+from knee.relations.pairings import PairingReading
 
 
 def study_run(
@@ -75,6 +77,30 @@ def conversations(study_run: StudyRun) -> tuple[SeriesConversation, ...]:
     return study_run.conversations
 
 
+def lens_readings(study_run: StudyRun) -> tuple[LensReading, ...]:
+    return tuple(s.lenses for s in study_run.series if s.lenses is not None)
+
+
+def lens_counts(lens_readings: tuple[LensReading, ...]) -> dict[str, int]:
+    return {
+        "lens_native_places": sum(r.codes.size for r in lens_readings),
+        "lens_output_bytes": sum(
+            r.codes.nbytes + r.digits.nbytes for r in lens_readings
+        ),
+    }
+
+
+def pairing_readings(study_run: StudyRun) -> tuple[PairingReading, ...]:
+    return tuple(s.pairings for s in study_run.series if s.pairings is not None)
+
+
+def pairing_counts(pairing_readings: tuple[PairingReading, ...]) -> dict[str, int]:
+    return {
+        "pairing_profiles": sum(r.outcome_codes.size for r in pairing_readings),
+        "sample_supported_pairs": sum(r.counts["paired"] for r in pairing_readings),
+    }
+
+
 def conversation_counts(
     conversations: tuple[SeriesConversation, ...],
 ) -> dict[str, int]:
@@ -101,6 +127,8 @@ def work_counts(
     interior_counts: dict[str, int],
     boundary_counts: dict[str, int],
     conversation_counts: dict[str, int],
+    lens_counts: dict[str, int],
+    pairing_counts: dict[str, int],
 ) -> dict[str, int]:
     return {
         "profile_coordinate_evaluations": native_samples,
@@ -110,4 +138,6 @@ def work_counts(
         **interior_counts,
         **boundary_counts,
         **conversation_counts,
+        **lens_counts,
+        **pairing_counts,
     }

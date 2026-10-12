@@ -388,44 +388,9 @@
       ]
     }
   ],
-  "src/knee/lenses/digits.py::digit_code::e942a94a52a7b5ad": [
-    {
-      "assertion_code": "result = digit_code(place_value=1.0625, witness_middle=1.0625, place_sigma=1.0625, witness_spread=1.0625, band_k=1.0625, witness_count=1, minimum_witness=2)\nassert result == 'witness_too_small'",
-      "category": "VALUE",
-      "confidence": 0.9,
-      "function_key": "",
-      "golden_case": [
-        "(1.0625, 1.0625, 1.0625, 1.0625, 1.0625, 1, 2)",
-        "'witness_too_small'"
-      ],
-      "mutant_id": "",
-      "needs_oracle": false,
-      "preconditions": [
-        "golden capture (pure + deterministic)"
-      ],
-      "setup_code": "from knee.lenses.digits import digit_code",
-      "source_lenses": [
-        "golden_capture"
-      ]
-    },
-    {
-      "assertion_code": "result = digit_code(place_value=1.0625, witness_middle=0.0, place_sigma=2.5, witness_spread=0.0, band_k=1.0, witness_count=3, minimum_witness=0)\nassert result == 'at'",
-      "category": "VALUE",
-      "confidence": 0.95,
-      "function_key": "",
-      "golden_case": null,
-      "mutant_id": "",
-      "needs_oracle": false,
-      "preconditions": [
-        "distinguishing witness (equivalence search)"
-      ],
-      "setup_code": "from knee.lenses.digits import digit_code",
-      "source_lenses": [
-        "witness"
-      ]
-    }
-  ],
-  "src/knee/lenses/digits.py::is_read::ef269f15fe73c411": [],
+  "src/knee/lenses/digits.py::digit_code::004f24d94763e508": [],
+  "src/knee/lenses/digits.py::is_read::0e958d5e211bfb4c": [],
+  "src/knee/lenses/places.py::place_codes_reference::6db9e8c59715baf0": [],
   "src/knee/lenses/slabs.py::gap_fraction::0d7066709ec64249": [
     {
       "assertion_code": "result = gap_fraction(thickness_mm=-1.0, spacing_mm=-1.0)\nassert result == 0.0\nassert repr(result) == '0.0'",
@@ -532,6 +497,41 @@
       ]
     }
   ],
+  "src/knee/relations/pair_codes.py::pair_code::8a2b51677a4cb4a9": [
+    {
+      "assertion_code": "result = pair_code(source=1, trace=7, near=[], far=[1, 1])\nassert result == 'profile_unbracketed'",
+      "category": "VALUE",
+      "confidence": 0.95,
+      "function_key": "",
+      "golden_case": null,
+      "mutant_id": "",
+      "needs_oracle": false,
+      "preconditions": [
+        "distinguishing witness (equivalence search)"
+      ],
+      "setup_code": "from knee.relations.pair_codes import pair_code",
+      "source_lenses": [
+        "witness"
+      ]
+    },
+    {
+      "assertion_code": "result = pair_code(source=0, trace=-1, near=[1], far=[])\nassert result == 'invalid_measurement'",
+      "category": "VALUE",
+      "confidence": 0.95,
+      "function_key": "",
+      "golden_case": null,
+      "mutant_id": "",
+      "needs_oracle": false,
+      "preconditions": [
+        "distinguishing witness (equivalence search)"
+      ],
+      "setup_code": "from knee.relations.pair_codes import pair_code",
+      "source_lenses": [
+        "witness"
+      ]
+    }
+  ],
+  "src/knee/relations/pairings.py::footprint_labels_reference::55e517e2226b89dc": [],
   "src/knee/relations/shell.py::read_relations::4cc5f3891fc63eb7": [
     {
       "assertion_code": "result = read_relations(interiors=None)\nassert repr(result) == \"RelationsReading(code='construction_absent', why='The facing-pair construction (task 1.3a) has not been built: no record says which two objects face each other across a border, so no interstice is constructed in this build.', interstices=())\"",

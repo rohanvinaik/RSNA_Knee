@@ -87,16 +87,21 @@ series' own foreground, which `RegimeKey.terciles` already computes, and records
 `normalisation: none`. It is a real reading against the image's own distribution — which is what
 defeats scanner scaling — and it is honest about the correction it does not apply.
 
-`digits.digit_code` still carries the old shape (a witness middle plus a spread band) and takes the
-low/high-edge correction first; that correction is independently settled and blocks nothing.
+Task 2.1 replaces the old `digits.digit_code` shape (a witness middle plus a spread band) with
+low/high edges first; that correction is independently settled and blocks nothing.
 
 ## The output file, which is the one place the epistemology meets a foreign schema
 
 A confidence column cannot carry silence. Fable: without conditions it is *"a constant wearing a
-prediction's shape."* Three, each a contract rather than advice: the abstention constant is declared
-in the spec **before** the run and may never be chosen by reference to a score or a label; the
+prediction's shape."* Three, each a contract rather than advice: the abstention value is declared
+in the spec **before CSV emission** and may never be chosen by reference to a score or a label; the
 companion record of named codes is written **in the same run**, so the submission is derivable from
 the codes and never the reverse; and the ledger records that every row abstained.
+
+**Founder correction, 2026-10-12:** "I don't know, that should resolve experientially, when actually
+running and seeing it in action". Named decisions run, record and render without a numeric
+projection. That inspection precedes its declaration; CSV emission is refused while it remains
+undeclared. This supersedes the earlier requirement to declare it before any run.
 
 ## What ports, and what never could
 
@@ -126,3 +131,12 @@ Units whose shape is settled are written by a sub-agent against a strict spec; t
 contract, the intent tests, the survivor judgments, the wiring and the telling. A body lands only
 with its certificate and after the lead has read it (`AGENTS.md` law 8). A sub-agent never weakens a
 test to make code pass, never judges a Detective survivor, and never writes an equivalence note.
+
+**Execution continuation, founder instruction 2026-10-12:** "Make sure you update the openspec
+contract, then continue the mechanized build process that I outlined with my prompts and our
+conversation earlier this session". Sonnet over the Anthropic API and local sub-agents remain
+mechanical workers under the boundary above. Each packet names its declared task, settled input
+and output shape, allowed files and direct intent tests. The lead records the body review and
+the exact verification standing before admission. An engineering refusal keeps the affected unit
+open; it neither becomes a pass nor changes the design. Independent declared work can continue.
+For unsettled units such as 1.3a, establish the support contract first; delegation never supplies it.

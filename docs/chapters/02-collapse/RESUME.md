@@ -5,6 +5,14 @@
 > **Everything below that looks like state is a SNAPSHOT of 2026-10-12 and is not authority.**
 > Recompute it. Where this file and a command disagree, the command is right.
 
+**Continuation evidence, 2026-10-12:** `workbench/consults/openspec-contract-audit-20261012.md`
+links the real-study frames, receipts and full verification outputs. Section 2 remains unchecked;
+the numeric map received a Detective UNGATEABLE verdict, which the ordinary gate does not override.
+The pairing continuation is `workbench/consults/dark-pairing-status-20261012.md`: support contract
+declared, candidate built/wired/rendered, numeric reference also UNGATEABLE. Task 1.3a stays open.
+Read both records before continuing dependent work. The submission projection now follows the
+founder's experiential correction in section 7, also recorded in the OpenSpec requirement.
+
 ## 1. How to ground, before anything
 
 In this order, each read WHOLE:
@@ -62,6 +70,13 @@ the lead has read it**. Agents are told not to run git, the gate, Detective or C
 touch `docs/places.json` or any task file — the lead serialises all verification, because the gate,
 git and `.detective/` are shared state.
 
+**The mechanized process the founder requested remains active:** cheap Sonnet workers over the
+Anthropic API, alongside local sub-agents, on settled packets only. The lead supplies the named
+OpenSpec task, meaning, interfaces, allowed files and direct intent tests; records its own reading
+before the API call; reads every returned body; and owns all admission and verification. API workers
+have no tooling or patient-data access. A refused certificate leaves its unit open while independent
+declared work can continue. It is never bypassed by an ordinary green gate.
+
 **This worked, and the reason it worked is that both agents pushed back.** On 2026-10-12 the
 relations agent corrected the lead's brief about `boundary_edges`, and the ownership agent asked
 about a case rather than deciding it — and that case was the body's one real flaw. A sub-agent
@@ -79,11 +94,35 @@ something is missing from the lead's understanding, and goes to him with the fra
 
 | | |
 |---|---|
-| route | `study` built · `collapse` partly · `objects` partly · six `not_built` |
-| modules | 82, all declared; 0 undeclared, absent, misplaced, `contract_disagrees`, `renders_missing` |
-| **UNREACHED** | **6** — lenses ×3, output, predicates, vectors. **This number is the change.** |
-| uncheckable, counted | `role` 0 of 82 · `frame` 6 of 9 stages |
-| tests | 464 passed, 1 skipped (platform longdouble) |
+| route | study built · collapse partly · lenses not_built · objects partly · relations not_built · ownership built · vectors/predicates/output not_built |
+| modules | 92, all declared; 40 reached; 0 undeclared, absent, misplaced, `contract_disagrees`, `renders_missing` |
+| **UNREACHED** | **4** — lenses/slabs, vectors, predicates, output; place check still exits 1 |
+| uncheckable, counted | `role` 0 of 92 unwritten · `frame` 3 of 9 unwritten |
+| ordinary gate | passed; Ruff clean, 281 files formatted; 530 passed, 1 skipped (platform longdouble) |
+| type pass | nine advisory diagnostics remain; no claim of type-clean |
+| graph/imports | graph valid; production/dev import contract kept, 73 files / 168 dependencies |
+| OpenSpec | `every-stage-renders` strict validation passes; 1.3a and sections 2–5 remain unchecked |
+| working tree | continuation candidates and evidence uncommitted; no push or submission |
+
+Commands behind this snapshot: `just places`, `just graph`, `just imports`, `just plan-check
+every-stage-renders`, and `scripts/ci_local.sh`. Complete gate output:
+`/private/tmp/rsna-pairing-gate-final-20261012.log`. Rerun these before asserting current state.
+
+**Actual-study evidence:** selected-plane pairing records for five series in
+`data/measurements/dark-pairings-profiled-20261012/receipt.json`; gallery and binding manifest in
+`data/pictures/dark-pairings-profiled-20261012/`. All 39170 profile rows retained, 597 supported
+sample pairs, all other rows named refusals; producer/consumer counts match. Sources unchanged
+during run, no recorded failures. These pairs do not resolve complete interstices or anatomy.
+The native digit gallery and ledger receipt are under `native-digits-ledger-20261012` in the
+same picture/measurement roots; some series have `no_edges`, rendered as silence.
+
+**Performance evidence:** Memray capture and flamegraph in
+`data/measurements/dark-pairings-memory-20261012.{bin,html}`. Whole-entry-point peak tracked allocation
+353727068 bytes; not per-kernel memory or RSS. Per-kernel attribution and full compute budgets remain.
+
+**Separate quality standing:** LintGate's strict audit `e9e550d1e592`, before final cleanup, reported
+32 blocking and 493 warning findings. Pairing/writer complexity and other modular/type leads remain;
+no clean LintGate result is claimed. The ordinary gate's advisory type pass does not erase this audit.
 
 **Done in section 0 (the scaffold)** — and three of its four tasks found a real defect: three compute
 contracts were **declared and attached to nothing**; nothing failed when that happened; and "a stage
@@ -94,14 +133,17 @@ is not built until it renders" could not tell a picture of the study from a pict
 
 ## 5. The build plan for the rest, in dependency order
 
-**1.3a — the dark-bounded pairing. Not delegable; its contract does not exist.** `relations` is a
-shell *only* because of this. Identity was never the blocker — the founder ruled an interstice is
-between two `<object>`s. What is missing is the **pairing**: `boundary_edges` stores
+**1.3a — the dark-bounded pairing. Lead-owned; contract now declared, candidate uncertified.**
+The support contract is `openspec/changes/every-stage-renders/specs/dark-bounded-pairing/spec.md`;
+the prior lead reading is `readings/dark-pairing-lead-20261012.md`. `pairings.py` constructs sampled
+pairs and retains refusals, with its own record and picture; complete interstice extent construction
+is still owed. Identity was never the blocker — the founder ruled an interstice is between two
+`<object>`s. The construction was needed because `boundary_edges` stores
 `labels[rows, cols]`, the territory's own label. For a `peer_territory` edge the neighbour's label
 *would* record the far side; the record is genuinely absent only for pairs bounded **across dark**,
 where `interior = available & ~dark` leaves the neighbour at label 0. **So this task CONSTRUCTS the
-dark-bounded pairing; it does not record an existing one.** Specify what support licenses a pairing
-*before* implementing.
+dark-bounded pairing; it does not record an existing one.** Its numeric reference was refused by
+Detective, so 1.3a remains unchecked and relations still reports `construction_absent`.
 
 **The renderers.** Every stage owes one, and no stage may claim `built`/`partly` without a module of
 its name in `knee.pictures` — `test_skeleton.py` enforces it. `ownership`'s is the **residual map**,
@@ -111,16 +153,26 @@ and it is the picture to put in front of the founder first.
 
 | | unit | blocked on |
 |---|---|---|
-| 2.1 | `digit_code` takes a low and a high edge | **read `lenses/digits.py` whole first** — it was never read |
-| 2.2–2.4 | per-series edge pair, write the digits, wire and render | 2.1, serially |
+| 2.1 | low/high scalar decision implemented, read whole, directly tested; Detective COMPLETE modulo three crash-only gaps; CrossHair confirmed | section remains unchecked pending admission of the numeric unit |
+| 2.2–2.4 | exact regime count/bar and own edges consumed; native codes/digits wired and rendered; normalisation none | numeric map Detective UNGATEABLE; array CrossHair Not confirmed; complete engineering/dispatch audit still owed |
 | 3.1–3.3 | bundles as row counts; unavailable banks named, never zeroed | 2.3, and the dispatch answer |
-| 4.1–4.3 | the twelve as named abstentions; serialiser + companion record | 1.2, the dispatch answer, and **the founder's abstention value** |
+| 4.1–4.3 | the twelve as named abstentions; serialiser + companion record | 1.2 and the dispatch answer; the numeric value is required only for CSV emission |
 
 **The dispatch question binds 2.4, 3.1 and 4.1.** Codex: *"Removing anatomical words from records
 does not establish that anatomical classification is absent from **dispatch**."* Before each is
 implemented, record **what resolved fact selects the structural role / the subject kind / the
 predicate's subject, and which earlier stage computed it.** If the selector is a kind-label, the task
 stops.
+
+**Admission blockers, not domain verdicts:** `place_codes_reference` and
+`footprint_labels_reference` each returned Detective **UNGATEABLE** because mutants could not be
+BUILT. Full literal outputs are in `.detective/runs/20261012T071605Z_converge.log` and
+`.detective/runs/20261012T074808Z_converge.log`. Neither names a concrete repair command. Do not
+retarget, change bars or retry on a bigger budget to turn the refusal into a pass. The pairing pure
+decision is COMPLETE modulo five crash-only value gaps, but its four CrossHair postconditions were
+Not confirmed; the footprint preconditions could not be met. Full capacity acceptance has not run.
+`workbench/consults/digit-edges-lead.md` also leaves literal sibling tracing owed before numeric
+admission. Do not silently promote a source-reading or dispatch chronology gap into settled evidence.
 
 **Section 5** — run every stage over one study through the real entry point. One study is **proof**,
 not a smoke test. Then **5.2, the first grading round**, which the founder settled as *both* readers'
@@ -147,18 +199,23 @@ to a specific image, and I'm pretty good about that."*
 
 ## 7. Open, and the founder's to rule
 
-1. **The submission's abstention value.** The spec says it is "declared in this specification before
-   any run" and then does not name it. Under Law 4 that is a bar he owes.
+1. **The submission's abstention value.** Founder correction, 2026-10-12: "I don't know, that should
+   resolve experientially, when actually running and seeing it in action". Run, record and render
+   named decisions first. The projection remains undeclared until that inspection; refuse CSV
+   emission without it, and never choose it from a score, prevalence or label.
 2. **Does `dark` become its own class in the residual?** The residual today is every unclaimed
    available place, and on one real plane that was 1170 of 1600, dominated by dark. "Black" is a
    positively-named structural class in the thesis; whether it is pulled out here is his.
-3. **`AGENTS.md` law 9** still says *"Nothing is built. No codebase meets the design"*. Written
-   2026-10-02, now false, and in the first document a new session reads.
+3. **`AGENTS.md` law 9** still says *"Nothing is built. No codebase meets the design"*. Its literal
+   first clause needs clarification against the computed built-stage entries; completion of the
+   whole design has not been claimed. This continuation does not rewrite that instruction.
 4. **`docs/provenance/` vs the chapter's `readings/`** — the project `CLAUDE.md` and `SPINE.md`
    disagree on where the record goes.
 5. **`detective converge read_ownership` returns `⚠ UNGATEABLE`** — Detective's own words: *"this
    measures the engine, not your suite; it is a defect to report, not a gap to close."* No theory is
    offered here, because theorising past a refusal is the failure the protocol names.
+6. **Expected correspondence `e`** remains hand-given, with its author/date. It has not been
+   supplied by this continuation; do not derive it from the parse, labels or scores.
 
 ## 8. What this session got wrong, recorded so a fresh reader can check
 

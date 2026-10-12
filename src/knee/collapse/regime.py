@@ -83,9 +83,13 @@ class RegimeKey:
     skew: float
     depth_spread: float
     background_split: float = float("nan")
+    foreground_count: int | None = None
+    tercile_minimum_population: int = 8
 
 
-def _shape_readings(values: np.ndarray) -> tuple[tuple[float, float], float, float]:
+def _shape_readings(
+    values: np.ndarray, minimum_population: int = 8
+) -> tuple[tuple[float, float], float, float]:
     """The distribution's terciles, its spread ratio against the Gaussian, and its skew's sign.
 
     The terciles are the 1/3 and 2/3 quantiles: a MIDDLE band, which is what the sibling build
@@ -94,7 +98,7 @@ def _shape_readings(values: np.ndarray) -> tuple[tuple[float, float], float, flo
     carry it on, one-sided or even. All three are "even, spiky or one-sided" in SS5.1's words,
     measured rather than named.
     """
-    if values.size < 8:
+    if minimum_population < 0 or values.size < minimum_population or not values.size:
         return (float("nan"), float("nan")), float("nan"), float("nan")
     low, high = (float(q) for q in np.quantile(values, (1 / 3, 2 / 3)))
     p5, p25, p75, p95 = (
@@ -116,6 +120,7 @@ def read_regime(
     foreground_units: float = 3.0,
     block: int = 16,
     floor_quantile: float = 0.1,
+    shape_minimum_population: int = 8,
 ) -> RegimeKey | None:
     """One series' regime key, read once from its own values and no label.
 
@@ -180,7 +185,7 @@ def read_regime(
             np.interp(at_level + foreground_units, table.units, table.magnitude)
         )
         above = values[values > cut]
-    terciles, spread_ratio, skew = _shape_readings(above)
+    terciles, spread_ratio, skew = _shape_readings(above, shape_minimum_population)
 
     # The profile along the stack: how much each slice's own foreground share departs from the
     # series', which is SS5.1's "profile down the depth" without a depth model.
@@ -216,4 +221,6 @@ def read_regime(
         skew=skew,
         depth_spread=depth_spread,
         background_split=split,
+        foreground_count=int(above.size),
+        tercile_minimum_population=shape_minimum_population,
     )

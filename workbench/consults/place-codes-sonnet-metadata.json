@@ -1,0 +1,22 @@
+{
+  "model": "claude-sonnet-5-5",
+  "usage": {
+    "input_tokens": 600,
+    "cache_creation_input_tokens": 0,
+    "cache_read_input_tokens": 0,
+    "cache_creation": {
+      "ephemeral_5m_input_tokens": 0,
+      "ephemeral_1h_input_tokens": 0
+    },
+    "output_tokens": 701,
+    "output_tokens_details": {
+      "thinking_tokens": 498
+    },
+    "service_tier": "standard",
+    "inference_geo": "global"
+  },
+  "stop_reason": "end_turn",
+  "prompt": "workbench/consults/place-codes-sonnet-prompt.md",
+  "images": [],
+  "note": "Vector reference body; scalar oracle and lead tests supplied before call"
+}

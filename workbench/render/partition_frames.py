@@ -1,0 +1,205 @@
+"""Draw private ownership and relation frames from saved production readings.
+
+The ownership frame displays the two saved masks and their saved counts. The
+relations frame displays pipeline construction status, not study-derived relation
+evidence. This workbench arranges values through the picture modules; it does not
+derive a mask, measure a place, count an object or construct an interstice.
+"""
+
+import argparse
+import json
+from collections.abc import Mapping
+from hashlib import sha256
+from pathlib import Path
+from textwrap import fill
+
+import matplotlib.pyplot as plt
+import numpy as np
+
+from knee.ownership.claims import OwnershipReading
+from knee.pictures import ownership, relations
+from knee.relations.shell import RelationsReading
+
+
+def saved_mask(
+    arrays: Mapping[str, np.ndarray], descriptors: dict, name: str
+) -> np.ndarray:
+    """Validate a saved mask's representation and recorded content digest."""
+    if name not in arrays or name not in descriptors:
+        raise ValueError(f"missing_saved_mask:{name}")
+    mask = arrays[name]
+    descriptor = descriptors[name]
+    if mask.dtype.str != descriptor["dtype"]:
+        raise ValueError(f"saved_array_dtype_mismatch:{name}")
+    if mask.shape != tuple(descriptor["shape"]):
+        raise ValueError(f"saved_array_shape_mismatch:{name}")
+    digest = sha256(
+        mask.dtype.str.encode() + str(mask.shape).encode() + mask.tobytes()
+    ).hexdigest()
+    if digest != descriptor["digest"]:
+        raise ValueError(f"saved_array_digest_mismatch:{name}")
+    if mask.dtype.kind != "b" or mask.ndim != 2:
+        raise ValueError(f"saved_mask_representation_invalid:{name}")
+    return mask
+
+
+def saved_panels(run: Path, metadata: dict) -> tuple:
+    """Reconstitute existing readings from one saved record, without measuring."""
+    if "ownership" not in metadata or "relations" not in metadata:
+        raise ValueError("missing_saved_stage_reading")
+    if "artifact" not in metadata or "arrays" not in metadata:
+        raise ValueError("missing_saved_artifact")
+    artifact = run / metadata["artifact"]
+    with np.load(artifact, allow_pickle=False) as arrays:
+        claims = saved_mask(arrays, metadata["arrays"], "ownership_claims")
+        residual = saved_mask(arrays, metadata["arrays"], "ownership_residual")
+    if claims.shape != residual.shape:
+        raise ValueError("ownership_mask_shape_mismatch")
+    saved_ownership = metadata["ownership"]
+    saved_relations = metadata["relations"]
+    ownership_reading = OwnershipReading(
+        code=saved_ownership["code"],
+        why=saved_ownership["why"],
+        claims=claims,
+        residual=residual,
+        claimed_places=saved_ownership["claimed_places"],
+        residual_places=saved_ownership["residual_places"],
+        unavailable_places=saved_ownership["unavailable_places"],
+        objects=saved_ownership["objects"],
+    )
+    relations_reading = RelationsReading(
+        code=saved_relations["code"],
+        why=saved_relations["why"],
+        interstices=tuple(saved_relations["interstices"]),
+    )
+    return (
+        artifact,
+        ownership.panels(ownership_reading),
+        relations.panels(relations_reading),
+    )
+
+
+def draw_mask(axis: object, mask: np.ndarray, title: str, code: str, why: str) -> None:
+    """Display a saved mask, or its existing named absence when it is empty."""
+    axis.set_title(title, fontsize=9)
+    if mask.size:
+        axis.imshow(mask, cmap="gray", vmin=0, vmax=1)
+    else:
+        axis.text(
+            0.03,
+            0.95,
+            f"{code}\n\n{why}",
+            transform=axis.transAxes,
+            va="top",
+            wrap=True,
+        )
+    axis.set_axis_off()
+
+
+def main() -> None:
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument("run", type=Path)
+    parser.add_argument("--study-uid", required=True)
+    parser.add_argument("--out", type=Path, required=True)
+    args = parser.parse_args()
+    data_root = Path(__file__).resolve().parents[2] / "data"
+    output = args.out.resolve()
+    if not output.is_relative_to(data_root.resolve()):
+        parser.error("out must be under the project's private data directory")
+    receipt_path = args.run / "receipt.json"
+    receipt = json.loads(receipt_path.read_text())
+    records = [
+        record for record in receipt["records"] if record["study_uid"] == args.study_uid
+    ]
+    if not records:
+        parser.error("no saved records for this study")
+    loaded = [saved_panels(args.run, record) for record in records]
+    output.mkdir(parents=True, exist_ok=True)
+    gallery, axes = plt.subplots(
+        len(records),
+        3,
+        figsize=(15, 4 * len(records)),
+        layout="constrained",
+        squeeze=False,
+    )
+    series = []
+    for row, (metadata, saved) in enumerate(zip(records, loaded, strict=True)):
+        artifact, ownership_frame, relations_frame = saved
+        series_uid = metadata["series_uid"]
+        label = fill(series_uid, width=42)
+        draw_mask(
+            axes[row, 0],
+            ownership_frame.claims,
+            f"{label}\n{ownership_frame.code}: {ownership_frame.why}\n"
+            f"claims: {ownership_frame.claimed_places} places; "
+            f"{ownership_frame.objects} objects",
+            ownership_frame.code,
+            ownership_frame.why,
+        )
+        draw_mask(
+            axes[row, 1],
+            ownership_frame.residual,
+            f"{label}\nresidual: {ownership_frame.residual_places} places; "
+            f"unavailable: {ownership_frame.unavailable_places} places",
+            ownership_frame.code,
+            ownership_frame.why,
+        )
+        axes[row, 2].set_title(
+            f"{label}\nrelations: pipeline construction status", fontsize=9
+        )
+        axes[row, 2].text(
+            0.03,
+            0.95,
+            f"{relations_frame.code}\n\n{relations_frame.why}",
+            transform=axes[row, 2].transAxes,
+            va="top",
+            wrap=True,
+        )
+        axes[row, 2].set_axis_off()
+        series.append(
+            {
+                "series_uid": series_uid,
+                "artifact": metadata["artifact"],
+                "artifact_sha256": sha256(artifact.read_bytes()).hexdigest(),
+                "masks": {
+                    name: metadata["arrays"][name]
+                    for name in ("ownership_claims", "ownership_residual")
+                },
+                "ownership": metadata["ownership"],
+                "relations": metadata["relations"],
+                "frame_kinds": {"ownership": "study", "relations": "pipeline"},
+            }
+        )
+    gallery.suptitle("Saved ownership readings and relation construction status")
+    gallery.savefig(output / "series.png", dpi=160)
+    plt.close(gallery)
+    picture_modules = {}
+    for name, module in (("ownership", ownership), ("relations", relations)):
+        if module.__file__ is None:
+            raise RuntimeError(f"picture_module_source_unavailable:{name}")
+        picture_modules[name] = sha256(Path(module.__file__).read_bytes()).hexdigest()
+    manifest = {
+        "schema": "partition-frames-v1",
+        "receipt_sha256": sha256(receipt_path.read_bytes()).hexdigest(),
+        "renderer_sha256": sha256(Path(__file__).read_bytes()).hexdigest(),
+        "picture_module_sha256": picture_modules,
+        "study_uid": args.study_uid,
+        "image": "series.png",
+        "series": series,
+    }
+    (output / "manifest.json").write_text(
+        json.dumps(manifest, indent=2, allow_nan=False) + "\n"
+    )
+    print(
+        json.dumps(
+            {
+                "series": str(output / "series.png"),
+                "manifest": str(output / "manifest.json"),
+            },
+            indent=2,
+        )
+    )
+
+
+if __name__ == "__main__":
+    main()
