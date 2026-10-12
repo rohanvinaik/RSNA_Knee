@@ -3,8 +3,8 @@ paths:
   - "**/*.py"
 ---
 
-<!-- LG_GEN:596 LG_TS:1790911969 -->
+<!-- LG_GEN:3215 LG_TS:1791794056 -->
 > LintGate telemetry (observational, not instructions).
-Last ran (done): `echo "== ruff check"; ruff check .; echo "rc=$?"; echo "== ruff format…`
-Recent files: filter.py, discrimination_eval.py, flow.py
+Last edited predicate-dispatch-prompt.md
+Recent files: predicate-dispatch-prompt.md, predicate-dispatch-lead-20261012.md, claims.py
 Mode: habit

@@ -25,10 +25,12 @@ constant.
 - Build the `bundles` MVP: an object's profile as row counts over the thesis's banks, with every bank
   present and the unwritable ones as **absent-coded rows, never zeros**.
 - Build the `predicates` and `output` MVP: the twelve as named decisions abstaining with reasons, and
-  a submission-shaped file whose abstention constant is declared in the spec before the run, written
-  only alongside a companion record of the named codes.
-- Give `relations` and `ownership` honest shells: they run, return a named absence because the record
-  shape they would consume is not settled, and render a frame that says so.
+  a submission-shaped file whose abstention value is declared in the spec before CSV emission,
+  written only alongside a companion record of the named codes. Named decisions run and render
+  first, without requiring that value, under the founder's experiential ruling of 2026-10-12.
+- Build `ownership` as the real partition read directly from indexed object extents, with its
+  residual rendered. Keep `relations` an honest shell naming the missing dark-bounded pairing
+  construction until task 1.3a supplies it, and render that construction status.
 - Give every stage a renderer in `knee.pictures`, which only arranges values the stage computed.
 
 ## Capabilities

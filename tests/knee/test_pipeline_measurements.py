@@ -290,12 +290,20 @@ def test_hamilton_graph_returns_the_production_measurements_and_derived_work_cou
         "source_read_upper_bound": 4 * expected_native_samples,
         "profile_sample_output_bytes": 9 * expected_native_samples,
         "squint_tiles": expected_squint_tiles,
+        "lens_native_places": 3 * 16 * 16,
+        "lens_output_bytes": 2 * 3 * 16 * 16,
+        "pairing_profiles": 0,
+        "sample_supported_pairs": 0,
     }
     assert outputs["work_counts"] == {
         "profile_coordinate_evaluations": expected_samples,
         "source_read_upper_bound": 4 * expected_samples,
         "profile_sample_output_bytes": 9 * expected_samples,
         "squint_tiles": 16,
+        "lens_native_places": 3 * 16 * 16,
+        "lens_output_bytes": 2 * 3 * 16 * 16,
+        "pairing_profiles": 0,
+        "sample_supported_pairs": 0,
     }
 
 
@@ -390,8 +398,32 @@ def test_saved_annotation_uses_the_production_background_reading(
     object_analysis.main()
     assert reads == {STACKED_UID: 1, UNSTACKED_UID: 1}
     receipt = json.loads((out / "receipt.json").read_text())
+    events = receipt["studies"][0]["ledger"]
+    produced = [
+        event["counts"]["places"]
+        for event in events
+        if event["name"] == "lenses.produced"
+    ]
+    consumed = [
+        event["counts"]["places"]
+        for event in events
+        if event["name"] == "lenses.consumed"
+    ]
+    assert produced == consumed == [3 * 16 * 16, 0]
     record = receipt["records"][0]
+    assert record["ownership"]["code"] == "predecessor_absent"
+    assert record["relations"]["code"] == "construction_absent"
+    assert record["pairings"]["code"] == "predecessor_absent"
+    assert "task 1.3a" in record["relations"]["why"]
+    assert record["lenses"]["normalisation"] == "none"
+    assert record["lenses"]["saved_scope"] == "selected native plane (row,column)"
+    assert sum(record["lenses"]["counts"]) == 3 * 16 * 16
     with np.load(out / record["artifact"], allow_pickle=False) as arrays:
+        assert arrays["lens_codes"].dtype == np.uint8
+        assert arrays["lens_digits"].dtype == np.int8
+        assert arrays["lens_digits"].shape == (16, 16)
+        assert arrays["ownership_claims"].shape == (0, 0)
+        assert arrays["ownership_residual"].shape == (0, 0)
         if np.isfinite(split):
             assert record["background_split"] == split
             assert record["background_annotation_code"] == "measured"

@@ -3,12 +3,13 @@ paths:
   - "**/*.py"
 ---
 
-<!-- LG_GEN:596 LG_TS:1790911969 -->
+<!-- LG_GEN:3215 LG_TS:1791794056 -->
 # Session State
 > LintGate telemetry — observational state, not instructions. Listed files are most-recently-touched (MRU) and may lag the current task.
 
-Mode: habit (score: 0.55)
-Recent files: [filter.py, discrimination_eval.py, flow.py, 2026-08-29-encoder-iteration-ladder.md, anatomy.py]
-Coherence: systemic | Warnings: 1
+Mode: habit (score: 0.62)
+Recent files: [predicate-dispatch-prompt.md, predicate-dispatch-lead-20261012.md, claims.py, ownership-residual-map-codex.md, ownership-residual-map-workshop-resolution.md]
+Coherence: stable
 
-Vitals (Prism, last session): setup 70
+Context: ~3% of 200k (est.) | Tools: 2303 | Compactions: 57
+Vitals (Prism, last session): setup 85

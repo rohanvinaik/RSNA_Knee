@@ -41,6 +41,19 @@ values the stage computed and SHALL NOT compute a value, a classification or a p
 - **WHEN** a picture would require a value the stage's record does not hold
 - **THEN** the renderer does not compute it, and the picture shows the value as absent
 
+#### Scenario: Ownership passes its residual to the drawing layer
+- **WHEN** ownership returns a readable field, including one with no claims
+- **THEN** `knee.pictures.ownership.panels(reading)` carries the original claims and residual
+  masks, code, reason and all four counts unchanged, without recomputing the partition
+- **AND** an absent or malformed field stays a named absence with empty masks, never a picture
+  of a fully claimed field
+
+#### Scenario: Relations displays its missing construction
+- **WHEN** the current relations shell returns `construction_absent`
+- **THEN** `knee.pictures.relations.panels(reading)` carries its code, reason and interstice
+  tuple unchanged for a frame explicitly about pipeline construction status
+- **AND** that frame never asserts a study has no interstice
+
 ### Requirement: No stage names anatomy or admits an object
 The system SHALL NOT allow any stage record, code or picture to carry an anatomical name, assert
 that a reading is a particular tissue, or mark a resolved element as an admitted object. A record

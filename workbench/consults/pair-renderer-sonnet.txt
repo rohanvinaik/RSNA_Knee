@@ -1,0 +1,252 @@
+```python
+import argparse
+import json
+from hashlib import sha256
+from pathlib import Path
+from textwrap import fill
+
+import numpy as np
+import matplotlib.pyplot as plt
+
+import knee.pictures.pairings as pictures
+from knee.relations.pairings import PairingReading
+
+plt.switch_backend("Agg")
+
+PALETTE = (
+    "#1f77b4",
+    "#ff7f0e",
+    "#2ca02c",
+    "#d62728",
+    "#9467bd",
+    "#8c564b",
+    "#e377c2",
+    "#17becf",
+    "#bcbd22",
+    "#333333",
+)
+
+PAIRING_ARRAYS = (
+    ("pairing_source_labels", "int32", 1),
+    ("pairing_far_labels", "int32", 1),
+    ("pairing_trace_codes", "uint8", 1),
+    ("pairing_outcome_codes", "uint8", 1),
+    ("pairing_positions_rc", "float64", 3),
+    ("pairing_contributor_labels", "int32", 3),
+    ("pairing_band_limits_mm", "float64", 2),
+)
+
+
+def saved_array(arrays, descriptors, name, dtype, ndim):
+    if name not in arrays:
+        raise ValueError(f"missing array: {name}")
+    if name not in descriptors:
+        raise ValueError(f"missing descriptor: {name}")
+    array = arrays[name]
+    descriptor = descriptors[name]
+    if array.dtype != np.dtype(dtype):
+        raise ValueError(f"{name}: dtype {array.dtype} != expected {dtype}")
+    if array.ndim != ndim:
+        raise ValueError(f"{name}: ndim {array.ndim} != expected {ndim}")
+    if list(descriptor["shape"]) != list(array.shape):
+        raise ValueError(f"{name}: descriptor shape mismatch")
+    if descriptor["dtype"] not in (array.dtype.str, str(array.dtype)):
+        raise ValueError(f"{name}: descriptor dtype mismatch")
+    digest = sha256(
+        array.dtype.str.encode() + str(array.shape).encode() + array.tobytes()
+    ).hexdigest()
+    if descriptor["contentdigest"] != digest:
+        raise ValueError(f"{name}: descriptor contentdigest mismatch")
+    return array
+
+
+def saved_panels(run: Path, metadata: dict):
+    artifact = Path(run) / metadata["artifact"]
+    descriptors = metadata["arrays"]
+    stage = metadata.get("pairings")
+    if stage is None:
+        raise ValueError("missing stage metadata: pairings")
+    with np.load(artifact, allow_pickle=False) as arrays:
+        loaded = {}
+        for name, dtype, ndim in PAIRING_ARRAYS:
+            loaded[name] = saved_array(arrays, descriptors, name, dtype, ndim)
+        if "b1_labels" in arrays.files:
+            labels = saved_array(arrays, descriptors, "b1_labels", "int32", 2)
+        else:
+            labels = np.empty((0, 0), dtype=np.int32)
+    count = loaded["pairing_source_labels"].size
+    expected = {
+        "pairing_source_labels": (count,),
+        "pairing_far_labels": (count,),
+        "pairing_trace_codes": (count,),
+        "pairing_outcome_codes": (count,),
+        "pairing_positions_rc": (count, 2, 2),
+        "pairing_contributor_labels": (count, 2, 4),
+        "pairing_band_limits_mm": (count, 2),
+    }
+    for name, shape in expected.items():
+        if loaded[name].shape != shape:
+            raise ValueError(f"{name}: shape {loaded[name].shape} != expected {shape}")
+    reading = PairingReading(
+        stage["code"],
+        stage["why"],
+        loaded["pairing_source_labels"],
+        loaded["pairing_far_labels"],
+        loaded["pairing_trace_codes"],
+        loaded["pairing_outcome_codes"],
+        loaded["pairing_positions_rc"],
+        loaded["pairing_contributor_labels"],
+        loaded["pairing_band_limits_mm"],
+        stage["counts"],
+        stage["scope"],
+    )
+    pictures.panels(reading)
+    return artifact, reading, labels
+
+
+def draw_frame(axis, reading, labels, metadata):
+    stage = metadata["pairings"]
+    names = stage["outcome_names"]
+    side_order = list(stage["side_order"])
+    near_index = side_order.index("near") if "near" in side_order else 0
+    far_index = side_order.index("far") if "far" in side_order else 1
+
+    has_background = labels.size > 0
+    if has_background:
+        axis.imshow(labels, cmap="tab20", interpolation="nearest")
+
+    positions = np.asarray(reading.positions_rc)
+    codes = np.asarray(reading.outcome_codes)
+    handles = []
+    for code in np.unique(codes):
+        code = int(code)
+        if isinstance(names, dict):
+            name = names[str(code)] if str(code) in names else names[code]
+        else:
+            name = names[code]
+        color = PALETTE[code % len(PALETTE)]
+        mask = codes == code
+        labelled = False
+        for index, marker in ((near_index, "o"), (far_index, "x")):
+            sites = positions[mask, index, :]
+            sites = sites[np.isfinite(sites).all(axis=1)]
+            if sites.shape[0] == 0:
+                continue
+            kwargs = {}
+            if marker == "o":
+                kwargs["facecolors"] = "none"
+                kwargs["edgecolors"] = color
+            else:
+                kwargs["c"] = color
+            artist = axis.scatter(
+                sites[:, 1],
+                sites[:, 0],
+                marker=marker,
+                s=18,
+                linewidths=0.8,
+                **kwargs,
+            )
+            if not labelled:
+                handles.append((artist, f"{code}: {name}"))
+                labelled = True
+
+    if not has_background:
+        axis.set_aspect("equal")
+        axis.invert_yaxis()
+    if handles:
+        axis.legend(
+            [handle for handle, _ in handles],
+            [text for _, text in handles],
+            loc="upper right",
+            fontsize=7,
+            title="outcome code",
+            title_fontsize=7,
+        )
+
+    counts = json.dumps(stage["counts"], sort_keys=True)
+    title = "\n".join(
+        [
+            fill(f"series_uid: {metadata['series_uid']}", 90),
+            fill(f"code: {reading.code}", 90),
+            fill(f"why: {stage['why']}", 90),
+            fill(f"scope: {stage['scope']}", 90),
+            fill(f"counts: {counts}", 90),
+            fill(
+                "o near, x far; flanking sample sites; indexed extents; "
+                "complete interstices unresolved",
+                90,
+            ),
+        ]
+    )
+    axis.set_title(title, fontsize=8, loc="left")
+    axis.axis("off")
+
+
+def main():
+    parser = argparse.ArgumentParser()
+    parser.add_argument("run")
+    parser.add_argument("--study-uid", required=True)
+    parser.add_argument("--out", required=True)
+    args = parser.parse_args()
+
+    run = Path(args.run)
+    out = Path(args.out)
+    data_root = Path(__file__).resolve().parents[2] / "data"
+    try:
+        out.resolve().relative_to(data_root)
+    except ValueError:
+        raise SystemExit(f"refusing output outside {data_root}")
+
+    receipt_path = run / "receipt.json"
+    receipt_bytes = receipt_path.read_bytes()
+    receipt = json.loads(receipt_bytes)
+    records = [r for r in receipt["records"] if r.get("study_uid") == args.study_uid]
+    if not records:
+        raise SystemExit(f"no records for study_uid {args.study_uid}")
+
+    out.mkdir(parents=True, exist_ok=True)
+    count = len(records)
+    fig, axes = plt.subplots(
+        count, 1, figsize=(10, 7 * count), constrained_layout=True, squeeze=False
+    )
+
+    series = []
+    for axis, record in zip(axes[:, 0], records):
+        artifact, reading, labels = saved_panels(run, record)
+        draw_frame(axis, reading, labels, record)
+        with np.load(artifact, allow_pickle=False) as arrays:
+            names = [name for name, _, _ in PAIRING_ARRAYS]
+            if "b1_labels" in arrays.files:
+                names.append("b1_labels")
+        series.append(
+            {
+                "series_uid": record["series_uid"],
+                "artifact": str(record["artifact"]),
+                "artifact_sha256": sha256(artifact.read_bytes()).hexdigest(),
+                "pairings": record["pairings"],
+                "arrays": {name: record["arrays"][name] for name in names},
+            }
+        )
+
+    image_path = out / "series.png"
+    fig.savefig(image_path, dpi=160)
+    plt.close(fig)
+
+    manifest = {
+        "schema": "pairing-frames-v1",
+        "receipt_sha256": sha256(receipt_bytes).hexdigest(),
+        "renderer_sha256": sha256(Path(__file__).read_bytes()).hexdigest(),
+        "picture_module_sha256": sha256(Path(pictures.__file__).read_bytes()).hexdigest(),
+        "study_uid": args.study_uid,
+        "image": "series.png",
+        "series": series,
+    }
+    manifest_path = out / "manifest.json"
+    manifest_path.write_text(json.dumps(manifest, indent=2, allow_nan=False))
+
+    print(json.dumps({"series": str(image_path), "manifest": str(manifest_path)}))
+
+
+if __name__ == "__main__":
+    main()
+```

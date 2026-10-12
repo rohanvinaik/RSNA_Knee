@@ -1,3 +1,6 @@
+Founder correction, 2026-10-12: "I don't know, that should resolve experientially, when actually
+running and seeing it in action". Named decisions precede the numeric projection's declaration.
+
 ## ADDED Requirements
 
 ### Requirement: Each finding is a named decision over a named subject
@@ -29,10 +32,16 @@ decision.
 - **THEN** the stage refuses it, because an input of that kind could only move a decision toward an
   answer that is already known
 
-### Requirement: The submission's number is declared before the run
+### Requirement: The submission's number is declared before CSV emission
 The system SHALL take the value written for an abstaining finding as an argument declared in this
-specification before any run, and SHALL NOT choose it by reference to a score, a prevalence, a
-metric or a label.
+specification before a run emits a submission CSV, and SHALL NOT choose it by reference to a score,
+a prevalence, a metric or a label. Runs that record and render named decisions SHALL NOT require a
+numeric projection. The value remains undeclared while those readings are inspected.
+
+#### Scenario: Named decisions run before a numeric projection is declared
+- **WHEN** the abstention value is undeclared
+- **THEN** the system can run, record and render named decisions, and refuses submission CSV
+  emission rather than supplying a default number
 
 #### Scenario: The file is written
 - **WHEN** the submission file is produced

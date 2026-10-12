@@ -90,6 +90,11 @@ earlier stage produced, identity is not assumed. If it is a kind-label, it is, a
 
 ## 1. The route and the vocabulary — the lead's, and first
 
+Continuation discipline (founder instruction 2026-10-12): mechanize settled packets through Sonnet
+API calls and local sub-agents under the delegation contract above. Record exact verification
+standing per unit; a refusal leaves that unit open while independent declared work continues.
+The next independent lead-owned unit is 1.3a, whose support contract must precede code.
+
 - [x] 1.1 Replace `src/knee/pipeline.py`'s `ROUTE` with the object model's **nine** stages — study,
       collapse (the field), lenses, objects, relations, ownership, vectors (the bundles), predicates,
       output. **Not ten:** §6's border refinement is work inside `objects`, not a stage beside it, and
@@ -110,7 +115,7 @@ earlier stage produced, identity is not assumed. If it is a kind-label, it is, a
       Detective-COMPLETE with zero survivors; both CrossHair-confirmed over all paths; 13 intent
       tests. Held open deliberately until the unit had a CONSUMER — step 7 of the loop — which
       `run_study` now is.)*
-- [ ] 1.3 **Give `ownership` a thin REAL implementation.** The founder's `<object>` ruling removed
+- [x] 1.3 **Give `ownership` a thin REAL implementation.** The founder's `<object>` ruling removed
       identity as a blocker, and ownership needs nothing else: every place claimed by one `<object>`
       or named `unassigned` is `interiors.labels` read directly — a non-zero label is a claim, a zero
       inside the available field is the residual. It returns a record, it renders, and **its picture
@@ -118,10 +123,12 @@ earlier stage produced, identity is not assumed. If it is a kind-label, it is, a
       channel the founder reads to supply the next lens. Verify it is consumed by the route and that
       `just graph` reports nothing dangling.
       *(PARTLY done 2026-10-12, `0006f4e` + `2cb49e3`: built, 12 intent tests, `ownership_code`
-      Detective-COMPLETE 3/3, CrossHair run, consumed by `run_study`, `just graph` valid. **STAYS
-      UNCHECKED** because this task also says it RENDERS and there is no `knee.pictures.ownership`.
-      A stage is not built until it renders, `test_skeleton.py` enforces it, and ROUTE correctly
-      still says `not_built`. The renderer is the whole remainder.)*
+      Detective-COMPLETE 3/3, CrossHair run, consumed by `run_study`, `just graph` valid.
+      Renderer remainder completed in this session: Sonnet API body read by lead, 10 direct
+      picture intent tests; writer saves returned masks/counts/codes; partition_frames draws five
+      series through the real entry point in data/measurements/partition-frames-20261012 and
+      data/pictures/partition-frames-20261012. Graph valid; import contract kept. Ownership's
+      frame is study-derived; relations' frame is pipeline status.)*
 - [ ] 1.3a **Record which territory each bracketed profile reached across the dark.** This is the
       pairing `relations` needs and **it does not exist in any record**. Confirmed in source
       2026-10-12 by reading `interiors.py` whole: `boundary_edges` does
@@ -138,13 +145,26 @@ earlier stage produced, identity is not assumed. If it is a kind-label, it is, a
       pinned two-sign. **Corrects a false claim this lead wrote into task 1.3 on 2026-10-12** — that
       relations was constructible "from the facing-pair graph the boundary census already computes".
       It is constructible in principle and it is **not a lookup**.
-- [ ] 1.3b **`relations` stays an honest shell until 1.3a lands**, and its absence names the missing
+      Support contract declared before implementation in `specs/dark-bounded-pairing/spec.md`;
+      lead reasoning is `docs/chapters/02-collapse/readings/dark-pairing-lead-20261012.md`.
+      This unit retains the native contributing labels immediately flanking the existing bracket,
+      not an interpolated label. It records sample-supported pairs and every refusal; complete
+      interstice extent construction remains a separate obligation of relations.
+      *(Candidate implemented, wired and rendered 2026-10-12. One study/five series retains every
+      profile outcome; 597 supported sampled pairs, not complete interstices. Pure `pair_code`
+      Detective COMPLETE modulo five crash-only value gaps; CrossHair Not confirmed. Numeric
+      `footprint_labels_reference` Detective UNGATEABLE: mutants could not be BUILT; no retry or
+      waiver. Ordinary gate passes, but LintGate/compute-budget obligations remain. Task stays open.
+      Full standing and receipts: `workbench/consults/dark-pairing-status-20261012.md`.)*
+- [x] 1.3b **`relations` stays an honest shell until 1.3a lands**, and its absence names the missing
       construction rather than a missing input. It runs, returns that named absence, and renders a
       frame showing it. Verify the absence it returns is not one of 1.2's three input silences, since
       it is not about an input at all.
       *(PARTLY done 2026-10-12, `1b4a96d` + `2cb49e3`: built, 10 intent tests, Detective-COMPLETE
       with all six equivalent survivors flagged with their proof, CrossHair confirmed over all paths,
-      consumed by `run_study`. **STAYS UNCHECKED** for the same reason as 1.3 — no frame yet.)*
+      consumed by `run_study`. Frame completed in this session by local sub-agent, lead-read
+      and tested with 1.3; the same real-study gallery shows construction_absent for all five
+      series. ROUTE remains not_built for actual relation construction.)*
 
 ## 2. The lenses MVP — delegable
 
@@ -157,6 +177,10 @@ earlier stage produced, identity is not assumed. If it is a kind-label, it is, a
 - [ ] 2.3 Write the digits for every place of every acquisition, recording `normalisation: none` and
       keeping an unread place **silent** rather than writing it as the middle digit. Verify silence
       and the middle digit are distinguishable in the record.
+      *(Candidate implemented and rendered, not certified. The 2026-10-12 Detective run for
+      `place_codes_reference` returned UNGATEABLE because mutants could not be BUILT; counts are
+      a floor, not a verdict. Array CrossHair contracts were Not confirmed. Read the full evidence
+      and limits in `workbench/consults/openspec-contract-audit-20261012.md`; this task remains open.)*
 - [ ] 2.4 Wire it into the production route and render it: the three-colour digit map per
       acquisition, with silence drawn as silence. **Record the dispatch answer first.** Verify the
       renderer arranges only what the stage computed, then run it over one study through the real
@@ -184,8 +208,11 @@ earlier stage produced, identity is not assumed. If it is a kind-label, it is, a
       the dispatch answer first**: how does a predicate come to receive `<object>` 3 and 7 rather than
       4 and 9? Verify the stage refuses any input from a label, a score or a previous outcome.
 - [ ] 4.2 Implement the submission serialiser against `sample_submission.csv`'s schema, taking the
-      abstention value as an argument **declared in the spec before any run** — it is not declared
-      there today, and under Law 4 that is a bar the founder owes. Write the companion record of
+      abstention value as an argument **declared in the spec before CSV emission** — it is not declared
+      there today. Founder correction, 2026-10-12: "I don't know, that should resolve
+      experientially, when actually running and seeing it in action". Run and render the named
+      decisions first; the numeric projection remains undeclared until that inspection and the
+      serialiser refuses CSV emission without it. Write the companion record of
       codes and reasons **in the same run**; the submission is its lossy projection. Verify a
       submission without its companion record is refused.
 - [ ] 4.3 Wire and render both: the twelve-row table per study, each row showing its abstention and

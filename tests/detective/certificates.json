@@ -55,15 +55,23 @@
   },
   "src/knee/lenses/digits.py::digit_code": {
     "cut_reasons": [],
-    "function_digest": "e942a94a52a7b5ad",
+    "function_digest": "004f24d94763e508",
     "refusal": "",
     "standing": "complete"
   },
   "src/knee/lenses/digits.py::is_read": {
     "cut_reasons": [],
-    "function_digest": "ef269f15fe73c411",
+    "function_digest": "0e958d5e211bfb4c",
     "refusal": "",
     "standing": "complete"
+  },
+  "src/knee/lenses/places.py::place_codes_reference": {
+    "cut_reasons": [
+      "mutant_construction_failed"
+    ],
+    "function_digest": "6db9e8c59715baf0",
+    "refusal": "",
+    "standing": "ungateable"
   },
   "src/knee/lenses/slabs.py::gap_fraction": {
     "cut_reasons": [],
@@ -130,6 +138,20 @@
       "mutant_construction_failed"
     ],
     "function_digest": "e940ee21aa8b140f",
+    "refusal": "",
+    "standing": "ungateable"
+  },
+  "src/knee/relations/pair_codes.py::pair_code": {
+    "cut_reasons": [],
+    "function_digest": "8a2b51677a4cb4a9",
+    "refusal": "",
+    "standing": "complete"
+  },
+  "src/knee/relations/pairings.py::footprint_labels_reference": {
+    "cut_reasons": [
+      "mutant_construction_failed"
+    ],
+    "function_digest": "55e517e2226b89dc",
     "refusal": "",
     "standing": "ungateable"
   },

@@ -19,11 +19,14 @@ from dataclasses import dataclass, field
 from pathlib import Path
 
 from knee.collapse.regime import RegimeKey, read_regime
+from knee.lenses.places import LensReading, read_lenses
 from knee.objects.analysis import AnalysisRequest, SeriesMeasurement, measure_series
 from knee.objects.conversation import ConversationInput, SeriesConversation, converse
 from knee.ownership.claims import OwnershipReading, read_ownership
+from knee.relations.pairings import PairingReading, read_pairings
 from knee.relations.shell import RelationsReading, read_relations
 from knee.study.corpus import Corpus, Study, read_study
+from knee.telemetry import ledger
 
 # The object model's route, in order, with the state of each stage. A stage is "built" when it runs
 # over a real study through Chapter 1's entry point -- never when its unit tests pass. That
@@ -39,8 +42,8 @@ ROUTE: tuple[tuple[str, str], ...] = (
     ("collapse", "partly"),  # the FIELD: regime, noise law, physical frame, the squint
     ("lenses", "not_built"),  # every place, every acquisition, one ternary digit
     ("objects", "partly"),  # the <object>s, and SS6's refinement of their borders
-    ("relations", "not_built"),  # interstices CONSTRUCTED between facing <object>s
-    ("ownership", "not_built"),  # every place claimed, or named unassigned
+    ("relations", "not_built"),  # rendered shell; facing-pair construction still absent
+    ("ownership", "built"),  # real-study partition, consumed and rendered
     ("vectors", "not_built"),  # the BUNDLES: each <object>'s profile as row counts
     ("predicates", "not_built"),  # the twelve, each on its named subject
     ("output", "not_built"),  # twelve confidences, with the kept record behind them
@@ -68,6 +71,8 @@ class SeriesRun:
     measurements: SeriesMeasurement | None = None
     ownership: OwnershipReading | None = None
     relations: RelationsReading | None = None
+    lenses: LensReading | None = None
+    pairings: PairingReading | None = None
 
 
 @dataclass(frozen=True, slots=True)
@@ -100,6 +105,8 @@ def run_study(
     for series in study.series:
         row = series.row
         key = read_regime(series) if series.volume is not None else None
+        lenses = read_lenses(series.volume, key)
+        ledger.record("lenses.consumed", places=int(lenses.codes.size))
         measurements = None
         if analysis is not None:
             measurements = (
@@ -120,6 +127,11 @@ def run_study(
         interiors = getattr(measurements, "interiors", None)
         ownership = read_ownership(interiors)
         relations = read_relations(interiors)
+        frame = getattr(measurements, "frame", None)
+        pairings = read_pairings(
+            interiors, frame.spacing_rc if frame is not None else None
+        )
+        ledger.record("pairings.consumed", profiles=int(pairings.outcome_codes.size))
         if series.volume is None:
             runs.append(
                 SeriesRun(
@@ -131,6 +143,8 @@ def run_study(
                     measurements,
                     ownership,
                     relations,
+                    lenses,
+                    pairings,
                 )
             )
             continue
@@ -144,6 +158,8 @@ def run_study(
                 measurements=measurements,
                 ownership=ownership,
                 relations=relations,
+                lenses=lenses,
+                pairings=pairings,
             )
         )
     # The furthest stage that actually read something. Ownership advances it only where it
