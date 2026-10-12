@@ -120,9 +120,15 @@ plan-check CHANGE="knee-object-model":
 graph OUT:
     HAMILTON_TELEMETRY_ENABLED=false PYTHONPATH=.:src .venv/bin/python scripts/object_graph.py --out "$1"
 
+# THE ONE COMMAND: a study in, the whole analysis out, every stage drawn on the way past.
 # Explicit physical settings go in the receipt. Output must stay under private data/.
+#
+# Matplotlib is supplied PER RUN here, exactly as the drawing recipes do it, so the single command
+# can print what it resolved while `knee` still imports no drawing code and `just imports` holds.
+# `--no-pictures` is the competition kernel, where the output is just the diagnosis; it loads no
+# Matplotlib at all and computes precisely the same thing.
 analyze-objects *ARGS:
-    .venv/bin/python -m workbench.measure.object_analysis "$@"
+    uv run --no-sync --with matplotlib python -m workbench.measure.object_analysis "$@"
 
 # Recompute a saved packet's source standing and proof linkage when resuming.
 packet-status RUN:

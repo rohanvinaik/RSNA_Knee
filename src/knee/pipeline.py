@@ -110,10 +110,18 @@ def run_study(
     Beyond that the route is unbuilt, and `StudyRun.reached` says so.
     """
     study: Study = read_study(corpus, uid)
+    # WHO RECORDS WHAT. A stage with one natural exit records its own `produced` -- lenses,
+    # pairings, ownership, relations do. `read_study` and `read_regime` have several exits and are
+    # pinned, so the route counts them here rather than threading a side effect through a pinned
+    # decision; the route can see exactly what came back. Either way every stage is counted, so a
+    # stage that ran can be told from one that never executed.
+    ledger.record("study.produced", series=len(study.series))
     runs: list[SeriesRun] = []
     for series in study.series:
         row = series.row
         key = read_regime(series) if series.volume is not None else None
+        ledger.record("collapse.produced", regime=1 if key is not None else 0)
+        ledger.record("collapse.consumed", regime=1 if key is not None else 0)
         lenses = read_lenses(series.volume, key)
         ledger.record("lenses.consumed", places=int(lenses.codes.size))
         measurements = None
@@ -135,7 +143,9 @@ def run_study(
         # decides nothing (SS13.7); the stage names its own silence.
         interiors = getattr(measurements, "interiors", None)
         ownership = read_ownership(interiors)
+        ledger.record("ownership.consumed", objects=int(ownership.objects))
         relations = read_relations(interiors)
+        ledger.record("relations.consumed", interstices=len(relations.interstices))
         frame = getattr(measurements, "frame", None)
         pairings = read_pairings(
             interiors, frame.spacing_rc if frame is not None else None
@@ -202,6 +212,11 @@ def run_study(
         )
         conversations = converse(
             inputs, np.asarray(analysis.offsets_mm), analysis.backend
+        )
+        ledger.record("conversation.produced", series=len(conversations))
+        ledger.record(
+            "conversation.consumed",
+            exchanges=sum(len(c.exchanges) for c in conversations),
         )
     return StudyRun(
         uid=study.row.uid,

@@ -97,17 +97,39 @@ def main() -> None:
     )
     parser.add_argument(
         "--conversation",
-        action="store_true",
-        help="exchange original same-orientation boundary readings",
+        action=argparse.BooleanOptionalAction,
+        default=True,
+        help=(
+            "exchange original same-orientation boundary readings (default). The founder, "
+            "2026-10-12, on what the one command does: 'the combined sum total of all the "
+            "analyses we have in conversation with one another' -- so this is the shape of the "
+            "run, not an option bolted onto it. --no-conversation runs the series in isolation."
+        ),
     )
     parser.add_argument(
         "--detective-report",
         type=Path,
         help="complete current-digest Detective JSON report",
     )
+    parser.add_argument(
+        "--pictures",
+        action=argparse.BooleanOptionalAction,
+        default=True,
+        help=(
+            "draw every stage after the run (default). --no-pictures is the competition kernel, "
+            "where the output is just the diagnosis; the compute is identical either way."
+        ),
+    )
     args = parser.parse_args()
     if args.samples < 1 or not np.isfinite(args.span_mm) or args.span_mm <= 0:
         parser.error("positive span-mm and samples required")
+    if args.conversation and args.prominence_mm is None:
+        # `AnalysisRequest` couples the two, and would raise `invalid_conversation_request`. Said
+        # here instead, in words, with the way out named -- a refusal is a verdict, not a crash.
+        parser.error(
+            "the conversation reads boundaries, so it needs --prominence-mm; "
+            "pass --no-conversation to run the series in isolation"
+        )
     directions = {
         "superior": (0.0, 0.0, 1.0),
         "left": (1.0, 0.0, 0.0),
@@ -440,12 +462,51 @@ def main() -> None:
     (args.out / "receipt.json").write_text(
         json.dumps(receipt, indent=2, allow_nan=False) + "\n"
     )
+
+    # THE SAME COMMAND DRAWS. The founder, 2026-10-12: the drawing "is just the output of the
+    # analysis, but since this is visual data, it can most effectively be judged visually, so why
+    # not print? ... it should be absurdly cheap to put out, since it's just a printed copy of the
+    # analysis that is already required." Thesis SS13.7 puts "drawing pictures" at the thin impure
+    # edge beside "reading a movie, writing the output" -- which is here -- and its purpose clause
+    # is "so pictures are a layer that can be switched off", which is `--no-pictures`.
+    #
+    # Imported INSIDE the branch: with pictures off nothing pulls in Matplotlib, so this module
+    # stays importable in the ordinary environment, where its tests run.
+    galleries = []
+    if args.pictures:
+        from workbench.render.all_frames import draw_all
+
+        pictures_root = Path(__file__).resolve().parents[2] / "data" / "pictures"
+        for uid in uids:
+            target = pictures_root / args.out.name / uid
+            try:
+                index = draw_all(args.out, uid, target)
+            except Exception as refusal:
+                galleries.append(
+                    {
+                        "study_uid": uid,
+                        "code": "not_drawn",
+                        "why": f"{type(refusal).__name__}: {refusal}",
+                    }
+                )
+                continue
+            galleries.append(
+                {
+                    "study_uid": uid,
+                    "code": "drawn",
+                    "out": str(target),
+                    "drawn": index["drawn"],
+                    "not_drawn": index["not_drawn"],
+                }
+            )
+
     print(
         json.dumps(
             {
                 "study_count": len(uids),
                 "series_count": len(records),
                 "codes": dict(codes),
+                "pictures": "off" if not args.pictures else galleries,
                 "failures": failures,
             },
             indent=2,

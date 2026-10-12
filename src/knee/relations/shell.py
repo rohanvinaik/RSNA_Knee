@@ -42,6 +42,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 
 from knee.absence import absence_code
+from knee.telemetry import ledger
 
 #: Why `construction_absent`, said once so the code and its reason cannot drift apart.
 WHY_ABSENT: str = (
@@ -85,6 +86,9 @@ def read_relations(interiors: object) -> RelationsReading:
     post: __return__.code == "construction_absent"
     post: __return__.interstices == ()
     """
+    # Recorded even though it constructs nothing: a stage that is silent still ran, and a ledger
+    # with no row for it cannot be told from a stage that never executed.
+    ledger.record("relations.produced", interstices=0)
     return RelationsReading(
         code=absence_code(
             construction_built=False,  # the one argument that is read

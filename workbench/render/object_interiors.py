@@ -83,24 +83,23 @@ def draw_stages(axes, arrays, metadata):
     )
 
 
-def main():
-    parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("run", type=Path)
-    parser.add_argument("--study-uid", required=True)
-    parser.add_argument(
-        "--out", type=Path, default=Path("data/pictures/object-toolkit/interiors-b1")
-    )
-    args = parser.parse_args()
-    receipt_path = args.run / "receipt.json"
+def draw(run: Path, study_uid: str, out: Path) -> dict:
+    """Draw this stage from the saved run and return its manifest.
+
+    The one entry a caller uses, so the single command can draw every stage without knowing each
+    renderer's argument spelling. `main()` is a thin wrapper over it, so the hand-typed command
+    and the joined run draw the same thing from the same code.
+    """
+    receipt_path = run / "receipt.json"
     receipt = json.loads(receipt_path.read_text())
     records = [
         r
         for r in receipt["records"]
-        if r["study_uid"] == args.study_uid and "interiors" in r
+        if r["study_uid"] == study_uid and "interiors" in r
     ]
     if not records:
-        parser.error("no production interior records for the selected study")
-    args.out.mkdir(parents=True, exist_ok=True)
+        raise ValueError("no production interior records for the selected study")
+    out.mkdir(parents=True, exist_ok=True)
     gallery, axes = plt.subplots(
         len(records),
         6,
@@ -110,7 +109,7 @@ def main():
     )
     panels = []
     for row, record in enumerate(records):
-        artifact = args.run / record["artifact"]
+        artifact = run / record["artifact"]
         with np.load(artifact, allow_pickle=False) as saved:
             arrays = dict(saved)
         for name, descriptor in record["arrays"].items():
@@ -129,7 +128,7 @@ def main():
         draw_stages(one_axes, arrays, record)
         one.suptitle(title)
         name = f"{row + 1:02d}-{view.lower()}-fs{fluid}-fat{fat}.png"
-        one.savefig(args.out / name, dpi=150)
+        one.savefig(out / name, dpi=150)
         plt.close(one)
         panels.append(
             {
@@ -145,7 +144,7 @@ def main():
         "Surrounding information → geometric interiors → native border readings",
         fontsize=18,
     )
-    gallery.savefig(args.out / "series.png", dpi=140)
+    gallery.savefig(out / "series.png", dpi=140)
     plt.close(gallery)
     # Separate stage series make every additional operation inspectable across views.
     for name, columns in (
@@ -161,7 +160,7 @@ def main():
             layout="constrained",
         )
         for row, record in enumerate(records):
-            with np.load(args.run / record["artifact"], allow_pickle=False) as saved:
+            with np.load(run / record["artifact"], allow_pickle=False) as saved:
                 scratch, scratch_axes = plt.subplots(1, 6)
                 # Draw once into dedicated full layout, then copy its raster panels.
                 draw_stages(scratch_axes, dict(saved), record)
@@ -185,7 +184,7 @@ def main():
                     fontsize=10,
                 )
                 plt.close(scratch)
-        stage.savefig(args.out / f"{name}.png", dpi=140)
+        stage.savefig(out / f"{name}.png", dpi=140)
         plt.close(stage)
     manifest = {
         "schema": "interior-visuals-b1",
@@ -200,13 +199,31 @@ def main():
         "scope": "all selected native planes; no anatomical ownership inferred by renderer",
         "image_sha256": {
             p.name: sha256(p.read_bytes()).hexdigest()
-            for p in sorted(args.out.glob("*.png"))
+            for p in sorted(out.glob("*.png"))
         },
     }
-    (args.out / "manifest.json").write_text(json.dumps(manifest, indent=2) + "\n")
+    (out / "manifest.json").write_text(json.dumps(manifest, indent=2) + "\n")
+    return manifest
+
+
+def main() -> None:
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument("run", type=Path)
+    parser.add_argument("--study-uid", required=True)
+    parser.add_argument(
+        "--out", type=Path, default=Path("data/pictures/object-toolkit/interiors-b1")
+    )
+    args = parser.parse_args()
+    try:
+        manifest = draw(args.run, args.study_uid, args.out)
+    except ValueError as refusal:
+        parser.error(str(refusal))
     print(
         json.dumps(
-            {"series": str((args.out / "series.png").resolve()), "panels": len(panels)},
+            {
+                "series": str((args.out / "series.png").resolve()),
+                "panels": len(manifest["panels"]),
+            },
             indent=2,
         )
     )

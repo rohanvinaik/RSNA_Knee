@@ -43,6 +43,7 @@ from knee.absence import (  # noqa: F401  CODES: read by the post: lines
     absence_code,
 )
 from knee.compute.contracts import ComputeContract, contracted, handed_on
+from knee.telemetry import ledger
 
 #: `absence_code` reads any count below zero as an argument that cannot be read.
 UNREADABLE_COUNT = -1
@@ -189,6 +190,9 @@ def read_ownership(interiors: object) -> OwnershipReading:
             if interiors is None
             else "the interiors reading's labels and availability do not read as one (R,C) field"
         )
+        # Recorded on BOTH paths: a stage that produced an empty map still ran, and a ledger with
+        # no row for it cannot be told from a stage that never executed.
+        ledger.record("ownership.produced", objects=0, claimed=0, residual=0)
         return empty_ownership(code, why)
     labels, available = arrays
     claims = labels != 0
@@ -197,6 +201,12 @@ def read_ownership(interiors: object) -> OwnershipReading:
     # nothing is entirely residual, which is the reading worth looking at, not one to discard.
     code = ownership_code(predecessor_returned=True, item_count=objects)
     residual = available & ~claims
+    ledger.record(
+        "ownership.produced",
+        objects=int(objects),
+        claimed=int(np.count_nonzero(claims)),
+        residual=int(np.count_nonzero(residual)),
+    )
     return OwnershipReading(
         code=code,
         why=getattr(interiors, "code", ""),

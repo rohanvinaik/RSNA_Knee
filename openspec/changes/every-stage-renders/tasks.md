@@ -233,6 +233,72 @@ The next independent lead-owned unit is 1.3a, whose support contract must preced
       *(A picture and a writer for the predicates half exist from 2026-10-12 — see 4.1. They stand
       or fall with it, and that is the founder's call.)*
 
+## 4b. ONE COMMAND — the pipeline as a single object. Founder, 2026-10-12
+
+His authorisation and its shape, verbatim: *"this is a production pipeline. Everything connected
+properly as a coherent instantiation of the thesis, as the thesis itself lays out. That's all I
+wanted"* — and, on scope: *"Not a 'small piece', there is no such thing as a 'small piece' of a
+single object. All of it."*
+
+On what the drawing IS, which removes the obstacle the lead had invented: *"the analysis isn't
+LITERALLY done off a drawn image … 'Drawing' is just the output of the analysis, but since this is
+visual data, it can most effectively be judged visually, so why not print? … it should be something
+that can be turned off for an actual competition setting, where the output is just the diagnosis …
+but it should be absurdly cheap to put out, since it's just a printed copy of the analysis that is
+already required."*
+
+Nothing forbade this. Thesis §13.7 (`what_an_object_is.md:4332`) puts **"drawing pictures"** at the
+thin impure edge beside *"reading a movie, writing the output"*, and its purpose clause is *"so
+pictures are a layer that can be switched off."* The enforced contract forbids only the **`knee`**
+package from importing matplotlib; the entry point lives in `workbench` and is outside it.
+
+MEASURED before this section was written, one study, every switch on: `reached: ownership`;
+**zero images**; 27 ledger events from four sources only (lenses, boundary census, pairings,
+predicates) with **study, collapse, ownership, relations and conversation recording nothing**;
+conversation one exchange on four of five series and `solitary` on the fifth; lenses `no_edges` on
+three of five; relations `construction_absent` on all five.
+
+- [ ] 4b.1 **Give every drawing module one entry a caller can use.** The eight renderers
+      (`object_packet`, `object_interiors`, `object_conversation`, `object_boundaries`,
+      `partition_frames`, `pair_frames`, `lens_frames`, `predicate_frames`) each expose only
+      `main()` behind argparse, which is why nothing can join them. Each gains
+      `draw(run, study_uid, out) -> dict` and `main()` becomes a thin wrapper over it. Verify each
+      existing command still works unchanged and its manifest is byte-identical.
+
+      **Two defects the refactor surfaced, both reported by the sub-agent rather than papered
+      over, and both OWED:**
+      - `object_packet.draw` cannot be called as `draw(run, study_uid, out)`: its
+        `--probe-fraction-rc` is `required=True` with no default, so the signature is
+        `draw(..., *, probe_fraction_rc)`. The agent refused to invent a value, correctly — a
+        probe fraction is a bar, and bars are the founder's. Until he gives one the joiner records
+        that stage `not_drawn` with the reason, which is honest but means **one stage of the
+        single command does not draw**. HIS RULING: what probe fraction the one command uses.
+      - `main()` now catches every `ValueError` from `draw()`, not only the argument refusals it
+        was meant to catch. That swallows `saved_array_digest_mismatch` and `json.JSONDecodeError`
+        into an exit-2 usage error. A corruption signal must never be dressed as a typo. The fix
+        is a dedicated refusal type the argument checks raise and `main()` alone catches, leaving
+        real `ValueError`s to propagate. **The joined run is unaffected** — the joiner calls
+        `draw()` directly and records the true reason — so this degrades only the hand-typed
+        command, and it is owed before this section is checked off.
+- [ ] 4b.2 **One joiner** that takes the saved run and draws every stage, collecting each
+      renderer's manifest into a single gallery index. A stage whose reading is a named absence
+      draws its absence and the joiner records it; **one renderer failing never fails the run**, it
+      returns its named code. Verify the index names every stage of `ROUTE`, present or absent.
+- [ ] 4b.3 **The entry point draws.** `workbench.measure.object_analysis` calls the joiner after
+      writing its receipt, under `--pictures/--no-pictures`, default ON; `--no-pictures` is the
+      competition kernel, where "the output is just the diagnosis". The `analyze-objects` recipe
+      becomes `uv run --with matplotlib` so the one command has it; `knee` still never imports it
+      and `just imports` must still pass.
+- [ ] 4b.4 **The acquisitions converse by default**, not behind a flag — "the combined sum total of
+      all the analyses we have in conversation with one another" is what the one command does.
+      Mind `AnalysisRequest.__post_init__`, which couples `conversation` to `prominence_mm`.
+- [ ] 4b.5 **Telemetry everywhere.** The five silent stages — study, collapse, ownership, relations,
+      conversation — each record what they produced and what was consumed, as lenses and pairings
+      already do. Verify by re-running and counting ledger sources, not by reading the code.
+- [ ] 4b.6 **Run the one command and measure it against the five rows above.** Each row moves or is
+      reported unmoved with its reason. Nothing here may call the pipeline coherent on the strength
+      of one function; the evidence is the re-run.
+
 ## 5. The whole route, end to end
 
 - [ ] 5.1 Run every stage over one study through Chapter 1's entry point, save the image series and

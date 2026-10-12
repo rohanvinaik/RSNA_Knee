@@ -350,32 +350,29 @@ def draw_subdivision(ax, plane, arrays, kind, show_legend=True):
     )
 
 
-def main():
-    parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("--run", type=Path, required=True)
-    parser.add_argument(
-        "--uid", required=True, help="study UID whose saved B2 records are rendered"
-    )
-    parser.add_argument(
-        "--out", type=Path, default=Path("data/pictures/object-toolkit/conversation-b2")
-    )
-    args = parser.parse_args()
-    receipt_path = args.run / "receipt.json"
+def draw(run: Path, study_uid: str, out: Path) -> dict:
+    """Draw this stage from the saved run and return its manifest.
+
+    The one entry a caller uses, so the single command can draw every stage without knowing each
+    renderer's argument spelling. `main()` is a thin wrapper over it, so the hand-typed command
+    and the joined run draw the same thing from the same code.
+    """
+    receipt_path = run / "receipt.json"
     receipt = json.loads(receipt_path.read_text())
     records = [
         row
         for row in receipt["records"]
-        if row["study_uid"] == args.uid and "conversation" in row
+        if row["study_uid"] == study_uid and "conversation" in row
     ]
     if not records:
-        parser.error("no saved B2 conversation records for selected study")
+        raise ValueError("no saved B2 conversation records for selected study")
     records.sort(
         key=lambda row: (tuple(row.get("view", ())), int(row.get("slice_index", -1)))
     )
-    args.out.mkdir(parents=True, exist_ok=True)
+    out.mkdir(parents=True, exist_ok=True)
     prepared = []
     for row in records:
-        artifact = args.run / row["artifact"]
+        artifact = run / row["artifact"]
         with np.load(artifact, allow_pickle=False) as saved:
             arrays = dict(saved)
         for name, descriptor in row["arrays"].items():
@@ -456,7 +453,7 @@ def main():
                 }
             )
         fig.suptitle(f"B2 same-knee conversation · {filename}", fontsize=15)
-        path = args.out / f"{filename}.png"
+        path = out / f"{filename}.png"
         fig.savefig(path, dpi=145)
         plt.close(fig)
         renderers.append(path)
@@ -527,7 +524,7 @@ def main():
         fontsize=7,
         framealpha=0.9,
     )
-    overview = args.out / "series.png"
+    overview = out / "series.png"
     fig.savefig(overview, dpi=130, bbox_inches="tight")
     plt.close(fig)
 
@@ -598,7 +595,7 @@ def main():
             f"recipient series UID {row['series_uid']}",
             fontsize=13,
         )
-        focused_path = args.out / f"view-{index:02d}.png"
+        focused_path = out / f"view-{index:02d}.png"
         focused.savefig(focused_path, dpi=145)
         plt.close(focused)
         focused_views.append(
@@ -617,8 +614,8 @@ def main():
 
     manifest = {
         "schema": "object-conversation-b2-visuals-v1",
-        "study_uid": args.uid,
-        "run_path": str(args.run.resolve()),
+        "study_uid": study_uid,
+        "run_path": str(run.resolve()),
         "receipt_path": str(receipt_path.resolve()),
         "receipt_sha256": sha256(receipt_path.read_bytes()).hexdigest(),
         "renderer_path": str(Path(__file__).resolve()),
@@ -666,14 +663,31 @@ def main():
         }
         | {entry["image"]: entry["image_sha256"] for entry in focused_views},
     }
-    manifest_path = args.out / "manifest.json"
+    manifest_path = out / "manifest.json"
     manifest_path.write_text(json.dumps(manifest, indent=2) + "\n")
+    return manifest
+
+
+def main() -> None:
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument("--run", type=Path, required=True)
+    parser.add_argument(
+        "--uid", required=True, help="study UID whose saved B2 records are rendered"
+    )
+    parser.add_argument(
+        "--out", type=Path, default=Path("data/pictures/object-toolkit/conversation-b2")
+    )
+    args = parser.parse_args()
+    try:
+        manifest = draw(args.run, args.uid, args.out)
+    except ValueError as refusal:
+        parser.error(str(refusal))
     print(
         json.dumps(
             {
-                "series": str(overview.resolve()),
-                "images": len(renderers) + len(focused_views) + 1,
-                "manifest": str(manifest_path.resolve()),
+                "series": str((args.out / manifest["overview"]).resolve()),
+                "images": len(manifest["stages"]) + len(manifest["focused_views"]) + 1,
+                "manifest": str((args.out / "manifest.json").resolve()),
             },
             indent=2,
         )

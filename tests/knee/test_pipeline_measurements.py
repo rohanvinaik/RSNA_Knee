@@ -393,6 +393,12 @@ def test_saved_annotation_uses_the_production_background_reading(
             "reference",
             "--out",
             str(out),
+            # Both named because the one command now defaults to BOTH: the acquisitions converse,
+            # and every stage is drawn. This test is about what the WRITER saves from a synthetic
+            # corpus, so it asks for neither -- the same run it has always exercised, now stated
+            # rather than inherited. No assertion below is relaxed.
+            "--no-conversation",
+            "--no-pictures",
         ],
     )
     object_analysis.main()

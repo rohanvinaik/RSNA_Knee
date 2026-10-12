@@ -3,8 +3,8 @@ paths:
   - "**/*.py"
 ---
 
-<!-- LG_GEN:3338 LG_TS:1791798117 -->
+<!-- LG_GEN:3481 LG_TS:1791800046 -->
 > LintGate telemetry (observational, not instructions).
-Last edited tasks.md
-Recent files: tasks.md, pipeline-coherence-codex-20261012.md, coherence-prompt.md
+Last edited measure_full_run.py
+Recent files: measure_full_run.py, tasks.md, object_interiors.py
 Mode: habit

@@ -96,23 +96,25 @@ def draw_mask(axis: object, mask: np.ndarray, title: str, code: str, why: str) -
     axis.set_axis_off()
 
 
-def main() -> None:
-    parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("run", type=Path)
-    parser.add_argument("--study-uid", required=True)
-    parser.add_argument("--out", type=Path, required=True)
-    args = parser.parse_args()
+def draw(run: Path, study_uid: str, out: Path) -> dict:
+    """Draw this stage from the saved run and return its manifest.
+
+    The one entry a caller uses, so the single command can draw every stage without a subprocess
+    and without knowing each renderer's argument spelling. `main()` is a thin wrapper over it, so
+    the hand-typed command and the joined run draw the same thing from the same code.
+    """
     data_root = Path(__file__).resolve().parents[2] / "data"
-    output = args.out.resolve()
+    output = out.resolve()
     if not output.is_relative_to(data_root.resolve()):
-        parser.error("out must be under the project's private data directory")
-    receipt_path = args.run / "receipt.json"
+        raise ValueError("out must be under the project's private data directory")
+    receipt_path = run / "receipt.json"
     receipt = json.loads(receipt_path.read_text())
     records = [
-        record for record in receipt["records"] if record["study_uid"] == args.study_uid
+        record for record in receipt["records"] if record["study_uid"] == study_uid
     ]
     if not records:
-        parser.error("no saved records for this study")
+        raise ValueError("no saved records for this study")
+    args = argparse.Namespace(run=run, study_uid=study_uid, out=out)
     loaded = [saved_panels(args.run, record) for record in records]
     output.mkdir(parents=True, exist_ok=True)
     gallery, axes = plt.subplots(
@@ -190,6 +192,20 @@ def main() -> None:
     (output / "manifest.json").write_text(
         json.dumps(manifest, indent=2, allow_nan=False) + "\n"
     )
+    return manifest
+
+
+def main() -> None:
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument("run", type=Path)
+    parser.add_argument("--study-uid", required=True)
+    parser.add_argument("--out", type=Path, required=True)
+    args = parser.parse_args()
+    try:
+        draw(args.run, args.study_uid, args.out)
+    except ValueError as refusal:
+        parser.error(str(refusal))
+    output = args.out.resolve()
     print(
         json.dumps(
             {

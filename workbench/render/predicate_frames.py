@@ -60,26 +60,28 @@ def saved_reading(study: dict) -> FindingsReading:
     )
 
 
-def main() -> None:
-    # Matplotlib is supplied PER RUN (`just render`) and is never a production dependency, so it
-    # is imported here rather than at module scope: `saved_reading` above is then importable and
-    # testable in the ordinary environment, which is where its must-nots are pinned.
+def draw(run: Path, study_uid: str, out: Path) -> dict:
+    """Draw this stage from the saved run and return its manifest.
+
+    The one entry a caller uses, so the single command can draw every stage without knowing each
+    renderer's argument spelling. `main()` is a thin wrapper over it, so the hand-typed command
+    and the joined run draw the same thing from the same code.
+
+    Matplotlib is supplied PER RUN and is never a production dependency, so it is imported here
+    rather than at module scope: `saved_reading` above is then importable and testable in the
+    ordinary environment, which is where its must-nots are pinned.
+    """
     import matplotlib.pyplot as plt
 
-    parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("run", type=Path)
-    parser.add_argument("--study-uid", required=True)
-    parser.add_argument("--out", type=Path, required=True)
-    args = parser.parse_args()
     data_root = Path(__file__).resolve().parents[2] / "data"
-    output = args.out.resolve()
+    output = out.resolve()
     if not output.is_relative_to(data_root.resolve()):
-        parser.error("out must be under the project's private data directory")
-    receipt_path = args.run / "receipt.json"
+        raise ValueError("out must be under the project's private data directory")
+    receipt_path = run / "receipt.json"
     receipt = json.loads(receipt_path.read_text())
-    studies = [s for s in receipt["studies"] if s["study_uid"] == args.study_uid]
+    studies = [s for s in receipt["studies"] if s["study_uid"] == study_uid]
     if not studies:
-        parser.error("no saved study entry for this study")
+        raise ValueError("no saved study entry for this study")
     frame = predicates.panels(saved_reading(studies[0]))
     output.mkdir(parents=True, exist_ok=True)
 
@@ -122,7 +124,7 @@ def main() -> None:
         "picture_module_sha256": {
             "predicates": sha256(Path(predicates.__file__).read_bytes()).hexdigest()
         },
-        "study_uid": args.study_uid,
+        "study_uid": study_uid,
         "image": "findings.png",
         "frame_kind": "pipeline",
         "stage_code": frame.code,
@@ -140,6 +142,20 @@ def main() -> None:
     (output / "manifest.json").write_text(
         json.dumps(manifest, indent=2, allow_nan=False) + "\n"
     )
+    return manifest
+
+
+def main() -> None:
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument("run", type=Path)
+    parser.add_argument("--study-uid", required=True)
+    parser.add_argument("--out", type=Path, required=True)
+    args = parser.parse_args()
+    try:
+        draw(args.run, args.study_uid, args.out)
+    except ValueError as refusal:
+        parser.error(str(refusal))
+    output = args.out.resolve()
     print(
         json.dumps(
             {
