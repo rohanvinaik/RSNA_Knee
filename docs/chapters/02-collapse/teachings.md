@@ -437,6 +437,65 @@ On the second readers, and on the figures he attached (H2a2 and H2b from the `<o
 
 ---
 
+## 2026-10-12 — `<object>` IS NOT "object", AND THAT IS THE WHOLE THESIS
+
+Answering the lead's question — *does an interstice exist between two index-numbered territories, or
+only between two role-bearing objects?* — which both second readers had independently put back to
+him. His answer, verbatim:
+
+> "these two are not in conflict. The interstice is defined relative to two \<object>s, which are not
+> the same as "objects". An "object" carries known semantic importance, a role that is definable and
+> correct, an artifact of human visual reasoning. An \<object>, according to the thesis, is **a
+> resolvable sub-set of the visual field presented to a computer vision pipeline.** The ability to
+> resolve an object, or parse out an area that we call the "background" vs areas that have the
+> objects we wish to resolve, **is the core base condition of a pipeline that instantiates the
+> thesis.** The computer is not defining these regions based on domain knowledge or known roles."
+
+> "The parse of the field that we are able to do purely deterministically … is the thesis. The point
+> is to be able to isolate \<object>s from visual data we provide **without hand-tuning to fit one
+> movie**, but with a set of lenses/rules that are able to parse the image **completely blind, as
+> problem class generally, not one single image on a "happy path" we hand-tuned.**"
+
+> "So to answer your question, **both**, because the fundamental point of the thesis is to say that an
+> "\<object>" and an "object" are not the SAME thing, but **the ability to resolve \<object>s is a
+> direct homology to visual reasoning on objects.** What the objects MEAN is something we define
+> intentionally. But **it doesn't take a computer magically understanding human anatomy to
+> "understand" that interstice is some "\<object>" that sits between an \<object> that is the same as
+> the tibia and another \<object> that is the same as the femur.**"
+
+He attached two production image series as the state of the parse: the B2 conversation across saved
+acquired views, and the boundary census.
+
+### What this settles
+
+1. **The interstice is constructible NOW**, between two `<object>`s, with no anatomical name and no
+   admission. The `relations` stage is not blocked on identity, and
+   `every-stage-renders` task 1.3's honest shell is therefore a choice not to compute something
+   computable. The question both readers put back is answered.
+2. **What licenses a place's membership in a bundle is `<object>` extent**, not a role. A
+   territory-keyed profile is a legitimate `<object>` profile, not an unsupported object assertion.
+   What remains is the vocabulary fix both readers named: the record says what it was keyed on.
+3. **"Blind, as a problem class generally" is a bar on the build, not a flourish.** A parse that works
+   on one hand-picked study is the happy path he names. This bears directly on the acceptance
+   condition of the breadth-first pass.
+
+### What the lead must NOT assume from it — a question for him
+
+The lead had parked contour refinement on §6: *"once an object is identified meaningfully, its role
+assigned, then its exact boundaries and borders can then recursively be refined given such
+assignment."* That parking read "role assigned" as **anatomically named**.
+
+**The lead's inference, labelled as its own and not acted on:** if `<object>` and "object" are
+distinct, then §6's "role" is plausibly the *structural* role — body, interstice, background, span —
+which is relationally derivable with no anatomy, exactly as the interstice is. Under that reading
+§6's precondition is reachable now and tasks 3.8-3.12 unpark. Under the other reading, "role" means
+the semantic role and the parking stands.
+
+This is not settled here, because getting it wrong either re-parks work that could proceed or
+restarts work that will hit the same wall a second time.
+
+---
+
 *Three corrections the lead made to its own earlier reading, which he let stand:* the MCL is
 **extra-articular** — a span on the medial exterior, not interstitial content; **Effusion's space is
 the capsule**, which includes the suprapatellar recess and exceeds the union of the interstices; and
