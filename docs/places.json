@@ -7,7 +7,7 @@
     "pictures": "the drawing layer; a stage is not built until one of these renders it",
     "workbench": "second tier: probes and systems not yet production",
     "script": "a project verb, run by hand or by the justfile",
-    "shelf": "exists, is not archived, and has no place in the settled route — a question, not a home"
+    "shelf": "exists, is not archived, and has no place in the settled route — a question, not a home. EMPTY since 2026-10-12: the five that sat here were archived at the founder's ruling rather than left as a standing question"
   },
   "places": {
     "src/knee/__init__.py": {"where": "beside", "role": "the package root", "contract": false},
@@ -45,6 +45,7 @@
     "src/knee/objects/profile_codes.py": {"where": "route:objects", "role": "the pure named decision for profile support", "contract": false},
 
     "src/knee/relations/__init__.py": {"where": "route:relations", "role": "interstices per facing pair, constructed and never detected", "contract": false},
+    "src/knee/ownership/__init__.py": {"where": "route:ownership", "role": "every place claimed by one <object> or named unassigned — a partition, never an identification; its picture is the residual map, which is the channel the founder reads to supply the next lens", "contract": false},
     "src/knee/predicates/__init__.py": {"where": "route:predicates", "role": "the twelve findings, each a predicate on its subject", "contract": false},
     "src/knee/output/__init__.py": {"where": "route:output", "role": "twelve confidences per study, with the kept record behind them", "contract": false},
     "src/knee/vectors/__init__.py": {"where": "route:bundles", "role": "every place written in one language; an object's profile is the bundle of its places", "contract": false},
@@ -62,12 +63,6 @@
     "src/knee/pictures/study.py": {"where": "pictures", "role": "draws the study stage", "contract": false},
     "src/knee/pictures/collapse.py": {"where": "pictures", "role": "draws the field stage", "contract": false},
     "src/knee/pictures/objects.py": {"where": "pictures", "role": "draws the objects stage", "contract": false},
-
-    "src/knee/loop/__init__.py": {"where": "shelf", "role": "Figure 8's loop; SPINE folds its role into the object model's stages, so it has no stage of its own", "contract": false},
-    "src/knee/candidates/__init__.py": {"where": "shelf", "role": "Figure 8's emptied box and candidates; folds into objects", "contract": false},
-    "src/knee/cleanup/__init__.py": {"where": "shelf", "role": "Figure 8's clean-up; folds into ownership", "contract": false},
-    "src/knee/every_object/__init__.py": {"where": "shelf", "role": "Figure 8's completeness check; folds into ownership", "contract": false},
-    "src/knee/assignment/__init__.py": {"where": "shelf", "role": "Figure 8's recall-routed assignment; belongs to diagnosis, not the parse", "contract": false},
 
     "workbench/measure/object_analysis.py": {"where": "workbench", "role": "the real-entry-point analysis run, with its receipt", "contract": false},
     "workbench/measure/interior_records.py": {"where": "workbench", "role": "serialises the returned interior reading", "contract": false},

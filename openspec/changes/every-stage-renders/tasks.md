@@ -90,10 +90,13 @@ earlier stage produced, identity is not assumed. If it is a kind-label, it is, a
 
 ## 1. The route and the vocabulary — the lead's, and first
 
-- [ ] 1.1 Replace `src/knee/pipeline.py`'s `ROUTE` with the object model's stages (study, field,
-      lenses, objects, borders, relations, ownership, bundles, predicates, output) per
-      `docs/PIPELINE_AS_OBJECT.md`. Verify `route_state` still reports honestly, that no stage claims
-      a state it has not reached through the real entry point, and that `scripts/unit_loop.py` prints
+- [ ] 1.1 Replace `src/knee/pipeline.py`'s `ROUTE` with the object model's **nine** stages — study,
+      collapse (the field), lenses, objects, relations, ownership, vectors (the bundles), predicates,
+      output. **Not ten:** §6's border refinement is work inside `objects`, not a stage beside it, and
+      a first draft of `docs/PIPELINE_AS_OBJECT.md` wrongly added it to the founder's settled route.
+      Entries are package names because `test_a_stage_is_not_built_until_it_renders` reads them
+      against `knee.pictures`. Verify `route_state` still reports honestly, that no stage claims a
+      state it has not reached through the real entry point, and that `scripts/unit_loop.py` prints
       the new table.
 - [ ] 1.2 Declare the shared absence vocabulary as `stage-totality` requires, with its three silences
       distinguished — predecessor absent, predecessor present but empty, item unread. Pin the pure

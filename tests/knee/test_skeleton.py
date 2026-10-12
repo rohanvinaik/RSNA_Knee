@@ -1,8 +1,14 @@
 """The packages are the object model's route (docs/OBJECT_MODEL.md), not Figure 8 transcribed.
 
 The founder settled the structure on 2026-10-11: a finding is a predicate violation on an object, or
-on a relation between objects. The build is ordered by the knee's own anatomy, so three of Figure 8's
-stages were archived for having no knee analogue, and three of the knee's own were added.
+on a relation between objects. The build is ordered by the knee's own anatomy, so Figure 8's stages
+with no knee analogue were archived and the knee's own were added.
+
+Five more were archived on 2026-10-12 at his ruling -- "Begone, Satan! ... I'd rather lose work and
+have to re-do it than have you be constantly confused when you encounter old things we haven't
+structured properly." Four of them (loop, candidates, cleanup, every_object) held Figure 8 roles the
+object model folds into `objects` and `ownership`; `assignment` is recall-routed and belongs to the
+diagnosis stage, which this project does not reach (SS12, out of scope).
 """
 
 import importlib
@@ -21,21 +27,18 @@ ROUTE = (
     "study",  # files -> series, whole at stored fidelity
     "collapse",  # the field: regime, noise law, physical frame, the squint
     "lenses",  # every place, every acquisition, one ternary digit per row
-    "objects",  # every element significant to the knee's operation, resolved from geometry
-    "relations",  # interstices constructed between facing objects
-    "loop",  # the residual pulled out, round by round, until nothing significant is unassigned
-    "candidates",  # resolved, not yet called
-    "cleanup",  # the residual read once more
+    "objects",  # the <object>s resolved from geometry, and SS6's refinement of their borders
+    "relations",  # interstices CONSTRUCTED between facing <object>s
+    "ownership",  # every place claimed or named unassigned; its picture is the residual map
     "vectors",  # every place in one language: the bundle (SS7, SS13)
-    "every_object",  # the completeness check
     "predicates",  # the twelve, each on its named subject
     "output",  # twelve confidences, with the kept record behind them
 )
 
-# Beside the route, consulted by any stage. `assignment` and `memory` are the diagnosis stage's
-# recall, which is deliberately NOT part of the object parse (founder, 2026-10-11: "we should be able
-# to isolate the components of the knee with NO recognition, pure math").
-BESIDE = ("memory", "expert", "agencies", "record", "assignment")
+# Beside the route, consulted by any stage. `memory` and `expert` are the diagnosis stage's recall,
+# which is deliberately NOT part of the object parse (founder, 2026-10-11: "we should be able to
+# isolate the components of the knee with NO recognition, pure math").
+BESIDE = ("memory", "expert", "agencies", "record")
 
 # Not a stage: the drawing layer, which imports stages and is imported by none, so it can be switched
 # off without the run noticing (SS13.7).
@@ -51,7 +54,22 @@ EXPECTED = (
 # Archived 2026-10-11 for having no knee analogue, each a checkable external fact: an anchor is a
 # time point resolved in full and a knee study is a still; "following through time" likewise; bones
 # do not divide. They are under archive/src/knee/, dug from if a role is ever found for them.
-ARCHIVED = frozenset({"anchor", "following", "division"})
+#
+# Archived 2026-10-12 at the founder's ruling, for having no stage in the settled route: loop,
+# candidates, cleanup and every_object fold into `objects` and `ownership`; `assignment` is recall,
+# which belongs to diagnosis. Losing their work was explicitly accepted rather than worked around.
+ARCHIVED = frozenset(
+    {
+        "anchor",
+        "following",
+        "division",
+        "loop",
+        "candidates",
+        "cleanup",
+        "every_object",
+        "assignment",
+    }
+)
 
 
 def _packages() -> frozenset[str]:
