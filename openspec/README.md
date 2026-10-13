@@ -5,7 +5,8 @@ This directory records changes to implement, not a second source of founder inte
 
 | change | scope |
 |---|---|
-| `every-stage-renders` | active breadth-first work: connected records, drawings and symbolic capacity |
+| `the-funnel` | **active, 2026-10-13**: the route as a funnel (first lens frozen, the free lenses lined up by place, the depth collapse, the tile dome, the native strip, the rounds); supersedes `every-stage-renders` as the immediate work; `just plan-next the-funnel` |
+| `every-stage-renders` | the breadth-first pass of 2026-10-12, closed out at its checklist's standing section; its route composition and rendering obligations carry into `the-funnel` |
 | `knee-object-model` | full structural object/relation/predicate architecture, corpus engineering and deployment |
 | `object-resolution-toolkit` | measurement and supported-contour substrate |
 | `reconcile-project-record` | documentation/planning reconciliation, with its own finite checklist |

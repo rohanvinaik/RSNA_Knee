@@ -247,3 +247,28 @@ is his to say.
   tile it is one tile or none. The contents may need the native strip of step 5 widened into the
   interstice, which is still scoped work, not whole-field work.
 - The 58-study run comes after the one study shows each step; it is engineering, not the proof.
+
+## 8. Corrections after the Codex consult and the code miners (2026-10-13, later the same day)
+
+- Codex's four provable corrections and two additions are taken; they are stated with their proofs
+  in `the-funnel-plan-codex-20261013.md` and are part of this plan: later steps receive every tile
+  the first lens did not positively declare background; lining up precedes the first lens (3a before
+  2, 3b after); facing pairs get their own producing step (5b); a straddling tile at the skin line is
+  a question for him; objects are followed through slices by overlap; native digits are made inside
+  an object when a predicate on its interior asks, never over the whole field. The build order is
+  0, 1, 3a, 2, 3b, 4, 5, 5b, 6, 7, 8, 9.
+- Step 1 is wrong about what exists: the squint already takes its tile size in millimetres
+  (`knee.collapse.physical.physical_squint(plane, spacing_rc, tile_mm)`, each tile at least
+  `tile_mm` wide, rounded up to whole pixels; the leg set to NaN outside it by the structural
+  reading). So step 1 exists as written and no change of unit is needed. The tile grid's origin is
+  the picture's corner, so tile indices do not line up across acquisitions; tile centres in
+  millimetres do, and the map from pixel to millimetre exists as `knee.collapse.physical.PlaneFrame`
+  (`from_dicom`, `to_patient`, `to_native`), today with no caller. Step 3a is that map applied to
+  tile centres.
+- The background split, as the code runs it: a 512-bin histogram of every finite value in the whole
+  stacked volume, smoothed by a 5-bin moving average; the peak is the highest bin (the docstring
+  says "the first peak", the code takes the global argmax); the split is the centre of the bin
+  before the first rise after a fall past that peak; NaN when the peak is the last bin. The air
+  reading of the structural stage uses a different rule and a different histogram (a level from the
+  border's own values, four-connected to the border, 120 bins over the air's values). Step 2's
+  candidate rule reads the first, at tile scale, with the border connection taken from the second.
