@@ -3,8 +3,8 @@ paths:
   - "**/*.py"
 ---
 
-<!-- LG_GEN:5008 LG_TS:1791846347 -->
+<!-- LG_GEN:5536 LG_TS:1791850559 -->
 > LintGate telemetry (observational, not instructions).
-Last edited commit-checkpoint-1.txt
-Recent files: commit-checkpoint-1.txt, series.py, places.py
+Last edited spec.md
+Recent files: spec.md, tasks.md, remaining-gaps-20261012.md
 Mode: habit

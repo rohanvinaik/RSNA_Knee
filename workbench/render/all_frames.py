@@ -20,6 +20,11 @@ named silence, never a negative, and the same holds for a missing picture: a sta
 raises is recorded as `not_drawn` with the reason, the remaining stages still draw, and the index
 says which is which. A half-drawn gallery that says so is worth more than no gallery.
 
+A drawer that cannot arrange its input may also RETURN a manifest whose `refusal` is a named code,
+with `why` saying it in words, instead of raising. The index records that as `not_drawn` with the
+code and the reason, exactly as it records a drawer that raised, so a manifest is never read as a
+drawing merely because nothing was raised.
+
 **Every route stage is named, drawn or not.** A stage with no drawer at all appears as
 `no_drawer`, so the index is a complete map of the route rather than a list of successes.
 """
@@ -34,6 +39,20 @@ from pathlib import Path
 #: Each drawing this run produces: the name it is filed under, and the module whose `draw` makes
 #: it. Several belong to one route stage -- `objects` is drawn four ways, because four different
 #: things were resolved there and one picture cannot show them.
+#:
+#: What four of them now show, so the index and the pictures can be read against each other:
+#:   collapse/field       the squint's four maps and the regime key by name, the whole-series
+#:                        histogram with the background split marked, the spread ratio beside the
+#:                        Gaussian reference, and the field's structural reading (the air, the
+#:                        closed leg, the squint inside it, the profile along the header's axis, the
+#:                        two basins and the seam, the darkest places and the bodies, the air's own
+#:                        histogram), one block per series
+#:   study/recorded       the selected plane and the stage's walk, with the superior end named from
+#:                        the field stage's saved header codes
+#:   objects/conversation each subdivision with `parted_more_by`, the count the adapter makes of
+#:                        the saved concurrent and conditional labels
+#:   vectors/bundles      each object's banks, with the backend the stage was asked for and the gap
+#:                        fraction of every other acquisition's own stack
 DRAWINGS: tuple[tuple[str, str, str], ...] = (
     ("study", "recorded", "study_frames"),
     ("collapse", "field", "field_frames"),
@@ -76,11 +95,16 @@ def draw_all(run: Path, study_uid: str, out: Path) -> dict:
         try:
             module = importlib.import_module(f"workbench.render.{module_name}")
             manifest = module.draw(run, study_uid, target)
-            entry["code"] = "drawn"
-            entry["out"] = str(target.relative_to(output))
-            entry["image"] = (
-                manifest.get("image") if isinstance(manifest, dict) else None
-            )
+            named = manifest.get("refusal") if isinstance(manifest, dict) else None
+            if named is None:
+                entry["code"] = "drawn"
+                entry["out"] = str(target.relative_to(output))
+                entry["image"] = (
+                    manifest.get("image") if isinstance(manifest, dict) else None
+                )
+            else:
+                entry["code"] = "not_drawn"
+                entry["why"] = f"{named}: {manifest.get('why', '')}"
         except Exception as refusal:
             # A drawer that cannot draw is a named silence, never a failed run.
             entry["code"] = "not_drawn"

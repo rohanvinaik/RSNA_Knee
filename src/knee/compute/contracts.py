@@ -7,8 +7,9 @@ field names with the PLAIN decorator, `@contracted`. The decorator reads the mod
 itself. Why plain and not `@contracted(CONTRACT)`: measured 2026-10-12
 (`docs/chapters/02-collapse/measurements/detective-call-form-decorator-20261012.md`), a decorator
 applied in call form makes Detective add mutants it cannot build and return UNGATEABLE for ANY
-function under it, so every kernel's standing was the decorator's and not the kernel's. The call
-form is accepted while the sites migrate and is refused by the places check afterwards.
+function under it, so every kernel's standing was the decorator's and not the kernel's. Every site
+migrated on 2026-10-12; the call form is retired and refused by name, and `scripts/places.py`
+reports any site that still spells it.
 
 `contracted` also records each kernel it decorates in a registry keyed by the kernel's dotted path,
 `<module>.<qualname>`, so a tool can read every declared contract from one place instead of
@@ -16,10 +17,10 @@ importing the kernels and asking each what it carries (task 7.3). Recording is b
 the function: the function is returned as it was given, and calling it costs nothing more.
 """
 
-from collections.abc import Callable, Mapping
+from collections.abc import Mapping
 from dataclasses import dataclass
 from types import FunctionType, MappingProxyType
-from typing import TypeVar, overload
+from typing import TypeVar
 
 import numpy as np
 
@@ -65,26 +66,22 @@ def _attach(function: F, contract: ComputeContract) -> F:
     return function
 
 
-@overload
-def contracted(target: F) -> F: ...
-@overload
-def contracted(target: ComputeContract) -> Callable[[F], F]: ...
-def contracted(target):  # type: ignore[no-untyped-def]
+def contracted(target: F) -> F:
     """The one form: `@contracted` on the reference kernel reads the module's `CONTRACT`.
 
-    The plain form takes the function and finds `CONTRACT` in the function's own module globals;
-    a module that declares none, or declares something that is not a `ComputeContract`, is refused
-    by name (`contract_undeclared`), because a kernel without a declared contract is exactly what
-    this decorator exists to make impossible. The call form, `@contracted(CONTRACT)`, is accepted
-    only while the sites migrate (task 7.11) and is reported by the places check once they have.
+    It takes the function and finds `CONTRACT` in the function's own module globals; a module
+    that declares none, or declares something that is not a `ComputeContract`, is refused by name
+    (`contract_undeclared`), because a kernel without a declared contract is exactly what this
+    decorator exists to make impossible. The call form, `@contracted(CONTRACT)`, is retired (task
+    7.11, every site migrated 2026-10-12) and refused by name, `contracted_call_form_retired`, so
+    the spelling that made Detective return UNGATEABLE cannot come back unnoticed.
     """
     if isinstance(target, ComputeContract):
-        contract = target
-
-        def attach(function: F) -> F:
-            return _attach(function, contract)
-
-        return attach
+        error = TypeError("contracted_call_form_retired")
+        error.add_note(
+            "apply the plain `@contracted` and declare `CONTRACT` at module level (task 7.11)"
+        )
+        raise error
     if not isinstance(target, FunctionType):
         raise TypeError("contracted_expects_a_function")
     contract = target.__globals__.get("CONTRACT")

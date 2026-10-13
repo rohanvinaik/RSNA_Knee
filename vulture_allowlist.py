@@ -19,13 +19,25 @@ trace_points_rc
 
 # RegimeKey fields: the writer enumerates every field with `dataclasses.fields(regime)` in
 # workbench/measure/object_analysis.py, so a field added later is saved by construction. Of the
-# 23, these are read by no stage and saved whole; they are drawn by workbench/render/field_frames.py.
+# 26, these are read by no stage and saved whole; they are drawn by workbench/render/field_frames.py
+# (`regime_lines`, every saved reading by name). `zero_share` and `foreground_share` joined the
+# list on 2026-10-12 when the `regime_key` and `look` probes that read them by name were archived
+# (task 7.1a); their consumer is the same enumeration.
 dark_count
 bright_count
 storage
 normalization
 foreground_count
 split_population_count
+zero_share
+foreground_share
+
+# SeriesGeometry.along_normal in knee/study/series.py: read as
+# `getattr(geometry, name, None) for name in ("normal", "position", "along_normal")` in
+# knee/vectors/bundles.py (`_stack`), which the through-plane banks and the gap fraction read
+# every other acquisition's stack through. The `geometry_spread` probe that read it by name was
+# archived 2026-10-12 (task 7.1a).
+along_normal
 
 # SeriesConversation.concurrent_labels and .conditional_labels: read as
 # `getattr(conversation, f"{name}_labels")` for each parse in knee/ownership/claims.py

@@ -19,6 +19,7 @@ from knee.compute.contracts import declared_contracts
 from knee.lenses.digits import DIGIT_CODES
 from knee.lenses.members import STANDING_CODES
 from knee.lenses.places import SILENT, LensesReading, LensReading
+from knee.objects import profile_codes
 from knee.objects.analysis import AnalysisRequest, SeriesMeasurement
 from knee.objects.conversation import SeriesConversation
 from knee.objects.profiles import ProfileReading
@@ -33,7 +34,7 @@ from knee.relations.shell import Interstice, RelationsReading
 from knee.study.corpus import LOCAL_ROOT, Corpus, open_corpus
 from knee.study.decoders import decoder_plugins
 from knee.study.shape import CorpusShape
-from knee.study.tables import Tables, labeled_uids, split_uids
+from knee.study.tables import SPLIT_FOLDER, Tables, labeled_uids, split_uids
 from knee.telemetry import recording
 from knee.vectors.bundles import Bank, BundlesReading, ObjectProfile
 from workbench.measure.boundary_records import boundary_record
@@ -238,8 +239,11 @@ def verification_record(report: Path | None) -> dict:
     return {
         "report_sha256": sha256(report.read_bytes()).hexdigest(),
         "snapshot": json.loads(report.read_text()),
+        # The file of the module the decision lives in, reached through its import. A path built
+        # off one stage's location named `collapse/profile_codes.py` after the module had moved to
+        # `objects` (commit e0edfb1), and the flag raised FileNotFoundError on every use.
         "profile_codes_source_sha256": sha256(
-            Path(collapse.__file__).parent.joinpath("profile_codes.py").read_bytes()
+            Path(profile_codes.__file__).read_bytes()
         ).hexdigest(),
     }
 
@@ -349,6 +353,14 @@ def study_record(series: SeriesRun) -> dict:
             "walk_array": "study_walk" if series.walk is not None else None,
             # Each slice's thickness as the study stage read it (task 7.2); None where unread.
             "slice_thickness_mm": list(series.slice_thickness_mm),
+            # The geometry's two spreads (task 7.12), measured and never judged; None where the
+            # series has no geometry, NaN where it was built without positions to measure from.
+            "orientation_spread": None
+            if series.orientation_spread is None
+            else json_safe(series.orientation_spread),
+            "origin_spread_mm": None
+            if series.origin_spread_mm is None
+            else json_safe(series.origin_spread_mm),
         },
     }
 
@@ -795,12 +807,7 @@ def array_table(arrays: dict[str, np.ndarray]) -> dict[str, dict]:
 
 def source_digests(root: Path, split: str, uid: str, series_uid: str) -> dict[str, str]:
     """The SHA-256 of every source DICOM file of one series, keyed by its path under the root."""
-    source_dir = (
-        root
-        / ("train_series" if split == "train" else "test_series")
-        / uid
-        / series_uid
-    )
+    source_dir = root / SPLIT_FOLDER[split] / uid / series_uid
     return {
         str(path.relative_to(root)): sha256(path.read_bytes()).hexdigest()
         for path in sorted(source_dir.glob("*.dcm"))
@@ -979,6 +986,8 @@ def measure_studies(
 def receipt_record(
     *,
     request: AnalysisRequest,
+    root: Path,
+    split: str,
     verification: dict,
     studies: list[dict],
     records: list[dict],
@@ -989,8 +998,8 @@ def receipt_record(
     study_count: int,
     corpus: CorpusShape,
 ) -> dict:
-    """The receipt: the run's request, environment and provenance hashes, the corpus's shape, every
-    declared compute contract, and every saved record."""
+    """The receipt: the run's request, the `--root` and `--split` it was given, its environment and
+    provenance hashes, the corpus's shape, every declared compute contract, and every saved record."""
     return {
         "schema": "physical-measurements-v2",
         "source_snapshot_code": snapshot_code,
@@ -998,6 +1007,13 @@ def receipt_record(
         "studies": studies,
         "scope": "middle acquired plane per series, not full-volume contour tracing",
         "request": asdict(request),
+        # Beside `request`, never inside it: that entry is `asdict(AnalysisRequest)`, and a reader
+        # that rebuilds the request from it with `AnalysisRequest(**receipt["request"])` -- the
+        # `machinery_facts` probe did -- is refused any key the request does not declare. Both are
+        # recorded as the command received them, so a relative root stays relative and `--split`
+        # is kept even where `--uid` made the selection.
+        "root": str(root),
+        "split": split,
         "environment": environment_record(),
         "corpus": corpus_record(corpus),
         "compute_contracts": contracts_record(),
@@ -1069,19 +1085,43 @@ def draw_galleries(out: Path, uids: tuple[str, ...]) -> list[dict]:
     ]
 
 
+def draw_corpus(out: Path, receipt: dict) -> dict:
+    """Draw the corpus's shape from the receipt just written; a drawer that refuses is recorded, never raised.
+
+    The corpus is a fact of the RUN and not of one study (task 7.1a), so it is drawn once, beside
+    the per-study galleries, from the receipt's own `corpus` entry. The drawer answers with a
+    manifest whose `refusal` is a named code when it cannot arrange the record, and that is
+    recorded as `not_drawn` with the reason, exactly as a study gallery's refusal is. Imported
+    inside, as `draw_galleries` imports, so a run with pictures off never loads Matplotlib.
+    """
+    from workbench.render.corpus_frames import draw
+
+    pictures_root = Path(__file__).resolve().parents[2] / "data" / "pictures"
+    target = pictures_root / out.name / "corpus"
+    try:
+        manifest = draw(receipt, target)
+    except Exception as refusal:
+        return {"code": "not_drawn", "why": f"{type(refusal).__name__}: {refusal}"}
+    if "refusal" in manifest:
+        return {"code": "not_drawn", "why": f"{manifest['refusal']}: {manifest['why']}"}
+    return {"code": "drawn", "out": str(target), "image": manifest["image"]}
+
+
 def summary_record(
     uids: tuple[str, ...],
     records: list[dict],
     codes: dict[str, int],
     pictures: list[dict] | str,
     failures: list[dict],
+    corpus: dict | str = "off",
 ) -> dict:
-    """What the command prints when it finishes: the counts and codes, the drawing outcome and the failures."""
+    """What the command prints when it finishes: the counts and codes, the drawing outcomes and the failures."""
     return {
         "study_count": len(uids),
         "series_count": len(records),
         "codes": codes,
         "pictures": pictures,
+        "corpus_picture": corpus,
         "failures": failures,
     }
 
@@ -1104,24 +1144,28 @@ def main() -> None:
     snapshot_code = snapshot_standing(kernels_before, source_snapshot())
     if snapshot_code == "changed":
         failures.append({"code": "source_changed_during_run"})
-    write_receipt(
-        args.out,
-        receipt_record(
-            request=request,
-            verification=verification,
-            studies=studies,
-            records=records,
-            failures=failures,
-            kernels=kernels_before,
-            snapshot_code=snapshot_code,
-            codes=codes,
-            study_count=len(uids),
-            corpus=corpus.shape,
-        ),
+    receipt = receipt_record(
+        request=request,
+        root=args.root,
+        split=args.split,
+        verification=verification,
+        studies=studies,
+        records=records,
+        failures=failures,
+        kernels=kernels_before,
+        snapshot_code=snapshot_code,
+        codes=codes,
+        study_count=len(uids),
+        corpus=corpus.shape,
     )
+    write_receipt(args.out, receipt)
     pictures = draw_galleries(args.out, uids) if args.pictures else "off"
+    corpus_picture = draw_corpus(args.out, receipt) if args.pictures else "off"
     print(
-        json.dumps(summary_record(uids, records, codes, pictures, failures), indent=2)
+        json.dumps(
+            summary_record(uids, records, codes, pictures, failures, corpus_picture),
+            indent=2,
+        )
     )
     if failures:
         raise SystemExit(1)

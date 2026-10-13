@@ -21,6 +21,7 @@ from knee.collapse.structure import (
     read_structure,
     structure_code,
     superior_code,
+    told_sign,
 )
 
 BARS = StructureBars()
@@ -72,8 +73,15 @@ def test_the_axis_is_the_direction_with_the_largest_z_cosine() -> None:
 def test_superior_is_the_sign_of_z_and_zero_carries_no_direction() -> None:
     assert superior_code(0.7) == "increasing"
     assert superior_code(-0.7) == "decreasing"
+    # the SIGN, not a size: a cosine of any magnitude carries the direction (two Detective
+    # survivors of 2026-10-12 moved the edge to 0.1 and to -0.1 and nothing distinguished them)
+    assert superior_code(0.05) == "increasing"
+    assert superior_code(-0.05) == "decreasing"
+    assert superior_code(1e-300) == "increasing"
     assert superior_code(0.0) == "unreadable"
+    assert superior_code(-0.0) == "unreadable"
     assert superior_code(math.nan) == "unreadable"
+    assert superior_code(math.inf) == "unreadable"
 
 
 def test_the_pure_decisions_are_total_and_speak_only_their_vocabulary() -> None:
@@ -93,6 +101,21 @@ def test_the_structure_code_names_each_silence_apart() -> None:
     assert structure_code(True, False, 0) == "invalid_count"
     assert structure_code(True, True, 0) == "predecessor_empty"
     assert structure_code(True, True, 7) == "present"
+
+
+def test_the_told_sign_is_the_tables_word_and_nothing_else() -> None:
+    """MUST NOT: read a sign from anything but the series table's two words. "1" is
+    fluid-sensitive and "0" is not; every other value -- another string, a number, a bool,
+    None, bytes -- is no sign at all, so the basins and the seam go unread rather than guessed
+    from a weighting nobody told."""
+    assert told_sign("1") is True
+    assert told_sign("0") is False
+    for other in ("", "2", "true", "01", " 1", 1, 0, True, False, None, b"1", 1.0):
+        assert told_sign(other) is None, repr(other)
+    # a truthy value that is not a string is not looked up at all (a Detective survivor of
+    # 2026-10-12 replaced the type check with truthiness and would have raised on a list)
+    assert told_sign(["1"]) is None
+    assert told_sign({"1": True}) is None
 
 
 def test_the_structure_code_never_says_present_without_a_leg() -> None:

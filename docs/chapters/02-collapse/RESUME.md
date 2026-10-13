@@ -1,6 +1,18 @@
 # Resume: the breadth-first build
 
-**2026-10-12, the composition repair — start here.** The route now runs in dependency order with
+**2026-10-12, later: the remaining gaps — start here.** Under `tasks.md` §7 the probes became
+production (the field's structural reading, drawn; the study's walk with the superior end named;
+the regime's histogram and second channel count; the corpus's shape, saved in the receipt and drawn
+once per run), the slab rule got its compiled twin pinned SAME on the real study, every contract
+took the one plain form after Detective was measured returning UNGATEABLE for any function under
+the call form, consumption is recorded only for a record handed over, the output reader is total,
+and the seven readers of the route that had no certificate are Detective-COMPLETE with every
+survivor judged. The real run with pictures: five series, twelve drawings and the corpus picture,
+`composed`. The dated record, with every standing, the Detective engine defects and the LintGate
+counts, is [remaining-gaps-20261012.md](measurements/remaining-gaps-20261012.md); what stays open
+is listed at its end.
+
+**2026-10-12, the composition repair.** The route now runs in dependency order with
 the conversation before ownership and relations, every producer has a consumer in the ledger, every
 stage draws, and the bundles and output stages have their first increments. The complete dated
 record, with every measurement and every verification standing, is

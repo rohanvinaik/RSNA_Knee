@@ -19,10 +19,12 @@ float64, NaN where a place was not read -- a place not read is never drawn as ze
 
 from __future__ import annotations
 
+from collections.abc import Mapping
 from dataclasses import dataclass
 
 import numpy as np
 
+from knee.collapse.structure import AXIS_CODES, SUPERIOR_CODES
 from knee.study.series import walk_indices
 
 
@@ -93,7 +95,9 @@ class RecordedPanels:
     thickness the header stated, or None. slice_index: the plane's index in the stack's order, or
     None. codes: the named codes the record carries that bear on this plane, in the order the
     caller gives them, each already labelled by the caller with the stage that produced it. A value
-    the record does not carry is None or empty, never zero.
+    the record does not carry is None or empty, never zero. axis_code and superior_code are the
+    field stage's two header codes for the selected plane as the record saved them, None when it
+    saved no structural reading; `superior_end` says what they name.
     """
 
     plane: np.ndarray | None
@@ -104,6 +108,8 @@ class RecordedPanels:
     walk: np.ndarray | None = None
     walk_indices: tuple[int, ...] = ()
     slice_codes: tuple[str, ...] = ()
+    axis_code: str | None = None
+    superior_code: str | None = None
 
 
 def recorded_panels(
@@ -115,6 +121,9 @@ def recorded_panels(
     walk: np.ndarray | None = None,
     walk_indices: tuple[int, ...] = (),
     slice_codes: tuple[str, ...] = (),
+    *,
+    axis_code: str | None = None,
+    superior_code: str | None = None,
 ) -> RecordedPanels:
     """Hand on one series' saved plane, its saved walk and the geometry the record states.
 
@@ -123,6 +132,7 @@ def recorded_panels(
     and int, and leaves an absent value absent. It selects nothing, windows nothing and derives no
     geometry: `walk` is the study stage's own retained walk (`Series.walk`), `walk_indices` the
     stack indices it visits and `slice_codes` the stage's code for every slice of the stack.
+    `axis_code` and `superior_code` are the field stage's header codes, handed on as saved.
     """
     return RecordedPanels(
         plane=None if plane is None else np.asarray(plane),
@@ -135,4 +145,68 @@ def recorded_panels(
         walk=None if walk is None else np.asarray(walk),
         walk_indices=tuple(int(index) for index in walk_indices),
         slice_codes=tuple(str(code) for code in slice_codes),
+        axis_code=axis_code,
+        superior_code=superior_code,
     )
+
+
+#: Where the superior end of a series lies in what a picture draws. An in-plane axis names an image
+#: edge; the `normal` axis names an end of the stack; the rest are the silences, each with its own
+#: remedy: nothing was saved, the stage's two header codes name no direction, or a code is one the
+#: stage does not say.
+SUPERIOR_ENDS: tuple[str, ...] = (
+    "top_edge",
+    "bottom_edge",
+    "left_edge",
+    "right_edge",
+    "first_slice",
+    "last_slice",
+    "not_saved",
+    "axis_ambiguous",
+    "axis_unreadable",
+    "direction_unreadable",
+    "axis_code_unknown",
+    "superior_code_unknown",
+)
+
+#: The end each (axis, superior) pair names. Row 0 is the top of a plane as every picture here draws
+#: it and column 0 its left, so an increasing row index goes down the picture and an increasing
+#: column index goes right; the stack is ordered ascending along its normal, so an increasing index
+#: along the normal goes toward the last slice.
+_SUPERIOR_END_OF: Mapping[tuple[str, str], str] = {
+    ("rows", "increasing"): "bottom_edge",
+    ("rows", "decreasing"): "top_edge",
+    ("columns", "increasing"): "right_edge",
+    ("columns", "decreasing"): "left_edge",
+    ("normal", "increasing"): "last_slice",
+    ("normal", "decreasing"): "first_slice",
+}
+
+#: The two axis codes that name no direction, with the silence each is.
+_AXIS_SILENCE: Mapping[str, str] = {
+    "ambiguous": "axis_ambiguous",
+    "unreadable": "axis_unreadable",
+}
+
+
+def superior_end(axis_code: str | None, superior_code: str | None) -> str:
+    """Name where the superior end lies in what is drawn, from the field stage's two header codes.
+
+    `axis_code` and `superior_code` are the structural reading's `axis` and `superior`, which the
+    stage reads from the selected plane's header (`knee.collapse.structure`): which direction of
+    the acquisition carries superior-inferior, and whether an increasing index along it goes
+    superior. See `_SUPERIOR_END_OF` for the end each pair names. Total: a record that saved no
+    codes is `not_saved`, a word the stage does not say is named and never drawn, an axis that names
+    no direction is its own silence, and so is a direction the stage could not read.
+
+    post: __return__ in SUPERIOR_ENDS
+    """
+    if axis_code is None or superior_code is None:
+        return "not_saved"
+    if axis_code not in AXIS_CODES:
+        return "axis_code_unknown"
+    if superior_code not in SUPERIOR_CODES:
+        return "superior_code_unknown"
+    if axis_code in _AXIS_SILENCE:
+        return _AXIS_SILENCE[axis_code]
+    return _SUPERIOR_END_OF.get((axis_code, superior_code), "direction_unreadable")

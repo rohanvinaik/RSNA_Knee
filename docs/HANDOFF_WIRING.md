@@ -4,7 +4,8 @@
 > document confirmed were repaired under `openspec/changes/every-stage-renders/tasks.md` §6 and
 > measured on the real study; the dated record is
 > `docs/chapters/02-collapse/measurements/composition-repair-20261012.md`, and the remaining gaps
-> are declared in the same checklist's §7. The counts below (22 unwired, eight galleries, `vectors`
+> are declared in the same checklist's §7 and measured, later the same day, in
+> `measurements/remaining-gaps-20261012.md`. The counts below (22 unwired, eight galleries, `vectors`
 > uncalled, `collapse` undrawn) are this document's measurements at the time it was written, not
 > current state: recompute with `just places` and `just unit`. The body is kept unchanged as the
 > record of what was found.

@@ -7,6 +7,10 @@ under `data/`, which `.gitignore` excludes whole, and never into git (`AGENTS.md
 Project-relative, resolved from this file, so a script runs from any working directory and the
 picture lands in the same place every time. The earlier scripts wrote into the session scratchpad
 by its UUID, which made every recorded picture unreproducible the moment the session ended.
+
+`pictures_dir()`, which resolved and created `data/pictures` for the hand-run probes, went with
+them (task 7.1, 2026-10-12): every drawer now takes its output directory from the joined pass and
+checks it lies under `data/` against `PROJECT`, so nothing called it and vulture said so.
 """
 
 from pathlib import Path
@@ -26,10 +30,3 @@ class ArgumentRefusal(ValueError):
     Declared once here rather than per renderer so every drawing module can tell the two apart the
     same way (`every-stage-renders` task 4b.1, the second of its two owed defects).
     """
-
-
-def pictures_dir() -> Path:
-    """The directory this run's pictures go in, created if absent."""
-    directory = PROJECT / "data" / "pictures"
-    directory.mkdir(parents=True, exist_ok=True)
-    return directory

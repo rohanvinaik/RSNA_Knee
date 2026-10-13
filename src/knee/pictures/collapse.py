@@ -102,6 +102,8 @@ class StructurePanels:
     `axis` is the image axis the axis code names, None when the axis is not in-plane, and `sign` is
     the number `CollapsePanels` carries: -1.0 when an increasing index goes superior (so the
     profile was reversed to put superior first), +1.0 when it goes inferior, 0.0 when unreadable.
+    `squint_coverage` and `squint_tile_shape_rc` are the squint's coverage map and its tile size in
+    native pixels, None when the squint is None.
     """
 
     code: str
@@ -126,14 +128,64 @@ class StructurePanels:
     bodies: np.ndarray
     histogram: tuple[np.ndarray, np.ndarray]
     counts: Mapping[str, int]
+    squint_coverage: np.ndarray | None = None
+    squint_tile_shape_rc: tuple[int, int] | None = None
 
 
-def structure_panels(plane: np.ndarray, reading: StructureReading) -> StructurePanels:
+@dataclass(frozen=True, slots=True)
+class SavedSquint:
+    """The squint inside the leg as a saved record holds it: its medians, its coverage and its tile size.
+
+    median, coverage: (tiles_down, tiles_across) float64, as `Squint` holds them. tile_shape_rc:
+    native pixels per tile, (rows, columns). A `Squint` also holds its extrema and its native
+    bounds, and a saved record carries neither, so this class carries neither and none is invented.
+    """
+
+    median: np.ndarray
+    coverage: np.ndarray
+    tile_shape_rc: tuple[int, int]
+
+
+@dataclass(frozen=True, slots=True)
+class SavedStructure:
+    """The structural reading as a saved record holds it: `StructureReading` with the squint reduced to what is saved.
+
+    Every field but `squint` is the field of the same name on `StructureReading`, with its meaning
+    and its dtype; a value the writer saved as None, which is how it saves a reading the stage did
+    not make, is NaN here, as the stage returned it.
+    """
+
+    code: str
+    why: str
+    axis: str
+    superior: str
+    air_level: float
+    air: np.ndarray
+    leg: np.ndarray
+    histogram_counts: np.ndarray
+    histogram_edges: np.ndarray
+    squint: SavedSquint | None
+    inside: np.ndarray
+    profile: np.ndarray
+    profile_tiles: np.ndarray
+    dip: int
+    basins: np.ndarray
+    seam: np.ndarray
+    dark_level: float
+    dark: np.ndarray
+    bodies: np.ndarray
+    counts: Mapping[str, int]
+
+
+def structure_panels(
+    plane: np.ndarray, reading: StructureReading | SavedStructure
+) -> StructurePanels:
     """Hand on the structural reading beside the plane it was read from, arranging nothing.
 
     `plane` is the slice the stage read, as Chapter 1 recorded it; `reading` is the stage's own
     record. A code outside the stage's vocabulary is refused by name rather than drawn: a picture
     labelled with a word the stage never says would be the drawer speaking for the stage.
+    `reading` may also be the `SavedStructure` of a saved record, which is handed on the same way.
     """
     if reading.axis not in AXIS_CODES:
         raise ValueError(f"unknown_axis_code:{reading.axis}")
@@ -163,6 +215,10 @@ def structure_panels(plane: np.ndarray, reading: StructureReading) -> StructureP
         bodies=reading.bodies,
         histogram=(reading.histogram_counts, reading.histogram_edges),
         counts=reading.counts,
+        squint_coverage=None if reading.squint is None else reading.squint.coverage,
+        squint_tile_shape_rc=None
+        if reading.squint is None
+        else reading.squint.tile_shape_rc,
     )
 
 

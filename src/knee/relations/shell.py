@@ -140,11 +140,13 @@ def read_relations(interiors: object, spacing_rc: object = None) -> RelationsRea
             interiors=1 if isinstance(interiors, InteriorReading) else 0,
         )
     pairings = read_pairings(interiors, spacing_rc) if readable else None
-    paired = int(pairings.counts.get("paired", 0)) if pairings is not None else 0
-    profiles = int(pairings.outcome_codes.size) if pairings is not None else 0
+    paired = 0
     if pairings is not None:
+        paired = int(pairings.counts["paired"])
         ledger.record(
-            "pairings.consumed_by.relations", profiles=profiles, paired=paired
+            "pairings.consumed_by.relations",
+            profiles=int(pairings.outcome_codes.size),
+            paired=paired,
         )
     # Recorded even though it constructs nothing: a stage that is silent still ran, and a ledger
     # with no row for it cannot be told from a stage that never executed.

@@ -38,7 +38,11 @@ class SeriesGeometry:
     each slice's ImagePositionPatient. spacing: (n, 2) float64, each slice's PixelSpacing (between rows, between
     columns). along_normal: (n,) float64, ascending, each position projected on the normal. orientation_spread:
     the largest absolute difference between any slice's direction cosine and the first slice's, measured and not
-    judged.
+    judged. origin_spread_mm: the largest in-plane displacement, in millimetres, of any slice's origin from the
+    first slice's -- the part of `position[i] - position[0]` that does not lie along the normal -- measured and
+    not judged (task 7.12). Together the two spreads are the precondition under which one slice's frame can
+    stand for the stack's; the slab lookup projects against each slice's own origin and shares only the basis.
+    NaN where the geometry was built without positions to measure it from.
     """
 
     normal: np.ndarray
@@ -47,6 +51,7 @@ class SeriesGeometry:
     spacing: np.ndarray
     along_normal: np.ndarray
     orientation_spread: float
+    origin_spread_mm: float = float("nan")
 
 
 #: How many slices the stage's walk through a stack keeps: the first, the last, and the rest evenly
@@ -218,6 +223,11 @@ def stack_geometry(
     distance = along(position, normal)
     order = np.argsort(distance, kind="stable")
     ordered = orientation[order]
+    # The in-plane part of each slice origin's displacement from the first slice's, in stack order
+    # (task 7.12): what remains of `position[i] - position[0]` once its component along the normal is
+    # removed. Measured for the record, never judged here.
+    displacement = position[order] - position[order][0]
+    in_plane = displacement - np.outer(displacement @ normal, normal)
     geometry = SeriesGeometry(
         normal=normal,
         orientation=ordered,
@@ -225,5 +235,6 @@ def stack_geometry(
         spacing=spacing[order],
         along_normal=distance[order],
         orientation_spread=float(np.abs(ordered - ordered[0]).max()),
+        origin_spread_mm=float(np.linalg.norm(in_plane, axis=1).max()),
     )
     return geometry, order

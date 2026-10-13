@@ -21,6 +21,7 @@ from knee.predicates.findings import (
     read_findings,
 )
 from knee.relations.shell import KINDS, Interstice
+from knee.telemetry import recording
 
 #: Words no stage record, code or picture may carry (`stage-totality`). "interstice" is NOT here:
 #: it is the thesis's structural tier, defined by the founder as a RELATIVE role.
@@ -361,6 +362,38 @@ def test_series_that_resolved_a_partition_are_counted():
     assert reading.code == "present"
     assert reading.series_with_population == 2
     assert reading.series_with_construction == 0
+    # The record explains itself in the counts it read, in one sentence that never drifts from them.
+    assert reading.why == (
+        "2 of 3 series resolved a partition; 0 resolved a construction (0 in all); "
+        "0 wrote profiles (0 in all)"
+    )
+
+
+def test_the_ledger_records_what_the_stage_read_only_when_series_were_handed_over():
+    """Tasks 6.5 and 7.14: the three consumptions are recorded, with the series read and the facts
+    counted from them, only when at least one series record was handed over; `predicates.produced`
+    on every path. None and an empty tuple hand over no ownership, relations or bundles record to
+    consume. The Detective survivors of 2026-10-12 that moved the guard, dropped or renamed a
+    record, or altered a count were killable only with the ledger recording."""
+    with recording() as run:
+        read_findings(None)
+        read_findings(())
+        read_findings((_Row("present"),))
+        read_findings(
+            (_Row("present", "present", (_facing(3, 7),)), _Row("predecessor_empty"))
+        )
+    assert [(event.name, dict(event.counts)) for event in run.events()] == [
+        ("predicates.produced", {"findings": 12}),
+        ("predicates.produced", {"findings": 12}),
+        ("ownership.consumed_by.predicates", {"series": 1, "with_population": 1}),
+        ("relations.consumed_by.predicates", {"series": 1, "constructions": 0}),
+        ("vectors.consumed_by.predicates", {"series": 1, "profiles": 0}),
+        ("predicates.produced", {"findings": 12}),
+        ("ownership.consumed_by.predicates", {"series": 2, "with_population": 1}),
+        ("relations.consumed_by.predicates", {"series": 2, "constructions": 1}),
+        ("vectors.consumed_by.predicates", {"series": 2, "profiles": 0}),
+        ("predicates.produced", {"findings": 12}),
+    ]
 
 
 def test_the_two_bone_findings_abstain_differently_from_the_other_ten():

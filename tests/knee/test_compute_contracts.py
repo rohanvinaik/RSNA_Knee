@@ -128,6 +128,11 @@ def _probe() -> ComputeContract:
     )
 
 
+#: This module's own contract, so a kernel defined in a test body under the plain `@contracted`
+#: reads it exactly as a production kernel reads its module's (task 7.11).
+CONTRACT = _probe()
+
+
 def test_every_declared_contract_reaches_its_kernel() -> None:
     """A contract that is declared and never attached links to nothing it describes."""
     offenders = [
@@ -137,7 +142,7 @@ def test_every_declared_contract_reaches_its_kernel() -> None:
     ]
     assert not offenders, (
         f"these contracts are declared and attached to no callable: {offenders}. "
-        "Apply it with @contracted(CONTRACT) to the kernel its `reference` field names."
+        "Apply the plain @contracted to the kernel its `reference` field names."
     )
 
 
@@ -155,26 +160,24 @@ def test_every_reference_twin_pair_declares_a_contract() -> None:
 
 def test_the_unattached_check_catches_a_contract_nothing_carries() -> None:
     """The check itself is checked: it must fail on the shape it exists to refuse."""
-    contract = _probe()
 
     def kernel(value: int) -> int:
         return value + 1
 
-    bare = {"CONTRACT": contract, "kernel": kernel}
+    bare = {"CONTRACT": CONTRACT, "kernel": kernel}
     assert unattached_contracts(bare) == ["CONTRACT"]
-    attached = contracted(contract)(kernel)
-    assert unattached_contracts({"CONTRACT": contract, "kernel": attached}) == []
+    attached = contracted(kernel)
+    assert unattached_contracts({"CONTRACT": CONTRACT, "kernel": attached}) == []
 
 
 def test_the_unattached_check_sees_a_contract_carried_by_a_method() -> None:
     """`Ledger.record` carries its module's contract, so a class member must count."""
-    contract = _probe()
 
     class Holder:
-        @contracted(contract)
+        @contracted
         def record(self) -> None: ...
 
-    assert unattached_contracts({"CONTRACT": contract, "Holder": Holder}) == []
+    assert unattached_contracts({"CONTRACT": CONTRACT, "Holder": Holder}) == []
 
 
 def test_the_pair_check_catches_a_twin_whose_contract_was_removed() -> None:
@@ -287,7 +290,17 @@ def test_the_plain_form_takes_only_a_function() -> None:
     import pytest
 
     with pytest.raises(TypeError, match="contracted_expects_a_function"):
-        contracted("kernel")  # type: ignore[call-overload]
+        contracted("kernel")  # type: ignore[arg-type]
+
+
+def test_the_call_form_is_retired_and_refused_by_name() -> None:
+    """MUST NOT (task 7.11): accept `@contracted(CONTRACT)` again. Measured 2026-10-12, that
+    spelling made Detective return UNGATEABLE for any function under it; every site migrated,
+    and the decorator refuses it by name so it cannot come back unnoticed."""
+    import pytest
+
+    with pytest.raises(TypeError, match="contracted_call_form_retired"):
+        contracted(CONTRACT)  # type: ignore[arg-type]
 
 
 def test_re_declaring_the_same_contract_is_idempotent_and_a_different_one_is_refused(
@@ -301,31 +314,20 @@ def test_re_declaring_the_same_contract_is_idempotent_and_a_different_one_is_ref
     first = _import_module(path, "reload_probe")
     second = _import_module(path, "reload_probe")
     assert second.kernel.__dict__["__contract__"] == first.CONTRACT
-    different = _probe()
+    changed = tmp_path / "reload_probe_changed.py"
+    changed.write_text(KERNEL_MODULE.replace('kind="probe"', 'kind="another"'))
     with pytest.raises(ValueError, match="duplicate_contract_key"):
-        contracted(different)(second.kernel)
+        _import_module(changed, "reload_probe")
 
 
 def test_contracts_are_data_and_never_wrap_the_measured_function() -> None:
     """SS13.5: attaching a contract must not put a wrapper on the hot path."""
-    from knee.compute.contracts import contracted
 
     def kernel(value: int) -> int:
         return value + 1
 
-    contract = ComputeContract(
-        kind="probe",
-        language="python reference",
-        reads="one int",
-        writes="one int",
-        allocation="none",
-        work="one addition",
-        parallel_unit="none",
-        reference="kernel itself",
-        proof_gate="this test",
-    )
-    decorated = contracted(contract)(kernel)
+    decorated = contracted(kernel)
     assert decorated is kernel, (
         "contracted() returned a wrapper; it must attach metadata only"
     )
-    assert decorated.__dict__["__contract__"] is contract
+    assert decorated.__dict__["__contract__"] is CONTRACT
