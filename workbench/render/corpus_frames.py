@@ -382,7 +382,7 @@ def draw_labels(axis, shape: CorpusShape) -> list[str]:
             longest * 1.01,
             row,
             " · ".join(
-                f"{code} {shape.labels[finding][code]}"
+                f"{code}: {shape.labels[finding][code]}"
                 for code in LABEL_CODES
                 if code in shape.labels[finding]
             ),

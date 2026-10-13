@@ -128,6 +128,17 @@ def saved_profile(saved: object) -> ObjectProfile:
     )
 
 
+def saved_number(value: object) -> float | None:
+    """A saved int or float as a float; None for anything else, a bool included.
+
+    Saved values come from JSON, so a bool is the one value Python would count as a number and
+    the record never means as one.
+    """
+    if isinstance(value, bool) or not isinstance(value, (int, float)):
+        return None
+    return float(value)
+
+
 def saved_gap(saved: object) -> tuple[str, float | None]:
     """One other acquisition's saved gap fraction as (its series uid, a fraction or None).
 
@@ -138,11 +149,12 @@ def saved_gap(saved: object) -> tuple[str, float | None]:
     fraction = saved_field(saved, "gap_fraction")
     if fraction is None:
         return uid, None
-    if type(fraction) not in (int, float):
+    number = saved_number(fraction)
+    if number is None:
         raise ValueError(f"saved_slab_gap_not_a_number:{uid}")
-    if not 0.0 <= fraction < 1.0:
+    if not 0.0 <= number < 1.0:
         raise ValueError(f"saved_slab_gap_out_of_range:{uid}")
-    return uid, float(fraction)
+    return uid, number
 
 
 def saved_slab_gaps(saved: object) -> tuple[tuple[str, float | None], ...]:
