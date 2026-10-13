@@ -8,7 +8,9 @@
 > `measurements/remaining-gaps-20261012.md`. The counts below (22 unwired, eight galleries, `vectors`
 > uncalled, `collapse` undrawn) are this document's measurements at the time it was written, not
 > current state: recompute with `just places` and `just unit`. The body is kept unchanged as the
-> record of what was found.
+> record of what was found. **Closed 2026-10-12** at commit `3d8fe3a`: the standing section at the
+> top of `openspec/changes/every-stage-renders/tasks.md` says what is done and what remains, and
+> `docs/BUILD_PLAN.md` says what comes next. This is a fix-guiding note and is read as history.
 
 Written 2026-10-12 by the outgoing lead, at the founder's instruction, for an agent with no prior
 context. Everything here was computed with a command rather than recalled, and every command is

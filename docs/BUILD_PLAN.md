@@ -18,26 +18,39 @@ A completed OpenSpec artifact means the proposal/design/spec/tasks documents exi
 implementation task means its declared obligation was verified. Neither implies the whole change
 or a candidate kernel is admitted. Historical task counts and certificates are dated evidence.
 
+## Where the build stands, 2026-10-12, at the close of the composition session
+
+The breadth-first change's own close-out is the standing section at the top of
+[its checklist](../openspec/changes/every-stage-renders/tasks.md), computed at commit `3d8fe3a`.
+In one line: the pipeline is one artifact on the one study -- every stage runs through the real
+entry point, returns a record or a named absence, renders, and records what it produced and
+consumed, and the run composes -- and what the twelve findings would decide waits on the three
+rulings that are the founder's. The dated evidence is
+[the remaining-gaps record](chapters/02-collapse/measurements/remaining-gaps-20261012.md).
+
 ## Immediate sequence and remaining obligations
 
 Run `just unit` and read the whole relevant checklist/spec before building. The existing breadth-first
 plan owns the next work; this index does not create a new architecture or substitute new bars.
 
-1. Preserve and resolve the admission obligations on native digits and sampled dark-bounded
-   pairings: both candidate implementations are connected and drawn, while their numeric
-   Detective runs were refused as `UNGATEABLE`. The ordinary gate cannot erase that standing.
-2. Finish the joined drawing contract (§4b): packet probe fraction remains founder-supplied;
-   CLI refusal/corruption distinction and complete telemetry consumption remain owed. All stages
-   must actually draw, including named absences, before full breadth-first acceptance.
-3. Build bundles (§3), with indexed subject kind, unavailable banks named and dispatch evidence
-   recorded before implementation. Subject support/correspondence must not be inferred from
-   matching array indices or independent object-wide counts.
-4. Reconcile the existing predicate candidate with actual subject-selection evidence (§4.1).
-   The withdrawn dispatch answer stays withdrawn. Named decisions can run/render now; declare
-   the numeric abstention projection after founder inspection and before CSV emission (§4.2).
-5. Complete the one-study capacity demonstration and first grading round (§5): alphabet plus
-   object–interstice–object sentence. `e` remains a hand-given correspondence. Then perform
-   corpus engineering and later deployment work under `knee-object-model`.
+1. **The founder's grading round (§5)**, now that every stage draws: the alphabet (the digit map
+   with silence drawn as silence; the parse with the measured boundary distinguished from the
+   constructed) and the first object–interstice–object sentence, read from the galleries of the
+   real run. The three declarations only he can make follow from it: the local structural
+   normalisation that precedes the digits, the hand-given correspondence `e` with its author and
+   date, and the numeric projection, which the output stage refuses CSV rows without.
+2. **The candidates held open by Detective's engine defects**, never waived: `footprint_labels_
+   reference` (1.3a, sampled dark-bounded pairings), `count_by_extent` (3.2, 3.3, 6.7, the bundles)
+   and `conversed_parses` (7.6). Each is wired, drawn and tested; each waits on the engine, and the
+   defects are recorded for the Detective project.
+3. **The declared and unbuilt**: the edge-to-piece translation so the pairings run under the
+   conversed parses (6.3a, 7.5); the complete interstice extent, which relations still names
+   `construction_absent`.
+4. **The 58-study run**, which is engineering and not the demonstration: the per-view tabulations
+   of the regime and geometry records (7.1a) and the prevalence of in-plane origin displacement
+   (7.12) are its measurements; then corpus engineering and deployment under `knee-object-model`.
+5. **Style debt the gate records and does not block**: the two renderers over LintGate's limits
+   and the warnings not yet triaged (7.7); two drawer decisions unpinned.
 
 Supported contour work (`object-resolution-toolkit` 3.8a–3.12) is unparked under the structural-role
 reading already recorded in the breadth-first change. Its support contract/machinery prerequisites

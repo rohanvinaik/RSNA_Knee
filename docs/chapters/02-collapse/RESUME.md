@@ -1,6 +1,16 @@
 # Resume: the breadth-first build
 
-**2026-10-12, later: the remaining gaps — start here.** Under `tasks.md` §7 the probes became
+**2026-10-12, the close of the composition session — start here.** The pipeline is one artifact
+on the one study: every stage runs through the real entry point, returns a record or a named
+absence, renders, records what it produced and consumed, and the run composes. Its standing,
+section by section, is the close-out at the top of
+`openspec/changes/every-stage-renders/tasks.md`; what comes next is `docs/BUILD_PLAN.md`,
+beginning with the founder's grading round and the three declarations only he can make. The
+evidence is [remaining-gaps-20261012.md](measurements/remaining-gaps-20261012.md). Recompute
+with `just unit`, `just places`, `just gate` and `just composition <run>` before asserting any
+of it.
+
+**2026-10-12, later: the remaining gaps.** Under `tasks.md` §7 the probes became
 production (the field's structural reading, drawn; the study's walk with the superior end named;
 the regime's histogram and second channel count; the corpus's shape, saved in the receipt and drawn
 once per run), the slab rule got its compiled twin pinned SAME on the real study, every contract
