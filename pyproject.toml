@@ -100,10 +100,11 @@ extend_exclude = ["archive"]
 known_first_party = ["knee", "_out", "workbench", "verify_profiles_same"]
 
 [tool.deptry.per_rule_ignores]
-# Workbench renderers intentionally receive matplotlib via uv run --with (workbench/README.md).
-DEP001 = ["matplotlib"]
-# Detective/Wesker are development readers; Hamilton is the development observation graph.
-DEP004 = ["Detective", "Wesker", "hamilton"]
+# Detective/Wesker are development readers; Hamilton is the development observation graph; and
+# matplotlib is the drawing layer's, in the dev group since 2026-10-12 (the founder: "You can just
+# add matplotlib in"), imported only by the workbench and never by `knee`, which `just imports`
+# enforces. Each is a development tool that development code imports, which is what DEP004 asks.
+DEP004 = ["Detective", "Wesker", "hamilton", "matplotlib"]
 # A pydicom decoder plugin: pydicom loads it, and nothing imports it by name.
 DEP002 = ["python-gdcm"]
 
@@ -125,6 +126,7 @@ dev = [
     "detective-spec>=1.1.1",
     "hypothesis>=6.168.5",
     "import-linter>=2.15",
+    "matplotlib>=3.11.2",
     "numba>=0.68.0",
     "pytest>=9.1.1",
     "ruff==0.16.7",

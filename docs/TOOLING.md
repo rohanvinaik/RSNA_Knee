@@ -84,9 +84,11 @@ The import contract enforces the existing development/production separation only
 invent stage ordering, sibling independence or the knee's domain architecture. Missing optional
 external modules are allowed in the graph; an import of one is still forbidden.
 
-deptry recognizes `_out` as the workbench's sibling module and Matplotlib as intentionally
-supplied via `--with`, per `workbench/README.md`. It still reports unused declared packages;
-these are leads to inspect, not authority to remove a package from the founder's design.
+deptry recognizes `_out` as the workbench's sibling module. Matplotlib is declared in the dev
+group since 2026-10-12 (the founder: "You can just add matplotlib in") and is imported only by
+the workbench, never by `knee`, which `just imports` enforces. deptry still reports unused
+declared packages; these are leads to inspect, not authority to remove a package from the
+founder's design.
 
 ## One command, its switches and its limits
 
@@ -175,9 +177,10 @@ Copier remain available choices, not additional adopted project layouts.
 See [BUILD_PLAN.md](BUILD_PLAN.md) for the packet index and
 [the resume entry](chapters/02-collapse/RESUME.md) for exact evidence and next work.
 `just setup` includes the optional JIT backend; production refuses a required backend
-that is absent. LintGate's exposed check reports the intentional per-run Matplotlib
-import as missing in the ordinary environment; actual renderer execution is separate
-evidence. The exposed API has no requested strictness argument. Dependency inspection
+that is absent. LintGate's exposed check once reported the per-run Matplotlib import as
+missing in the ordinary environment; since 2026-10-12 Matplotlib is in the dev group, so
+that report no longer applies, and actual renderer execution remains separate evidence. The
+exposed API has no requested strictness argument. Dependency inspection
 currently flags declared pandas and SimpleITK as unused; their planned roles are not
 authority to remove them. Re-run those readers to establish current state.
 
