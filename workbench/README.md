@@ -54,9 +54,12 @@ they are cited from (`docs/chapters/02-collapse/measurements/`), as historical m
 
 ### `render/` — saved-record adapters and earlier probes
 
-`all_frames.py` joins twelve drawings over one saved study (`DRAWINGS`: the study's recorded
+`all_frames.py` joins thirteen drawings over one saved study (`DRAWINGS`: the study's recorded
 plane and walk, the field, the objects four ways, the lens digits, the ownership partition, the
-pairings, the findings, the bundles and the output's companion record). Each outcome is retained
+pairings, the findings, the bundles, the output's companion record, and the view sheets). The view
+sheets (`view_frames.py`, the founder's ask of 2026-10-12) are one picture PER SERIES: the saved
+acquired plane under every reading that wrote at its places, every stage in route order, each
+silence said in its own panel, drawn with the owning drawers' loaders and colours. Each outcome is retained
 in a gallery index, including `not_drawn` with its reason and route stages with `no_drawer`; a
 drawer that returns a manifest whose `refusal` is a named code is recorded the same way. It does
 not measure missing stage output. `corpus_frames.py` draws the run's corpus shape from the
@@ -105,9 +108,11 @@ These import `knee`, so they run under the project's interpreter from the projec
     uv run --with matplotlib python -m workbench.render.field_frames data/measurements/<run> \
         --study-uid <study> --out data/pictures/<run>/<study>/collapse-field
 
-Rendering needs matplotlib, which is deliberately **not** a project dependency: the pipeline
-imports no drawing code (§13.7), so matplotlib stays outside it and is supplied per-run. That
-`--with` is the proof of the separation, not a workaround.
+Rendering needs matplotlib, which is a **dev-group** dependency since 2026-10-12 (the founder:
+"You can just add matplotlib in") and never a production one: the pipeline imports no drawing
+code (§13.7), and `just imports` refuses `knee` importing it. The recipes' `--with matplotlib`
+still works and is now redundant in the synced environment; the separation is enforced by the
+import contract, not by the package's absence.
 
 `object_analysis.py` saves NPZ records, a receipt and study checkpoints under the explicit
 private `data/` run directory, then draws. Each renderer saves PNGs and a manifest under its

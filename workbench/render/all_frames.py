@@ -53,6 +53,10 @@ from pathlib import Path
 #:                        the saved concurrent and conditional labels
 #:   vectors/bundles      each object's banks, with the backend the stage was asked for and the gap
 #:                        fraction of every other acquisition's own stack
+#:   study/views          one sheet PER VIEW: the acquired plane under every reading that wrote at
+#:                        its places, every stage in route order, a silence said in its own panel
+#:                        (the founder, 2026-10-12: "one of each view ... along with every single
+#:                        analysis lens view that has something to say ... on the original image")
 DRAWINGS: tuple[tuple[str, str, str], ...] = (
     ("study", "recorded", "study_frames"),
     ("collapse", "field", "field_frames"),
@@ -66,6 +70,7 @@ DRAWINGS: tuple[tuple[str, str, str], ...] = (
     ("predicates", "findings", "predicate_frames"),
     ("vectors", "bundles", "bundle_frames"),
     ("output", "companion", "output_frames"),
+    ("study", "views", "view_frames"),
 )
 
 
