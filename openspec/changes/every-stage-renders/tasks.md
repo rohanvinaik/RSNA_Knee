@@ -48,6 +48,46 @@ The universal relational wording this item once carried was the lead's, not the 
 his own sentence contradicted it; it is scoped as above, and `knee.predicates` reads a relation
 for the ten construction-subject findings and a population for the two object-subject ones.
 
+## Standing at the close of the build session, 2026-10-12
+
+Computed at commit `3d8fe3a` by `just unit`, `just places`, the gate and the real run
+(`docs/chapters/02-collapse/measurements/remaining-gaps-20261012.md`), and written here so the
+checklist says what is done and what remains without a reader summing boxes.
+
+**The composition goal is met on the one study.** Through the real entry point every one of the
+nine stages runs, returns a record or a named absence from the one vocabulary, renders (twelve
+drawings and the corpus picture, no stage without a drawer), records its production and its
+consumptions, and `just composition` reads `composed` with no phantom and nothing dangling. The
+audit of the handoff and the Codex re-review of the tree are both answered (§6, 7.12 to 7.14).
+The pipeline is one artifact, to the extent it has been built.
+
+**The acceptance (§5) is the founder's, not an engineering gap.** Capacity properties 1 to 3 hold
+as built: the field is parsed into indexed extents with every place owned or named unassigned;
+every place carries a ternary digit per seated member against that series' own edges, silence
+distinct from the middle; every decision is a named code, total over its arguments, every bar an
+argument, and the ten relation-subject findings read a relation. Property 4, the hand-given
+correspondence `e`, is undeclared by his choice, as are the numeric projection and the local
+structural normalisation; so 5.1 and 5.2 wait on him, and the twelve findings abstain by design
+until then.
+
+| section | standing at the close |
+|---|---|
+| 0, the scaffold | complete |
+| 1, the route and the vocabulary | complete but 1.3a, a candidate: `footprint_labels_reference` holds no certificate (engine defect, §7's record) |
+| 2, the lenses | complete as declared; the stage stays `partly` because the normalisation that precedes the digits is the founder's |
+| 3, the bundles | built, wired, drawn, the seeds counted; a candidate on `count_by_extent`, Incomplete 9/10 with the last survivor unresolved by an engine crash |
+| 4, the predicates and output | complete as declared; they decide nothing until `e` and the projection are declared |
+| 4b, one command | complete |
+| 5, the whole route | the founder's grading round |
+| 6, the composition repairs | complete but 6.3a, declared and not built |
+| 7, the remaining gaps | complete but 7.1a, 7.5, 7.6, 7.7 and 7.12, each open with its reason in its box |
+
+What stays open in engineering, each beside its box: 7.5 (6.3a), the edge-to-piece translation,
+unbuilt; 7.1a and 7.12, two measurements the 58-study run makes; 7.6, one parser whose proof
+basis the engine cannot collect; 7.7, the decomposition of two renderers and the triage of the
+warnings; 1.3a, 3.2, 3.3 and 6.7, candidates held open by Detective's engine defects, which are
+reported and never waived; and two drawer decisions, `tile_placement` and `saved_gap`, unpinned.
+
 ## The dispatch question, which binds tasks 2.4, 3.1 and 4.1
 
 Codex, 2026-10-12: *"Removing anatomical words from records does not establish that anatomical
@@ -217,14 +257,19 @@ or certified. The dated reconciliation run and `docs/BUILD_PLAN.md` locate curre
       *(DONE 2026-10-12, `bd9e9b0`, before the audit: both members seated per series with their own
       edges and populations, and the standing between them per place retained. Box reconciled
       2026-10-12.)*
-- [ ] 2.3 Write the digits for every place of every acquisition, recording `normalisation: none` and
+- [x] 2.3 Write the digits for every place of every acquisition, recording `normalisation: none` and
       keeping an unread place **silent** rather than writing it as the middle digit. Verify silence
       and the middle digit are distinguishable in the record.
       *(Candidate implemented and rendered, not certified. The 2026-10-12 Detective run for
       `place_codes_reference` returned UNGATEABLE because mutants could not be BUILT; counts are
       a floor, not a verdict. Array CrossHair contracts were Not confirmed. Read the full evidence
       and limits in `workbench/consults/openspec-contract-audit-20261012.md`; this task remains open.)*
-- [ ] 2.4 Wire it into the production route and render it: the three-colour digit map per
+      *(DONE 2026-10-12, later: the UNGATEABLE standing was the call-form decorator (7.11), and
+      under the plain form `place_codes_reference` is Detective-COMPLETE 40/42 modulo two
+      annotation survivors flagged with their proof. The candidate rule no longer holds this open.
+      `normalisation: none` stays recorded: the local structural normalisation that precedes the
+      digits is the founder's, so the STAGE stays `partly` while the task is done as declared.)*
+- [x] 2.4 Wire it into the production route and render it: the three-colour digit map per
       acquisition, with silence drawn as silence. **Record the dispatch answer first.** Verify the
       renderer arranges only what the stage computed, then run it over one study through the real
       entry point.
@@ -234,6 +279,8 @@ or certified. The dated reconciliation run and `docs/BUILD_PLAN.md` locate curre
       no kind-label anywhere, so the task proceeds. Wired: `read_lenses` runs in `run_study` and
       `lenses.produced` is consumed by vectors; drawn by `lens_frames` through the one command. Open
       as a candidate with 2.3 while `place_codes_reference` is UNGATEABLE.)*
+      *(DONE 2026-10-12, later, with 2.3: the kernel's certificate exists, the lens gallery draws on
+      every real run, and the lenses record is consumed by the bundles.)*
 
 ## 3. The bundles MVP — delegable
 
@@ -254,6 +301,11 @@ or certified. The dated reconciliation run and `docs/BUILD_PLAN.md` locate curre
       with edge kinds and trace codes, and `through_plane:<uid>` are written, each naming its source
       stage. The SEEDS are not in `came_out` and are owed. Candidate while `count_by_extent` is
       UNGATEABLE.)*
+      *(2026-10-12, later: the seeds are in `came_out`, counted inside the extent from the markers
+      field alone, and tested. Under the plain contract form `count_by_extent` is Incomplete 9/10:
+      its last survivor is unresolved because the engine crashed in survivor classification on the
+      authored input (engine defect 1, `measurements/remaining-gaps-20261012.md` §4). Open on that
+      certificate alone.)*
 - [ ] 3.3 Wire and render it: the count table, with unavailable banks visible as unavailable. Verify
       no bank is written under the name of a bank whose definition is unsettled.
       *(Wired and drawn under 6.7: `bundle_frames` draws one table per profile with unavailable banks

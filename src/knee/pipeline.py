@@ -61,7 +61,12 @@ from knee.vectors.bundles import BundlesReading, read_bundles
 ROUTE: tuple[tuple[str, str], ...] = (
     ("study", "built"),  # the input, whole at stored fidelity
     ("collapse", "partly"),  # the FIELD: regime, noise law, physical frame, the squint
-    ("lenses", "not_built"),  # every place, every acquisition, one ternary digit
+    # `partly`: every place of every acquisition carries one ternary digit per seated member
+    # against that series' own edges, silence distinct, drawn on every real run and consumed by
+    # the bundles (tasks 2.3 and 2.4, certified under the plain contract form); `normalisation:
+    # none` is recorded, because the local structural normalisation that precedes the digits is
+    # the founder's, and no document may imply the stage is complete without it.
+    ("lenses", "partly"),  # every place, every acquisition, one ternary digit
     ("objects", "partly"),  # the <object>s, and SS6's refinement of their borders
     ("relations", "not_built"),  # carries its pairings; interstice extent still absent
     ("ownership", "built"),  # one member per parse, consumed and rendered

@@ -1,5 +1,10 @@
 # Chapter 2 — `collapse`. Where it stands.
 
+**2026-10-12, the close of the composition session.** The route is one artifact on the one
+study, every stage running, recording and drawing; the standing per section is the close-out at
+the top of `openspec/changes/every-stage-renders/tasks.md`, and the next step is the founder's
+grading round (`docs/BUILD_PLAN.md`). [RESUME.md](RESUME.md) starts there.
+
 **2026-10-12, later: the remaining gaps.** The field stage carries the structural reading the
 render probes held (air by connection to the border, the leg closed, the axis from the header, the
 profile superior first, two basins and the seam, the darkest places and the largest bodies), wired
