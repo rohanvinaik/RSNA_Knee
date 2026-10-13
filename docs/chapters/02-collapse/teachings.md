@@ -999,3 +999,73 @@ later."
 5. **The lead speaks his words, not its own.** "Member", "standing", "parse" and the like are the
    build's names, not the project's language in conversation with him. A question he cannot read is
    not a question.
+
+---
+
+## 2026-10-13 — THE SQUINT LINES THE FREE LENSES UP, and the plan
+
+The session compacted between his six answers and the lead's reply. His words on that, which are a
+ruling on the working method: "compacting is ANTI-correlated with the truth. And for this session in
+PARTICULAR, the whole point was to NOT have you ground in the session context as it exists, because I
+wanted an INDEPENDENT review"; "Don't follow the instructions for the post-compact grounding, that's
+antithietical to what I'm trying to do here"; then "Just read my prompts from the pre-compact session,
+all of them, then read the prompt sent to codex in full, then your last two responses (and my last
+response between them)"; and when the lead read the hook's selection of his prompts instead of the
+transcript: "That hook has OPINIONS on the prompts, selects between them. I didn't say "read the
+pre-compact hook slection of prompts". I said "read all of my prompts from last session""; "Not the
+tool results. JUST my prompts. Like, my LITERAL words"; "I did not say to skip images". The lead then
+read every message he typed, with the picture he attached, from the transcript itself.
+
+The lead had asked whether the two coronal series, which have different pixel counts and pixel
+sizes, should be laid over each other pixel by pixel or tile by tile. He answered with a question:
+
+> "That last question should be pretty obvious to answer, if you understand this correctly. You saw
+> the image. Tell me--if the coronal view has slightly different pixel counts, what's the
+> common-sense explanation for how two images with different pixel counts can show almost precisely
+> the same view, and thus be superimposed upon one another to more clearly resolve objects in the
+> visual field?"
+
+The lead answered: one physical knee, lying still, in one scanner, in one plane; the pixel count is a
+setting of the camera, not a property of the knee; each file says how big its pixels are in
+millimetres and where its corner sits, so superposition is "same place on the knee", not "same
+pixel"; the squint makes it trivial, since a tile is a patch of the knee in millimetres and a shift
+of a millimetre or two vanishes inside it; pixel agreement matters only where a boundary is drawn.
+His confirmation:
+
+> "Good! Yes, the squint is how you make it cheap, you just kinda...line it up. That's all. The
+> lenses, the actual analyses do the actual line-drawing and precise resolution. But for information,
+> to help understand the significance, and eventually to diagnose the condition? It's the same
+> fucking image, just sorta scootch it a bit, and you're good. It's the same thing."
+
+> "Cool beans! So, now do you understand how you've been missing the obvious thing, and thus how we
+> should work through making this an ACTUAL production computer vision pipeline of the kind
+> described in the \<object> thesis? I only talked about the tibia/femur, we need to be able to
+> resolve ALL of the relevant anatomical objects to diagnose between the 12 conditions the
+> competition asks us to resolve. We need to make this clean, do it in the way that the problem
+> space and the solution I've designed makes obvious. See how we should do that?"
+
+The lead's restatement (the funnel in seven steps: background versus leg per view at the squint,
+frozen; the free lenses lined up by place on the knee; the two big bones from the gap by the dome at
+the squint; the spaces between constructed, their contents located by them; each view resolving what
+it sees best, carried across views in millimetres; the twelve read off the objects; the code in the
+same shape) is in `readings/the-funnel-plan-lead-20261013.md` §3. His confirmation:
+
+> "Excellent work! For once, you actually AREN'T wrong about this! This is the correct epistemology
+> and workflow. I'd like to plan it out properly. Work through this, send off a codex consult (do
+> big-boy consolut; GPT-6 Astra on Max). Once it's set, then let's work through a RIGOROUS and
+> unambiguous plan to implement, then fire it off with a workflow or something to plow through it as
+> mechanically as we can. As you can see from the way I've been articulating it, a LOT of this is
+> common sense, if you're disciplined about holding to the epistemology I've communicated to you
+> this session."
+
+### What this settles
+
+1. **The frame for the two acquisitions is the knee itself, in the scanner's millimetres.** The
+   pixel grid is the instrument's; the squint lines the two lenses up by place, cheaply; the
+   analyses draw the lines at native resolution where they are needed.
+2. **The funnel is the pipeline, confirmed in his words**, and the scope is every element the twelve
+   findings need, not the two bones alone.
+3. **The order of work is his:** the plan, consulted with Codex (GPT-6 Astra, highest effort), then a
+   rigorous and unambiguous implementation plan, then a workflow to carry it out mechanically.
+4. **After a compaction, his words are read from the transcript**, every one he typed, with what he
+   attached, never from a selection and never from the summary.
