@@ -279,9 +279,25 @@ under 7.7, with the round-trip tests as its behaviour pin.
   renderer's own refusal `acquired_plane_unavailable`. The lead accepts that as arrangement, and
   the name stays. Its report, requested as a file after the post-compaction lock refused its
   messages, is `builder-writer-2-report.md` in the session scratchpad.
-- The drawers builder's report never arrived: it went idle under the same lock, and its files
-  were read whole instead (§7). The writer's `origin_spread_mm` line was the lead's, once the
-  series run carried the field, which the writer builder had correctly refused to add in `src`.
+- The drawers builder's report arrived after the second half was committed (`25a2581`): it went
+  idle under the same lock, and its files had been read whole instead (§7). Its own evidence: the
+  render tests and the whole suite passing, `just imports` kept, and a 180-check adversarial
+  probe of every new reader and refusal in the scratchpad. It left two defects, on the lead's
+  instruction to change nothing further, both repaired after the commit: `saved_gap` in the bundle
+  drawer lost its type narrowing to a ruff rewrite (three ty findings), now a `saved_number`
+  reader that narrows; and the corpus label text joined a code and its count without a colon. Its
+  third observation stands as the data: the test split's 3 studies and 15 series are invisible
+  bars beside the training split's. It kept the existing readers raising on a tampered array or a
+  word outside a stage's vocabulary, because the tests pin that, and made every new absence a
+  named silence; the lead keeps both. It added no `DRAWINGS` entry for the corpus drawer, which
+  takes a receipt and not a study, and asked which of two wirings was wanted; the writer call was
+  the lead's answer. Its slips, self-reported: one inline interpreter call (to print a picture's
+  pixel size), three line-window reads of files it had already read whole, and one shared scratch
+  file of an earlier builder overwritten (`crop.py`). It names `tile_placement` and `saved_gap`
+  as pure decisions it left unpinned; `superior_end` and `saved_shape` have the lead's tests and
+  `superior_end` its certificate (§7).
+- The writer's `origin_spread_mm` line was the lead's, once the series run carried the field,
+  which the writer builder had correctly refused to add in `src`.
 
 ## 9. Open, after this record
 
