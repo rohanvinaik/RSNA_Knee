@@ -329,6 +329,27 @@
       ]
     }
   ],
+  "src/knee/collapse/structure.py::axis_code::7f65126b1ddcb219": [
+    {
+      "assertion_code": "result = axis_code(along_rows_z=0.0, along_columns_z=0.0, normal_z=-0.5)\nassert result == 'normal'",
+      "category": "VALUE",
+      "confidence": 0.95,
+      "function_key": "",
+      "golden_case": null,
+      "mutant_id": "",
+      "needs_oracle": false,
+      "preconditions": [
+        "distinguishing witness (equivalence search)"
+      ],
+      "setup_code": "from knee.collapse.structure import axis_code",
+      "source_lenses": [
+        "witness"
+      ]
+    }
+  ],
+  "src/knee/collapse/structure.py::structure_code::ea8707987ffd13d8": [],
+  "src/knee/collapse/structure.py::superior_code::f1a8e6e3e6a3f964": [],
+  "src/knee/collapse/structure.py::told_sign::16dfc72a24b07462": [],
   "src/knee/lenses/digits.py::band_width::fdd83186b1d8a506": [
     {
       "assertion_code": "result = band_width(place_sigma=2.0, witness_spread=0.0, band_k=1.0)\nassert result == 2.0",
@@ -392,7 +413,57 @@
   "src/knee/lenses/digits.py::is_read::0e958d5e211bfb4c": [],
   "src/knee/lenses/members.py::is_retained::ad63af29ebb8499c": [],
   "src/knee/lenses/members.py::standing_code::3d34afd7191c8e7a": [],
-  "src/knee/lenses/places.py::place_codes_reference::6db9e8c59715baf0": [],
+  "src/knee/lenses/places.py::place_codes_reference::a19d7c856f570a95": [
+    {
+      "assertion_code": "try:\n    _result = place_codes_reference(values=None, low_edge=1.0, high_edge=1.0, population_count=1, minimum_population=1)\nexcept AttributeError as _exc:\n    assert str(_exc) == \"'NoneType' object has no attribute 'shape'\"\nexcept BaseException as _exc:\n    pytest.fail(f\"expected AttributeError, got {type(_exc).__name__}: {_exc!r}\")\nelse:\n    pytest.fail(f\"expected AttributeError, but the call returned {_result!r}\")",
+      "category": "VALUE",
+      "confidence": 0.95,
+      "function_key": "",
+      "golden_case": null,
+      "mutant_id": "",
+      "needs_oracle": false,
+      "preconditions": [
+        "distinguishing witness (original raises AttributeError: 'NoneType' object has no attribute 'shape')"
+      ],
+      "setup_code": "from knee.lenses.places import place_codes_reference\nimport pytest",
+      "source_lenses": [
+        "witness"
+      ]
+    },
+    {
+      "assertion_code": "result = place_codes_reference(values=numpy.array([], dtype='<i8').reshape((0,)), low_edge=-1.0, high_edge=-1.0, population_count=-1, minimum_population=-1)\nassert repr(result) == 'array([], dtype=uint8)'",
+      "category": "VALUE",
+      "confidence": 0.95,
+      "function_key": "",
+      "golden_case": null,
+      "mutant_id": "",
+      "needs_oracle": false,
+      "preconditions": [
+        "distinguishing witness (equivalence search)"
+      ],
+      "setup_code": "from knee.lenses.places import place_codes_reference\nimport numpy",
+      "source_lenses": [
+        "witness"
+      ]
+    },
+    {
+      "assertion_code": "result = place_codes_reference(values=numpy.array([[0]], dtype='<i8').reshape((1, 1)), low_edge=2.5, high_edge=2.5, population_count=2, minimum_population=2)\nassert repr(result) == 'array([[0]], dtype=uint8)'",
+      "category": "VALUE",
+      "confidence": 0.95,
+      "function_key": "",
+      "golden_case": null,
+      "mutant_id": "",
+      "needs_oracle": false,
+      "preconditions": [
+        "distinguishing witness (equivalence search)"
+      ],
+      "setup_code": "from knee.lenses.places import place_codes_reference\nimport numpy",
+      "source_lenses": [
+        "witness"
+      ]
+    }
+  ],
+  "src/knee/lenses/slab_kernels.py::slab_codes_reference::1168803f6a08188e": [],
   "src/knee/lenses/slabs.py::gap_fraction::0d7066709ec64249": [
     {
       "assertion_code": "result = gap_fraction(thickness_mm=-1.0, spacing_mm=-1.0)\nassert result == 0.0\nassert repr(result) == '0.0'",
@@ -481,6 +552,90 @@
     }
   ],
   "src/knee/output/projection.py::output_code::f84bd557fa1f458d": [],
+  "src/knee/output/projection.py::read_output::347395ffdfd2e1c2": [
+    {
+      "assertion_code": "result = read_output(None)\nassert repr(result) == \"OutputReading(code='predecessor_absent', why='no findings reading was handed to this stage', companion=(), projection=None, rows=None)\"",
+      "category": "VALUE",
+      "confidence": 0.9,
+      "function_key": "",
+      "golden_case": null,
+      "mutant_id": "",
+      "needs_oracle": false,
+      "preconditions": [
+        "golden capture (pure + deterministic)"
+      ],
+      "setup_code": "from knee.output.projection import read_output",
+      "source_lenses": [
+        "golden_capture"
+      ]
+    },
+    {
+      "assertion_code": "result = read_output(findings=FindingsReading(code='present', why='1 of 1 series resolved a partition; 0 resolved a construction (0 in all); 0 wrote profiles (0 in all)', findings=(Finding(index=0, requirement='an object', code='form_not_given', reason=\"requires an object; the predicate's form on this subject has not been given\", subjects=(0, 0), candidates=0, profiles=0), Finding(index=1, requirement='an object', code='form_not_given', reason=\"requires an object; the predicate's form on this subject has not been given\", subjects=(0, 0), candidates=0, profiles=0), Finding(index=2, requirement='an interstice of a facing pair', code='subject_unconstructed', reason='requires an interstice of a facing pair; no such relation is constructed in this build', subjects=(0, 0), candidates=0, profiles=0), Finding(index=3, requirement='an interstice of a facing pair', code='subject_unconstructed', reason='requires an interstice of a facing pair; no such relation is constructed in this build', subjects=(0, 0), candidates=0, profiles=0), Finding(index=4, requirement='an interstice of a facing pair', code='subject_unconstructed', reason='requires an interstice of a facing pair; no such relation is constructed in this build', subjects=(0, 0), candidates=0, profiles=0), Finding(index=5, requirement='the content of an interstice', code='subject_unconstructed', reason='requires the content of an interstice; no such relation is constructed in this build', subjects=(0, 0), candidates=0, profiles=0), Finding(index=6, requirement='the content of an interstice', code='subject_unconstructed', reason='requires the content of an interstice; no such relation is constructed in this build', subjects=(0, 0), candidates=0, profiles=0), Finding(index=7, requirement='the content of an interstice', code='subject_unconstructed', reason='requires the content of an interstice; no such relation is constructed in this build', subjects=(0, 0), candidates=0, profiles=0), Finding(index=8, requirement='a span attached to two objects', code='subject_unconstructed', reason='requires a span attached to two objects; no such relation is constructed in this build', subjects=(0, 0), candidates=0, profiles=0), Finding(index=9, requirement='an envelope', code='subject_unconstructed', reason='requires an envelope; no such relation is constructed in this build', subjects=(0, 0), candidates=0, profiles=0), Finding(index=10, requirement='the lining of an envelope', code='subject_unconstructed', reason='requires the lining of an envelope; no such relation is constructed in this build', subjects=(0, 0), candidates=0, profiles=0), Finding(index=11, requirement='an envelope', code='subject_unconstructed', reason='requires an envelope; no such relation is constructed in this build', subjects=(0, 0), candidates=0, profiles=0)), series_with_population=1, series_with_construction=0, series_with_profiles=0), projection=Projection(value=0.5, author='a test, not the founder', declared='2026-10-12'))\nassert repr(result) == 'OutputReading(code=\\'present\\', why=\\'every finding has a column and the projection is declared\\', companion=(CompanionRow(index=0, column=\\'Fracture\\', code=\\'form_not_given\\', reason=\"requires an object; the predicate\\'s form on this subject has not been given\", subjects=(0, 0), candidates=0), CompanionRow(index=1, column=\\'Contusion\\', code=\\'form_not_given\\', reason=\"requires an object; the predicate\\'s form on this subject has not been given\", subjects=(0, 0), candidates=0), CompanionRow(index=2, column=\\'Medial OA\\', code=\\'subject_unconstructed\\', reason=\\'requires an interstice of a facing pair; no such relation is constructed in this build\\', subjects=(0, 0), candidates=0), CompanionRow(index=3, column=\\'Lateral OA\\', code=\\'subject_unconstructed\\', reason=\\'requires an interstice of a facing pair; no such relation is constructed in this build\\', subjects=(0, 0), candidates=0), CompanionRow(index=4, column=\\'PF OA\\', code=\\'subject_unconstructed\\', reason=\\'requires an interstice of a facing pair; no such relation is constructed in this build\\', subjects=(0, 0), candidates=0), CompanionRow(index=5, column=\\'Medial Meniscus\\', code=\\'subject_unconstructed\\', reason=\\'requires the content of an interstice; no such relation is constructed in this build\\', subjects=(0, 0), candidates=0), CompanionRow(index=6, column=\\'Lateral Meniscus\\', code=\\'subject_unconstructed\\', reason=\\'requires the content of an interstice; no such relation is constructed in this build\\', subjects=(0, 0), candidates=0), CompanionRow(index=7, column=\\'ACL\\', code=\\'subject_unconstructed\\', reason=\\'requires the content of an interstice; no such relation is constructed in this build\\', subjects=(0, 0), candidates=0), CompanionRow(index=8, column=\\'MCL\\', code=\\'subject_unconstructed\\', reason=\\'requires a span attached to two objects; no such relation is constructed in this build\\', subjects=(0, 0), candidates=0), CompanionRow(index=9, column=\\'Effusion\\', code=\\'subject_unconstructed\\', reason=\\'requires an envelope; no such relation is constructed in this build\\', subjects=(0, 0), candidates=0), CompanionRow(index=10, column=\\'Synovitis\\', code=\\'subject_unconstructed\\', reason=\\'requires the lining of an envelope; no such relation is constructed in this build\\', subjects=(0, 0), candidates=0), CompanionRow(index=11, column=\"Baker\\'s\", code=\\'subject_unconstructed\\', reason=\\'requires an envelope; no such relation is constructed in this build\\', subjects=(0, 0), candidates=0)), projection=Projection(value=0.5, author=\\'a test, not the founder\\', declared=\\'2026-10-12\\'), rows=((\\'Fracture\\', 0.5), (\\'Contusion\\', 0.5), (\\'Medial OA\\', 0.5), (\\'Lateral OA\\', 0.5), (\\'PF OA\\', 0.5), (\\'Medial Meniscus\\', 0.5), (\\'Lateral Meniscus\\', 0.5), (\\'ACL\\', 0.5), (\\'MCL\\', 0.5), (\\'Effusion\\', 0.5), (\\'Synovitis\\', 0.5), (\"Baker\\'s\", 0.5)))'",
+      "category": "VALUE",
+      "confidence": 0.95,
+      "function_key": "",
+      "golden_case": null,
+      "mutant_id": "",
+      "needs_oracle": false,
+      "preconditions": [
+        "distinguishing witness (equivalence search)"
+      ],
+      "setup_code": "from knee.output.projection import read_output\nfrom knee.predicates.findings import FindingsReading\nfrom knee.predicates.findings import Finding\nfrom knee.output.projection import Projection",
+      "source_lenses": [
+        "witness"
+      ]
+    },
+    {
+      "assertion_code": "result = read_output(findings=FindingsReading(code='present', why='1 of 1 series resolved a partition; 0 resolved a construction (0 in all); 0 wrote profiles (0 in all)', findings=(Finding(index=0, requirement='an object', code='form_not_given', reason=\"requires an object; the predicate's form on this subject has not been given\", subjects=(0, 0), candidates=0, profiles=0), Finding(index=1, requirement='an object', code='form_not_given', reason=\"requires an object; the predicate's form on this subject has not been given\", subjects=(0, 0), candidates=0, profiles=0), Finding(index=2, requirement='an interstice of a facing pair', code='subject_unconstructed', reason='requires an interstice of a facing pair; no such relation is constructed in this build', subjects=(0, 0), candidates=0, profiles=0), Finding(index=3, requirement='an interstice of a facing pair', code='subject_unconstructed', reason='requires an interstice of a facing pair; no such relation is constructed in this build', subjects=(0, 0), candidates=0, profiles=0), Finding(index=4, requirement='an interstice of a facing pair', code='subject_unconstructed', reason='requires an interstice of a facing pair; no such relation is constructed in this build', subjects=(0, 0), candidates=0, profiles=0), Finding(index=5, requirement='the content of an interstice', code='subject_unconstructed', reason='requires the content of an interstice; no such relation is constructed in this build', subjects=(0, 0), candidates=0, profiles=0), Finding(index=6, requirement='the content of an interstice', code='subject_unconstructed', reason='requires the content of an interstice; no such relation is constructed in this build', subjects=(0, 0), candidates=0, profiles=0), Finding(index=7, requirement='the content of an interstice', code='subject_unconstructed', reason='requires the content of an interstice; no such relation is constructed in this build', subjects=(0, 0), candidates=0, profiles=0), Finding(index=8, requirement='a span attached to two objects', code='subject_unconstructed', reason='requires a span attached to two objects; no such relation is constructed in this build', subjects=(0, 0), candidates=0, profiles=0), Finding(index=9, requirement='an envelope', code='subject_unconstructed', reason='requires an envelope; no such relation is constructed in this build', subjects=(0, 0), candidates=0, profiles=0), Finding(index=10, requirement='the lining of an envelope', code='subject_unconstructed', reason='requires the lining of an envelope; no such relation is constructed in this build', subjects=(0, 0), candidates=0, profiles=0), Finding(index=11, requirement='an envelope', code='subject_unconstructed', reason='requires an envelope; no such relation is constructed in this build', subjects=(0, 0), candidates=0, profiles=0)), series_with_population=1, series_with_construction=0, series_with_profiles=0), projection=None)\nassert repr(result) == 'OutputReading(code=\\'projection_undeclared\\', why=\\'the companion record is complete; the numeric projection has not been declared, so no submission row is written\\', companion=(CompanionRow(index=0, column=\\'Fracture\\', code=\\'form_not_given\\', reason=\"requires an object; the predicate\\'s form on this subject has not been given\", subjects=(0, 0), candidates=0), CompanionRow(index=1, column=\\'Contusion\\', code=\\'form_not_given\\', reason=\"requires an object; the predicate\\'s form on this subject has not been given\", subjects=(0, 0), candidates=0), CompanionRow(index=2, column=\\'Medial OA\\', code=\\'subject_unconstructed\\', reason=\\'requires an interstice of a facing pair; no such relation is constructed in this build\\', subjects=(0, 0), candidates=0), CompanionRow(index=3, column=\\'Lateral OA\\', code=\\'subject_unconstructed\\', reason=\\'requires an interstice of a facing pair; no such relation is constructed in this build\\', subjects=(0, 0), candidates=0), CompanionRow(index=4, column=\\'PF OA\\', code=\\'subject_unconstructed\\', reason=\\'requires an interstice of a facing pair; no such relation is constructed in this build\\', subjects=(0, 0), candidates=0), CompanionRow(index=5, column=\\'Medial Meniscus\\', code=\\'subject_unconstructed\\', reason=\\'requires the content of an interstice; no such relation is constructed in this build\\', subjects=(0, 0), candidates=0), CompanionRow(index=6, column=\\'Lateral Meniscus\\', code=\\'subject_unconstructed\\', reason=\\'requires the content of an interstice; no such relation is constructed in this build\\', subjects=(0, 0), candidates=0), CompanionRow(index=7, column=\\'ACL\\', code=\\'subject_unconstructed\\', reason=\\'requires the content of an interstice; no such relation is constructed in this build\\', subjects=(0, 0), candidates=0), CompanionRow(index=8, column=\\'MCL\\', code=\\'subject_unconstructed\\', reason=\\'requires a span attached to two objects; no such relation is constructed in this build\\', subjects=(0, 0), candidates=0), CompanionRow(index=9, column=\\'Effusion\\', code=\\'subject_unconstructed\\', reason=\\'requires an envelope; no such relation is constructed in this build\\', subjects=(0, 0), candidates=0), CompanionRow(index=10, column=\\'Synovitis\\', code=\\'subject_unconstructed\\', reason=\\'requires the lining of an envelope; no such relation is constructed in this build\\', subjects=(0, 0), candidates=0), CompanionRow(index=11, column=\"Baker\\'s\", code=\\'subject_unconstructed\\', reason=\\'requires an envelope; no such relation is constructed in this build\\', subjects=(0, 0), candidates=0)), projection=None, rows=None)'",
+      "category": "VALUE",
+      "confidence": 0.95,
+      "function_key": "",
+      "golden_case": null,
+      "mutant_id": "",
+      "needs_oracle": false,
+      "preconditions": [
+        "distinguishing witness (equivalence search)"
+      ],
+      "setup_code": "from knee.output.projection import read_output\nfrom knee.predicates.findings import FindingsReading\nfrom knee.predicates.findings import Finding",
+      "source_lenses": [
+        "witness"
+      ]
+    }
+  ],
+  "src/knee/output/projection.py::submission_rows::569a0bcc097047b0": [
+    {
+      "assertion_code": "result = submission_rows(reading=OutputReading(code='present', why='w', companion=(), projection=None, rows=None), study_uid='uid')\nassert result == ('invalid_count', [])",
+      "category": "VALUE",
+      "confidence": 0.95,
+      "function_key": "",
+      "golden_case": null,
+      "mutant_id": "",
+      "needs_oracle": false,
+      "preconditions": [
+        "distinguishing witness (equivalence search)"
+      ],
+      "setup_code": "from knee.output.projection import submission_rows\nfrom knee.output.projection import OutputReading",
+      "source_lenses": [
+        "witness"
+      ]
+    },
+    {
+      "assertion_code": "result = submission_rows(reading=OutputReading(code='present', why='every finding has a column and the projection is declared', companion=(CompanionRow(index=0, column='Fracture', code='form_not_given', reason=\"requires an object; the predicate's form on this subject has not been given\", subjects=(0, 0), candidates=0), CompanionRow(index=1, column='Contusion', code='form_not_given', reason=\"requires an object; the predicate's form on this subject has not been given\", subjects=(0, 0), candidates=0), CompanionRow(index=2, column='Medial OA', code='subject_unconstructed', reason='requires an interstice of a facing pair; no such relation is constructed in this build', subjects=(0, 0), candidates=0), CompanionRow(index=3, column='Lateral OA', code='subject_unconstructed', reason='requires an interstice of a facing pair; no such relation is constructed in this build', subjects=(0, 0), candidates=0), CompanionRow(index=4, column='PF OA', code='subject_unconstructed', reason='requires an interstice of a facing pair; no such relation is constructed in this build', subjects=(0, 0), candidates=0), CompanionRow(index=5, column='Medial Meniscus', code='subject_unconstructed', reason='requires the content of an interstice; no such relation is constructed in this build', subjects=(0, 0), candidates=0), CompanionRow(index=6, column='Lateral Meniscus', code='subject_unconstructed', reason='requires the content of an interstice; no such relation is constructed in this build', subjects=(0, 0), candidates=0), CompanionRow(index=7, column='ACL', code='subject_unconstructed', reason='requires the content of an interstice; no such relation is constructed in this build', subjects=(0, 0), candidates=0), CompanionRow(index=8, column='MCL', code='subject_unconstructed', reason='requires a span attached to two objects; no such relation is constructed in this build', subjects=(0, 0), candidates=0), CompanionRow(index=9, column='Effusion', code='subject_unconstructed', reason='requires an envelope; no such relation is constructed in this build', subjects=(0, 0), candidates=0), CompanionRow(index=10, column='Synovitis', code='subject_unconstructed', reason='requires the lining of an envelope; no such relation is constructed in this build', subjects=(0, 0), candidates=0), CompanionRow(index=11, column=\"Baker's\", code='subject_unconstructed', reason='requires an envelope; no such relation is constructed in this build', subjects=(0, 0), candidates=0)), projection=Projection(value=0.25, author='a test, not the founder', declared='2026-10-12'), rows=(('Fracture', 0.25), ('Contusion', 0.25), ('Medial OA', 0.25), ('Lateral OA', 0.25), ('PF OA', 0.25), ('Medial Meniscus', 0.25), ('Lateral Meniscus', 0.25), ('ACL', 0.25), ('MCL', 0.25), ('Effusion', 0.25), ('Synovitis', 0.25), (\"Baker's\", 0.25))), study_uid='uid')\nassert result == ('written', ['uid', '0.25', '0.25', '0.25', '0.25', '0.25', '0.25', '0.25', '0.25', '0.25', '0.25', '0.25', '0.25'])",
+      "category": "VALUE",
+      "confidence": 0.95,
+      "function_key": "",
+      "golden_case": null,
+      "mutant_id": "",
+      "needs_oracle": false,
+      "preconditions": [
+        "distinguishing witness (equivalence search)"
+      ],
+      "setup_code": "from knee.output.projection import submission_rows\nfrom knee.output.projection import OutputReading\nfrom knee.output.projection import CompanionRow\nfrom knee.output.projection import Projection",
+      "source_lenses": [
+        "witness"
+      ]
+    }
+  ],
   "src/knee/ownership/claims.py::comparison_code::c3112d19c51eb4a3": [
     {
       "assertion_code": "result = comparison_code(first_places=0, second_places=-1, same_shape=False)\nassert result == 'invalid_count'",
@@ -499,9 +654,46 @@
       ]
     }
   ],
+  "src/knee/ownership/claims.py::conversed_parses::0ba08d95f7ff37de": [
+    {
+      "assertion_code": "result = conversed_parses(interiors=1, conversation=1)\nassert result == ()",
+      "category": "VALUE",
+      "confidence": 0.9,
+      "function_key": "",
+      "golden_case": [
+        "(1, 1)",
+        "()"
+      ],
+      "mutant_id": "",
+      "needs_oracle": false,
+      "preconditions": [
+        "golden capture (pure + deterministic)"
+      ],
+      "setup_code": "from knee.ownership.claims import conversed_parses",
+      "source_lenses": [
+        "golden_capture"
+      ]
+    },
+    {
+      "assertion_code": "result = conversed_parses(interiors=None, conversation=_Conversation(code='measured', concurrent_labels=None, conditional_labels=None))\nassert result == ()",
+      "category": "VALUE",
+      "confidence": 0.95,
+      "function_key": "",
+      "golden_case": null,
+      "mutant_id": "",
+      "needs_oracle": false,
+      "preconditions": [
+        "distinguishing witness (equivalence search)"
+      ],
+      "setup_code": "from knee.ownership.claims import conversed_parses\nfrom test_ownership_claims import _Conversation",
+      "source_lenses": [
+        "witness"
+      ]
+    }
+  ],
   "src/knee/ownership/claims.py::members_code::5bf873f55b566982": [],
   "src/knee/ownership/claims.py::ownership_code::14b86ed8dac6a8f6": [],
-  "src/knee/ownership/claims.py::read_ownership::e940ee21aa8b140f": [
+  "src/knee/ownership/claims.py::read_ownership::93874280a57b19c6": [
     {
       "assertion_code": "result = read_ownership(interiors=None)\nassert repr(result) == \"OwnershipReading(code='predecessor_absent', why='no interiors reading was handed to this stage', claims=array([], shape=(0, 0), dtype=bool), residual=array([], shape=(0, 0), dtype=bool), claimed_places=0, residual_places=0, unavailable_places=0, objects=0)\"",
       "category": "VALUE",
@@ -516,6 +708,61 @@
       "setup_code": "from knee.ownership.claims import read_ownership",
       "source_lenses": [
         "golden_capture"
+      ]
+    }
+  ],
+  "src/knee/ownership/claims.py::read_ownership_members::dceca5c736385647": [
+    {
+      "assertion_code": "result = read_ownership_members(interiors=1, conversation=1)\nassert repr(result) == 'OwnershipMembers(code=\\'invalid_count\\', why=\\'solitary parse only: the conversation did not read this series (unreadable)\\', members=(OwnershipMember(parse=\\'solitary\\', reading=OwnershipReading(code=\\'invalid_count\\', why=\"the interiors reading\\'s labels and availability do not read as one (R,C) field\", claims=array([], shape=(0, 0), dtype=bool), residual=array([], shape=(0, 0), dtype=bool), claimed_places=0, residual_places=0, unavailable_places=0, objects=0)),), comparison=\\'member_absent\\', disagreement=array([], shape=(0, 0), dtype=bool), disagreeing_places=0)'",
+      "category": "VALUE",
+      "confidence": 0.9,
+      "function_key": "",
+      "golden_case": null,
+      "mutant_id": "",
+      "needs_oracle": false,
+      "preconditions": [
+        "golden capture (pure + deterministic)"
+      ],
+      "setup_code": "from knee.ownership.claims import read_ownership_members",
+      "source_lenses": [
+        "golden_capture"
+      ]
+    }
+  ],
+  "src/knee/pictures/study.py::superior_end::25a39208fe948113": [
+    {
+      "assertion_code": "result = superior_end(axis_code='ambiguous', superior_code='increasing')\nassert result == 'axis_ambiguous'",
+      "category": "VALUE",
+      "confidence": 0.9,
+      "function_key": "",
+      "golden_case": [
+        "('ambiguous', 'increasing')",
+        "'axis_ambiguous'"
+      ],
+      "mutant_id": "",
+      "needs_oracle": false,
+      "preconditions": [
+        "golden capture (pure + deterministic)"
+      ],
+      "setup_code": "from knee.pictures.study import superior_end",
+      "source_lenses": [
+        "golden_capture"
+      ]
+    },
+    {
+      "assertion_code": "result = superior_end(axis_code=None, superior_code='')\nassert result == 'not_saved'",
+      "category": "VALUE",
+      "confidence": 0.95,
+      "function_key": "",
+      "golden_case": null,
+      "mutant_id": "",
+      "needs_oracle": false,
+      "preconditions": [
+        "distinguishing witness (equivalence search)"
+      ],
+      "setup_code": "from knee.pictures.study import superior_end",
+      "source_lenses": [
+        "witness"
       ]
     }
   ],
@@ -560,6 +807,40 @@
       ]
     }
   ],
+  "src/knee/predicates/findings.py::read_findings::be1023bab14496da": [
+    {
+      "assertion_code": "result = read_findings(None)\nassert repr(result) == \"FindingsReading(code='predecessor_absent', why='no series reading was handed to this stage', findings=(Finding(index=0, requirement='an object', code='subject_population_empty', reason='requires an object; no extent was resolved in any series of this study', subjects=(0, 0), candidates=0, profiles=0), Finding(index=1, requirement='an object', code='subject_population_empty', reason='requires an object; no extent was resolved in any series of this study', subjects=(0, 0), candidates=0, profiles=0), Finding(index=2, requirement='an interstice of a facing pair', code='subject_unconstructed', reason='requires an interstice of a facing pair; no such relation is constructed in this build', subjects=(0, 0), candidates=0, profiles=0), Finding(index=3, requirement='an interstice of a facing pair', code='subject_unconstructed', reason='requires an interstice of a facing pair; no such relation is constructed in this build', subjects=(0, 0), candidates=0, profiles=0), Finding(index=4, requirement='an interstice of a facing pair', code='subject_unconstructed', reason='requires an interstice of a facing pair; no such relation is constructed in this build', subjects=(0, 0), candidates=0, profiles=0), Finding(index=5, requirement='the content of an interstice', code='subject_unconstructed', reason='requires the content of an interstice; no such relation is constructed in this build', subjects=(0, 0), candidates=0, profiles=0), Finding(index=6, requirement='the content of an interstice', code='subject_unconstructed', reason='requires the content of an interstice; no such relation is constructed in this build', subjects=(0, 0), candidates=0, profiles=0), Finding(index=7, requirement='the content of an interstice', code='subject_unconstructed', reason='requires the content of an interstice; no such relation is constructed in this build', subjects=(0, 0), candidates=0, profiles=0), Finding(index=8, requirement='a span attached to two objects', code='subject_unconstructed', reason='requires a span attached to two objects; no such relation is constructed in this build', subjects=(0, 0), candidates=0, profiles=0), Finding(index=9, requirement='an envelope', code='subject_unconstructed', reason='requires an envelope; no such relation is constructed in this build', subjects=(0, 0), candidates=0, profiles=0), Finding(index=10, requirement='the lining of an envelope', code='subject_unconstructed', reason='requires the lining of an envelope; no such relation is constructed in this build', subjects=(0, 0), candidates=0, profiles=0), Finding(index=11, requirement='an envelope', code='subject_unconstructed', reason='requires an envelope; no such relation is constructed in this build', subjects=(0, 0), candidates=0, profiles=0)), series_with_population=0, series_with_construction=0, series_with_profiles=0)\"",
+      "category": "VALUE",
+      "confidence": 0.9,
+      "function_key": "",
+      "golden_case": null,
+      "mutant_id": "",
+      "needs_oracle": false,
+      "preconditions": [
+        "golden capture (pure + deterministic)"
+      ],
+      "setup_code": "from knee.predicates.findings import read_findings",
+      "source_lenses": [
+        "golden_capture"
+      ]
+    },
+    {
+      "assertion_code": "result = read_findings(())\nassert repr(result) == \"FindingsReading(code='predecessor_empty', why='a series reading was handed over and it held no series', findings=(Finding(index=0, requirement='an object', code='subject_population_empty', reason='requires an object; no extent was resolved in any series of this study', subjects=(0, 0), candidates=0, profiles=0), Finding(index=1, requirement='an object', code='subject_population_empty', reason='requires an object; no extent was resolved in any series of this study', subjects=(0, 0), candidates=0, profiles=0), Finding(index=2, requirement='an interstice of a facing pair', code='subject_unconstructed', reason='requires an interstice of a facing pair; no such relation is constructed in this build', subjects=(0, 0), candidates=0, profiles=0), Finding(index=3, requirement='an interstice of a facing pair', code='subject_unconstructed', reason='requires an interstice of a facing pair; no such relation is constructed in this build', subjects=(0, 0), candidates=0, profiles=0), Finding(index=4, requirement='an interstice of a facing pair', code='subject_unconstructed', reason='requires an interstice of a facing pair; no such relation is constructed in this build', subjects=(0, 0), candidates=0, profiles=0), Finding(index=5, requirement='the content of an interstice', code='subject_unconstructed', reason='requires the content of an interstice; no such relation is constructed in this build', subjects=(0, 0), candidates=0, profiles=0), Finding(index=6, requirement='the content of an interstice', code='subject_unconstructed', reason='requires the content of an interstice; no such relation is constructed in this build', subjects=(0, 0), candidates=0, profiles=0), Finding(index=7, requirement='the content of an interstice', code='subject_unconstructed', reason='requires the content of an interstice; no such relation is constructed in this build', subjects=(0, 0), candidates=0, profiles=0), Finding(index=8, requirement='a span attached to two objects', code='subject_unconstructed', reason='requires a span attached to two objects; no such relation is constructed in this build', subjects=(0, 0), candidates=0, profiles=0), Finding(index=9, requirement='an envelope', code='subject_unconstructed', reason='requires an envelope; no such relation is constructed in this build', subjects=(0, 0), candidates=0, profiles=0), Finding(index=10, requirement='the lining of an envelope', code='subject_unconstructed', reason='requires the lining of an envelope; no such relation is constructed in this build', subjects=(0, 0), candidates=0, profiles=0), Finding(index=11, requirement='an envelope', code='subject_unconstructed', reason='requires an envelope; no such relation is constructed in this build', subjects=(0, 0), candidates=0, profiles=0)), series_with_population=0, series_with_construction=0, series_with_profiles=0)\"",
+      "category": "VALUE",
+      "confidence": 0.9,
+      "function_key": "",
+      "golden_case": null,
+      "mutant_id": "",
+      "needs_oracle": false,
+      "preconditions": [
+        "golden capture (pure + deterministic)"
+      ],
+      "setup_code": "from knee.predicates.findings import read_findings",
+      "source_lenses": [
+        "golden_capture"
+      ]
+    }
+  ],
   "src/knee/relations/pair_codes.py::pair_code::8a2b51677a4cb4a9": [
     {
       "assertion_code": "result = pair_code(source=1, trace=7, near=[], far=[1, 1])\nassert result == 'profile_unbracketed'",
@@ -595,7 +876,25 @@
     }
   ],
   "src/knee/relations/pairings.py::footprint_labels_reference::55e517e2226b89dc": [],
-  "src/knee/relations/shell.py::read_relations::055ac1a06ff83e35": [
+  "src/knee/relations/pairings.py::read_pairings::fc800cf45a0cd495": [
+    {
+      "assertion_code": "result = read_pairings(interiors=1, spacing_rc=1)\nassert repr(result) == \"PairingReading(code='invalid_count', why='the interiors reading handed over does not read as one', source_labels=array([], dtype=int32), far_labels=array([], dtype=int32), trace_codes=array([], dtype=uint8), outcome_codes=array([], dtype=uint8), positions_rc=array([], shape=(0, 2, 2), dtype=float64), contributor_labels=array([], shape=(0, 2, 4), dtype=int32), band_limits_mm=array([], shape=(0, 2), dtype=float64), counts=mappingproxy({'paired': 0, 'profile_unbracketed': 0, 'item_unread': 0, 'invalid_measurement': 0, 'source_unassigned': 0, 'far_unassigned': 0, 'source_ambiguous': 0, 'far_ambiguous': 0, 'source_mismatch': 0, 'same_object': 0}), scope='selected-plane sample-supported pairs; complete interstice extent unresolved')\"",
+      "category": "VALUE",
+      "confidence": 0.9,
+      "function_key": "",
+      "golden_case": null,
+      "mutant_id": "",
+      "needs_oracle": false,
+      "preconditions": [
+        "golden capture (pure + deterministic)"
+      ],
+      "setup_code": "from knee.relations.pairings import read_pairings",
+      "source_lenses": [
+        "golden_capture"
+      ]
+    }
+  ],
+  "src/knee/relations/shell.py::read_relations::b46b4f01496a5f6a": [
     {
       "assertion_code": "result = read_relations(None)\nassert repr(result) == 'RelationsReading(code=\\'construction_absent\\', why=\"The complete interstice extent (task 1.3a\\'s second obligation) has not been built: sample-supported pairs across dark brackets are retained in `pairings`, but no record yet says the extent, walls, fill or contents of the space between two objects, so no interstice is constructed in this build.\", interstices=(), pairings=PairingReading(code=\\'predecessor_absent\\', why=\\'predecessor_absent\\', source_labels=array([], dtype=int32), far_labels=array([], dtype=int32), trace_codes=array([], dtype=uint8), outcome_codes=array([], dtype=uint8), positions_rc=array([], shape=(0, 2, 2), dtype=float64), contributor_labels=array([], shape=(0, 2, 4), dtype=int32), band_limits_mm=array([], shape=(0, 2), dtype=float64), counts=mappingproxy({\\'paired\\': 0, \\'profile_unbracketed\\': 0, \\'item_unread\\': 0, \\'invalid_measurement\\': 0, \\'source_unassigned\\': 0, \\'far_unassigned\\': 0, \\'source_ambiguous\\': 0, \\'far_ambiguous\\': 0, \\'source_mismatch\\': 0, \\'same_object\\': 0}), scope=\\'selected-plane sample-supported pairs; complete interstice extent unresolved\\'))'",
       "category": "VALUE",
@@ -613,9 +912,113 @@
       ]
     }
   ],
+  "src/knee/study/series.py::selected_slice::a32a2fa71e72d254": [],
+  "src/knee/study/series.py::walk_indices::0a3769da8ac9eadf": [
+    {
+      "assertion_code": "result = walk_indices(1)\nassert result == (0,)\nassert type(result[0]) is int",
+      "category": "VALUE",
+      "confidence": 0.95,
+      "function_key": "",
+      "golden_case": null,
+      "mutant_id": "",
+      "needs_oracle": false,
+      "preconditions": [
+        "distinguishing witness (equivalence search)",
+        "outcomes ==-equal; distinction pinned by type/repr"
+      ],
+      "setup_code": "from knee.study.series import walk_indices",
+      "source_lenses": [
+        "witness"
+      ]
+    },
+    {
+      "assertion_code": "result = walk_indices(slices=1, walk_count=1)\nassert result == (0,)",
+      "category": "VALUE",
+      "confidence": 0.95,
+      "function_key": "",
+      "golden_case": null,
+      "mutant_id": "",
+      "needs_oracle": false,
+      "preconditions": [
+        "distinguishing witness (equivalence search)"
+      ],
+      "setup_code": "from knee.study.series import walk_indices",
+      "source_lenses": [
+        "witness"
+      ]
+    },
+    {
+      "assertion_code": "result = walk_indices(slices=1, walk_count=-1)\nassert result == ()",
+      "category": "VALUE",
+      "confidence": 0.95,
+      "function_key": "",
+      "golden_case": null,
+      "mutant_id": "",
+      "needs_oracle": false,
+      "preconditions": [
+        "distinguishing witness (equivalence search)"
+      ],
+      "setup_code": "from knee.study.series import walk_indices",
+      "source_lenses": [
+        "witness"
+      ]
+    }
+  ],
+  "src/knee/study/shape.py::report_code::c92a624a59050be0": [],
   "src/knee/vectors/bundles.py::bank_status_code::a57bd61b0c9d92a7": [],
-  "src/knee/vectors/bundles.py::count_by_extent::94be047ad879b824": [],
-  "src/knee/vectors/bundles.py::stage_code::b4f32508a1579bec": [
+  "src/knee/vectors/bundles.py::count_by_extent::383046098994cf34": [
+    {
+      "assertion_code": "try:\n    _result = count_by_extent(extent=numpy.array([1, 2], dtype='<i8').reshape((2,)), values=numpy.array([1, 2], dtype='<i8').reshape((2,)), extents=1, vocabulary=1)\nexcept ValueError as _exc:\n    assert str(_exc) == 'cannot reshape array of size 5 into shape (1,1)'\nexcept BaseException as _exc:\n    pytest.fail(f\"expected ValueError, got {type(_exc).__name__}: {_exc!r}\")\nelse:\n    pytest.fail(f\"expected ValueError, but the call returned {_result!r}\")",
+      "category": "VALUE",
+      "confidence": 0.95,
+      "function_key": "",
+      "golden_case": null,
+      "mutant_id": "",
+      "needs_oracle": false,
+      "preconditions": [
+        "distinguishing witness (original raises ValueError: cannot reshape array of size 5 into shape (1,1))"
+      ],
+      "setup_code": "from knee.vectors.bundles import count_by_extent\nimport numpy\nimport pytest",
+      "source_lenses": [
+        "witness"
+      ]
+    },
+    {
+      "assertion_code": "result = count_by_extent(extent=numpy.array([], dtype='<i8').reshape((0,)), values=numpy.array([0], dtype='<i8').reshape((1,)), extents=1, vocabulary=2)\nassert repr(result) == 'array([[0, 0]])'",
+      "category": "VALUE",
+      "confidence": 0.95,
+      "function_key": "",
+      "golden_case": null,
+      "mutant_id": "",
+      "needs_oracle": false,
+      "preconditions": [
+        "distinguishing witness (equivalence search)"
+      ],
+      "setup_code": "from knee.vectors.bundles import count_by_extent\nimport numpy",
+      "source_lenses": [
+        "witness"
+      ]
+    }
+  ],
+  "src/knee/vectors/bundles.py::read_bundles::07b40de57db8ec05": [
+    {
+      "assertion_code": "result = read_bundles(None, None, None)\nassert repr(result) == \"BundlesReading(code='predecessor_absent', why='no ownership reading was handed to this stage, so no object is individuated and no profile is written', subject_kind='indexed_extent_of_the_selected_native_plane', planes_read=1, profiles=(), backend='reference', slab_gaps=())\"",
+      "category": "VALUE",
+      "confidence": 0.9,
+      "function_key": "",
+      "golden_case": null,
+      "mutant_id": "",
+      "needs_oracle": false,
+      "preconditions": [
+        "golden capture (pure + deterministic)"
+      ],
+      "setup_code": "from knee.vectors.bundles import read_bundles",
+      "source_lenses": [
+        "golden_capture"
+      ]
+    }
+  ],
+  "src/knee/vectors/bundles.py::stage_code::b40e2e3854a37971": [
     {
       "assertion_code": "result = stage_code(ownership_code='abc', subject_returned=True, subject_readable=True, extents=1)\nassert result == 'invalid_count'",
       "category": "VALUE",

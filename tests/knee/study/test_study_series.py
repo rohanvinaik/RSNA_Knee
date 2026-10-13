@@ -87,6 +87,34 @@ def test_a_small_orientation_difference_is_measured_not_judged(tmp_path: Path) -
     assert series.geometry.orientation_spread == pytest.approx(0.0044721)
 
 
+def test_the_in_plane_origin_spread_is_measured_not_judged(tmp_path: Path) -> None:
+    """Task 7.12: the slab lookup shares one slice's basis across a stack, which holds only where
+    slice origins differ along the normal alone; Chapter 1 measures how far they depart in-plane
+    and records it beside the orientation spread, judging nothing. The second slice here is
+    displaced (3, 4) mm in-plane: the spread is 5 mm; a stack displaced along the normal only
+    reads 0."""
+    directory = tmp_path / "s"
+    directory.mkdir()
+    for name, position in (
+        ("a", ("0", "0", "0")),
+        ("b", ("3", "4", "1")),
+        ("c", ("0", "0", "2")),
+    ):
+        write_slice(
+            directory / f"{name}.dcm",
+            pattern(ROWS, COLUMNS, np.uint16),
+            position=position,
+        )
+    series = read_series(directory, ROW)
+    assert series.stack == ("stackable",)
+    assert series.geometry is not None
+    assert series.geometry.origin_spread_mm == pytest.approx(5.0)
+    written(tmp_path / "t", ["0", "1", "2"])
+    aligned = read_series(tmp_path / "t", ROW)
+    assert aligned.geometry is not None
+    assert aligned.geometry.origin_spread_mm == 0.0
+
+
 def test_a_differently_shaped_slice_keeps_every_slice_but_no_volume(
     tmp_path: Path,
 ) -> None:
@@ -260,6 +288,10 @@ def test_the_selected_slice_is_never_outside_the_stack() -> None:
     assert selected_slice(5, 5) is None
     assert selected_slice(5, -1) is None
     assert selected_slice(5, True) is None  # type: ignore[arg-type]
+    # a request that is not a whole number is no index at all, never rounded or compared (a
+    # Detective survivor of 2026-10-12 dropped the int check and would have returned 1.5)
+    assert selected_slice(5, 1.5) is None  # type: ignore[arg-type]
+    assert selected_slice(5, "2") is None  # type: ignore[arg-type]
     for count in range(12):
         for requested in (None, *range(-2, 14)):
             index = selected_slice(count, requested)

@@ -11,6 +11,7 @@ from knee.output.projection import (
 )
 from knee.predicates.findings import REQUIREMENTS, read_findings
 from knee.study.tables import LABELS
+from knee.telemetry import recording
 
 
 class _Row:
@@ -114,6 +115,53 @@ def test_nothing_handed_over_is_distinguished_from_an_empty_record():
     # findings tuple at all, and that is an argument that cannot be read, never an empty one.
     wrong = OutputReading("x", "y", (), None, None)
     assert read_output(wrong).code == "invalid_count"
+    # Each silence explains itself: a code never comes back over an empty sentence.
+    for reading in (read_output(None), read_output(empty), read_output(wrong)):
+        assert reading.why, reading.code
+
+
+def test_a_declared_value_is_written_as_a_decimal_whatever_number_declared_it():
+    # The competition's columns carry decimals. A projection declared as a whole number is still
+    # written as one, so no row reads "1" where every other reads "0.25".
+    whole = Projection(1, "a test, not the founder", "2026-10-12")
+    reading = read_output(read_findings((_Row(),)), whole)
+    assert reading.rows is not None
+    assert all(type(value) is float for _, value in reading.rows)
+    assert submission_rows(reading, "uid")[1][1:] == ["1.0"] * len(LABELS)
+
+
+def test_the_ledger_records_a_consumption_only_for_a_record_handed_over():
+    """Tasks 6.5 and 7.14: `predicates.consumed_by.output` is recorded only when a findings record
+    was handed over, with the rows read and whether they were the twelve, and `output.produced`
+    on every path with the rows written. None was not produced, so nothing is consumed; a record
+    of the wrong type (the twelve in a list) is read as nothing. The Detective survivors of
+    2026-10-12 that moved the guard, dropped or renamed a record, or altered a count were
+    killable only with the ledger recording, which refuses a count that is not a whole number."""
+    good = read_findings((_Row(),))
+    projection = Projection(0.5, "a test, not the founder", "2026-10-12")
+
+    class NoReason:
+        index, code, subjects, candidates = 0, "form_not_given", (0, 0), 0
+
+    short = type("F", (), {"findings": (NoReason(), *good.findings[1:])})()
+    listed = type("F", (), {"findings": list(good.findings)})()
+    with recording() as run:
+        read_output(None)
+        read_output(good)
+        read_output(good, projection)
+        read_output(short)
+        read_output(listed)
+    assert [(event.name, dict(event.counts)) for event in run.events()] == [
+        ("output.produced", {"rows": 0}),
+        ("predicates.consumed_by.output", {"findings": 12, "complete": 1}),
+        ("output.produced", {"rows": 0}),
+        ("predicates.consumed_by.output", {"findings": 12, "complete": 1}),
+        ("output.produced", {"rows": 12}),
+        ("predicates.consumed_by.output", {"findings": 11, "complete": 0}),
+        ("output.produced", {"rows": 0}),
+        ("predicates.consumed_by.output", {"findings": 0, "complete": 0}),
+        ("output.produced", {"rows": 0}),
+    ]
 
 
 # ---------------------------------------------------------------- read_output, negative
@@ -133,6 +181,25 @@ def test_a_submission_without_its_companion_is_refused():
     # by name rather than written short.
     partial = OutputReading("present", "w", (), None, (("ACL", 0.5),))
     assert submission_rows(partial, "uid") == ("invalid_count", [])
+
+
+def test_a_refusal_is_always_a_named_code_of_this_stage():
+    # MUST NOT: hand back a word outside the stage's vocabulary as the refusal, least of all
+    # `written` with no row. CrossHair's counterexample, 2026-10-12: a reading carrying the code
+    # `written` and no rows came back as ("written", []), which the post-condition forbids.
+    for odd in (
+        OutputReading("written", "", (), Projection(0.0, "", ""), None),
+        OutputReading("anything", "", (), None, None),
+        OutputReading("present", "w", (), None, None),
+    ):
+        code, row = submission_rows(odd, "uid")
+        assert code == "invalid_count", odd.code
+        assert row == []
+    for silence in ("projection_undeclared", "predecessor_absent", "predecessor_empty"):
+        assert submission_rows(OutputReading(silence, "", (), None, None), "uid") == (
+            silence,
+            [],
+        )
 
 
 def test_a_malformed_findings_record_is_named_not_projected():
@@ -201,3 +268,41 @@ def test_a_row_that_does_not_read_as_one_is_named_never_raised():
         assert reading.code == "invalid_count", type(odd).__name__
         assert reading.rows is None
         assert len(reading.companion) == 11
+
+
+def test_an_unreadable_row_beside_the_twelve_never_makes_the_record_complete():
+    # MUST NOT: the twelve readable rows plus one that does not read as one is not the twelve.
+    # The companion keeps the twelve and the record is named unreadable (task 7.13); a reader
+    # that only counted the readable rows would call this complete and project it.
+    twelve = read_findings((_Row(),)).findings
+    projection = Projection(0.5, "a test, not the founder", "2026-10-12")
+
+    class NoReason:
+        index, code, subjects, candidates = 0, "form_not_given", (0, 0), 0
+
+    reading = read_output(
+        type("F", (), {"findings": (*twelve, NoReason())})(), projection
+    )
+    assert reading.code == "invalid_count"
+    assert reading.rows is None
+    assert len(reading.companion) == 12
+
+
+def test_a_code_outside_the_predicates_vocabulary_is_never_written_under_a_column():
+    # MUST NOT: a row whose code is not one the predicates stage admits -- a verdict from nowhere
+    # -- reads as a row, is kept in the companion under its index, and is never one of the
+    # twelve: the record is named unreadable and nothing is projected, whatever is declared.
+    twelve = read_findings((_Row(),)).findings
+    projection = Projection(0.5, "a test, not the founder", "2026-10-12")
+
+    class Decided:
+        index, code, reason = 0, "positive", "a verdict from nowhere"
+        subjects, candidates = (0, 0), 0
+
+    reading = read_output(
+        type("F", (), {"findings": (Decided(), *twelve[1:])})(), projection
+    )
+    assert reading.code == "invalid_count"
+    assert reading.rows is None
+    assert len(reading.companion) == 12
+    assert reading.companion[0].code == "positive"

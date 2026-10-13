@@ -108,6 +108,52 @@ def test_the_pure_decision_names_each_case_it_can_reach() -> None:
     assert ownership_code(True, 4) == "present"
 
 
+def test_the_counts_are_the_partitions_own_and_the_objects_are_distinct_labels() -> (
+    None
+):
+    """MUST NOT: count claimed places as objects, invent a reason when the predecessor carries
+    none, or hand back anything but the partition of THIS field. Each was a Detective survivor on
+    2026-10-12 that the real-field tests above left standing; this reads a hand-built field whose
+    labels repeat, so a count of places and a count of labels differ."""
+    labels = np.array([[1, 1, 0], [2, 0, 3], [3, 3, 0]], dtype=np.int32)
+    available = np.ones((3, 3), dtype=bool)
+    available[2, 2] = False
+    reading = read_ownership(_Reading(labels, available))
+    assert reading.code == "present"
+    assert reading.objects == 3
+    assert reading.claimed_places == 6
+    assert reading.residual_places == 2
+    assert reading.unavailable_places == 1
+    for value in (
+        reading.claimed_places,
+        reading.residual_places,
+        reading.unavailable_places,
+        reading.objects,
+    ):
+        assert type(value) is int
+    np.testing.assert_array_equal(reading.claims, labels != 0)
+    np.testing.assert_array_equal(reading.residual, available & (labels == 0))
+    bare = type("Bare", (), {"labels": labels, "available": available})()
+    assert read_ownership(bare).why == ""
+
+
+def test_the_ledger_records_exactly_the_members_counts_on_both_paths() -> None:
+    """Tasks 6.5 and 7.14: the member records `ownership.member.produced` with the partition's
+    exact whole counts on BOTH paths, under that name and no other. The Detective survivors of
+    2026-10-12 that deleted or altered the record were killable only with the ledger recording."""
+    from knee.telemetry import recording
+
+    labels = np.array([[1, 1, 0], [2, 0, 3], [3, 3, 0]], dtype=np.int32)
+    available = np.ones((3, 3), dtype=bool)
+    with recording() as run:
+        read_ownership(_Reading(labels, available))
+        read_ownership(None)
+    assert [(event.name, dict(event.counts)) for event in run.events()] == [
+        ("ownership.member.produced", {"objects": 3, "claimed": 6, "residual": 3}),
+        ("ownership.member.produced", {"objects": 0, "claimed": 0, "residual": 0}),
+    ]
+
+
 # --------------------------------------------------------------------------------------------
 # Negative: what it must NEVER do.
 # --------------------------------------------------------------------------------------------
@@ -183,6 +229,7 @@ def test_without_a_conversation_only_the_solitary_parse_is_seated() -> None:
     assert members.code == "present"
     assert members.comparison == "member_absent"
     assert members.disagreement.shape == (0, 0)
+    assert not members.disagreement.flags.writeable
     assert "no conversation" in members.why
 
 
@@ -199,8 +246,87 @@ def test_a_measured_conversation_seats_three_members_and_keeps_their_disagreemen
     assert members.comparison == "compared"
     assert members.disagreeing_places == 1
     assert members.disagreement.shape == interiors.labels.shape
+    assert members.why == "3 parses seated: solitary, concurrent, conditional"
     solitary, concurrent = members.members[0].reading, members.members[1].reading
     assert solitary.claimed_places == concurrent.claimed_places + 1
+
+
+def test_two_members_are_compared_and_the_solitary_member_is_always_the_first() -> None:
+    """MUST NOT: compare any pair but the solitary and the concurrent members, or withhold the
+    comparison while only one conversed parse was seated. Two Detective survivors of 2026-10-12
+    read the LAST member as the first and demanded three members before comparing; both were
+    invisible while the conditional parse equalled the solitary one."""
+    interiors = _two_bodies()
+    concurrent = np.asarray(_conversed(interiors).concurrent_labels)
+    two = read_ownership_members(interiors, _Conversation("measured", concurrent, None))
+    assert [m.parse for m in two.members] == ["solitary", "concurrent"]
+    assert two.comparison == "compared"
+    assert two.disagreeing_places == 1
+    three = read_ownership_members(
+        interiors, _Conversation("measured", concurrent, concurrent.copy())
+    )
+    assert [m.parse for m in three.members] == ["solitary", "concurrent", "conditional"]
+    assert three.disagreeing_places == 1
+
+
+def test_a_member_holding_no_places_is_never_compared_and_never_raises() -> None:
+    """MUST NOT: compare the solitary member's empty record against a conversed parse that did
+    read the field. The solitary parse is unreadable here (float labels) while the conversation's
+    labels read as the field: the comparison is `member_absent`, the disagreement holds no place,
+    and nothing raises over the two shapes."""
+    available = np.ones((4, 4), dtype=bool)
+    unreadable = _Reading(np.zeros((4, 4)), available)
+    parse = np.zeros((4, 4), dtype=np.int32)
+    parse[0, 0] = 1
+    members = read_ownership_members(
+        unreadable, _Conversation("measured", parse, parse.copy())
+    )
+    assert [m.parse for m in members.members] == [
+        "solitary",
+        "concurrent",
+        "conditional",
+    ]
+    assert members.members[0].reading.code == "invalid_count"
+    assert members.members[1].reading.code == "present"
+    assert members.comparison == "member_absent"
+    assert members.disagreement.shape == (0, 0)
+    assert members.disagreeing_places == 0
+
+
+def test_the_members_ledger_records_a_consumption_only_for_a_record_handed_over() -> (
+    None
+):
+    """Tasks 6.5 and 7.14: `objects.consumed_by.ownership` only when interiors were handed over
+    (1 when they read as a field, 0 when they do not), `conversation.consumed_by.ownership` only
+    when a conversation was, with the parses it seated, and `ownership.produced` on every path
+    with whole counts. None was not produced, so nothing is consumed. The member's own event is
+    pinned by its own test above and is set aside here. The Detective survivors of 2026-10-12 that
+    moved these guards, dropped or renamed a record, or altered a count were killable only with
+    the ledger recording, which refuses a count that is not a whole number."""
+    from knee.telemetry import recording
+
+    interiors = _two_bodies()
+    with recording() as run:
+        read_ownership_members(None, None)
+        read_ownership_members(_Reading(None, None), None)
+        read_ownership_members(interiors, _conversed(interiors))
+        read_ownership_members(
+            interiors, _Conversation("recipient_unavailable", None, None)
+        )
+    named = [(event.name, dict(event.counts)) for event in run.events()]
+    member = "ownership.member.produced"
+    assert [entry for entry in named if entry[0] != member] == [
+        ("ownership.produced", {"members": 1, "disagreeing": 0}),
+        ("objects.consumed_by.ownership", {"interiors": 0}),
+        ("ownership.produced", {"members": 1, "disagreeing": 0}),
+        ("objects.consumed_by.ownership", {"interiors": 1}),
+        ("conversation.consumed_by.ownership", {"parses": 2}),
+        ("ownership.produced", {"members": 3, "disagreeing": 1}),
+        ("objects.consumed_by.ownership", {"interiors": 1}),
+        ("conversation.consumed_by.ownership", {"parses": 0}),
+        ("ownership.produced", {"members": 1, "disagreeing": 0}),
+    ]
+    assert all(type(value) is int for _, counts in named for value in counts.values())
 
 
 def test_a_conversation_that_did_not_read_the_series_seats_nothing_from_it() -> None:

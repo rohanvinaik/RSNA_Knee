@@ -1,10 +1,11 @@
 """The slab rule's array kernel, both signs (task 7.10): a reference and a JIT twin that answer to SAME.
 
-Written by the lead BEFORE the body. The oracle is the scalar `slab_code`, the one decision; the
-kernel re-states its arithmetic over arrays and is pinned to it here element by element, on every
-boundary the rule names (the half-thickness, the half-pitch, an underflowing thickness, a non-finite
-offset or geometry) and on both in-plane flags. The twin is the same body compiled, as the profile
-and raster twins are, and it is never a silent fallback: an unavailable backend is refused by name.
+Written by the lead BEFORE the body. The oracle is the scalar `slab_code`, the one decision, and
+since task 7.15 the reference RUNS it, place by place; the twin is a second body, the rule's
+arithmetic over arrays compiled, admitted only by agreeing with the reference element by element on
+every boundary the rule names (the half-thickness, the half-pitch, an underflowing thickness, a
+non-finite offset or geometry) and on both in-plane flags. It is never a silent fallback: an
+unavailable backend is refused by name.
 """
 
 import math
@@ -105,10 +106,42 @@ def test_the_kernel_carries_its_contract_on_the_reference() -> None:
     assert "slab_code" in CONTRACT.proof_gate
 
 
-def test_the_jit_kernel_is_the_reference_body_compiled() -> None:
+def test_the_reference_applies_the_scalar_rule_to_every_place(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """Task 7.15: the rule has ONE statement and the reference runs it, so production on the
+    reference backend calls `slab_code` once per place. A restatement left the scalar rule with
+    no production caller and two bodies pinned to each other only by tests."""
+    calls: list[tuple[float, float, float, bool]] = []
+
+    def recording_rule(offset, thickness, spacing, in_plane):
+        calls.append((offset, thickness, spacing, in_plane))
+        return slab_code(offset, thickness, spacing, in_plane)
+
+    monkeypatch.setattr(slab_kernels, "slab_code", recording_rule)
+    offsets = np.linspace(-6.0, 6.0, 13)
+    flags = (np.arange(13) % 2) == 0
+    codes = slab_codes_reference(offsets, 3.0, 4.0, flags)
+    assert len(calls) == 13
+    assert [call[3] for call in calls] == flags.tolist()
+    assert codes.tolist() == _oracle(offsets, 3.0, 4.0, flags)
+
+
+def test_the_jit_twin_is_a_second_body_admitted_only_by_same() -> None:
     pytest.importorskip("numba")
     kernel = slab_kernels.jit_slab_kernel()
-    assert kernel.py_func is slab_codes_reference
+    assert kernel.py_func is slab_kernels._slab_body
+    assert kernel.py_func is not slab_codes_reference
+
+
+@pytest.mark.parametrize(("thickness", "spacing"), GEOMETRIES)
+def test_the_twins_body_equals_the_reference_uncompiled_too(thickness, spacing) -> None:
+    """SAME holds for the body itself, not only for what Numba made of it."""
+    offsets = _offsets(thickness, spacing)
+    in_plane = (np.arange(offsets.size) % 3) != 0
+    body = slab_kernels._slab_body(offsets, thickness, spacing, in_plane)
+    reference = slab_codes_reference(offsets, thickness, spacing, in_plane)
+    assert body.tolist() == reference.tolist()
 
 
 # ---------------------------------------------------------------- negative

@@ -249,6 +249,45 @@ def test_a_place_outside_the_other_acquisitions_frame_is_outside_frame() -> None
         assert bank.rows["outside_frame"] == profile.places - inside
 
 
+def test_the_in_plane_test_is_made_in_the_nearest_slices_own_frame() -> None:
+    """MUST NOT (task 7.12): apply one slice's in-plane origin to the whole stack. The other
+    acquisition's second slice is displaced 20 mm along the column direction; this plane sits at
+    its height, so that slab is the nearest for every place, and a place is inside its frame only
+    where its column is 20 or more. The shared-frame shortcut read every place as measured, which
+    is the Codex re-review's counterexample: a measured place as `outside_frame`, an outside
+    place as `measured`, by one slice's rectangle standing for another's."""
+    geometry = SeriesGeometry(
+        normal=np.array([0.0, 0.0, 1.0]),
+        orientation=np.tile(AXIAL, (2, 1)),
+        position=np.array([[0.0, 0.0, 0.0], [20.0, 0.0, 10.0]]),
+        spacing=np.tile([1.0, 1.0], (2, 1)),
+        along_normal=np.array([0.0, 10.0]),
+        orientation_spread=0.0,
+    )
+    series = SimpleNamespace(
+        row=SimpleNamespace(series_uid="B"),
+        geometry=geometry,
+        volume=np.zeros((2, 24, 24)),
+    )
+    measurement = SimpleNamespace(
+        code="measured",
+        slice_index=0,
+        frame=_frame(0.0),
+        acquired_plane=np.zeros((24, 24)),
+        interiors=None,
+        slice_thickness_mm=3.0,
+    )
+    reading, interiors, _ = _bundle(others=((series, measurement),), z=10.0)
+    for profile in reading.profiles:
+        bank = _bank(profile, "through_plane:B")
+        assert bank.status == "written"
+        _rows, cols = np.nonzero(interiors.labels == profile.index)
+        inside = int((cols >= 20).sum())
+        assert bank.rows["measured"] == inside
+        assert bank.rows["outside_frame"] == profile.places - inside
+        assert bank.rows["in_gap"] == bank.rows["not_this_slice"] == 0
+
+
 def test_the_reading_carries_each_other_acquisitions_gap_fraction() -> None:
     """Task 7.2: `gap_fraction` is a property of the ACQUISITION that "belongs beside a
     conjunction as the prior probability that a foreign place falls into nothing" (its own
@@ -297,19 +336,31 @@ def test_a_silent_member_writes_its_silence_rows_never_a_digit() -> None:
 
 
 def test_the_ledger_records_what_the_stage_read_and_wrote() -> None:
+    """Tasks 6.5 and 7.14: each consumption under its own name with the readings handed over, the
+    lens-map places read and the acquisitions; the stage's production on every path; and NO
+    consumption of a predecessor handed over as None, which was not produced. The Detective
+    survivors of 2026-10-12 that moved a guard, dropped or renamed a record, or altered a count
+    were killable only with the ledger recording, which refuses a count that is not a whole
+    number."""
     plane = _plane()
     interiors = _interiors(plane)
     ownership = read_ownership_members(interiors, None)
     lenses = read_lenses(plane[None], BOTH)
     with recording() as run:
         reading = read_bundles(ownership, lenses, _measurement(plane, interiors), ())
-    events = {event.name: event.counts for event in run.events()}
-    assert events["vectors.produced"]["profiles"] == len(reading.profiles)
-    assert events["lenses.consumed_by.vectors"]["places"] == sum(
-        p.places for p in reading.profiles
-    )
-    assert "ownership.consumed_by.vectors" in events
-    assert "objects.consumed_by.vectors" in events
+        silence = read_bundles(None, None, None)
+    places = sum(p.places for p in reading.profiles)
+    assert places > 0 and len(reading.profiles) >= 2
+    assert silence.code == "predecessor_absent"
+    assert [(event.name, dict(event.counts)) for event in run.events()] == [
+        ("ownership.consumed_by.vectors", {"readings": 1}),
+        ("lenses.consumed_by.vectors", {"readings": 1, "places": places}),
+        ("objects.consumed_by.vectors", {"readings": 1}),
+        ("study.consumed_by.vectors", {"acquisitions": 0}),
+        ("vectors.produced", {"profiles": len(reading.profiles), "slab_places": 0}),
+        ("study.consumed_by.vectors", {"acquisitions": 0}),
+        ("vectors.produced", {"profiles": 0, "slab_places": 0}),
+    ]
 
 
 def test_the_ledger_counts_the_slab_rules_work_as_places_times_acquisitions() -> None:

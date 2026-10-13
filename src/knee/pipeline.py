@@ -115,6 +115,11 @@ class SeriesRun:
     walk_indices: tuple[int, ...] = ()
     walk: np.ndarray | None = None
     slice_thickness_mm: tuple[float | None, ...] = ()
+    # The geometry's two spreads (task 7.12), measured by the study stage and never judged: how
+    # far any slice's direction cosines, and its in-plane origin, depart from the first slice's.
+    # None where the series has no geometry.
+    orientation_spread: float | None = None
+    origin_spread_mm: float | None = None
     # The field's structural reading (task 7.1): air, the leg, the axis, the profile, the basins
     # and the seam, read from the selected plane; None when no analysis named a tile, as
     # `measurements` is.
@@ -364,6 +369,16 @@ def run_study(
                 walk_indices=series.walk_indices,
                 walk=series.walk,
                 slice_thickness_mm=series.slice_thickness_mm,
+                orientation_spread=(
+                    None
+                    if series.geometry is None
+                    else float(series.geometry.orientation_spread)
+                ),
+                origin_spread_mm=(
+                    None
+                    if series.geometry is None
+                    else float(series.geometry.origin_spread_mm)
+                ),
                 structure=read.structure,
             )
         )

@@ -250,11 +250,18 @@ def submission_rows(reading: OutputReading, study_uid: str) -> tuple[str, list[s
     The first value is the refusal code (`written` when a row is returned). A row is returned only
     from a `present` reading, and its columns are the competition's in the competition's own
     order, read from the reading's rows by column name so a reordered table cannot shift a value.
+    A reading whose code is outside this stage's vocabulary, or one that says `present` and
+    carries no rows, is refused as `invalid_count`: CrossHair found (2026-10-12) that a reading
+    carrying the code `written` with no rows was handed back as `written` with no row, which the
+    post-condition below forbids, and the refusal code is now always one of `CODES`.
 
     post: (__return__[0] == "written") == (len(__return__[1]) == 1 + len(LABELS))
+    post: __return__[0] == "written" or __return__[0] in CODES
     """
-    if reading.code != "present" or reading.rows is None:
-        return reading.code, []
+    if reading.code != "present":
+        return (reading.code if reading.code in CODES else "invalid_count"), []
+    if reading.rows is None:
+        return "invalid_count", []
     values = dict(reading.rows)
     if set(values) != set(LABELS):
         return "invalid_count", []

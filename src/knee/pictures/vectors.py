@@ -51,7 +51,11 @@ class BundlesPanels:
 
     `code` and `why` are the stage's authoritative status and reason; when `code` is not
     `present`, `profiles` is empty and `why` names the silence. `subject_kind` says what the
-    profiles are keyed on and `planes_read` how many planes were read.
+    profiles are keyed on and `planes_read` how many planes were read. `backend` is the backend the
+    through-plane banks were REQUESTED to use, and `slab_gaps` one (series uid, gap fraction) pair
+    per other acquisition in the order the stage had them, a fraction None where it could not be
+    read; both are the stage's own and have no default here, because a default would state a reading
+    the stage never made.
     """
 
     code: str
@@ -59,6 +63,8 @@ class BundlesPanels:
     subject_kind: str
     planes_read: int
     profiles: tuple[ProfilePanel, ...]
+    backend: str
+    slab_gaps: tuple[tuple[str, float | None], ...]
 
 
 def panels(reading: BundlesReading) -> BundlesPanels:
@@ -93,4 +99,6 @@ def panels(reading: BundlesReading) -> BundlesPanels:
             )
             for profile in reading.profiles
         ),
+        backend=reading.backend,
+        slab_gaps=reading.slab_gaps,
     )

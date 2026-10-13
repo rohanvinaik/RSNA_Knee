@@ -169,16 +169,17 @@ def declares_contract(path: Path) -> bool:
     """Whether the module declares a compute contract at all.
 
     The codebase now uses ONE form, settled by the founder 2026-10-12 ("I guess only one? … the
-    bigger risk is you forgetting that there are two formats"):
+    bigger risk is you forgetting that there are two formats") and respelled under task 7.11:
 
       CONTRACT = ComputeContract(...)        named at module level, where a reader meets it
-      @contracted(CONTRACT)                  applied to the kernel its `reference` field names
+      @contracted                            applied, plain, to the kernel its `reference` names
 
     Both halves are still recognised here, deliberately, because this check must keep seeing a
     module that has only one of them -- that is the half-built state, not a passing one. It is
     MODULE-scale and therefore blind to the defect that mattered: a CONTRACT declared and attached
     to nothing, which three modules carried in production. `tests/knee/test_compute_contracts.py`
-    is what refuses that, and it gates.
+    is what refuses that, and it gates. The retired call form, `@contracted(CONTRACT)`, is reported
+    separately by `call_form_sites`.
     """
     tree = ast.parse(path.read_text())
     for node in tree.body:
@@ -201,6 +202,40 @@ def declares_contract(path: Path) -> bool:
             if isinstance(called, ast.Attribute) and called.attr == "contracted":
                 return True
     return False
+
+
+def call_form_sites(path: Path) -> list[str]:
+    """Every function or class in the module decorated with the RETIRED call form, `@contracted(...)`.
+
+    Task 7.11: measured 2026-10-12, a decorator applied in call form made Detective add mutants it
+    could not build and return UNGATEABLE for any function under it, so the one form is the plain
+    `@contracted`. `knee.compute.contracts.contracted` refuses the call form by name at import;
+    this reports a site before anything imports it, read from the syntax and never from the text.
+    """
+    tree = ast.parse(path.read_text())
+    sites: list[str] = []
+    for node in ast.walk(tree):
+        if not isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef, ast.ClassDef)):
+            continue
+        for decorator in node.decorator_list:
+            if not isinstance(decorator, ast.Call):
+                continue
+            called = decorator.func
+            named = isinstance(called, ast.Name) and called.id == "contracted"
+            attribute = (
+                isinstance(called, ast.Attribute) and called.attr == "contracted"
+            )
+            if named or attribute:
+                sites.append(node.name)
+    return sites
+
+
+def contract_call_form_rows(relative: str, path: Path) -> list[str]:
+    """The `contract_call_form` rows of one module: one per site still spelling the retired form."""
+    return [
+        f"{relative}: {site} applies the retired call form @contracted(...); task 7.11"
+        for site in call_form_sites(path)
+    ]
 
 
 def reached_from_route(on_disk: set[str]) -> set[str]:
@@ -315,6 +350,7 @@ def scan_declared(
         "unwired": [],
         "misplaced": [],
         "contract_disagrees": [],
+        "contract_call_form": [],
         "renders_missing": [],
     }
     roles_unwritten: list[str] = []
@@ -331,6 +367,7 @@ def scan_declared(
         findings["contract_disagrees"].extend(
             contract_disagrees_rows(relative, entry, path)
         )
+        findings["contract_call_form"].extend(contract_call_form_rows(relative, path))
         findings["unwired"].extend(unwired_rows(relative, where, entries, wired))
 
         if name is None:

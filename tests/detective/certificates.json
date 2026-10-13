@@ -47,6 +47,30 @@
     "refusal": "",
     "standing": "complete"
   },
+  "src/knee/collapse/structure.py::axis_code": {
+    "cut_reasons": [],
+    "function_digest": "7f65126b1ddcb219",
+    "refusal": "",
+    "standing": "complete"
+  },
+  "src/knee/collapse/structure.py::structure_code": {
+    "cut_reasons": [],
+    "function_digest": "ea8707987ffd13d8",
+    "refusal": "",
+    "standing": "complete"
+  },
+  "src/knee/collapse/structure.py::superior_code": {
+    "cut_reasons": [],
+    "function_digest": "f1a8e6e3e6a3f964",
+    "refusal": "",
+    "standing": "complete"
+  },
+  "src/knee/collapse/structure.py::told_sign": {
+    "cut_reasons": [],
+    "function_digest": "16dfc72a24b07462",
+    "refusal": "",
+    "standing": "complete"
+  },
   "src/knee/lenses/digits.py::band_width": {
     "cut_reasons": [],
     "function_digest": "fdd83186b1d8a506",
@@ -78,12 +102,16 @@
     "standing": "complete"
   },
   "src/knee/lenses/places.py::place_codes_reference": {
-    "cut_reasons": [
-      "mutant_construction_failed"
-    ],
-    "function_digest": "6db9e8c59715baf0",
+    "cut_reasons": [],
+    "function_digest": "a19d7c856f570a95",
     "refusal": "",
-    "standing": "ungateable"
+    "standing": "complete"
+  },
+  "src/knee/lenses/slab_kernels.py::slab_codes_reference": {
+    "cut_reasons": [],
+    "function_digest": "1168803f6a08188e",
+    "refusal": "",
+    "standing": "complete"
   },
   "src/knee/lenses/slabs.py::gap_fraction": {
     "cut_reasons": [],
@@ -145,11 +173,29 @@
     "refusal": "",
     "standing": "complete"
   },
+  "src/knee/output/projection.py::read_output": {
+    "cut_reasons": [],
+    "function_digest": "347395ffdfd2e1c2",
+    "refusal": "",
+    "standing": "complete"
+  },
+  "src/knee/output/projection.py::submission_rows": {
+    "cut_reasons": [],
+    "function_digest": "569a0bcc097047b0",
+    "refusal": "",
+    "standing": "complete"
+  },
   "src/knee/ownership/claims.py::comparison_code": {
     "cut_reasons": [],
     "function_digest": "c3112d19c51eb4a3",
     "refusal": "",
     "standing": "complete"
+  },
+  "src/knee/ownership/claims.py::conversed_parses": {
+    "cut_reasons": [],
+    "function_digest": "0ba08d95f7ff37de",
+    "refusal": "",
+    "standing": "unverified"
   },
   "src/knee/ownership/claims.py::members_code": {
     "cut_reasons": [],
@@ -164,12 +210,22 @@
     "standing": "complete"
   },
   "src/knee/ownership/claims.py::read_ownership": {
-    "cut_reasons": [
-      "mutant_construction_failed"
-    ],
-    "function_digest": "e940ee21aa8b140f",
+    "cut_reasons": [],
+    "function_digest": "93874280a57b19c6",
     "refusal": "",
-    "standing": "ungateable"
+    "standing": "complete"
+  },
+  "src/knee/ownership/claims.py::read_ownership_members": {
+    "cut_reasons": [],
+    "function_digest": "dceca5c736385647",
+    "refusal": "",
+    "standing": "complete"
+  },
+  "src/knee/pictures/study.py::superior_end": {
+    "cut_reasons": [],
+    "function_digest": "25a39208fe948113",
+    "refusal": "",
+    "standing": "complete"
   },
   "src/knee/predicates/findings.py::finding_code": {
     "cut_reasons": [],
@@ -180,6 +236,12 @@
   "src/knee/predicates/findings.py::finding_reason": {
     "cut_reasons": [],
     "function_digest": "972dcb9ca98915a7",
+    "refusal": "",
+    "standing": "complete"
+  },
+  "src/knee/predicates/findings.py::read_findings": {
+    "cut_reasons": [],
+    "function_digest": "be1023bab14496da",
     "refusal": "",
     "standing": "complete"
   },
@@ -197,9 +259,33 @@
     "refusal": "",
     "standing": "ungateable"
   },
+  "src/knee/relations/pairings.py::read_pairings": {
+    "cut_reasons": [],
+    "function_digest": "fc800cf45a0cd495",
+    "refusal": "",
+    "standing": "complete"
+  },
   "src/knee/relations/shell.py::read_relations": {
     "cut_reasons": [],
-    "function_digest": "055ac1a06ff83e35",
+    "function_digest": "b46b4f01496a5f6a",
+    "refusal": "",
+    "standing": "complete"
+  },
+  "src/knee/study/series.py::selected_slice": {
+    "cut_reasons": [],
+    "function_digest": "a32a2fa71e72d254",
+    "refusal": "",
+    "standing": "complete"
+  },
+  "src/knee/study/series.py::walk_indices": {
+    "cut_reasons": [],
+    "function_digest": "0a3769da8ac9eadf",
+    "refusal": "",
+    "standing": "complete"
+  },
+  "src/knee/study/shape.py::report_code": {
+    "cut_reasons": [],
+    "function_digest": "c92a624a59050be0",
     "refusal": "",
     "standing": "complete"
   },
@@ -210,16 +296,20 @@
     "standing": "complete"
   },
   "src/knee/vectors/bundles.py::count_by_extent": {
-    "cut_reasons": [
-      "mutant_construction_failed"
-    ],
-    "function_digest": "94be047ad879b824",
+    "cut_reasons": [],
+    "function_digest": "383046098994cf34",
     "refusal": "",
-    "standing": "ungateable"
+    "standing": "incomplete"
+  },
+  "src/knee/vectors/bundles.py::read_bundles": {
+    "cut_reasons": [],
+    "function_digest": "07b40de57db8ec05",
+    "refusal": "",
+    "standing": "complete"
   },
   "src/knee/vectors/bundles.py::stage_code": {
     "cut_reasons": [],
-    "function_digest": "b4f32508a1579bec",
+    "function_digest": "b40e2e3854a37971",
     "refusal": "",
     "standing": "complete"
   }

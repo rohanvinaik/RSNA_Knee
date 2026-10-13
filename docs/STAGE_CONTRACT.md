@@ -57,8 +57,11 @@ the tools merely *check*.
 reference · proof_gate`. `tests/knee/test_compute_contracts.py` fails the gate on a stub: a contract
 that does not name its reference and proof gate licenses nothing, and reads as a guarantee it has not
 earned. The settled idiom is module-level `CONTRACT = ComputeContract(...)` attached to the
-reference with `@contracted(CONTRACT)`. Contracts are **data attached without a wrapper**
-(§13.5); the decorator returns the function unchanged and is not a hot-path wrapper.
+reference with the plain `@contracted`, which reads the module's `CONTRACT` (respelled under
+`every-stage-renders` task 7.11, 2026-10-12: the call form `@contracted(CONTRACT)` made Detective
+return UNGATEABLE for any function under it, and is now refused by name). Contracts are **data
+attached without a wrapper** (§13.5); the decorator returns the function unchanged and is not a
+hot-path wrapper.
 
 ### Language by computation shape, decided at design time
 | shape | language |

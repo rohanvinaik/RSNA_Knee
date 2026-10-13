@@ -42,7 +42,10 @@ COLUMNS = 6
 TABLE_WIDTH_INCHES = 3.1
 LINE_INCHES = 0.105
 TITLE_INCHES = 0.32
-HEADING_INCHES = 0.85
+#: A series' heading is its identifier and one line per line `heading_lines` returns: this much
+#: besides, and this much for each line.
+HEADING_INCHES = 0.35
+HEADING_LINE_INCHES = 0.145
 LABEL_WIDTH = 38
 REASON_WIDTH = 38
 
@@ -125,13 +128,42 @@ def saved_profile(saved: object) -> ObjectProfile:
     )
 
 
+def saved_gap(saved: object) -> tuple[str, float | None]:
+    """One other acquisition's saved gap fraction as (its series uid, a fraction or None).
+
+    None is a fraction the stage could not read and stays None. The stage's `gap_fraction` returns
+    a value in [0, 1), so any other number, a bool or a NaN is a record that disagrees with it.
+    """
+    uid = saved_text(saved, "series_uid")
+    fraction = saved_field(saved, "gap_fraction")
+    if fraction is None:
+        return uid, None
+    if type(fraction) not in (int, float):
+        raise ValueError(f"saved_slab_gap_not_a_number:{uid}")
+    if not 0.0 <= fraction < 1.0:
+        raise ValueError(f"saved_slab_gap_out_of_range:{uid}")
+    return uid, float(fraction)
+
+
+def saved_slab_gaps(saved: object) -> tuple[tuple[str, float | None], ...]:
+    """Every other acquisition's saved gap fraction, in the order the stage saved them."""
+    gaps = saved_field(saved, "slab_gaps")
+    if type(gaps) is not list:
+        raise ValueError("saved_vectors_slab_gaps_not_a_list")
+    return tuple(saved_gap(gap) for gap in gaps)
+
+
 def saved_reading(record: dict) -> BundlesReading:
     """Reconstitute the stage's returned reading from one saved series record, without deciding.
 
     Every saved field is checked against the vocabulary the stage owns rather than trusted: a
     record without the stage, a code outside `CODES`, a status outside `BANK_STATUS`, a subject
     kind the stage does not write, or a status its rows contradict means the record and this
-    renderer disagree, and that is reported rather than drawn.
+    renderer disagree, and that is reported rather than drawn. The backend the stage was asked for
+    and the gap fractions it returned are read from the record like every other field: a record
+    that lacks them is refused, and is never handed the stage's defaults, which would state a
+    backend and a set of gaps the run never recorded. The backend is any text the stage recorded,
+    because the stage records a request it refused as faithfully as one it ran.
     """
     if "vectors" not in record:
         raise ValueError("missing_saved_vectors")
@@ -150,6 +182,8 @@ def saved_reading(record: dict) -> BundlesReading:
         subject_kind=SUBJECT_KIND,
         planes_read=saved_count(saved, "planes_read"),
         profiles=tuple(saved_profile(profile) for profile in profiles),
+        backend=saved_text(saved, "backend"),
+        slab_gaps=saved_slab_gaps(saved),
     )
 
 
@@ -177,13 +211,50 @@ def table_lines(profile: vectors.ProfilePanel) -> list[tuple[str, str, str]]:
     return lines
 
 
+def gap_text(fraction: float | None) -> str:
+    """One saved gap fraction as text; None is a fraction the stage could not read, never a zero."""
+    return "not read" if fraction is None else f"{fraction:.4g}"
+
+
+def heading_lines(frame: vectors.BundlesPanels) -> list[str]:
+    """The lines of a series' heading after its identifier, every one a value the stage saved.
+
+    What the stage returned and what the profiles are keyed on, the backend the through-plane
+    banks were REQUESTED to use, and the gap fraction of every other acquisition's own stack, one
+    per line in the stage's order. A gap fraction belongs to an acquisition and not to any
+    object's places, so it is stated here and never inside a table.
+    """
+    lines = [
+        *f"stage: {frame.code} - {fill(frame.why, width=170)}".splitlines(),
+        (
+            f"keyed on: {frame.subject_kind}; planes read: {frame.planes_read}; "
+            f"objects: {len(frame.profiles)}"
+        ),
+        f"through-plane banks requested on backend: {frame.backend}",
+    ]
+    if frame.slab_gaps:
+        lines.append("gap fraction of each other acquisition's own stack, as saved:")
+        lines.extend(f"    {uid}: {gap_text(gap)}" for uid, gap in frame.slab_gaps)
+    else:
+        lines.append(
+            "gap fraction of each other acquisition's own stack: none saved "
+            "(no other acquisition was read)"
+        )
+    return lines
+
+
+def heading_inches(frame: vectors.BundlesPanels) -> float:
+    """How tall a series' heading is: its identifier and `heading_lines`, a fixed height per line."""
+    return HEADING_INCHES + HEADING_LINE_INCHES * (1 + len(heading_lines(frame)))
+
+
 def series_inches(frame: vectors.BundlesPanels) -> float:
     """How tall a series' section is: its heading, then a grid of equally tall tables."""
     if not frame.profiles:
-        return HEADING_INCHES
+        return heading_inches(frame)
     lines = max(len(table_lines(profile)) for profile in frame.profiles)
     rows = ceil(len(frame.profiles) / COLUMNS)
-    return HEADING_INCHES + rows * (lines * LINE_INCHES + TITLE_INCHES)
+    return heading_inches(frame) + rows * (lines * LINE_INCHES + TITLE_INCHES)
 
 
 def resolution(width: float, height: float) -> int:
@@ -229,10 +300,7 @@ def draw_series(
 ) -> None:
     """A series' section: what the stage returned for it, then one table per object."""
     subfigure.suptitle(
-        f"{uid}\n"
-        f"stage: {frame.code} - {fill(frame.why, width=170)}\n"
-        f"keyed on: {frame.subject_kind}; planes read: {frame.planes_read}; "
-        f"objects: {len(frame.profiles)}",
+        "\n".join([uid, *heading_lines(frame)]),
         fontsize=8,
         x=0.004,
         y=0.995,
@@ -247,7 +315,7 @@ def draw_series(
         left=0.005,
         right=0.995,
         bottom=0.003,
-        top=1.0 - HEADING_INCHES / inches,
+        top=1.0 - heading_inches(frame) / inches,
         wspace=0.08,
         hspace=0.12,
     )
@@ -330,6 +398,11 @@ def draw(run: Path, study_uid: str, out: Path) -> dict:
                 "stage_code": frame.code,
                 "subject_kind": frame.subject_kind,
                 "planes_read": frame.planes_read,
+                "backend_requested": frame.backend,
+                "slab_gaps": [
+                    {"series_uid": other, "gap_fraction": gap}
+                    for other, gap in frame.slab_gaps
+                ],
                 "profiles": [
                     {
                         "index": profile.index,

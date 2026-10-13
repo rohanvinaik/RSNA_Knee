@@ -14,6 +14,8 @@ import numpy as np
 from matplotlib.collections import LineCollection, PolyCollection
 from matplotlib.patches import Patch
 
+from knee.pictures import objects as object_pictures
+
 TERRITORY = plt.colormaps["tab20"]
 EXCHANGE_COLORS = {
     "concurrent": "#00e5ff",
@@ -28,6 +30,11 @@ EXCHANGE_COLORS = {
     "empty_profile": "#bcbd22",
     "invalid_measurement": "#17becf",
 }
+
+#: This renderer's own refusal for a saved row it cannot lay a plane out for. It is recorded beside
+#: the code the conversation stage saved for that row, which says why upstream; this one says what
+#: could not be arranged here.
+PLANE_UNAVAILABLE = "acquired_plane_unavailable"
 
 
 def digest_array(array):
@@ -173,6 +180,138 @@ def all_exchange_items(record, arrays):
         )
 
 
+def slice_position(row):
+    """Where a saved row sorts among those of its view: a saved silence first, then by saved index.
+
+    A series with no stacked volume saves `slice_index: None`, a reading its stage did not make.
+    The silence is placed by this rule and is never given a number to sort on; the saved integers
+    sort as saved.
+    """
+    index = row.get("slice_index")
+    return (False, 0) if index is None else (True, int(index))
+
+
+def plane_unavailable(plane):
+    """True where a saved row has no acquired plane this renderer can lay out: none saved, not
+    two-dimensional, or empty."""
+    return plane is None or plane.ndim != 2 or not plane.size
+
+
+def standing(row, plane):
+    """What a saved row says about itself where it is listed: the code its conversation stage saved
+    for it, and this renderer's refusal where it could not lay the row's plane out. Both are read,
+    never computed."""
+    return {
+        "conversation_code": row["conversation"].get("code"),
+        "refusal": PLANE_UNAVAILABLE if plane_unavailable(plane) else None,
+    }
+
+
+def mark_plane_unavailable(axes, view_label, row):
+    """Say on every axis of a row that its acquired plane is unavailable, with the conversation
+    stage's own saved code beside the view, so the silence reads as the stage's silence."""
+    for ax in axes:
+        ax.set_axis_off()
+        ax.text(
+            0.5,
+            0.5,
+            f"Acquired plane unavailable\n{view_label}\n"
+            f"conversation stage code: {row['conversation'].get('code')}",
+            ha="center",
+            va="center",
+            transform=ax.transAxes,
+        )
+
+
+def panel_record(stage, row, artifact, peers, plane):
+    """One saved row's entry in a stage's panel list: where it came from, which donors it heard
+    from, and its standing. A row whose plane is unavailable is listed too, with the refusal."""
+    return {
+        "stage": stage,
+        "series_uid": row["series_uid"],
+        "source_plane": row.get("source_plane"),
+        "slice_index": row.get("slice_index"),
+        "artifact": str(artifact.resolve()),
+        "artifact_sha256": sha256(artifact.read_bytes()).hexdigest(),
+        "donor_uids": [meta["donor_uid"] for meta, _ in peers],
+        **standing(row, plane),
+    }
+
+
+#: The saved arrays `knee.pictures.objects.panels` arranges besides the donors' own places: the plane
+#: the series was read at, B1's territories, and both subdivisions with their parent maps.
+PARTED_ARRAYS = (
+    "acquired_plane",
+    "b1_labels",
+    "b2_concurrent_labels",
+    "b2_conditional_labels",
+    "b2_concurrent_parents",
+    "b2_conditional_parents",
+)
+
+
+def donor_arrays(peers):
+    """The peers' transported places, trace codes and derived traces, joined in peer order.
+
+    Returns (joined arrays, the name of what a peer lacks). A series with no exchange joins to
+    nothing, which is what it is; a peer that lacks one of the three is named and nothing is joined
+    over the gap.
+    """
+    nothing = {
+        "points_rc": np.empty((0, 2)),
+        "trace_codes": np.empty(0, dtype=np.uint8),
+        "derived_trace_rc": np.empty((0, 2)),
+    }
+    joined = {}
+    for name, empty in nothing.items():
+        parts = []
+        for index, (_metadata, fields) in enumerate(peers):
+            if name not in fields:
+                return {}, f"b2_exchange{index}_{name}"
+            parts.append(fields[name])
+        joined[name] = np.concatenate(parts) if parts else empty
+    return joined, ""
+
+
+def parted_more(arrays, peers):
+    """How many more children the saved conditional subdivision made than the saved concurrent one.
+
+    Returns (the count or None, a code that says why there is none). The count is the adapter's own,
+    `knee.pictures.objects.parted_more_by`, asked of the saved arrays arranged by
+    `knee.pictures.objects.panels`: nothing is recounted here. An array the run did not save, or
+    arrays the adapter refuses to arrange as one parse of one plane, make the count a named silence
+    and never a zero.
+    """
+    for name in PARTED_ARRAYS:
+        if name not in arrays:
+            return None, f"not saved ({name})"
+    donors, lacking = donor_arrays(peers)
+    if lacking:
+        return None, f"not saved ({lacking})"
+    try:
+        shaped = object_pictures.panels(
+            arrays["acquired_plane"],
+            arrays["b1_labels"],
+            donors["points_rc"],
+            donors["trace_codes"],
+            donors["derived_trace_rc"],
+            arrays["b2_concurrent_labels"],
+            arrays["b2_conditional_labels"],
+            arrays["b2_concurrent_parents"],
+            arrays["b2_conditional_parents"],
+        )
+    except ValueError as refusal:
+        return None, f"not arranged ({refusal})"
+    return object_pictures.parted_more_by(shaped), "counted"
+
+
+def more_text(count, code):
+    """The line a subdivision's panel carries for `parted_more_by`, or why there is none."""
+    if count is None:
+        return f"parted_more_by: {code}"
+    return f"parted_more_by {count:+d} (conditional children - concurrent children)"
+
+
 def draw_bands(ax, plane, record, arrays, peers, show_legend=True):
     image_base(ax, plane, arrays.get("background_mask"))
     present = set()
@@ -283,7 +422,7 @@ def draw_native(ax, plane, record, arrays, peers, show_legend=True):
     )
 
 
-def draw_subdivision(ax, plane, arrays, kind, show_legend=True):
+def draw_subdivision(ax, plane, arrays, kind, show_legend=True, more=""):
     labels = arrays[f"b2_{kind}_labels"]
     parents = arrays[f"b2_{kind}_parents"]
     barrier = arrays[f"b2_{kind}_barrier"]
@@ -345,7 +484,7 @@ def draw_subdivision(ax, plane, arrays, kind, show_legend=True):
     ax.set_title(
         f"{kind.capitalize()} subdivision\n"
         f"{territory_count} original · {len(colors)} children · {int(barrier.sum())} barrier cells\n"
-        "child IDs map explicitly to original parents",
+        "child IDs map explicitly to original parents" + (f"\n{more}" if more else ""),
         fontsize=9,
     )
 
@@ -366,9 +505,7 @@ def draw(run: Path, study_uid: str, out: Path) -> dict:
     ]
     if not records:
         raise ValueError("no saved B2 conversation records for selected study")
-    records.sort(
-        key=lambda row: (tuple(row.get("view", ())), int(row.get("slice_index", -1)))
-    )
+    records.sort(key=lambda row: (tuple(row.get("view", ())), slice_position(row)))
     out.mkdir(parents=True, exist_ok=True)
     prepared = []
     for row in records:
@@ -382,6 +519,16 @@ def draw(run: Path, study_uid: str, out: Path) -> dict:
         prepared.append(
             (row, arrays, artifact, list(all_exchange_items(row, arrays)), plane)
         )
+
+    # `parted_more_by` of every saved row, from the adapter and the saved arrays alone; a row that
+    # cannot be arranged carries the reason in place of the count.
+    parted = {
+        row["series_uid"]: parted_more(arrays, peers)
+        for row, arrays, _artifact, peers, _plane in prepared
+    }
+
+    def more_for(row):
+        return more_text(*parted[row["series_uid"]])
 
     views = len(prepared)
     stages = [
@@ -400,17 +547,9 @@ def draw(run: Path, study_uid: str, out: Path) -> dict:
         for index, (row, arrays, artifact, peers, plane) in enumerate(prepared):
             view = row.get("view", ["view", "?", "?"])
             view_label = f"{view[0]} · fs={view[1]} · fat={view[2]} · slice {row.get('slice_index')}"
-            if plane is None or plane.ndim != 2 or not plane.size:
-                for ax in axes[index]:
-                    ax.set_axis_off()
-                    ax.text(
-                        0.5,
-                        0.5,
-                        f"Acquired plane unavailable\n{view_label}",
-                        ha="center",
-                        va="center",
-                        transform=ax.transAxes,
-                    )
+            if plane_unavailable(plane):
+                mark_plane_unavailable(axes[index], view_label, row)
+                panels.append(panel_record(filename, row, artifact, peers, plane))
                 continue
             if filename == stages[0]:
                 image_base(axes[index, 0], plane, arrays.get("background_mask"))
@@ -432,26 +571,20 @@ def draw(run: Path, study_uid: str, out: Path) -> dict:
                 add_original(
                     axes[index, 0], plane, arrays, row, arrays.get("background_mask")
                 )
-                draw_subdivision(axes[index, 1], plane, arrays, "concurrent")
+                draw_subdivision(
+                    axes[index, 1], plane, arrays, "concurrent", more=more_for(row)
+                )
             else:
                 add_original(
                     axes[index, 0], plane, arrays, row, arrays.get("background_mask")
                 )
-                draw_subdivision(axes[index, 1], plane, arrays, "conditional")
+                draw_subdivision(
+                    axes[index, 1], plane, arrays, "conditional", more=more_for(row)
+                )
             axes[index, 0].set_title(
                 axes[index, 0].get_title() + "\n" + view_label, fontsize=8
             )
-            panels.append(
-                {
-                    "stage": filename,
-                    "series_uid": row["series_uid"],
-                    "source_plane": row.get("source_plane"),
-                    "slice_index": row.get("slice_index"),
-                    "artifact": str(artifact.resolve()),
-                    "artifact_sha256": sha256(artifact.read_bytes()).hexdigest(),
-                    "donor_uids": [meta["donor_uid"] for meta, _ in peers],
-                }
-            )
+            panels.append(panel_record(filename, row, artifact, peers, plane))
         fig.suptitle(f"B2 same-knee conversation · {filename}", fontsize=15)
         path = out / f"{filename}.png"
         fig.savefig(path, dpi=145)
@@ -467,25 +600,20 @@ def draw(run: Path, study_uid: str, out: Path) -> dict:
         view_label = (
             f"{view[0]} fs={view[1]} fat={view[2]} · slice {row.get('slice_index')}"
         )
-        if plane is None or plane.ndim != 2 or not plane.size:
-            for ax in axes[index]:
-                ax.set_axis_off()
-                ax.text(
-                    0.5,
-                    0.5,
-                    f"Acquired plane unavailable\n{view_label}",
-                    ha="center",
-                    va="center",
-                    transform=ax.transAxes,
-                )
+        if plane_unavailable(plane):
+            mark_plane_unavailable(axes[index], view_label, row)
             continue
         add_original(
             axes[index, 0], plane, arrays, row, arrays.get("background_mask"), False
         )
         draw_bands(axes[index, 1], plane, row, arrays, peers, False)
         draw_native(axes[index, 2], plane, row, arrays, peers, False)
-        draw_subdivision(axes[index, 3], plane, arrays, "concurrent", False)
-        draw_subdivision(axes[index, 4], plane, arrays, "conditional", False)
+        draw_subdivision(
+            axes[index, 3], plane, arrays, "concurrent", False, more_for(row)
+        )
+        draw_subdivision(
+            axes[index, 4], plane, arrays, "conditional", False, more_for(row)
+        )
         axes[index, 0].set_title(
             axes[index, 0].get_title() + "\n" + view_label, fontsize=7
         )
@@ -539,17 +667,8 @@ def draw(run: Path, study_uid: str, out: Path) -> dict:
         view_label = (
             f"{view[0]} · fs={view[1]} · fat={view[2]} · slice {row.get('slice_index')}"
         )
-        if plane is None or plane.ndim != 2 or not plane.size:
-            for ax in focused_axes:
-                ax.set_axis_off()
-                ax.text(
-                    0.5,
-                    0.5,
-                    f"Acquired plane unavailable\n{view_label}",
-                    ha="center",
-                    va="center",
-                    transform=ax.transAxes,
-                )
+        if plane_unavailable(plane):
+            mark_plane_unavailable(focused_axes, view_label, row)
         else:
             add_original(
                 focused_axes[0],
@@ -561,8 +680,12 @@ def draw(run: Path, study_uid: str, out: Path) -> dict:
             )
             draw_bands(focused_axes[1], plane, row, arrays, peers, False)
             draw_native(focused_axes[2], plane, row, arrays, peers, False)
-            draw_subdivision(focused_axes[3], plane, arrays, "concurrent", False)
-            draw_subdivision(focused_axes[4], plane, arrays, "conditional", False)
+            draw_subdivision(
+                focused_axes[3], plane, arrays, "concurrent", False, more_for(row)
+            )
+            draw_subdivision(
+                focused_axes[4], plane, arrays, "conditional", False, more_for(row)
+            )
             focused_axes[0].set_title(focused_axes[0].get_title() + "\n" + view_label)
         local_code_counts = {name: 0 for name in row["conversation"]["exchange_codes"]}
         for _, fields in peers:
@@ -592,7 +715,8 @@ def draw(run: Path, study_uid: str, out: Path) -> dict:
         )
         focused.suptitle(
             f"B2 same-knee conversation · {view_label}\n"
-            f"recipient series UID {row['series_uid']}",
+            f"recipient series UID {row['series_uid']}\n"
+            f"{more_for(row)}",
             fontsize=13,
         )
         focused_path = out / f"view-{index:02d}.png"
@@ -609,6 +733,7 @@ def draw(run: Path, study_uid: str, out: Path) -> dict:
                 "artifact": str(artifact.resolve()),
                 "artifact_sha256": sha256(artifact.read_bytes()).hexdigest(),
                 "donor_uids": [meta["donor_uid"] for meta, _ in peers],
+                **standing(row, plane),
             }
         )
 
@@ -653,8 +778,17 @@ def draw(run: Path, study_uid: str, out: Path) -> dict:
             for row, arrays, _, _, _ in prepared
             for kind in ("concurrent", "conditional")
         ],
+        "parted_more_by": [
+            {
+                "series_uid": uid,
+                "value": count,
+                "code": code,
+            }
+            for uid, (count, code) in parted.items()
+        ],
         "stages": [path.name for path in renderers],
         "overview": overview.name,
+        "image": overview.name,
         "focused_views": focused_views,
         "panels": panels,
         "image_sha256": {

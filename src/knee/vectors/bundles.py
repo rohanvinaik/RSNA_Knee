@@ -682,28 +682,31 @@ def _slab_codes(
     to the lower slice), its signed offset from that slice's position is `(place - position) .
     normal`, and the slab rule names what that slab did with it, given the acquisition's own
     thickness, its pitch (`_pitch`, the same one the gap fraction uses) and whether the place falls
-    inside its in-plane rectangle [0, R-1] x [0, C-1]. The rule is applied to every place in ONE
-    call of its array twin, `knee.lenses.slab_kernels.slab_codes`, on the backend the request
-    names. That twin restates the scalar `slab_code` over arrays and is pinned to it element by
-    element, so `slab_code` stays the oracle and is not called here. The twin's refusals -- a
-    backend outside the registry, or one that cannot be built -- are raised by name and are not
-    caught here.
+    inside THAT slice's in-plane rectangle [0, R-1] x [0, C-1]. The rule is applied to every place
+    in ONE call of `knee.lenses.slab_kernels.slab_codes`, on the backend the request names: the
+    reference applies the scalar `slab_code` per place and the twin is pinned SAME to it. The
+    refusals -- a backend outside the registry, or one that cannot be built -- are raised by name
+    and are not caught here.
+
+    The in-plane test is made in the NEAREST slice's own frame (task 7.12): its origin is that
+    slice's stored position, which is exact, and its basis is the selected plane's, which the
+    stack shares under the precondition Chapter 1 measures and records as `orientation_spread`
+    and `origin_spread_mm`. Until 7.12 every place was projected into the selected plane's frame,
+    so one slice's origin stood for the whole stack, and a stack whose slice origins are displaced
+    in-plane read a measured place as `outside_frame` and an outside place as `measured` (the
+    Codex re-review's counterexample).
 
     None when the other acquisition's frame cannot place these places. A coordinate too large to
     hold is a non-finite offset, which the rule names `invalid_geometry`; it is no warning here.
     """
     normal, position, heights = stack
+    if not np.all(np.isfinite(place_lps)):
+        return None
     with np.errstate(all="ignore"):
         try:
-            native = frame.to_native(place_lps)
-        except (ValueError, TypeError):
+            to_native = np.linalg.pinv(frame.basis_lps).T
+        except (ValueError, TypeError, np.linalg.LinAlgError):
             return None
-        in_plane = (
-            (native[:, 0] >= 0)
-            & (native[:, 0] <= shape[0] - 1)
-            & (native[:, 1] >= 0)
-            & (native[:, 1] <= shape[1] - 1)
-        )
         order = np.argsort(heights, kind="stable")
         centres = heights[order]
         along = place_lps @ normal
@@ -712,7 +715,15 @@ def _slab_codes(
         above = np.clip(after, 0, centres.size - 1)
         nearer = np.abs(along - centres[below]) <= np.abs(along - centres[above])
         nearest = order[np.where(nearer, below, above)]
-        offset = (place_lps - position[nearest]) @ normal
+        from_slice = place_lps - position[nearest]
+        offset = from_slice @ normal
+        native = from_slice @ to_native
+        in_plane = (
+            (native[:, 0] >= 0)
+            & (native[:, 0] <= shape[0] - 1)
+            & (native[:, 1] >= 0)
+            & (native[:, 1] <= shape[1] - 1)
+        )
         pitch = _pitch(centres, thickness)
         return slab_codes(offset, thickness, pitch, in_plane, backend)
 

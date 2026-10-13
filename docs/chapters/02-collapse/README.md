@@ -1,5 +1,17 @@
 # Chapter 2 — `collapse`. Where it stands.
 
+**2026-10-12, later: the remaining gaps.** The field stage carries the structural reading the
+render probes held (air by connection to the border, the leg closed, the axis from the header, the
+profile superior first, two basins and the seam, the darkest places and the largest bodies), wired
+at the one selected slice, saved, and drawn as the second row of every series' block in the field
+gallery, with the superior end named on the study gallery from the same header codes; the corpus's
+shape is drawn once per run; the regime key keeps its histogram and a second channel count; every
+contract is in one plain form; the slab rule has one statement and a compiled twin pinned SAME on
+the real study; every reader of the route is Detective-COMPLETE but the conversation parser, which
+an engine defect leaves unverified; all thirteen probes are archived. The dated record, with every
+Detective and CrossHair standing, the engine defects, the LintGate counts and what stays open, is
+[measurements/remaining-gaps-20261012.md](measurements/remaining-gaps-20261012.md).
+
 **2026-10-12, the composition repair.** The route's stages now compose: see
 [measurements/composition-repair-20261012.md](measurements/composition-repair-20261012.md) for what
 changed, what was measured on the real study, every Detective and CrossHair standing, and the rulings

@@ -71,6 +71,8 @@ earlier stage produced, identity is not assumed. If it is a kind-label, it is, a
       names the contract where a reader meets it and attaches it to the function it describes.
       Verify `contracted` still returns the kernel unwrapped (§13.5), and that each module carries
       exactly one contract, on its **reference** and not on its twin or its orchestrator.
+      *(Respelled 2026-10-12 under 7.11: the same structure, applied as the plain `@contracted`,
+      which reads the module's `CONTRACT`; the call form is retired and refused by name.)*
 - [x] 0.3a **Read `interiors.py` and `ledger.py` whole and establish whether their declared
       `CONTRACT` is attached to anything.** `find_referencing_symbols` on `contracted` returns six
       files and neither is among them, while `places.json` declares both as carrying a contract — so
@@ -537,7 +539,7 @@ scopes, Detective's certificates, a first LintGate run, deptry, ty), declared be
 item is engineering on work that exists; none builds new design content, which stays with §1–§5 and
 the other changes. The delegation contract at the top of this file governs every packet.
 
-- [ ] 7.1 **Every probe becomes production.** Founder: *"I don't run ANY by hand. ALL probes are
+- [x] 7.1 **Every probe becomes production.** Founder: *"I don't run ANY by hand. ALL probes are
       supposed to be part of production."* For each of the five render probes `just places`
       reports unwired (`seam`, `structure`, `objects`, `axial`, `look`): establish from a whole
       reading what it computes and which stage's record holds, or would hold, that quantity. Where
@@ -549,13 +551,30 @@ the other changes. The delegation contract at the top of this file governs every
       functions get their caller. A probe whose work is in production moves to `archive/workbench/`
       under its path, the 0.6 precedent, and is never deleted. Verify by `just places` (the unwired
       count falls by the probe) and by the real run's gallery.
+      *(DONE 2026-10-12: `seam`, `structure` and `objects` became the field's structural reading,
+      `knee.collapse.structure`, wired at the selected slice, saved by the writer and drawn as the
+      second row of every series' block in the field gallery, where `panels()` and `over()` have
+      their caller; `axial` became the study stage's retained walk, drawn with the superior end
+      named from the field's header codes (`knee.pictures.study.superior_end`, Detective-COMPLETE
+      27/29 modulo two annotation survivors flagged with their proof, CrossHair Not confirmed);
+      `look`'s histogram with its split and its squint are the first row of the same gallery. The
+      five are in `archive/workbench/render/`. `just places`: unwired 9 → 4, the four empty
+      `beside` packages. The real run's gallery: 12 drawn, 0 not drawn, and the corpus picture.
+      Standings: `measurements/remaining-gaps-20261012.md` §7.)*
 - [ ] 7.1a **The eight measurement probes** (`corpus_shape`, `noise_floor`, `regime_key`,
       `regime_run`, `geometry_spread`, `object_toolkit_geometry`, `machinery_facts`, `reports`):
       the same rule. The corpus-wide tabulations among them become a corpus summary the writer
       computes from the per-study records when the one command runs without `--uid`, saved in the
       receipt and drawn; a probe that only re-runs a stage over the corpus is superseded by that
       run and archived.
-- [ ] 7.2 **Every production name vulture reports without a production caller gets its consumer, or
+      *(PARTLY 2026-10-12: the eight are in `archive/workbench/measure/`. The table-only
+      tabulations are `knee.study.shape.corpus_shape`, counted once when the corpus opens, saved as
+      the receipt's `corpus` entry and drawn once per run by `workbench.render.corpus_frames`
+      through the writer's `draw_corpus`; the regime's histogram and the moment-ratio channel
+      count are on the regime key (`regime_run`, `regime_key`); the two geometry spreads are on
+      every series (`geometry_spread`, 7.12). OWED: the per-view tabulation of the regime and
+      geometry records when the one command runs without `--uid`, which is the 58-study run's.)*
+- [x] 7.2 **Every production name vulture reports without a production caller gets its consumer, or
       its archive.** The list, computed 2026-10-12 over `src workbench scripts`: `is_silence`,
       `coil_count`, `signal_squared`, `was_measured`, `gap_fraction`, `carries_prominence`, `over`,
       `parted_more_by`, `route_state`, `decoder_plugins`, `split_uids`, `READ_STANDINGS`,
@@ -589,7 +608,14 @@ the other changes. The delegation contract at the top of this file governs every
       `seed_quantile` was a parameter the `structure` probe declared and never read; it goes with
       the probe. `declared_contracts` and `decoder_plugins` get their consumer in the receipt
       once the writer's decomposition lands.)*
-- [ ] 7.3 **The compute contracts are read by a tool.** Every `ComputeContract` is declared on a
+      *(DONE 2026-10-12: at the final gate vulture's production scope is exactly the four kept
+      visible by design -- `signal_squared`, `READ_STANDINGS`, `was_measured`, `KAGGLE_ROOT` --
+      after the drawers consumed `over`, `panels`, `GAUSSIAN_SPREAD_RATIO` and `parted_more_by`,
+      the receipt consumed `declared_contracts` and `decoder_plugins`, `SUPERIOR_ENDS` got its
+      consumer in the study drawer, `zero_share`, `foreground_share` and `along_normal` joined the
+      allowlist with their dynamic consumers named, and `pictures_dir` was removed with its reason
+      beside the archived probes that called it.)*
+- [x] 7.3 **The compute contracts are read by a tool.** Every `ComputeContract` is declared on a
       kernel and read by nothing. The receipt carries each kernel's contract beside the ledger's
       counted work for that run, so the declared `work` and the measured count sit in one record
       where a reader can compare them. A budget stays undeclared: it is a bar.
@@ -597,6 +623,10 @@ the other changes. The delegation contract at the top of this file governs every
       returns the read-only view (builder, read whole by the lead; re-declaring the same contract
       under the same key is idempotent, a different one raises `duplicate_contract_key`). The
       receipt's `compute_contracts` block lands with the writer's decomposition.)*
+      *(DONE 2026-10-12: the decomposed writer's receipt carries `compute_contracts`, every
+      declared contract by its kernel's dotted path, beside the ledger's counted work; read on the
+      real run's receipt. The comparison of declared `work` against the counted work is a reader's,
+      and no budget is declared.)*
 - [x] 7.4 **The real run's composition is a verb.** The producer/consumer check the lead ran with a
       scratch probe becomes `scripts/composition_check.py <run>` and `just composition <run>`: every
       `<stage>.produced` has a consumer, no consumer lacks a producer, and the conversation precedes
@@ -608,7 +638,7 @@ the other changes. The delegation contract at the top of this file governs every
       builder's additions, accepted: an `ownership_absent` order code, every conversation index
       listed, the last conversation event before the first ownership one, refusals for an empty
       ledger or studies list and a `refused:<code>` final line.)*
-- [ ] 7.11 **The one contract form becomes the plain decorator, measured.** Declared 2026-10-12
+- [x] 7.11 **The one contract form becomes the plain decorator, measured.** Declared 2026-10-12
       from `measurements/detective-call-form-decorator-20261012.md`: a call-form decorator makes
       Detective add two mutants it cannot build and return UNGATEABLE for ANY function under it,
       while a plain decorator converges; every kernel here carries `@contracted(CONTRACT)`, so the
@@ -619,6 +649,16 @@ the other changes. The delegation contract at the top of this file governs every
       idiom and refuses the old. Every site migrates in one commit once the builders are off
       their files. Verify by converging `count_by_extent`, `footprint_labels_reference`,
       `place_codes_reference` and `read_ownership` again and recording what they now return.
+      *(DONE 2026-10-12: every site is the plain `@contracted` (`37c3934` and after), the
+      decorator refuses the call form by name (`contracted_call_form_retired`), the places check
+      reports `contract_call_form` and read `none`, the test file's four call-form uses are
+      plain. Re-converged under the plain form: `place_codes_reference` COMPLETE 40/42 modulo
+      two annotation-only survivors flagged with their proof; `read_ownership` COMPLETE 37/55
+      with its survivors judged (one flagged, the rest killable and now killed by two direct
+      tests); `count_by_extent` Incomplete 9/10 pending one authored input;
+      `footprint_labels_reference` crashed the ENGINE in survivor classification
+      (`dataclasses.fields` on a non-dataclass, Detective engine.py:2701), an engine defect
+      reported in `measurements/remaining-gaps-20261012.md` and never waived.)*
 - [ ] 7.5 **6.3a built.** The edge-to-piece translation (the edge point minus half the sign of its
       normal, exact) so `read_pairings` runs on the concurrent and conditional parses: one unit, its
       contract, its pure decision pinned two-sign; the relations record carries one pairing reading
@@ -628,6 +668,17 @@ the other changes. The delegation contract at the top of this file governs every
       `submission_rows` have no certificate. `just detective converge` each, every survivor judged by
       the lead and never by a builder; the standing recorded here per digest. `read_ownership`'s
       certificate is UNGATEABLE (`mutant_construction_failed`), which the record had not said.
+      *(2026-10-12: seven of the eight are COMPLETE with every survivor judged by the lead --
+      `walk_indices` 27/32, `read_ownership_members` 101/106, `read_pairings` 12/12,
+      `read_bundles` 41/41, `read_findings` 63/67, `read_output` 87/94, `submission_rows` 25/25 --
+      the provable equivalents flagged with their proof (annotations under lazy evaluation, a
+      clause implied by the one before it, a commutative `max`, a negative sentinel the absence
+      vocabulary reads alike, an argument `absence_code` never reaches) and the rest killed by
+      the ledger tests, which record every event with its exact counts, and by the must-not
+      tests of 7.13 and 7.14; `read_ownership` is COMPLETE 54/55 under the plain form.
+      `conversed_parses` stays UNVERIFIED: the engine's own generated proof basis is
+      uncollectable, defect 3 in `measurements/remaining-gaps-20261012.md` §4, reported and never
+      waived. Open on that one.)*
 - [ ] 7.7 **LintGate's first run answered.** Run 2026-10-12: 8 blocking, 695 warnings, coherence
       "systemic". The blockers: `scripts/places.py::main` (complexity 32) and
       `lenses/places.py::read_member` (31) decomposed with behaviour unchanged, which the tests,
@@ -636,17 +687,28 @@ the other changes. The delegation contract at the top of this file governs every
       the design's record shapes and not split for a style limit. The writer's one 585-line `main`
       decomposed into per-stage record functions with the receipt byte-identical on the synthetic
       corpus. The warnings read whole and triaged into this list or a reasoned allowlist.
-- [ ] 7.8 **deptry and ty.** `pandas` and `SimpleITK` are declared and imported by nothing; removed
+      *(2026-10-12, three runs: 8 → 6 → 15 blocking, 695 → 919 → 894 warnings. The first run's
+      blockers are answered as the task says. The third run's are the drawers packet's:
+      `workbench/render/field_frames.py` at 1236 lines with `saved_structure` at complexity 50,
+      `object_conversation.draw` at 41, ten `matplotlib` imports the resolver cannot see because
+      the stage contract supplies matplotlib per run, and `StructurePanels` at 24 attributes,
+      recorded as the record's shape. OWED: the decomposition of the two renderers, with the
+      round-trip tests in `tests/knee/test_stage_drawers.py` as its behaviour pin, and the triage
+      of the warnings.)*
+- [x] 7.8 **deptry and ty.** `pandas` and `SimpleITK` are declared and imported by nothing; removed
       from the declared dependencies with `uv lock`, under the global repo-hygiene reference, if
       7.1 and 7.2 leave no production import of either. The two `src` ty diagnostics fixed; the
       three in tests read and either fixed or recorded with their reason.
+      *(DONE 2026-10-12: both removed from the declared dependencies with `uv lock`, deptry
+      clean; ty on `src` 0; the diagnostics in tests, 13 at the final gate, each a hand-built
+      malformed argument the type checker rightly refuses, read and recorded, not silenced.)*
 - [x] 7.9 **The profile read.** The `just profile-tree` output of the one command read whole for
       work repeated across stages, the audit's own class of defect; each instance found becomes a
       7.x task here; counted work per stage reported from the ledger beside it.
       *(DONE 2026-10-12 with `just profile-calls`, read whole:
       `measurements/profile-20261012.md`. No stage recomputes another's work; the one finding is
       7.10. The writer's compression is a quarter of the wall time and the route is 5.5 s of 8.3 s.)*
-- [ ] 7.10 **The slab rule's vectorised twin.** Measured 2026-10-12: the through-plane bank calls
+- [x] 7.10 **The slab rule's vectorised twin.** Measured 2026-10-12: the through-plane bank calls
       the scalar `slab_code` 1,888,948 times on the real study, 2.75 s of `run_study`'s 5.47 s, from
       a generator in `bundles._slab_codes`. The house rule (AGENTS.md, override 2): a reference
       first, then an accelerated twin that answers to SAME. The founder, 2026-10-12, on this
@@ -658,6 +720,12 @@ the other changes. The delegation contract at the top of this file governs every
       stays. C/C++ is for memory-bound work, which this loop is not; the only memory-bound cost
       the profile shows is the writer's compression, the artifact's and not a kernel's. Verify with
       a SAME comparison over the real study's receipts and the counted calls in the ledger.
+      *(DONE 2026-10-12: `knee.lenses.slab_kernels.slab_codes`, the Numba twin `_slab_body` beside
+      the reference under the one `CONTRACT`, selected by the backend the request names and
+      refused by name. SAME on the real study's receipts: 204 through-plane banks identical between
+      the reference and the jit run, `slab_places` identical per series, 1,888,948 in all, which is
+      the ledger's count of the kernel's evaluations. The builder's synthetic timing on 898,880
+      places: the reference 0.213 s, the twin 0.0007 s.)*
 
 The four below were declared 2026-10-12 from the Codex re-review of the tree and the gate run that
 checked it, each confirmed by the lead reading the enclosing unit whole before declaring. The
@@ -677,7 +745,12 @@ task as a single artifact (to the extent that it has been built thus far)"*.
       the orientation spread is the stated precondition for sharing the basis and is carried in
       the record. Verify by a must-not test with displaced origins and by the geometry record over
       the 58 for prevalence.
-- [ ] 7.13 **The output reader is total, and complete means the twelve.** Confirmed in
+      *(BUILT 2026-10-12: the in-plane test is made in the nearest slice's own frame; Chapter 1
+      measures `origin_spread_mm` beside `orientation_spread`, the series run carries both and
+      the writer saves them in the study record; the must-not test with a displaced origin holds.
+      Measured on the one study: 0.0006 to 0.0008 mm on all five series. OWED: the prevalence over
+      the 58, which is the corpus run's.)*
+- [x] 7.13 **The output reader is total, and complete means the twelve.** Confirmed in
       `read_output`: twelve rows of index 0 pass as complete; a non-numeric index or a row without
       a reason raises, against the docstring's promise that nothing raises; the CSV path would
       refuse the first case by column set but the companion record and the stage code claim
@@ -685,7 +758,10 @@ task as a single artifact (to the extent that it has been built thus far)"*.
       Repair: a row reader that returns None for anything unreadable; completeness is the twelve
       distinct indices, each once; the count is -1 otherwise so the stage names `invalid_count`.
       Two must-not tests. `output_code` unchanged.
-- [ ] 7.14 **Consumption is recorded only for a record handed over.** Confirmed in
+      *(DONE 2026-10-12: a row reader returns None for anything unreadable, complete is the
+      twelve distinct indices, the readable rows stay in the companion; two must-not tests,
+      `tests/knee/output/test_projection.py`.)*
+- [x] 7.14 **Consumption is recorded only for a record handed over.** Confirmed in
       `read_ownership_members`: `conversation.consumed_by.ownership` is recorded with the
       conversation off, parses zero, and `just composition` reports `phantom:conversation` on
       such a run. A zero-parse consumption of a conversation that ran and a conversation that
@@ -695,13 +771,22 @@ task as a single artifact (to the extent that it has been built thus far)"*.
       nothing, and its silence stays in the stage's `why`. Every consumer audited against it.
       Verify by a conversation-off ledger test and `just composition` reading `composed` on a
       `--no-conversation` run.
-- [ ] 7.15 **The slab rule has one statement, and production runs it.** Measured in the gate
+      *(DONE 2026-10-12: the rule is in `specs/route-composition/spec.md` with its scenario;
+      ownership, relations, the bundles, the lenses, the predicates and the output record a
+      consumption only for a record handed over; the composition test over the synthetic corpus
+      checks the default route for phantoms and the conversation-off run for a conversation
+      consumer; the relations shell's ledger tests restated under the rule.)*
+- [x] 7.15 **The slab rule has one statement, and production runs it.** Measured in the gate
       after 7.10: vulture lists `slab_code` with no production caller, because
       `slab_codes_reference` restates its arithmetic instead of calling it, so the rule has two
       statements pinned to each other only by tests. Repair: the reference calls `slab_code` per
       place, the decision applied and slow by design; the compiled body is the twin, pinned SAME
       to the reference on captured and boundary inputs, with the element-wise pin to the scalar
       kept. Verify by both vulture scopes and the SAME test.
+      *(DONE 2026-10-12: `slab_codes_reference` calls `slab_code` per place, the twin is
+      `_slab_body` compiled and pinned SAME to the reference uncompiled and compiled on every
+      boundary; a test records the per-place calls; `slab_codes_reference` Detective-COMPLETE
+      21/21. Vulture no longer lists `slab_code` after the next gate.)*
 
 ## Beside this change, unparked rather than duplicated
 
