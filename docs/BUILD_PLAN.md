@@ -9,7 +9,8 @@ superseded chapter order. [INSTANTIATION.md](INSTANTIATION.md) joins thesis idea
 
 | OpenSpec change | responsibility | how to resume |
 |---|---|---|
-| [every-stage-renders](../openspec/changes/every-stage-renders/) | immediate breadth-first build: every stage wired, returning records or named absences, visibly inspectable | `just plan-next` (default) |
+| [the-funnel](../openspec/changes/the-funnel/) | **the immediate work, 2026-10-13**: the route as a funnel, in the order the founder confirmed (`docs/chapters/02-collapse/readings/the-funnel-plan-lead-20261013.md`); every unit under the stage contract's loop, paused at his five eye-checks | `just plan-next the-funnel` |
+| [every-stage-renders](../openspec/changes/every-stage-renders/) | the breadth-first pass of 2026-10-12: every stage wired, returning records or named absences, visibly inspectable; closed out at its checklist's standing section, its open obligations carried into `the-funnel` | `just plan-next` (default) |
 | [knee-object-model](../openspec/changes/knee-object-model/) | complete object/relation/predicate architecture, corpus engineering and deployment | `just plan-next knee-object-model` |
 | [object-resolution-toolkit](../openspec/changes/object-resolution-toolkit/) | physical, interior, conversation and supported-contour substrate | `just plan-next object-resolution-toolkit` |
 | [reconcile-project-record](../openspec/changes/reconcile-project-record/) | documentation/planning reconciliation requested 2026-10-12; no domain implementation | its checklist and [reconciliation record](RECONCILIATION.md) |

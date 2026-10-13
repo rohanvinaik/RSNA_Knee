@@ -1069,3 +1069,75 @@ same shape) is in `readings/the-funnel-plan-lead-20261013.md` §3. His confirmat
    rigorous and unambiguous implementation plan, then a workflow to carry it out mechanically.
 4. **After a compaction, his words are read from the transcript**, every one he typed, with what he
    attached, never from a selection and never from the summary.
+
+## 2026-10-13 — his answers to the five questions on the plan
+
+After the Codex consult the lead put five questions, first in the build's words ("Need context for
+your questions, they're in jargon still. "Rim"? "Clear"? "Valley"? No invented jargon. Real terms
+with objective meaning"), then restated with their setting. His answers, verbatim:
+
+On whether a tile that straddles the skin line, mostly air with a sliver of skin, is called air or
+left undecided and kept in play:
+
+> "If I understand you right, then yes, a lil bit of extra compute requirement, some buffer, is
+> perfectly fine"
+
+On the axial view, which shows one bone's cross-section and the patella and no second long bone:
+whether it picks objects by its own rule or has the other views' objects carried onto it by
+position in millimetres:
+
+> "No, the other views shouldn't speak to the axial view. It's of the same leg, so it speaks to
+> diagnosis, but it's NOT the same picture. Unlike, say, the coronal view fat bright vs fat dark,
+> it's not "basically" the same view,it's a compeltely different picture at a completely different
+> time and place and angle. Different photo with different rules/roles/objects. They just happen to
+> correspond to roles that also exist in the other photos, and help in diagnosis through an
+> independent view"
+
+On whether the tile reading of a bone's inside is enough for contusion, or the pixels inside the
+bone are read one by one when asked:
+
+> "We shall see, won't we? That's derived experimentally. My gues is that it will be resolvable
+> above a baseline level of expected signal. Bones should be pretty flat within the internal fill
+> of the \<object>, a contusion should show up as unexpected variance in signal intensity. But we
+> shall see when we actually try to diagnose"
+
+On whether the terciles over the leg tiles, and then over each object's own places, are the local
+normalisation he meant:
+
+> "Yup, that should do"
+
+On whether the squint and the object picking run on every slice, each bone joined through the
+stack:
+
+> "Not every slice, not even CLOSE. You might want to poke in on the \<object> thesis, and how it
+> was able to turn a 4D cell microscopy MOVIE into a 2D still. This is a WAAAAAAAAY easier problem
+> than that to solve"
+
+### What this settles
+
+1. **A straddling tile is left undecided, not called air.** The first lens declares air only where
+   it is sure; a ring of undecided tiles around the leg is accepted as the price.
+2. **Each view is its own picture, with its own rules, roles and objects.** Only the two
+   acquisitions of one orientation are "basically the same view" and line up by place. Nothing is
+   carried from the coronal onto the axial or the sagittal by position. The views meet at
+   diagnosis, each an independent witness to the same roles. The lead's earlier sentence "a bone
+   resolved on the coronal says where to look on the sagittal" is withdrawn.
+3. **Contusion is settled by trying, at the diagnosis stage.** The inside of a bone is read as a
+   measurement (his guess: flat inside, a contusion is unexpected variance); whether the squint
+   suffices is found when diagnosis is attempted, not decided now.
+4. **The local normalisation is the leg tiles, then each object's own places.** Settled.
+5. **Not every slice.** The depth of a series collapses the way the thesis collapses a movie to a
+   still (§4, the collapse in depth); the lead reads the thesis for the mechanism before stating
+   it.
+
+The lead read §4 whole (through a miner, verbatim with line numbers) and restated the knee's
+version: each lens is one cheap number per slice and stands at the one slice where its number
+peaks; only that slice is read in full; the other slices keep their cheap readings; a finding that
+needs another slice is another lens standing at its own slice, not a walk through the stack; the
+build's "middle slice" is this collapse with the cheapest reading possible. His confirmation:
+
+> "Yup! Sill have the cell depth miner going, no? This is the right general plan, enough to build
+> off. Once you're settled, we should be good to go!"
+
+**The plan is set** (`readings/the-funnel-plan-lead-20261013.md` with its §8 corrections, and the
+answers above). What follows is the implementation plan as an OpenSpec change, then the workflow.
