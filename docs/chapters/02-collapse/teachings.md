@@ -875,3 +875,127 @@ two sources) or a **second member** (two readings retained). Fable had shown a f
 the capsule**, which includes the suprapatellar recess and exceeds the union of the interstices; and
 **Baker's** is a posterior capsular outpouching bounded partly by muscle and tendon objects the parse
 does not yet resolve, which is why he deferred it to the close of this stage.
+
+---
+
+## 2026-10-12 — THE FUNNEL: the first lens, the squint, and the free lenses
+
+Said over the view sheets (`data/pictures/view-frames-20261012/…/study-views/`, one picture per
+series with every saved reading drawn on the acquired plane), walking the coronal fluid-sensitive
+fat-suppressed sheet panel by panel, 1 (top left) to 22 (bottom right). The lead's reading, the
+thesis's words mined whole, and the Codex consult are in `readings/the-funnel-*-20261012.md`.
+
+> "So, if you're actually following the epistemology I've been trying to express, the answer
+> should be obvious. Also, why the build is currently NOT the "performance engineer, SICP-style,
+> one compute operation per script, paralelizable compute, shared information, superposition of
+> lenses resolving meaning" I specified that this should be."
+
+> "Pick any of these. Let's say the coronal view. First off, fat-dark vs fat-bright? These aren't
+> independent views. These two are basically "lenses" that are given to us for free, by the
+> competition itself."
+
+> "The goal here is to try and resolve \<object>s that correspond to "bone", tibia and femur. On
+> image 2, already, we can CLEANLY see most of the noise cleanly subtracted out (repeated on image
+> 10?). I see the background CLEANLY resolved out. We need to actually fix this lens to work on all
+> five images, but once it's good like this for all of them, we should NEVER spend a SECOND of
+> compute on this ever again. Literally EVERY analysis that comes after this is wasting about
+> 40-50% of its compute on places that should be comepltely removed and NEVER read for ANYTHING,
+> EVER. So yeah, THAT'S what I've been trying to communicate. We're on the FIRST lens, and already
+> the search space is halved, and the uncertainty of the resolution is exponentially smaller.
+> That's not a vibe, I've proven this mathematically. We can also see that already both the tibia
+> and femur are non-trivially resolved. If we had a script that needed to wildly guess SOMETHING
+> at only this stage, we'd actually be able to hit the tibia and femur basically 100% of the time."
+
+> "Also, this, and MANY of the other lenses, should have been computed off the lossy/squint view,
+> the one that collapses that image into, I think, a 16x16 grid? We are doing two things--(1)
+> high-level localization and targeting, and (2) fine-grained targeting and boundary-drawing. The
+> "squint" view is WAAAAY cheaper. If the raw image is 256x256, then a 16x16 grid costs literally
+> (n)^(1/2), for EVERYTHING. And when we've actually done that, wherever I've seen it, the squint
+> view was MORE than enough to target analyses properly. Like, common-sense high-level reasoning,
+> you only spend expensive compute to try and find the exact boundary of things in the places
+> where they actually look like they might exist. Same sort of thing as the "black"/"air"/
+> "background" removal thing I just outlined. Why try and draw boundaries where the bones aren't?
+> I didn't do this quite so strictly in the cell tracking project because you can never actually
+> predict where cells will be. But knee images? They almost ALWAYS look the same. Why compute
+> vectors and shit where we know the knee isn't?"
+
+> "No idea what's wrong with views 3/4, they just seem like pointless noise compared to 2. Pretty
+> sure they're a mangling of what I actually wanted. Also 5/6. Not sure what they're supposed to
+> be, I don't think that's what I asked for. Also, you missed some of the most CRITICAL lenses, the
+> ones that were in [Image #1]."
+
+> "Images 7/8 feel like another duplication, but they're HIGH-resolution lenses. When it comes to
+> the high-level resolution of the boundaries of the bones, the expensive stuff, this is REFINED.
+> I mean, LOOK at the boundary there. Is there any question what the tibia and femur look like?"
+
+> "Image 9 isn't really anything"
+
+> "Image 11 is partially what I was talking about, partially build, but WAAAAAAAAY more expensively
+> than was needed."
+
+> "the "interior peaks" one is VERY useful for specific selection of \<object>s that are
+> potentially significant, treating them as physical objects that are grounded and connected as a
+> singular whole, will be useful for diagnosing; i.e., what is "wrong" with the coherent object
+> that is grounded to those interior peaks"
+
+**His answers to the lead's six questions, verbatim, the same day.** First: "Yeah, don't
+delete/remove lenses. I will figure out what bizarre interpretation you had of my words/ideas led
+to this presentation, but I'm sure they are meaningful in some way."
+
+On what "fix this lens" means, and where a lens's authority comes from:
+
+> "The "fix" is to have it actually resolve out background vs leg for every image/view. I think
+> you tried to set some global values/resolution that would work flatly on every view/image. No
+> sense in that, these are all different views, they just happen to be of the same leg. That's why
+> the fat-bright vs fat-dark coronal view are different--the fat-dark view is globally dark and
+> you tested the background resolution with that one. Obviously, the fat-bright one has a
+> COMPLETELY different signal profile, running the same numbers on it is just not going to work.
+> The thing that grants the first lens the "authority" to declare background is "being correct".
+> I know that sounds circular. But that's the point. We make a lens that looks for what we define
+> as background, and when it works and only finds things that aren't bones or other anatomical
+> features, then it works and we use it. Sounds arbitrary? So what? See my "Hellen Keller" prompt,
+> where I go into the weirdness of the "naturalistic" fallacy for machine intelligence. Basically,
+> her understanding of the world was entirely constructed. She lacked the ability to sense anything
+> that was not in direct contact with her body. So what? Still intelligent, and rather saucy too.
+> The fact that intelligence or reasoning is imparted onto a system that has no independent
+> understanding of the domain space is immaterial to the question of if it's doing a task of
+> genuine reasoning"
+
+On "never read for anything, ever" meaning no full analysis on a cleared place while the record
+and the cheap readings are kept: "Yup".
+
+On the lead's question about the frame the two acquisitions meet in: "...huh? Many words, very
+little meaning."
+
+On the lead's question about "members": "Again, huh? What's a "member"?? I don't know why you
+insist on using random BS made-up terms all the time, I just can't get you to stop. I don't speak
+Claude!! I INVENTED this, I still have no idea what you mean when you discuss it with me half the
+time"
+
+On where the expensive, native-resolution boundary work runs:
+
+> "I don't understand how those are different. But essentially, we define that, by looking at it
+> (common-sense border estimation) and by using domain knowledge for where these elements are
+> supposed to be on these really fixed and almost identical-looking images"
+
+On panels 3 to 6: "No idea, because I have no idea what underlying idea I was communicating that
+you misunderstood or interpreted weirdly. Keep all, I will do speulunking to understand these
+later."
+
+### What this settles
+
+1. **Nothing is removed.** Every lens stays; he will read them himself.
+2. **The first lens is fixed view by view, and its authority is correctness, checked by looking.**
+   Each view gets its own resolution of background against leg; one rule run flatly across views
+   is not the design. The lens is right when it finds only what is not bone or another anatomical
+   feature, and that is what licenses it. (A fact beside this, the lead's: the current split is
+   one rule, the first valley of each series' own histogram, so its number is per series, five
+   values on this study; what was never done is the check he names, view by view, by eye.)
+3. **"Never read again" is about compute, not the record.** No full analysis on a cleared place;
+   the decision, its reasons and the cheap readings are kept, as the thesis has it.
+4. **Where the expensive work runs is defined by eye and by anatomy**, on images that are almost
+   identical from knee to knee: common-sense border estimation plus domain knowledge of where each
+   element sits. Not a formula.
+5. **The lead speaks his words, not its own.** "Member", "standing", "parse" and the like are the
+   build's names, not the project's language in conversation with him. A question he cannot read is
+   not a question.
