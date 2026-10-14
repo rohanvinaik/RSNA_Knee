@@ -19,7 +19,13 @@ Do not:
 - build rule machinery;
 - chase unseen studies with a new rule per image («even if a few images are a bit weird»);
 - change the proof pipeline's lenses unless he asks;
-- report in jargon.
+- report in jargon;
+- hand Rohan the choice of a remedy for something you broke («YOU'RE the one who fucked it up»);
+  fix it;
+- let an advisor's or a side agent's advice override his thesis or his words.
+
+The full account of how the 2026-10-14 session went wrong, and how not to repeat it, is in
+Claude's project memory, `feedback_rsna_knee_name_objects_from_pictures.md`.
 
 **The archives are invisible.** `archive/` and `archive2/` hold the old builds. Do not read, lint or check them
 unless Rohan says to look in them. Rohan, 2026-10-13: «Ignore lint and other checks on the archive folders.
