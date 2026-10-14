@@ -1,0 +1,50 @@
+{
+  "src/knee/objects/assignments.py::air_code": {
+    "cut_reasons": [],
+    "function_digest": "4485acfe494978fb",
+    "refusal": "",
+    "standing": "complete"
+  },
+  "src/knee/objects/assignments.py::bone_code": {
+    "cut_reasons": [],
+    "function_digest": "a078401c133657de",
+    "refusal": "",
+    "standing": "complete"
+  },
+  "src/knee/objects/assignments.py::fat_sign": {
+    "cut_reasons": [],
+    "function_digest": "e5b3758f9edd0ae5",
+    "refusal": "",
+    "standing": "complete"
+  },
+  "src/knee/objects/assignments.py::joint_code": {
+    "cut_reasons": [],
+    "function_digest": "7339b98a0116e8f9",
+    "refusal": "",
+    "standing": "complete"
+  },
+  "src/knee/objects/assignments.py::marrow_sign": {
+    "cut_reasons": [],
+    "function_digest": "40805b46bf757b62",
+    "refusal": "",
+    "standing": "complete"
+  },
+  "src/knee/objects/assignments.py::noise_sign": {
+    "cut_reasons": [],
+    "function_digest": "2aca3fda44bb6b5a",
+    "refusal": "",
+    "standing": "complete"
+  },
+  "src/knee/objects/assignments.py::pair_code": {
+    "cut_reasons": [],
+    "function_digest": "9c51409ef1941849",
+    "refusal": "",
+    "standing": "complete"
+  },
+  "src/knee/objects/assignments.py::wall_sign": {
+    "cut_reasons": [],
+    "function_digest": "bdad7376943500a9",
+    "refusal": "",
+    "standing": "complete"
+  }
+}
