@@ -113,6 +113,7 @@ def measure(series: Series) -> tuple[dict, dict[str, np.ndarray]] | str:
             "codes": assignment.codes,
             "femur": assignment.femur,
             "tibia": assignment.tibia,
+            "patella": assignment.patella,
             "peaks": [asdict(peak) for peak in assignment.peaks],
         },
     }

@@ -20,6 +20,9 @@ from knee.objects.interiors import read_interiors
 OFFSETS = np.arange(-3.0, 3.5, 0.5)
 CORONAL = np.array([[0.0, 1.0], [0.0, 0.0], [-1.0, 0.0]])  # rows inferior, columns left
 AXIAL = np.array([[0.0, 1.0], [1.0, 0.0], [0.0, 0.0]])  # rows posterior, columns left
+SAGITTAL = np.array(
+    [[0.0, 0.0], [0.0, 1.0], [-1.0, 0.0]]
+)  # rows inferior, columns posterior
 
 
 def scene() -> np.ndarray:
@@ -34,6 +37,28 @@ def scene() -> np.ndarray:
     return plane
 
 
+def sagittal_scene(fat_pad_reaching_down: bool = False) -> np.ndarray:
+    """A sagittal knee at a knee's own proportions, front to the left, one place per millimetre.
+
+    The femur runs off the top and the tibia off the bottom, with the joint between them at rows
+    110 to 124. The patella sits in front of the femur's lower end, its middle about 2.5 cm above
+    the femur's lowest point; the quadriceps tendon runs down to it through the soft tissue in
+    front of the femur's shaft, whose middle lies some 7 cm above that point.
+    """
+    plane = np.full((200, 160), 2.0)  # air
+    plane[:, 28:150] = 40.0  # the leg's soft tissue
+    plane[:110, 60:120] = 1.0  # the femur's shell, running off the top
+    plane[:108, 62:118] = 100.0  # its marrow
+    plane[124:, 60:120] = 1.0  # the tibia's shell, running off the bottom
+    plane[126:, 62:118] = 100.0  # its marrow
+    plane[:66, 46:48] = 1.0  # the quadriceps tendon, down to the patella
+    plane[66:100, 36:58] = 1.0  # the patella's shell
+    plane[68:98, 38:56] = 100.0  # its marrow
+    if fat_pad_reaching_down:  # its marrow runs on, unbroken, down past the femur
+        plane[98:150, 38:56] = 100.0
+    return plane
+
+
 def assigned(plane, basis=CORONAL):
     reading = read_interiors(plane, (1.0, 1.0), 5.0, 3.0, OFFSETS, "reference")
     return assign_plane(plane, reading, basis)
@@ -42,7 +67,8 @@ def assigned(plane, basis=CORONAL):
 def test_the_scene_names_air_skin_femur_over_tibia_and_the_joint():
     result = assigned(scene())
     objects = result.objects
-    assert set(result.codes.values()) == {"identified"}
+    for name in ("air", "skin", "femur", "tibia", "joint"):
+        assert result.codes[name] == "identified"
     assert objects[40, 60] == OBJECT_CODES["femur"]
     assert objects[100, 60] == OBJECT_CODES["tibia"]
     assert objects[69, 60] == OBJECT_CODES["joint"]
@@ -86,6 +112,28 @@ def test_two_territories_side_by_side_are_not_femur_and_tibia():
     result = assigned(plane)
     assert result.codes["femur"] == "abstain_nothing_above_or_below_the_deepest"
     assert not np.isin(result.objects, [3, 4, 5]).any()
+
+
+def test_the_patella_is_the_bone_in_front_of_the_femurs_lower_end():
+    result = assigned(sagittal_scene(), SAGITTAL)
+    assert result.codes["femur"] == "identified"
+    assert result.codes["patella"] == "identified"
+    assert result.objects[83, 47] == OBJECT_CODES["patella"]
+    assert result.objects[50, 90] == OBJECT_CODES["femur"]
+    assert result.objects[160, 90] == OBJECT_CODES["tibia"]
+
+
+def test_a_region_in_front_that_reaches_down_past_the_femur_is_not_the_patella():
+    result = assigned(sagittal_scene(fat_pad_reaching_down=True), SAGITTAL)
+    assert result.codes["patella"] == "abstain_nothing_in_front_of_the_femurs_lower_end"
+    assert not (result.objects == OBJECT_CODES["patella"]).any()
+
+
+def test_the_patella_is_not_named_where_front_and_back_run_through_the_plane():
+    coronal = assigned(scene(), CORONAL)
+    assert coronal.codes["patella"] == "abstain_front_runs_through_the_plane"
+    axial = assigned(scene(), AXIAL)
+    assert axial.codes["patella"] == "abstain_no_femur"
 
 
 def test_pair_code_names_why():

@@ -21,6 +21,7 @@ OBJECT_COLOURS = {
     "femur": (1.0, 0.55, 0.1, 0.55),
     "tibia": (0.2, 0.85, 0.35, 0.55),
     "joint": (0.95, 0.2, 0.95, 0.7),
+    "patella": (0.0, 0.85, 1.0, 0.6),
 }
 
 
@@ -42,7 +43,7 @@ def draw_stages(axes, arrays, record):
     rgba = plt.colormaps["tab20"](((labels - 1) % 20) / 19)
     rgba[..., 3] = np.where(labels > 0, 0.45, 0)
     axes[1].imshow(rgba, interpolation="nearest")
-    named = (assigned["femur"], assigned["tibia"])
+    named = (assigned["femur"], assigned["tibia"], assigned["patella"])
     for peak in assigned["peaks"]:
         row, col = peak["peak_rc"]
         ringed = peak["territory"] in named
@@ -62,14 +63,15 @@ def draw_stages(axes, arrays, record):
             fontsize=6,
         )
     axes[1].set_title(
-        "Territories and their strongest peaks\nRINGED: the deepest, and the deepest above or below it",
+        "Territories and their strongest peaks\nRINGED: the territories named as bones",
         fontsize=9,
     )
     for name, colour in OBJECT_COLOURS.items():
         overlay(axes[2], objects == OBJECT_CODES[name], colour)
     axes[2].set_title(
         f"BLUE air · YELLOW skin: {codes['air']}\n"
-        f"ORANGE femur · GREEN tibia · MAGENTA joint: {codes['femur']}",
+        f"ORANGE femur · GREEN tibia · MAGENTA joint: {codes['femur']}\n"
+        f"CYAN patella: {codes['patella']}",
         fontsize=8,
     )
 
