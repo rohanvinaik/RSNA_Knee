@@ -4,6 +4,23 @@
 Read it before anything else, and do not overcomplicate it. Rohan, 2026-10-13: «This is basically the whole
 thing. That's it.»
 
+**How the knee's objects are named.** Rohan, 2026-10-14: «I TOLD you to use common-sense reasoning off
+images.» For each object in `docs/OBJECTS_AND_CONDITIONS.md`, one at a time:
+1. Look at the proof study's pictures.
+2. Say plainly why the object looks like itself there.
+3. Write exactly that as a few plain rules on the lenses the interiors already give
+   (`src/knee/objects/assignments.py`).
+4. Run `scripts/run_interiors.py` on the proof study, look at the picture, and show Rohan before the next
+   object.
+
+Where the pictures do not hold the object as its own region, it is not named; it is never drawn wrong.
+
+Do not:
+- build rule machinery;
+- chase unseen studies with a new rule per image («even if a few images are a bit weird»);
+- change the proof pipeline's lenses unless he asks;
+- report in jargon.
+
 **The archives are invisible.** `archive/` and `archive2/` hold the old builds. Do not read, lint or check them
 unless Rohan says to look in them. Rohan, 2026-10-13: «Ignore lint and other checks on the archive folders.
 They're invisible unless I tell you to look in them».
