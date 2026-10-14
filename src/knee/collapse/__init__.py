@@ -26,10 +26,11 @@ inferior axis is read from the header rather than the pixels, and a basin is evi
 identity.
 
 ----------------------------------------------------------------------------------------------
-THE CHAPTER'S RECORD IS `docs/chapters/02-collapse/`. Read `README.md` there FIRST in a new
-session or after a compaction: what is built, what is not working and the traced reason, what is
-open and the founder's to rule, and a claim withdrawn. Then `teachings.md` for his words verbatim,
-then `design.md`.
+This note came back with the code from the second build. The chapter record it named,
+`docs/chapters/02-collapse/`, is not in this project. What governs now is `AGENTS.md`, whose
+method finds each object's main slice with the squint. Rohan, 2026-10-14: «Is it not obvious which
+slice to use? The one that is able to show the anatomical region needed for identification of each
+anatomical object, and then for diagnosis.»
 ----------------------------------------------------------------------------------------------
 
 The modules here, and what each is (SS13.7 keeps the three kinds apart):
