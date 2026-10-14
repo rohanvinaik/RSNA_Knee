@@ -1,17 +1,16 @@
-"""Run the interiors operation on one study, name its objects, and draw both.
+"""Run the interiors operation on one study, name the plain objects, and draw both.
 
 For each series of the study, as the second build's route did (`objects/analysis.py`,
 `_measure_series`): the regime's background split, the middle slice, its plane frame, and
 `read_interiors` with the frame's spacing and the retained basis as its metric. Then
-`assign_plane` asks every question of that reading (air, skin, bone, femur and tibia, joint) and
-names an object only where its lenses concur. The arrays the renderers read are saved per series
-with their digests in a receipt; `object_interiors.draw`, the renderer that drew the proof figure,
-draws the interiors, and `object_assignments.draw` draws the assignments.
+`assign_plane` names what the pictures show: air, skin, femur, tibia and joint. The arrays the
+renderers read are saved per series with their digests in a receipt; `object_interiors.draw`, the
+renderer that drew the proof figure, draws the interiors, and `object_assignments.draw` draws the
+named objects.
 
 The settings are the proof run's own (`data/measurements/codex-wiring-rereview-20261012`):
 prominence 3 mm, and border offsets from -3 to 3 mm in 0.5 mm steps. The backend is the plain
-reference; that run used its JIT twin, whose records the contract states are the same. The
-assignments reach as far as the border window does, 3 mm.
+reference; that run used its JIT twin, whose records the contract states are the same.
 
 Run from anywhere: `.venv/bin/python scripts/run_interiors.py --study-uid <uid>`.
 """
@@ -36,7 +35,6 @@ from knee.study.series import Series, selected_slice
 ROOT = Path(__file__).resolve().parent.parent
 PROMINENCE_MM = 3.0
 OFFSETS_MM = (-3.0, -2.5, -2.0, -1.5, -1.0, -0.5, 0.0, 0.5, 1.0, 1.5, 2.0, 2.5, 3.0)
-REACH_MM = max(abs(offset) for offset in OFFSETS_MM)
 
 
 def digest(array: np.ndarray) -> str:
@@ -47,7 +45,7 @@ def digest(array: np.ndarray) -> str:
 
 
 def measure(series: Series) -> tuple[dict, dict[str, np.ndarray]] | str:
-    """One series' interiors and assignments at its middle slice, or the reason no plane was read."""
+    """One series' interiors and named objects at its middle slice, or why no plane was read."""
     if series.volume is None:
         return "no_stacked_volume"
     if series.geometry is None:
@@ -66,14 +64,6 @@ def measure(series: Series) -> tuple[dict, dict[str, np.ndarray]] | str:
         return f"geometry_unreadable: {error}"
     regime = read_regime(series)
     split = regime.background_split if regime is not None else float("nan")
-    thirds = (
-        regime.split_terciles if regime is not None else (float("nan"), float("nan"))
-    )
-    sigmas = (
-        (regime.dark, regime.bright)
-        if regime is not None
-        else (float("nan"), float("nan"))
-    )
     axes = frame.basis_lps / frame.spacing_rc
     plane = series.volume[index]
     reading = read_interiors(
@@ -85,17 +75,7 @@ def measure(series: Series) -> tuple[dict, dict[str, np.ndarray]] | str:
         "reference",
         metric_rc=axes.T @ axes,
     )
-    row = series.row
-    assignment = assign_plane(
-        plane,
-        reading,
-        frame.spacing_rc,
-        frame.basis_lps,
-        thirds,
-        (row.fluid_sensitive, row.fat_suppression),
-        REACH_MM,
-        sigmas,
-    )
+    assignment = assign_plane(plane, reading, frame.basis_lps)
     arrays = {
         "acquired_plane": plane.copy(),
         "b1_dark": reading.dark,
@@ -108,11 +88,8 @@ def measure(series: Series) -> tuple[dict, dict[str, np.ndarray]] | str:
         "b1_trace_codes": reading.trace_codes,
         "b1_trace_points_rc": reading.trace_points_rc,
         "a1_objects": assignment.objects,
-        "a1_margin": assignment.margin,
-        "a1_record_edge": assignment.record_edge,
-        "a1_inside": assignment.inside,
-        "a1_walled": assignment.walled,
     }
+    row = series.row
     record = {
         "series_uid": row.series_uid,
         "view": [row.anatomical_plane, row.fluid_sensitive, row.fat_suppression],
@@ -134,13 +111,9 @@ def measure(series: Series) -> tuple[dict, dict[str, np.ndarray]] | str:
         },
         "assignments": {
             "codes": assignment.codes,
-            "counts": assignment.counts,
             "femur": assignment.femur,
             "tibia": assignment.tibia,
-            "superior_in_plane": assignment.superior_in_plane,
-            "split_terciles": list(thirds),
-            "noise_sigmas": {"dark": sigmas[0], "bright": sigmas[1]},
-            "territories": [asdict(r) for r in assignment.readings],
+            "peaks": [asdict(peak) for peak in assignment.peaks],
         },
     }
     return record, arrays
@@ -169,7 +142,6 @@ def run(
         "request": {
             "prominence_mm": PROMINENCE_MM,
             "offsets_mm": list(OFFSETS_MM),
-            "reach_mm": REACH_MM,
             "slice_index": None,
             "backend": "reference",
         },
