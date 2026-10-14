@@ -11,9 +11,17 @@ Each is named by what the pictures show, read off the interiors' own lenses:
   above the other along the leg (Rohan, 2026-10-13, on the proof figure: «Good»). So: the territory
   with the deepest peak, and the deepest one above or below it. The upper is the femur.
 - JOINT: what lies between the femur and the tibia, along the leg.
+- PATELLA: the bone in front of the femur's lower end. Of the territories whose peak lies in front
+  of the femur's, beside its lower end (within `PATELLA_REACH_MM` above the femur's lowest point),
+  and that do not reach down past that point, the deepest. Seen on the proof's sagittal T1,
+  2026-10-14: the patella is the oval bone there, with the femur's texture and bright marrow, and
+  its own territory but for a thin strip of fat above it; on the fat-suppressed sagittal it shares
+  a territory with the fat pad beneath it, which reaches down past the femur, so it is not named.
 
-The leg runs along the patient's superior axis, read from the slice's own frame. Where that axis
-does not lie in the plane (an axial slice), the femur, tibia and joint are not named. The black
+The leg runs along the patient's superior axis, and front to back along the anterior axis, both
+read from the slice's own frame. Where the leg's axis does not lie in the plane (an axial slice),
+the femur, tibia and joint are not named; where the front-back axis does not (a coronal slice),
+the patella is not. The black
 margin the reconstruction never filled is outside the picture, so nothing is named in it. Nothing
 here draws; the run's renderer draws what this returns.
 """
@@ -29,6 +37,9 @@ from knee.objects.interiors import InteriorReading
 ALONG_THE_LEG = float(np.sqrt(0.5))
 # Air around a leg is a field centimetres across; the picture's edge strips are millimetres.
 AIR_FIELD_MM = 10.0
+# The patella sits beside the femur's lower end, at the trochlea: its middle lies within a few
+# centimetres above the joint. Claude's reading of the anatomy, 2026-10-14, not a sourced number.
+PATELLA_REACH_MM = 50.0
 OBJECT_CODES = {
     "unassigned": 0,
     "air": 1,
@@ -36,6 +47,7 @@ OBJECT_CODES = {
     "femur": 3,
     "tibia": 4,
     "joint": 5,
+    "patella": 6,
 }
 FOUR_NEIGHBOURS = ndi.generate_binary_structure(2, 1)
 
@@ -59,6 +71,7 @@ class PlaneAssignment:
     peaks: tuple[Peak, ...]
     femur: int | None
     tibia: int | None
+    patella: int | None
 
 
 def margin(plane: np.ndarray) -> np.ndarray:
@@ -115,6 +128,44 @@ def pair_code(leg_in_plane: bool, territories: int, partner_found: bool) -> str:
     if not partner_found:
         return "abstain_nothing_above_or_below_the_deepest"
     return "identified"
+
+
+def patella_code(front_in_plane: bool, femur_named: bool, found: bool) -> str:
+    """Whether the patella was named, or why not."""
+    if not front_in_plane:
+        return "abstain_front_runs_through_the_plane"
+    if not femur_named:
+        return "abstain_no_femur"
+    if not found:
+        return "abstain_nothing_in_front_of_the_femurs_lower_end"
+    return "identified"
+
+
+def patella_territory(
+    labels: np.ndarray,
+    peaks: tuple[Peak, ...],
+    femur: int,
+    tibia: int,
+    basis_lps: np.ndarray,
+) -> int | None:
+    """The deepest territory in front of the femur, beside its lower end and not reaching past it."""
+    rows, cols = np.indices(labels.shape)
+    superior = basis_lps[2, 0] * rows + basis_lps[2, 1] * cols
+    lowest = float(superior[labels == femur].min())
+    femur_peak = next(peak for peak in peaks if peak.territory == femur)
+    femur_front = float(basis_lps[1] @ np.asarray(femur_peak.peak_rc, dtype=np.float64))
+    for peak in peaks:  # deepest first
+        if peak.territory in (femur, tibia):
+            continue
+        front = float(basis_lps[1] @ np.asarray(peak.peak_rc, dtype=np.float64))
+        in_front = (
+            front < femur_front
+        )  # anterior is the patient's minus-posterior direction
+        beside = lowest < peak.superior_mm <= lowest + PATELLA_REACH_MM
+        not_below = float(superior[labels == peak.territory].min()) > lowest
+        if in_front and beside and not_below:
+            return peak.territory
+    return None
 
 
 def between_along_the_leg(
@@ -199,4 +250,15 @@ def assign_plane(
         )
         objects[joint] = OBJECT_CODES["joint"]
         codes["joint"] = "identified" if joint.any() else "abstain_nothing_between"
-    return PlaneAssignment(objects, codes, peaks, femur, tibia)
+
+    # PATELLA: the bone in front of the femur's lower end.
+    front_in_plane = float(np.linalg.norm(unit[1])) >= ALONG_THE_LEG
+    patella = None
+    if front_in_plane and femur is not None and tibia is not None:
+        patella = patella_territory(labels, peaks, femur, tibia, basis_lps)
+        if patella is not None:
+            objects[(labels == patella) & (objects == 0)] = OBJECT_CODES["patella"]
+    codes["patella"] = patella_code(
+        front_in_plane, femur is not None, patella is not None
+    )
+    return PlaneAssignment(objects, codes, peaks, femur, tibia, patella)
