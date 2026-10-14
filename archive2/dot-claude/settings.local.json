@@ -1,0 +1,27 @@
+{
+  "enabledMcpjsonServers": [
+    "LintGate",
+    "Detective",
+    "MentalAtlas",
+    "ModelAtlas",
+    "MathLinter",
+    "SetupAtlas",
+    "Mneme",
+    "ShortcutForge",
+    "IphoneRecovery",
+    "Continuity",
+    "LensDB",
+    "XcodeBuildMCP",
+    "Kaggle",
+    "GoogleDrive",
+    "ColabMCP",
+    "Prism",
+    "Filesystem",
+    "Genesis",
+    "Regenesis",
+    "SparseWiki",
+    "SymbolicSpellCheck",
+    "Wayfinder",
+    "Serena"
+  ]
+}

@@ -25,6 +25,17 @@ run of the old gate, on the tree just before the move, had three failing tests: 
 fault in `workbench/render/tile_dome_frames.py` and two route-composition tests that found
 `depth` and `tile_digits` produced but read by no stage.
 
-**Outside the project, untouched:** Claude's memory for this project
-(`~/.claude/projects/-Users-rohanvinaik-Projects-Kaggle-Killer-competitions-RSNA-Knee/memory/`), the
-global instructions and hooks that apply to every project, and the session's scratchpad probes.
+**Renamed so they can never load as instructions** (the content is unchanged): `CLAUDE.md` is
+`CLAUDE.archived.md`, `AGENTS.md` is `AGENTS.archived.md`, and the project's `.claude/` folder (its
+rules and settings) is `dot-claude/`. A file named `CLAUDE.md` or `AGENTS.md`, or a `.claude/`
+folder, loads into an agent's context as soon as it reads anything beside it.
+
+**Claude's memory for this project**, the nine notes that were injected into every prompt
+(`~/.claude/projects/-Users-rohanvinaik-Projects-Kaggle-Killer-competitions-RSNA-Knee/memory/`), is
+in `claude-memory/`; that folder outside the project is now empty.
+
+**Outside the project, untouched:** the shared instruction files one folder up
+(`~/Projects/Kaggle_Killer/CLAUDE.md` and `AGENTS.md`, loaded in every session under Kaggle_Killer and
+shared by every competition), the global instructions and hooks that apply to every project,
+Claude's past session transcripts for this project (read only if a session is resumed), and the
+session's scratchpad probes.
