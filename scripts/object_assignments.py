@@ -50,7 +50,7 @@ def draw_stages(axes, arrays, record):
     named = (
         assigned["femur"],
         assigned["tibia"],
-        assigned["patella"],
+        assigned.get("patella"),  # withdrawn 2026-10-14; older records still carry it
         assigned.get("fibula"),
     )
     for peak in assigned["peaks"]:
