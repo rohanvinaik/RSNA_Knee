@@ -1,16 +1,20 @@
-"""Name the objects of one plane where lenses that each measure one thing concur; abstain elsewhere.
+"""Name the objects that are plain in the interiors' pictures: air, skin, femur, tibia and joint.
 
-His words, 2026-10-13: «"never wrong" simply means you are not saying something false», and «This
-relies on a series of lossy lenses, with the "truth" being recapitulated from addative and subtractive
-superposition of the lossy lenses». So every LENS here measures one property of every place or of
-every territory and knows no question. Every QUESTION (air, skin, bone, femur and tibia, joint) holds
-its own signs, reads each sign as +1, 0 or -1 from one lens, names an object only where its signs
-concur, and otherwise abstains with a named code. Every lens's readings are returned, so the run keeps
-them.
+Each is named by what the pictures show, read off the interiors' own lenses:
 
-The signs are medicine's, from docs/OBJECTS_AND_CONDITIONS.md, cited by its source keys; a line that is
-Claude's own says so. One scale recurs, and it is not new: `reach_mm`, the half-width of the window the
-interiors stage reads a border over (its offsets run from -3 to 3 mm), handed in by the caller. Nothing
+- AIR: the measured low signal outside the leg, where it is a field, at least a centimetre thick.
+  The leg is every territory, its holes filled. Measured on the proof study, 2026-10-14: the air
+  fields are 2.5 to 5 cm thick, and the strips where the picture fades into its black margin are a
+  few millimetres; those strips are not air.
+- SKIN: the leg's places that touch the air.
+- FEMUR and TIBIA: each is its own large territory, and they hold the strongest interior peaks, one
+  above the other along the leg (Rohan, 2026-10-13, on the proof figure: «Good»). So: the territory
+  with the deepest peak, and the deepest one above or below it. The upper is the femur.
+- JOINT: what lies between the femur and the tibia, along the leg.
+
+The leg runs along the patient's superior axis, read from the slice's own frame. Where that axis
+does not lie in the plane (an axial slice), the femur, tibia and joint are not named. The black
+margin the reconstruction never filled is outside the picture, so nothing is named in it. Nothing
 here draws; the run's renderer draws what this returns.
 """
 
@@ -19,10 +23,12 @@ from dataclasses import dataclass
 import numpy as np
 from scipy import ndimage as ndi
 
-from knee.objects.interiors import EDGE_KINDS, TRACE_CODES, InteriorReading
+from knee.objects.interiors import InteriorReading
 
-# The cosine of 45 degrees: more along an axis than across it. Geometry, not a fitted level.
-HALF_TURN_SHARE = float(np.sqrt(0.5))
+# More along the leg than across it: the cosine of 45 degrees. Geometry.
+ALONG_THE_LEG = float(np.sqrt(0.5))
+# Air around a leg is a field centimetres across; the picture's edge strips are millimetres.
+AIR_FIELD_MM = 10.0
 OBJECT_CODES = {
     "unassigned": 0,
     "air": 1,
@@ -31,60 +37,32 @@ OBJECT_CODES = {
     "tibia": 4,
     "joint": 5,
 }
-# The bone answers the femur and tibia question may seat: concurrence, or a wall whose signal the
-# sequence leaves silent. That question then needs its own signs to concur before it names either.
-PAIR_CANDIDATES = ("bone_concurred", "abstain_signal_silent")
-UNREADABLE_EDGES = (EDGE_KINDS["frame"], EDGE_KINDS["acquisition_missing"])
+FOUR_NEIGHBOURS = ndi.generate_binary_structure(2, 1)
 
 
 @dataclass(frozen=True, slots=True)
-class TerritoryReading:
-    """One territory's lens readings, each a measurement, and its bone question's answer.
-
-    The walled part is the territory's share of its deepest place's compartment; every reading
-    after `walled_pixels` is taken over that part. `wall_share` is NaN when no border edge of it
-    could be read.
-    """
+class Peak:
+    """One territory's strongest interior peak: where it is, how deep, and how far superior."""
 
     territory: int
-    pixels: int
-    walled_pixels: int
     depth_mm: float
     peak_rc: tuple[int, int]
     superior_mm: float
-    signal_third: int | None
-    wall_share: float
-    border_edges: int
-    wall_sign: int
-    marrow_sign: int
-    fat_sign: int
-    bone: str
 
 
 @dataclass(frozen=True, slots=True)
 class PlaneAssignment:
-    """One plane's named objects (`OBJECT_CODES`), the field lenses that named them, and the codes."""
+    """The named objects (`OBJECT_CODES`), each object's code, and the peaks they were read from."""
 
     objects: np.ndarray
-    margin: np.ndarray
-    record_edge: np.ndarray
-    inside: np.ndarray
-    walled: np.ndarray
-    readings: tuple[TerritoryReading, ...]
     codes: dict[str, str]
-    counts: dict[str, int]
+    peaks: tuple[Peak, ...]
     femur: int | None
     tibia: int | None
-    superior_in_plane: float
 
 
-def unrecorded(plane: np.ndarray) -> np.ndarray:
-    """Stored zeros joined to the frame through zeros: a margin the reconstruction never filled.
-
-    Measured on the proof study, 2026-10-14: every series stores whole sides of its frame as exact
-    zero around a slightly turned rectangle of content. A zero there reads nothing, so nothing is
-    named in it.
-    """
+def margin(plane: np.ndarray) -> np.ndarray:
+    """The black margin: stored zeros joined to the picture's frame through zeros."""
     zeros = plane == 0
     if not zeros.any():
         return zeros
@@ -93,296 +71,59 @@ def unrecorded(plane: np.ndarray) -> np.ndarray:
     return np.isin(parts, frame[frame > 0])
 
 
-def record_edge(
-    margin: np.ndarray, spacing_rc: tuple[float, float], reach_mm: float
-) -> np.ndarray:
-    """Recorded places within `reach_mm` of the margin or the frame, where the record ends and blends."""
-    if not margin.size:
-        return margin.copy()
-    recorded = np.pad(~margin, 1, constant_values=False)
-    distance = ndi.distance_transform_edt(recorded, sampling=spacing_rc)[1:-1, 1:-1]
-    return ~margin & (distance <= reach_mm)
+def fields(outside: np.ndarray, spacing_rc: np.ndarray) -> np.ndarray:
+    """The pieces of `outside` at least `AIR_FIELD_MM` thick (twice their deepest inner distance)."""
+    parts, count = ndi.label(outside, structure=np.ones((3, 3), dtype=bool))
+    if not count:
+        return outside.copy()
+    depth = ndi.distance_transform_edt(outside, sampling=spacing_rc)
+    thickest = ndi.maximum(depth, parts, index=np.arange(1, count + 1))
+    keep = np.flatnonzero(2.0 * np.asarray(thickest) >= AIR_FIELD_MM) + 1
+    return np.isin(parts, keep)
 
 
-def closed(
-    mask: np.ndarray, spacing_rc: tuple[float, float], radius_mm: float
-) -> np.ndarray:
-    """`mask` closed by a disc of `radius_mm`; the frame repeats its edge, so it adds nothing."""
-    if not mask.size:
-        return mask.copy()
-    half = np.ceil(radius_mm / np.asarray(spacing_rc)).astype(int)
-    rows, cols = np.mgrid[-half[0] : half[0] + 1, -half[1] : half[1] + 1]
-    disc = (rows * spacing_rc[0]) ** 2 + (cols * spacing_rc[1]) ** 2 <= radius_mm**2
-    pad = int(half.max()) + 1
-    padded = np.pad(mask, pad, mode="edge")
-    return ndi.binary_closing(padded, structure=disc)[pad:-pad, pad:-pad]
+def territory_peaks(
+    labels: np.ndarray, distance_mm: np.ndarray, basis_lps: np.ndarray
+) -> tuple[Peak, ...]:
+    """Every territory's strongest interior peak, the deepest first."""
+    found = []
+    for territory in range(1, int(labels.max(initial=0)) + 1):
+        mask = labels == territory
+        if not mask.any():
+            continue
+        depth = float(distance_mm[mask].max())
+        row, col = np.argwhere(mask & (distance_mm == depth))[0]
+        superior = float(basis_lps[2] @ np.asarray((row, col), dtype=np.float64))
+        found.append(Peak(territory, depth, (int(row), int(col)), superior))
+    return tuple(sorted(found, key=lambda peak: peak.depth_mm, reverse=True))
 
 
-def compartments(
-    dark: np.ndarray,
-    available: np.ndarray,
-    spacing_rc: tuple[float, float],
-    reach_mm: float,
-) -> np.ndarray:
-    """The field's above-split places, cut apart where low signal closes across `reach_mm` (labels).
-
-    A gap in a wall of low signal no wider than the border window (a cortex read above the split
-    for a few places) is sealed, so what lies behind the gap is another compartment.
-    """
-    parts, _ = ndi.label(available & ~closed(dark, spacing_rc, reach_mm))
-    return parts
+def along_the_leg(basis_lps: np.ndarray, a_rc, b_rc) -> float:
+    """How much of the way from a to b runs along the leg (the patient's superior axis), 0 to 1."""
+    step = np.asarray(b_rc, dtype=np.float64) - np.asarray(a_rc, dtype=np.float64)
+    way = basis_lps @ step
+    length = float(np.linalg.norm(way))
+    return abs(float(way[2])) / length if length else 0.0
 
 
-def edge_places(
-    points_rc: np.ndarray, normals_rc: np.ndarray, shape: tuple[int, ...]
-) -> tuple[np.ndarray, np.ndarray]:
-    """Each border edge's two places: the territory's own, and its neighbour's (clipped to the plane)."""
-    step = np.sign(normals_rc)
-    limit = np.asarray(shape) - 1
-    inner = np.clip(np.rint(points_rc - step / 2).astype(int), 0, limit)
-    outer = np.clip(np.rint(points_rc + step / 2).astype(int), 0, limit)
-    return inner, outer
+def pair_code(leg_in_plane: bool, territories: int, partner_found: bool) -> str:
+    """Whether the femur and tibia were named, or why not."""
+    if not leg_in_plane:
+        return "abstain_leg_runs_through_the_plane"
+    if territories < 2:
+        return "abstain_fewer_than_two_territories"
+    if not partner_found:
+        return "abstain_nothing_above_or_below_the_deepest"
+    return "identified"
 
 
-def signal_third(value: float, thirds: tuple[float, float]) -> int | None:
-    """-1, 0 or +1: which third of the series' above-split values `value` falls in; None unread."""
-    low, high = thirds
-    if not (np.isfinite(low) and np.isfinite(high) and np.isfinite(value)):
-        return None
-    return -1 if value < low else (1 if value > high else 0)
-
-
-def marrow_sign(third: int | None, fluid_sensitive: str, fat_suppressed: str) -> int:
-    """+1, 0 or -1: what a signal third says of bone marrow on this kind of sequence.
-
-    From the tissue table (docs/OBJECTS_AND_CONDITIONS.md §3, [Kh] Table II). T1W, tags (0, 0):
-    yellow marrow is high, so the bright third carries its signal (+1); red marrow is low or
-    intermediate, so the lower thirds refuse nothing (0). Fat-suppressed, tags (1, 1): yellow
-    marrow is very low, so the dark third carries the suppressed signal (+1); red marrow, muscle,
-    fat and cartilage all reach the middle third (0); no marrow is bright while fluid is very high,
-    so the bright third refuses it (-1). T2W or PD without suppression (1, 0), and any other
-    pairing: the table gives marrow no signal of its own (0).
-    """
-    if third is None:
-        return 0
-    if (fluid_sensitive, fat_suppressed) == ("0", "0"):
-        return 1 if third > 0 else 0
-    if (fluid_sensitive, fat_suppressed) == ("1", "1"):
-        return -1 if third > 0 else (1 if third < 0 else 0)
-    return 0
-
-
-def fat_sign(third: int | None, fluid_sensitive: str, fat_suppressed: str) -> int:
-    """+1, 0 or -1: what a signal third says of fat on this kind of sequence.
-
-    From the same table. T1W (0, 0): fat is high, so the bright third carries its signal (+1) and
-    the dark third refuses it (-1). Fat-suppressed (1, 1): fat is low to intermediate and never
-    bright, so the bright third refuses it (-1) and the others say nothing (0). Any other
-    pairing: nothing (0).
-    """
-    if third is None:
-        return 0
-    if (fluid_sensitive, fat_suppressed) == ("0", "0"):
-        return 1 if third > 0 else (-1 if third < 0 else 0)
-    if (fluid_sensitive, fat_suppressed) == ("1", "1"):
-        return -1 if third > 0 else 0
-    return 0
-
-
-def wall_sign(bracketed: int, readable: int) -> int:
-    """+1, 0 or -1: whether a thin dark band walls most of a territory's readable border.
-
-    A bone is walled by its cortex, very low on every sequence ([Kh]); the interiors stage reads a
-    thin dark band with tissue beyond it as a bracketed trace. "Most" is a majority, at least half:
-    Claude's bar, from common sense, never fitted. 0 when no border edge could be read.
-    """
-    if readable <= 0:
-        return 0
-    return 1 if 2 * bracketed >= readable else -1
-
-
-def bone_code(wall: int, marrow: int) -> str:
-    """Bone where its two signs concur: the cortex's wall and the marrow's signal.
-
-    [Kh]: bone is told from the soft tissue around it «by the very-low cortex and the marrow's fat
-    signal». A sign the sequence leaves silent (0) neither agrees nor refuses, and one voice is not
-    concurrence, so the question stays open; measured 2026-10-14, the wall alone was met by air
-    and muscle territories on a coronal T1W. A sign against the other also leaves it open.
-    """
-    if wall == 0:
-        return "abstain_wall_unread"
-    if wall > 0:
-        if marrow > 0:
-            return "bone_concurred"
-        return "abstain_signal_silent" if marrow == 0 else "abstain_signs_disagree"
-    return "abstain_signs_disagree" if marrow > 0 else "not_bone"
-
-
-def place_signs(
-    plane: np.ndarray, thirds: tuple[float, float], tags: tuple[str, str], sign
-) -> np.ndarray:
-    """`sign` (`marrow_sign` or `fat_sign`) read place by place from each place's own third.
-
-    0 wherever the thirds are unread or a value is not finite: a sign not read says nothing.
-    """
-    low, high = thirds
-    value = np.asarray(plane, dtype=np.float64)
-    signs = np.zeros(plane.shape, dtype=np.int8)
-    if not (np.isfinite(low) and np.isfinite(high)):
-        return signs
-    third = np.where(value < low, -1, np.where(value > high, 1, 0))
-    for t in (-1, 0, 1):
-        signs[(third == t) & np.isfinite(value)] = sign(t, *tags)
-    return signs
-
-
-def taken_in(part: np.ndarray, refused: np.ndarray) -> np.ndarray:
-    """The refused places of `part` that run on, still refused, out of it: what it took in.
-
-    Fluid that a bone's territory reached runs on out of the bone into the joint or a recess; a
-    refused place the bone holds alone is its own reading (noise, or later a bruise's oedema), and
-    stays the bone's. Measured 2026-10-14 on a coronal fat-suppressed tibia: refusing every bright
-    place left the marrow speckled with holes.
-    """
-    parts, _ = ndi.label(refused)
-    crossing = np.unique(parts[refused & ~part])
-    return part & np.isin(parts, crossing[crossing > 0])
-
-
-def held_body(mask: np.ndarray, peak_rc: tuple[int, int]) -> np.ndarray:
-    """The connected piece of `mask` that holds `peak_rc`: one bone is one connected solid.
-
-    A piece cut off from it (by fluid taken out, say) is not that bone. Empty when the peak itself
-    is not in `mask`.
-    """
-    parts, _ = ndi.label(mask)
-    own = parts[peak_rc]
-    return parts == own if own else np.zeros(mask.shape, dtype=bool)
-
-
-def pair_code(
-    superior_in_plane: float,
-    bones: int,
-    deeper_others: int,
-    stacked: bool,
-    crossed: bool,
-) -> str:
-    """Femur over tibia: the two deepest candidates, stacked along the leg's axis, low signal between.
-
-    The femur and tibia are the knee's two large bones and meet at the tibiofemoral joint
-    ([R-KNEE]); the leg lies along the patient's superior axis. A candidate is a territory whose
-    bone question concurred or stood open only on a silent signal (`PAIR_CANDIDATES`). Abstains
-    when that axis does not lie in the plane, when there are fewer than two candidates, when any
-    other territory is at least as deep as the second (the two large bones must be the field's two
-    deepest interiors; measured 2026-10-14, without this two shallow strips of soft tissue were
-    named femur and tibia on a sagittal fat-suppressed plane whose marrow had broken apart), when
-    the two are not stacked, or when no low signal lies between them.
-    """
-    if not np.isfinite(superior_in_plane) or superior_in_plane < HALF_TURN_SHARE:
-        return "abstain_superior_through_plane"
-    if bones < 2:
-        return "abstain_fewer_than_two_bones"
-    if deeper_others:
-        return "abstain_candidates_not_the_two_deepest"
-    if not stacked:
-        return "abstain_two_deepest_bones_not_stacked"
-    if not crossed:
-        return "abstain_no_low_signal_between"
-    return "femur_tibia"
-
-
-def joint_code(fat: int) -> str:
-    """What an above-split place between the femur and the tibia is named, by its own fat sign.
-
-    The joint holds cartilage and fluid ([C], [Kh]); the fat pads are objects of their own that
-    border it, and Hoffa's «follows the signal of subcutaneous fat on all pulse sequences» ([Kh]).
-    So a place there is joint where its signal refuses fat (-1: fluid's, low on T1W and very high
-    under fat suppression), and abstains where it carries fat's (+1, a fat pad or marrow) or says
-    nothing (0, where cartilage and fat cannot be told apart by signal).
-    """
-    if fat < 0:
-        return "joint"
-    return "abstain_fat_signal" if fat > 0 else "abstain_signal_silent"
-
-
-def noise_sign(dark_sigma: float, bright_sigma: float) -> int:
-    """+1, 0 or -1: whether the places below the split hold the air's noise and nothing else.
-
-    The regime reads one noise law twice: from the places below the split (`RegimeKey.dark`), and
-    from the tissue's own texture, which never reads the background (`RegimeKey.bright`). If the
-    places below the split are noise alone, their reading can be no louder than the tissue's (+1);
-    louder means they hold signal too, so low signal there is not no signal (-1). 0 when either is
-    not read. The bar is the two readings' equality, nothing fitted. Measured 2026-10-14 over five
-    studies: every series on which air was seen painted over a structure inside the knee read
-    louder (1.50 to 3.98 times), and every series that read quieter (0.37 to 0.90) was named right.
-    """
-    if not (np.isfinite(dark_sigma) and np.isfinite(bright_sigma)):
-        return 0
-    if dark_sigma <= 0 or bright_sigma <= 0:
-        return 0
-    return 1 if dark_sigma <= bright_sigma else -1
-
-
-def air_code(
-    seeded: int,
-    body: int,
-    noise: int,
-    outside: int,
-    outside_dark: int,
-    open_dark: int,
-    air: int,
-) -> str:
-    """Whether air was named, or why not, from the counts of the places each sign kept.
-
-    The body is the piece of the outline that holds the field's centre: a knee is imaged with the
-    knee at the centre of the field of view, so an outline that misses the centre has lost the
-    knee. Measured 2026-10-14: on three fat-suppressed series whose split lay inside the tissue,
-    the outline shrank to scattered bright places and air was painted across the knee. Air is
-    read only where the noise law vouches that low signal is no signal (`noise_sign`).
-    """
-    if air:
-        return "identified"
-    if not seeded:
-        return "abstain_no_body"
-    if not body:
-        return "abstain_body_not_at_field_centre"
-    if noise == 0:
-        return "abstain_noise_law_unread"
-    if noise < 0:
-        return "abstain_low_signal_holds_more_than_noise"
-    if not outside:
-        return "abstain_no_outside_field"
-    if not outside_dark:
-        return "abstain_outside_not_low_signal"
-    if not open_dark:
-        return "abstain_low_signal_only_at_record_edge"
-    return "abstain_no_low_signal_wider_than_a_border"
-
-
-def low_signal_between(dark: np.ndarray, a_rc, b_rc) -> bool:
-    """Whether the straight path between two places crosses measured low signal."""
-    a, b = np.asarray(a_rc, dtype=np.float64), np.asarray(b_rc, dtype=np.float64)
-    steps = int(np.ceil(2 * np.abs(b - a).max())) + 1
-    path = np.rint(a + np.linspace(0, 1, steps)[:, None] * (b - a)).astype(int)
-    return bool(dark[path[:, 0], path[:, 1]].any())
-
-
-def superior_share(basis_lps: np.ndarray, a_rc, b_rc) -> float:
-    """How much of the patient vector from a to b lies along the superior axis (0 to 1)."""
-    v = basis_lps @ (
-        np.asarray(b_rc, dtype=np.float64) - np.asarray(a_rc, dtype=np.float64)
-    )
-    norm = float(np.linalg.norm(v))
-    return abs(float(v[2])) / norm if norm else float("nan")
-
-
-def between_along_superior(
+def between_along_the_leg(
     upper: np.ndarray, lower: np.ndarray, basis_lps: np.ndarray
 ) -> np.ndarray:
-    """The places strictly between `upper` and `lower` on lines along the in-plane superior axis.
+    """The places between `upper` and `lower` on each line along the leg, where both lie on it.
 
-    The line is the pixel axis nearer the superior axis; along it, from the last `upper` place to
-    the first `lower` place, wherever both lie on the line in that order.
+    The line is the pixel axis nearer the leg's axis; on it, the places after the last `upper`
+    place and before the first `lower` place.
     """
     rows_axis = abs(basis_lps[2, 0]) >= abs(basis_lps[2, 1])
     a, b = (upper, lower) if rows_axis else (upper.T, lower.T)
@@ -392,243 +133,70 @@ def between_along_superior(
     index = np.arange(a.shape[0])[:, None]
     last_upper = np.where(a, index, -1).max(axis=0, initial=-1)
     first_lower = np.where(b, index, a.shape[0]).min(axis=0, initial=a.shape[0])
-    present = (
-        (last_upper >= 0) & (first_lower < a.shape[0]) & (last_upper < first_lower)
-    )
-    between = present & (index > last_upper) & (index < first_lower)
+    both = (last_upper >= 0) & (first_lower < a.shape[0]) & (last_upper < first_lower)
+    between = both & (index > last_upper) & (index < first_lower)
     if superior_step > 0:
         between = between[::-1]
     return between if rows_axis else between.T
 
 
-def territory_readings(
-    plane: np.ndarray,
-    reading: InteriorReading,
-    readable: np.ndarray,
-    compartment: np.ndarray,
-    basis_lps: np.ndarray,
-    thirds: tuple[float, float],
-    tags: tuple[str, str],
-) -> tuple[tuple[TerritoryReading, ...], np.ndarray]:
-    """Every territory's lens readings over its walled part, and the map of the walled parts."""
-    labels, distance = reading.labels, reading.distance_mm
-    count = int(labels.max(initial=0))
-    walled = np.zeros(labels.shape, dtype=np.int32)
-    found = []
-    for territory in range(1, count + 1):
-        mask = labels == territory
-        if not mask.any():
-            continue
-        depth = float(distance[mask].max())
-        peak = np.argwhere(mask & (distance == depth))[0]
-        own = compartment[peak[0], peak[1]]
-        if own:
-            walled[mask & (compartment == own)] = territory
-        found.append((territory, mask, depth, peak))
-    inner, _ = edge_places(
-        reading.edge_points_rc, reading.edge_normals_rc, labels.shape
-    )
-    regions = reading.edge_regions.astype(np.int64)
-    mine = readable & (walled[inner[:, 0], inner[:, 1]] == regions)
-    bracketed = (reading.edge_kinds == EDGE_KINDS["low_signal"]) & (
-        reading.trace_codes == TRACE_CODES["bracketed"]
-    )
-    readable_count = np.bincount(regions[mine], minlength=count + 1)
-    bracketed_count = np.bincount(regions[mine & bracketed], minlength=count + 1)
-    readings = []
-    for territory, mask, depth, peak in found:
-        part = walled == territory
-        third = (
-            signal_third(float(np.median(plane[part])), thirds) if part.any() else None
-        )
-        held, read = int(bracketed_count[territory]), int(readable_count[territory])
-        wall = wall_sign(held, read)
-        marrow = marrow_sign(third, *tags)
-        readings.append(
-            TerritoryReading(
-                territory=territory,
-                pixels=int(mask.sum()),
-                walled_pixels=int(part.sum()),
-                depth_mm=depth,
-                peak_rc=(int(peak[0]), int(peak[1])),
-                superior_mm=float(basis_lps[2] @ peak),
-                signal_third=third,
-                wall_share=held / read if read else float("nan"),
-                border_edges=read,
-                wall_sign=wall,
-                marrow_sign=marrow,
-                fat_sign=fat_sign(third, *tags),
-                bone=bone_code(wall, marrow),
-            )
-        )
-    return tuple(readings), walled
-
-
 def assign_plane(
-    plane: np.ndarray,
-    reading: InteriorReading,
-    spacing_rc: tuple[float, float],
-    basis_lps: np.ndarray,
-    thirds: tuple[float, float],
-    tags: tuple[str, str],
-    reach_mm: float,
-    noise_sigmas: tuple[float, float] = (float("nan"), float("nan")),
+    plane: np.ndarray, reading: InteriorReading, basis_lps: np.ndarray
 ) -> PlaneAssignment:
-    """Ask every question of the plane's places and territories; keep every reading.
-
-    `tags` is the series' (Fluid_Sensitive, Fat_Suppression) pair as the table gives it, `thirds`
-    its terciles above the background split (`RegimeKey.split_terciles`), and `noise_sigmas` its
-    two readings of the noise law (`RegimeKey.dark`, `RegimeKey.bright`).
-    """
-    dark, available, labels = reading.dark, reading.available, reading.labels
+    """Name air, skin, femur, tibia and joint on one plane from its interiors reading."""
+    dark, labels = reading.dark, reading.labels
     objects = np.zeros(plane.shape, dtype=np.int8)
     codes: dict[str, str] = {}
-    margin = unrecorded(plane)
-    recorded = available & ~margin
-    edge = record_edge(margin, spacing_rc, reach_mm)
-    seeded = labels > 0
+    outside_picture = margin(plane)
 
-    # AIR: measured low signal, outside the outline (the seeded tissue with its holes filled), with
-    # a body at the field's centre, recorded, off the record's edge, in a field reaching deeper than
-    # a border window from the tissue.
-    inside = ndi.binary_fill_holes(seeded)
-    body = held_body(inside, (plane.shape[0] // 2, plane.shape[1] // 2))
-    noise = noise_sign(*noise_sigmas)
-    outside = recorded & ~inside
-    open_dark = outside & dark & ~edge
-    if body.any() and noise > 0:
-        depth = ndi.distance_transform_edt(~seeded, sampling=spacing_rc)
-        parts, _ = ndi.label(open_dark, structure=np.ones((3, 3), dtype=bool))
-        held = np.unique(parts[open_dark & (depth > reach_mm)])
-        air = np.isin(parts, held[held > 0])
-    else:
-        air = np.zeros(plane.shape, dtype=bool)
+    # AIR: the low signal outside the leg, where it is a field. SKIN: the leg's places touching it.
+    leg = ndi.binary_fill_holes(labels > 0)
+    spacing_rc = np.linalg.norm(basis_lps, axis=0)
+    air = fields(dark & ~leg & ~outside_picture, spacing_rc) & leg.any()
     objects[air] = OBJECT_CODES["air"]
-    codes["air"] = air_code(
-        int(seeded.sum()),
-        int(body.sum()),
-        noise,
-        int(outside.sum()),
-        int((outside & dark).sum()),
-        int(open_dark.sum()),
-        int(air.sum()),
+    codes["air"] = (
+        "identified"
+        if air.any()
+        else "abstain_no_leg"
+        if not leg.any()
+        else "abstain_no_field_outside_the_leg"
     )
-
-    # SKIN: the body's own above-split places that touch the air.
-    touching = ndi.binary_dilation(air, structure=ndi.generate_binary_structure(2, 1))
-    skin = body & recorded & ~dark & touching
+    skin = leg & ndi.binary_dilation(air, structure=FOUR_NEIGHBOURS)
     objects[skin] = OBJECT_CODES["skin"]
     codes["skin"] = "identified" if skin.any() else "abstain_no_air"
 
-    # BONES: every territory asked, over its walled part; FEMUR over TIBIA from the two deepest.
-    compartment = compartments(dark, available, spacing_rc, reach_mm)
-    inner, outer = edge_places(
-        reading.edge_points_rc, reading.edge_normals_rc, plane.shape
-    )
-    readable = (
-        ~np.isin(reading.edge_kinds, UNREADABLE_EDGES)
-        & ~edge[inner[:, 0], inner[:, 1]]
-        & ~edge[outer[:, 0], outer[:, 1]]
-        & ~margin[outer[:, 0], outer[:, 1]]
-    )
-    readings, walled = territory_readings(
-        plane, reading, readable, compartment, basis_lps, thirds, tags
-    )
+    # FEMUR and TIBIA: the deepest territory, and the deepest one above or below it.
+    peaks = territory_peaks(labels, reading.distance_mm, basis_lps)
     unit = basis_lps / np.linalg.norm(basis_lps, axis=0)
-    superior_in_plane = float(np.linalg.norm(unit[2]))
-    ranked = sorted(readings, key=lambda r: r.depth_mm, reverse=True)
-    bones = [r for r in ranked if r.bone in PAIR_CANDIDATES]
-    deeper_others, stacked, crossed = 0, False, False
-    if len(bones) >= 2:
-        first, second = bones[0], bones[1]
-        deeper_others = sum(
-            r.depth_mm >= second.depth_mm
-            and r.territory not in (first.territory, second.territory)
-            for r in ranked
+    leg_in_plane = float(np.linalg.norm(unit[2])) >= ALONG_THE_LEG
+    partner = None
+    if leg_in_plane and peaks:
+        partner = next(
+            (
+                peak
+                for peak in peaks[1:]
+                if along_the_leg(basis_lps, peaks[0].peak_rc, peak.peak_rc)
+                >= ALONG_THE_LEG
+            ),
+            None,
         )
-        stacked = (
-            superior_share(basis_lps, first.peak_rc, second.peak_rc) >= HALF_TURN_SHARE
-        )
-        crossed = low_signal_between(dark, first.peak_rc, second.peak_rc)
-    codes["pair"] = pair_code(
-        superior_in_plane, len(bones), deeper_others, stacked, crossed
+    codes["femur"] = codes["tibia"] = codes["joint"] = pair_code(
+        leg_in_plane, len(peaks), partner is not None
     )
-    counts: dict[str, int] = {}
     femur = tibia = None
-    if codes["pair"] == "femur_tibia":
-        high, low = sorted(bones[:2], key=lambda r: r.superior_mm, reverse=True)
-        femur, tibia = high.territory, low.territory
-        # The marrow sign read place by place: under fat suppression a bright place is not marrow,
-        # and where it runs on out of a bone's walled part it is fluid the territory took in.
-        refused = place_signs(plane, thirds, tags, marrow_sign) < 0
-        conflict = np.zeros(plane.shape, dtype=bool)
-        for name, reading_of in (("femur", high), ("tibia", low)):
-            part = walled == reading_of.territory
-            fluid = taken_in(part, refused)
-            bone = held_body(part & ~fluid, reading_of.peak_rc)
-            conflict |= bone & (objects != 0)
-            objects[bone & (objects == 0)] = OBJECT_CODES[name]
-            counts[f"{name}_outside_walled"] = int(
-                np.count_nonzero((labels == reading_of.territory) & ~part)
-            )
-            counts[f"{name}_refused_by_signal"] = int(np.count_nonzero(fluid))
-            counts[f"{name}_cut_off"] = int(np.count_nonzero(part & ~fluid & ~bone))
-        objects[conflict] = OBJECT_CODES["unassigned"]
-        counts["conflict"] = int(conflict.sum())
-        codes["femur"] = codes["tibia"] = "identified"
-        # JOINT: the above-split places between the two along the leg's axis whose own signal
-        # refuses fat.
-        between = (
-            between_along_superior(
-                objects == OBJECT_CODES["femur"],
-                objects == OBJECT_CODES["tibia"],
-                basis_lps,
-            )
-            & recorded
+    if partner is not None:
+        upper, lower = sorted(
+            (peaks[0], partner), key=lambda peak: peak.superior_mm, reverse=True
+        )
+        femur, tibia = upper.territory, lower.territory
+        objects[labels == femur] = OBJECT_CODES["femur"]
+        objects[labels == tibia] = OBJECT_CODES["tibia"]
+        # JOINT: what lies between the two bones along the leg.
+        joint = (
+            between_along_the_leg(labels == femur, labels == tibia, basis_lps)
             & (objects == 0)
+            & ~outside_picture
         )
-        above = between & ~dark
-        fat_here = place_signs(plane, thirds, tags, fat_sign)
-        verdicts = {f: joint_code(f) for f in (-1, 0, 1)}
-        joint = above & np.isin(
-            fat_here, [f for f, v in verdicts.items() if v == "joint"]
-        )
-        abstained = {
-            v: int(np.count_nonzero(above & (fat_here == f)))
-            for f, v in verdicts.items()
-            if v != "joint"
-        }
         objects[joint] = OBJECT_CODES["joint"]
-        codes["joint"] = (
-            "identified"
-            if joint.any()
-            else "abstain_between_without_fluid_signal"
-            if above.any()
-            else "abstain_nothing_between"
-        )
-        counts["between_low_signal"] = int(np.count_nonzero(between & dark))
-        counts["between_fat_signal"] = abstained["abstain_fat_signal"]
-        counts["between_signal_silent"] = abstained["abstain_signal_silent"]
-    else:
-        for name in ("femur", "tibia", "joint"):
-            codes[name] = codes["pair"]
-    for name, value in OBJECT_CODES.items():
-        if name != "unassigned":
-            counts[name] = int(np.count_nonzero(objects == value))
-    counts["unrecorded"] = int(margin.sum())
-    counts["record_edge"] = int(edge.sum())
-    counts["outside_not_low_signal"] = int(np.count_nonzero(outside & ~dark))
-    counts["outside_low_signal_not_air"] = int(np.count_nonzero(outside & dark & ~air))
-    return PlaneAssignment(
-        objects,
-        margin,
-        edge,
-        inside,
-        walled,
-        readings,
-        codes,
-        counts,
-        femur,
-        tibia,
-        superior_in_plane,
-    )
+        codes["joint"] = "identified" if joint.any() else "abstain_nothing_between"
+    return PlaneAssignment(objects, codes, peaks, femur, tibia)
