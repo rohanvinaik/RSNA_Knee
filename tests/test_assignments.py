@@ -25,15 +25,47 @@ SAGITTAL = np.array(
 )  # rows inferior, columns posterior
 
 
+def rounded_box(shape, r0: int, r1: int, c0: int, c1: int, radius: int) -> np.ndarray:
+    """The places inside a box with rounded corners: bones' ends are round, never square."""
+    rows, cols = np.indices(shape)
+    near_r = np.clip(rows, r0 + radius, r1 - 1 - radius)
+    near_c = np.clip(cols, c0 + radius, c1 - 1 - radius)
+    return (rows - near_r) ** 2 + (cols - near_c) ** 2 <= radius**2
+
+
 def scene() -> np.ndarray:
     plane = np.full((140, 120), 2.0)  # air
     plane[:3, :] = 0.0  # the black margin
     plane[:, :3] = 0.0
     plane[10:132, 20:100] = 40.0  # the leg's soft tissue
     for top in (16, 76):  # the femur above, the tibia below
-        plane[top : top + 46, 32:88] = 1.0  # the dark shell
-        plane[top + 2 : top + 44, 34:86] = 100.0  # the marrow
+        shell = rounded_box(plane.shape, top, top + 46, 32, 88, 8)
+        plane[shell] = 1.0  # the dark shell
+        plane[rounded_box(plane.shape, top + 2, top + 44, 34, 86, 6)] = 100.0  # marrow
     plane[62:76, 38:82] = 25.0  # the joint between them
+    return plane
+
+
+FINE_MM = (
+    0.5  # the meniscus scene's pixel, near the 0.44 mm of the proof's coronal planes
+)
+
+
+def fine_coronal_scene(menisci: bool = False) -> np.ndarray:
+    """A coronal knee at half-millimetre pixels: bones with a 1 mm shell, round at their ends, and
+    the joint between them; with `menisci`, a 7 mm wedge at each end of the joint, reaching out
+    past the bones' edges as menisci do."""
+    plane = np.full((280, 240), 2.0)  # air
+    plane[20:264, 40:200] = 40.0  # the leg's soft tissue
+    for top in (32, 152):  # the femur above, the tibia below
+        plane[rounded_box(plane.shape, top, top + 92, 64, 176, 16)] = 1.0  # the shell
+        plane[rounded_box(plane.shape, top + 2, top + 90, 66, 174, 14)] = (
+            100.0  # marrow
+        )
+    plane[124:152, 76:164] = 25.0  # the joint between them
+    if menisci:
+        plane[124:152, 52:84] = 1.0
+        plane[124:152, 156:188] = 1.0
     return plane
 
 
@@ -59,9 +91,10 @@ def sagittal_scene(fat_pad_reaching_down: bool = False) -> np.ndarray:
     return plane
 
 
-def assigned(plane, basis=CORONAL):
-    reading = read_interiors(plane, (1.0, 1.0), 5.0, 3.0, OFFSETS, "reference")
-    return assign_plane(plane, reading, basis)
+def assigned(plane, basis=CORONAL, pixel_mm: float = 1.0):
+    spacing = (pixel_mm, pixel_mm)
+    reading = read_interiors(plane, spacing, 5.0, 3.0, OFFSETS, "reference")
+    return assign_plane(plane, reading, basis * pixel_mm)
 
 
 def test_the_scene_names_air_skin_femur_over_tibia_and_the_joint():
@@ -134,6 +167,26 @@ def test_the_patella_is_not_named_where_front_and_back_run_through_the_plane():
     assert coronal.codes["patella"] == "abstain_front_runs_through_the_plane"
     axial = assigned(scene(), AXIAL)
     assert axial.codes["patella"] == "abstain_no_femur"
+
+
+def test_the_menisci_are_the_dark_wedges_at_the_two_ends_of_the_joint():
+    result = assigned(fine_coronal_scene(menisci=True), pixel_mm=FINE_MM)
+    assert result.codes["meniscus"] == "identified"
+    assert result.menisci == 2
+    assert result.objects[138, 66] == OBJECT_CODES["meniscus"]
+    assert result.objects[138, 172] == OBJECT_CODES["meniscus"]
+    assert result.objects[138, 120] == OBJECT_CODES["joint"]
+    # the bones' thin shells along the joint are not menisci
+    assert result.objects[123, 120] != OBJECT_CODES["meniscus"]
+
+
+def test_no_menisci_without_thick_low_signal_or_on_a_sagittal_slice():
+    plain = assigned(fine_coronal_scene(), pixel_mm=FINE_MM)
+    assert plain.codes["joint"] == "identified"
+    assert plain.codes["meniscus"] == "abstain_no_thick_low_signal_in_the_joint"
+    sagittal = assigned(sagittal_scene(), SAGITTAL)
+    assert sagittal.codes["meniscus"] == "abstain_side_to_side_runs_through_the_plane"
+    assert assigned(scene(), AXIAL).codes["meniscus"] == "abstain_no_joint"
 
 
 def test_pair_code_names_why():

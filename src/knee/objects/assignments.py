@@ -1,4 +1,4 @@
-"""Name the objects that are plain in the interiors' pictures: air, skin, femur, tibia and joint.
+"""Name the objects that are plain in the interiors' pictures, one at a time.
 
 Each is named by what the pictures show, read off the interiors' own lenses:
 
@@ -17,11 +17,20 @@ Each is named by what the pictures show, read off the interiors' own lenses:
   2026-10-14: the patella is the oval bone there, with the femur's texture and bright marrow, and
   its own territory but for a thin strip of fat above it; on the fat-suppressed sagittal it shares
   a territory with the fat pad beneath it, which reaches down past the femur, so it is not named.
+- MENISCI: on a coronal slice, the dark triangles at the two ends of the joint, between the femur's
+  condyle and the tibia's plateau («an isosceles triangle on coronal images», low on every
+  sequence: docs/OBJECTS_AND_CONDITIONS.md). So: the low signal with every part thinner than
+  `MENISCUS_THICKNESS_MM` rubbed away (the bones' thin shells), the pieces of it that touch the
+  joint, each whole, since a meniscus reaches out past the bones' ends, and the piece nearest each
+  end. Seen on the proof's fat-suppressed coronal, 2026-10-14; on its T1 coronal the joint's
+  dark band is not measured low signal, so nothing is named. The middle sagittal slice passes
+  through the notch, where the joint holds the cruciate ligaments, so menisci are not named there.
 
-The leg runs along the patient's superior axis, and front to back along the anterior axis, both
-read from the slice's own frame. Where the leg's axis does not lie in the plane (an axial slice),
-the femur, tibia and joint are not named; where the front-back axis does not (a coronal slice),
-the patella is not. The black
+The leg runs along the patient's superior axis, front to back along the anterior axis, and side to
+side along the left axis, all read from the slice's own frame. Where the leg's axis does not lie in
+the plane (an axial slice), the femur, tibia and joint are not named; where the front-back axis
+does not (a coronal slice), the patella is not; where the side-to-side axis does not (a sagittal
+slice), the menisci are not. The black
 margin the reconstruction never filled is outside the picture, so nothing is named in it. Nothing
 here draws; the run's renderer draws what this returns.
 """
@@ -40,6 +49,9 @@ AIR_FIELD_MM = 10.0
 # The patella sits beside the femur's lower end, at the trochlea: its middle lies within a few
 # centimetres above the joint. Claude's reading of the anatomy, 2026-10-14, not a sourced number.
 PATELLA_REACH_MM = 50.0
+# A bone's shell along the joint is about a millimetre thick; a meniscus is about 5 mm at its base.
+# Claude's reading of the proof's fat-suppressed coronal, 2026-10-14.
+MENISCUS_THICKNESS_MM = 2.0
 OBJECT_CODES = {
     "unassigned": 0,
     "air": 1,
@@ -48,6 +60,7 @@ OBJECT_CODES = {
     "tibia": 4,
     "joint": 5,
     "patella": 6,
+    "meniscus": 7,
 }
 FOUR_NEIGHBOURS = ndi.generate_binary_structure(2, 1)
 
@@ -72,6 +85,7 @@ class PlaneAssignment:
     femur: int | None
     tibia: int | None
     patella: int | None
+    menisci: int
 
 
 def margin(plane: np.ndarray) -> np.ndarray:
@@ -168,6 +182,46 @@ def patella_territory(
     return None
 
 
+def meniscus_code(sides_in_plane: bool, joint_named: bool, found: int) -> str:
+    """Whether menisci were named, or why not."""
+    if not sides_in_plane:
+        return "abstain_side_to_side_runs_through_the_plane"
+    if not joint_named:
+        return "abstain_no_joint"
+    if not found:
+        return "abstain_no_thick_low_signal_in_the_joint"
+    return "identified"
+
+
+def thick_parts(
+    mask: np.ndarray, spacing_rc: np.ndarray, thickness_mm: float
+) -> np.ndarray:
+    """`mask` with every part thinner than `thickness_mm` rubbed away (an opening by a disc)."""
+    radius = thickness_mm / 2.0
+    half = np.maximum(1, np.floor(radius / spacing_rc)).astype(int)
+    rows, cols = np.mgrid[-half[0] : half[0] + 1, -half[1] : half[1] + 1]
+    disc = (rows * spacing_rc[0]) ** 2 + (cols * spacing_rc[1]) ** 2 <= radius**2
+    return ndi.binary_opening(mask, structure=disc)
+
+
+def end_pieces(pieces: np.ndarray, count: int, across: np.ndarray) -> list[int]:
+    """The piece nearest each end of the joint: the outermost piece on each side of its middle.
+
+    `across` is each place's position across the leg; the middle is the middle of all the pieces.
+    """
+    if not count:
+        return []
+    labels = np.arange(1, count + 1)
+    where = np.asarray(ndi.mean(across, pieces, index=labels))
+    middle = float(across[pieces > 0].mean())
+    chosen = []
+    for side in (where < middle, where >= middle):
+        if side.any():
+            outermost = np.abs(where - middle) * side
+            chosen.append(int(labels[int(np.argmax(outermost))]))
+    return chosen
+
+
 def between_along_the_leg(
     upper: np.ndarray, lower: np.ndarray, basis_lps: np.ndarray
 ) -> np.ndarray:
@@ -261,4 +315,22 @@ def assign_plane(
     codes["patella"] = patella_code(
         front_in_plane, femur is not None, patella is not None
     )
-    return PlaneAssignment(objects, codes, peaks, femur, tibia, patella)
+
+    # MENISCI: the thick low signal touching the joint, whole, the piece nearest each end.
+    sides_in_plane = float(np.linalg.norm(unit[0])) >= ALONG_THE_LEG
+    menisci = 0
+    joint_places = objects == OBJECT_CODES["joint"]
+    if sides_in_plane and joint_places.any():
+        thick = thick_parts(dark & ~outside_picture, spacing_rc, MENISCUS_THICKNESS_MM)
+        pieces, _ = ndi.label(thick)
+        near_joint = ndi.binary_dilation(joint_places, structure=FOUR_NEIGHBOURS)
+        touching = np.unique(pieces[near_joint & (pieces > 0)])
+        pieces = np.where(np.isin(pieces, touching), pieces, 0)
+        pieces, count = ndi.label(pieces > 0)
+        rows, cols = np.indices(plane.shape)
+        across = basis_lps[0, 0] * rows + basis_lps[0, 1] * cols
+        for piece in end_pieces(pieces, count, across):
+            objects[pieces == piece] = OBJECT_CODES["meniscus"]
+            menisci += 1
+    codes["meniscus"] = meniscus_code(sides_in_plane, joint_places.any(), menisci)
+    return PlaneAssignment(objects, codes, peaks, femur, tibia, patella, menisci)
