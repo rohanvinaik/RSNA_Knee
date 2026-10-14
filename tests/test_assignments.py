@@ -10,16 +10,22 @@ import numpy as np
 
 from knee.objects.assignments import (
     OBJECT_CODES,
+    UNSEEN,
+    Peak,
+    PlaneAssignment,
     assign_plane,
     between_along_the_leg,
     end_pieces,
     fibula_block,
     fibula_code,
     fibula_on_slice,
+    laid_on,
     main_slice,
     margin,
     meniscus_side,
     pair_code,
+    patella_code,
+    with_partner,
 )
 from knee.objects.interiors import read_interiors
 
@@ -95,10 +101,16 @@ def sagittal_scene() -> np.ndarray:
     return plane
 
 
-def assigned(plane, basis=CORONAL, pixel_mm: float = 1.0, knee: str = ""):
+def assigned(
+    plane,
+    basis=CORONAL,
+    pixel_mm: float = 1.0,
+    knee: str = "",
+    fat_suppressed: bool = False,
+):
     spacing = (pixel_mm, pixel_mm)
     reading = read_interiors(plane, spacing, 5.0, 3.0, OFFSETS, "reference")
-    return assign_plane(plane, reading, basis * pixel_mm, knee)
+    return assign_plane(plane, reading, basis * pixel_mm, knee, fat_suppressed)
 
 
 def test_the_scene_names_air_skin_femur_over_tibia_and_the_joint():
@@ -151,21 +163,165 @@ def test_two_territories_side_by_side_are_not_femur_and_tibia():
     assert not np.isin(result.objects, [3, 4, 5]).any()
 
 
-def test_the_patella_is_not_named_until_a_lens_holds_it_whole():
-    # Withdrawn 2026-10-14: on the proof's T2 sagittal no lens holds the patella whole, and the
-    # rule that named the deepest territory in front of the femur's lower end named its upper
-    # half and the tissue above it. Never drawn wrong: it abstains, even where one is in view.
-    for plane, basis in (
-        (sagittal_scene(), SAGITTAL),
-        (scene(), CORONAL),
-        (scene(), AXIAL),
-    ):
-        result = assigned(plane, basis)
-        assert result.codes["patella"] == "abstain_no_lens_holds_it_whole"
+def test_with_fat_suppression_the_patella_is_the_bone_like_the_femur_at_its_lower_end():
+    result = assigned(sagittal_scene(), SAGITTAL, fat_suppressed=True)
+    patella = result.objects == OBJECT_CODES["patella"]
+    assert result.codes["patella"] == "identified"
+    assert patella[83, 47]  # its marrow
+    assert patella.sum() == 30 * 18  # all of its marrow, and nothing else
+    assert result.patella is not None
+    # the soft tissue in front of the femur's shaft, by the tendon, is not the patella
+    assert not patella[:66].any()
+    assert result.objects[50, 90] == OBJECT_CODES["femur"]
+    assert result.objects[160, 90] == OBJECT_CODES["tibia"]
+
+
+def test_without_fat_suppression_the_patella_is_left_to_its_partner():
+    # the fat pad is as bright as marrow there, so light cannot part them
+    result = assigned(sagittal_scene(), SAGITTAL)
+    assert result.codes["patella"] == "abstain_fat_as_bright_as_marrow"
+    assert not (result.objects == OBJECT_CODES["patella"]).any()
+
+
+def test_the_patella_is_not_looked_for_across_a_coronal_or_axial_slice():
+    coronal = assigned(scene(), CORONAL, fat_suppressed=True)
+    assert coronal.codes["patella"] == "abstain_front_to_back_runs_through_the_plane"
+    axial = assigned(scene(), AXIAL, fat_suppressed=True)
+    assert axial.codes["patella"] == "abstain_no_femur"
+    for result in (coronal, axial):
         assert not (result.objects == OBJECT_CODES["patella"]).any()
-    sagittal = assigned(sagittal_scene(), SAGITTAL)
-    assert sagittal.objects[50, 90] == OBJECT_CODES["femur"]
-    assert sagittal.objects[160, 90] == OBJECT_CODES["tibia"]
+
+
+def test_patella_code_names_why():
+    assert patella_code(False, True, True, True, True) == (
+        "abstain_front_to_back_runs_through_the_plane"
+    )
+    assert patella_code(True, False, True, True, True) == "abstain_no_femur"
+    assert patella_code(True, True, False, True, True) == (
+        "abstain_fat_as_bright_as_marrow"
+    )
+    assert patella_code(True, True, True, False, True) == (
+        "abstain_no_peak_in_front_of_the_femur"
+    )
+    assert patella_code(True, True, True, True, False) == (
+        "abstain_nothing_like_the_femur_at_its_peak"
+    )
+    assert patella_code(True, True, True, True, True) == "identified"
+
+
+SAGITTAL_MM = SAGITTAL.astype(float)  # one place per millimetre
+
+
+def test_a_slice_lays_its_names_on_the_same_place_at_another_pixel_size():
+    origin = np.zeros(3)
+    coarse = np.zeros((20, 20), dtype=np.int8)
+    coarse[4:8, 6:10] = OBJECT_CODES["femur"]  # rows 2-4 mm down, columns 3-5 mm back
+    seen = np.ones(coarse.shape, dtype=bool)
+    seen[19, :] = False  # its last row is margin
+    laid = laid_on(
+        coarse,
+        seen,
+        origin,
+        SAGITTAL_MM * 0.5,
+        origin,
+        SAGITTAL_MM * 0.4,
+        (30, 30),
+        2.0,
+    )
+    assert laid is not None
+    assert laid[5, 8] == OBJECT_CODES["femur"]  # 2.0 mm down, 3.2 mm back
+    assert laid[0, 0] == 0  # seen and named nothing
+    assert laid[24, 0] == UNSEEN  # 9.6 mm down: the other slice's margin row
+    assert laid[29, 29] == UNSEEN  # 11.6 mm: past the other slice's edge
+    beside = origin + np.array([5.0, 0.0, 0.0])  # a slice 5 mm to the side
+    assert (
+        laid_on(
+            coarse,
+            seen,
+            origin,
+            SAGITTAL_MM * 0.5,
+            beside,
+            SAGITTAL_MM * 0.4,
+            (30, 30),
+            2.0,
+        )
+        is None
+    )
+
+
+def partner_scene() -> tuple[PlaneAssignment, np.ndarray, np.ndarray]:
+    """A sagittal slice, front to the left, and what its partner laid on it: the femur at rows
+    0-40, the tibia at rows 50-80, columns 20-40; this slice's femur also took in a block of soft
+    tissue behind it (columns 40-50), which the partner's does not. The partner names a patella in
+    front of the femur's lower end; this slice abstains on it but has its own peak there."""
+    femur, tibia, patella = (
+        OBJECT_CODES["femur"],
+        OBJECT_CODES["tibia"],
+        OBJECT_CODES["patella"],
+    )
+    own = np.zeros((90, 60), dtype=np.int8)
+    own[0:40, 20:50] = femur
+    own[50:80, 20:40] = tibia
+    laid = np.zeros((90, 60), dtype=np.int8)
+    laid[0:40, 20:40] = femur
+    laid[50:80, 20:40] = tibia
+    laid[25:36, 5:16] = patella
+    labels = np.ones((90, 60), dtype=np.int32)
+    peaks = (Peak(7, 5.0, (30, 10), -30.0),)
+    codes = {
+        "femur": "identified",
+        "tibia": "identified",
+        "joint": "identified",
+        "patella": "abstain_fat_as_bright_as_marrow",
+        "meniscus": "abstain_side_to_side_runs_through_the_plane",
+    }
+    return PlaneAssignment(own, codes, peaks, 1, 2, 0), labels, laid
+
+
+PARTNER_CODES = {
+    "femur": "identified",
+    "tibia": "identified",
+    "patella": "identified",
+    "meniscus": "abstain_side_to_side_runs_through_the_plane",
+}
+
+
+def test_two_slices_name_a_bone_where_they_agree_and_lay_on_what_only_one_sees():
+    assignment, labels, laid = partner_scene()
+    nowhere = np.zeros(labels.shape, dtype=bool)
+    objects, codes = with_partner(
+        assignment, labels, SAGITTAL_MM, nowhere, laid, PARTNER_CODES
+    )
+    assert codes["femur"] == codes["tibia"] == "agreed_with_its_partner"
+    assert objects[10, 30] == OBJECT_CODES["femur"]
+    assert objects[10, 45] == 0  # the soft tissue only this slice's femur took in
+    assert codes["patella"] == "laid_from_its_partner"
+    assert objects[30, 10] == OBJECT_CODES["patella"]
+    assert codes["joint"] == "identified"
+    assert objects[45, 30] == OBJECT_CODES["joint"]
+    # where the partner's picture does not reach, it has no say: this slice keeps its own
+    unseen = laid.copy()
+    unseen[:, 40:] = UNSEEN
+    objects, _ = with_partner(
+        assignment, labels, SAGITTAL_MM, nowhere, unseen, PARTNER_CODES
+    )
+    assert objects[10, 45] == OBJECT_CODES["femur"]
+
+
+def test_two_slices_that_disagree_on_where_the_patella_is_name_none():
+    assignment, labels, laid = partner_scene()
+    laid[laid == OBJECT_CODES["patella"]] = 0
+    laid[60:70, 5:16] = OBJECT_CODES["patella"]  # not at this slice's own peak
+    objects, codes = with_partner(
+        assignment,
+        labels,
+        SAGITTAL_MM,
+        np.zeros(labels.shape, dtype=bool),
+        laid,
+        PARTNER_CODES,
+    )
+    assert codes["patella"] == "abstain_the_two_slices_disagree"
+    assert not (objects == OBJECT_CODES["patella"]).any()
 
 
 def test_the_menisci_are_the_dark_wedges_at_the_two_ends_of_the_joint():

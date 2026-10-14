@@ -5,11 +5,14 @@ For each series of a study, as the second build's route did (`objects/analysis.p
 `_measure_series`): the regime key, read once over the whole series and kept whole; the squint
 over every slice, made once and kept with the series; the middle slice, its plane frame, and
 `read_interiors` with the frame's spacing and the retained basis as its metric. Then
-`assign_plane` names what the pictures show: air, skin, femur, tibia, joint and menisci, the
-menisci sided by the header's own word for which knee it is; the patella abstains until a lens
-holds it whole. The arrays the renderers read, and the squint's, are saved per series with their
-digests in a receipt; `object_interiors.draw`, the renderer that drew the proof figure, draws the
-interiors, and `object_assignments.draw` draws the named objects.
+`assign_plane` names what the pictures show: air, skin, femur, tibia, joint, the patella (by its
+light, with fat suppression) and menisci, the menisci sided by the header's own word for which knee
+it is. Once every series of the study is read, each middle slice is read with its partner's, the
+other sequence's slice of the same place (`partner_of`, `read_with_partner`, and
+`knee.objects.assignments.with_partner`): bones both name, where both agree; a part only the
+partner names, laid on. The arrays the renderers read, and the squint's, are saved per series with
+their digests in a receipt; `object_interiors.draw`, the renderer that drew the proof figure, draws
+the interiors, and `object_assignments.draw` draws the named objects.
 
 An object the middle slice does not show is named on its own main slice (AGENTS.md, the method's
 first step), saved in a run of its own and drawn beside the others: so far the fibula
@@ -49,7 +52,7 @@ import json
 import os
 from collections.abc import Iterable, Sequence
 from concurrent.futures import ProcessPoolExecutor
-from dataclasses import asdict, fields
+from dataclasses import asdict, dataclass, fields
 from hashlib import sha256
 from itertools import repeat
 from pathlib import Path
@@ -63,12 +66,17 @@ from knee.collapse.physical import PlaneFrame
 from knee.collapse.regime import read_regime
 from knee.collapse.squint_stack import SquintStack, read_squint_stack
 from knee.objects.assignments import (
+    NAMED,
     OBJECT_CODES,
+    PlaneAssignment,
     assign_plane,
     fibula_block,
     fibula_code,
     fibula_on_slice,
+    laid_on,
     main_slice,
+    margin,
+    with_partner,
 )
 from knee.objects.interiors import EDGE_KINDS, TRACE_CODES, read_interiors
 from knee.receipt import merged_receipt
@@ -114,7 +122,7 @@ DRAWN_INTERIORS = (
     "trace_codes",
     "trace_points_rc",
 )
-DRAWN_NAMES = ("objects", "codes", "peaks", "femur", "tibia")
+DRAWN_NAMES = ("objects", "codes", "peaks", "femur", "tibia", "patella")
 
 
 def handed(product: str, names: Iterable[str]) -> None:
@@ -157,9 +165,20 @@ def plane_frame(series: Series, index: int) -> PlaneFrame | str:
         return f"geometry_unreadable: {error}"
 
 
-def measure(
-    series: Series,
-) -> tuple[dict, dict[str, np.ndarray], SquintStack] | str:
+@dataclass(frozen=True, slots=True)
+class Measured:
+    """One series as `measure` read it: the record and arrays the run keeps, its squint, the named
+    objects of its middle slice, and that slice's frame."""
+
+    series: Series
+    record: dict
+    arrays: dict[str, np.ndarray]
+    stack: SquintStack
+    assignment: PlaneAssignment
+    frame: PlaneFrame
+
+
+def measure(series: Series) -> Measured | str:
     """One series' readings: the regime key and the squint, each kept whole, and the interiors and
     named objects at its middle slice; or why no plane was read."""
     reads("series", ("volume", "geometry"), "measure")
@@ -186,7 +205,9 @@ def measure(
     # The header's own word for which knee this is ("R", "L", or blank); it sides the menisci.
     reads("series", ("slices",), "naming")
     knee = str(getattr(series.slices[index].header, "Laterality", "") or "").strip()
-    record, arrays = name_plane(series, index, series.volume[index], frame, split, knee)
+    record, arrays, assignment = name_plane(
+        series, index, series.volume[index], frame, split, knee
+    )
     record["regime"] = None if regime is None else asdict(regime)
     record["squint"] = {
         "code": stack.code,
@@ -196,7 +217,7 @@ def measure(
     }
     for name in SQUINT_ARRAYS:
         arrays[f"squint_{name}"] = np.asarray(getattr(stack, name))
-    return record, arrays, stack
+    return Measured(series, record, arrays, stack, assignment, frame)
 
 
 def name_plane(
@@ -206,8 +227,9 @@ def name_plane(
     frame: PlaneFrame,
     split: float,
     knee: str,
-) -> tuple[dict, dict[str, np.ndarray]]:
-    """One slice's interiors and its named objects, as the record and arrays the renderers read."""
+) -> tuple[dict, dict[str, np.ndarray], PlaneAssignment]:
+    """One slice's interiors and its named objects: the record and arrays the renderers read, and
+    the named objects themselves."""
     reads("series", ("volume", "row", "slices"), "interiors")
     reads("regime", ("background_split",), "interiors")
     axes = frame.basis_lps / frame.spacing_rc
@@ -225,7 +247,8 @@ def name_plane(
         "interiors.work", planes=1, territories=int(reading.labels.max(initial=0))
     )
     reads("interiors", ("dark", "labels", "distance_mm"), "naming")
-    assignment = assign_plane(plane, reading, frame.basis_lps, knee)
+    fat_suppressed = int(series.row.fat_suppression) == 1  # the tag is stored as text
+    assignment = assign_plane(plane, reading, frame.basis_lps, knee, fat_suppressed)
     handed("naming", field_names(assignment))
     arrays = {
         "acquired_plane": plane.copy(),
@@ -265,11 +288,65 @@ def name_plane(
             "codes": assignment.codes,
             "femur": assignment.femur,
             "tibia": assignment.tibia,
+            "patella": assignment.patella,
             "menisci": assignment.menisci,
             "peaks": [asdict(peak) for peak in assignment.peaks],
         },
     }
-    return record, arrays
+    return record, arrays, assignment
+
+
+def partner_of(measured: list[Measured], index: int) -> Measured | None:
+    """The series whose middle slice is the same place in the other sequence: the first of the same
+    plane with the other fat-suppression tag that `laid_on` finds on the same plane. None when there
+    is none."""
+    reads("series", ("row",), "partner")
+    own = measured[index]
+    for other in measured:
+        same = other.series.row.anatomical_plane == own.series.row.anatomical_plane
+        other_sequence = (
+            other.series.row.fat_suppression != own.series.row.fat_suppression
+        )
+        if other is not own and same and other_sequence:
+            return other
+    return None
+
+
+def read_with_partner(own: Measured, partner: Measured) -> str:
+    """Read one series' middle slice with its partner's (`with_partner`), keeping the result in its
+    record and arrays; or say why it was not: the two slices are not the same place, or this
+    slice's thickness is not in its header to say so."""
+    reads("series", ("slice_thickness_mm",), "partner")
+    thickness = own.series.slice_thickness_mm[own.record["slice_index"]]
+    if thickness is None:
+        return "no_slice_thickness"
+    reads("naming", ("objects", "codes", "peaks"), "partner")
+    reads("interiors", ("labels",), "partner")
+    plane = own.arrays["acquired_plane"]
+    laid = laid_on(
+        partner.assignment.objects,
+        ~margin(partner.arrays["acquired_plane"]),
+        partner.frame.origin_lps,
+        partner.frame.basis_lps,
+        own.frame.origin_lps,
+        own.frame.basis_lps,
+        plane.shape,
+        thickness,
+    )
+    if laid is None:
+        return "not_the_same_place"
+    objects, codes = with_partner(
+        own.assignment,
+        own.arrays["b1_labels"],
+        own.frame.basis_lps,
+        margin(plane),
+        laid,
+        partner.assignment.codes,
+    )
+    handed("partner", ("objects", "codes"))
+    own.arrays["a1_objects"] = objects
+    own.record["assignments"]["codes"] = codes
+    return "read_with_" + partner.record["series_uid"]
 
 
 def find_fibula(
@@ -370,7 +447,7 @@ def find_fibula(
     held_on_main = found[chosen]
     if isinstance(frame, str) or held_on_main is None:
         return "geometry_unreadable"
-    main_record, main_arrays = name_plane(
+    main_record, main_arrays, _ = name_plane(
         series, chosen, volume[chosen], frame, split, knee
     )
     # On its main slice only the fibula is named, beside the tibia it was found against; each is
@@ -468,7 +545,7 @@ def named_parts(records: list[dict], main_records: list[dict]) -> dict[str, int]
     named: dict[str, int] = {}
     for record in records:
         for name, code in record["assignments"]["codes"].items():
-            if code in ("identified", "from_the_header"):
+            if code in NAMED or code == "from_the_header":
                 named[name] = named.get(name, 0) + 1
     if main_records:
         named["fibula"] = len(main_records)
@@ -493,23 +570,37 @@ def measure_study(
         )
         records, unread = [], {}
         main_records, main_unread = [], {}
+        measured: list[Measured] = []
         for series in study.series:
             handed("series", field_names(series))
-            measured = measure(series)
-            if isinstance(measured, str):
-                unread[series.row.series_uid] = measured
-                continue
-            record, arrays, stack = measured
-            fibula = find_fibula(series, record, arrays, stack)
-            records.append(save(run_dir, study_uid, record, arrays))
+            reading = measure(series)
+            if isinstance(reading, str):
+                unread[series.row.series_uid] = reading
+            else:
+                measured.append(reading)
+        # Each middle slice is read with its partner's, the other sequence's slice of the same
+        # place, on the names each made alone (`Measured.assignment`, which this never changes);
+        # then saved.
+        for index, own in enumerate(measured):
+            partner = partner_of(measured, index)
+            own.record["assignments"]["partner"] = (
+                "none_of_the_other_sequence"
+                if partner is None
+                else read_with_partner(own, partner)
+            )
+        for own in measured:
+            fibula = find_fibula(own.series, own.record, own.arrays, own.stack)
+            records.append(save(run_dir, study_uid, own.record, own.arrays))
             if isinstance(fibula, str):
-                main_unread[record["series_uid"]] = fibula
+                main_unread[own.record["series_uid"]] = fibula
             else:
                 main_records.append(save(main_run, study_uid, *fibula))
         # The renderers read the saved run, when they draw it: their reads are its last.
         if drawn and records:
             reads("interiors", DRAWN_INTERIORS, "draw")
             reads("naming", DRAWN_NAMES, "draw")
+            # what a slice read with its partner keeps, in place of its own objects and codes
+            reads("partner", ("objects", "codes"), "draw")
         if drawn and main_records:
             reads("fibula", ("main_slice", "region"), "draw")
         telemetry = ledger_reading(led.events(), led.totals())

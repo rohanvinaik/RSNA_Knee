@@ -10,18 +10,20 @@ Each is named by what the pictures show, read off the interiors' own lenses:
 - FEMUR and TIBIA: each is its own large territory, and they hold the strongest interior peaks, one
   above the other along the leg (Rohan, 2026-10-13, on the proof figure: «Good»). So: the territory
   with the deepest peak, and the deepest one above or below it. The upper is the femur.
+- BONE MARROW: the inside of each bone named here. A bone's territory is its inside, within its
+  dark shell, so the marrow needs no rule of its own.
 - JOINT: what lies between the femur and the tibia, along the leg.
-- PATELLA: not named yet, on any slice (`abstain_no_lens_holds_it_whole`). Seen on the proof's T2
-  sagittal at native size, 2026-10-14: the patella is plain to the eye, a mid-grey bone with its
-  own peak at its middle, but no lens holds it whole. The measured low signal catches only its
-  front; the bands on its top and back are about a tenth of its light, too light for that lens;
-  its lower edge against the fat pad is no darker at all, the fat only about a fifth brighter; and
-  two markers sit on its one peak, so two territories split it through its middle, each running on
-  into the tendon and fat above it or the fat pad below. The rule that named the deepest territory
-  in front of the femur's lower end named its upper half and the tissue above it, and on 12 of
-  the labelled studies looked at (contact sheets, 2026-10-14) most of its regions took in that
-  tissue too, so it is withdrawn: never drawn wrong. It is to be named on its own main slice,
-  where a lens holds it whole.
+- PATELLA: the bone in front of the femur's lower end, on a sagittal slice. Its marrow is the
+  femur's tissue, so it is about as bright as the femur, and it has its own peak there. Seen on the
+  proof's two middle sagittals, 2026-10-14 (the patella is plain to the eye in both): with fat
+  suppression the patella is a solid oval as dark as the femur, and the fat pad below it is half
+  again to two and a half times brighter, so its light parts them; without fat suppression the fat
+  pad is as bright as marrow, and two territories meet across the patella's lower part, so there
+  light and territory cannot part them. So: the deepest peak in front of the femur, no higher than
+  `PATELLA_ABOVE_MM` above its lowest place (`patella_peak`); in that peak's territory, the places
+  as bright as the femur, the piece of them holding most of the peak's own disc, its holes filled
+  (`patella_piece`). Without fat suppression it is laid on from the fat-suppressed slice of the
+  same place (`with_partner`).
 - MENISCI: on a coronal slice, the dark triangles at the two ends of the joint, between the femur's
   condyle and the tibia's plateau («an isosceles triangle on coronal images», low on every
   sequence: docs/OBJECTS_AND_CONDITIONS.md). So: the low signal with every part thinner than
@@ -46,12 +48,25 @@ Each is named by what the pictures show, read off the interiors' own lenses:
   there (`fibula_code`). Seen right on the proof's T2 sagittal, 2026-10-14: slice 30, the bone
   under the tibia's outer condyle, its head and neck.
 
+TWO SLICES OF ONE PLACE (`with_partner`). A study images the knee in two sequences on the same
+slices: on the proof, the two sagittals lie on the same planes within 0.002 mm and the two coronals
+too, each pair at its own pixel size (measured through the import, 2026-10-14). Each sequence is a
+lens that shows what the other may not (Rohan, 2026-10-14: «If it's visible in one lens but not the
+other (like "joint fluid")...then great, we know how to find it, problem solved»). On the proof's
+T1 coronal the joint's band is not dark enough for the low-signal lens, so the femur's and tibia's
+territories run over the joint and its menisci; on its fat-suppressed coronal they do not. So a
+slice is read with its partner, the other sequence's slice of the same place (`laid_on`): a bone
+both name is named where both agree, and not at all where they share no place; a part only the
+partner names is laid on from it, onto this slice's own interiors that nothing else holds, the
+patella only where it holds this slice's own peak in front of the femur; and the joint is again
+what lies between the bones.
+
 The leg runs along the patient's superior axis, front to back along the anterior axis, and side to
 side along the left axis, all read from the slice's own frame. Where the leg's axis does not lie in
 the plane (an axial slice), the femur, tibia and joint are not named; where the side-to-side axis
-does not (a sagittal slice), the menisci are not. The black margin the reconstruction never
-filled is outside the picture, so nothing is named in it. Nothing here draws; the run's renderer
-draws what this returns.
+does not (a sagittal slice), the menisci are not; where the front-to-back axis does not (a coronal
+slice), the patella is not. The black margin the reconstruction never filled is outside the
+picture, so nothing is named in it. Nothing here draws; the run's renderer draws what this returns.
 """
 
 from dataclasses import dataclass
@@ -76,6 +91,20 @@ BONE_MM = 10.0
 # of the tibia's light and about 5 cm below its top; the muscle beside it is x0.1 to x0.6.
 LIKE_THE_TIBIA = (0.75, 1.33)
 FIBULA_BELOW_MM = 30.0
+# The patella's marrow is the femur's tissue, so on one slice it is about as bright: within a
+# quarter of the femur's light, as the fibula is of the tibia's. It rides on the femur's lower end
+# and is about 5 cm tall, so its middle lies in front of the femur and no higher than 5 cm above the
+# femur's lowest place on the slice. Claude's reading of the proof's fat-suppressed sagittal,
+# 2026-10-14: the patella x0.75 to x1.33 of the femur's light, the fat pad below it x1.5 to x2.5;
+# its peak 15 mm in front of the femur and 23 mm above the femur's lowest place.
+LIKE_THE_FEMUR = (0.75, 1.33)
+PATELLA_ABOVE_MM = 50.0
+# What a slice's codes say when an object is named on it, by its own lens or with its partner's.
+NAMED = ("identified", "agreed_with_its_partner", "laid_from_its_partner")
+# A place of one slice that lies outside its partner's picture, where the partner has no say.
+UNSEEN = -1
+BONES = ("femur", "tibia")
+MENISCI = ("meniscus", "medial_meniscus", "lateral_meniscus")
 OBJECT_CODES = {
     "unassigned": 0,
     "air": 1,
@@ -112,6 +141,7 @@ class PlaneAssignment:
     femur: int | None
     tibia: int | None
     menisci: int
+    patella: int | None = None
 
 
 def margin(plane: np.ndarray) -> np.ndarray:
@@ -200,6 +230,79 @@ def side_code(knee: str, named: int) -> str:
     if knee not in ("R", "L"):
         return "abstain_header_names_no_knee"
     return "from_the_header"
+
+
+def patella_code(
+    front_to_back_in_plane: bool,
+    femur_named: bool,
+    fat_suppressed: bool,
+    peak_found: bool,
+    found: bool,
+) -> str:
+    """Whether the patella was named by this slice's own light, or why not.
+
+    Without fat suppression the fat pad under the patella is as bright as marrow, so light cannot
+    part them; there the patella is laid on from the fat-suppressed slice of the same place
+    (`with_partner`).
+    """
+    if not front_to_back_in_plane:
+        return "abstain_front_to_back_runs_through_the_plane"
+    if not femur_named:
+        return "abstain_no_femur"
+    if not fat_suppressed:
+        return "abstain_fat_as_bright_as_marrow"
+    if not peak_found:
+        return "abstain_no_peak_in_front_of_the_femur"
+    if not found:
+        return "abstain_nothing_like_the_femur_at_its_peak"
+    return "identified"
+
+
+def patella_peak(
+    peaks: tuple[Peak, ...], femur: np.ndarray, basis_lps: np.ndarray
+) -> Peak | None:
+    """The deepest peak in front of the femur, no higher than `PATELLA_ABOVE_MM` above the femur's
+    lowest place: where the patella rides on the femur's lower end. None when there is none.
+
+    Places are read along the patient's axes in the slice's own frame: y toward the back, z up.
+    """
+    at = np.argwhere(femur).astype(np.float64) @ basis_lps.T
+    if not at.size:
+        return None
+    front, lowest = float(at[:, 1].min()), float(at[:, 2].min())
+    for peak in peaks:  # the deepest first
+        place = basis_lps @ np.asarray(peak.peak_rc, dtype=np.float64)
+        if place[1] < front and lowest <= place[2] <= lowest + PATELLA_ABOVE_MM:
+            return peak
+    return None
+
+
+def patella_piece(
+    plane: np.ndarray,
+    labels: np.ndarray,
+    peak: Peak,
+    light: float,
+    spacing_rc: np.ndarray,
+) -> np.ndarray:
+    """The patella around its peak: in the peak's territory, the places within `LIKE_THE_FEMUR` of
+    the femur's light `light`; of those pieces, the one holding most of the peak's own disc (the
+    deepest the lens fits there, so one speckled place at the peak does not lose it); its holes
+    filled. Empty when nothing there is as bright as the femur."""
+    if light <= 0:
+        return np.zeros(plane.shape, dtype=bool)
+    low, high = LIKE_THE_FEMUR
+    share = plane / light
+    like = (labels == peak.territory) & (share >= low) & (share <= high)
+    pieces, count = ndi.label(like, structure=FOUR_NEIGHBOURS)
+    rows, cols = np.indices(plane.shape)
+    r0, c0 = peak.peak_rc
+    disc = ((rows - r0) * spacing_rc[0]) ** 2 + (
+        (cols - c0) * spacing_rc[1]
+    ) ** 2 <= peak.depth_mm**2
+    held = np.bincount(pieces[disc & (pieces > 0)], minlength=count + 1)[1:]
+    if not held.any():
+        return np.zeros(plane.shape, dtype=bool)
+    return ndi.binary_fill_holes(pieces == int(np.argmax(held)) + 1)
 
 
 def fibula_block(
@@ -355,12 +458,13 @@ def assign_plane(
     reading: InteriorReading,
     basis_lps: np.ndarray,
     knee: str = "",
+    fat_suppressed: bool = False,
 ) -> PlaneAssignment:
-    """Name air, skin, femur, tibia, joint and menisci on one plane, from its interiors; the
-    patella abstains everywhere until a lens holds it whole.
+    """Name air, skin, femur, tibia, joint, patella and menisci on one plane, from its interiors.
 
     `knee` is the header's own word for which knee the scan is, "R", "L" or blank; it sides the
-    menisci.
+    menisci. `fat_suppressed` is the series' own tag; only with it is the patella named by its
+    light.
     """
     dark, labels = reading.dark, reading.labels
     objects = np.zeros(plane.shape, dtype=np.int8)
@@ -418,8 +522,30 @@ def assign_plane(
         objects[joint] = OBJECT_CODES["joint"]
         codes["joint"] = "identified" if joint.any() else "abstain_nothing_between"
 
-    # PATELLA: not named until a lens holds it whole (the module's note).
-    codes["patella"] = "abstain_no_lens_holds_it_whole"
+    # PATELLA: on a fat-suppressed sagittal slice, the bone as bright as the femur at the deepest
+    # peak in front of the femur's lower end.
+    front_in_plane = float(np.linalg.norm(unit[1])) >= ALONG_THE_LEG
+    femur_places = objects == OBJECT_CODES["femur"]
+    peak = (
+        patella_peak(peaks, femur_places, basis_lps)
+        if front_in_plane and femur is not None
+        else None
+    )
+    piece = np.zeros(plane.shape, dtype=bool)
+    if peak is not None and fat_suppressed:
+        light = float(np.median(plane[femur_places]))
+        piece = patella_piece(plane, labels, peak, light, spacing_rc) & (objects == 0)
+    codes["patella"] = patella_code(
+        front_in_plane,
+        femur is not None,
+        fat_suppressed,
+        peak is not None,
+        bool(piece.any()),
+    )
+    patella = None
+    if peak is not None and codes["patella"] == "identified":
+        objects[piece] = OBJECT_CODES["patella"]
+        patella = peak.territory
 
     # MENISCI: the thick low signal touching the joint, whole, the piece nearest each end.
     sides_in_plane = float(np.linalg.norm(unit[0])) >= ALONG_THE_LEG
@@ -442,4 +568,106 @@ def assign_plane(
             menisci += 1
     codes["meniscus"] = meniscus_code(sides_in_plane, joint_places.any(), menisci)
     codes["meniscus_side"] = side_code(knee, menisci)
-    return PlaneAssignment(objects, codes, peaks, femur, tibia, menisci)
+    return PlaneAssignment(objects, codes, peaks, femur, tibia, menisci, patella)
+
+
+def laid_on(
+    objects: np.ndarray,
+    seen: np.ndarray,
+    origin_lps: np.ndarray,
+    basis_lps: np.ndarray,
+    onto_origin_lps: np.ndarray,
+    onto_basis_lps: np.ndarray,
+    onto_shape: tuple[int, int],
+    thickness_mm: float,
+) -> np.ndarray | None:
+    """One slice's named objects at the places of another slice of the same knee; None when the
+    other slice is not the same place (some place of it lies more than half a slice thickness off
+    this slice's plane).
+
+    Each place of the other slice takes the object at this slice's nearest pixel, and `UNSEEN`
+    where it lies outside this slice's picture: beyond its edge, or where `seen` is False (its
+    black margin, which the reconstruction never filled). This slice has no say there. Frames are
+    in the scanner's millimetres (DICOM LPS): a (3,) origin and the (3, 2) basis of rows and
+    columns, spacing included.
+    """
+    rows, cols = np.indices(onto_shape)
+    rc = np.column_stack((rows.ravel(), cols.ravel())).astype(np.float64)
+    places = rc @ np.asarray(onto_basis_lps).T + np.asarray(onto_origin_lps)
+    normal = np.cross(basis_lps[:, 0], basis_lps[:, 1])
+    normal = normal / np.linalg.norm(normal)
+    if float(np.abs((places - origin_lps) @ normal).max()) > thickness_mm / 2.0:
+        return None
+    native = np.rint((places - origin_lps) @ np.linalg.pinv(basis_lps).T).astype(int)
+    inside = (
+        (native[:, 0] >= 0)
+        & (native[:, 0] < objects.shape[0])
+        & (native[:, 1] >= 0)
+        & (native[:, 1] < objects.shape[1])
+    )
+    inside[inside] = seen[native[inside, 0], native[inside, 1]]
+    laid = np.full(rows.size, UNSEEN, dtype=objects.dtype)
+    laid[inside] = objects[native[inside, 0], native[inside, 1]]
+    return laid.reshape(onto_shape)
+
+
+def with_partner(
+    assignment: PlaneAssignment,
+    labels: np.ndarray,
+    basis_lps: np.ndarray,
+    outside_picture: np.ndarray,
+    laid: np.ndarray,
+    partner_codes: dict[str, str],
+) -> tuple[np.ndarray, dict[str, str]]:
+    """One slice's named objects and codes, read with its partner's: the other sequence's slice of
+    the same place (`laid`, the partner's objects at this slice's places, from `laid_on`).
+
+    A bone both name is named where both agree, and where the partner's picture does not reach
+    (`UNSEEN`: it has no say there); not at all where they share no place. A part only the partner
+    names is laid on from it, onto this slice's own interiors that nothing else holds; the patella
+    only where it holds this slice's own peak in front of the femur, so the two lenses agree on
+    where it is. The joint is then again what lies between the bones along the leg.
+    """
+    objects, codes = assignment.objects.copy(), dict(assignment.codes)
+    for name in BONES:
+        code = OBJECT_CODES[name]
+        own, theirs = objects == code, laid == code
+        if codes.get(name) in NAMED and partner_codes.get(name) in NAMED:
+            agreed = own & (theirs | (laid == UNSEEN))
+            objects[own & ~agreed] = 0
+            codes[name] = (
+                "agreed_with_its_partner"
+                if agreed.any()
+                else "abstain_the_two_slices_disagree"
+            )
+        elif partner_codes.get(name) in NAMED:
+            placed = theirs & (labels > 0) & (objects == 0)
+            objects[placed] = code
+            if placed.any():
+                codes[name] = "laid_from_its_partner"
+    joint = OBJECT_CODES["joint"]
+    objects[objects == joint] = 0
+    femur, tibia = objects == OBJECT_CODES["femur"], objects == OBJECT_CODES["tibia"]
+    between = np.zeros(objects.shape, dtype=bool)
+    if femur.any() and tibia.any():
+        between = between_along_the_leg(femur, tibia, basis_lps)
+        between &= (objects == 0) & ~outside_picture
+    objects[between] = joint
+    if codes.get("joint") in NAMED or between.any():
+        codes["joint"] = "identified" if between.any() else "abstain_nothing_between"
+    for name, members in (("patella", ("patella",)), ("meniscus", MENISCI)):
+        if codes.get(name) in NAMED or partner_codes.get(name) not in NAMED:
+            continue
+        theirs = np.isin(laid, [OBJECT_CODES[member] for member in members])
+        if name == "patella":
+            peak = patella_peak(assignment.peaks, femur, basis_lps)
+            if peak is None or not theirs[peak.peak_rc]:
+                codes[name] = "abstain_the_two_slices_disagree"
+                continue
+        placed = theirs & (labels > 0) & np.isin(objects, (0, joint))
+        objects[placed] = laid[placed]
+        if placed.any():
+            codes[name] = "laid_from_its_partner"
+            if name == "meniscus":
+                codes["meniscus_side"] = partner_codes.get("meniscus_side", "")
+    return objects, codes
