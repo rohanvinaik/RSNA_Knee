@@ -75,7 +75,7 @@ def fine_coronal_scene(menisci: bool = False) -> np.ndarray:
     return plane
 
 
-def sagittal_scene(fat_pad_reaching_down: bool = False) -> np.ndarray:
+def sagittal_scene() -> np.ndarray:
     """A sagittal knee at a knee's own proportions, front to the left, one place per millimetre.
 
     The femur runs off the top and the tibia off the bottom, with the joint between them at rows
@@ -92,8 +92,6 @@ def sagittal_scene(fat_pad_reaching_down: bool = False) -> np.ndarray:
     plane[:66, 46:48] = 1.0  # the quadriceps tendon, down to the patella
     plane[66:100, 36:58] = 1.0  # the patella's shell
     plane[68:98, 38:56] = 100.0  # its marrow
-    if fat_pad_reaching_down:  # its marrow runs on, unbroken, down past the femur
-        plane[98:150, 38:56] = 100.0
     return plane
 
 
@@ -153,26 +151,21 @@ def test_two_territories_side_by_side_are_not_femur_and_tibia():
     assert not np.isin(result.objects, [3, 4, 5]).any()
 
 
-def test_the_patella_is_the_bone_in_front_of_the_femurs_lower_end():
-    result = assigned(sagittal_scene(), SAGITTAL)
-    assert result.codes["femur"] == "identified"
-    assert result.codes["patella"] == "identified"
-    assert result.objects[83, 47] == OBJECT_CODES["patella"]
-    assert result.objects[50, 90] == OBJECT_CODES["femur"]
-    assert result.objects[160, 90] == OBJECT_CODES["tibia"]
-
-
-def test_a_region_in_front_that_reaches_down_past_the_femur_is_not_the_patella():
-    result = assigned(sagittal_scene(fat_pad_reaching_down=True), SAGITTAL)
-    assert result.codes["patella"] == "abstain_nothing_in_front_of_the_femurs_lower_end"
-    assert not (result.objects == OBJECT_CODES["patella"]).any()
-
-
-def test_the_patella_is_not_named_where_front_and_back_run_through_the_plane():
-    coronal = assigned(scene(), CORONAL)
-    assert coronal.codes["patella"] == "abstain_front_runs_through_the_plane"
-    axial = assigned(scene(), AXIAL)
-    assert axial.codes["patella"] == "abstain_no_femur"
+def test_the_patella_is_not_named_until_a_lens_holds_it_whole():
+    # Withdrawn 2026-10-14: on the proof's T2 sagittal no lens holds the patella whole, and the
+    # rule that named the deepest territory in front of the femur's lower end named its upper
+    # half and the tissue above it. Never drawn wrong: it abstains, even where one is in view.
+    for plane, basis in (
+        (sagittal_scene(), SAGITTAL),
+        (scene(), CORONAL),
+        (scene(), AXIAL),
+    ):
+        result = assigned(plane, basis)
+        assert result.codes["patella"] == "abstain_no_lens_holds_it_whole"
+        assert not (result.objects == OBJECT_CODES["patella"]).any()
+    sagittal = assigned(sagittal_scene(), SAGITTAL)
+    assert sagittal.objects[50, 90] == OBJECT_CODES["femur"]
+    assert sagittal.objects[160, 90] == OBJECT_CODES["tibia"]
 
 
 def test_the_menisci_are_the_dark_wedges_at_the_two_ends_of_the_joint():
