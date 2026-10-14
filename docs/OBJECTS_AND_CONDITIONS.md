@@ -201,7 +201,7 @@ Signal by sequence, as one source tabulates it [Kh]:
   patella to femoral condyles, best seen on axial images [C], [Kh]. No label names it; the suprapatellar bursa lies
   behind the quadriceps tendon and Hoffa's fat pad behind the patellar tendon [C], [Kh].
 - **The rest:** subcutaneous fat and muscle as in §3 [Kh]; the popliteal artery lies in front of the popliteal vein
-  [Kh]. Skin and the air around the knee are not described by the sources read.
+  [Kh].
 
 ## 5. The twelve conditions
 
@@ -247,7 +247,7 @@ Signal by sequence, as one source tabulates it [Kh]:
 
 ## 7. Gaps
 
-- Not described by the sources read: skin and the air around the knee; the normal look of the synovium.
+- Not described by the sources read: the normal look of the synovium.
 - [Kh] gives fluid on PD as low in its Table II and water on PD as intermediate in its Table I.
 - Read but not used: Kenhub's "Normal knee MRI" contradicts [C], [R-BME] and [R-BB] in places (it calls marrow
   oedema bright on T1 and fluid dark on T2).
