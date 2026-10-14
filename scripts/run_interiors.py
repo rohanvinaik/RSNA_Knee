@@ -346,6 +346,11 @@ def read_with_partner(own: Measured, partner: Measured) -> str:
     handed("partner", ("objects", "codes"))
     own.arrays["a1_objects"] = objects
     own.record["assignments"]["codes"] = codes
+    # A bone the two slices do not agree on, or one laid on from the partner, has no territory of
+    # this slice's own.
+    for name in ("femur", "tibia", "patella"):
+        if codes.get(name) not in ("identified", "agreed_with_its_partner"):
+            own.record["assignments"][name] = None
     return "read_with_" + partner.record["series_uid"]
 
 
@@ -368,16 +373,17 @@ def find_fibula(
     knee = assigned["knee"]
     reads("series", ("row",), "fibula")
     fat_suppressed = int(series.row.fat_suppression) == 1  # the tag is stored as text
-    reads("naming", ("tibia",), "fibula")
-    code = fibula_code(knee, assigned["tibia"] is not None, fat_suppressed, True)
+    reads("naming", ("tibia", "objects"), "fibula")
+    tibia = arrays["a1_objects"] == OBJECT_CODES["tibia"]
+    tibia_named = assigned["tibia"] is not None and bool(tibia.any())
+    code = fibula_code(knee, tibia_named, fat_suppressed, True)
     if code != "identified":
         return code
     volume = series.volume
     middle = plane_frame(series, record["slice_index"])
     if volume is None or isinstance(middle, str):
         return "geometry_unreadable"
-    reads("naming", ("objects", "peaks"), "fibula")
-    tibia = arrays["a1_objects"] == OBJECT_CODES["tibia"]
+    reads("naming", ("peaks",), "fibula")
     top_mm = float(middle.to_patient(np.argwhere(tibia).astype(float))[:, 2].max())
     peak = next(p for p in assigned["peaks"] if p["territory"] == assigned["tibia"])
     middle_lps = middle.to_patient(np.asarray([peak["peak_rc"]], dtype=float))[0]
