@@ -3,7 +3,8 @@
 For each series of the study, as the second build's route did (`objects/analysis.py`,
 `_measure_series`): the regime's background split, the middle slice, its plane frame, and
 `read_interiors` with the frame's spacing and the retained basis as its metric. Then
-`assign_plane` names what the pictures show: air, skin, femur, tibia and joint. The arrays the
+`assign_plane` names what the pictures show: air, skin, femur, tibia, joint, patella and menisci,
+the menisci sided by the header's own word for which knee it is. The arrays the
 renderers read are saved per series with their digests in a receipt; `object_interiors.draw`, the
 renderer that drew the proof figure, draws the interiors, and `object_assignments.draw` draws the
 named objects.
@@ -75,7 +76,9 @@ def measure(series: Series) -> tuple[dict, dict[str, np.ndarray]] | str:
         "reference",
         metric_rc=axes.T @ axes,
     )
-    assignment = assign_plane(plane, reading, frame.basis_lps)
+    # The header's own word for which knee this is ("R", "L", or blank); it sides the menisci.
+    knee = str(getattr(series.slices[index].header, "Laterality", "") or "").strip()
+    assignment = assign_plane(plane, reading, frame.basis_lps, knee)
     arrays = {
         "acquired_plane": plane.copy(),
         "b1_dark": reading.dark,
@@ -110,6 +113,7 @@ def measure(series: Series) -> tuple[dict, dict[str, np.ndarray]] | str:
             "backend": "reference",
         },
         "assignments": {
+            "knee": knee,
             "codes": assignment.codes,
             "femur": assignment.femur,
             "tibia": assignment.tibia,
