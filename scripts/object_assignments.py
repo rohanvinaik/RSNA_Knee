@@ -22,7 +22,9 @@ OBJECT_COLOURS = {
     "tibia": (0.2, 0.85, 0.35, 0.55),
     "joint": (0.95, 0.2, 0.95, 0.7),
     "patella": (0.0, 0.85, 1.0, 0.6),
-    "meniscus": (1.0, 0.15, 0.15, 0.9),
+    "meniscus": (1.0, 1.0, 1.0, 0.9),
+    "medial_meniscus": (1.0, 0.15, 0.15, 0.9),
+    "lateral_meniscus": (0.6, 1.0, 0.0, 0.95),
 }
 
 
@@ -72,7 +74,9 @@ def draw_stages(axes, arrays, record):
     axes[2].set_title(
         f"BLUE air · YELLOW skin: {codes['air']}\n"
         f"ORANGE femur · GREEN tibia · MAGENTA joint: {codes['femur']}\n"
-        f"CYAN patella: {codes['patella']} · RED menisci: {codes['meniscus']}",
+        f"CYAN patella: {codes['patella']}\n"
+        f"RED medial · LIME lateral · WHITE unsided meniscus: {codes['meniscus']}, "
+        f"sides {codes.get('meniscus_side', '-')}",
         fontsize=8,
     )
 

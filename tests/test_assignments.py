@@ -1,4 +1,4 @@
-"""Intent tests for the named objects: air, skin, femur over tibia, and the joint between them.
+"""Intent tests for the named objects: air, skin, femur over tibia, the joint, patella and menisci.
 
 The scene is a small synthetic knee in a coronal frame (rows run inferior, columns run to the left,
 one place per millimetre): air around a leg of soft tissue, a black margin along two sides of the
@@ -12,7 +12,9 @@ from knee.objects.assignments import (
     OBJECT_CODES,
     assign_plane,
     between_along_the_leg,
+    end_pieces,
     margin,
+    meniscus_side,
     pair_code,
 )
 from knee.objects.interiors import read_interiors
@@ -91,10 +93,10 @@ def sagittal_scene(fat_pad_reaching_down: bool = False) -> np.ndarray:
     return plane
 
 
-def assigned(plane, basis=CORONAL, pixel_mm: float = 1.0):
+def assigned(plane, basis=CORONAL, pixel_mm: float = 1.0, knee: str = ""):
     spacing = (pixel_mm, pixel_mm)
     reading = read_interiors(plane, spacing, 5.0, 3.0, OFFSETS, "reference")
-    return assign_plane(plane, reading, basis * pixel_mm)
+    return assign_plane(plane, reading, basis * pixel_mm, knee)
 
 
 def test_the_scene_names_air_skin_femur_over_tibia_and_the_joint():
@@ -178,12 +180,51 @@ def test_the_menisci_are_the_dark_wedges_at_the_two_ends_of_the_joint():
     assert result.objects[138, 120] == OBJECT_CODES["joint"]
     # the bones' thin shells along the joint are not menisci
     assert result.objects[123, 120] != OBJECT_CODES["meniscus"]
+    # with no knee named in the header, they are not sided
+    assert result.codes["meniscus_side"] == "abstain_header_names_no_knee"
+
+
+def test_on_a_right_knee_the_medial_meniscus_is_the_one_toward_the_patients_left():
+    result = assigned(fine_coronal_scene(menisci=True), pixel_mm=FINE_MM, knee="R")
+    assert result.codes["meniscus_side"] == "from_the_header"
+    # the scene's columns run toward the patient's left
+    assert result.objects[138, 172] == OBJECT_CODES["medial_meniscus"]
+    assert result.objects[138, 66] == OBJECT_CODES["lateral_meniscus"]
+
+
+def test_on_a_left_knee_the_sides_swap():
+    result = assigned(fine_coronal_scene(menisci=True), pixel_mm=FINE_MM, knee="L")
+    assert result.objects[138, 172] == OBJECT_CODES["lateral_meniscus"]
+    assert result.objects[138, 66] == OBJECT_CODES["medial_meniscus"]
+
+
+def test_the_slices_own_frame_decides_the_side_not_the_pictures_left_and_right():
+    columns_to_the_right = np.array([[0.0, -1.0], [0.0, 0.0], [-1.0, 0.0]])
+    plane = fine_coronal_scene(menisci=True)
+    result = assigned(plane, columns_to_the_right, FINE_MM, "R")
+    assert result.objects[138, 172] == OBJECT_CODES["lateral_meniscus"]
+    assert result.objects[138, 66] == OBJECT_CODES["medial_meniscus"]
+
+
+def test_each_end_takes_a_piece_from_its_own_side_of_the_middle():
+    # piece 2 sits exactly at the middle: it is still the only piece toward the left
+    pieces = np.array([[1, 0, 2]])
+    across = np.array([[0.0, 5.0, 5.0]])
+    assert end_pieces(pieces, 2, across, 5.0) == [(1, False), (2, True)]
+
+
+def test_a_knee_the_header_does_not_name_leaves_the_menisci_unsided():
+    for word in ("", "B", "U", "r"):
+        assert meniscus_side(word, True) == "meniscus"
+    assert meniscus_side("R", True) == "medial"
+    assert meniscus_side("L", True) == "lateral"
 
 
 def test_no_menisci_without_thick_low_signal_or_on_a_sagittal_slice():
-    plain = assigned(fine_coronal_scene(), pixel_mm=FINE_MM)
+    plain = assigned(fine_coronal_scene(), pixel_mm=FINE_MM, knee="R")
     assert plain.codes["joint"] == "identified"
     assert plain.codes["meniscus"] == "abstain_no_thick_low_signal_in_the_joint"
+    assert plain.codes["meniscus_side"] == "abstain_no_meniscus"
     sagittal = assigned(sagittal_scene(), SAGITTAL)
     assert sagittal.codes["meniscus"] == "abstain_side_to_side_runs_through_the_plane"
     assert assigned(scene(), AXIAL).codes["meniscus"] == "abstain_no_joint"

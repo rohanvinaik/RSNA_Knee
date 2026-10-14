@@ -22,9 +22,13 @@ Each is named by what the pictures show, read off the interiors' own lenses:
   sequence: docs/OBJECTS_AND_CONDITIONS.md). So: the low signal with every part thinner than
   `MENISCUS_THICKNESS_MM` rubbed away (the bones' thin shells), the pieces of it that touch the
   joint, each whole, since a meniscus reaches out past the bones' ends, and the piece nearest each
-  end. Seen on the proof's fat-suppressed coronal, 2026-10-14; on its T1 coronal the joint's
-  dark band is not measured low signal, so nothing is named. The middle sagittal slice passes
-  through the notch, where the joint holds the cruciate ligaments, so menisci are not named there.
+  end, either side of the joint's middle. Seen on the proof's fat-suppressed coronal, 2026-10-14;
+  on its T1 coronal the joint's dark band is not measured low signal, so nothing is named. The
+  middle sagittal slice passes through the notch, where the joint holds the cruciate ligaments, so
+  menisci are not named there.
+  Which is MEDIAL and which LATERAL: the medial lies toward the other knee, so where the header
+  names the knee (Laterality "R" or "L"; the proof study says "R"), the side follows from the
+  patient's left axis. Where it does not, the menisci stay unsided.
 
 The leg runs along the patient's superior axis, front to back along the anterior axis, and side to
 side along the left axis, all read from the slice's own frame. Where the leg's axis does not lie in
@@ -61,6 +65,8 @@ OBJECT_CODES = {
     "joint": 5,
     "patella": 6,
     "meniscus": 7,
+    "medial_meniscus": 8,
+    "lateral_meniscus": 9,
 }
 FOUR_NEIGHBOURS = ndi.generate_binary_structure(2, 1)
 
@@ -193,6 +199,27 @@ def meniscus_code(sides_in_plane: bool, joint_named: bool, found: int) -> str:
     return "identified"
 
 
+def meniscus_side(knee: str, toward_left: bool) -> str:
+    """Which meniscus a piece is: "medial", "lateral", or "meniscus" when the knee is not named.
+
+    The medial meniscus lies on the side toward the other knee. For a right knee that is the
+    patient's left; for a left knee, the patient's right. `knee` is the header's own word, "R" or
+    "L"; `toward_left` says whether the piece is at the joint's end toward the patient's left.
+    """
+    if knee not in ("R", "L"):
+        return "meniscus"
+    return "medial" if toward_left == (knee == "R") else "lateral"
+
+
+def side_code(knee: str, named: int) -> str:
+    """Whether the menisci's sides were read, or why not."""
+    if not named:
+        return "abstain_no_meniscus"
+    if knee not in ("R", "L"):
+        return "abstain_header_names_no_knee"
+    return "from_the_header"
+
+
 def thick_parts(
     mask: np.ndarray, spacing_rc: np.ndarray, thickness_mm: float
 ) -> np.ndarray:
@@ -204,21 +231,23 @@ def thick_parts(
     return ndi.binary_opening(mask, structure=disc)
 
 
-def end_pieces(pieces: np.ndarray, count: int, across: np.ndarray) -> list[int]:
+def end_pieces(
+    pieces: np.ndarray, count: int, across: np.ndarray, middle: float
+) -> list[tuple[int, bool]]:
     """The piece nearest each end of the joint: the outermost piece on each side of its middle.
 
-    `across` is each place's position across the leg; the middle is the middle of all the pieces.
+    `across` is each place's position toward the patient's left, and `middle` is the joint's
+    middle on it. Each piece comes with whether its end is the one toward the patient's left.
     """
     if not count:
         return []
     labels = np.arange(1, count + 1)
     where = np.asarray(ndi.mean(across, pieces, index=labels))
-    middle = float(across[pieces > 0].mean())
     chosen = []
-    for side in (where < middle, where >= middle):
+    for toward_left, side in ((False, where < middle), (True, where >= middle)):
         if side.any():
-            outermost = np.abs(where - middle) * side
-            chosen.append(int(labels[int(np.argmax(outermost))]))
+            outermost = np.where(side, np.abs(where - middle), -1.0)  # only this side's
+            chosen.append((int(labels[int(np.argmax(outermost))]), toward_left))
     return chosen
 
 
@@ -246,9 +275,16 @@ def between_along_the_leg(
 
 
 def assign_plane(
-    plane: np.ndarray, reading: InteriorReading, basis_lps: np.ndarray
+    plane: np.ndarray,
+    reading: InteriorReading,
+    basis_lps: np.ndarray,
+    knee: str = "",
 ) -> PlaneAssignment:
-    """Name air, skin, femur, tibia and joint on one plane from its interiors reading."""
+    """Name air, skin, femur, tibia, joint, patella and menisci on one plane, from its interiors.
+
+    `knee` is the header's own word for which knee the scan is, "R", "L" or blank; it sides the
+    menisci.
+    """
     dark, labels = reading.dark, reading.labels
     objects = np.zeros(plane.shape, dtype=np.int8)
     codes: dict[str, str] = {}
@@ -328,9 +364,13 @@ def assign_plane(
         pieces = np.where(np.isin(pieces, touching), pieces, 0)
         pieces, count = ndi.label(pieces > 0)
         rows, cols = np.indices(plane.shape)
-        across = basis_lps[0, 0] * rows + basis_lps[0, 1] * cols
-        for piece in end_pieces(pieces, count, across):
-            objects[pieces == piece] = OBJECT_CODES["meniscus"]
+        across = basis_lps[0, 0] * rows + basis_lps[0, 1] * cols  # mm toward the left
+        middle = float(across[joint_places].mean())  # the joint's middle
+        for piece, toward_left in end_pieces(pieces, count, across, middle):
+            side = meniscus_side(knee, toward_left)
+            name = "meniscus" if side == "meniscus" else f"{side}_meniscus"
+            objects[pieces == piece] = OBJECT_CODES[name]
             menisci += 1
     codes["meniscus"] = meniscus_code(sides_in_plane, joint_places.any(), menisci)
+    codes["meniscus_side"] = side_code(knee, menisci)
     return PlaneAssignment(objects, codes, peaks, femur, tibia, patella, menisci)
