@@ -32,18 +32,26 @@ renderers' included (`DRAWN_INTERIORS`, `DRAWN_NAMES`); no stage records its own
 check is as true as those declarations and no truer.
 
 The settings are the proof run's own (`data/measurements/codex-wiring-rereview-20261012`):
-prominence 3 mm, and border offsets from -3 to 3 mm in 0.5 mm steps. The backend is the plain
-reference; that run used its JIT twin, whose records the contract states are the same.
+prominence 3 mm, and border offsets from -3 to 3 mm in 0.5 mm steps. The backend is the JIT twin
+of the profile sampler, as that run used; its records are the reference's, checked run against run
+on all 58 labelled studies, 2026-10-14: 336 series, every saved array the same.
+
+Studies are measured in parallel, one worker process each, and each saves its own arrays; the main
+process alone writes the receipts, in the order the studies were asked for. Pictures are drawn only
+with `--draw`, from the saved run, after its study is in the receipt.
 
 Run from anywhere: `.venv/bin/python scripts/run_interiors.py --study-uid <uid> [<uid> ...]`, or
-`--labeled` for every labelled study whose series are all on disk.
+`--labeled` for every labelled study whose series are all on disk; `--draw` for the pictures.
 """
 
 import argparse
 import json
+import os
 from collections.abc import Iterable, Sequence
+from concurrent.futures import ProcessPoolExecutor
 from dataclasses import asdict, fields
 from hashlib import sha256
+from itertools import repeat
 from pathlib import Path
 from typing import Any
 
@@ -82,11 +90,13 @@ OFFSETS_MM = (-3.0, -2.5, -2.0, -1.5, -1.0, -0.5, 0.0, 0.5, 1.0, 1.5, 2.0, 2.5, 
 # The squint that points to where an object must be: tiles 10 mm wide, about a 16 x 16 grid on
 # these fields (Rohan, 2026-10-12: «a 16x16 grid costs literally (n)^(1/2), for EVERYTHING»).
 SQUINT_TILE_MM = 10.0
+# The profile sampler's JIT twin; its records are the reference's (the contract's SAME).
+BACKEND = "jit"
 REQUEST = {
     "prominence_mm": PROMINENCE_MM,
     "offsets_mm": list(OFFSETS_MM),
     "slice_index": None,
-    "backend": "reference",
+    "backend": BACKEND,
 }
 # The squint's arrays, kept with each series as `squint_<name>`.
 SQUINT_ARRAYS = ("median", "minimum", "maximum", "coverage", "centres_lps", "bounds_rc")
@@ -207,7 +217,7 @@ def name_plane(
         split,
         PROMINENCE_MM,
         np.asarray(OFFSETS_MM),
-        "reference",
+        BACKEND,
         metric_rc=axes.T @ axes,
     )
     handed("interiors", field_names(reading))
@@ -248,7 +258,7 @@ def name_plane(
                 code: int(np.count_nonzero(reading.trace_codes == value))
                 for code, value in TRACE_CODES.items()
             },
-            "backend": "reference",
+            "backend": BACKEND,
         },
         "assignments": {
             "knee": knee,
@@ -321,7 +331,7 @@ def find_fibula(
             split,
             PROMINENCE_MM,
             np.asarray(OFFSETS_MM),
-            "reference",
+            BACKEND,
             metric_rc=axes.T @ axes,
         )
         readings += 1
@@ -465,17 +475,13 @@ def named_parts(records: list[dict], main_records: list[dict]) -> dict[str, int]
     return named
 
 
-def run(
-    corpus: Corpus,
-    study_uid: str,
-    run_dir: Path,
-    out: Path,
-    assignments_out: Path,
-    main_run: Path,
-    main_out: Path,
-) -> tuple[list[Path], dict[str, int], tuple[str, ...]]:
-    """Measure every series of one study with the ledger on, merge the study into the run's
-    receipts, draw it, and return its pictures, what it named, and what no stage read."""
+def measure_study(
+    corpus: Corpus, study_uid: str, run_dir: Path, main_run: Path, drawn: bool
+) -> dict:
+    """Measure every series of one study with the ledger on and save its arrays; return what the
+    receipts take (its records, silences and telemetry) and what it named. Writes no receipt, so
+    studies can be measured side by side. `drawn` says whether its pictures will be drawn, since
+    only then do the renderers read what they read."""
     (run_dir / study_uid).mkdir(parents=True, exist_ok=True)
     (main_run / study_uid).mkdir(parents=True, exist_ok=True)
     with recording() as led:
@@ -500,29 +506,67 @@ def run(
                 main_unread[record["series_uid"]] = fibula
             else:
                 main_records.append(save(main_run, study_uid, *fibula))
-        # The renderers read the saved run: their reads are its last.
-        if records:
+        # The renderers read the saved run, when they draw it: their reads are its last.
+        if drawn and records:
             reads("interiors", DRAWN_INTERIORS, "draw")
             reads("naming", DRAWN_NAMES, "draw")
-        if main_records:
+        if drawn and main_records:
             reads("fibula", ("main_slice", "region"), "draw")
         telemetry = ledger_reading(led.events(), led.totals())
-    series_uids = [series.row.series_uid for series in study.series]
-    write_receipt(run_dir, study_uid, series_uids, records, unread, telemetry)
-    write_receipt(main_run, study_uid, series_uids, main_records, main_unread, None)
-    pictures: list[Path] = []
-    if records:
-        object_interiors.draw(run_dir, study_uid, out)
-        object_assignments.draw(run_dir, study_uid, assignments_out)
-        pictures += [out / "series.png", assignments_out / "series.png"]
-    if main_records:
-        object_assignments.draw(main_run, study_uid, main_out)
-        pictures.append(main_out / "series.png")
-    return (
-        pictures,
-        named_parts(records, main_records),
-        tuple(telemetry["read_by_no_stage"]),
+    return {
+        "study_uid": study_uid,
+        "series_uids": [series.row.series_uid for series in study.series],
+        "records": records,
+        "unread": unread,
+        "main_records": main_records,
+        "main_unread": main_unread,
+        "telemetry": telemetry,
+        "named": named_parts(records, main_records),
+    }
+
+
+def measure_study_at(
+    root: Path, study_uid: str, run_dir: Path, main_run: Path, drawn: bool
+) -> dict:
+    """`measure_study` in a worker process, which opens the corpus at `root` itself."""
+    return measure_study(open_corpus(root), study_uid, run_dir, main_run, drawn)
+
+
+def keep(result: dict, run_dir: Path, main_run: Path) -> None:
+    """Merge one study's result into the run's two receipts: the one writer of either."""
+    uid, series_uids = result["study_uid"], result["series_uids"]
+    write_receipt(
+        run_dir,
+        uid,
+        series_uids,
+        result["records"],
+        result["unread"],
+        result["telemetry"],
     )
+    write_receipt(
+        main_run, uid, series_uids, result["main_records"], result["main_unread"], None
+    )
+
+
+def draw_study(
+    result: dict,
+    run_dir: Path,
+    out: Path,
+    assignments_out: Path,
+    main_run: Path,
+    main_out: Path,
+) -> list[Path]:
+    """Draw one study from the saved run, once it is in the receipts; return its pictures."""
+    uid = result["study_uid"]
+    pictures: list[Path] = []
+    if result["records"]:
+        object_interiors.draw(run_dir, uid, out)
+        object_assignments.draw(run_dir, uid, assignments_out)
+        pictures += [out / "series.png", assignments_out / "series.png"]
+    if result["main_records"]:
+        object_assignments.draw(main_run, uid, main_out)
+        pictures.append(main_out / "series.png")
+    return pictures
 
 
 def on_disk(corpus: Corpus) -> list[str]:
@@ -535,6 +579,28 @@ def on_disk(corpus: Corpus) -> list[str]:
     return found
 
 
+def report(result: dict, args: argparse.Namespace) -> None:
+    """Keep one study in the receipts, draw it when asked, and say what it named and what no
+    stage read."""
+    keep(result, args.run, args.main_run)
+    uid = result["study_uid"]
+    parts = ", ".join(f"{name} {count}" for name, count in result["named"].items())
+    unread = ", ".join(result["telemetry"]["read_by_no_stage"])
+    print(uid, flush=True)
+    print(f"  named, by series: {parts or 'nothing'}", flush=True)
+    print(f"  produced and read by no stage: {unread or 'none'}", flush=True)
+    if args.draw:
+        for picture in draw_study(
+            result,
+            args.run,
+            args.out / uid,
+            args.assignments_out / uid,
+            args.main_run,
+            args.main_out / uid,
+        ):
+            print(f"  {picture}", flush=True)
+
+
 def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
     which = parser.add_mutually_exclusive_group(required=True)
@@ -542,7 +608,18 @@ def main() -> None:
     which.add_argument(
         "--labeled",
         action="store_true",
-        help="every labelled study whose series are all on disk, one after another",
+        help="every labelled study whose series are all on disk",
+    )
+    parser.add_argument(
+        "--workers",
+        type=int,
+        default=os.cpu_count() or 1,
+        help="studies measured side by side, one process each",
+    )
+    parser.add_argument(
+        "--draw",
+        action="store_true",
+        help="draw each study's pictures from the saved run",
     )
     parser.add_argument(
         "--run", type=Path, default=ROOT / "data/measurements/interiors"
@@ -558,24 +635,26 @@ def main() -> None:
         "--main-out", type=Path, default=ROOT / "data/pictures/main-slices"
     )
     args = parser.parse_args()
-    corpus = open_corpus(ROOT / LOCAL_ROOT)
+    root = ROOT / LOCAL_ROOT
+    corpus = open_corpus(root)
     uids = on_disk(corpus) if args.labeled else args.study_uid
-    for uid in uids:
-        pictures, named, unread = run(
-            corpus,
-            uid,
-            args.run,
-            args.out / uid,
-            args.assignments_out / uid,
-            args.main_run,
-            args.main_out / uid,
+    workers = max(1, min(args.workers, len(uids)))
+    if workers == 1:
+        for uid in uids:
+            report(measure_study(corpus, uid, args.run, args.main_run, args.draw), args)
+        return
+    with ProcessPoolExecutor(max_workers=workers) as pool:
+        results = pool.map(
+            measure_study_at,
+            repeat(root),
+            uids,
+            repeat(args.run),
+            repeat(args.main_run),
+            repeat(args.draw),
         )
-        parts = ", ".join(f"{name} {count}" for name, count in named.items())
-        print(uid)
-        print(f"  named, by series: {parts or 'nothing'}")
-        print(f"  produced and read by no stage: {', '.join(unread) or 'none'}")
-        for picture in pictures:
-            print(f"  {picture}")
+        # In the order asked; this process alone writes the receipts.
+        for result in results:
+            report(result, args)
 
 
 if __name__ == "__main__":
