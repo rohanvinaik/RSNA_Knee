@@ -29,6 +29,17 @@ Each is named by what the pictures show, read off the interiors' own lenses:
   Which is MEDIAL and which LATERAL: the medial lies toward the other knee, so where the header
   names the knee (Laterality "R" or "L"; the proof study says "R"), the side follows from the
   patient's left axis. Where it does not, the menisci stay unsided.
+- FIBULA: the bone under the tibia's outer back. Its head has the tibia's marrow, so it is as
+  bright as the tibia, and it lies about 5 cm below the tibia's top (seen on the proof's T1 coronal
+  and T2 sagittal, 2026-10-14; Rohan: «Do you not see the giant fucking bone that is the
+  fibula?»). It is named on its main slice, as the method says: the squint points to where it must
+  be (`fibula_block`: below the tibia's top, on the outer side); the interiors lens reads only that
+  block on each slice that holds it; the fibula there is the region the lens already draws that
+  looks like the tibia, well below its top and behind its middle, apart from the tibia and whole
+  in the block (`fibula_on_slice`); and its main slice is the one where that region is largest.
+  On a fat-suppressed sequence the marrow is darkened to the light of muscle, so it is not named
+  there (`fibula_code`). Seen right on the proof's T2 sagittal, 2026-10-14: slice 30, the bone
+  under the tibia's outer condyle, its head and neck.
 
 The leg runs along the patient's superior axis, front to back along the anterior axis, and side to
 side along the left axis, all read from the slice's own frame. Where the leg's axis does not lie in
@@ -56,6 +67,14 @@ PATELLA_REACH_MM = 50.0
 # A bone's shell along the joint is about a millimetre thick; a meniscus is about 5 mm at its base.
 # Claude's reading of the proof's fat-suppressed coronal, 2026-10-14.
 MENISCUS_THICKNESS_MM = 2.0
+# A bone is at least a centimetre across: a region smaller than a disc this wide is not one.
+BONE_MM = 10.0
+# The fibula's marrow is the tibia's tissue, so on one slice it is about as bright: within a
+# quarter of the tibia's light. Its head lies under the tibia's plateau, at least 3 cm below the
+# tibia's top. Claude's reading of the proof's T2 sagittal, 2026-10-14: the head is x1.00 to x1.08
+# of the tibia's light and about 5 cm below its top; the muscle beside it is x0.1 to x0.6.
+LIKE_THE_TIBIA = (0.75, 1.33)
+FIBULA_BELOW_MM = 30.0
 OBJECT_CODES = {
     "unassigned": 0,
     "air": 1,
@@ -67,6 +86,7 @@ OBJECT_CODES = {
     "meniscus": 7,
     "medial_meniscus": 8,
     "lateral_meniscus": 9,
+    "fibula": 10,
 }
 FOUR_NEIGHBOURS = ndi.generate_binary_structure(2, 1)
 
@@ -218,6 +238,100 @@ def side_code(knee: str, named: int) -> str:
     if knee not in ("R", "L"):
         return "abstain_header_names_no_knee"
     return "from_the_header"
+
+
+def fibula_block(
+    centres_lps: np.ndarray,
+    tibia_top_mm: float,
+    tibia_middle_lps: np.ndarray,
+    knee: str,
+) -> np.ndarray:
+    """The squint tiles where the fibula must be: below the tibia's top, on the knee's outer side of
+    the tibia's middle. Empty when the header names no knee.
+
+    Positions are the tiles' centres in the scanner's millimetres: x toward the patient's left, y
+    toward the back, z up. The outer side is the patient's right for a right knee ("R") and the
+    patient's left for a left one ("L").
+    """
+    if knee not in ("R", "L"):
+        return np.zeros(centres_lps.shape[:-1], dtype=bool)
+    across = centres_lps[..., 0] - tibia_middle_lps[0]
+    outer = across < 0 if knee == "R" else across > 0
+    below = centres_lps[..., 2] < tibia_top_mm
+    return outer & below
+
+
+def fibula_on_slice(
+    labels: np.ndarray,
+    plane: np.ndarray,
+    pixel_mm2: float,
+    places_lps: np.ndarray,
+    tibia_before: np.ndarray,
+    tibia_middle_lps: np.ndarray,
+    cut: np.ndarray,
+) -> tuple[int | None, float]:
+    """On one slice's block, the fibula's territory and its area in square millimetres; (None, 0.0)
+    when the block holds none.
+
+    The fibula is the bone under the tibia's outer back that looks like the tibia. Of the regions
+    the lens draws there, apart from the tibia and at least a disc `BONE_MM` across: those as
+    bright as the tibia (within `LIKE_THE_TIBIA`), whose middle lies at least `FIBULA_BELOW_MM`
+    below the tibia's top and behind the tibia's middle; the largest of them. The tibia on this
+    slice is the region holding most of `tibia_before`, the tibia's places on the middle slice:
+    anatomy is contiguous from slice to slice. A region the block's own edge cuts through (`cut`:
+    the block's border where it is not the picture's edge) is not a whole object in view, so it is
+    not the fibula; the fibula may run off the picture itself. `labels` and `plane` are the block's
+    regions and light; `places_lps` (R, C, 3) its places in the scanner's millimetres, y toward
+    the back, z up.
+    """
+    held = labels[tibia_before & (labels > 0)]
+    if not held.size:
+        return None, 0.0
+    tibia_here = int(np.argmax(np.bincount(held)))
+    tibia = labels == tibia_here
+    light = float(np.median(plane[tibia]))
+    top = float(places_lps[tibia][:, 2].max())
+    least = np.pi * (BONE_MM / 2.0) ** 2
+    low, high = LIKE_THE_TIBIA
+    best, area = None, 0.0
+    for territory in range(1, int(labels.max()) + 1):
+        place = labels == territory
+        size = float(np.count_nonzero(place)) * pixel_mm2
+        if territory == tibia_here or size < least or size <= area or light <= 0:
+            continue
+        if (place & cut).any():
+            continue
+        middle = places_lps[place].mean(axis=0)
+        like = low <= float(np.median(plane[place])) / light <= high
+        below = top - float(middle[2]) >= FIBULA_BELOW_MM
+        behind = float(middle[1]) > float(tibia_middle_lps[1])
+        if like and below and behind:
+            best, area = territory, size
+    return best, area
+
+
+def main_slice(areas: list[float]) -> int | None:
+    """The slice where the object's region is largest; None when no slice holds it."""
+    if not any(area > 0 for area in areas):
+        return None
+    return int(np.argmax(areas))
+
+
+def fibula_code(knee: str, tibia_named: bool, fat_suppressed: bool, found: bool) -> str:
+    """Whether the fibula was named, or why not.
+
+    Marrow is mostly fat, so a fat-suppressed sequence darkens it to the light of muscle; there
+    "as bright as the tibia" cannot tell bone from soft tissue, and the fibula is not named.
+    """
+    if knee not in ("R", "L"):
+        return "abstain_header_names_no_knee"
+    if not tibia_named:
+        return "abstain_no_tibia"
+    if fat_suppressed:
+        return "abstain_marrow_suppressed_with_the_fat"
+    if not found:
+        return "abstain_no_bone_like_the_tibia_below_it"
+    return "identified"
 
 
 def thick_parts(
