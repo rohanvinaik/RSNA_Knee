@@ -25,6 +25,7 @@ OBJECT_COLOURS = {
     "meniscus": (1.0, 1.0, 1.0, 0.9),
     "medial_meniscus": (1.0, 0.15, 0.15, 0.9),
     "lateral_meniscus": (0.6, 1.0, 0.0, 0.95),
+    "fibula": (0.6, 0.3, 1.0, 0.75),
 }
 
 
@@ -46,7 +47,12 @@ def draw_stages(axes, arrays, record):
     rgba = plt.colormaps["tab20"](((labels - 1) % 20) / 19)
     rgba[..., 3] = np.where(labels > 0, 0.45, 0)
     axes[1].imshow(rgba, interpolation="nearest")
-    named = (assigned["femur"], assigned["tibia"], assigned["patella"])
+    named = (
+        assigned["femur"],
+        assigned["tibia"],
+        assigned["patella"],
+        assigned.get("fibula"),
+    )
     for peak in assigned["peaks"]:
         row, col = peak["peak_rc"]
         ringed = peak["territory"] in named
@@ -76,7 +82,8 @@ def draw_stages(axes, arrays, record):
         f"ORANGE femur · GREEN tibia · MAGENTA joint: {codes['femur']}\n"
         f"CYAN patella: {codes['patella']}\n"
         f"RED medial · LIME lateral · WHITE unsided meniscus: {codes['meniscus']}, "
-        f"sides {codes.get('meniscus_side', '-')}",
+        f"sides {codes.get('meniscus_side', '-')}"
+        + (f"\nVIOLET fibula: {codes['fibula']}" if "fibula" in codes else ""),
         fontsize=8,
     )
 
@@ -115,6 +122,8 @@ def draw(run: Path, study_uid: str, out: Path) -> dict:
         draw_stages(axes[row], arrays, record)
         view, fluid, fat = record["view"]
         title = f"{view} · fluid-sensitive={fluid}, fat-suppressed={fat} · slice {record['slice_index']}"
+        if "main_slice" in record:
+            title += f" · the {record['main_slice']['object']}'s main slice"
         axes[row, 0].set_title(title + "\nAcquired signal", fontsize=9)
         one, one_axes = plt.subplots(1, 3, figsize=(18, 6), layout="constrained")
         draw_stages(one_axes, arrays, record)

@@ -1,4 +1,4 @@
-"""Intent tests for the named objects: air, skin, femur over tibia, the joint, patella and menisci.
+"""Intent tests for the named objects: air, skin, femur over tibia, the joint, patella, menisci, fibula.
 
 The scene is a small synthetic knee in a coronal frame (rows run inferior, columns run to the left,
 one place per millimetre): air around a leg of soft tissue, a black margin along two sides of the
@@ -13,6 +13,10 @@ from knee.objects.assignments import (
     assign_plane,
     between_along_the_leg,
     end_pieces,
+    fibula_block,
+    fibula_code,
+    fibula_on_slice,
+    main_slice,
     margin,
     meniscus_side,
     pair_code,
@@ -228,6 +232,143 @@ def test_no_menisci_without_thick_low_signal_or_on_a_sagittal_slice():
     sagittal = assigned(sagittal_scene(), SAGITTAL)
     assert sagittal.codes["meniscus"] == "abstain_side_to_side_runs_through_the_plane"
     assert assigned(scene(), AXIAL).codes["meniscus"] == "abstain_no_joint"
+
+
+def disc(shape, centre_rc, radius_px) -> np.ndarray:
+    rows, cols = np.indices(shape)
+    return (rows - centre_rc[0]) ** 2 + (cols - centre_rc[1]) ** 2 <= radius_px**2
+
+
+TIBIA = (
+    0,
+    58,
+    12,
+    98,
+    6,
+)  # the tibia's marrow, rows and columns, running off the block's top
+
+
+def fibula_scene(fibula_col: int | None = 120, high: bool = False) -> np.ndarray:
+    """A sagittal block at half-millimetre pixels, front to the left and the top at row 0: soft
+    tissue, the tibia running off the top down to 3 cm, and the fibular head, a bone 2 cm across
+    with the tibia's marrow, its middle 6.5 cm below the tibia's top. With `high`, a region as
+    bright as the tibia's marrow 2 cm below its top, behind it."""
+    plane = np.full((200, 160), 40.0)  # soft tissue, darker than marrow
+    plane[rounded_box(plane.shape, 0, 60, 10, 100, 8)] = 1.0  # the tibia's shell
+    plane[rounded_box(plane.shape, *TIBIA)] = 100.0  # its marrow
+    if fibula_col is not None:
+        plane[disc(plane.shape, (130, fibula_col), 22)] = 1.0
+        plane[disc(plane.shape, (130, fibula_col), 20)] = 100.0
+    if high:
+        plane[disc(plane.shape, (40, 140), 14)] = 1.0
+        plane[disc(plane.shape, (40, 140), 12)] = 100.0
+    return plane
+
+
+def places(shape) -> np.ndarray:
+    """A sagittal block's places in the scanner's millimetres: rows run down, columns to the back."""
+    rows, cols = np.indices(shape)
+    return np.stack((np.zeros(shape), cols * FINE_MM, -rows * FINE_MM), axis=-1)
+
+
+TIBIA_MIDDLE = np.array([0.0, 27.5, -14.5])  # column 55, row 29
+
+
+def fibula_in(plane, tibia_before=None, cut=None):
+    reading = read_interiors(plane, (FINE_MM, FINE_MM), 5.0, 3.0, OFFSETS, "reference")
+    if tibia_before is None:
+        tibia_before = rounded_box(plane.shape, *TIBIA)
+    if cut is None:
+        cut = np.zeros(plane.shape, dtype=bool)  # the block is the whole picture
+    found = fibula_on_slice(
+        reading.labels,
+        plane,
+        FINE_MM**2,
+        places(plane.shape),
+        tibia_before,
+        TIBIA_MIDDLE,
+        cut,
+    )
+    return reading, found
+
+
+def test_the_fibula_is_the_bone_like_the_tibia_well_below_its_top_and_behind_it():
+    reading, (territory, area) = fibula_in(fibula_scene())
+    assert territory == reading.labels[130, 120]
+    assert 280 < area < 350  # a disc 2 cm across holds 314 mm²
+
+
+def test_a_bright_region_near_the_tibias_top_is_not_the_fibula():
+    assert fibula_in(fibula_scene(fibula_col=None, high=True))[1] == (None, 0.0)
+
+
+def test_soft_tissue_is_not_the_fibula():
+    assert fibula_in(fibula_scene(fibula_col=None))[1] == (None, 0.0)
+
+
+def test_a_bone_in_front_of_the_tibias_middle_is_not_the_fibula():
+    assert fibula_in(fibula_scene(fibula_col=30))[1] == (None, 0.0)
+
+
+def test_where_the_tibia_is_not_on_the_slice_no_fibula_is_named():
+    plane = fibula_scene()
+    nowhere = np.zeros(plane.shape, dtype=bool)
+    assert fibula_in(plane, nowhere)[1] == (None, 0.0)
+
+
+def test_a_bone_the_blocks_edge_cuts_through_is_not_the_fibula():
+    plane = fibula_scene()[
+        :, :130
+    ]  # the block's edge runs through the bone at column 129
+    cut = np.zeros(plane.shape, dtype=bool)
+    cut[:, -1] = True  # that edge is the block's, not the picture's
+    assert fibula_in(plane, cut=cut)[1] == (None, 0.0)
+    whole_picture = fibula_in(plane)[
+        1
+    ]  # the same edge as the picture's own: it may run off
+    assert whole_picture[0] is not None
+
+
+def test_the_fibula_block_is_below_the_tibias_top_on_the_outer_side():
+    # x toward the patient's left, y toward the back, z up; the tibia's middle at the origin, its
+    # top at z = 20
+    centres = np.array(
+        [
+            [
+                [-10.0, 10.0, -10.0],
+                [10.0, 10.0, -10.0],
+                [-10.0, -10.0, -10.0],
+                [-10.0, 10.0, 30.0],
+            ]
+        ]
+    )
+    middle = np.zeros(3)
+    assert fibula_block(centres, 20.0, middle, "R").tolist() == [
+        [True, False, True, False]
+    ]
+    assert fibula_block(centres, 20.0, middle, "L").tolist() == [
+        [False, True, False, False]
+    ]
+    assert not fibula_block(centres, 20.0, middle, "").any()
+
+
+def test_the_main_slice_is_where_the_region_is_largest():
+    assert main_slice([0.0, 120.0, 452.0, 300.0]) == 2
+    assert main_slice([0.0, 0.0]) is None
+
+
+def test_fibula_code_names_why():
+    assert fibula_code("", True, False, True) == "abstain_header_names_no_knee"
+    assert fibula_code("R", False, False, True) == "abstain_no_tibia"
+    # fat suppression darkens marrow to the light of muscle
+    assert (
+        fibula_code("R", True, True, True) == "abstain_marrow_suppressed_with_the_fat"
+    )
+    assert (
+        fibula_code("R", True, False, False)
+        == "abstain_no_bone_like_the_tibia_below_it"
+    )
+    assert fibula_code("L", True, False, True) == "identified"
 
 
 def test_pair_code_names_why():
