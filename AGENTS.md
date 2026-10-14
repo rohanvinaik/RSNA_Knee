@@ -6,10 +6,17 @@ thing. That's it.» At every session start and after every compaction, before an
 `docs/conversations/2026-10-13-the-thesis.md`, then `docs/THEORY_OF_THE_CASE.md`, then
 `docs/OBJECTS_AND_CONDITIONS.md`, and look at the proof study's pictures.
 
-**How the knee's objects are named.** Rohan, 2026-10-14: «I TOLD you to use common-sense reasoning off
-images.» For each object in `docs/OBJECTS_AND_CONDITIONS.md`, one at a time:
-1. Look at the proof study's pictures.
-2. Say plainly why the object looks like itself there.
+**How the knee's objects are named.** Rohan, 2026-10-14: «Reasoning off the actual pngs, basic
+common-sense domain knowledge, the work I ALREADY did and proved, and basic identification and
+assignment of object identity.» And: «I TOLD you to use common-sense reasoning off images.» For each
+object in `docs/OBJECTS_AND_CONDITIONS.md`, one at a time:
+1. Find its main slice in each series: the one that shows the region the object is identified in, and
+   later diagnosed in («Is it not obvious which slice to use?»). The squint
+   (`src/knee/collapse/squint_stack.py`) shows every slice of a series cheaply, so finding it is plain.
+   Never recompute on every slice («that's completely wrong»; the collapse,
+   `../cell_tracking/docs/pipeline_thesis/paper/what_an_object_is.md` §4).
+2. Look at the actual pictures of that slice, and say plainly, with common-sense domain knowledge, why the
+   object looks like itself there.
 3. Write exactly that as a few plain rules on the lenses the interiors already give
    (`src/knee/objects/assignments.py`).
 4. Run `scripts/run_interiors.py` on the proof study, look at the picture, and show Rohan before the next
