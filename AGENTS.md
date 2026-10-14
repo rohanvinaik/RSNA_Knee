@@ -1,10 +1,16 @@
 # For agents (and humans) arriving fresh — read before proposing anything
 
+**Listen.** Rohan's words are the specification: do exactly what he asks and no more, restate only what he
+said, ask where there is a gap, answer the question he asked first, and trust the thesis («You just don't
+fucking TRUST me»). What you broke, you fix. Every correction he had to make, and what would have prevented
+it, is in `docs/HOW_TO_BUILD.md`.
+
 **Read the thesis first.** Everything in RSNA_Knee serves one thesis: `docs/THEORY_OF_THE_CASE.md`, Part I.
 Read it before anything else, and do not overcomplicate it. Rohan, 2026-10-13: «This is basically the whole
 thing. That's it.» At every session start and after every compaction, before anything else, read whole
 `docs/conversations/2026-10-13-the-thesis.md`, then `docs/THEORY_OF_THE_CASE.md`, then
-`docs/OBJECTS_AND_CONDITIONS.md`, and look at the proof study's pictures.
+`docs/OBJECTS_AND_CONDITIONS.md`, then `docs/HOW_TO_BUILD.md`, and look at the proof study's pictures with
+the conversation in mind: the parts of the knee the lenses already pull out.
 
 **How the knee's objects are named.** Rohan, 2026-10-14: «Reasoning off the actual pngs, basic
 common-sense domain knowledge, the work I ALREADY did and proved, and basic identification and
@@ -22,7 +28,16 @@ object in `docs/OBJECTS_AND_CONDITIONS.md`, one at a time:
 4. Run `scripts/run_interiors.py` on the proof study, look at the picture, and show Rohan before the next
    object.
 
-Where the pictures do not hold the object as its own region, it is not named; it is never drawn wrong.
+A part plainly visible in one lens is found by that lens, whichever lens it is: «If it's visible in one lens
+but not the other (like "joint fluid")...then great, we know how to find it, problem solved». Seeing a part
+and not yet resolving it is the agent's failure, never the project's. Where the pictures do not hold the
+object at all, it is not named; it is never drawn wrong.
+
+**One coherent operation.** Rohan, 2026-10-14: «This was supposed to be efficient. JIT and paralell compute,
+cheap measures, analyses shared in a single coherent operation.» The run is one graph of named values, each
+computed once and handed to every consumer; nothing is computed and thrown away, or computed twice. The
+ledger, vulture and the gate stay on, and the pipeline is checked through its real entry point
+(`scripts/run_interiors.py`). Details: `docs/HOW_TO_BUILD.md` §5.
 
 Do not:
 - build rule machinery;
@@ -33,8 +48,8 @@ Do not:
   fix it;
 - let an advisor's or a side agent's advice override his thesis or his words.
 
-The full account of how the 2026-10-14 session went wrong, and how not to repeat it, is in
-Claude's project memory, `feedback_rsna_knee_name_objects_from_pictures.md`.
+Every correction Rohan had to make, with his words and what would have prevented it, is in
+`docs/HOW_TO_BUILD.md`, for every agent.
 
 **The archives are invisible.** `archive/` and `archive2/` hold the old builds. Do not read, lint or check them
 unless Rohan says to look in them. Rohan, 2026-10-13: «Ignore lint and other checks on the archive folders.
