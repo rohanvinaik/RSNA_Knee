@@ -2,7 +2,9 @@
 
 **Read the thesis first.** Everything in RSNA_Knee serves one thesis: `docs/THEORY_OF_THE_CASE.md`, Part I.
 Read it before anything else, and do not overcomplicate it. Rohan, 2026-10-13: «This is basically the whole
-thing. That's it.»
+thing. That's it.» At every session start and after every compaction, before anything else, read whole
+`docs/conversations/2026-10-13-the-thesis.md`, then `docs/THEORY_OF_THE_CASE.md`, then
+`docs/OBJECTS_AND_CONDITIONS.md`, and look at the proof study's pictures.
 
 **How the knee's objects are named.** Rohan, 2026-10-14: «I TOLD you to use common-sense reasoning off
 images.» For each object in `docs/OBJECTS_AND_CONDITIONS.md`, one at a time:
