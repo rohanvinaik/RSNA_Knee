@@ -88,7 +88,7 @@ extend-select = ["B"]
 [tool.ruff.lint.isort]
 # `_out` is workbench/render's own sibling module (the pictures directory), resolved because a
 # script's directory is on sys.path when it is run as a script. It is ours, not third-party.
-known-first-party = ["knee", "_out"]
+known-first-party = ["knee", "_out", "object_interiors"]
 
 [tool.ty.src]
 exclude = ["archive", "archive2"]
@@ -96,7 +96,7 @@ exclude = ["archive", "archive2"]
 [tool.deptry]
 extend_exclude = ["archive", "archive2"]
 # SAME verifiers are neighboring scripts, not external distributions.
-known_first_party = ["knee", "_out", "workbench", "verify_profiles_same"]
+known_first_party = ["knee", "_out", "workbench", "verify_profiles_same", "object_interiors"]
 
 [tool.deptry.per_rule_ignores]
 # Detective/Wesker are development readers; Hamilton is the development observation graph; and
