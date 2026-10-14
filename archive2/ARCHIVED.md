@@ -25,6 +25,22 @@ run of the old gate, on the tree just before the move, had three failing tests: 
 fault in `workbench/render/tile_dome_frames.py` and two route-composition tests that found
 `depth` and `tile_digits` produced but read by no stage.
 
+**Recovered from here, at his word** ("I guess we can recover the study loader and the "squint, the
+background lens and the line-up". Fine the joint slice too. But that's it. The rest, I'm rebuilding
+by hand"): back at their original paths under `src/knee/`, unchanged, are the study loader
+(`study/`, all ten modules), the squint (`collapse/squint_stack.py`, with `collapse/physical.py`),
+the background lens (`collapse/first_lens.py`, with the series' own black level from
+`collapse/regime.py`, `noise.py`, `units.py` and `codes.py`) and the line-up
+(`collapse/lineup.py`), and the modules they import: `collapse/structure.py` (the pairing reads
+its `told_sign`, and the joint-line probe its profile helpers; the file comes back whole, with its
+old field-stage reading in it), `absence.py`, `compute/contracts.py`, `telemetry/ledger.py` and the
+package `__init__` files. Their tests and pictures stay here. The joint-line probe, which seeds the
+two halves either side of the deepest enclosed dip and finds the line on every joint slice, is
+saved as `probes/probe_halves_plateau.py`; it runs against the recovered pieces with
+`PYTHONPATH=src .venv/bin/python archive2/probes/probe_halves_plateau.py <study uid> <out dir>`.
+`pyproject.toml` stays here too, so the recovered code runs with `PYTHONPATH=src` and the project's
+`.venv`.
+
 **Renamed so they can never load as instructions** (the content is unchanged): `CLAUDE.md` is
 `CLAUDE.archived.md`, `AGENTS.md` is `AGENTS.archived.md`, and the project's `.claude/` folder (its
 rules and settings) is `dot-claude/`. A file named `CLAUDE.md` or `AGENTS.md`, or a `.claude/`
