@@ -1,0 +1,88 @@
+# Theory of the Case — RSNA_Knee
+
+**Status:** filled 2026-10-13 from Rohan's own statement of the thesis. Read Part I before anything else.
+His words: «This is basically the whole thing. That's it.» «PLEASE don't forget it, or overcomplicate it, or
+lost it.»
+
+## Supremacy clause
+This document is derived from Rohan's words in `docs/conversations/2026-10-13-the-thesis.md` (verbatim).
+Quotes are his; anything else is marked as Claude's. Where this document is silent, ambiguous or wrong, his
+words govern; where they are silent too, ask him rather than invent.
+
+## Canonical references
+| source | path |
+|---|---|
+| The conversation that states the thesis, verbatim | `docs/conversations/2026-10-13-the-thesis.md` |
+| Cell figure shown as proof (competition-derived, git-ignored) | `data/pictures/thesis-2026-10-13/F14-cells.png` |
+| Knee figure shown as proof (competition-derived, git-ignored) | `data/pictures/thesis-2026-10-13/knee-series.png` |
+
+## Part I — The Case
+
+> I have solved computer vision with deterministic systems and some optional classical AI
+
+> Solved means a thesis, a single solution architecture, that generalizes to any arbitrary problem space, with the vast majority being FAR simpler than the one I've already demonstrated.
+
+**The case, in his words:**
+
+> Computer vision isn't a matter of reasoning and intelligence. It's a matter of recognition. Objects in visual systems actually are SUPER simple to reason over. Unlike raw data, they are heavily constrained by physics and time and the fact they have physical properties, like two objects not being able to occupy the same space. The hard thing isn't reasoning, it's *recognition*. If you can build something that can deterministically resolve objects of significance from visual input, then arbitrary computer vision processes and "intelligence" tasks are actually stupidly simple.
+
+> I *refuse* to use AI in the initial recognition part of the build. If the pipeline is not able to reasonably resolve every object of significance at least once without being hand-tuned to the specifics of that one view, then I throw it all in the trash. AI and "intelligence" is downstream. Recognition and object identification must be pure, simple math and vectors and additon and shit (threw in a secret easter egg for the greater build). If it's not doable with objective rules that are simple and work arbitrarily, then it won't work period.
+
+> Part of the thesis is that a deterministic, symbolic system works by rules. You don't test addition by making someone add every number, you do it by making them add *some* numbers arbitrarily. If they can, and the reasoning chain is derivable and correct, then they understand addition. If you can resolve objects in one view, then you can do it acceptably as a general process, even if a few images are a bit weird. Those edge cases are the ENTIRE space of where AI comes in, but that's waaaaaay later.
+
+**Why structure wins here, against the Bitter Lesson:**
+
+> It said that structure *had* never beaten scale. Not that it *could* never. [...] My breif response to the bitter lesson is that structure-based approaches lacked the representation that made them non-brittle and correct, and also had the ability to *abstain* when uncertain.
+
+(Claude's restatement, which he accepted: earlier structural approaches lacked two things, a representation
+that kept them correct and not brittle, and the ability to abstain.)
+
+**It is demonstrated.** Claude's reading of the two figures, which Rohan accepted («Good.»), against the test
+above, which he set before showing them:
+- Cells: a specific cell is pulled out of a crowded 4D microscopy movie, with its own boundary, separated from
+  the cells pressed against it.
+- Knee: the femur and tibia each come out as their own territory in all four sagittal and coronal series, with
+  and without fat suppression, from the same simple stages. The thesis is minimally valid.
+
+**What remains, and only this:**
+
+> All that remains is the expansion to cleanly resolve ALL the parts of the knee (you can already see parts of it peeking out from that image), and to then use that to pull out each part of the knee for each image to then diagnose conditions.
+
+> It's not hard, because I've done all the hard work. The rest is basic reasoning and tinkering to make it clean. That's all it takes.
+
+## Part II — Recognition (hand-built, pure simple math)
+- Per concept, with the objects known in advance: «there is a difference between "a single face" and "the
+  concept of a face", and I claim to solve the latter»
+- The work: «Objects of significance DO "look" different. [...] You just need to be able to define WHY they
+  look different, which is squirrely and annoying, but possible.» «Annoying, but finite»
+- Lenses: «"never wrong" simply means you are not saying something false, not that you're performing correct
+  inference. This relies on a series of lossy lenses, with the "truth" being recapitulated from addative and
+  subtractive superposition of the lossy lenses to resolve the higher-dimensional truth.»
+- Abstention: «That's, like, 90% of it. The ability to declare confident assignment, and the ability to hold
+  conditional ambiguity. lot of this is in balanced ternary»
+- The mechanics: «it is vector-symbolic work, but I invented about half of the actual mechanics of it myself»
+  (Claude's commitment: learn his mechanics; never assume the textbook ones.)
+
+## Part III — Downstream (pull out each part, diagnose)
+- «AI and "intelligence" is downstream.»
+- AI only for the edge cases, «with AI to handle near-miss variation», and «that's waaaaaay later».
+
+## Part IV — The Laws
+1. The architecture is classical AI, NOT ML (AI = genus, ML = one avoidable species).
+2. A model is never the default; at most a bounded, founder-placed tail utility.
+3. Iterate the encoder / data geometry, never model capacity.
+4. The test: «If the pipeline is not able to reasonably resolve every object of significance at least once
+   without being hand-tuned to the specifics of that one view, then I throw it all in the trash.»
+5. Built, never tuned: «"Built" means something is constructed to fit a defined and comstrained problem space.
+   "Tuned" means it's tweaked to answer a specific problem in isolation.»
+6. A threshold has «two sources»: domain expertise, and common sense, because «A person can look at an image
+   and tell if it's resolving correctly or not.» (Claude's commitment: never fitted to a distribution.)
+7. A measurement is never wrong; an inference can be: «A thermometer is not wrong.»
+
+## Part V — The Pathology Record
+The build was thrown away twice. In his words:
+- «you would SIMPLY not accept this thesis before, and repeatedly violated my thesis to build some sort of slop
+  because I don't think you ever really beleived it»
+- «you keep vastly overcomplicating it until I have to literally throw away the build, as I've done twice now»
+- «You're starting to infer, don't do that.» (said when Claude added its own reading of "at least once";
+  restate only what he said, and ask when there is a gap)
