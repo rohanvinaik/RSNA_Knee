@@ -69,6 +69,11 @@ def measure(series: Series) -> tuple[dict, dict[str, np.ndarray]] | str:
     thirds = (
         regime.split_terciles if regime is not None else (float("nan"), float("nan"))
     )
+    sigmas = (
+        (regime.dark, regime.bright)
+        if regime is not None
+        else (float("nan"), float("nan"))
+    )
     axes = frame.basis_lps / frame.spacing_rc
     plane = series.volume[index]
     reading = read_interiors(
@@ -89,6 +94,7 @@ def measure(series: Series) -> tuple[dict, dict[str, np.ndarray]] | str:
         thirds,
         (row.fluid_sensitive, row.fat_suppression),
         REACH_MM,
+        sigmas,
     )
     arrays = {
         "acquired_plane": plane.copy(),
@@ -133,6 +139,7 @@ def measure(series: Series) -> tuple[dict, dict[str, np.ndarray]] | str:
             "tibia": assignment.tibia,
             "superior_in_plane": assignment.superior_in_plane,
             "split_terciles": list(thirds),
+            "noise_sigmas": {"dark": sigmas[0], "bright": sigmas[1]},
             "territories": [asdict(r) for r in assignment.readings],
         },
     }

@@ -20,6 +20,7 @@ from knee.objects.assignments import (
     held_body,
     joint_code,
     marrow_sign,
+    noise_sign,
     pair_code,
     signal_third,
     unrecorded,
@@ -50,9 +51,17 @@ def scene(marrow: float, joint: float) -> np.ndarray:
     return plane
 
 
-def assigned(plane, basis=CORONAL, tags=T1W, thirds=THIRDS, split=SPLIT):
+NOISE_VOUCHES = (
+    1.0,
+    2.0,
+)  # the places below the split read no louder than the tissue's noise
+
+
+def assigned(
+    plane, basis=CORONAL, tags=T1W, thirds=THIRDS, split=SPLIT, sigmas=NOISE_VOUCHES
+):
     reading = read_interiors(plane, (1.0, 1.0), split, 3.0, OFFSETS, "reference")
-    return assign_plane(plane, reading, (1.0, 1.0), basis, thirds, tags, REACH)
+    return assign_plane(plane, reading, (1.0, 1.0), basis, thirds, tags, REACH, sigmas)
 
 
 def test_t1w_scene_names_air_skin_femur_over_tibia_and_the_joint():
@@ -199,7 +208,7 @@ def test_pair_code_abstains_in_the_order_its_signs_are_read():
     assert pair_code(0.1, 2, 0, True, True) == "abstain_superior_through_plane"
     assert pair_code(float("nan"), 2, 0, True, True) == "abstain_superior_through_plane"
     assert pair_code(1.0, 1, 0, True, True) == "abstain_fewer_than_two_bones"
-    assert pair_code(1.0, 2, 1, True, True) == "abstain_deeper_territory_open"
+    assert pair_code(1.0, 2, 1, True, True) == "abstain_candidates_not_the_two_deepest"
     assert pair_code(1.0, 2, 0, False, True) == "abstain_two_deepest_bones_not_stacked"
     assert pair_code(1.0, 2, 0, True, False) == "abstain_no_low_signal_between"
     assert pair_code(1.0, 2, 0, True, True) == "femur_tibia"
@@ -212,12 +221,37 @@ def test_joint_code_keeps_fat_out_of_the_joint():
 
 
 def test_air_code_names_the_first_sign_that_kept_nothing():
-    assert air_code(1, 1, 1, 1, 1) == "identified"
-    assert air_code(0, 1, 1, 1, 0) == "abstain_no_body"
-    assert air_code(1, 0, 0, 0, 0) == "abstain_no_outside_field"
-    assert air_code(1, 1, 0, 0, 0) == "abstain_outside_not_low_signal"
-    assert air_code(1, 1, 1, 0, 0) == "abstain_low_signal_only_at_record_edge"
-    assert air_code(1, 1, 1, 1, 0) == "abstain_no_low_signal_wider_than_a_border"
+    assert air_code(1, 1, 1, 1, 1, 1, 1) == "identified"
+    assert air_code(0, 0, 1, 1, 1, 1, 0) == "abstain_no_body"
+    assert air_code(1, 0, 1, 1, 1, 1, 0) == "abstain_body_not_at_field_centre"
+    assert air_code(1, 1, 0, 1, 1, 1, 0) == "abstain_noise_law_unread"
+    assert air_code(1, 1, -1, 1, 1, 1, 0) == "abstain_low_signal_holds_more_than_noise"
+    assert air_code(1, 1, 1, 0, 0, 0, 0) == "abstain_no_outside_field"
+    assert air_code(1, 1, 1, 1, 0, 0, 0) == "abstain_outside_not_low_signal"
+    assert air_code(1, 1, 1, 1, 1, 0, 0) == "abstain_low_signal_only_at_record_edge"
+    assert air_code(1, 1, 1, 1, 1, 1, 0) == "abstain_no_low_signal_wider_than_a_border"
+
+
+def test_noise_sign_vouches_only_when_below_the_split_is_noise_alone():
+    assert noise_sign(1.0, 2.0) == noise_sign(2.0, 2.0) == 1
+    assert noise_sign(3.0, 2.0) == -1
+    assert noise_sign(float("nan"), 2.0) == noise_sign(1.0, 0.0) == 0
+
+
+def test_low_signal_that_holds_more_than_noise_names_no_air():
+    result = assigned(scene(marrow=100.0, joint=25.0), sigmas=(3.0, 2.0))
+    assert result.codes["air"] == "abstain_low_signal_holds_more_than_noise"
+    assert not (result.objects == OBJECT_CODES["air"]).any()
+    assert result.codes["pair"] == "femur_tibia"  # the bones do not read the noise law
+
+
+def test_tissue_that_misses_the_field_centre_names_no_air_or_skin():
+    plane = np.full((120, 120), 2.0)
+    plane[5:41, 5:41] = 40.0  # tissue in a corner, while the centre is low signal
+    result = assigned(plane)
+    assert result.codes["air"] == "abstain_body_not_at_field_centre"
+    assert result.codes["skin"] == "abstain_no_air"
+    assert not np.isin(result.objects, [1, 2]).any()
 
 
 def test_signal_third_edges_and_unread_values():

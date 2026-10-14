@@ -261,24 +261,29 @@ def held_body(mask: np.ndarray, peak_rc: tuple[int, int]) -> np.ndarray:
 
 
 def pair_code(
-    superior_in_plane: float, bones: int, open_deeper: int, stacked: bool, crossed: bool
+    superior_in_plane: float,
+    bones: int,
+    deeper_others: int,
+    stacked: bool,
+    crossed: bool,
 ) -> str:
     """Femur over tibia: the two deepest candidates, stacked along the leg's axis, low signal between.
 
     The femur and tibia are the knee's two large bones and meet at the tibiofemoral joint
     ([R-KNEE]); the leg lies along the patient's superior axis. A candidate is a territory whose
     bone question concurred or stood open only on a silent signal (`PAIR_CANDIDATES`). Abstains
-    when that axis does not lie in the plane, when there are fewer than two candidates, when a
-    territory at least as deep as the second left its bone question open for another reason (it
-    could be the bone that was missed), when the two are not stacked, or when no low signal lies
-    between them.
+    when that axis does not lie in the plane, when there are fewer than two candidates, when any
+    other territory is at least as deep as the second (the two large bones must be the field's two
+    deepest interiors; measured 2026-10-14, without this two shallow strips of soft tissue were
+    named femur and tibia on a sagittal fat-suppressed plane whose marrow had broken apart), when
+    the two are not stacked, or when no low signal lies between them.
     """
     if not np.isfinite(superior_in_plane) or superior_in_plane < HALF_TURN_SHARE:
         return "abstain_superior_through_plane"
     if bones < 2:
         return "abstain_fewer_than_two_bones"
-    if open_deeper:
-        return "abstain_deeper_territory_open"
+    if deeper_others:
+        return "abstain_candidates_not_the_two_deepest"
     if not stacked:
         return "abstain_two_deepest_bones_not_stacked"
     if not crossed:
@@ -300,14 +305,51 @@ def joint_code(fat: int) -> str:
     return "abstain_fat_signal" if fat > 0 else "abstain_signal_silent"
 
 
+def noise_sign(dark_sigma: float, bright_sigma: float) -> int:
+    """+1, 0 or -1: whether the places below the split hold the air's noise and nothing else.
+
+    The regime reads one noise law twice: from the places below the split (`RegimeKey.dark`), and
+    from the tissue's own texture, which never reads the background (`RegimeKey.bright`). If the
+    places below the split are noise alone, their reading can be no louder than the tissue's (+1);
+    louder means they hold signal too, so low signal there is not no signal (-1). 0 when either is
+    not read. The bar is the two readings' equality, nothing fitted. Measured 2026-10-14 over five
+    studies: every series on which air was seen painted over a structure inside the knee read
+    louder (1.50 to 3.98 times), and every series that read quieter (0.37 to 0.90) was named right.
+    """
+    if not (np.isfinite(dark_sigma) and np.isfinite(bright_sigma)):
+        return 0
+    if dark_sigma <= 0 or bright_sigma <= 0:
+        return 0
+    return 1 if dark_sigma <= bright_sigma else -1
+
+
 def air_code(
-    body: int, outside: int, outside_dark: int, open_dark: int, air: int
+    seeded: int,
+    body: int,
+    noise: int,
+    outside: int,
+    outside_dark: int,
+    open_dark: int,
+    air: int,
 ) -> str:
-    """Whether air was named, or why not, from the counts of the places each sign kept."""
+    """Whether air was named, or why not, from the counts of the places each sign kept.
+
+    The body is the piece of the outline that holds the field's centre: a knee is imaged with the
+    knee at the centre of the field of view, so an outline that misses the centre has lost the
+    knee. Measured 2026-10-14: on three fat-suppressed series whose split lay inside the tissue,
+    the outline shrank to scattered bright places and air was painted across the knee. Air is
+    read only where the noise law vouches that low signal is no signal (`noise_sign`).
+    """
     if air:
         return "identified"
-    if not body:
+    if not seeded:
         return "abstain_no_body"
+    if not body:
+        return "abstain_body_not_at_field_centre"
+    if noise == 0:
+        return "abstain_noise_law_unread"
+    if noise < 0:
+        return "abstain_low_signal_holds_more_than_noise"
     if not outside:
         return "abstain_no_outside_field"
     if not outside_dark:
@@ -430,11 +472,13 @@ def assign_plane(
     thirds: tuple[float, float],
     tags: tuple[str, str],
     reach_mm: float,
+    noise_sigmas: tuple[float, float] = (float("nan"), float("nan")),
 ) -> PlaneAssignment:
     """Ask every question of the plane's places and territories; keep every reading.
 
-    `tags` is the series' (Fluid_Sensitive, Fat_Suppression) pair as the table gives it, and
-    `thirds` its terciles above the background split (`RegimeKey.split_terciles`).
+    `tags` is the series' (Fluid_Sensitive, Fat_Suppression) pair as the table gives it, `thirds`
+    its terciles above the background split (`RegimeKey.split_terciles`), and `noise_sigmas` its
+    two readings of the noise law (`RegimeKey.dark`, `RegimeKey.bright`).
     """
     dark, available, labels = reading.dark, reading.available, reading.labels
     objects = np.zeros(plane.shape, dtype=np.int8)
@@ -444,12 +488,15 @@ def assign_plane(
     edge = record_edge(margin, spacing_rc, reach_mm)
     seeded = labels > 0
 
-    # AIR: measured low signal, outside the body's outline (the seeded tissue with its holes filled),
-    # recorded, off the record's edge, in a field reaching deeper than a border window from the body.
+    # AIR: measured low signal, outside the outline (the seeded tissue with its holes filled), with
+    # a body at the field's centre, recorded, off the record's edge, in a field reaching deeper than
+    # a border window from the tissue.
     inside = ndi.binary_fill_holes(seeded)
+    body = held_body(inside, (plane.shape[0] // 2, plane.shape[1] // 2))
+    noise = noise_sign(*noise_sigmas)
     outside = recorded & ~inside
     open_dark = outside & dark & ~edge
-    if seeded.any():
+    if body.any() and noise > 0:
         depth = ndi.distance_transform_edt(~seeded, sampling=spacing_rc)
         parts, _ = ndi.label(open_dark, structure=np.ones((3, 3), dtype=bool))
         held = np.unique(parts[open_dark & (depth > reach_mm)])
@@ -459,6 +506,8 @@ def assign_plane(
     objects[air] = OBJECT_CODES["air"]
     codes["air"] = air_code(
         int(seeded.sum()),
+        int(body.sum()),
+        noise,
         int(outside.sum()),
         int((outside & dark).sum()),
         int(open_dark.sum()),
@@ -467,7 +516,7 @@ def assign_plane(
 
     # SKIN: the body's own above-split places that touch the air.
     touching = ndi.binary_dilation(air, structure=ndi.generate_binary_structure(2, 1))
-    skin = inside & recorded & ~dark & touching
+    skin = body & recorded & ~dark & touching
     objects[skin] = OBJECT_CODES["skin"]
     codes["skin"] = "identified" if skin.any() else "abstain_no_air"
 
@@ -489,13 +538,12 @@ def assign_plane(
     superior_in_plane = float(np.linalg.norm(unit[2]))
     ranked = sorted(readings, key=lambda r: r.depth_mm, reverse=True)
     bones = [r for r in ranked if r.bone in PAIR_CANDIDATES]
-    open_deeper, stacked, crossed = 0, False, False
+    deeper_others, stacked, crossed = 0, False, False
     if len(bones) >= 2:
         first, second = bones[0], bones[1]
-        open_deeper = sum(
+        deeper_others = sum(
             r.depth_mm >= second.depth_mm
-            and r.bone.startswith("abstain")
-            and r.bone not in PAIR_CANDIDATES
+            and r.territory not in (first.territory, second.territory)
             for r in ranked
         )
         stacked = (
@@ -503,7 +551,7 @@ def assign_plane(
         )
         crossed = low_signal_between(dark, first.peak_rc, second.peak_rc)
     codes["pair"] = pair_code(
-        superior_in_plane, len(bones), open_deeper, stacked, crossed
+        superior_in_plane, len(bones), deeper_others, stacked, crossed
     )
     counts: dict[str, int] = {}
     femur = tibia = None
