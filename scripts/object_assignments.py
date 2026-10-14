@@ -22,6 +22,7 @@ OBJECT_COLOURS = {
     "tibia": (0.2, 0.85, 0.35, 0.55),
     "joint": (0.95, 0.2, 0.95, 0.7),
     "patella": (0.0, 0.85, 1.0, 0.6),
+    "meniscus": (1.0, 0.15, 0.15, 0.9),
 }
 
 
@@ -71,7 +72,7 @@ def draw_stages(axes, arrays, record):
     axes[2].set_title(
         f"BLUE air · YELLOW skin: {codes['air']}\n"
         f"ORANGE femur · GREEN tibia · MAGENTA joint: {codes['femur']}\n"
-        f"CYAN patella: {codes['patella']}",
+        f"CYAN patella: {codes['patella']} · RED menisci: {codes['meniscus']}",
         fontsize=8,
     )
 
