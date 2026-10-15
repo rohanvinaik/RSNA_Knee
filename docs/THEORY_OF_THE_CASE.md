@@ -78,6 +78,13 @@ above, which he set before showing them:
 6. A threshold has «two sources»: domain expertise, and common sense, because «A person can look at an image
    and tell if it's resolving correctly or not.» (Claude's commitment: never fitted to a distribution.)
 7. A measurement is never wrong; an inference can be: «A thermometer is not wrong.»
+8. Validity, not perfection (2026-10-14): «It's not about perfection. It's about validity.» Each object
+   is resolved at least once, by a rule not tuned to that view; the few weird images are the edge
+   cases, where the AI part comes in later («Those edge cases are the ENTIRE space of where AI comes
+   in»; «I haven't described the AI part of this to you yet»).
+9. One leg, one set of objects (2026-10-14): «It's literally the same leg, obviously the object would be
+   the same in both views. That's the WHOLE thesis». An object found in one view of the leg is that
+   object in every other view of it.
 
 ## Part V — The Pathology Record
 The build was thrown away twice. In his words:
