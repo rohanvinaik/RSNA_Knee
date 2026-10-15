@@ -253,10 +253,12 @@ note of `src/knee/objects/assignments.py` has a paragraph for each rule.
   quadriceps tendon where it meets the patella, and the picture's top edge cuts it; the medial
   gastrocnemius head takes in the popliteal vessels on its outer side, the tissue behind the
   notch, and a thin strip under the skin along the back of the leg; the semimembranosus tendon is
-  named by the thickest piece of its core, about 2 by 4 mm of the black oval, about 7 by 5 mm,
-  that it is on its slice, because the low-signal lens covers the oval only in pieces
-  (`data/pictures/assignments-zooms-20261015/semimembranosus-axial-slice-11.png`), and the reach
-  test to the condyle's region keeps the piece at the knee without showing it touching the bone.
+  the black oval on its slice, about 7 by 4 mm, named whole since its cracks one pixel wide are
+  closed (named at first as a 2 by 4 mm speck of its core; a side note of 2026-10-15 asked whether
+  a speck resolves it, and it does not), but for its narrow tip toward the tibia's back shell
+  (`data/pictures/assignments-zooms-20261015/semimembranosus-axial-slice-11.png`); two dark bodies
+  that touch, or lie a pixel or two apart, are read as one; and the reach test to the condyle's
+  region keeps it at the knee without showing it touching the bone.
 - Nothing is pushed; ask before pushing.
 
 ## The record, 2026-10-14

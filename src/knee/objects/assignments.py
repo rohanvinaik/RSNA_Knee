@@ -305,11 +305,13 @@ categories of the twelve it relates to (docs/OBJECTS_AND_CONDITIONS.md §6):
      the highest along the leg (`tibia_top_slice`) (abstain_no_tibia_below_the_femur);
   6. the tibia's inner condyle is found there as for the medial head (`inner_condyle`)
      (abstain_no_inner_condyle);
-  7. it is a low-signal piece at least `MENISCUS_THICKNESS_MM` thick outside every named part (a
-     tendon cut across; a shell or a fascia line is thinner), whose middle lies inside the inner
-     condyle's peak and behind it, the back-inner corner, and that reaches within `SHELL_MM` of the
-     condyle's region; the front one, since the semitendinosus lies behind it
-     (`semimembranosus_on_slice`) (abstain_no_tendon_at_the_back_inner_corner). The condyle's
+  7. it is the low signal outside every named part, its cracks one pixel wide closed (the
+     scanner's grain lifts some of the tendon's pixels just above the lens's level, so the lens
+     draws it cracked), a piece of it at least `MENISCUS_THICKNESS_MM` thick (a tendon cut across;
+     a shell or a fascia line is thinner), whose middle lies inside the inner condyle's peak and
+     behind it, the back-inner corner, and that reaches within `SHELL_MM` of the condyle's region;
+     the front one, since the semitendinosus lies behind it (`semimembranosus_on_slice`)
+     (abstain_no_tendon_at_the_back_inner_corner). The condyle's
      region is the one the lens draws round the bone, and on the proof it takes in the whole top
      of the knee, soft tissue too, so that reach keeps the piece at the knee; it does not show the
      piece touching the bone.
@@ -318,8 +320,10 @@ categories of the twelve it relates to (docs/OBJECTS_AND_CONDITIONS.md §6):
   Baker's: the cyst lies between it and the medial gastrocnemius head. Seen also on the proof:
   followed from its piece onto the two sagittals, it lies just behind the joint line's back end,
   on the cord that runs down behind the tibia to the insertion, behind the medial meniscus's back
-  horn and outside it; the lens's low signal in it is speckled, so the rule names the thickest
-  piece of its core, about 2 by 4 mm, and the rest of the tendon's dark is not reached; the PCL's
+  horn and outside it; it is the black oval there, about 7 by 4 mm, light 0 to 42, and the lens
+  marks it to 21, so its grain cracks it, and with the cracks closed the oval is named whole but
+  for its narrow tip toward the tibia's back shell, which the rubbing-away takes; two dark bodies
+  that touch, or lie a pixel or two apart, are read as one; the PCL's
   end on the back of the tibia lies inside the notch but outside the condyle's peak, and is not
   taken; the medial gastrocnemius head shows on its slice too and is named only on the middle
   slice.
@@ -1114,14 +1118,15 @@ def semimembranosus_on_slice(
     inner_mm: np.ndarray,
     spacing_rc: np.ndarray,
 ) -> np.ndarray:
-    """The semimembranosus tendon at the top of the tibia: of the low-signal pieces at least
-    `MENISCUS_THICKNESS_MM` thick among the places no part holds (`free`), those whose middle lies
-    inside the inner condyle's peak (`inner_mm`) and behind it (`back_mm`), the back-inner corner,
-    and that reach within `SHELL_MM` of the condyle's `region`; the front one. Empty when none
-    does."""
-    pieces, count = ndi.label(
-        thick_parts(dark & free, spacing_rc, MENISCUS_THICKNESS_MM)
-    )
+    """The semimembranosus tendon at the top of the tibia: the low signal among the places no part
+    holds (`free`), its cracks one pixel wide closed (`FOUR_NEIGHBOURS`), and of its pieces at
+    least `MENISCUS_THICKNESS_MM` thick, those whose middle lies inside the inner condyle's peak
+    (`inner_mm`) and behind it (`back_mm`), the back-inner corner, and that reach within
+    `SHELL_MM` of the condyle's `region`; the front one. Empty when none does."""
+    # The scanner's grain lifts some of the tendon's pixels just above the lens's level, so the
+    # lens draws it cracked; a crack one pixel wide is closed before the thin parts are rubbed away.
+    body = ndi.binary_closing(dark & free, structure=FOUR_NEIGHBOURS) & free
+    pieces, count = ndi.label(thick_parts(body, spacing_rc, MENISCUS_THICKNESS_MM))
     none = np.zeros(dark.shape, dtype=bool)
     if not count:
         return none
