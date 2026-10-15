@@ -468,6 +468,23 @@ categories of the twelve it relates to (docs/OBJECTS_AND_CONDITIONS.md §6):
   end on the back of the tibia lies inside the notch but outside the condyle's peak, and is not
   taken; the medial gastrocnemius head shows on its slice too and is named only on the middle
   slice.
+- GASTROCNEMIUS-SEMIMEMBRANOSUS BURSA: the fluid-filled pocket between the medial
+  gastrocnemius and semimembranosus tendon. Descriptions (bursa_code):
+  1. fluid is bright on this fat-suppressed, fluid-sensitive axial slice
+     (abstain_fluid_not_bright_on_this_sequence);
+  2. the semimembranosus tendon is named on its existing tibial-top slice
+     (abstain_no_semimembranosus_tendon; on a middle slice,
+     abstain_requires_the_semimembranosus_slice);
+  3. the existing region rule locates the posterior field behind the inner condyle
+     (abstain_no_region_behind_the_inner_condyle); it is a coarse target, not an exact muscle mask;
+  4. the bursa's fluid is the largest connected white body on the knee's inner side, with its
+     middle behind the tendon and before the posterior field's middle, reaching that field
+     through the existing shell/contact allowance (abstain_no_fluid_body_in_the_bursal_place).
+  White uses the existing fluid/marrow contrast against the carried bone places on this slice.
+  Its narrow neck can be dimmer than the fluid level; direct contact between the bright body and
+  the tendon is not required. The separate mask retains the body without erasing a neighbouring
+  tissue label. The fluid-filled part, not the full bursal wall or its neck across slices, is
+  resolved here. The relation is Baker's; this step does not diagnose a cyst.
 - MENISCI: on a coronal slice, the dark triangles at the two ends of the joint, between the femur's
   condyle and the tibia's plateau («an isosceles triangle on coronal images», low on every
   sequence: docs/OBJECTS_AND_CONDITIONS.md). Seen on the proof's fat-suppressed coronal,
@@ -649,6 +666,7 @@ OBJECT_CODES = {
     "synovium": 26,
     "anterior_synovial_recess": 27,
     "joint_capsule": 28,
+    "gastrocnemius_semimembranosus_bursa": 29,
 }
 CARTILAGES = ("femoral_cartilage", "tibial_cartilage")
 # The parts a slice's naming gives a code for (`assign_plane`), in the order it gives them; a part
@@ -675,6 +693,7 @@ SLICE_PARTS = (
     "anterior_synovial_recess",
     "synovium",
     "joint_capsule",
+    "gastrocnemius_semimembranosus_bursa",
 )
 FOUR_NEIGHBOURS = ndi.generate_binary_structure(2, 1)
 
@@ -1828,6 +1847,61 @@ def semimembranosus_on_slice(
     return pieces == int(index[corner][np.argmin(back[corner])])
 
 
+def bursa_on_slice(
+    white: np.ndarray,
+    tendon: np.ndarray,
+    posterior_region: np.ndarray,
+    back_mm: np.ndarray,
+    inner_mm: np.ndarray,
+    spacing_rc: np.ndarray,
+    measures: Measures | None = None,
+) -> np.ndarray:
+    """The fluid-filled gastrocnemius-semimembranosus bursa at the back-inner knee.
+
+    The tendon locates its anterior end; the region behind the inner condyle locates the
+    posterior soft-tissue field. Among connected white bodies on the inner side, behind the
+    tendon and before that field's middle, take the largest reaching that field. This uses a
+    broad territory as a target, not as an exact muscle mask. A narrow neck need not itself
+    be white or reach the tendon on this one slice. No diagnosis is made.
+    """
+    empty = np.zeros(white.shape, dtype=bool)
+    if not (tendon.any() and posterior_region.any() and white.any()):
+        return empty
+    front = float(np.median(back_mm[tendon]))
+    back = float(np.median(back_mm[posterior_region]))
+    to_region = (
+        distance_from(posterior_region, spacing_rc)
+        if measures is None
+        else measures.distance(posterior_region, spacing_rc)
+    )
+    pieces, count = ndi.label(white, structure=np.ones((3, 3), dtype=bool))
+    candidates = []
+    for region in range(1, count + 1):
+        body = pieces == region
+        if not front < np.median(back_mm[body]) < back:
+            continue
+        if np.median(inner_mm[body]) <= 0:
+            continue
+        if to_region[body].min() <= SHELL_MM:
+            candidates.append((int(body.sum()), region))
+    return empty if not candidates else pieces == max(candidates)[1]
+
+
+def bursa_code(
+    fluid_bright: bool, tendon: bool, posterior_region: bool, body: bool
+) -> str:
+    """Why a fluid-filled bursal body is or is not resolved on the tendon's slice."""
+    if not fluid_bright:
+        return "abstain_fluid_not_bright_on_this_sequence"
+    if not tendon:
+        return "abstain_no_semimembranosus_tendon"
+    if not posterior_region:
+        return "abstain_no_region_behind_the_inner_condyle"
+    if not body:
+        return "abstain_no_fluid_body_in_the_bursal_place"
+    return "identified"
+
+
 def patella_code(
     front_to_back_in_plane: bool,
     femur_named: bool,
@@ -2322,6 +2396,9 @@ def assign_plane(
     # Located after the sequences have supplied their named parts; these surfaces overlap fluid.
     codes["anterior_synovial_recess"] = codes["synovium"] = "not_named_on_this_slice"
     codes["joint_capsule"] = "not_named_on_this_slice"
+    codes["gastrocnemius_semimembranosus_bursa"] = (
+        "abstain_requires_the_semimembranosus_slice"
+    )
     return PlaneAssignment(
         objects, codes, peaks, femur, tibia, patella, bands, white, in_plane
     )

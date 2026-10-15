@@ -105,6 +105,7 @@ from knee.collapse.physical import PlaneFrame
 from knee.collapse.squint_stack import SquintStack, read_squint_stack
 from knee.compute.contracts import handed_on
 from knee.objects.assignments import (
+    FLUID_BRIGHTER,
     NAMED,
     OBJECT_CODES,
     SLICE_PARTS,
@@ -115,6 +116,8 @@ from knee.objects.assignments import (
     acl_on_slice,
     anterior_synovial_recess,
     assign_plane,
+    bursa_code,
+    bursa_on_slice,
     capsule_at_side_recesses,
     capsule_code,
     carried_bone,
@@ -1108,6 +1111,55 @@ def semimembranosus_slice(
     record["assignments"]["codes"]["semimembranosus"] = semimembranosus_code(
         True, knee, True, True, True, condyle is not None, bool(objects.any())
     )
+    # The bursa reads this same slice and its already carried leg; no lens is read again.
+    bright = (
+        int(own.series.row.fat_suppression) == 1
+        and int(own.series.row.fluid_sensitive) == 1
+    )
+    posterior = np.zeros(labels.shape, dtype=bool)
+    bursal = np.zeros(labels.shape, dtype=bool)
+    if (
+        bright
+        and tendon is not None
+        and tendon.any()
+        and condyle is not None
+        and toward_left is not None
+    ):
+        posterior = gastrocnemius_head(
+            field.peaks,
+            labels,
+            carried.femur | carried.tibia,
+            condyle,
+            carried.back_mm,
+            inner_mm,
+        )
+        shared = measures_of(uid, z, plane, frame)
+        marrow = shared.light(carried.femur | carried.tibia)
+        white = (
+            (plane > FLUID_BRIGHTER * marrow)
+            if marrow > 0
+            else np.zeros(labels.shape, dtype=bool)
+        )
+        arrays["a2_fluid_signal"] = white
+        handed("bursal_fluid", ("white",))
+        reads("carried", ("back_mm", "toward_left_mm"), "bursa")
+        bursal = bursa_on_slice(
+            white,
+            tendon,
+            posterior,
+            carried.back_mm,
+            inner_mm,
+            np.asarray(frame.spacing_rc),
+            shared,
+        )
+    arrays["a2_gastrocnemius_semimembranosus_bursa"] = bursal
+    handed("bursa", ("region",))
+    record["assignments"]["codes"]["gastrocnemius_semimembranosus_bursa"] = bursa_code(
+        bright,
+        tendon is not None and bool(tendon.any()),
+        bool(posterior.any()),
+        bool(bursal.any()),
+    )
     record["main_slice"] = {"object": "semimembranosus"}
     return record, arrays, frame
 
@@ -1515,6 +1567,10 @@ def save(run_dir: Path, study_uid: str, record: dict, arrays: dict) -> dict:
     artifact = Path(study_uid) / f"{name}.npz"
     if "a2_synovium" in arrays:
         reads("joint_boundaries", ("recess", "lining", "capsule"), "save")
+    if "a2_gastrocnemius_semimembranosus_bursa" in arrays:
+        reads("bursa", ("region",), "save")
+    if "a2_fluid_signal" in arrays:
+        reads("bursal_fluid", ("white",), "save")
     np.savez_compressed(run_dir / artifact, allow_pickle=False, **arrays)
     record["study_uid"] = study_uid
     record["artifact"] = str(artifact)
