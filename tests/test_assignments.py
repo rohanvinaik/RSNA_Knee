@@ -1,5 +1,5 @@
 """Intent tests for the named objects: air, skin, femur over tibia, the joint, patella, menisci,
-fibula, cartilage, the PCL, the ACL, the MCL and the LCL.
+fibula, cartilage, the PCL, the ACL, the MCL, the LCL and the joint's fluid.
 
 The scene is a small synthetic knee in a coronal frame (rows run inferior, columns run to the left,
 one place per millimetre): air around a leg of soft tissue, a black margin along two sides of the
@@ -23,6 +23,7 @@ from knee.objects.assignments import (
     fibula_block,
     fibula_code,
     fibula_on_slice,
+    fluid_code,
     laid_on,
     lcl_attachment,
     lcl_code,
@@ -125,10 +126,13 @@ def assigned(
     pixel_mm: float = 1.0,
     knee: str = "",
     fat_suppressed: bool = False,
+    fluid_sensitive: bool = False,
 ):
     spacing = (pixel_mm, pixel_mm)
     reading = read_interiors(plane, spacing, 5.0, 3.0, OFFSETS, "reference")
-    return assign_plane(plane, reading, basis * pixel_mm, knee, fat_suppressed)
+    return assign_plane(
+        plane, reading, basis * pixel_mm, knee, fat_suppressed, fluid_sensitive
+    )
 
 
 def test_the_scene_names_air_skin_femur_over_tibia_and_the_joint():
@@ -665,6 +669,43 @@ def test_lcl_code_names_why():
         "abstain_no_region_joins_the_femur_and_the_fibula"
     )
     assert lcl_code(True, True, True, True, False, True, True) == "identified"
+
+
+def fluid_scene() -> np.ndarray:
+    """The fine coronal knee with fluid white, as with fat suppression on a fluid-sensitive
+    sequence: a white pocket in the gutter against the femur's side, and a white vessel in the soft
+    tissue, 8 mm from the tibia."""
+    plane = fine_coronal_scene()
+    plane[80:100, 58:64] = 500.0  # against the femur's shell, at column 64
+    plane[200:206, 44:48] = 500.0  # a vessel, away from the bones and the joint
+    return plane
+
+
+def test_the_joint_fluid_is_the_white_in_the_joints_recesses():
+    result = assigned(
+        fluid_scene(), pixel_mm=FINE_MM, fat_suppressed=True, fluid_sensitive=True
+    )
+    assert result.codes["joint_fluid"] == "identified"
+    assert result.objects[90, 60] == OBJECT_CODES["joint_fluid"]
+    assert result.objects[203, 46] != OBJECT_CODES["joint_fluid"]  # the vessel
+
+
+def test_without_fat_suppression_and_fluid_sensitivity_the_fluid_is_left_to_the_partner():
+    for fat, fluid in ((False, True), (True, False), (False, False)):
+        result = assigned(
+            fluid_scene(), pixel_mm=FINE_MM, fat_suppressed=fat, fluid_sensitive=fluid
+        )
+        assert (
+            result.codes["joint_fluid"] == "abstain_fluid_not_bright_on_this_sequence"
+        )
+        assert not (result.objects == OBJECT_CODES["joint_fluid"]).any()
+
+
+def test_fluid_code_names_why():
+    assert fluid_code(False, True, True) == "abstain_fluid_not_bright_on_this_sequence"
+    assert fluid_code(True, False, True) == "abstain_no_femur_and_tibia"
+    assert fluid_code(True, True, False) == "abstain_no_bright_fluid_in_the_recesses"
+    assert fluid_code(True, True, True) == "identified"
 
 
 def test_a_joint_with_nothing_bright_against_the_bones_names_no_cartilage():

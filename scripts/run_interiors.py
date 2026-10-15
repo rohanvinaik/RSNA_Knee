@@ -8,7 +8,8 @@ over every slice, made once and kept with the series; the middle slice, its plan
 `assign_plane` names what the pictures show, each part by its paragraph in
 `knee.objects.assignments`: air, skin, femur, tibia, joint, the patella (by its light, with fat
 suppression), the menisci (sided by the header's own word for which knee it is), the articular
-cartilage, the PCL and the MCL. Once every series of the study is read, each middle slice is
+cartilage, the PCL, the MCL and the joint's fluid. Once every series of the study is read, each
+middle slice is
 read with its partner's, the other sequence's slice of the same place (`partner_of`,
 `read_with_partner`, and `knee.objects.assignments.with_partner`): bones both name, where both agree; a part only the
 partner names, laid on. The arrays the renderers read, and the squint's, are saved per series with
@@ -271,8 +272,11 @@ def name_plane(
         "interiors.work", planes=1, territories=int(reading.labels.max(initial=0))
     )
     reads("interiors", ("dark", "labels", "distance_mm"), "naming")
-    fat_suppressed = int(series.row.fat_suppression) == 1  # the tag is stored as text
-    assignment = assign_plane(plane, reading, frame.basis_lps, knee, fat_suppressed)
+    fat_suppressed = int(series.row.fat_suppression) == 1  # the tags are stored as text
+    fluid_sensitive = int(series.row.fluid_sensitive) == 1
+    assignment = assign_plane(
+        plane, reading, frame.basis_lps, knee, fat_suppressed, fluid_sensitive
+    )
     handed("naming", field_names(assignment))
     arrays = {
         "acquired_plane": plane.copy(),
