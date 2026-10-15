@@ -20,12 +20,17 @@ first step), saved in a run of its own, one record per part and series, and draw
 others. The fibula (`find_fibula`) is named there beside the tibia it was found against and nothing
 else. It reads the series' kept squint, but it still reads the interiors lens again on the block of
 every slice that holds it, which the method forbids; the ledger counts those readings
-(`fibula.lens_readings`) until its main slice comes from the squint. The ACL (`find_acl`) is named
-on the middle slice's neighbour on the knee's outer side, between the femur and the tibia carried
-there from the middle slice. Its slice is chosen by place, from the header's word for which knee,
-not read off the squint; the lens is read once more, on that slice of each sagittal series
+(`fibula.lens_readings`) until its main slice comes from the squint. The ACL (`acl_slice`) is
+named on the middle slice's neighbour on the knee's outer side, between the femur and the tibia
+carried there from the middle slice. Its slice is chosen by place, from the header's word for which
+knee, not read off the squint; the lens is read once more, on that slice of each sagittal series
 (`acl.lens_readings`); the ACL is named where fat is suppressed and laid onto the other sequence's
-slice of the same place. A series' silence on a main-slice part is kept as `<series uid>:<part>`.
+slice of the same place (`find_part`, `lay_part`). The LCL (`lcl_slice`) is named on the coronal
+slice through the place where it attaches on the fibula, the fibula being the one found on its
+main slice, handed on from there (`where_the_fibula_is`); the lens is read once more, on that slice
+of each coronal series (`lcl.lens_readings`); the LCL is named where fat is not suppressed and laid
+onto the other sequence's slice of the same place. A series' silence on a main-slice part is kept
+as `<series uid>:<part>`.
 
 THE RECEIPT KEEPS EVERY STUDY (`knee.receipt.merged_receipt`): a study run again replaces only its
 own records. Studies run one after another in one process; two processes writing one run folder
@@ -56,7 +61,7 @@ Run from anywhere: `.venv/bin/python scripts/run_interiors.py --study-uid <uid> 
 import argparse
 import json
 import os
-from collections.abc import Iterable, Sequence
+from collections.abc import Callable, Iterable, Sequence
 from concurrent.futures import ProcessPoolExecutor
 from dataclasses import asdict, dataclass, fields
 from hashlib import sha256
@@ -84,9 +89,15 @@ from knee.objects.assignments import (
     fibula_code,
     fibula_on_slice,
     laid_on,
+    lcl_attachment,
+    lcl_code,
+    lcl_on_slice,
     main_slice,
     margin,
     outer_step,
+    places_on_slice,
+    region_holding,
+    slice_through,
     with_partner,
 )
 from knee.objects.interiors import EDGE_KINDS, TRACE_CODES, read_interiors
@@ -135,7 +146,7 @@ DRAWN_INTERIORS = (
 )
 DRAWN_NAMES = ("objects", "codes", "peaks", "femur", "tibia", "patella")
 # The parts named on a main slice of their own; a series' silence on each is `<series uid>:<part>`.
-MAIN_PARTS = ("fibula", "acl")
+MAIN_PARTS = ("fibula", "acl", "lcl")
 
 
 def handed(product: str, names: Iterable[str]) -> None:
@@ -580,17 +591,138 @@ def acl_slice(own: Measured) -> tuple[dict, dict[str, np.ndarray], PlaneFrame] |
     return acl_record, arrays, frame
 
 
-def lay_acl(
+def where_the_fibula_is(
+    series: Series, record: dict, arrays: dict[str, np.ndarray]
+) -> np.ndarray | None:
+    """The fibula's places on its main slice, in the scanner's millimetres, where front to back lies
+    in that slice's plane, so its front edge can be read: what the LCL's slice is found from, one
+    leg, one set of objects. None where it does not, or where the slice's header does not read as
+    a frame."""
+    frame = plane_frame(series, record["slice_index"])
+    if isinstance(frame, str):
+        return None
+    unit = frame.basis_lps / np.linalg.norm(frame.basis_lps, axis=0)
+    if float(np.linalg.norm(unit[1])) < ALONG_THE_LEG:
+        return None
+    fibula = arrays["a1_objects"] == OBJECT_CODES["fibula"]
+    return frame.to_patient(np.argwhere(fibula).astype(float))
+
+
+def lcl_slice(
+    own: Measured, fibula_lps: np.ndarray | None
+) -> tuple[dict, dict[str, np.ndarray], PlaneFrame] | str:
+    """The LCL's slice of one series, read (the LCL's paragraph in `knee.objects.assignments`): the
+    slice through the place on the fibula's head where the LCL attaches, the fibula being the one
+    its own rule named on its main slice, carried by place; the femur carried there from the middle
+    slice; and the LCL named where fat is not suppressed; or why it was not read."""
+    series, record = own.series, own.record
+    assigned = record["assignments"]
+    unit = own.frame.basis_lps / np.linalg.norm(own.frame.basis_lps, axis=0)
+    sides_in_plane = float(np.linalg.norm(unit[0])) >= ALONG_THE_LEG
+    reads("partner", ("objects",), "lcl")
+    femur_before = own.arrays["a1_objects"] == OBJECT_CODES["femur"]
+    bones = bool(femur_before.any()) and assigned["tibia"] is not None
+    named = fibula_lps is not None
+    code = lcl_code(sides_in_plane, named, bones, True, False, True, True)
+    if code != "identified" or fibula_lps is None:
+        return code
+    reads("fibula", ("main_slice", "region"), "lcl")
+    reads("series", ("geometry", "slice_thickness_mm", "volume"), "lcl")
+    geometry, volume, thicknesses = (
+        series.geometry,
+        series.volume,
+        series.slice_thickness_mm,
+    )
+    if geometry is None or volume is None:
+        return "geometry_unreadable"
+    known = [float(t) for t in thicknesses if t is not None]
+    if len(known) != len(thicknesses):
+        return "no_slice_thickness"
+    origins = np.asarray([np.asarray(p, dtype=float) for p in geometry.position])
+    normal = np.cross(own.frame.basis_lps[:, 0], own.frame.basis_lps[:, 1])
+    z = slice_through(
+        lcl_attachment(fibula_lps), origins, normal / np.linalg.norm(normal), known
+    )
+    if z is None:
+        return lcl_code(True, True, True, False, False, True, True)
+    frame = plane_frame(series, z)
+    if isinstance(frame, str):
+        return frame
+    reads("regime", ("background_split",), "lcl")
+    lcl_record, arrays, _ = name_plane(
+        series, z, volume[z], frame, record["background_split"], assigned["knee"]
+    )
+    ledger.record("lcl.lens_readings", planes=1)
+    labels = arrays["b1_labels"]
+    femur = carried_bone(labels, femur_before)
+    fibula_places = places_on_slice(
+        fibula_lps, frame.origin_lps, frame.basis_lps, labels.shape, known[z]
+    )
+    fibula = region_holding(labels, fibula_places)
+    fat_suppressed = int(series.row.fat_suppression) == 1  # the tag is stored as text
+    reads("naming", ("tibia", "peaks"), "lcl")
+    peak = next(p for p in assigned["peaks"] if p["territory"] == assigned["tibia"])
+    tibia_middle = own.frame.to_patient(np.asarray([peak["peak_rc"]], dtype=float))[0]
+    lcl = np.zeros(labels.shape, dtype=bool)
+    if femur.any() and fibula.any() and not fat_suppressed:
+        rows, cols = np.indices(labels.shape)
+        across = (
+            frame.origin_lps[0]
+            + frame.basis_lps[0, 0] * rows
+            + frame.basis_lps[0, 1] * cols
+        )
+        lcl = lcl_on_slice(
+            labels,
+            femur,
+            fibula,
+            across,
+            float(tibia_middle[0]),
+            float(fibula_lps[:, 0].mean()),
+            np.asarray(frame.spacing_rc),
+        )
+    # On its slice only the LCL is named, with the fibula's own places carried from its main slice;
+    # the regions of the femur and of the fibula are its targets, never its names, since on a T1
+    # the fibula's head may share a region with the tibia.
+    objects = np.zeros(labels.shape, dtype=np.int8)
+    objects[fibula_places] = OBJECT_CODES["fibula"]
+    objects[lcl] = OBJECT_CODES["lcl"]
+    arrays["a1_objects"] = objects
+    lcl_assigned = lcl_record["assignments"]
+    codes = {name: "not_named_on_this_slice" for name in lcl_assigned["codes"]}
+    codes["fibula"] = "carried_from_its_main_slice"
+    codes["lcl"] = lcl_code(
+        True,
+        True,
+        bool(femur.any()),
+        True,
+        fat_suppressed,
+        bool(fibula.any()),
+        bool(lcl.any()),
+    )
+    lcl_assigned.update(
+        codes=codes,
+        femur=None,
+        tibia=None,
+        patella=None,
+        menisci=0,
+        lcl=int(labels[lcl].max()) if lcl.any() else None,
+    )
+    lcl_record["main_slice"] = {"object": "LCL"}
+    return lcl_record, arrays, frame
+
+
+def lay_part(
     own: Measured,
     read: tuple[dict, dict[str, np.ndarray], PlaneFrame],
     partner: tuple[dict, dict[str, np.ndarray], PlaneFrame],
-) -> str:
-    """Lay the ACL the fat-suppressed slice names onto the other sequence's slice of the same place
-    (`laid_on`), onto this slice's own regions that nothing else holds; return its code, or why it
-    was not laid."""
+    part: str,
+) -> str | None:
+    """Lay a part the other sequence's slice of the same place names onto this series' slice
+    (`laid_on`), onto this slice's own regions that nothing else holds: "laid_from_its_partner",
+    why it was not laid, or None when nothing was laid."""
     record, arrays, frame = read
     _, partner_arrays, partner_frame = partner
-    reads("series", ("slice_thickness_mm",), "acl")
+    reads("series", ("slice_thickness_mm",), part)
     thickness = own.series.slice_thickness_mm[record["slice_index"]]
     if thickness is None:
         return "no_slice_thickness"
@@ -608,44 +740,49 @@ def lay_acl(
     if laid is None:
         return "not_the_same_place"
     objects = arrays["a1_objects"]
-    placed = (laid == OBJECT_CODES["acl"]) & (arrays["b1_labels"] > 0) & (objects == 0)
+    code = OBJECT_CODES[part]
+    placed = (laid == code) & (arrays["b1_labels"] > 0) & (objects == 0)
     if not placed.any():
-        return "abstain_not_walled_off_without_fat_suppression"
-    objects[placed] = OBJECT_CODES["acl"]
+        return None
+    objects[placed] = code
     return "laid_from_its_partner"
 
 
-def find_acl(
+def find_part(
     measured: list[Measured],
+    part: str,
+    read_slice: Callable[
+        [Measured], tuple[dict, dict[str, np.ndarray], PlaneFrame] | str
+    ],
+    laid_when: str,
 ) -> tuple[list[tuple[dict, dict[str, np.ndarray]]], dict[str, str]]:
-    """The ACL named on its own slice in each series (`acl_slice`), and laid from a fat-suppressed
-    slice onto the other sequence's slice of the same place (`lay_acl`): the slices that name it,
-    each record with its arrays, and every other series' silence, keyed `<series uid>:acl`."""
+    """A part named on its own slice in each series (`read_slice`: `acl_slice`, `lcl_slice`), and
+    laid from the sequence that names it onto the other sequence's slice of the same place where
+    that one abstains with `laid_when` (`lay_part`): the slices that name it, each record with its
+    arrays, and every other series' silence, keyed `<series uid>:<part>`."""
     read: dict[int, tuple[dict, dict[str, np.ndarray], PlaneFrame]] = {}
     silences: dict[str, str] = {}
     for index, own in enumerate(measured):
-        result = acl_slice(own)
+        result = read_slice(own)
         if isinstance(result, str):
-            silences[f"{own.record['series_uid']}:acl"] = result
+            silences[f"{own.record['series_uid']}:{part}"] = result
         else:
             read[index] = result
     found = []
     for index, (record, arrays, _) in read.items():
         own = measured[index]
         codes = record["assignments"]["codes"]
-        if codes["acl"] == "abstain_not_walled_off_without_fat_suppression":
+        if codes[part] == laid_when:
             partner = partner_of(measured, index)
             at = next((i for i, m in enumerate(measured) if m is partner), None)
-            if (
-                at in read
-                and read[at][0]["assignments"]["codes"]["acl"] == "identified"
-            ):
-                codes["acl"] = lay_acl(own, read[index], read[at])
-        if codes["acl"] in NAMED:
-            handed("acl", ("main_slice", "region"))
+            if at in read and read[at][0]["assignments"]["codes"][part] == "identified":
+                laid = lay_part(own, read[index], read[at], part)
+                codes[part] = laid or codes[part]
+        if codes[part] in NAMED:
+            handed(part, ("main_slice", "region"))
             found.append((record, arrays))
         else:
-            silences[f"{own.record['series_uid']}:acl"] = codes["acl"]
+            silences[f"{own.record['series_uid']}:{part}"] = codes[part]
     return found, silences
 
 
@@ -750,6 +887,9 @@ def measure_study(
                 if partner is None
                 else read_with_partner(own, partner)
             )
+        # The fibula found on its main slice is handed to the LCL, which ends on it: the first
+        # series, in the study's order, to name it where its front edge can be read.
+        fibula_lps = None
         for own in measured:
             fibula = find_fibula(own.series, own.record, own.arrays, own.stack)
             records.append(save(run_dir, study_uid, own.record, own.arrays))
@@ -757,10 +897,20 @@ def measure_study(
                 main_unread[f"{own.record['series_uid']}:fibula"] = fibula
             else:
                 main_records.append(save(main_run, study_uid, *fibula))
-        acl_found, acl_silences = find_acl(measured)
-        for acl_record, acl_arrays in acl_found:
-            main_records.append(save(main_run, study_uid, acl_record, acl_arrays))
-        main_unread.update(acl_silences)
+                if fibula_lps is None:
+                    fibula_lps = where_the_fibula_is(own.series, *fibula)
+        for part, read_slice, laid_when in (
+            ("acl", acl_slice, "abstain_not_walled_off_without_fat_suppression"),
+            (
+                "lcl",
+                lambda own: lcl_slice(own, fibula_lps),
+                "abstain_not_parted_from_the_fat_with_fat_suppression",
+            ),
+        ):
+            found, silences = find_part(measured, part, read_slice, laid_when)
+            for part_record, part_arrays in found:
+                main_records.append(save(main_run, study_uid, part_record, part_arrays))
+            main_unread.update(silences)
         # The renderers read the saved run, when they draw it: their reads are its last.
         if drawn and records:
             reads("interiors", DRAWN_INTERIORS, "draw")

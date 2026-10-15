@@ -1,5 +1,5 @@
 """Intent tests for the named objects: air, skin, femur over tibia, the joint, patella, menisci,
-fibula, cartilage, the PCL, the ACL and the MCL.
+fibula, cartilage, the PCL, the ACL, the MCL and the LCL.
 
 The scene is a small synthetic knee in a coronal frame (rows run inferior, columns run to the left,
 one place per millimetre): air around a leg of soft tissue, a black margin along two sides of the
@@ -24,6 +24,9 @@ from knee.objects.assignments import (
     fibula_code,
     fibula_on_slice,
     laid_on,
+    lcl_attachment,
+    lcl_code,
+    lcl_on_slice,
     ligament_joining,
     ligament_on_the_inner_side,
     main_slice,
@@ -33,6 +36,9 @@ from knee.objects.assignments import (
     outer_step,
     pair_code,
     patella_code,
+    places_on_slice,
+    region_holding,
+    slice_through,
     with_partner,
 )
 from knee.objects.interiors import read_interiors
@@ -569,6 +575,96 @@ def test_mcl_code_names_why():
         "abstain_no_low_signal_joins_the_bones_on_the_inner_side"
     )
     assert mcl_code(True, True, True) == "identified"
+
+
+def lcl_scene() -> np.ndarray:
+    """A coronal slice's regions at one place per millimetre, columns toward the patient's left: the
+    femur (1) above; the tibia below, sharing one region (2) with the fibula's head, which lies
+    toward the patient's right, as a T1 may draw them; a band (3) on the fibula's side from beside
+    the femur down to the fibula's head; the same band (4) on the other side, beside the femur and
+    the tibia; and a region (5) in the joint, its middle at the tibia's."""
+    labels = np.zeros((80, 70), dtype=np.int32)
+    labels[0:31, 20:51] = 1  # the femur
+    labels[40:80, 20:51] = 2  # the tibia
+    labels[60:80, 5:20] = 2  # the fibula's head, in the tibia's region
+    labels[25:60, 10:20] = 3  # the band on the fibula's side
+    labels[25:60, 51:59] = 4  # the band on the other side
+    labels[31:40, 20:51] = 5  # in the joint
+    return labels
+
+
+def test_the_lcl_is_the_region_joining_the_femur_and_the_fibula_on_the_fibulas_side():
+    labels = lcl_scene()
+    across = np.indices(labels.shape)[1].astype(float)  # mm toward the patient's left
+    femur, fibula = labels == 1, labels == 2
+    lcl = lcl_on_slice(labels, femur, fibula, across, 35.0, 12.0, np.ones(2))
+    assert lcl[40, 15] and lcl.sum() == 35 * 10
+    assert not lcl[40, 55]  # it joins both too, but on the other side
+    assert not lcl[35, 35]  # in the joint: on neither side of the tibia's middle
+    assert not lcl[10, 30] and not lcl[70, 10]  # the bones are never the LCL
+    # with no fibula on the slice, nothing is named
+    nowhere = np.zeros(labels.shape, dtype=bool)
+    assert not lcl_on_slice(
+        labels, femur, nowhere, across, 35.0, 12.0, np.ones(2)
+    ).any()
+
+
+def test_the_lcl_attaches_8_mm_behind_the_front_of_the_fibula():
+    # x toward the patient's left, y toward the back, z up
+    fibula = np.array(
+        [[-50.0, 10.0, -30.0], [-52.0, 40.0, -34.0], [-54.0, 25.0, -32.0]]
+    )
+    assert np.allclose(lcl_attachment(fibula), [-52.0, 18.2, -32.0])
+
+
+def test_the_lcls_slice_is_the_one_through_where_it_attaches():
+    # coronal slices 3.4 mm apart, each 3 mm thick, stepping toward the back
+    origins = np.array([[0.0, 3.4 * z, 0.0] for z in range(6)])
+    normal = np.array([0.0, 1.0, 0.0])
+    thicknesses = [3.0] * 6
+    assert slice_through(np.array([9.0, 7.0, -4.0]), origins, normal, thicknesses) == 2
+    beyond = np.array([0.0, 30.0, 0.0])  # 13 mm past the last slice
+    assert slice_through(beyond, origins, normal, thicknesses) is None
+
+
+def test_a_slice_holds_the_places_within_half_its_thickness():
+    origin = np.array([0.0, 5.0, 0.0])
+    near = np.array([[3.0, 5.4, -2.0]])  # 0.4 mm off the plane: row 2, column 3
+    off = np.array([[3.0, 9.0, -2.0]])  # 4 mm off it
+    held = places_on_slice(near, origin, CORONAL, (6, 6), 3.0)
+    assert held[2, 3] and held.sum() == 1
+    assert not places_on_slice(off, origin, CORONAL, (6, 6), 3.0).any()
+
+
+def test_the_region_holding_most_of_the_places_is_the_one_that_holds_them():
+    labels = np.array([[1, 1, 2, 2], [0, 0, 2, 2]])
+    places = np.array([[False, True, True, True], [True, False, True, False]])
+    assert region_holding(labels, places).tolist() == (labels == 2).tolist()
+    assert not region_holding(labels, np.zeros(labels.shape, dtype=bool)).any()
+
+
+def test_lcl_code_names_why():
+    assert lcl_code(False, True, True, True, False, True, True) == (
+        "abstain_side_to_side_runs_through_the_plane"
+    )
+    assert lcl_code(True, False, True, True, False, True, True) == "abstain_no_fibula"
+    assert lcl_code(True, True, False, True, False, True, True) == (
+        "abstain_no_femur_and_tibia_to_carry"
+    )
+    assert lcl_code(True, True, True, False, False, True, True) == (
+        "abstain_attachment_off_the_slices"
+    )
+    # with fat suppression the band and the fat under the skin fall in one region
+    assert lcl_code(True, True, True, True, True, True, True) == (
+        "abstain_not_parted_from_the_fat_with_fat_suppression"
+    )
+    assert lcl_code(True, True, True, True, False, False, True) == (
+        "abstain_no_fibula_on_the_slice"
+    )
+    assert lcl_code(True, True, True, True, False, True, False) == (
+        "abstain_no_region_joins_the_femur_and_the_fibula"
+    )
+    assert lcl_code(True, True, True, True, False, True, True) == "identified"
 
 
 def test_a_joint_with_nothing_bright_against_the_bones_names_no_cartilage():

@@ -159,8 +159,11 @@ Signal by sequence, as one source tabulates it [Kh]:
   *Involved in:* MCL.
 - **LCL, the fibular collateral ligament** (a neighbour). From the lateral femoral condyle to the fibular head [Kh];
   a thin cord about 5 cm long, not attached to the lateral meniscus [R-KNEE]; with the iliotibial band and biceps
-  femoris tendon it makes the lateral complex [Kh]. *Involved in:* no label directly; it is the MCL's counterpart on
-  the lateral side.
+  femoris tendon it makes the lateral complex [Kh]. Its attachments: on the femur slightly proximal (1.4 mm) and
+  posterior (3.1 mm) to the lateral epicondyle; on the lateral aspect of the fibular head, 8.2 mm (range 6.8–9.7)
+  posterior to the head's anterior margin, on average 38% of the head's anterior-to-posterior width from its
+  anterior edge; 69.6 mm long between them; the popliteus tendon runs medial to it [LP-PLC].
+  *Involved in:* no label directly; it is the MCL's counterpart on the lateral side.
 
 ### Joint space, lining and fluid
 
@@ -273,3 +276,8 @@ Signal by sequence, as one source tabulates it [Kh]:
   Also read in full, for the diagnosis step later: Patterns of bone bruise in knee injury (rID 43268) and Tibial
   plateau fracture (rID 15615).
 - **[W-ECF]** Wikipedia, "Extracellular fluid", § Interstitial fluid (oldid 1379802233).
+- **[LP-PLC]** LaPrade RF, Ly TV, Wentorf FA, Engebretsen L. The posterolateral attachments of the knee: a
+  qualitative and quantitative morphologic analysis of the fibular collateral ligament, popliteus tendon,
+  popliteofibular ligament, and lateral gastrocnemius tendon. *Am J Sports Med*, 2003; cadaveric study of ten knees.
+  Read in full 15 Oct 2026, at
+  https://www.klokeavskade.no/globalassets/publications/laprade_2003_amjs_the-posterolateral-attachments-of-the-knee--.pdf
