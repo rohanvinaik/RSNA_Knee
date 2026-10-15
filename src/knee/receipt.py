@@ -8,6 +8,18 @@ processes writing one receipt would still lose each other's records, so a run fo
 process at a time.
 """
 
+from hashlib import sha256
+
+import numpy as np
+
+
+def digest(array: np.ndarray) -> str:
+    """A saved array's digest: its dtype, shape and bytes. The one statement of it: the run notes
+    each saved array's on its record, and every renderer checks the array it loads against it."""
+    return sha256(
+        array.dtype.str.encode() + str(array.shape).encode() + array.tobytes()
+    ).hexdigest()
+
 
 def merged_receipt(
     old: dict | None,

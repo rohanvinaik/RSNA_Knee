@@ -22,6 +22,7 @@ measures and decides nothing; the stack's code names the one silence it can meet
 
 from __future__ import annotations
 
+from collections.abc import Callable
 from dataclasses import dataclass
 
 import numpy as np
@@ -104,7 +105,12 @@ class SquintStack:
     centres_lps: np.ndarray
 
 
-def read_squint_stack(series: Series, tile_mm: float) -> SquintStack:
+def read_squint_stack(
+    series: Series,
+    tile_mm: float,
+    frame_at: Callable[[int], PlaneFrame | ValueError] | None = None,
+    finite: np.ndarray | None = None,
+) -> SquintStack:
     """Squint every slice of a series and place every tile's centre in millimetres (orchestration).
 
     When `series.volume` is None the code is `no_stacked_volume`; when `series.geometry` is None
@@ -115,6 +121,10 @@ def read_squint_stack(series: Series, tile_mm: float) -> SquintStack:
     stackable series; the first slice's are kept. Output arrays are frozen with
     `knee.compute.contracts.handed_on`. Records `study.consumed_by.squint_stack` and
     `squint_stack.produced` (slices, tiles) on the ledger. Decides nothing itself.
+
+    `frame_at` gives slice z's frame, or the error its header raised, when the caller makes each
+    slice's frame once for every stage that asks; and `finite` is which of the volume's values are
+    finite, when the caller has read it once for the series. Each is made here otherwise.
     """
     if not np.isfinite(tile_mm) or tile_mm <= 0:
         raise ValueError("invalid_tile_mm")
@@ -125,7 +135,7 @@ def read_squint_stack(series: Series, tile_mm: float) -> SquintStack:
         volume=1 if series.volume is not None else 0,
         geometry=1 if series.geometry is not None else 0,
     )
-    stack = _read_squint_stack(series, float(tile_mm))
+    stack = _read_squint_stack(series, float(tile_mm), frame_at, finite)
     ledger.record(
         "squint_stack.produced",
         slices=int(stack.median.shape[0]),
@@ -186,7 +196,12 @@ def _grid_mismatch(
     return None
 
 
-def _read_squint_stack(series: Series, tile_mm: float) -> SquintStack:
+def _read_squint_stack(
+    series: Series,
+    tile_mm: float,
+    frame_at: Callable[[int], PlaneFrame | ValueError] | None = None,
+    finite: np.ndarray | None = None,
+) -> SquintStack:
     """The stack itself, the two silences first, then one squint and one set of centres per slice."""
     volume, geometry = series.volume, series.geometry
     if volume is None:
@@ -212,18 +227,23 @@ def _read_squint_stack(series: Series, tile_mm: float) -> SquintStack:
     centres: list[np.ndarray] = []
     first: tuple[np.ndarray, tuple[int, int]] | None = None
     for z in range(len(volume)):
-        try:
-            frame = PlaneFrame.from_dicom(
+        frame = (
+            _frame_of(
                 geometry.position[z], geometry.orientation[z], geometry.spacing[z]
             )
-        except ValueError as error:
+            if frame_at is None
+            else frame_at(z)
+        )
+        if isinstance(frame, ValueError):
             return _absent(
                 series,
                 tile_mm,
                 "geometry_unreadable",
-                f"slice {z}: its header does not read as a plane frame ({error})",
+                f"slice {z}: its header does not read as a plane frame ({frame})",
             )
-        squint = physical_squint(volume[z], frame.spacing_rc, tile_mm)
+        squint = physical_squint(
+            volume[z], frame.spacing_rc, tile_mm, None if finite is None else finite[z]
+        )
         if first is None:
             first = (squint.bounds_rc, squint.tile_shape_rc)
         else:
@@ -262,3 +282,11 @@ def _read_squint_stack(series: Series, tile_mm: float) -> SquintStack:
         coverage=handed_on(np.stack(coverages)),
         centres_lps=handed_on(np.stack(centres)),
     )
+
+
+def _frame_of(position, orientation, spacing) -> PlaneFrame | ValueError:
+    """One slice's frame from its header's geometry, or the error the header raised."""
+    try:
+        return PlaneFrame.from_dicom(position, orientation, spacing)
+    except ValueError as error:
+        return error

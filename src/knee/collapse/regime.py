@@ -41,7 +41,7 @@ from knee.collapse.noise import (
     quiet_population,
 )
 from knee.collapse.units import magnitude_moments, stabilizer, to_units
-from knee.study.series import Series
+from knee.study.series import Series, selected_slice
 
 # The Gaussian value of (p95 - p5) / (p75 - p25). A spread at this value is as even as a normal;
 # above it the distribution carries more in its tails. Derived, not chosen.
@@ -174,12 +174,15 @@ def read_regime(
     block: int = 16,
     floor_quantile: float = 0.1,
     shape_minimum_population: int = 8,
+    finite: np.ndarray | None = None,
 ) -> RegimeKey | None:
     """One series' regime key, read once from its own values and no label.
 
     The bars this reads -- how few quiet values are too few, the neighbour lag, how many standard
     errors count as concurrence, the block size and the floor's quantile -- are arguments, never
     constants inside a decision. Under Law 4 a level is written down before the run it judges.
+    `finite` is which of the volume's values are finite, when the caller has read it once for the
+    series; it is read here otherwise, and once.
 
     None when the series carries no stacked volume: a regime cannot be read from a series whose
     files do not form one stack, and Chapter 1 already says in named codes why they do not.
@@ -187,7 +190,8 @@ def read_regime(
     if series.volume is None or series.volume.size == 0:
         return None
     volume = np.asarray(series.volume, dtype=np.float64)
-    values = finite_values(volume)
+    finite = np.isfinite(volume) if finite is None else finite
+    values = finite_values(volume, finite)
     if values.size == 0:
         return None
 
@@ -221,8 +225,9 @@ def read_regime(
     # things conflict".
     coils_moment = coil_count(moment_ratio(quiet))
 
-    # The bright estimator reads tissue, so its floor is the same valley: above it is tissue.
-    middle = volume[volume.shape[0] // 2]
+    # The bright estimator reads tissue, so its floor is the same valley: above it is tissue. Its
+    # slice is the route's middle slice, by the one rule for it.
+    middle = volume[selected_slice(int(volume.shape[0]), None) or 0]
     bright, bright_n = bright_sigma(middle, lag, split, block, floor_quantile)
 
     concurrence = concurrence_code(dark, bright, quiet.size, bright_n, tolerance_errors)
@@ -264,8 +269,8 @@ def read_regime(
     # series', which is SS5.1's "profile down the depth" without a depth model.
     per_slice = np.array(
         [
-            float(np.mean(s[np.isfinite(s)] > cut)) if np.isfinite(cut) else np.nan
-            for s in volume
+            float(np.mean(s[f] > cut)) if np.isfinite(cut) else np.nan
+            for s, f in zip(volume, finite, strict=True)
         ]
     )
     depth_spread = float(np.nanstd(per_slice)) if per_slice.size else float("nan")

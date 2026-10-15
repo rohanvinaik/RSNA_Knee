@@ -37,7 +37,8 @@ EDGE_KINDS = {
 CONTRACT = ComputeContract(
     kind="geometric_interiors_and_native_dark_bands",
     language="NumPy + SciPy EDT + scikit-image morphology/watershed; reference/Numba sampler",
-    reads="native (R,C) numeric source; finite split; positive mm spacing/prominence; S offsets",
+    reads="native (R,C) numeric source; finite split; positive mm spacing/prominence; S offsets; "
+    "the source's finite mask when already read",
     writes="owned read-only (R,C) bool/float64/int32 fields; P edges, P×S samples; no labels of anatomy",
     allocation="O(N+P*S), P<=4N; library scratch measured separately; no whole-volume copy",
     work="EDT and watershed per plane; four vectorized neighbor passes; <=4P*S source reads",
@@ -158,13 +159,15 @@ def read_interiors(
     backend: str = "reference",
     *,
     metric_rc: np.ndarray | None = None,
+    available: np.ndarray | None = None,
 ) -> InteriorReading:
     """Consume measured exclusions within their scope; preserve unresolved places.
 
     EDT uses the explicitly orthogonal spacing metric; the conservative error
     bound covers its difference from the retained rounded DICOM basis. Profiles
     use that original basis metric. The outside guard is a computational bound,
-    never an acquired dark reading.
+    never an acquired dark reading. `available` is which of the plane's places are
+    finite, when the caller has read it once for the series; it is read here otherwise.
     """
     numeric_plane(plane)
     spacing = spacing_pair(spacing_rc)
@@ -191,7 +194,7 @@ def read_interiors(
         raise ValueError("invalid_backend")
     if np.isinf(split):
         raise ValueError("invalid_background_split")
-    available = np.isfinite(plane)
+    available = np.isfinite(plane) if available is None else available
     dark = (
         available & (plane <= split)
         if np.isfinite(split)

@@ -22,8 +22,14 @@ never the basis of a claim.
 
 OFF BY DEFAULT. A disabled ledger does no allocation and no formatting, so a production run pays
 nothing for the instrumentation being present.
+
+COMPUTED ONCE (`once`, `computing`): a value two stages need is made by the first to ask for it and
+handed to every later asker, within one study's scope, and the ledger counts each making and each
+handing-on. The founder, 2026-10-15: «ALL repetitious operations need to be centralized and
+deduplicated across the whole codebase».
 """
 
 from knee.telemetry.ledger import Event, Ledger, ledger, recording
+from knee.telemetry.once import computing, once
 
-__all__ = ["Event", "Ledger", "ledger", "recording"]
+__all__ = ["Event", "Ledger", "computing", "ledger", "once", "recording"]

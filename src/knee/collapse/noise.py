@@ -27,10 +27,11 @@ MAD_TO_SIGMA = 1.0 / 0.6744897501960817
 FOUR_NEIGHBOUR_SCALE = np.sqrt(4.0 / 5.0)
 
 
-def finite_values(volume: np.ndarray) -> np.ndarray:
-    """Every finite value of `volume`, flat, float64. Non-finite values are not readings."""
+def finite_values(volume: np.ndarray, finite: np.ndarray | None = None) -> np.ndarray:
+    """Every finite value of `volume`, flat, float64. Non-finite values are not readings. `finite`
+    is which of them are finite, when the caller has read it already."""
     flat = np.asarray(volume, dtype=np.float64).ravel()
-    return flat[np.isfinite(flat)]
+    return flat[np.isfinite(flat) if finite is None else np.ravel(finite)]
 
 
 def background_histogram(
