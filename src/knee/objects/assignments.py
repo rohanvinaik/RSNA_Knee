@@ -522,6 +522,7 @@ from typing import TypeVar
 import numpy as np
 from scipy import ndimage as ndi
 
+from knee.collapse.physical import PlaneFrame
 from knee.compute.contracts import handed_on
 from knee.objects.interiors import InteriorReading
 from knee.receipt import digest
@@ -670,7 +671,6 @@ class PlaneAssignment:
     peaks: tuple[Peak, ...]
     femur: int | None
     tibia: int | None
-    menisci: int
     patella: int | None = None
     bands: np.ndarray | None = None
     white: np.ndarray | None = None
@@ -1303,19 +1303,16 @@ def slice_through(
 
 def places_on_slice(
     points_lps: np.ndarray,
-    origin_lps: np.ndarray,
-    basis_lps: np.ndarray,
+    frame: PlaneFrame,
     shape: tuple[int, int],
     thickness_mm: float,
 ) -> np.ndarray:
     """The pixels of a slice holding the given places, those within half its thickness of its plane.
-    Places are in the scanner's millimetres; the frame is a (3,) origin and the (3, 2) basis of rows
-    and columns, spacing included."""
-    normal = np.cross(basis_lps[:, 0], basis_lps[:, 1])
-    normal = normal / np.linalg.norm(normal)
-    offsets = np.asarray(points_lps, dtype=np.float64) - origin_lps
-    near = np.abs(offsets @ normal) <= thickness_mm / 2.0
-    rc = np.rint(offsets[near] @ np.linalg.pinv(basis_lps).T).astype(int)
+    Places are in the scanner's millimetres; `frame` is the slice's, whose normal and inverse
+    (`PlaneFrame.normal`, `PlaneFrame.to_native`) carry them onto it."""
+    points = np.asarray(points_lps, dtype=np.float64)
+    near = np.abs((points - frame.origin_lps) @ frame.normal()) <= thickness_mm / 2.0
+    rc = np.rint(frame.to_native(points[near])).astype(int)
     inside = (
         (rc[:, 0] >= 0)
         & (rc[:, 0] < shape[0])
@@ -2140,16 +2137,14 @@ def assign_plane(
         fat_suppressed, bool(air.any()), femur is not None, False
     )
     return PlaneAssignment(
-        objects, codes, peaks, femur, tibia, menisci, patella, bands, white, in_plane
+        objects, codes, peaks, femur, tibia, patella, bands, white, in_plane
     )
 
 
 def places_from(
     seen: np.ndarray,
-    origin_lps: np.ndarray,
-    basis_lps: np.ndarray,
-    onto_origin_lps: np.ndarray,
-    onto_basis_lps: np.ndarray,
+    frame: PlaneFrame,
+    onto: PlaneFrame,
     onto_shape: tuple[int, int],
     thickness_mm: float,
 ) -> np.ndarray | None:
@@ -2158,18 +2153,20 @@ def places_from(
     `seen` is False (its black margin, which the reconstruction never filled), so this slice has no
     say there. None when the other slice is not the same place (some place of it lies more than
     half a slice thickness off this slice's plane). The match is made once for a pair of slices and
-    lays any of this slice's readings onto the other (`laid_by`). Frames are in the scanner's
-    millimetres (DICOM LPS): a (3,) origin and the (3, 2) basis of rows and columns, spacing
-    included.
+    lays any of this slice's readings onto the other (`laid_by`). `frame` is this slice's and
+    `onto` the other's, in the scanner's millimetres (DICOM LPS): the other's places are put in
+    them (`PlaneFrame.to_patient`) and carried onto this one (`PlaneFrame.normal`,
+    `PlaneFrame.to_native`).
     """
     rows, cols = np.indices(onto_shape)
-    rc = np.column_stack((rows.ravel(), cols.ravel())).astype(np.float64)
-    places = rc @ np.asarray(onto_basis_lps).T + np.asarray(onto_origin_lps)
-    normal = np.cross(basis_lps[:, 0], basis_lps[:, 1])
-    normal = normal / np.linalg.norm(normal)
-    if float(np.abs((places - origin_lps) @ normal).max()) > thickness_mm / 2.0:
+    places = onto.to_patient(
+        np.column_stack((rows.ravel(), cols.ravel())).astype(np.float64)
+    )
+    if float(np.abs((places - frame.origin_lps) @ frame.normal()).max()) > (
+        thickness_mm / 2.0
+    ):
         return None
-    native = np.rint((places - origin_lps) @ np.linalg.pinv(basis_lps).T).astype(int)
+    native = np.rint(frame.to_native(places)).astype(int)
     inside = (
         (native[:, 0] >= 0)
         & (native[:, 0] < seen.shape[0])

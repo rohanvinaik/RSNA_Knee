@@ -139,9 +139,15 @@ here.
 - The run is one graph of named values, each computed once where it becomes known and handed to
   every consumer (his `ops/agents/reference/performance.md` and `project-composition.md`: Hamilton
   derives the graph from plain functions and shows a value nobody consumes). Nothing is computed and
-  thrown away; nothing is computed twice. The cheap whole-movie measures (the squint, the regime) come
-  first and point where the expensive work runs. The lens runs on its JIT twin; studies run in
-  parallel with one writer; pictures are drawn when asked.
+  thrown away; nothing is computed twice. The cheap whole-movie measures (the squint, the background
+  split) come first and point where the expensive work runs. The lens runs on its JIT twin; studies
+  run in parallel with one writer; pictures are drawn when asked.
+- One path (2026-10-15): «There should be just the one path when we're done with this--the single
+  compute path that identifies the objects corresponding to knee anatomy as one operation, one
+  goal, that will be meant to run on Kaggle». `scripts/run_interiors.py` is that path: any study in
+  (`--split test` takes the studies a Kaggle kernel is given), a decision on every part out. What
+  no stage reads is judged on the run that draws nothing, the one a kernel runs; a run that draws
+  declares the pictures' reads and hides the rest.
 - «Make sure the pipeline actually works. From the import "chapter 1" ..., taking in movies, it
   should spit out all the parts of anatomy we can result thus far». Check through the real entry
   point, on the movies it takes in.
@@ -235,15 +241,26 @@ note of `src/knee/objects/assignments.py` has a paragraph for each rule.
   one sequence onto the other where a slice names none of its own, as on the proof's T1 coronal,
   whose lens draws the air into its territories. Over the 58 labelled studies the fat is named in
   56 (106 series by their own light, 72 laid on), air and skin are laid on 9 series, and every
-  other part keeps its counts. Every one of them is written in the module note as an «<object>»
-  (§4), its descriptions checked against its code.
+  other part keeps its counts. Muscle (commits `0b1a328` and `80f255b`) is named where fat is not
+  suppressed: the leg's places outside every part named, darker than fat, the bodies of them at
+  least a centimetre across, then outside the white its fat-suppressed, fluid-sensitive twin sees
+  as fluid, since on T1 fluid, a Baker's cyst among it, is as dark as muscle; and laid onto the
+  twin. Over the 58 labelled studies it is named in 50, on 155 series. Every one of them is
+  written in the module note as an «<object>» (§4), its descriptions checked against its code.
+- What the run puts out (2026-10-15): for any study it is given, labelled or not, a decision on
+  each of the 23 parts on every series it reads, named (and how) or abstained (and why): over the
+  58 labelled studies, 336 series and none missing a decision; the 3 studies on disk that are
+  not labelled are the test split's, the competition's public sample, and `--split test` runs
+  them as a kernel would: 15 series, none missing a decision. `--root` is where the competition's
+  files are, the kernel's mount (`KAGGLE_ROOT`) when it exists. The bone marrow (named with its
+  bone) and the synovium (not named) have no decision of their own in the output.
 - Not named, because the pictures do not hold it: the synovium. Looked at on 2026-10-15 at the
   outer recess of the fat-suppressed coronal, at its own pixels: the fluid lies straight between
   the capsule's thin dark line and the femur's shell, with no layer of its own between them; the
   sources read give no normal look for it, and synovitis is told apart with contrast, which no tag
   marks (docs/OBJECTS_AND_CONDITIONS.md).
-- Next, in the objects document's order: muscle. Then the parts that need their own main slices
-  (the menisci on the sagittal, the patella on the axial). Diagnosis only when he says.
+- Next: the parts that need their own main slices (the menisci on the sagittal, the patella on the
+  axial), and the fibula's main slice from the squint (below). Diagnosis only when he says.
 - Still owed: where the header names no knee, look for the fibula on both sides and let its side
   name the outer one (the second half of the plan for siding the menisci); the fibula is not yet
   laid onto the fat-suppressed sagittal's slice of the same place (Law 9); the parts named on the
@@ -254,8 +271,26 @@ note of `src/knee/objects/assignments.py` has a paragraph for each rule.
   that same reading; parting the two fat pads above the patella, which lie on either side of the
   suprapatellar recess: on the proof the recess between them is collapsed, a film of faint white
   under the fluid's level with fat suppression and a faint dark curve without it, and no lens draws
-  it as a border; and §5's one coherent operation: the run prints the values that no stage
-  reads ("produced and read by no stage"), and on 2026-10-14 there were many.
+  it as a border; and §5's one coherent operation. Since 2026-10-15 each value two stages need is
+  made once and handed on (`knee.telemetry.once`: the run prints, kind by kind, how many were
+  made and how many handed on), each slice's shared measures likewise (`Measures`: the marrow's
+  light, each place's distance from a part, its position along the patient's axes, each region's
+  size), and a part's own slice reads its lens and its field only. The one path (2026-10-15): the
+  modules no run reached are gone, and so is what the run made and nothing read (the regime's
+  readings, the lens's error bound, guard, band edges and profiles, the input stage's copy of each
+  volume in walk order, the corpus's shape); the drawing layer is imported only to draw; the
+  frame's places, their inverse and its normal are each stated once (`PlaneFrame`); over the 58
+  labelled studies every decision, silence and saved array is the same as before, and only the
+  fields removed with what made them are gone from the records. Still owed there: the fibula's
+  search reads
+  the lens on a block of every slice that holds it (51 of the proof's 62 lens readings) until its
+  main slice comes from the squint, whose tile medians nothing reads until then, and which is a
+  Python loop owed a JIT twin with the same answers; on the run that draws nothing, the lens's
+  border readings (its edges and dark-band traces, about a quarter of each lens reading) are read
+  only by the pictures: the proof's lens, unchanged unless he asks; vulture lists only the
+  contracts, which `contracted` reads at import, and their fields, his design's data; and a
+  slice's pixel size is stated two ways, from the frame's axes in the naming and from the
+  header's spacing in the stages after it, up to 1e-4 of a pixel apart.
 - Over-reaches stated in the module note, not chased: the cartilage takes in the notch roof's lining
   and the fluid down the femur's outer side; on the middle slice the PCL takes in the ACL's lower
   fibres, which cross in front of it, and leaves its last stretch down the tibia; the ACL takes in
@@ -333,6 +368,10 @@ note of `src/knee/objects/assignments.py` has a paragraph for each rule.
 | «Do the conversation read and the photo look steps again. i need you to connect the epistemology from the conversation to the literal photo output from the current stage we have. Otherwise you don't get the idea here, why it is common sense, why this is a SOLVED problem I've handed you, and you simply need to do some end-stage identity match and wiring» | After the compaction, summed up what to do as a list of steps, without saying what the lens pictures already show | §2: look at the lens pictures with the conversation in mind; what is left is naming the parts and wiring them in |
 | «Make sure you're only using deterministic systems. We have solved harder problems than this before in the cell tracking project, articulated in the <object> thesis» · «You are not present in the competition. Don't hand-tune» | Looked at the LCL slice by slice and began fitting a rule to the slices and columns where it showed, then patched exclusions one after another when the rule missed | §3: built for studies never seen; §7: the slice from a sourced law (the LCL's, from LaPrade 2003), and parts already found as targets, never masks |
 | «Um, reading it whole? Claude, it's over 100 pages long. Why do you think I haven't told you to read it whole before now?» | Started to read his whole paper on what an object is, over 100 pages, to learn what «<object>» means, when his message had just defined it | Reading whole means the whole unit he points to, such as the section he names; where he defines a term in his message, his definition is the one used (§4, «<object>») |
+| «Repeated work is a scourge, it's an artifact of you being myopic about the codebase» · «ALL repetitious operations need to be centralized and deduplicated across the whole codebase. That's why I have a "Telemetry" folder for centralized compute tracking» | The muscle step matched the twin's places once more, and was left "for later"; each stage read a slice's frame, margin and match again; a part's own slice was named in full and all but the part thrown away | §5: each value made once where it becomes known and handed on (`knee.telemetry.once`), counted on the ledger |
+| «Compute that resolved one object of the knee's anatomy OBVIOUSLY can help resolve the others ... many literally do the SAME operation, so be thoughtful about it» | Each rule read the marrow's light, a part's distance and the places' positions for itself | §5: measure where the run's time goes first, with the instruments; share what is literally the same (`Measures`), and stop what is made and thrown away |
+| «Recall JIT/C++/Rust» | Shared the repeated work but left the hot Python loops (the squint's tiles, the profiles' codes) uncompiled | §5: a Python loop on a hot path gets a JIT twin, kept only if the answers are the SAME, run against run |
+| «There should be just the one path when we're done with this--the single compute path that identifies the objects corresponding to knee anatomy as one operation, one goal, that will be meant to run on Kaggle» · «The work we're doing is VERY delicate ... Use the tooling in the CI gate and others as needed to ensure we have a single, sane, effective compute operation that takes image studies and puts out the objects of anatomy as resolved features» | Left modules no run reached, values made and read by nothing, the drawing layer imported by the run, and no way to run the test split | §5, one path: read vulture's lists and the run's "read by no stage" list (on the run that draws nothing), and the runtime trace beside the static one (`performance.md`); remove what nothing reads; prove the records the same |
 
 Side notes he relayed the same day, each a lapse a self-check would have caught: the pipeline read
 only the middle slice; the menisci were unsided; the read-first rule lived only in Claude's memory;
@@ -340,7 +379,13 @@ the recovered squint code still named a missing chapter file; the fibula rule ne
 the "sealed" and "shelled" signs were the removed pile's under new names; Claude's own unapproved
 lines sat in `AGENTS.md`. And on 2026-10-15: the parts named before the ACL were still written as
 prose when a report said each part was written as an «<object>»; the semimembranosus tendon was
-named, and reported named, as a 2 by 4 mm speck of the 7 by 4 mm oval it is.
+named, and reported named, as a 2 by 4 mm speck of the 7 by 4 mm oval it is; the muscle rule could
+name fluid, a Baker's cyst among it, as muscle on T1; the first fix for that withdrew the fat
+under the skin wherever a scan had no fat-suppressed twin, and cut the white out before measuring
+the bodies, which dropped a grey triangle of muscle; the muscle step matched the twins' places once
+more; and a report said the checks "pass", vulture included, when vulture is advisory, listed about
+60 names, and the run listed 44 values no stage reads: when a check is advisory, report its list,
+not the gate's verdict.
 
 Earlier sessions' corrections live where they were recorded: the theory's Part V (the builds thrown
 away twice; «You're starting to infer»), and the global `~/.claude/CLAUDE.md` (the reading law of

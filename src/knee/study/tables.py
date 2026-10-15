@@ -65,11 +65,10 @@ class StudyRow:
 
 @dataclass(frozen=True, slots=True)
 class Tables:
-    """Every study of both splits, by StudyInstanceUID in table order, and any series row whose study is in neither
-    study table (kept, never dropped)."""
+    """Every study of both splits, by StudyInstanceUID in table order, each with its rows of its split's series
+    table. A series row whose study is in neither study table belongs to no study the run reads."""
 
     studies: Mapping[str, StudyRow]
-    orphan_series: tuple[SeriesRow, ...]
 
 
 def read_rows(path: Path, columns: tuple[str, ...]) -> list[dict[str, str]]:
@@ -131,8 +130,7 @@ def read_tables(root: Path) -> Tables:
                 series=tuple(series_of.pop(("test", r["StudyInstanceUID"]), ())),
             ),
         )
-    orphans = tuple(row for rows in series_of.values() for row in rows)
-    return Tables(studies=studies, orphan_series=orphans)
+    return Tables(studies=studies)
 
 
 def add_study(studies: dict[str, StudyRow], row: StudyRow) -> None:

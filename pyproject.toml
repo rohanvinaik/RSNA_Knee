@@ -77,32 +77,26 @@ extend-select = ["B"]
 # crash witness it writes catches BaseException on purpose, to name any other exception as the
 # wrong one (2026-10-12, the first crash-only survivors it pinned).
 "tests/detective/*" = ["I001", "BLE001"]
-# The workbench is the project's second tier (workbench/README.md): a probe answers for being
-# re-runnable and for not being wrong about what it measured, not for production polish. A probe
-# that sweeps all 336 series MUST catch broadly -- a single unreadable series is a finding to
-# record, never a reason for the sweep to die -- so the blind-except rule is lifted here and
-# nowhere else. Everything that bears on CORRECTNESS (B905's silent zip truncation, the import
-# and format rules) still applies: a rough probe is allowed, a probe with a wrong number is not.
-"workbench/*" = ["BLE001"]
 
 [tool.ruff.lint.isort]
-# `_out` is workbench/render's own sibling module (the pictures directory), resolved because a
-# script's directory is on sys.path when it is run as a script. It is ours, not third-party.
-known-first-party = ["knee", "_out", "object_interiors", "object_assignments"]
+# The drawing scripts are the run's sibling modules, resolved because a script's directory is on
+# sys.path when it is run as a script. They are ours, not third-party.
+known-first-party = ["knee", "object_interiors", "object_assignments"]
 
 [tool.ty.src]
 exclude = ["archive", "archive2"]
 
 [tool.deptry]
 extend_exclude = ["archive", "archive2"]
-# SAME verifiers are neighboring scripts, not external distributions.
-known_first_party = ["knee", "_out", "workbench", "verify_profiles_same", "object_interiors", "object_assignments"]
+# The drawing scripts are the run's neighbouring scripts, not external distributions.
+known_first_party = ["knee", "object_interiors", "object_assignments"]
 
 [tool.deptry.per_rule_ignores]
 # Detective/Wesker are development readers; Hamilton is the development observation graph; and
 # matplotlib is the drawing layer's, in the dev group since 2026-10-12 (the founder: "You can just
-# add matplotlib in"), imported only by the workbench and never by `knee`, which `just imports`
-# enforces. Each is a development tool that development code imports, which is what DEP004 asks.
+# add matplotlib in"), imported only by the drawing scripts and never by `knee`, which the import
+# contract enforces. Each is a development tool that development code imports, which is what
+# DEP004 asks.
 DEP004 = ["Detective", "Wesker", "hamilton", "matplotlib"]
 # A pydicom decoder plugin: pydicom loads it, and nothing imports it by name.
 DEP002 = ["python-gdcm"]

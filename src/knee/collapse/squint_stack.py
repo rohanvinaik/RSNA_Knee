@@ -16,8 +16,7 @@ slice's grid (each tile at least `tile_mm` wide, rounded up to whole pixels; emp
 maps a native point to millimetres. This module runs the first over every slice and the second
 over every tile centre. It adds one measurement, `tile_centres_lps`, which carries the contract.
 
-This is the funnel's operation 1 (`openspec/changes/the-funnel/design.md` R1, task 1.1). It
-measures and decides nothing; the stack's code names the one silence it can meet.
+It measures and decides nothing; the stack's code names the silence it meets.
 """
 
 from __future__ import annotations
@@ -32,9 +31,6 @@ from knee.compute.contracts import ComputeContract, contracted, handed_on
 from knee.study.corpus import Series
 from knee.telemetry import ledger
 
-#: The codes a stack reports. `present` is a reading; the others name why none was made.
-STACK_CODES: tuple[str, ...] = ("present", "no_stacked_volume", "geometry_unreadable")
-
 CONTRACT = ComputeContract(
     kind="measurement",
     language="NumPy; no twin, the work is one affine map per tile",
@@ -44,9 +40,9 @@ CONTRACT = ComputeContract(
     work="TR * TC affine maps per slice; the stack is Z of them",
     parallel_unit="slice",
     reference="tile_centres_lps",
-    proof_gate="tests/knee/collapse/test_squint_stack.py: the corner tile's centre equals the "
-    "slice origin offset by half a tile along both in-plane directions; a tile centre maps back "
-    "to native within half a pixel",
+    proof_gate="tests/test_squint_stack.py: the corner tile's centre equals the slice origin "
+    "offset by half a tile along both in-plane directions; a tile centre maps back to native "
+    "within half a pixel",
 )
 
 
@@ -88,8 +84,9 @@ class SquintStack:
     float64 (Z, TR, TC, 3) millimetres. `bounds_rc`: int64 (TR, TC, 4), the half-open native
     bounds r0, r1, c0, c1 shared by every slice (one grid per series, since every slice of a
     stackable series has one shape). `tile_shape_rc`: the tile's size in native pixels.
-    `tile_mm`: the bar the grid was made with. `code` is from `STACK_CODES`; when it is not
-    `present` the arrays are empty with the right number of axes and `why` says which silence.
+    `tile_mm`: the bar the grid was made with. `code` is `present`, a reading, or the silence that
+    stopped one, `no_stacked_volume` or `geometry_unreadable`; when it is not `present` the arrays
+    are empty with the right number of axes and `why` says which silence.
     """
 
     series_uid: str

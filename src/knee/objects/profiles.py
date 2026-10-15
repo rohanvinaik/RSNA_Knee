@@ -8,7 +8,6 @@ import numpy as np
 
 from knee.collapse.physical import numeric_plane, spacing_pair
 from knee.compute.contracts import ComputeContract, contracted, handed_on
-from knee.objects.profile_codes import profile_support_code
 
 CONTRACT = ComputeContract(
     kind="measurement",
@@ -67,20 +66,15 @@ def jit_profile_kernel():
 
 @dataclass(frozen=True, slots=True)
 class ProfileReading:
-    """Samples in stored intensity units; slopes intensity/mm. Missing entries retain NaN.
+    """Samples in stored intensity units, missing entries NaN; which samples are valid; and each
+    offset's distance in millimetres: what the dark bands at the borders are read from.
 
-    Shapes: samples,valid (P,S), slopes (P,max(0,S-1)), distances_mm (S,).
-    Per-profile counts/support codes are retained, alongside overall support.
+    Shapes: samples, valid (P, S); distances_mm (S,).
     """
 
     samples: np.ndarray
     valid: np.ndarray
-    slopes: np.ndarray
     distances_mm: np.ndarray
-    support_code: str
-    support_codes: tuple[str, ...]
-    requested_backend: str
-    effective_backend: str
 
 
 def sample_profiles(
@@ -137,17 +131,6 @@ def sample_profiles(
         profile_samples_reference if backend == "reference" else jit_profile_kernel()
     )
     samples, valid = kernel(plane, points, normals, offsets, spacing)
-    slopes = np.full((len(points), max(0, len(offsets) - 1)), np.nan)
-    if len(offsets) > 1:
-        both = valid[:, 1:] & valid[:, :-1]
-        np.divide(np.diff(samples, axis=1), np.diff(offsets), out=slopes, where=both)
     return ProfileReading(
-        handed_on(samples),
-        handed_on(valid),
-        handed_on(slopes),
-        handed_on(offsets.copy()),
-        profile_support_code(int(valid.size), int(valid.sum())),
-        tuple(profile_support_code(len(offsets), int(row.sum())) for row in valid),
-        backend,
-        backend,
+        handed_on(samples), handed_on(valid), handed_on(offsets.copy())
     )

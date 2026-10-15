@@ -1,10 +1,10 @@
-"""Run the pipeline on one or more studies: chapter 1 reads each whole, every reading is kept, the
-plain objects are named, and both are drawn.
+"""The one run: every study it is given, read whole; each part of the knee named on it, or the
+reason it is not; every reading kept.
 
-For each series of a study, as the second build's route did (`objects/analysis.py`,
-`_measure_series`): the regime key, read once over the whole series and kept whole; the squint
-over every slice, made once and kept with the series; the middle slice, its plane frame, and
-`read_interiors` with the frame's spacing and the retained basis as its metric. Then
+For each series of a study: its background split, read once over the whole series, the level the
+lens reads low signal under (`knee.collapse.noise.background_split`); the squint over every slice,
+made once and kept with the series; the middle slice, its plane frame, and `read_interiors` with
+the frame's spacing and the retained basis as its metric. Then
 `assign_plane` names what the pictures show, each part by its paragraph in
 `knee.objects.assignments`: air, skin, femur, tibia, joint, the patella (by its light, with fat
 suppression), the menisci (sided by the header's own word for which knee it is), the articular
@@ -76,10 +76,14 @@ on all 58 labelled studies, 2026-10-14: 336 series, every saved array the same.
 
 Studies are measured in parallel, one worker process each, and each saves its own arrays; the main
 process alone writes the receipts, in the order the studies were asked for. Pictures are drawn only
-with `--draw`, from the saved run, after its study is in the receipt.
+with `--draw`, from the saved run, after its study is in the receipt; the drawing layer is imported
+only then, so a run that draws nothing never loads it.
 
-Run from anywhere: `.venv/bin/python scripts/run_interiors.py --study-uid <uid> [<uid> ...]`, or
-`--labeled` for every labelled study whose series are all on disk; `--draw` for the pictures.
+Run from anywhere: `.venv/bin/python scripts/run_interiors.py --study-uid <uid> [<uid> ...]`;
+`--labeled` for every labelled study whose series are all on disk; `--split test` (or `train`) for
+every study of that split whose series are all on disk, the test split being the studies a Kaggle
+kernel is given; `--root` for where the competition's files are (where a kernel mounts them,
+`knee.study.corpus.KAGGLE_ROOT`, when that exists, else `data/raw`); `--draw` for the pictures.
 """
 
 import argparse
@@ -95,10 +99,8 @@ from typing import Any
 
 import numpy as np
 
-import object_assignments
-import object_interiors
+from knee.collapse.noise import background_split, finite_values
 from knee.collapse.physical import PlaneFrame
-from knee.collapse.regime import read_regime
 from knee.collapse.squint_stack import SquintStack, read_squint_stack
 from knee.compute.contracts import handed_on
 from knee.objects.assignments import (
@@ -149,6 +151,7 @@ from knee.objects.interiors import (
 )
 from knee.receipt import digest, merged_receipt
 from knee.study.corpus import (
+    KAGGLE_ROOT,
     LOCAL_ROOT,
     Corpus,
     open_corpus,
@@ -156,7 +159,7 @@ from knee.study.corpus import (
     series_directory,
 )
 from knee.study.series import Series, selected_slice
-from knee.study.tables import labeled_uids
+from knee.study.tables import SPLIT_FOLDER, labeled_uids, split_uids
 from knee.telemetry import Event, computing, ledger, once, recording
 from knee.telemetry.route import unread_products
 
@@ -276,10 +279,8 @@ def matched(
             return "no_slice_thickness"
         places = places_from(
             ~margin_of(source["series_uid"], source["slice_index"], source_plane),
-            source_frame.origin_lps,
-            source_frame.basis_lps,
-            onto_frame.origin_lps,
-            onto_frame.basis_lps,
+            source_frame,
+            onto_frame,
             onto_shape,
             thickness,
         )
@@ -308,9 +309,10 @@ class Measured:
 
 
 def measure(series: Series) -> Measured | str:
-    """One series' readings: the regime key and the squint, each kept whole, and the interiors and
-    named objects at its middle slice; or why no plane was read. Which of its values are finite,
-    and every slice's frame, are read once here and handed to the regime, the squint and the lens."""
+    """One series' readings: its background split and its squint, each read once over the whole
+    series, and the interiors and named objects at its middle slice; or why no plane was read.
+    Which of its values are finite, and every slice's frame, are read once here and handed to the
+    split, the squint and the lens."""
     reads("series", ("volume", "geometry"), "measure")
     if series.volume is None:
         return "no_stacked_volume"
@@ -323,11 +325,11 @@ def measure(series: Series) -> Measured | str:
     if isinstance(frame, str):
         return frame
     finite = finite_of(series)
-    reads("series", ("volume", "slices", "row"), "regime")
-    regime = read_regime(series, finite=finite)
-    if regime is not None:
-        handed("regime", field_names(regime))
-    split = regime.background_split if regime is not None else float("nan")
+    # The background split: the valley after the background's mode in the series' own histogram
+    # (`knee.collapse.noise.background_split`), the level the lens reads low signal under.
+    reads("series", ("volume",), "background")
+    split = background_split(finite_values(series.volume, finite))
+    handed("background", ("split",))
     # The squint, made once for the series and kept with it for any stage to consult; it records
     # its own reading of the series and its counted work on the ledger. It reads every slice's
     # frame, made once for the squint and every stage after it.
@@ -342,7 +344,6 @@ def measure(series: Series) -> Measured | str:
     record, arrays, assignment = name_plane(
         series, index, series.volume[index], frame, split, knee
     )
-    record["regime"] = None if regime is None else asdict(regime)
     record["squint"] = {
         "code": stack.code,
         "why": stack.why,
@@ -369,7 +370,7 @@ def lens_of(
 
     def read() -> tuple[np.ndarray, InteriorReading, dict]:
         reads("series", ("volume", "row", "slices"), "interiors")
-        reads("regime", ("background_split",), "interiors")
+        reads("background", ("split",), "interiors")
         axes = frame.basis_lps / frame.spacing_rc
         reading = read_interiors(
             plane,
@@ -474,7 +475,6 @@ def slice_record(
             "femur": None,
             "tibia": None,
             "patella": None,
-            "menisci": 0,
             "peaks": [asdict(peak) for peak in field.peaks],
         },
     }
@@ -526,7 +526,6 @@ def name_plane(
         femur=assignment.femur,
         tibia=assignment.tibia,
         patella=assignment.patella,
-        menisci=assignment.menisci,
     )
     return record, arrays, assignment
 
@@ -619,12 +618,8 @@ def leg_on(
         "leg_on_slice",
         (series.row.series_uid, z),
         lambda: (
-            places_on_slice(
-                leg.femur_lps, frame.origin_lps, frame.basis_lps, shape, thickness
-            ),
-            places_on_slice(
-                leg.tibia_lps, frame.origin_lps, frame.basis_lps, shape, thickness
-            ),
+            places_on_slice(leg.femur_lps, frame, shape, thickness),
+            places_on_slice(leg.tibia_lps, frame, shape, thickness),
         ),
     )
 
@@ -672,8 +667,7 @@ def leg_of(measured: list[Measured]) -> Leg:
             places = np.argwhere(objects == OBJECT_CODES[name]).astype(float)
             found.append(other.frame.to_patient(places))
         if notch_origin is None and not sides_in_plane:
-            normal = np.cross(other.frame.basis_lps[:, 0], other.frame.basis_lps[:, 1])
-            normal = normal / np.linalg.norm(normal)
+            normal = other.frame.normal()
             notch_origin = other.frame.origin_lps
             notch_normal = normal if normal[0] > 0 else -normal
     leg = Leg(np.concatenate(femur), np.concatenate(tibia), notch_origin, notch_normal)
@@ -969,7 +963,7 @@ def semimembranosus_slice(
     frame = None if z is None else plane_frame(own.series, z)
     if z is None or frame is None or isinstance(frame, str):
         return semimembranosus_code(True, knee, True, True, False, False, False)
-    reads("regime", ("background_split",), "semimembranosus")
+    reads("background", ("split",), "semimembranosus")
     record, arrays, field = read_part_slice(
         own.series,
         z,
@@ -1058,7 +1052,7 @@ def find_fibula(
     if stack.code != "present":
         return f"squint_{stack.code}"
     reads("squint_stack", ("centres_lps", "bounds_rc"), "fibula")
-    reads("regime", ("background_split",), "fibula")
+    reads("background", ("split",), "fibula")
     reads("series", ("volume",), "fibula")
     split = record["background_split"]
     finite = finite_of(series)
@@ -1199,7 +1193,7 @@ def acl_slice(own: Measured) -> tuple[dict, dict[str, np.ndarray], PlaneFrame] |
     frame = plane_frame(series, z)
     if isinstance(frame, str):
         return frame
-    reads("regime", ("background_split",), "acl")
+    reads("background", ("split",), "acl")
     plane = volume[z]
     acl_record, arrays, field = read_part_slice(
         series, z, plane, frame, record["background_split"], knee, "acl"
@@ -1268,16 +1262,13 @@ def lcl_slice(
     if len(known) != len(thicknesses):
         return "no_slice_thickness"
     origins = np.asarray([np.asarray(p, dtype=float) for p in geometry.position])
-    normal = np.cross(own.frame.basis_lps[:, 0], own.frame.basis_lps[:, 1])
-    z = slice_through(
-        lcl_attachment(fibula_lps), origins, normal / np.linalg.norm(normal), known
-    )
+    z = slice_through(lcl_attachment(fibula_lps), origins, own.frame.normal(), known)
     if z is None:
         return lcl_code(True, True, True, False, False, True, True)
     frame = plane_frame(series, z)
     if isinstance(frame, str):
         return frame
-    reads("regime", ("background_split",), "lcl")
+    reads("background", ("split",), "lcl")
     lcl_record, arrays, _ = read_part_slice(
         series,
         z,
@@ -1290,9 +1281,7 @@ def lcl_slice(
     labels = arrays["b1_labels"]
     measures = measures_of(series.row.series_uid, z, arrays["acquired_plane"], frame)
     femur = carried_bone(labels, femur_before, measures)
-    fibula_places = places_on_slice(
-        fibula_lps, frame.origin_lps, frame.basis_lps, labels.shape, known[z]
-    )
+    fibula_places = places_on_slice(fibula_lps, frame, labels.shape, known[z])
     fibula = region_holding(labels, fibula_places)
     fat_suppressed = int(series.row.fat_suppression) == 1  # the tag is stored as text
     reads("naming", ("tibia", "peaks"), "lcl")
@@ -1681,7 +1670,11 @@ def draw_study(
     main_run: Path,
     main_out: Path,
 ) -> list[Path]:
-    """Draw one study from the saved run, once it is in the receipts; return its pictures."""
+    """Draw one study from the saved run, once it is in the receipts; return its pictures. The
+    renderers are imported here, so a run that draws nothing never loads the drawing layer."""
+    import object_assignments
+    import object_interiors
+
     uid = result["study_uid"]
     pictures: list[Path] = []
     if result["records"]:
@@ -1694,10 +1687,10 @@ def draw_study(
     return pictures
 
 
-def on_disk(corpus: Corpus) -> list[str]:
-    """Every labelled study whose series are all on disk, in the table's order."""
+def on_disk(corpus: Corpus, uids: Iterable[str]) -> list[str]:
+    """The given studies whose series are all on disk, in the order given."""
     found = []
-    for uid in labeled_uids(corpus.tables):
+    for uid in uids:
         study = corpus.tables.studies[uid]
         if all(series_directory(corpus, study, s).is_dir() for s in study.series):
             found.append(uid)
@@ -1740,6 +1733,17 @@ def main() -> None:
         action="store_true",
         help="every labelled study whose series are all on disk",
     )
+    which.add_argument(
+        "--split",
+        choices=sorted(SPLIT_FOLDER),
+        help="every study of one split whose series are all on disk; a kernel is given the test split",
+    )
+    parser.add_argument(
+        "--root",
+        type=Path,
+        default=KAGGLE_ROOT if KAGGLE_ROOT.is_dir() else ROOT / LOCAL_ROOT,
+        help="the competition's files: where a kernel mounts them when that exists, else data/raw",
+    )
     parser.add_argument(
         "--workers",
         type=int,
@@ -1765,9 +1769,13 @@ def main() -> None:
         "--main-out", type=Path, default=ROOT / "data/pictures/main-slices"
     )
     args = parser.parse_args()
-    root = ROOT / LOCAL_ROOT
-    corpus = opened(root)
-    uids = on_disk(corpus) if args.labeled else args.study_uid
+    corpus = opened(args.root)
+    if args.labeled:
+        uids = on_disk(corpus, labeled_uids(corpus.tables))
+    elif args.split:
+        uids = on_disk(corpus, split_uids(corpus.tables, args.split))
+    else:
+        uids = args.study_uid
     workers = max(1, min(args.workers, len(uids)))
     if workers == 1:
         for uid in uids:
@@ -1776,7 +1784,7 @@ def main() -> None:
     with ProcessPoolExecutor(max_workers=workers) as pool:
         results = pool.map(
             measure_study_at,
-            repeat(root),
+            repeat(args.root),
             uids,
             repeat(args.run),
             repeat(args.main_run),

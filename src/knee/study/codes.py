@@ -1,8 +1,5 @@
 """The input stage's decisions: pure, total over their arguments, returning named codes."""
 
-#: Every code `label_code` can return, in the order the corpus shape reports them.
-LABEL_CODES: tuple[str, ...] = ("1", "0", "not_given", "unrecognized")
-
 
 def label_code(raw: str) -> str:
     """The host's label for one finding, as a named code (pure — pinned).

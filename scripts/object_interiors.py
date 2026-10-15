@@ -9,6 +9,15 @@ import matplotlib.pyplot as plt
 import numpy as np
 from matplotlib.collections import LineCollection
 
+from knee.receipt import digest
+
+# The three stage pictures, each two of a slice's six panels.
+STAGES = (
+    ("01-surrounding-field", (0, 1)),
+    ("02-interiors", (2, 3)),
+    ("03-native-traces", (4, 5)),
+)
+
 
 def overlay_mask(axis, mask, color):
     rgba = np.zeros((*mask.shape, 4))
@@ -16,7 +25,7 @@ def overlay_mask(axis, mask, color):
     axis.imshow(rgba, interpolation="nearest")
 
 
-def draw_stages(axes, arrays, metadata):
+def draw_stages(axes, arrays):
     plane = arrays["acquired_plane"]
     dark, available = arrays["b1_dark"], arrays["b1_available"]
     labels, markers = arrays["b1_labels"], arrays["b1_markers"]
@@ -107,29 +116,60 @@ def draw(run: Path, study_uid: str, out: Path) -> dict:
         squeeze=False,
         layout="constrained",
     )
+    # Separate stage series make every additional operation inspectable across views.
+    stages = {
+        name: plt.subplots(
+            len(records),
+            2,
+            figsize=(10, 4 * len(records)),
+            squeeze=False,
+            layout="constrained",
+        )
+        for name, _ in STAGES
+    }
     panels = []
     for row, record in enumerate(records):
         artifact = run / record["artifact"]
         with np.load(artifact, allow_pickle=False) as saved:
             arrays = dict(saved)
         for name, descriptor in record["arrays"].items():
-            a = arrays[name]
-            digest = sha256(
-                a.dtype.str.encode() + str(a.shape).encode() + a.tobytes()
-            ).hexdigest()
-            if digest != descriptor["digest"]:
+            if digest(arrays[name]) != descriptor["digest"]:
                 raise ValueError("saved_array_digest_mismatch")
-        draw_stages(axes[row], arrays, record)
+        draw_stages(axes[row], arrays)
         view, fluid, fat = record["view"]
         axes[row, 0].set_ylabel(f"{view} fs={fluid} fat={fat}")
         title = f"{view} · fluid-sensitive={fluid}, fat-suppressed={fat} · slice {record['slice_index']}"
         axes[row, 0].set_title(title + "\nAcquired signal", fontsize=10)
         one, one_axes = plt.subplots(1, 6, figsize=(24, 4), layout="constrained")
-        draw_stages(one_axes, arrays, record)
+        draw_stages(one_axes, arrays)
         one.suptitle(title)
         name = f"{row + 1:02d}-{view.lower()}-fs{fluid}-fat{fat}.png"
         one.savefig(out / name, dpi=150)
         plt.close(one)
+        # Draw once into a dedicated full layout, then copy its raster panels into each stage.
+        scratch, scratch_axes = plt.subplots(1, 6)
+        draw_stages(scratch_axes, arrays)
+        scratch.set_size_inches(24, 4)
+        scratch.canvas.draw()
+        pixels = np.asarray(scratch.canvas.buffer_rgba())
+        for stage_name, columns in STAGES:
+            stage_axes = stages[stage_name][1]
+            for col, index in enumerate(columns):
+                box = scratch_axes[index].get_window_extent().bounds
+                x, y, w, h = map(int, box)
+                stage_axes[row, col].imshow(
+                    pixels[pixels.shape[0] - y - h : pixels.shape[0] - y, x : x + w]
+                )
+                stage_axes[row, col].set_title(
+                    scratch_axes[index].get_title(), fontsize=10
+                )
+                stage_axes[row, col].set_axis_off()
+            stage_axes[row, 0].set_title(
+                f"{view} · fs={fluid} · fat={fat} · slice {record['slice_index']}\n"
+                + scratch_axes[columns[0]].get_title(),
+                fontsize=10,
+            )
+        plt.close(scratch)
         panels.append(
             {
                 "image": name,
@@ -146,45 +186,9 @@ def draw(run: Path, study_uid: str, out: Path) -> dict:
     )
     gallery.savefig(out / "series.png", dpi=140)
     plt.close(gallery)
-    # Separate stage series make every additional operation inspectable across views.
-    for name, columns in (
-        ("01-surrounding-field", (0, 1)),
-        ("02-interiors", (2, 3)),
-        ("03-native-traces", (4, 5)),
-    ):
-        stage, stage_axes = plt.subplots(
-            len(records),
-            2,
-            figsize=(10, 4 * len(records)),
-            squeeze=False,
-            layout="constrained",
-        )
-        for row, record in enumerate(records):
-            with np.load(run / record["artifact"], allow_pickle=False) as saved:
-                scratch, scratch_axes = plt.subplots(1, 6)
-                # Draw once into dedicated full layout, then copy its raster panels.
-                draw_stages(scratch_axes, dict(saved), record)
-                scratch.set_size_inches(24, 4)
-                scratch.canvas.draw()
-                pixels = np.asarray(scratch.canvas.buffer_rgba())
-                for col, index in enumerate(columns):
-                    box = scratch_axes[index].get_window_extent().bounds
-                    x, y, w, h = map(int, box)
-                    stage_axes[row, col].imshow(
-                        pixels[pixels.shape[0] - y - h : pixels.shape[0] - y, x : x + w]
-                    )
-                    stage_axes[row, col].set_title(
-                        scratch_axes[index].get_title(), fontsize=10
-                    )
-                    stage_axes[row, col].set_axis_off()
-                view, fluid, fat = record["view"]
-                stage_axes[row, 0].set_title(
-                    f"{view} · fs={fluid} · fat={fat} · slice {record['slice_index']}\n"
-                    + scratch_axes[columns[0]].get_title(),
-                    fontsize=10,
-                )
-                plt.close(scratch)
-        stage.savefig(out / f"{name}.png", dpi=140)
+    for stage_name, _ in STAGES:
+        stage = stages[stage_name][0]
+        stage.savefig(out / f"{stage_name}.png", dpi=140)
         plt.close(stage)
     manifest = {
         "schema": "interior-visuals-b1",

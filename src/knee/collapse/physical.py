@@ -66,16 +66,27 @@ class PlaneFrame:
         return cls(handed_on(position.copy()), handed_on(directions * spacing), spacing)
 
     def to_patient(self, points_rc: np.ndarray) -> np.ndarray:
+        """Native (row, column) points (N, 2) in the scanner's millimetres (N, 3): the one statement
+        of a slice's places in the scanner's frame."""
         points = np.asarray(points_rc, dtype=np.float64)
         if points.ndim != 2 or points.shape[1] != 2 or not np.all(np.isfinite(points)):
             raise ValueError("invalid_native_points")
         return handed_on(points @ self.basis_lps.T + self.origin_lps)
 
     def to_native(self, points_lps: np.ndarray) -> np.ndarray:
+        """Places in the scanner's millimetres (N, 3) projected onto this plane, as native (row,
+        column) points (N, 2): the one statement of the inverse, which every stage that carries a
+        place from one slice of the knee onto another reads."""
         points = np.asarray(points_lps, dtype=np.float64)
         if points.ndim != 2 or points.shape[1] != 3 or not np.all(np.isfinite(points)):
             raise ValueError("invalid_patient_points")
         return handed_on((points - self.origin_lps) @ np.linalg.pinv(self.basis_lps).T)
+
+    def normal(self) -> np.ndarray:
+        """The plane's unit normal (3,), the rows' direction crossed with the columns': the one
+        statement of it, which every stage that asks how far a place lies off the plane reads."""
+        normal = np.cross(self.basis_lps[:, 0], self.basis_lps[:, 1])
+        return normal / np.linalg.norm(normal)
 
 
 @dataclass(frozen=True, slots=True)
