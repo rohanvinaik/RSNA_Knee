@@ -3,9 +3,9 @@ reason it is not; every reading kept.
 
 For each series of a study: its background split, read once over the whole series, the level the
 lens reads low signal under (`knee.collapse.noise.background_split`); the squint over every slice,
-made once and kept with the series; the middle slice (the code's choice of slice, not the
-thesis's: under review, `docs/RESOLVING_THE_PARTS.md` §8), its plane frame, and `read_interiors`
-with the frame's spacing and the retained basis as its metric. Then
+made once and kept with the series; the middle slice (the standard first slice,
+`docs/RESOLVING_THE_PARTS.md` §8), its plane frame, and `read_interiors` with the frame's spacing
+and the retained basis as its metric. Then
 `assign_plane` names what the pictures show, each part by its paragraph in
 `knee.objects.assignments`: air, skin, femur, tibia, joint, the patella (by its light, with fat
 suppression), the menisci (sided by the header's own word for which knee it is), the articular
@@ -247,7 +247,7 @@ def plane_frame(series: Series, index: int) -> PlaneFrame | str:
 
 def finite_of(series: Series) -> np.ndarray:
     """Which of a series' stored values are finite, (Z, R, C): read once for the series and handed
-    to the regime, the squint and every lens read on its slices."""
+    to the background split, the squint and every lens read on its slices."""
     return once(
         "finite", series.row.series_uid, lambda: np.isfinite(np.asarray(series.volume))
     )

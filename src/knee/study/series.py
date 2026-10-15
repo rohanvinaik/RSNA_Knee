@@ -48,9 +48,9 @@ def selected_slice(count: int, requested: int | None) -> int | None:
 
     `requested` is the caller's explicit index; None selects floor(count / 2) in the stack's
     order. None back when the stack is empty or the request lies outside it, so the caller names
-    `slice_unavailable` rather than reading past the end. The middle is the code's choice of
-    slice, not the thesis's: how a slice is chosen is under review (`docs/RESOLVING_THE_PARTS.md`
-    §8).
+    `slice_unavailable` rather than reading past the end. The middle is the standard first slice:
+    Rohan, 2026-10-15, «The "middle" is a fine standard first slice to select»
+    (`docs/RESOLVING_THE_PARTS.md` §8).
 
     post: __return__ is None or (0 <= __return__ < count)
     """

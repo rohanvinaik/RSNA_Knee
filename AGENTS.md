@@ -22,9 +22,13 @@ object in `docs/OBJECTS_AND_CONDITIONS.md`, one at a time:
    later diagnosed in («Is it not obvious which slice to use?»). The squint
    (`src/knee/collapse/squint_stack.py`) shows every slice of a series cheaply, so finding it is plain.
    Never recompute on every slice («that's completely wrong»; the collapse,
-   `../cell_tracking/docs/pipeline_thesis/paper/what_an_object_is.md` §4). The run still reads each
-   series' middle slice for most parts, the code's choice and not the thesis's; Rohan, 2026-10-15: «I
-   think that you missed the point of this part of the thesis» (`docs/RESOLVING_THE_PARTS.md` §8).
+   `../cell_tracking/docs/pipeline_thesis/paper/what_an_object_is.md` §4). Rohan, 2026-10-15, of the
+   middle slice the run reads first and of the thesis's dimensional collapse: «The "middle" is a fine
+   standard first slice to select. For other elements that are not obvious in that one slice, etc,
+   that is a fine standard. There are five different views (different angles and fat-bright vs
+   fat-dark), and each has multiple z-slices. That is where the thing being mined is
+   relevant--discovery of ALL elements of the anatomy at their best slices and resolution across the 5
+   images/3 orientations» (the thesis's own text on it: `docs/RESOLVING_THE_PARTS.md` §8).
 2. Look at the actual pictures of that slice, and say plainly, with common-sense domain knowledge, why the
    object looks like itself there.
 3. Write exactly that as a few plain rules on the lenses the interiors already give

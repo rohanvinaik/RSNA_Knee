@@ -58,6 +58,19 @@ A study is several series of one knee from one session; each series is one view,
 | coronal (side to side, along the leg) | | the collaterals; the menisci's bodies; the cartilage of femur and tibia; the gutters; the sides of the leg |
 | axial (front to back, side to side) | | the back of the knee (gastrocnemius heads, hamstring tendons, Baker's); the patellofemoral joint; vessels |
 
+**How medicine reads them** (`docs/OBJECTS_AND_CONDITIONS.md` §2–§3, with their sources). Each part is
+read on the view that shows it plainly, and confirmed on another. The normal anatomy is found on T1W,
+proton-density and gradient-echo images; the tissues are confirmed homogeneous on T1W, and checked on
+T2W where they are not [Kh]. Fluid and Baker's cyst are read on the axial T2 FS; bone bruises and
+fractures with fat suppressed, the fractures confirmed on the coronal T1 without it; the meniscus on
+the sagittal PD and its body on the coronal T2 FS; the cartilage on the coronal and sagittal T2 FS; the
+ACL and PCL on the axial and coronal T2 FS; the MCL and the lateral complex on the coronal and axial
+T2 FS; the extensor mechanism on the sagittal T2 FS; the vessels, nerves and soft tissue on the axial
+T2 FS [AUR]. Three tissues are dark on every sequence, cortex, ligaments and tendons, and the menisci
+[Kh], so they are told apart by place and shape, not by their light (Claude's pairing, as in that
+document's §3). In the thesis's words: «No view is the truth alone, and what an <object> is, is what
+the views recover together» (*What an <Object> Is* §1.3).
+
 **One leg, one set of objects.** «It's literally the same leg, obviously the object would be the same in
 both views. That's the WHOLE thesis». Each slice's place is known in the scanner's millimetres (its
 frame), so a part found on one view is carried onto the others by place:
@@ -115,8 +128,9 @@ example, fluid is brighter than cartilage, which is brighter than suppressed mar
 ## 5. The parts resolved, each at least once on the proof study
 
 The proof study is `…10095687747295410396510538520594649149`. "Middle slice" below is the slice the run
-reads of each series (the middle of its stack: see §8, under review); a part with "its own slice" is
-named on a slice chosen for it. Over-reaches are listed in each part's paragraph in the module note.
+reads first of each series, the middle of its stack: «The "middle" is a fine standard first slice to
+select» (§8). A part not plain there is named on "its own slice", a slice chosen for it. Over-reaches
+are listed in each part's paragraph in the module note.
 
 | part | meaning | views and slice | the lenses and operations | found from | the twelve |
 |---|---|---|---|---|---|
@@ -144,10 +158,16 @@ named on a slice chosen for it. Over-reaches are listed in each part's paragraph
 
 ## 6. Provisional entries: the parts not yet resolved
 
-Each entry is a plan for the loop (§7), not a rule: the part's meaning, the kind of tissue it is and how
-that kind is already resolved, where it lies relative to the parts already found (and the squint for
-which slices show it), the views medicine reads it on, and its relation to the twelve. Each is checked
-on the pictures before any rule is written.
+Each entry is a plan for the loop (§7), not a rule, and every reading in it is Claude's and provisional
+until the pictures check it: the part's meaning; the kind of tissue it is and how that kind is already
+resolved; where it lies among the parts already found; which of the five views show it and where its
+best slices lie, from the squint (each slice's 10 mm tiles, their median, minimum, maximum and coverage
+and their centres in millimetres, made once over every slice of every series: §3) and from the parts
+already found, carried by place; and its relation to the twelve. Rohan, 2026-10-15: «discovery of ALL
+elements of the anatomy at their best slices and resolution across the 5 images/3 orientations» (§8).
+Where an entry calls a tile "as white as fluid", that is Claude's provisional reading of what the
+squint computes: the tile's maximum at least `FLUID_BRIGHTER` (four) times the bones' marrow light read
+on the same series' middle slice, the joint fluid's own rule (§5), on a fat-dark, fluid-sensitive view.
 
 - **Synovium: the joint's lining, and the synovial fluid it holds.** Rohan, 2026-10-15: «On the
   synovium...huh? The pictures don't hold it? It's literally a form of interstitial fluid.
@@ -160,57 +180,102 @@ on the pictures before any rule is written.
   its recesses (suprapatellar, the gutters, the back). Provisional reading: the synovial compartment
   is the joint's places and the joint fluid's, without the parts that lie in the joint but are not
   synovium (cartilage, menisci, the cruciates); its lining is the compartment's edge against the fat
-  pads and the capsule. Views: the fat-dark coronal and sagittal (the recesses' white), the fat-dark
-  axial (the suprapatellar and back recesses), and the fat-bright twin by place. The twelve:
+  pads and the capsule. Views and slices: the fat-dark coronal and sagittal, where the recesses' white
+  outlines the compartment, and the fat-dark axial for the suprapatellar and back recesses; laid onto
+  the fat-bright twins by place. Its best slices are where the compartment is widest: the coronal
+  slices through the condyles, where the gutters run down both sides, and the sagittal slices through
+  each compartment and through the suprapatellar recess; the squint's tiles whose maximum is as white
+  as fluid, beside the femur's and tibia's places, show which slices hold the recesses' fluid without
+  the lens read on every slice. The twelve:
   Synovitis (its inflammation), Effusion (its excess fluid), Baker's (the cyst is synovial-lined).
   (Claude had written "not named, because the pictures do not hold it": wrong. It looked for the
   synovium's own look instead of the relation that defines it.)
+- **The joint capsule.** Meaning: the sleeve that closes the joint (anatomy), lined on its inside by
+  the synovium [R-KNEE]; its back wall is among Baker's objects, where the cyst's neck joins the joint
+  [R-BAKER]. Kind: a thin dark line, dark on every sequence as a ligament is (Claude's reading of the
+  proof's fat-dark coronal, 2026-10-15: at the outer recess the fluid lies between the capsule's thin
+  dark line and the femur's shell). Where: the synovial compartment's outer edge, outside the joint's
+  fluid in the recesses and inside the fat and muscle round them. Views and slices: the fat-dark
+  coronal and axial, where the white inside it draws its line; the synovium's slices. Provisional
+  reading: the thin low signal that bounds the joint fluid's recesses on the side away from the bones.
+  The twelve: Effusion and Synovitis (it bounds their compartment), Baker's (its back wall).
 - **The gastrocnemius–semimembranosus bursa** (where a Baker's cyst forms). Meaning: the bursa beneath
   the medial gastrocnemius head, between it and the semimembranosus tendon, joined to the joint
-  [R-KNEE], [R-BAKER]; normally collapsed. Interstitial again: between two parts already found on the
-  axial, behind the inner condyle. Kind: fluid, white on the fat-dark fluid-sensitive views and dark on
-  T1 (where muscle's rule already leaves out the twin's white, so a cyst is not named muscle). Where:
-  the axial slices between the semimembranosus tendon's slice (the top of the tibia) and the head's
-  (the condyles), the squint showing on which of them white lies between the two. Provisional reading:
-  the seam the head and the tendon share, and what the fluid lens sees in it: white, joined by a neck
-  to the joint's back recess, is a distended bursa. Views: the fat-dark axial first (medicine reads
-  Baker's there [AUR]), the sagittal for its neck. The twelve: Baker's.
-- **Lateral gastrocnemius head.** The calf muscle's outer head, from the back of the femur's outer
-  condyle; the lens already draws it as a region of its own on the fat-dark axial. Provisional reading:
-  the medial head's rule on the knee's outer side of the notch. The twelve: none directly.
+  [R-KNEE], [R-BAKER]; collapsed when there is no cyst (Claude). Interstitial again: between two parts
+  already found on the axial, behind the inner condyle. Kind: fluid, white on the fat-dark
+  fluid-sensitive views and dark on T1 (where muscle's rule already leaves out the twin's white, so a
+  cyst is not named muscle). Views and slices: the fat-dark axial first, where medicine reads Baker's
+  [AUR]: the slices from the tendon's (the top of the tibia) up to the head's (the condyles), the two
+  parts carried from slice to slice by place («anatomy is contiguous from slice to slice», §8); the
+  squint's tiles in the seam whose maximum is as white as fluid show which of those slices hold fluid;
+  the sagittal slices through the back-inner corner show its neck. Provisional reading: the seam the
+  head and the tendon share, and what the fluid lens sees in it: white, joined by a neck to the
+  joint's back recess, is a distended bursa. The twelve: Baker's.
+- **Lateral gastrocnemius head.** Meaning: the calf muscle's outer head, from the back of the femur's
+  outer condyle (anatomy). Kind: muscle, resolved as muscle already is: on the fat-bright views the
+  leg's places outside every part named, darker than fat, the bodies at least a centimetre across; on
+  the fat-dark views the suppressed fat between the muscles parts each belly from the next, so the lens
+  draws each as a region of its own. Where: behind the femur's outer condyle, on the knee's outer side
+  of the notch, the medial head's place mirrored. Views and slices: the fat-dark axial (on the proof's
+  middle axial slice the lens already draws it as a region of its own), on the axial slices through
+  the condyles, which the femur carried onto the axial shows; and the sagittal and coronal slices
+  behind the outer condyle, by place, where muscle is named. Provisional reading: the medial head's
+  rule on the outer side of the notch, behind the outer condyle's peak, with muscle's light on the
+  fat-bright twin as one more description. The twelve: none directly.
 - **Popliteal vessels** (the artery in front of the vein [Kh]). Kind: tubes; on the proof's fat-dark
   slices they are as white as fluid, round on the axial and long on the sagittal. Where: behind the
-  notch, between the two gastrocnemius heads, continuing from slice to slice down the axial series
-  (the squint follows them). Provisional reading: round white bodies behind the notch between the
+  notch, between the two gastrocnemius heads, continuing from slice to slice down the axial series:
+  the squint's tiles behind the notch whose maximum is as white as fluid follow them from slice to
+  slice without the lens. Provisional reading: round white bodies behind the notch between the
   heads, apart from the joint (not joined to it, which parts them from a Baker's cyst), carried slice
   to slice. The twelve: none (landmarks; to be told apart from Baker's and Effusion).
 - **Patellar retinacula.** Low-signal bands from the patella to the femoral condyles, best seen on the
-  axial [C], [Kh]. Needs the patella on the axial, carried by place from the sagittal (owed).
-  Provisional reading: on the axial through the patella, the low signal joining the patella and each
-  side of the femur, the MCL's kind of rule. The twelve: none (PF OA's neighbours).
+  axial [C], [Kh]. Kind: bands dark on every sequence, as ligaments are, resolved as the MCL is: low
+  signal joining two parts already found. Views and slices: the fat-dark axial slices through the
+  patella, found by carrying the patella onto the axial by place (owed, Law 9), as the leg is carried
+  to find the top of the tibia. Provisional reading: on those slices, the low signal joining the
+  patella and each side of the femur. The twelve: none (PF OA's neighbours).
 - **The lateral complex beyond the LCL: popliteus tendon, biceps femoris tendon, iliotibial band**
   [Kh], [LP-PLC]. Kind: tendons and a band, dark on every sequence. Where, relative to parts found: the
   popliteus tendon at the femur's outer condyle's notch, medial to the LCL (the LCL's band now takes
   it in); the biceps tendon reaching the fibula's head beside the LCL; the iliotibial band in front of
-  them on the outer side. Provisional reading: the dark-band rules (thick, uniformly dark, joining two
-  parts) with these targets, on the coronal and axial fat-dark views [AUR]. The twelve: none directly.
+  them on the outer side. Views and slices: the coronal slices through the fibula's head and the outer
+  condyle (the LCL's slice is one of them) and the axial slices from the condyle down to the fibula's
+  head, each found from the fibula and the femur carried by place; medicine reads them on the coronal
+  and axial T2 FS [AUR]. Provisional reading: the dark-band rules (thick, uniformly dark, joining two
+  parts) with these targets. The twelve: none directly.
 - **The other hamstring tendons.** The semitendinosus, a smaller black oval behind the semimembranosus
   tendon on its slice (seen on the proof), and the pes anserinus tendons to the front-inner tibia
-  [LP-MED]. Provisional reading: the semimembranosus tendon's rule, the one behind it; carried along
-  the axial series. The twelve: none directly (Baker's neighbours).
+  [LP-MED]. Kind: tendons, cut across on the axial as black ovals, as the semimembranosus tendon is.
+  Views and slices: the fat-dark axial, from the semimembranosus tendon's slice up toward the condyles,
+  each tendon followed from one slice to the next by place («anatomy is contiguous from slice to
+  slice», §8); the sagittal slices through the back-inner corner by place. Provisional reading: the
+  semimembranosus tendon's rule, the piece behind it. The twelve: none directly (Baker's neighbours).
+- **The two fat pads above the patella, parted.** Meaning: the quadriceps (anterior suprapatellar) and
+  the prefemoral (posterior suprapatellar) fat pads [R-KNEE], «on either side of the suprapatellar
+  recess» [R-EFF], named together now as the suprapatellar fat (§5). Interstitial: the recess between
+  them is the synovial compartment's upper reach, so the synovium's compartment, once found, parts
+  them. On the proof the recess is collapsed: a film of faint white with fat suppressed and a faint
+  dark curve without it (Claude's reading, 2026-10-15). Views and slices: the fat-dark and fat-bright
+  sagittals through the suprapatellar recess, and the axial slices above the patella. Provisional
+  reading: the suprapatellar fat split along the recess's film, the part in front of it the
+  quadriceps pad, the part behind it the prefemoral pad. The twelve: none directly; the recess
+  between them fills in Effusion.
 - **The patella on the axial, the menisci on the sagittal.** Not new parts, but the views medicine
   reads them on (the patellofemoral joint on the axial, the menisci's horns on the sagittal): carried
-  there by place from where each is found.
+  there by place from where each is found, onto the axial slices through the patella and the sagittal
+  slices through each compartment.
 
 ## 7. How to build the next ones
 
 The loop of `docs/HOW_TO_BUILD.md` §7, part by part, in the order of `docs/OBJECTS_AND_CONDITIONS.md`:
 1. Read the part's provisional entry, and medicine's words for it. Ask what it lies between, beside or
    inside, among the parts already found.
-2. Look at the pictures of the proof, at the part's own pixels, on every view that shows it: which
-   view shows it plainly (fat-bright or fat-dark; sagittal, coronal or axial), and which lenses
-   (light, low signal, territories, distance and peaks, the twin, the squint) add up to it and take
-   away what is not it. Never one lens alone.
+2. Look at the pictures of the proof, at the part's own pixels, on every view that shows it, at its
+   best slices there (its entry's views and slices, §6; the collapse, §8): which view shows it
+   plainly (fat-bright or fat-dark; sagittal, coronal or axial), and which lenses (light, low signal,
+   territories, distance and peaks, the twin, the squint) add up to it and take away what is not it.
+   Never one lens alone.
 3. Write that reading as a few descriptions, each one check with a named code, its numbers from
    anatomy, a source or the picture (labelled), its targets the parts already found; draw it on the
    proof before it touches the run, and look.
@@ -218,16 +283,96 @@ The loop of `docs/HOW_TO_BUILD.md` §7, part by part, in the order of `docs/OBJE
    `scripts/run_interiors.py`, look at every picture it reaches, run the gate, commit, and show Rohan.
 5. It is done when it is resolved once. Do not chase the studies where it is a bit off.
 
-## 8. Under review: dimensional collapse and how a slice is chosen
+## 8. The collapse: every part at its best slice, across the five views
 
-Rohan, 2026-10-15: «what do you mean by "all five middle slices"? Read the "what an <object> is
+Rohan, 2026-10-15, asked: «what do you mean by "all five middle slices"? Read the "what an <object> is
 thesis, send a cheap agent to look into the dimensional collapse parts and slice selection parts of
 the information theory parts that are relevant for this as well. I think that you missed the point of
-this part of the thesis, and we need to get to fixing the implementation in another session».
+this part of the thesis, and we need to get to fixing the implementation in another session». Told
+that it meant the one slice the run reads from the middle of each of the proof's five series, he
+answered: «Okay. That is a not-invalid slection. The "middle" is a fine standard first slice to
+select. For other elements that are not obvious in that one slice, etc, that is a fine standard.
+There are five different views (different angles and fat-bright vs fat-dark), and each has multiple
+z-slices. That is where the thing being mined is relevant--discovery of ALL elements of the anatomy at
+their best slices and resolution across the 5 images/3 orientations». His words before it: in the
+input stage's note (`knee.study`, 2026-10-10), «we need ALL the data to be available for each series,
+but we will use dimensional collapse to throw away a solid majority per analysis step, yet stay
+lossless ... *I* decide what gets compressed»; and 2026-10-14, «Is it not obvious which slice to use?
+The one that is able to show the anatomical region needed for identification of each anatomical
+object, and then for diagnosis.» · «are you actually going to re-compute on every single slice?
+Because that's completely wrong».
 
-What the run does now: for most parts it reads each series' middle slice (the floor of half its
-stack, `knee.study.series.selected_slice`), and four parts get a slice of their own (the fibula's,
-largest; the ACL's, the middle slice's neighbour; the LCL's, through its attachment; the
-semimembranosus tendon's, the top of the tibia). The middle slice is the code's choice, not the
-thesis's. What the thesis says about collapsing depth and choosing what to read is recorded below,
-from its own text, for the session that fixes the implementation.
+**What the run does now** (`scripts/run_interiors.py`, read whole 2026-10-15). It reads the lens on
+each series' middle slice, the floor of half its stack (`knee.study.series.selected_slice`), and names
+there every part that slice shows. It makes the squint over every slice of every series once, and
+keeps it; of the squint only the fibula's search reads anything, the tiles' centres and bounds, and
+nothing reads the tiles' light. Four parts not plain on the middle slice get a slice of their own,
+none chosen from the squint: the fibula's, where its region is largest, found by reading the lens's
+territories on a block of every slice that holds it; the ACL's, the middle slice's neighbour on the
+knee's outer side, by place from the header; the LCL's, the coronal slice through its attachment on
+the fibula; and the semimembranosus tendon's, the top of the tibia, found by carrying the leg onto
+each axial slice without reading the lens there. What the next session fixes is his sentence above.
+
+**The thesis's own text.** *What an <Object> Is* is
+`../cell_tracking/docs/pipeline_thesis/paper/what_an_object_is.md`; the information-theory corpus, his
+words with the lead's reading of them, is `../cell_tracking/docs/pipeline_thesis/INFORMATION_THEORY_CORPUS.md`.
+Each section below was read whole on 2026-10-15; its lines are as found then.
+
+- The collapse (the paper's §4, lines 2113–2308): «The first move of **H1** (vision built from the
+  laws) is to stop rereading what the movie's laws hold nearly constant (§3). We call this move **the
+  collapse**. The movie is read as flat two-dimensional stills, one for each lens at its own depth, and
+  time is followed by small shifts from three time points resolved in full.» Its warrant (§4.1): «What
+  is nearly invariant is each cell's own depth ... That invariance does not put the cells in one plane.
+  ... So the collapse makes several flat pictures, each at its own depth.»
+- Each lens at its own depth (§4.2): «Each nucleus is sharpest at its own depth, so a flat picture at a
+  well-chosen depth holds the nuclei there whole. To choose the depths, the system measures how in
+  focus each slice is.» «Each lens stands at its own sharpest slice, and its picture is the recorded
+  light at that slice. There it draws the **bodies** it sees ... A lens with nothing clear to say
+  abstains. Nothing is averaged or merged.» «Two lenses at about one depth read one plane two ways, and
+  each corrects the other's borders. Lenses at different depths are the three-dimensional structure
+  itself.» «So which lenses share a plane changes from plate to plate.»
+- Depth kept as a number (§4.3): «**The composite** keeps depth another way, as a number at each place.
+  ... Bright spots are found through the whole volume at a nucleus's scale. Each is given its own
+  slice: near where it was found, the slice at which the light over a nucleus-sized disc around it is
+  brightest. Every place of the grid is then shown at the slice of its nearest spot, and keeps that
+  slice as a number». «It is also the least clean of the five pictures, so it never pulls a cell and
+  never decides alone: it points.» «Depth is peeled, never reconstructed. Each cell taken leaves the
+  volume through its band, the slices it occupies, together with its halo, and the next round reads
+  again what is left.»
+- The squint (§1.3, lines 290–377; §4.5): «a view's fidelity reduced on purpose, so that the dimension
+  a question reads stands clear of the variation it does not read.» «A squinted view is lossless for
+  what it measures. A tile's median is exactly that tile's median, with no error in it.» «The laws say
+  which reductions are safe: those that flatten only what the laws hold nearly constant». «Each lens is
+  coarse, but the lenses' joint description is precise».
+- What a step removes (§4.6): «In a round each lens draws the whole field from one slice of the 64».
+  «Every loss is taken in a view or in how a reading is written, never in what is kept». «**reading by
+  exclusion**: a reading that is poor at finding a signal can be reliable at saying where the signal is
+  not.» «The collapse turns a four-dimensional search into flat, categorical questions, each asked where
+  the laws say its answer lies.»
+- One object, many views (§1.3): «A squinted view answers one question. An <object> is read through many
+  views, each exact about what it reads. A face is often recorded in two photographs, one from the
+  front and one in profile: two views at right angles.» «No view is the truth alone, and what an
+  <object> is, is what the views recover together.» «Each view is incomplete by construction, and the
+  pair is complete.»
+- The recipe for another domain (§14.1–§14.2, lines 4342–4409): «*Name one lens per term of the law.*»
+  «*Read the priors as regime keys.* The priors, cheap readings of the whole field taken once, point
+  and never decide alone.» Its MRI row: the laws, «A tissue's brightness is set by its magnetic
+  relaxation under the sequence; anatomy is contiguous from slice to slice»; the lenses, «One per
+  sequence».
+- His words in the corpus: «If a domain space is defined and constrained, information reveal in one
+  axis/dimension is *implicitly* information reveal about the whole rest of the domain» (§2, lines
+  84–147); «These lenses are smaller, lossy views of the whole field, and that's a STRENGTH» and
+  «"colliding" doesn't mean "useless", it means what they're seeing are two lossy representations of
+  the same view, which is important and makes it MORE useful» (§4, lines 210–258); «the meaning of what
+  a "cell" signal is at this time point is a holographic prjection of the orthogonal, lossy vector
+  representations of the truth. None is "the truth" in isolation» and «If a cheap measure can tell you
+  only that something *might be* important, then when it measures that something *isn't* important,
+  you can throw it away confidently» (§5, lines 259–318); «if the cells aren't really moving, why
+  pretend they are? Get the position and measure the change. it's the smaller number» (§10, lines
+  504–548).
+
+How this carries onto the knee's five views and their slices (what the knee's depth is, which of its
+lenses stands at which slice, what its composite is) is not stated for the knee in his words. It is
+the next session's to settle with him, from his sentence above and this text. The "views and slices"
+lines of §6 are Claude's provisional readings toward it, to be checked against this text with him;
+they are not that mapping.
