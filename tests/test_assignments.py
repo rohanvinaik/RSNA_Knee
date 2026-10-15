@@ -1,6 +1,7 @@
 """Intent tests for the named objects: air, skin, femur over tibia, the joint, patella, menisci,
 fibula, cartilage, the PCL, the ACL, the MCL, the LCL, the joint's fluid, Hoffa's fat pad, the
-suprapatellar fat, the medial gastrocnemius head and the semimembranosus tendon.
+suprapatellar fat, the medial gastrocnemius head, the semimembranosus tendon, and the patellar and
+quadriceps tendons.
 
 The scene is a small synthetic knee in a coronal frame (rows run inferior, columns run to the left,
 one place per millimetre): air around a leg of soft tissue, a black margin along two sides of the
@@ -18,9 +19,12 @@ from knee.objects.assignments import (
     acl_code,
     acl_on_slice,
     assign_plane,
+    band_joining,
     between_along_the_leg,
     carried_bone,
+    dark_bands,
     end_pieces,
+    extensor_tendons,
     fat_pad_code,
     fibula_block,
     fibula_code,
@@ -33,7 +37,6 @@ from knee.objects.assignments import (
     lcl_attachment,
     lcl_code,
     lcl_on_slice,
-    ligament_joining,
     ligament_on_the_inner_side,
     main_slice,
     margin,
@@ -48,6 +51,7 @@ from knee.objects.assignments import (
     semimembranosus_code,
     semimembranosus_on_slice,
     slice_through,
+    tendon_code,
     tibia_top_slice,
     with_partner,
 )
@@ -442,16 +446,91 @@ def test_the_pcl_is_the_thick_uniformly_dark_band_joining_the_femur_and_the_tibi
     for name, rows in (("femur", slice(0, 30)), ("tibia", slice(45, 80))):
         objects[rows, 10:40] = OBJECT_CODES[name]
         plane[rows, 10:40] = 100.0
-    plane[25:50, 41:48] = (
-        12.0  # a band 7 mm thick behind both bones, at a ligament's light
-    )
+    # a band 7 mm thick behind both bones, at a ligament's light
+    plane[25:50, 41:48] = 12.0
     plane[30:45, 20:22] = 12.0  # a line 2 mm thin between them: no ligament's thickness
     plane[60:70, 50:58] = 12.0  # as dark, but joined to neither bone
-    band = ligament_joining(plane, objects, np.array([1.0, 1.0]))
+    # the band's darkest places, stored as zero: tissue, not the margin
+    plane[34:37, 43:46] = 0.0
+    plane[:, 0:3] = 0.0  # the black margin along the frame
+    spacing = np.array([1.0, 1.0])
+    bands = dark_bands(plane, objects, spacing, margin(plane))
+    femur, tibia = (objects == OBJECT_CODES[name] for name in ("femur", "tibia"))
+    band = band_joining(bands, femur, tibia, spacing)
     assert band[35, 44]
     assert not band[35, 21]
     assert not band[65, 54]
-    assert not band[10, 20]  # the femur's own places are never the band
+    assert not band[10, 20]
+    assert not band[40, 1]
+
+
+def test_the_extensor_tendons_are_the_band_from_the_patella_to_the_tibia_split_at_the_patella():
+    # one place per millimetre, rows running down and columns back, front to the left: the femur
+    # behind, the patella in front of its lower end, the tibia below; one dark band runs down the
+    # front from above the patella, along its front, to the tibia's front
+    plane = np.full((120, 80), 40.0)
+    objects = np.zeros((120, 80), dtype=np.int8)
+    for name, rows, cols in (
+        ("femur", slice(0, 60), slice(40, 75)),
+        ("patella", slice(40, 60), slice(22, 34)),
+        ("tibia", slice(75, 120), slice(20, 75)),
+    ):
+        objects[rows, cols] = OBJECT_CODES[name]
+        plane[rows, cols] = 100.0
+    plane[10:40, 17:23] = 5.0  # above the patella: the quadriceps tendon
+    plane[38:62, 15:22] = 5.0  # along the patella's front
+    plane[60:78, 17:23] = 5.0  # below it, down to the tibia: the patellar tendon
+    plane[64:70, 19:21] = 0.0  # the patellar tendon's darkest places, stored as zero
+    # the fat pad behind it, named first, over the band's back edge
+    objects[62:70, 21:23] = OBJECT_CODES["hoffa_fat_pad"]
+    plane[90:100, 2:8] = 5.0  # as dark, but joined to neither
+    spacing = np.array([1.0, 1.0])
+    bands = dark_bands(plane, objects, spacing, margin(plane))
+    below, above = extensor_tendons(bands, objects, spacing, SAGITTAL)
+    # the patellar tendon, its darkest places and the fat pad's edge too
+    assert below[66, 18] and below[66, 20] and below[65, 22]
+    assert above[20, 20]  # the quadriceps tendon
+    assert not below[50, 18] and not above[50, 18]  # alongside the patella: neither
+    assert not below[50, 25] and not above[50, 25]  # the patella
+    assert not below[95, 5]
+    # without the patella the band has no upper end: neither tendon
+    alone = np.where(objects == OBJECT_CODES["patella"], 0, objects)
+    nothing = extensor_tendons(bands, alone, spacing, SAGITTAL)
+    assert not nothing[0].any() and not nothing[1].any()
+
+
+def test_tendon_code_names_why():
+    assert tendon_code(False, False, True, True) == (
+        "abstain_front_to_back_runs_through_the_plane"
+    )
+    assert tendon_code(True, True, True, True) == (
+        "abstain_not_uniformly_dark_with_fat_suppression"
+    )
+    assert tendon_code(True, False, False, True) == "abstain_no_patella_and_tibia"
+    assert tendon_code(True, False, True, False) == (
+        "abstain_no_dark_band_below_the_patella"
+    )
+    assert tendon_code(True, False, True, False, above=True) == (
+        "abstain_no_dark_band_above_the_patella"
+    )
+    assert tendon_code(True, False, True, True) == "identified"
+
+
+def test_read_alone_a_slice_says_why_it_cannot_name_the_extensor_tendons():
+    plain = assigned(sagittal_scene(), SAGITTAL)
+    suppressed = assigned(sagittal_scene(), SAGITTAL, fat_suppressed=True)
+    coronal = assigned(scene(), CORONAL)
+    for name in ("patellar_tendon", "quadriceps_tendon"):
+        assert plain.codes[name] == "abstain_no_patella_and_tibia"
+        assert suppressed.codes[name] == (
+            "abstain_not_uniformly_dark_with_fat_suppression"
+        )
+        assert coronal.codes[name] == "abstain_front_to_back_runs_through_the_plane"
+    # the bands are kept where the PCL is read, and only there
+    assert plain.bands is not None
+    assert (
+        suppressed.bands is None and coronal.bands is None
+    )  # the femur's own places are never the band
 
 
 def test_with_fat_suppression_or_across_a_coronal_slice_no_pcl_is_named():

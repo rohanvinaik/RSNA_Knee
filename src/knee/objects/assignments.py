@@ -91,13 +91,16 @@ categories of the twelve it relates to (docs/OBJECTS_AND_CONDITIONS.md §6):
      (abstain_marrow_as_dark_as_a_ligament_with_fat_suppression);
   3. the slice names the femur and the tibia (abstain_no_femur_and_tibia);
   4. it is the places whose light over `LIGAMENT_SMOOTH_MM` (uniformly dark, not speckled) is under
-     `LIGAMENT_DARKER` of the femur's marrow, at least `LIGAMENT_THICK_MM` thick (the bones' thin
-     shells drop out), the largest such piece reaching within `SHELL_MM` of both the femur and the
-     tibia (`ligament_joining`) (abstain_no_dark_band_joins_the_bones).
+     `LIGAMENT_DARKER` of the femur's marrow, outside the black margin (a stored zero inside the
+     leg is the darkest tissue there, not the margin), at least `LIGAMENT_THICK_MM` thick (the
+     bones' thin shells drop out): the slice's dark bands (`dark_bands`), of which it is the
+     largest reaching within `SHELL_MM` of both the femur and the tibia (`band_joining`)
+     (abstain_no_dark_band_joins_the_bones).
   It relates to none of the twelve categories directly: it is the ACL's neighbour in the notch.
   Seen also on the proof: on the middle slice it takes in the ACL's lower fibres, which cross in
   front of it in the same dark, and its last stretch down the back of the tibia stays with the
-  dark tissue behind the tibia.
+  dark tissue behind the tibia; where the femur's shell, stored as zero, touches it at the
+  condyle's back, it takes in a thin strip of the shell.
 - ACL: the anterior cruciate ligament, inside the notch from the tibia's front-middle up and back
   to the inner wall of the femur's outer condyle; «less well defined than the PCL», «its bundles
   outlined by surrounding high-intensity structures», and «going lateral to medial, the ACL comes
@@ -226,7 +229,8 @@ categories of the twelve it relates to (docs/OBJECTS_AND_CONDITIONS.md §6):
      (abstain_nothing_below_the_patella).
   It relates to none of the twelve categories directly. Seen also on the proof: its back part,
   tucked between the femur's condyle and the tibia, is named joint, and its top edge is cut level
-  with the patella's lowest place.
+  with the patella's lowest place; the patellar tendon, named after it, takes back the band's
+  places it held at the tendon's back edge.
 - SUPRAPATELLAR FAT: the two fat pads above the patella, the quadriceps (anterior suprapatellar)
   fat pad and the prefemoral (posterior suprapatellar) fat pad, which lie «on either side of the
   suprapatellar recess» (docs/OBJECTS_AND_CONDITIONS.md). Seen on the proof's middle sagittals,
@@ -248,8 +252,46 @@ categories of the twelve it relates to (docs/OBJECTS_AND_CONDITIONS.md §6):
      (abstain_nothing_above_the_patella).
   It relates to none of the twelve categories directly: the recess between its two pads is where
   the joint's fluid gathers in Effusion. Seen also on the proof: the two pads are one name, with
-  the recess's film inside it; the picture's top edge cuts it; and where it meets the patella it
-  takes in a little of the quadriceps tendon. Parting the two pads is owed.
+  the recess's film inside it; the picture's top edge cuts it; and the quadriceps tendon, named
+  after it, takes back the band's places it held at the tendon's back edge. Parting the two pads
+  is owed.
+- PATELLAR TENDON and QUADRICEPS TENDON: the extensor mechanism's two tendons, «The quadriceps
+  tendon, patella and patellar tendon; both tendons uniformly low and best seen on midsagittal
+  images»; «the patellar ligament runs from its apex to the tibial tuberosity», and the quadriceps
+  tendon is «laminated, its layers separated by fat» (docs/OBJECTS_AND_CONDITIONS.md). Seen on the
+  proof's middle sagittals, 2026-10-15: on the T2, one black band, light 0 to 25 against the
+  fat's 280 to 600 on either side, comes down the front of the knee from the picture's top edge
+  to the patella's upper pole, runs along the patella's front, and goes from its lower pole down
+  to the front of the tibia's top, about 3.4 mm thick below the patella; its darkest places are
+  stored as zero. With fat suppression the same band is about 2.5 mm thick between fat suppressed
+  to grey, so over `LIGAMENT_SMOOTH_MM` it is not uniformly dark, and the lens draws it as the
+  border between two of its regions. On the T2 it is one of the dark bands the PCL is read from
+  (`dark_bands`). It is named on the T2 once the patella is laid on from the fat-suppressed slice
+  of the same place, and laid back onto that slice by place, since it is one leg. Their
+  descriptions, each one check with its code (`tendon_code`):
+  1. front to back lies in its slice's plane, as on a sagittal slice
+     (abstain_front_to_back_runs_through_the_plane);
+  2. fat is not suppressed: with it the band is not uniformly dark over the light's reach, and the
+     tendons are laid on from the slice of the same place without it, onto the places nothing
+     holds but the fat pads, the border between the lens's regions included
+     (abstain_not_uniformly_dark_with_fat_suppression);
+  3. the slice names the patella and the tibia, the band's two ends; the patella is named by its
+     light only with fat suppression, so here it is the one laid on from the partner
+     (abstain_no_patella_and_tibia);
+  4. the band is the largest of the slice's dark bands reaching within `SHELL_MM` of both the
+     patella and the tibia (`band_joining`); the patellar tendon is its stretch below the
+     patella's lowest place along the leg, the quadriceps tendon its stretch above the patella's
+     highest, each where no part holds it but the two fat pads beside the patella, which are the
+     rest of the patella's territory outside every part named (`extensor_tendons`)
+     (abstain_no_dark_band_below_the_patella; abstain_no_dark_band_above_the_patella).
+  They relate to none of the twelve categories directly: Hoffa's fat pad lies behind the patellar
+  tendon, and the suprapatellar recess, where Effusion's fluid gathers, behind the quadriceps
+  tendon. Seen also on the proof: the band's stretch along the patella's front, the fibres that
+  pass over it from one tendon to the other, is named neither; the quadriceps tendon's layers are
+  named together, with the line of fat between them, just above the patella, where that line is
+  narrower than the light's reach, and higher up, where it is wider, its thin front layer is not
+  reached; the picture's top edge cuts it; laid onto the fat-suppressed slice, where the band is
+  thinner, the patellar tendon takes in up to 1.5 mm of Hoffa's fat behind it.
 - MEDIAL GASTROCNEMIUS HEAD: the inner head of the calf's big muscle, which arises from the back of
   the femur's medial condyle; «muscle intermediate»; a Baker's cyst lies «between the medial
   gastrocnemius head and the semimembranosus tendon», and medicine reads the back of the knee on
@@ -475,6 +517,8 @@ OBJECT_CODES = {
     "suprapatellar_fat": 19,
     "medial_gastrocnemius": 20,
     "semimembranosus": 21,
+    "patellar_tendon": 22,
+    "quadriceps_tendon": 23,
 }
 CARTILAGES = ("femoral_cartilage", "tibial_cartilage")
 FOUR_NEIGHBOURS = ndi.generate_binary_structure(2, 1)
@@ -492,7 +536,9 @@ class Peak:
 
 @dataclass(frozen=True, slots=True)
 class PlaneAssignment:
-    """The named objects (`OBJECT_CODES`), each object's code, and the peaks they were read from."""
+    """The named objects (`OBJECT_CODES`), each object's code, and the peaks they were read from;
+    and the slice's thick, uniformly dark bands (`dark_bands`), where the PCL's rule read them, for
+    any later part a band names (`extensor_tendons`), so they are read once."""
 
     objects: np.ndarray
     codes: dict[str, str]
@@ -501,6 +547,7 @@ class PlaneAssignment:
     tibia: int | None
     menisci: int
     patella: int | None = None
+    bands: np.ndarray | None = None
 
 
 def margin(plane: np.ndarray) -> np.ndarray:
@@ -644,37 +691,102 @@ def pcl_code(
     return "identified"
 
 
-def ligament_joining(
-    plane: np.ndarray, objects: np.ndarray, spacing_rc: np.ndarray
+def dark_bands(
+    plane: np.ndarray,
+    objects: np.ndarray,
+    spacing_rc: np.ndarray,
+    outside_picture: np.ndarray,
 ) -> np.ndarray:
-    """The thick, uniformly dark band joining the femur and the tibia: the places whose light over
-    `LIGAMENT_SMOOTH_MM` is under `LIGAMENT_DARKER` of the femur's marrow, outside the bones and the
-    black margin, at least `LIGAMENT_THICK_MM` thick; the largest piece of them reaching within
-    `SHELL_MM` of both bones. Empty when no piece joins them."""
+    """The slice's thick, uniformly dark bands, each piece its own label (0 elsewhere): the places
+    whose light over `LIGAMENT_SMOOTH_MM` is under `LIGAMENT_DARKER` of the femur's marrow, outside
+    the femur, the tibia and the black margin (`outside_picture`, from `margin`; a stored zero
+    inside the leg is the darkest tissue, not the margin), at least `LIGAMENT_THICK_MM` thick. All
+    zero when the slice names no femur, or its light is none."""
     femur = objects == OBJECT_CODES["femur"]
     tibia = objects == OBJECT_CODES["tibia"]
-    none = np.zeros(plane.shape, dtype=bool)
-    if not (femur.any() and tibia.any()):
+    none = np.zeros(plane.shape, dtype=np.int32)
+    if not femur.any():
         return none
     light = float(np.median(plane[femur]))
     if light <= 0:
         return none
     size = tuple(int(2 * round(LIGAMENT_SMOOTH_MM / step) + 1) for step in spacing_rc)
     uniform = ndi.median_filter(np.asarray(plane, dtype=np.float64), size=size)
-    dark = (uniform < LIGAMENT_DARKER * light) & (plane > 0) & ~femur & ~tibia
-    pieces, count = ndi.label(thick_parts(dark, spacing_rc, LIGAMENT_THICK_MM))
-    if not count:
+    dark = (uniform < LIGAMENT_DARKER * light) & ~outside_picture & ~femur & ~tibia
+    pieces, _ = ndi.label(thick_parts(dark, spacing_rc, LIGAMENT_THICK_MM))
+    return np.asarray(pieces, dtype=np.int32)
+
+
+def band_joining(
+    bands: np.ndarray, first: np.ndarray, second: np.ndarray, spacing_rc: np.ndarray
+) -> np.ndarray:
+    """Of the dark bands (`dark_bands`), the largest reaching within `SHELL_MM` of both `first` and
+    `second`, two named parts. Empty when none does."""
+    none = np.zeros(bands.shape, dtype=bool)
+    count = int(bands.max(initial=0))
+    if not count or not (first.any() and second.any()):
         return none
-    near_femur = np.asarray(ndi.distance_transform_edt(~femur, sampling=spacing_rc))
-    near_tibia = np.asarray(ndi.distance_transform_edt(~tibia, sampling=spacing_rc))
+    near_first = np.asarray(ndi.distance_transform_edt(~first, sampling=spacing_rc))
+    near_second = np.asarray(ndi.distance_transform_edt(~second, sampling=spacing_rc))
     labels = np.arange(1, count + 1)
-    reach_femur = np.asarray(ndi.minimum(near_femur, pieces, index=labels))
-    reach_tibia = np.asarray(ndi.minimum(near_tibia, pieces, index=labels))
-    sizes = np.bincount(pieces.ravel(), minlength=count + 1)[1:]
-    joining = (reach_femur <= SHELL_MM) & (reach_tibia <= SHELL_MM)
+    reach_first = np.asarray(ndi.minimum(near_first, bands, index=labels))
+    reach_second = np.asarray(ndi.minimum(near_second, bands, index=labels))
+    sizes = np.bincount(bands.ravel(), minlength=count + 1)[1:]
+    joining = (reach_first <= SHELL_MM) & (reach_second <= SHELL_MM)
     if not joining.any():
         return none
-    return pieces == int(labels[joining][np.argmax(sizes[joining])])
+    return bands == int(labels[joining][np.argmax(sizes[joining])])
+
+
+def tendon_code(
+    front_to_back_in_plane: bool,
+    fat_suppressed: bool,
+    ends_named: bool,
+    found: bool,
+    above: bool = False,
+) -> str:
+    """Whether the patellar tendon (or, `above` the patella, the quadriceps tendon) was named, or why
+    not."""
+    if not front_to_back_in_plane:
+        return "abstain_front_to_back_runs_through_the_plane"
+    if fat_suppressed:
+        return "abstain_not_uniformly_dark_with_fat_suppression"
+    if not ends_named:
+        return "abstain_no_patella_and_tibia"
+    if not found:
+        return (
+            "abstain_no_dark_band_above_the_patella"
+            if above
+            else "abstain_no_dark_band_below_the_patella"
+        )
+    return "identified"
+
+
+def extensor_tendons(
+    bands: np.ndarray,
+    objects: np.ndarray,
+    spacing_rc: np.ndarray,
+    basis_lps: np.ndarray,
+) -> tuple[np.ndarray, np.ndarray]:
+    """The patellar and the quadriceps tendon on a sagittal slice: of the dark bands, the one joining
+    the patella and the tibia (`band_joining`), the extensor mechanism's; below the patella's lowest
+    place along the leg, the patellar tendon, and above its highest, the quadriceps tendon, each
+    where no part holds it but the two fat pads beside the patella, which are the rest of its
+    territory outside every part named. Alongside the patella it is neither. Both empty when the
+    slice does not name the patella and the tibia."""
+    patella = objects == OBJECT_CODES["patella"]
+    tibia = objects == OBJECT_CODES["tibia"]
+    band = band_joining(bands, patella, tibia, spacing_rc)
+    none = np.zeros(objects.shape, dtype=bool)
+    if not band.any():
+        return none, none
+    fat = (OBJECT_CODES["hoffa_fat_pad"], OBJECT_CODES["suprapatellar_fat"])
+    open_to_it = band & np.isin(objects, (0, *fat))
+    rows, cols = np.indices(objects.shape)
+    up = basis_lps[2, 0] * rows + basis_lps[2, 1] * cols  # mm toward the head
+    below = open_to_it & (up < float(up[patella].min()))
+    above = open_to_it & (up > float(up[patella].max()))
+    return below, above
 
 
 def acl_code(
@@ -1374,7 +1486,8 @@ def assign_plane(
     fluid_sensitive: bool = False,
 ) -> PlaneAssignment:
     """Name air, skin, femur, tibia, joint, patella, menisci, cartilage, the PCL, the MCL, the
-    joint's fluid, Hoffa's fat pad and the suprapatellar fat on one plane, from its interiors.
+    joint's fluid, Hoffa's fat pad and the suprapatellar fat on one plane, from its interiors; and
+    keep the dark bands the PCL is read from, for the extensor tendons.
 
     `knee` is the header's own word for which knee the scan is, "R", "L" or blank; it sides the
     menisci. `fat_suppressed` and `fluid_sensitive` are the series' own tags; only with fat
@@ -1496,16 +1609,28 @@ def assign_plane(
     objects[tibial] = OBJECT_CODES["tibial_cartilage"]
 
     # PCL: on a sagittal slice without fat suppression, the thick, uniformly dark band joining the
-    # femur and the tibia.
+    # femur and the tibia. The slice's dark bands are kept: the extensor tendons are another of
+    # them, named once the patella is laid on from the fat-suppressed slice of the same place.
     bones_named = femur is not None and tibia is not None
     pcl = np.zeros(plane.shape, dtype=bool)
+    bands = None
     if front_in_plane and not fat_suppressed and bones_named:
-        pcl = ligament_joining(plane, objects, spacing_rc)
+        bands = dark_bands(plane, objects, spacing_rc, outside_picture)
+        pcl = band_joining(
+            bands,
+            objects == OBJECT_CODES["femur"],
+            objects == OBJECT_CODES["tibia"],
+            spacing_rc,
+        )
         pcl &= np.isin(objects, (0, OBJECT_CODES["joint"]))
     codes["pcl"] = pcl_code(
         front_in_plane, fat_suppressed, bones_named, bool(pcl.any())
     )
     objects[pcl] = OBJECT_CODES["pcl"]
+    # PATELLAR and QUADRICEPS TENDONS: named from those bands with the partner's patella
+    # (`extensor_tendons`); read alone, a slice says only why it cannot.
+    for name, above in (("patellar_tendon", False), ("quadriceps_tendon", True)):
+        codes[name] = tendon_code(front_in_plane, fat_suppressed, False, False, above)
 
     # MCL: on a coronal slice, the low signal left on the medial meniscus's side that joins the
     # femur and the tibia.
@@ -1538,7 +1663,7 @@ def assign_plane(
             front_in_plane, fat_suppressed, patella is not None, bool(pad.any()), upward
         )
         objects[pad] = OBJECT_CODES[name]
-    return PlaneAssignment(objects, codes, peaks, femur, tibia, menisci, patella)
+    return PlaneAssignment(objects, codes, peaks, femur, tibia, menisci, patella, bands)
 
 
 def laid_on(

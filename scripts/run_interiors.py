@@ -11,7 +11,10 @@ suppression), the menisci (sided by the header's own word for which knee it is),
 cartilage, the PCL, the MCL, the joint's fluid, Hoffa's fat pad and the suprapatellar fat. Once
 every series of the study is read, each middle slice is read with its partner's, the other sequence's slice of the
 same place (`partner_of`, `read_with_partner`, and `knee.objects.assignments.with_partner`): bones
-both name, where both agree; a part only the partner names, laid on. The arrays the renderers
+both name, where both agree; a part only the partner names, laid on. Then the extensor tendons are
+named on the sagittal slice without fat suppression, where their band is plain, from the dark bands
+its PCL was read from and the patella laid on from its partner, and laid onto that partner
+(`name_the_extensor_tendons`); no lens is read again. The arrays the renderers
 read, and the squint's, are saved per series with their digests in a receipt;
 `object_interiors.draw`, the renderer that drew the proof figure, draws the interiors, and
 `object_assignments.draw` draws the named objects.
@@ -98,6 +101,7 @@ from knee.objects.assignments import (
     acl_on_slice,
     assign_plane,
     carried_bone,
+    extensor_tendons,
     fibula_block,
     fibula_code,
     fibula_on_slice,
@@ -116,6 +120,7 @@ from knee.objects.assignments import (
     semimembranosus_code,
     semimembranosus_on_slice,
     slice_through,
+    tendon_code,
     tibia_top_slice,
     with_partner,
 )
@@ -532,6 +537,56 @@ def name_the_back_of_the_knee(own: Measured, leg: Leg | None) -> str:
     return gastrocnemius_code(
         True, knee, True, True, True, condyle is not None, bool(placed.any())
     )
+
+
+def name_the_extensor_tendons(own: Measured, partner: Measured | None) -> None:
+    """The patellar and quadriceps tendons named on this series' middle slice where their band is
+    plain (their paragraph in `knee.objects.assignments`): a sagittal slice without fat
+    suppression, from the dark bands its PCL was read from (`PlaneAssignment.bands`) and the
+    patella laid on from its partner, the fat-suppressed slice of the same place; then laid onto
+    that partner by place, where its fat pads beside the patella yield to them. Each slice's codes
+    are set; no lens is read again."""
+    reads("naming", ("bands",), "tendons")
+    bands = own.assignment.bands
+    if bands is None:
+        return
+    reads("partner", ("objects",), "tendons")
+    # a copy: the names the slice made alone (`Measured.assignment`) stay as made
+    objects = own.arrays["a1_objects"].copy()
+    patellar, quadriceps = extensor_tendons(
+        bands, objects, np.asarray(own.frame.spacing_rc), own.frame.basis_lps
+    )
+    ends = bool(
+        (objects == OBJECT_CODES["patella"]).any()
+        and (objects == OBJECT_CODES["tibia"]).any()
+    )
+    codes = own.record["assignments"]["codes"]
+    for name, tendon, above in (
+        ("patellar_tendon", patellar, False),
+        ("quadriceps_tendon", quadriceps, True),
+    ):
+        objects[tendon] = OBJECT_CODES[name]
+        codes[name] = tendon_code(True, False, ends, bool(tendon.any()), above)
+    own.arrays["a1_objects"] = objects
+    if not (patellar.any() or quadriceps.any()):
+        return
+    handed("tendons", ("region",))
+    if partner is None:
+        return
+    fat = (OBJECT_CODES["hoffa_fat_pad"], OBJECT_CODES["suprapatellar_fat"])
+    laid = lay_parts(
+        partner,
+        (partner.record, partner.arrays, partner.frame),
+        (own.record, own.arrays, own.frame),
+        ("patellar_tendon", "quadriceps_tendon"),
+        "tendons",
+        fat,
+        # with fat suppression the band is the border between two of the lens's regions
+        onto_borders=True,
+    )
+    for name, code in laid.items():
+        if code is not None:
+            partner.record["assignments"]["codes"][name] = code
 
 
 def semimembranosus_slice(
@@ -954,21 +1009,27 @@ def lcl_slice(
     return lcl_record, arrays, frame
 
 
-def lay_part(
+def lay_parts(
     own: Measured,
     read: tuple[dict, dict[str, np.ndarray], PlaneFrame],
     partner: tuple[dict, dict[str, np.ndarray], PlaneFrame],
-    part: str,
-) -> str | None:
-    """Lay a part the other sequence's slice of the same place names onto this series' slice
-    (`laid_on`), onto this slice's own regions that nothing else holds: "laid_from_its_partner",
-    why it was not laid, or None when nothing was laid."""
+    parts: tuple[str, ...],
+    stage: str,
+    yields: tuple[int, ...] = (),
+    onto_borders: bool = False,
+) -> dict[str, str | None]:
+    """Lay the parts the other sequence's slice of the same place names onto this series' slice
+    (`laid_on`, once for all of them), onto this slice's own regions that nothing else holds but
+    the parts in `yields`, and with `onto_borders` onto the places between its regions too, where
+    its lens leaves a thin dark band out of every region: for each part, "laid_from_its_partner",
+    why it was not laid, or None when nothing was laid. `stage` is the reader the ledger
+    records."""
     record, arrays, frame = read
     _, partner_arrays, partner_frame = partner
-    reads("series", ("slice_thickness_mm",), part)
+    reads("series", ("slice_thickness_mm",), stage)
     thickness = own.series.slice_thickness_mm[record["slice_index"]]
     if thickness is None:
-        return "no_slice_thickness"
+        return dict.fromkeys(parts, "no_slice_thickness")
     plane = arrays["acquired_plane"]
     laid = laid_on(
         partner_arrays["a1_objects"],
@@ -981,14 +1042,20 @@ def lay_part(
         thickness,
     )
     if laid is None:
-        return "not_the_same_place"
-    objects = arrays["a1_objects"]
-    code = OBJECT_CODES[part]
-    placed = (laid == code) & (arrays["b1_labels"] > 0) & (objects == 0)
-    if not placed.any():
-        return None
-    objects[placed] = code
-    return "laid_from_its_partner"
+        return dict.fromkeys(parts, "not_the_same_place")
+    # a copy: a slice's objects may still be the names it made alone
+    objects = arrays["a1_objects"].copy()
+    open_to_them = np.isin(objects, (0, *yields))
+    if not onto_borders:
+        open_to_them &= arrays["b1_labels"] > 0
+    codes: dict[str, str | None] = {}
+    for part in parts:
+        code = OBJECT_CODES[part]
+        placed = (laid == code) & open_to_them
+        objects[placed] = code
+        codes[part] = "laid_from_its_partner" if placed.any() else None
+    arrays["a1_objects"] = objects
+    return codes
 
 
 def find_part(
@@ -1019,7 +1086,7 @@ def find_part(
             partner = partner_of(measured, index)
             at = next((i for i, m in enumerate(measured) if m is partner), None)
             if at in read and read[at][0]["assignments"]["codes"][part] == "identified":
-                laid = lay_part(own, read[index], read[at], part)
+                laid = lay_parts(own, read[index], read[at], (part,), part)[part]
                 codes[part] = laid or codes[part]
         if codes[part] in NAMED:
             handed(part, ("main_slice", "region"))
@@ -1123,13 +1190,17 @@ def measure_study(
         # Each middle slice is read with its partner's, the other sequence's slice of the same
         # place, on the names each made alone (`Measured.assignment`, which this never changes);
         # then saved.
-        for index, own in enumerate(measured):
-            partner = partner_of(measured, index)
+        partners = [partner_of(measured, index) for index in range(len(measured))]
+        for own, partner in zip(measured, partners, strict=True):
             own.record["assignments"]["partner"] = (
                 "none_of_the_other_sequence"
                 if partner is None
                 else read_with_partner(own, partner)
             )
+        # The extensor tendons, on the sagittal slice without fat suppression, from the bands its
+        # PCL was read from and the patella its partner laid on; then laid onto that partner.
+        for own, partner in zip(measured, partners, strict=True):
+            name_the_extensor_tendons(own, partner)
         # The back of the knee, on the series the leg runs through: the study's leg, its bones in
         # the scanner's millimetres, made once where the header names the knee there, and carried
         # onto the slices its parts are named on; the medial head on the middle slice, from the
@@ -1186,6 +1257,13 @@ def measure_study(
                 for r in records
             ):
                 reads("gastrocnemius", ("region",), "draw")
+            # the extensor tendons, which the sagittal middle slices name
+            if any(
+                r["assignments"]["codes"].get(name) in NAMED
+                for r in records
+                for name in ("patellar_tendon", "quadriceps_tendon")
+            ):
+                reads("tendons", ("region",), "draw")
         if drawn:
             for part in sorted(
                 {r["main_slice"]["object"].lower() for r in main_records}
