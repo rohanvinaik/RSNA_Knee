@@ -233,6 +233,18 @@ categories of the twelve it relates to (docs/OBJECTS_AND_CONDITIONS.md §6):
   the large bright pocket behind the patella is resolved. The definition uses anatomical order
   and the existing fluid reading, with no new numerical cutoff. The cavity relates to Effusion,
   the lining to Synovitis. Both are laid onto the twin by the existing physical-place match.
+- JOINT CAPSULE: the sleeve around the joint, here the dark wall outside its side recesses.
+  Descriptions (capsule_code): a coronal slice (abstain_not_a_coronal_slice); fluid bright with
+  fat suppression and fluid sensitivity (abstain_fluid_not_bright_on_this_sequence); a named
+  femur (abstain_no_femur); both named menisci locating the joint's ends
+  (abstain_no_two_menisci_to_locate_the_side_recesses); and a dark outer wall bordering the
+  largest white recess beside the femur outboard of either meniscus
+  (abstain_no_dark_outer_wall_at_the_recesses). Only low signal on the side away from the
+  femur, over the recess's height, within the existing 2 mm shell/contact allowance is returned.
+  This allowance tests contact, not capsule thickness. The mask is kept independently because
+  the capsule and the deep collateral structures can share a place. On the proof the outer wall
+  of the image-left recess is plain; other stretches are not required for this demonstration.
+  The wall relates to Effusion, Synovitis and Baker's as their compartment's boundary.
 - HOFFA'S FAT PAD: the infrapatellar fat pad, which «lies just behind the patellar tendon and
   follows subcutaneous fat on all sequences» (docs/OBJECTS_AND_CONDITIONS.md). Seen on the proof's
   middle sagittals, 2026-10-15: with fat suppression it is the grey, striated triangle below the
@@ -636,6 +648,7 @@ OBJECT_CODES = {
     "muscle": 25,
     "synovium": 26,
     "anterior_synovial_recess": 27,
+    "joint_capsule": 28,
 }
 CARTILAGES = ("femoral_cartilage", "tibial_cartilage")
 # The parts a slice's naming gives a code for (`assign_plane`), in the order it gives them; a part
@@ -661,6 +674,7 @@ SLICE_PARTS = (
     "muscle",
     "anterior_synovial_recess",
     "synovium",
+    "joint_capsule",
 )
 FOUR_NEIGHBOURS = ndi.generate_binary_structure(2, 1)
 
@@ -1530,6 +1544,85 @@ def synovium_code(
     return "identified"
 
 
+def capsule_at_side_recesses(
+    dark: np.ndarray,
+    white: np.ndarray,
+    objects: np.ndarray,
+    basis_lps: np.ndarray,
+    spacing_rc: np.ndarray,
+    measures: Measures | None = None,
+) -> np.ndarray:
+    """The dark outer wall of the side recesses on a coronal slice.
+
+    Each recess lies outboard of its meniscus, above the joint, beside the femur.
+    Of the white bodies reaching the femur through its shell (the existing SHELL_MM
+    contact allowance), use the largest on each side. The capsule is low signal just
+    outside that body, away from the femur, over the body's height. The same contact
+    allowance locates the wall; it does not prescribe capsule thickness.
+    """
+    femur = objects == OBJECT_CODES["femur"]
+    menisci = [
+        objects == OBJECT_CODES[name]
+        for name in ("medial_meniscus", "lateral_meniscus")
+    ]
+    capsule = np.zeros(objects.shape, dtype=bool)
+    if not femur.any() or not all(mask.any() for mask in menisci):
+        return capsule
+    side = (
+        positions_along(objects.shape, basis_lps, 0)
+        if measures is None
+        else measures.along(0)
+    )
+    up = (
+        positions_along(objects.shape, basis_lps, 2)
+        if measures is None
+        else measures.along(2)
+    )
+    ends = sorted(float(np.median(side[mask])) for mask in menisci)
+    joint_bottom = min(float(up[mask].min()) for mask in menisci)
+    near_femur = (
+        distance_from(femur, spacing_rc)
+        if measures is None
+        else measures.distance(femur, spacing_rc)
+    ) <= SHELL_MM
+    pieces, count = ndi.label(white, structure=np.ones((3, 3), dtype=bool))
+    for sign, end in ((-1, ends[0]), (1, ends[1])):
+        candidates = []
+        for region in range(1, count + 1):
+            mask = pieces == region
+            centre = float(np.median(side[mask]))
+            if (centre - end) * sign <= 0 or np.median(up[mask]) < joint_bottom:
+                continue
+            if np.any(mask & near_femur):
+                candidates.append((int(mask.sum()), region))
+        if not candidates:
+            continue
+        _, region = max(candidates)
+        recess = pieces == region
+        outside = (side - np.median(side[recess])) * sign > 0
+        beside = distance_from(recess, spacing_rc) <= SHELL_MM
+        height = (up >= up[recess].min()) & (up <= up[recess].max())
+        capsule |= dark & outside & beside & height
+    return capsule
+
+
+def capsule_code(
+    coronal: bool, fluid_bright: bool, femur: bool, menisci: bool, wall: bool
+) -> str:
+    """Name why the outer capsular wall at the side recesses is or is not found."""
+    if not coronal:
+        return "abstain_not_a_coronal_slice"
+    if not fluid_bright:
+        return "abstain_fluid_not_bright_on_this_sequence"
+    if not femur:
+        return "abstain_no_femur"
+    if not menisci:
+        return "abstain_no_two_menisci_to_locate_the_side_recesses"
+    if not wall:
+        return "abstain_no_dark_outer_wall_at_the_recesses"
+    return "identified"
+
+
 def fat_pad_code(
     front_to_back_in_plane: bool,
     fat_suppressed: bool,
@@ -2228,6 +2321,7 @@ def assign_plane(
     )
     # Located after the sequences have supplied their named parts; these surfaces overlap fluid.
     codes["anterior_synovial_recess"] = codes["synovium"] = "not_named_on_this_slice"
+    codes["joint_capsule"] = "not_named_on_this_slice"
     return PlaneAssignment(
         objects, codes, peaks, femur, tibia, patella, bands, white, in_plane
     )

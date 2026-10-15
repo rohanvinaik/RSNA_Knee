@@ -411,3 +411,18 @@ Checked through `scripts/run_interiors.py --draw` on the proof, with both sagitt
 Pictures and records: `data/pictures/definitions-20261015/assignments/<proof uid>/` and
 `data/measurements/definitions-20261015/interiors/`. This supersedes the earlier statement that the
 synovium has no decision of its own. Full cross-view coverage remains the later collapse work.
+
+### Joint capsule at the side recesses
+
+On the proof's fluid-sensitive coronal slice 15, the image-left bright gutter lies between the
+femur's dark cortex and a second dark line outside it. That outer line is the capsular wall.
+`capsule_at_side_recesses` describes that relation: each side recess is a connected white body
+outboard of its meniscus, at or above the menisci's lower end, reaching the femur through its shell.
+Use the largest eligible body on each side. The wall is measured low signal outside that body on
+the side away from the femur, over the recess's height. The existing 2 mm shell/contact allowance
+locates adjacent tissue; it is not a capsule-thickness estimate or a new fitted number.
+
+The separate mask `a2_joint_capsule` preserves its overlap with collateral structures. It has its
+own decision (`capsule_code`), is serialized through the real run, and is laid onto the coronal
+twin by the shared physical-place match. Both coronal outputs were inspected after the proof run.
+This demonstrates the wall at a side recess, not the capsule's entire envelope across all slices.

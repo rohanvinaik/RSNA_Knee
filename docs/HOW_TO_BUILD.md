@@ -431,3 +431,10 @@ through the real entry point (`docs/RESOLVING_THE_PARTS.md` §9). This supersede
 in the earlier status record. The lining output localizes the cavity boundary against fat; it does
 not report membrane thickness. Its rule uses the existing fluid measurement and anatomical order,
 with no new numerical cutoff, and retains both masks without taking pixels away from existing parts.
+
+The capsule's dark outer wall at the side recesses is also demonstrated on the proof's coronal
+slice, with a separate mask and decision (`RESOLVING_THE_PARTS.md` §9).
+
+Rohan also explicitly clarified: «Remember also, we can add lenses as needed». Add a simple,
+objective measurement when the anatomical distinction needs it; no individual lens must isolate
+the object alone. Keep that measurement shared and check its contribution on the actual pictures.

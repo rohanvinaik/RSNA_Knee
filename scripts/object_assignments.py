@@ -44,6 +44,7 @@ OBJECT_COLOURS = {
     "muscle": (0.98, 0.5, 0.45, 0.5),
     "anterior_synovial_recess": (0.1, 0.75, 1.0, 0.65),
     "synovium": (1.0, 1.0, 0.0, 1.0),
+    "joint_capsule": (1.0, 0.6, 0.2, 1.0),
 }
 
 
@@ -156,6 +157,11 @@ def draw_stages(axes, arrays, record):
         + (
             f"\nYELLOW synovial surface: {codes['synovium']}"
             if "synovium" in codes
+            else ""
+        )
+        + (
+            f"\nORANGE joint capsule: {codes['joint_capsule']}"
+            if "joint_capsule" in codes
             else ""
         )
         + (
