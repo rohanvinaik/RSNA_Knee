@@ -222,10 +222,34 @@ categories of the twelve it relates to (docs/OBJECTS_AND_CONDITIONS.md §6):
      (abstain_fat_as_bright_as_marrow);
   3. the slice names the patella by its own light (abstain_no_patella);
   4. it is the rest of the patella's territory below the patella's lowest place along the leg,
-     outside every part named (`below_the_patella`) (abstain_nothing_below_the_patella).
+     outside every part named (`rest_of_the_patellas_territory`)
+     (abstain_nothing_below_the_patella).
   It relates to none of the twelve categories directly. Seen also on the proof: its back part,
   tucked between the femur's condyle and the tibia, is named joint, and its top edge is cut level
   with the patella's lowest place.
+- SUPRAPATELLAR FAT: the two fat pads above the patella, the quadriceps (anterior suprapatellar)
+  fat pad and the prefemoral (posterior suprapatellar) fat pad, which lie «on either side of the
+  suprapatellar recess» (docs/OBJECTS_AND_CONDITIONS.md). Seen on the proof's middle sagittals,
+  2026-10-15: above the patella, behind the quadriceps tendon's dark band and in front of the
+  femur, the lens draws the fat in one territory with the patella, as it draws Hoffa's below it.
+  The recess between the two pads is collapsed, as it normally is («Normally it holds only a small
+  amount of fluid»): with fat suppression a film of faint white lines, under the fluid's level,
+  and without it a faint dark curve; no lens draws it as a border. So the two pads are named
+  together, as the fat above the patella, and not parted. Its descriptions, each one check with its
+  code (`fat_pad_code`, above the patella):
+  1. front to back lies in its slice's plane, as on a sagittal slice
+     (abstain_front_to_back_runs_through_the_plane);
+  2. fat is suppressed: without it the fat is as bright as the patella's marrow, and it is laid on
+     from the fat-suppressed slice of the same place (`with_partner`)
+     (abstain_fat_as_bright_as_marrow);
+  3. the slice names the patella by its own light (abstain_no_patella);
+  4. it is the rest of the patella's territory above the patella's highest place along the leg,
+     outside every part named (`rest_of_the_patellas_territory`)
+     (abstain_nothing_above_the_patella).
+  It relates to none of the twelve categories directly: the recess between its two pads is where
+  the joint's fluid gathers in Effusion. Seen also on the proof: the two pads are one name, with
+  the recess's film inside it; the picture's top edge cuts it; and where it meets the patella it
+  takes in a little of the quadriceps tendon. Parting the two pads is owed.
 - MENISCI: on a coronal slice, the dark triangles at the two ends of the joint, between the femur's
   condyle and the tibia's plateau («an isosceles triangle on coronal images», low on every
   sequence: docs/OBJECTS_AND_CONDITIONS.md). Seen on the proof's fat-suppressed coronal,
@@ -369,6 +393,7 @@ OBJECT_CODES = {
     "lcl": 16,
     "joint_fluid": 17,
     "hoffa_fat_pad": 18,
+    "suprapatellar_fat": 19,
 }
 CARTILAGES = ("femoral_cartilage", "tibial_cartilage")
 FOUR_NEIGHBOURS = ndi.generate_binary_structure(2, 1)
@@ -851,8 +876,10 @@ def fat_pad_code(
     fat_suppressed: bool,
     patella_named: bool,
     found: bool,
+    above: bool = False,
 ) -> str:
-    """Whether Hoffa's fat pad was named, or why not: each check is one of its descriptions."""
+    """Whether a fat pad beside the patella was named, Hoffa's below it or the suprapatellar fat
+    above it (`above`), or why not: each check is one of its descriptions."""
     if not front_to_back_in_plane:
         return "abstain_front_to_back_runs_through_the_plane"
     if not fat_suppressed:
@@ -860,25 +887,32 @@ def fat_pad_code(
     if not patella_named:
         return "abstain_no_patella"
     if not found:
+        if above:
+            return "abstain_nothing_above_the_patella"
         return "abstain_nothing_below_the_patella"
     return "identified"
 
 
-def below_the_patella(
+def rest_of_the_patellas_territory(
     labels: np.ndarray,
     territory: int,
     patella: np.ndarray,
     objects: np.ndarray,
     basis_lps: np.ndarray,
+    upward: bool = False,
 ) -> np.ndarray:
-    """Hoffa's fat pad: the rest of the patella's territory below the patella's lowest place along
-    the leg, outside every part named. Empty when the patella has no places."""
+    """A fat pad beside the patella: the rest of the patella's territory beyond the patella along
+    the leg, outside every part named; below its lowest place (Hoffa's), or above its highest when
+    `upward` (the suprapatellar fat). Empty when the patella has no places."""
     if not patella.any():
         return np.zeros(labels.shape, dtype=bool)
     rows, cols = np.indices(labels.shape)
     up = basis_lps[2, 0] * rows + basis_lps[2, 1] * cols  # mm toward the head
-    lowest = float(up[patella].min())
-    return (labels == territory) & (up < lowest) & (objects == 0)
+    if upward:
+        beyond = up > float(up[patella].max())
+    else:
+        beyond = up < float(up[patella].min())
+    return (labels == territory) & beyond & (objects == 0)
 
 
 def patella_code(
@@ -1111,7 +1145,7 @@ def assign_plane(
     fluid_sensitive: bool = False,
 ) -> PlaneAssignment:
     """Name air, skin, femur, tibia, joint, patella, menisci, cartilage, the PCL, the MCL, the
-    joint's fluid and Hoffa's fat pad on one plane, from its interiors.
+    joint's fluid, Hoffa's fat pad and the suprapatellar fat on one plane, from its interiors.
 
     `knee` is the header's own word for which knee the scan is, "R", "L" or blank; it sides the
     menisci. `fat_suppressed` and `fluid_sensitive` are the series' own tags; only with fat
@@ -1262,15 +1296,19 @@ def assign_plane(
     codes["joint_fluid"] = fluid_code(fluid_bright, bones_named, bool(fluid.any()))
     objects[fluid] = OBJECT_CODES["joint_fluid"]
 
-    # HOFFA'S FAT PAD: with fat suppression, the rest of the patella's territory below it.
-    hoffa = np.zeros(plane.shape, dtype=bool)
-    if front_in_plane and fat_suppressed and patella is not None:
-        patella_places = objects == OBJECT_CODES["patella"]
-        hoffa = below_the_patella(labels, patella, patella_places, objects, basis_lps)
-    codes["hoffa_fat_pad"] = fat_pad_code(
-        front_in_plane, fat_suppressed, patella is not None, bool(hoffa.any())
-    )
-    objects[hoffa] = OBJECT_CODES["hoffa_fat_pad"]
+    # HOFFA'S FAT PAD and the SUPRAPATELLAR FAT: with fat suppression, the rest of the patella's
+    # territory below it and above it.
+    patella_places = objects == OBJECT_CODES["patella"]
+    for name, upward in (("hoffa_fat_pad", False), ("suprapatellar_fat", True)):
+        pad = np.zeros(plane.shape, dtype=bool)
+        if front_in_plane and fat_suppressed and patella is not None:
+            pad = rest_of_the_patellas_territory(
+                labels, patella, patella_places, objects, basis_lps, upward
+            )
+        codes[name] = fat_pad_code(
+            front_in_plane, fat_suppressed, patella is not None, bool(pad.any()), upward
+        )
+        objects[pad] = OBJECT_CODES[name]
     return PlaneAssignment(objects, codes, peaks, femur, tibia, menisci, patella)
 
 
@@ -1328,9 +1366,10 @@ def with_partner(
     A bone both name is named where both agree, and where the partner's picture does not reach
     (`UNSEEN`: it has no say there); not at all where they share no place. A part only the partner
     names (the patella, the menisci, the cartilage, the PCL, the MCL, the joint's fluid, Hoffa's fat
-    pad) is laid on from it, onto this slice's own interiors that nothing else holds; the patella
-    only where it holds this slice's own peak in front of the femur, so the two lenses agree on
-    where it is. The joint is then again what lies between the bones along the leg.
+    pad, the suprapatellar fat) is laid on from it, onto this slice's own interiors that nothing
+    else holds; the patella only where it holds this slice's own peak in front of the femur, so
+    the two lenses agree on where it is. The joint is then again what lies between the bones along
+    the leg.
     """
     objects, codes = assignment.objects.copy(), dict(assignment.codes)
     for name in BONES:
@@ -1367,6 +1406,7 @@ def with_partner(
         ("mcl", ("mcl",)),
         ("joint_fluid", ("joint_fluid",)),
         ("hoffa_fat_pad", ("hoffa_fat_pad",)),
+        ("suprapatellar_fat", ("suprapatellar_fat",)),
     ):
         if codes.get(name) in NAMED or partner_codes.get(name) not in NAMED:
             continue
