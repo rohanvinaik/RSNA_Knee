@@ -91,6 +91,14 @@ here.
 - One leg, one set of objects: a part found in one view of the leg is the same part in every other
   view of it, so it is carried there by place. «It's literally the same leg, obviously the object
   would be the same in both views. That's the WHOLE thesis»
+- Each part is an «<object>»: «Each part of the anatomy should be resolvable as an "<object>" (in
+  the parlance of my thesis), a set of descriptions that describe the anatomical object as it
+  appears in the images we have been given, the knee scans»; «Then do that. Properly.
+  Deterministically. As I explained.» In practice: a part's paragraph in the module note of
+  `src/knee/objects/assignments.py` is a numbered set of descriptions of how it appears in these
+  scans, each one check with its named abstain code, and the category of the twelve it relates
+  to; the ACL's paragraph is the worked example. The descriptions and the code say the same
+  thing: every description is checked, and every check is described.
 - Medicine's rules are the rules: «"define rules to discriminate between objects in a field" is
   LITERALLY how medicine itself does it». Draft the domain knowledge yourself («This is basic domain
   knowledge. look it up»).
@@ -168,26 +176,31 @@ listening»:
 ## Where it stands, 2026-10-14
 Check `git log` first; the run prints what each study named ("named, by series"), and the module
 note of `src/knee/objects/assignments.py` has a paragraph for each rule.
-- Resolved on the proof study (commit `157fc2f`), on the middle slices: air, skin, femur, tibia,
+- Resolved on the proof study (commit `5c8e7d1`), on the middle slices: air, skin, femur, tibia,
   bone marrow (the inside of each bone named), the joint, the patella, both menisci (sided by the
-  header), the articular cartilage, the PCL; and the fibula on its main slice (the T2 sagittal's
-  slice 30). The patella, the menisci, the cartilage and the PCL are each found on one sequence and
-  laid onto the other sequence's slice of the same place.
-- Next, in the objects document's order: the ACL; the MCL; the LCL (on its own main slice); the
-  joint's fluid and recesses, and the synovium if the pictures hold it; the fat pads (Hoffa's, and
-  the two above the patella); the back of the knee (the medial gastrocnemius head, the
-  semimembranosus tendon); the quadriceps and patellar tendons; the fat under the skin, and muscle.
-  Then the parts that need their own main slices (the menisci on the sagittal, the patella on the
-  axial). Diagnosis only when he says.
+  header), the articular cartilage, the PCL; the fibula on its main slice (the T2 sagittal's slice
+  30); and the ACL on its own slice, the middle slice's neighbour on the knee's outer side (named
+  on the fat-suppressed sagittal's slice 19 and laid onto the T2's). The patella, the menisci, the
+  cartilage, the PCL and the ACL are each found on one sequence and laid onto the other sequence's
+  slice of the same place.
+- Next, in the objects document's order: the MCL; the LCL (on its own main slice); the joint's
+  fluid and recesses, and the synovium if the pictures hold it; the fat pads (Hoffa's, and the two
+  above the patella); the back of the knee (the medial gastrocnemius head, the semimembranosus
+  tendon); the quadriceps and patellar tendons; the fat under the skin, and muscle. Then the parts
+  that need their own main slices (the menisci on the sagittal, the patella on the axial).
+  Diagnosis only when he says.
 - Still owed: where the header names no knee, look for the fibula on both sides and let its side
   name the outer one (the second half of the plan for siding the menisci); the fibula is not yet
-  laid onto the fat-suppressed sagittal's slice of the same place (Law 9); its main slice is found
-  by reading the lens on its block in every slice, not from the squint (§4); and §5's one
-  coherent operation: the run prints the values that no stage reads ("produced and read by no
-  stage"), and on 2026-10-14 there were many.
+  laid onto the fat-suppressed sagittal's slice of the same place (Law 9); the fibula's main slice
+  is found by reading the lens on its block in every slice, and the ACL's is chosen by place from
+  the header, neither from the squint (§4); the parts resolved before the ACL are described in
+  prose, not yet as the numbered set of descriptions the ACL's paragraph is (§4, «<object>»); and
+  §5's one coherent operation: the run prints the values that no stage reads ("produced and read
+  by no stage"), and on 2026-10-14 there were many.
 - Over-reaches stated in the module note, not chased: the cartilage takes in the notch roof's lining
-  and the fluid down the femur's outer side; the PCL takes in some dark tissue round it and leaves
-  its last stretch down the tibia.
+  and the fluid down the femur's outer side; on the middle slice the PCL takes in the ACL's lower
+  fibres, which cross in front of it, and leaves its last stretch down the tibia; the ACL takes in
+  the fluid round it and a patch toward the tibia, and leaves its top end at the femur.
 - Nothing is pushed; ask before pushing.
 
 ## The record, 2026-10-14
@@ -231,6 +244,7 @@ note of `src/knee/objects/assignments.py` has a paragraph for each rule.
 | «...yeah. Duh. That's what I've been saying this whole time. Why would that not be valid? It's literally the same leg, obviously the object would be the same in both views. That's the WHOLE thesis» | Called the step that carries a part between two scans of the same slices its own invention, and offered to take it out | §4: one leg, one set of objects |
 | «Finally, you're listening. Persist THIS understanding in the documentation pre-compact» | (the cartilage and the PCL, done by §7's loop) | §2's after-compaction steps, §7, "Where it stands" |
 | «Do the conversation read and the photo look steps again. i need you to connect the epistemology from the conversation to the literal photo output from the current stage we have. Otherwise you don't get the idea here, why it is common sense, why this is a SOLVED problem I've handed you, and you simply need to do some end-stage identity match and wiring» | After the compaction, summed up what to do as a list of steps, without saying what the lens pictures already show | §2: look at the lens pictures with the conversation in mind; what is left is naming the parts and wiring them in |
+| «Um, reading it whole? Claude, it's over 100 pages long. Why do you think I haven't told you to read it whole before now?» | Started to read his whole paper on what an object is, over 100 pages, to learn what «<object>» means, when his message had just defined it | Reading whole means the whole unit he points to, such as the section he names; where he defines a term in his message, his definition is the one used (§4, «<object>») |
 
 Side notes he relayed the same day, each a lapse a self-check would have caught: the pipeline read
 only the middle slice; the menisci were unsided; the read-first rule lived only in Claude's memory;
