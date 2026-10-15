@@ -49,9 +49,10 @@ THE BACK OF THE KNEE is named on the series the leg runs through, an axial one. 
 names the knee there, the femur and the tibia named on the study's middle slices where the leg
 runs in the plane are put in the scanner's millimetres once, with the notch's plane from the
 middle sagittal slice (`leg_of`, the `leg` product), and carried by place onto each slice a part
-is named on (`carry_onto`, the `carried` product). The medial gastrocnemius head is named on the
-middle slice, whose lens the run has already read, behind the bone's inner condyle
-(`name_the_back_of_the_knee`), before the records are saved. The semimembranosus tendon is named
+is named on (`carry_onto`, the `carried` product). Both gastrocnemius heads are named on the
+middle slice, whose lens the run has already read, each behind its corresponding condyle on
+its side of the notch (`name_the_back_of_the_knee`), sharing the carried leg, before the records
+are saved. The semimembranosus tendon is named
 on its own slice, the top of the tibia just below the joint line, found by carrying the leg onto
 each slice of the series (`semimembranosus_slice`); the lens is read once more there
 (`semimembranosus.lens_readings`), and the tendon is laid onto the other sequence's slice of the
@@ -711,13 +712,16 @@ def carry_onto(
     return carried
 
 
-def name_the_back_of_the_knee(own: Measured, leg: Leg | None) -> str:
-    """The medial gastrocnemius head named on this series' middle slice (its paragraph in
+def name_the_back_of_the_knee(own: Measured, leg: Leg | None) -> dict[str, str]:
+    """Both gastrocnemius heads named on this series' middle slice (their paragraphs in
     `knee.objects.assignments`), from the lens the run has already read there and the study's leg
     carried onto it (`carry_onto`), which is carried only once its first three descriptions hold,
-    so nothing is carried that no part reads; its code, or why the bones were not carried. No
-    lens is read again."""
+    so nothing is carried that no part reads; each head's code, or why the bones were not carried.
+    Both use the same operations on opposite physical sides. No lens is read again."""
     assigned = own.record["assignments"]
+    names = ("medial_gastrocnemius", "lateral_gastrocnemius")
+    for name in names:
+        assigned[name] = None
     knee = assigned["knee"]
     reads("series", ("row",), "gastrocnemius")
     reads("naming", ("in_plane",), "gastrocnemius")
@@ -726,12 +730,14 @@ def name_the_back_of_the_knee(own: Measured, leg: Leg | None) -> str:
     code = gastrocnemius_code(
         not own.assignment.in_plane[2], knee, fat_suppressed, True, True, True, True
     )
-    if code != "identified" or leg is None:
-        return code
+    if code != "identified":
+        return dict.fromkeys(names, code)
+    if leg is None:
+        return dict.fromkeys(names, "abstain_no_bone_carried")
     reads("series", ("slice_thickness_mm",), "gastrocnemius")
     thickness = own.series.slice_thickness_mm[own.record["slice_index"]]
     if thickness is None:
-        return "no_slice_thickness"
+        return dict.fromkeys(names, "no_slice_thickness")
     carried = carry_onto(
         leg,
         own.series,
@@ -744,31 +750,43 @@ def name_the_back_of_the_knee(own: Measured, leg: Leg | None) -> str:
     bone = carried.femur | carried.tibia
     notch = carried.toward_left_mm
     if not bone.any() or notch is None:
-        return gastrocnemius_code(
+        code = gastrocnemius_code(
             True, knee, True, bool(bone.any()), notch is not None, False, False
         )
+        return dict.fromkeys(names, code)
     reads("naming", ("peaks",), "gastrocnemius")
     reads("interiors", ("labels",), "gastrocnemius")
     labels = own.arrays["b1_labels"]
+    peaks = own.assignment.peaks
     # the inner side is toward the other knee: the patient's left for a right knee
     inner_mm = notch if knee == "R" else -notch
-    condyle = inner_condyle(own.assignment.peaks, labels, bone, inner_mm)
-    head = np.zeros(labels.shape, dtype=bool)
-    if condyle is not None:
-        head = gastrocnemius_head(
-            own.assignment.peaks, labels, bone, condyle, carried.back_mm, inner_mm
-        )
     # a copy: the names the slice made alone (`Measured.assignment`) stay as made
     objects = own.arrays["a1_objects"].copy()
-    placed = head & (objects == 0)
-    objects[placed] = OBJECT_CODES["medial_gastrocnemius"]
+    codes = {}
+    lateral_codes = {
+        "abstain_no_inner_condyle": "abstain_no_outer_condyle",
+        "abstain_no_body_behind_the_inner_condyle": "abstain_no_body_behind_the_outer_condyle",
+    }
+    placed_any = False
+    for name, toward in ((names[0], inner_mm), (names[1], -inner_mm)):
+        condyle = inner_condyle(peaks, labels, bone, toward)
+        head = np.zeros(labels.shape, dtype=bool)
+        if condyle is not None:
+            head = gastrocnemius_head(
+                peaks, labels, bone, condyle, carried.back_mm, toward
+            )
+        placed = head & (objects == 0)
+        objects[placed] = OBJECT_CODES[name]
+        assigned[name] = int(labels[head].max()) if head.any() else None
+        placed_any |= bool(placed.any())
+        code = gastrocnemius_code(
+            True, knee, True, True, True, condyle is not None, bool(placed.any())
+        )
+        codes[name] = lateral_codes.get(code, code) if name == names[1] else code
     own.arrays["a1_objects"] = objects
-    assigned["medial_gastrocnemius"] = int(labels[head].max()) if head.any() else None
-    if placed.any():
+    if placed_any:
         handed("gastrocnemius", ("region",))
-    return gastrocnemius_code(
-        True, knee, True, True, True, condyle is not None, bool(placed.any())
-    )
+    return codes
 
 
 def name_the_extensor_tendons(own: Measured, partner: Measured | None) -> None:
@@ -1694,7 +1712,7 @@ def measure_study(
             name_joint_boundaries(own, partner)
         # The back of the knee, on the series the leg runs through: the study's leg, its bones in
         # the scanner's millimetres, made once where the header names the knee there, and carried
-        # onto the slices its parts are named on; the medial head on the middle slice, from the
+        # onto the slices its parts are named on; both heads on the middle slice, from the
         # lens already read there, before the records are saved, so it is saved and drawn.
         leg = None
         reads("naming", ("in_plane",), "leg")
@@ -1705,7 +1723,7 @@ def measure_study(
         ):
             leg = leg_of(measured)
         for own in measured:
-            own.record["assignments"]["codes"]["medial_gastrocnemius"] = (
+            own.record["assignments"]["codes"].update(
                 name_the_back_of_the_knee(own, leg)
             )
         # The fibula found on its main slice is handed to the LCL, which ends on it: the first
@@ -1748,8 +1766,9 @@ def measure_study(
             reads("partner", ("objects", "codes"), "draw")
             # the back of the knee's part, which a middle slice the leg runs through names
             if any(
-                r["assignments"]["codes"].get("medial_gastrocnemius") == "identified"
+                r["assignments"]["codes"].get(name) == "identified"
                 for r in records
+                for name in ("medial_gastrocnemius", "lateral_gastrocnemius")
             ):
                 reads("gastrocnemius", ("region",), "draw")
             # the extensor tendons, which the sagittal middle slices name
