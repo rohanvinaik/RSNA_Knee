@@ -34,6 +34,7 @@ OBJECT_COLOURS = {
     "lcl": (1.0, 0.3, 0.0, 0.8),
     "joint_fluid": (0.55, 0.85, 1.0, 0.85),
     "hoffa_fat_pad": (1.0, 0.75, 0.45, 0.65),
+    "suprapatellar_fat": (1.0, 0.95, 0.4, 0.6),
 }
 
 
@@ -111,6 +112,11 @@ def draw_stages(axes, arrays, record):
         + (
             f"\nAPRICOT Hoffa's fat pad: {codes['hoffa_fat_pad']}"
             if "hoffa_fat_pad" in codes
+            else ""
+        )
+        + (
+            f"\nLEMON suprapatellar fat: {codes['suprapatellar_fat']}"
+            if "suprapatellar_fat" in codes
             else ""
         ),
         fontsize=8,
