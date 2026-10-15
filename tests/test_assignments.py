@@ -1,6 +1,6 @@
 """Intent tests for the named objects: air, skin, femur over tibia, the joint, patella, menisci,
-fibula, cartilage, the PCL, the ACL, the MCL, the LCL, the joint's fluid, Hoffa's fat pad and the
-suprapatellar fat.
+fibula, cartilage, the PCL, the ACL, the MCL, the LCL, the joint's fluid, Hoffa's fat pad, the
+suprapatellar fat and the medial gastrocnemius head.
 
 The scene is a small synthetic knee in a coronal frame (rows run inferior, columns run to the left,
 one place per millimetre): air around a leg of soft tissue, a black margin along two sides of the
@@ -26,6 +26,9 @@ from knee.objects.assignments import (
     fibula_code,
     fibula_on_slice,
     fluid_code,
+    gastrocnemius_code,
+    gastrocnemius_head,
+    inner_condyle,
     laid_on,
     lcl_attachment,
     lcl_code,
@@ -648,6 +651,93 @@ def test_the_region_holding_most_of_the_places_is_the_one_that_holds_them():
     places = np.array([[False, True, True, True], [True, False, True, False]])
     assert region_holding(labels, places).tolist() == (labels == 2).tolist()
     assert not region_holding(labels, np.zeros(labels.shape, dtype=bool)).any()
+
+
+def back_of_knee_scene() -> tuple[np.ndarray, tuple[Peak, ...]]:
+    """An axial slice's regions at one place per millimetre, rows toward the back, columns toward
+    the patient's left, the notch at column 40: the front of the knee (1); the femur's two condyles,
+    toward the patient's right (2) and left (3); and behind them the two heads of the calf's muscle
+    (4, 5). Their peaks, the deepest first, as the lens finds them on the proof: the front, the
+    condyles, then the muscles."""
+    labels = np.zeros((60, 80), dtype=np.int32)
+    labels[0:15, 10:70] = 1  # the front
+    labels[15:35, 10:38] = 2  # the condyle toward the right
+    labels[15:35, 42:70] = 3  # the condyle toward the left
+    labels[38:58, 10:38] = 4  # the head behind the right-hand condyle
+    labels[38:58, 42:70] = 5  # the head behind the left-hand condyle
+    peaks = (
+        Peak(1, 17.0, (8, 40), 0.0),
+        Peak(3, 16.0, (25, 56), 0.0),
+        Peak(2, 15.0, (25, 24), 0.0),
+        Peak(4, 12.0, (48, 24), 0.0),
+        Peak(5, 10.0, (48, 56), 0.0),
+    )
+    return labels, peaks
+
+
+def test_the_medial_gastrocnemius_head_is_the_body_behind_the_inner_condyle():
+    labels, peaks = back_of_knee_scene()
+    rows, cols = np.indices(labels.shape)
+    back, toward_left = rows.astype(float), cols - 40.0
+    bone = np.zeros(labels.shape, dtype=bool)
+    # the femur carried from a coronal slice, across both condyles
+    bone[25, 12:68] = True
+    # a right knee: the inner side is toward the patient's left
+    condyle = inner_condyle(peaks, labels, bone, toward_left)
+    assert condyle is not None and condyle.territory == 3
+    head = gastrocnemius_head(peaks, labels, bone, condyle, back, toward_left)
+    assert head[48, 56] and head.sum() == 20 * 28
+    # a left knee: the inner side is toward the patient's right
+    condyle = inner_condyle(peaks, labels, bone, -toward_left)
+    assert condyle is not None and condyle.territory == 2
+    assert gastrocnemius_head(peaks, labels, bone, condyle, back, -toward_left)[48, 24]
+    # where no carried bone lies on the inner side, there is no inner condyle to stand behind
+    outer_only = np.zeros(labels.shape, dtype=bool)
+    outer_only[25, 12:38] = True
+    assert inner_condyle(peaks, labels, outer_only, toward_left) is None
+
+
+def test_neither_a_bones_region_nor_one_in_front_is_the_medial_gastrocnemius_head():
+    labels, peaks = back_of_knee_scene()
+    rows, cols = np.indices(labels.shape)
+    back, toward_left = rows.astype(float), cols - 40.0
+    bone = np.zeros(labels.shape, dtype=bool)
+    bone[25, 12:68] = True
+    condyle = inner_condyle(peaks, labels, bone, toward_left)
+    assert condyle is not None
+    # the front lies on the inner side of a notch at column 30, but in front of the condyle
+    moved = cols - 30.0
+    assert gastrocnemius_head(peaks, labels, bone, condyle, back, moved)[48, 56]
+    assert not gastrocnemius_head(peaks, labels, bone, condyle, back, moved)[8, 40]
+    # a region holding a carried bone place is the bone's, never the muscle
+    bone[50, 60] = True
+    assert not gastrocnemius_head(peaks, labels, bone, condyle, back, toward_left).any()
+
+
+def test_gastrocnemius_code_names_why():
+    assert gastrocnemius_code(False, "R", True, True, True, True, True) == (
+        "abstain_leg_runs_in_the_plane"
+    )
+    assert gastrocnemius_code(True, "", True, True, True, True, True) == (
+        "abstain_header_names_no_knee"
+    )
+    # without fat suppression the fat between the muscles is bright and draws no border
+    assert gastrocnemius_code(True, "R", False, True, True, True, True) == (
+        "abstain_not_parted_from_the_fat_without_fat_suppression"
+    )
+    assert gastrocnemius_code(True, "L", True, False, True, True, True) == (
+        "abstain_no_bone_carried"
+    )
+    assert gastrocnemius_code(True, "R", True, True, False, True, True) == (
+        "abstain_no_middle_sagittal_slice"
+    )
+    assert gastrocnemius_code(True, "R", True, True, True, False, True) == (
+        "abstain_no_inner_condyle"
+    )
+    assert gastrocnemius_code(True, "R", True, True, True, True, False) == (
+        "abstain_no_body_behind_the_inner_condyle"
+    )
+    assert gastrocnemius_code(True, "R", True, True, True, True, True) == "identified"
 
 
 def test_lcl_code_names_why():

@@ -250,6 +250,38 @@ categories of the twelve it relates to (docs/OBJECTS_AND_CONDITIONS.md §6):
   the joint's fluid gathers in Effusion. Seen also on the proof: the two pads are one name, with
   the recess's film inside it; the picture's top edge cuts it; and where it meets the patella it
   takes in a little of the quadriceps tendon. Parting the two pads is owed.
+- MEDIAL GASTROCNEMIUS HEAD: the inner head of the calf's big muscle, which arises from the back of
+  the femur's medial condyle; «muscle intermediate»; a Baker's cyst lies «between the medial
+  gastrocnemius head and the semimembranosus tendon», and medicine reads the back of the knee on
+  the fat-suppressed axial (docs/OBJECTS_AND_CONDITIONS.md). Seen on the proof's fat-suppressed
+  axial, 2026-10-15: behind the femur's inner condyle, the muscle's big grey body, the popliteal
+  vessels on its outer side and, on its inner side, a thin dark line, its fascia, beyond which lie
+  the dark fat of the knee's back-inner corner and the round dark tendons in it. With fat
+  suppressed the fat between the muscles is dark, and the lens draws the muscle as a region of its
+  own with its peak in the muscle, and the condyle, with the corner's fat, as another; without it
+  the fat is bright and draws no border: on the proof's T1 coronal, behind the condyles, the lens
+  draws the two heads and the fat between them as one region. It is named on the axial's middle
+  slice, whose lens the run has already read, by these descriptions, each one check with its code
+  (`gastrocnemius_code`):
+  1. the leg runs through its slice's plane, as on an axial slice, where the muscles of the back
+     of the knee are cut across (abstain_leg_runs_in_the_plane);
+  2. the header names the knee, so its inner side is known (abstain_header_names_no_knee);
+  3. fat is suppressed, so the fat between the muscles is dark and the lens draws each muscle as a
+     body of its own (abstain_not_parted_from_the_fat_without_fat_suppression);
+  4. the femur and the tibia named on the study's middle slices where the leg runs in the plane
+     are carried here by place, since it is one leg (`places_on_slice`); the regions the lens draws
+     that hold their places are the bones' regions here (abstain_no_bone_carried);
+  5. the notch, where the middle sagittal slice passes, parts the knee's inner side from its outer
+     (abstain_no_middle_sagittal_slice);
+  6. the bone's inner condyle is the bones' region with the deepest peak on the knee's inner side
+     of the notch (`inner_condyle`) (abstain_no_inner_condyle);
+  7. its body is the region the lens draws, not the bones', whose peak lies on the knee's inner
+     side of the notch and behind the inner condyle's peak; the deepest such
+     (`gastrocnemius_head`) (abstain_no_body_behind_the_inner_condyle).
+  It relates to Baker's: the cyst lies between it and the semimembranosus tendon. Seen also on the
+  proof: the region takes in the popliteal vessels on its outer side, the tissue behind the notch
+  above it, and a thin strip under the skin along the back of the leg; the lateral head, the same
+  body on the knee's outer side, the lens draws as a region of its own, and it is not named.
 - MENISCI: on a coronal slice, the dark triangles at the two ends of the joint, between the femur's
   condyle and the tibia's plateau («an isosceles triangle on coronal images», low on every
   sequence: docs/OBJECTS_AND_CONDITIONS.md). Seen on the proof's fat-suppressed coronal,
@@ -305,10 +337,12 @@ what lies between the bones.
 
 The leg runs along the patient's superior axis, front to back along the anterior axis, and side to
 side along the left axis, all read from the slice's own frame. Where the leg's axis does not lie in
-the plane (an axial slice), the femur, tibia and joint are not named; where the side-to-side axis
-does not (a sagittal slice), the menisci are not; where the front-to-back axis does not (a coronal
-slice), the patella is not. The black margin the reconstruction never filled is outside the
-picture, so nothing is named in it. Nothing here draws; the run's renderer draws what this returns.
+the plane (an axial slice), the femur, tibia and joint are not named, and the bones of the slices
+where it does lie are carried there by place to name the back of the knee; where the side-to-side
+axis does not (a sagittal slice), the menisci are not; where the front-to-back axis does not (a
+coronal slice), the patella is not. The black margin the reconstruction never filled is outside
+the picture, so nothing is named in it. Nothing here draws; the run's renderer draws what this
+returns.
 """
 
 from dataclasses import dataclass
@@ -394,6 +428,7 @@ OBJECT_CODES = {
     "joint_fluid": 17,
     "hoffa_fat_pad": 18,
     "suprapatellar_fat": 19,
+    "medial_gastrocnemius": 20,
 }
 CARTILAGES = ("femoral_cartilage", "tibial_cartilage")
 FOUR_NEIGHBOURS = ndi.generate_binary_structure(2, 1)
@@ -913,6 +948,70 @@ def rest_of_the_patellas_territory(
     else:
         beyond = up < float(up[patella].min())
     return (labels == territory) & beyond & (objects == 0)
+
+
+def gastrocnemius_code(
+    leg_through_plane: bool,
+    knee: str,
+    fat_suppressed: bool,
+    bone_carried: bool,
+    notch: bool,
+    condyle: bool,
+    found: bool,
+) -> str:
+    """Whether the medial gastrocnemius head was named, or why not: each check is one of its
+    descriptions."""
+    if not leg_through_plane:
+        return "abstain_leg_runs_in_the_plane"
+    if knee not in ("R", "L"):
+        return "abstain_header_names_no_knee"
+    if not fat_suppressed:
+        return "abstain_not_parted_from_the_fat_without_fat_suppression"
+    if not bone_carried:
+        return "abstain_no_bone_carried"
+    if not notch:
+        return "abstain_no_middle_sagittal_slice"
+    if not condyle:
+        return "abstain_no_inner_condyle"
+    if not found:
+        return "abstain_no_body_behind_the_inner_condyle"
+    return "identified"
+
+
+def inner_condyle(
+    peaks: tuple[Peak, ...], labels: np.ndarray, bone: np.ndarray, inner_mm: np.ndarray
+) -> Peak | None:
+    """The bone's inner condyle on a slice the leg runs through: of the regions the lens draws that
+    hold the bones' places carried there (`bone`), the one with the deepest peak on the knee's
+    inner side of the notch (`inner_mm`, each place's distance toward that side). None when no
+    bone's region has its peak there."""
+    regions = np.unique(labels[bone & (labels > 0)])
+    for peak in peaks:  # the deepest first
+        if np.isin(peak.territory, regions) and inner_mm[peak.peak_rc] > 0:
+            return peak
+    return None
+
+
+def gastrocnemius_head(
+    peaks: tuple[Peak, ...],
+    labels: np.ndarray,
+    bone: np.ndarray,
+    condyle: Peak,
+    back_mm: np.ndarray,
+    inner_mm: np.ndarray,
+) -> np.ndarray:
+    """The medial gastrocnemius head on a slice the leg runs through: of the regions the lens draws
+    that hold none of the bones' carried places (`bone`), the deepest whose peak lies on the knee's
+    inner side of the notch (`inner_mm`) and behind the inner condyle's peak (`back_mm`, each
+    place's position toward the back). Empty when none does."""
+    regions = np.unique(labels[bone & (labels > 0)])
+    behind = float(back_mm[condyle.peak_rc])
+    for peak in peaks:  # the deepest first
+        if np.isin(peak.territory, regions):
+            continue
+        if inner_mm[peak.peak_rc] > 0 and back_mm[peak.peak_rc] > behind:
+            return labels == peak.territory
+    return np.zeros(labels.shape, dtype=bool)
 
 
 def patella_code(

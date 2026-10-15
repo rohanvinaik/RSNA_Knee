@@ -35,6 +35,7 @@ OBJECT_COLOURS = {
     "joint_fluid": (0.55, 0.85, 1.0, 0.85),
     "hoffa_fat_pad": (1.0, 0.75, 0.45, 0.65),
     "suprapatellar_fat": (1.0, 0.95, 0.4, 0.6),
+    "medial_gastrocnemius": (0.6, 0.65, 0.1, 0.6),
 }
 
 
@@ -63,6 +64,7 @@ def draw_stages(axes, arrays, record):
         assigned.get("fibula"),
         assigned.get("acl"),
         assigned.get("lcl"),
+        assigned.get("medial_gastrocnemius"),
     )
     for peak in assigned["peaks"]:
         row, col = peak["peak_rc"]
@@ -117,6 +119,11 @@ def draw_stages(axes, arrays, record):
         + (
             f"\nLEMON suprapatellar fat: {codes['suprapatellar_fat']}"
             if "suprapatellar_fat" in codes
+            else ""
+        )
+        + (
+            f"\nOLIVE medial gastrocnemius head: {codes['medial_gastrocnemius']}"
+            if "medial_gastrocnemius" in codes
             else ""
         ),
         fontsize=8,
