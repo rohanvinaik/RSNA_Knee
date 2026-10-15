@@ -1,5 +1,5 @@
 """Intent tests for the named objects: air, skin, femur over tibia, the joint, patella, menisci,
-fibula, cartilage, the PCL, the ACL, the MCL, the LCL and the joint's fluid.
+fibula, cartilage, the PCL, the ACL, the MCL, the LCL, the joint's fluid and Hoffa's fat pad.
 
 The scene is a small synthetic knee in a coronal frame (rows run inferior, columns run to the left,
 one place per millimetre): air around a leg of soft tissue, a black margin along two sides of the
@@ -17,9 +17,11 @@ from knee.objects.assignments import (
     acl_code,
     acl_on_slice,
     assign_plane,
+    below_the_patella,
     between_along_the_leg,
     carried_bone,
     end_pieces,
+    fat_pad_code,
     fibula_block,
     fibula_code,
     fibula_on_slice,
@@ -699,6 +701,48 @@ def test_without_fat_suppression_and_fluid_sensitivity_the_fluid_is_left_to_the_
             result.codes["joint_fluid"] == "abstain_fluid_not_bright_on_this_sequence"
         )
         assert not (result.objects == OBJECT_CODES["joint_fluid"]).any()
+
+
+def test_hoffas_fat_pad_is_the_rest_of_the_patellas_territory_below_it():
+    # a sagittal slice at one place per millimetre, rows running down: the patella's territory (3)
+    # holds the patella at rows 0-8 and fat below it; another territory (4) lies below too
+    labels = np.zeros((30, 20), dtype=np.int32)
+    labels[0:20, 0:10] = 3
+    labels[0:30, 10:20] = 4
+    patella = np.zeros(labels.shape, dtype=bool)
+    patella[0:9, 0:10] = True
+    objects = np.zeros(labels.shape, dtype=np.int8)
+    objects[patella] = OBJECT_CODES["patella"]
+    objects[15:20, 0:3] = OBJECT_CODES["joint_fluid"]  # a part already named
+    pad = below_the_patella(labels, 3, patella, objects, SAGITTAL_MM)
+    assert pad[12, 5] and pad[19, 9]
+    assert not pad[5, 5]  # the patella
+    assert not pad[16, 1]  # the fluid already named
+    assert not pad[25, 15]  # another territory
+    assert not below_the_patella(
+        labels, 3, np.zeros_like(patella), objects, SAGITTAL_MM
+    ).any()
+
+
+def test_hoffas_fat_pad_is_named_only_with_fat_suppression_on_a_sagittal_slice():
+    plain = assigned(sagittal_scene(), SAGITTAL)
+    assert plain.codes["hoffa_fat_pad"] == "abstain_fat_as_bright_as_marrow"
+    coronal = assigned(scene(), CORONAL, fat_suppressed=True)
+    assert coronal.codes["hoffa_fat_pad"] == (
+        "abstain_front_to_back_runs_through_the_plane"
+    )
+    for result in (plain, coronal):
+        assert not (result.objects == OBJECT_CODES["hoffa_fat_pad"]).any()
+
+
+def test_fat_pad_code_names_why():
+    assert fat_pad_code(False, True, True, True) == (
+        "abstain_front_to_back_runs_through_the_plane"
+    )
+    assert fat_pad_code(True, False, True, True) == "abstain_fat_as_bright_as_marrow"
+    assert fat_pad_code(True, True, False, True) == "abstain_no_patella"
+    assert fat_pad_code(True, True, True, False) == "abstain_nothing_below_the_patella"
+    assert fat_pad_code(True, True, True, True) == "identified"
 
 
 def test_fluid_code_names_why():

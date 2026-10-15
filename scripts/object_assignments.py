@@ -33,6 +33,7 @@ OBJECT_COLOURS = {
     "mcl": (1.0, 0.25, 0.7, 0.9),
     "lcl": (1.0, 0.3, 0.0, 0.8),
     "joint_fluid": (0.55, 0.85, 1.0, 0.85),
+    "hoffa_fat_pad": (1.0, 0.75, 0.45, 0.65),
 }
 
 
@@ -105,6 +106,11 @@ def draw_stages(axes, arrays, record):
         + (
             f"\nSKY BLUE joint fluid: {codes['joint_fluid']}"
             if "joint_fluid" in codes
+            else ""
+        )
+        + (
+            f"\nAPRICOT Hoffa's fat pad: {codes['hoffa_fat_pad']}"
+            if "hoffa_fat_pad" in codes
             else ""
         ),
         fontsize=8,
