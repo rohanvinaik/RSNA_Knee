@@ -28,6 +28,9 @@ object in `docs/OBJECTS_AND_CONDITIONS.md`, one at a time:
 4. Run `scripts/run_interiors.py` on the proof study, look at the picture, and show Rohan before the next
    object.
 
+The loop that works, step by step, what to do straight after a compaction, and where the parts stand:
+`docs/HOW_TO_BUILD.md` §2, §7 and "Where it stands".
+
 A part plainly visible in one lens is found by that lens, whichever lens it is: «If it's visible in one lens
 but not the other (like "joint fluid")...then great, we know how to find it, problem solved». Seeing a part
 and not yet resolving it is the agent's failure, never the project's. Where the pictures do not hold the

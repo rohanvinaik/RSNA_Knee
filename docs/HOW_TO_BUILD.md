@@ -36,9 +36,27 @@ here.
   you to read and look at the photos with that in mind?» Looking with it in mind means seeing what
   he said is there: the parts of the knee already pulled out by the lenses («you can already see
   parts of it peeking out from that image»). It does not mean auditing your own code's output.
+  «i need you to connect the epistemology from the conversation to the literal photo output from
+  the current stage we have. Otherwise you don't get the idea here, why it is common sense, why
+  this is a SOLVED problem I've handed you, and you simply need to do some end-stage identity match
+  and wiring»
 - Never take the next step from a compaction summary or from your own notes. His last words in the
   record say what he asked.
 - The archives are invisible. «They're invisible unlesss I tell you to look in them».
+- Straight after a compaction, in this order, before anything else:
+  1. read the pre-compact snapshot the start-up hook names: his messages, word for word; his last
+     one is the task;
+  2. read whole the thesis conversation, the theory, the objects document and this file;
+  3. look at the proof study's pictures with the conversation in mind. The lens pictures,
+     `data/pictures/interiors/<proof uid>/series.png` and its per-series panels, are the current
+     stage's output; the named pictures, `data/pictures/assignments/<proof uid>/series.png` and its
+     per-series panels, show the parts resolved on the middle slices;
+     `data/pictures/main-slices/<proof uid>/series.png` shows the fibula on its main slice;
+  4. `git log --oneline -15` and `git status`: what is committed;
+  5. then do what his last message asks. When that is naming the parts, the next part is the first
+     one under "Where it stands" below, done by the loop in §7. Do not ask him to confirm again what
+     is recorded here («YES. I have said that MANY TIMES»), and do not re-measure finished parts on
+     other slices or studies.
 
 ### 3. The thesis is simple: keep it simple
 - «This is basically the whole thing. That's it.» Recognition is pure simple math on the lenses,
@@ -85,6 +103,9 @@ here.
      and show him before the next object.
 - All the parts first, diagnosis after: «First objects, injury diagnosis later»; «we need to
   resolve ALL the parts of the anatomy then go to diagnosis». Settle the resolved ones formally.
+  What the work is now (2026-10-14): «We are JUST defining what each object is in anatomy, and how
+  it relates to the 12 diagnosis categories». And: «I haven't told you ANYTHING about the AI part
+  of the project».
 - Plain words, never jargon. «What on earth does that mean?»
 - Where a picture does not hold a part, it is not named. A part the pictures do hold is never
   withdrawn because its name is wrong somewhere; it is fixed («You REMOVED shit??»).
@@ -122,6 +143,52 @@ here.
 - Measured numbers only, and per object: named, abstained and wrong, never one number.
 - Check your own work against these rules before he or a side agent has to: every side note he
   relayed on 2026-10-14 was a lapse that a check would have caught.
+
+### 7. The loop that works, part by part
+What worked on 2026-10-14 for the articular cartilage and the PCL, after he said «Finally, you're
+listening»:
+1. Look at the part on the proof study's pictures, on its main slice (§4), at its own pixels:
+   enlarge the slice where it is, with the low-signal lens over it and the light read down a few
+   columns across it. Say plainly what it looks like and where, in medicine's words
+   (docs/OBJECTS_AND_CONDITIONS.md).
+2. Find the lens that shows it plainly: the signal, the low-signal map, the distance map and its
+   peaks, the territories, the edges, the dark bands; or the same slice in the other sequence of the
+   same leg. A part plain in one lens is found by that lens.
+3. Write that plain reading as a short rule on those lenses. Each number comes from anatomy or from
+   the picture, labelled as Claude's reading when it is; each abstention has a named code.
+4. Draw exactly that rule on the proof before it touches the run, and look. If it misses, say why
+   from the picture and change it for that reason; never cycle through rules.
+5. Write it in `src/knee/objects/assignments.py`, with a paragraph in the module note saying what it
+   names, how, and where it over-reaches; add a test; run the proof through `scripts/run_interiors.py`;
+   look at every picture it reaches; run the gate; commit; rerun the labelled studies so `data/`
+   matches the code; show him the picture.
+6. The part is done: resolved at least once. Do not measure it across slices or studies and chase
+   what it gets wrong; those images are the AI part, later. Go to the next part.
+
+## Where it stands, 2026-10-14
+Check `git log` first; the run prints what each study named ("named, by series"), and the module
+note of `src/knee/objects/assignments.py` has a paragraph for each rule.
+- Resolved on the proof study (commit `157fc2f`), on the middle slices: air, skin, femur, tibia,
+  bone marrow (the inside of each bone named), the joint, the patella, both menisci (sided by the
+  header), the articular cartilage, the PCL; and the fibula on its main slice (the T2 sagittal's
+  slice 30). The patella, the menisci, the cartilage and the PCL are each found on one sequence and
+  laid onto the other sequence's slice of the same place.
+- Next, in the objects document's order: the ACL; the MCL; the LCL (on its own main slice); the
+  joint's fluid and recesses, and the synovium if the pictures hold it; the fat pads (Hoffa's, and
+  the two above the patella); the back of the knee (the medial gastrocnemius head, the
+  semimembranosus tendon); the quadriceps and patellar tendons; the fat under the skin, and muscle.
+  Then the parts that need their own main slices (the menisci on the sagittal, the patella on the
+  axial). Diagnosis only when he says.
+- Still owed: where the header names no knee, look for the fibula on both sides and let its side
+  name the outer one (the second half of the plan for siding the menisci); the fibula is not yet
+  laid onto the fat-suppressed sagittal's slice of the same place (Law 9); its main slice is found
+  by reading the lens on its block in every slice, not from the squint (§4); and §5's one
+  coherent operation: the run prints the values that no stage reads ("produced and read by no
+  stage"), and on 2026-10-14 there were many.
+- Over-reaches stated in the module note, not chased: the cartilage takes in the notch roof's lining
+  and the fluid down the femur's outer side; the PCL takes in some dark tissue round it and leaves
+  its last stretch down the tibia.
+- Nothing is pushed; ask before pushing.
 
 ## The record, 2026-10-14
 
@@ -162,6 +229,8 @@ here.
 | «Remember what "computer vision" means here. I don't think you recall what the idea actually is. It's not about perfection. It's about validity. I haven't described the AI part of this to you yet» | Measured the patella on eleven slices and all 58 studies and treated its wrong names there as failures; had read «never wrong» as a rule for the names | §3: validity, not perfection; "never wrong" is the lenses' |
 | «YES. I have said that MANY TIMES. Read the original conversation from yesterday AGAIN.» | Asked him to confirm what he had said many times | §1, §2 |
 | «...yeah. Duh. That's what I've been saying this whole time. Why would that not be valid? It's literally the same leg, obviously the object would be the same in both views. That's the WHOLE thesis» | Called the step that carries a part between two scans of the same slices its own invention, and offered to take it out | §4: one leg, one set of objects |
+| «Finally, you're listening. Persist THIS understanding in the documentation pre-compact» | (the cartilage and the PCL, done by §7's loop) | §2's after-compaction steps, §7, "Where it stands" |
+| «Do the conversation read and the photo look steps again. i need you to connect the epistemology from the conversation to the literal photo output from the current stage we have. Otherwise you don't get the idea here, why it is common sense, why this is a SOLVED problem I've handed you, and you simply need to do some end-stage identity match and wiring» | After the compaction, summed up what to do as a list of steps, without saying what the lens pictures already show | §2: look at the lens pictures with the conversation in mind; what is left is naming the parts and wiring them in |
 
 Side notes he relayed the same day, each a lapse a self-check would have caught: the pipeline read
 only the middle slice; the menisci were unsided; the read-first rule lived only in Claude's memory;
