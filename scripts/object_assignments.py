@@ -30,6 +30,7 @@ OBJECT_COLOURS = {
     "tibial_cartilage": (0.0, 0.75, 0.6, 0.85),
     "pcl": (0.85, 0.1, 0.35, 0.8),
     "acl": (0.15, 0.3, 1.0, 0.8),
+    "mcl": (1.0, 0.25, 0.7, 0.9),
 }
 
 
@@ -95,7 +96,8 @@ def draw_stages(axes, arrays, record):
         )
         + (f"\nCRIMSON PCL: {codes['pcl']}" if "pcl" in codes else "")
         + (f"\nVIOLET fibula: {codes['fibula']}" if "fibula" in codes else "")
-        + (f"\nROYAL BLUE ACL: {codes['acl']}" if "acl" in codes else ""),
+        + (f"\nROYAL BLUE ACL: {codes['acl']}" if "acl" in codes else "")
+        + (f"\nHOT PINK MCL: {codes['mcl']}" if "mcl" in codes else ""),
         fontsize=8,
     )
 

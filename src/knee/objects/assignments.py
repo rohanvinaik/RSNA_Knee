@@ -73,6 +73,26 @@ Each is named by what the pictures show, read off the interiors' own lenses:
   It relates to the ACL category, «anterior cruciate ligament injury». Seen also on the proof: it
   takes in the fluid round it and a patch down toward the tibia, and leaves its top end at the
   femur.
+- MCL: the medial collateral ligament, «a uniformly low-signal line» on the medial side of the
+  joint, «from epicondyle to tibia», «joined to the medial meniscus», seen on «coronal images
+  first» (docs/OBJECTS_AND_CONDITIONS.md). Seen on the proof's fat-suppressed coronal, 2026-10-14:
+  outside the medial meniscus a dark band crosses the joint line from beside the femur to beside
+  the tibia, and the low-signal lens marks it; its stretch down the tibia's inner side is a second
+  band 2 to 3 mm below it, and up the femur only dots. On the T1 coronal the lens does not mark it
+  and the femur's and tibia's regions take its place, so there it is laid on from the
+  fat-suppressed slice of the same place (`with_partner`). It is named by these descriptions, each
+  one check with its code (`mcl_code`):
+  1. its slice is coronal, side to side in the plane (abstain_side_to_side_runs_through_the_plane);
+  2. it lies on the inner side of the joint, the side of the medial meniscus, which the header's
+     word for which knee sides (abstain_no_medial_meniscus);
+  3. it is low signal the lens marks, outside every part already named, on that side of the
+     joint's middle, joining the femur and the tibia: the largest such piece reaching within
+     `SHELL_MM` of both (`ligament_on_the_inner_side`)
+     (abstain_no_low_signal_joins_the_bones_on_the_inner_side).
+  It relates to the MCL category, «medial collateral ligament injury». Seen also on the proof: it
+  is named only where it crosses the joint line, about 12 mm of it; its stretches down the tibia
+  and up the femur are not reached; and the femur's region, which takes in the fluid of the inner
+  recess, lies between it and the meniscus, so the meniscus marks its side and is not reached.
 - MENISCI: on a coronal slice, the dark triangles at the two ends of the joint, between the femur's
   condyle and the tibia's plateau («an isosceles triangle on coronal images», low on every
   sequence: docs/OBJECTS_AND_CONDITIONS.md). So: the low signal with every part thinner than
@@ -188,6 +208,7 @@ OBJECT_CODES = {
     "tibial_cartilage": 12,
     "pcl": 13,
     "acl": 14,
+    "mcl": 15,
 }
 CARTILAGES = ("femoral_cartilage", "tibial_cartilage")
 FOUR_NEIGHBOURS = ndi.generate_binary_structure(2, 1)
@@ -448,6 +469,58 @@ def acl_on_slice(
     return np.zeros(labels.shape, dtype=bool)
 
 
+def mcl_code(sides_in_plane: bool, medial_meniscus: bool, found: bool) -> str:
+    """Whether the MCL was named, or why not: each check is one of its descriptions."""
+    if not sides_in_plane:
+        return "abstain_side_to_side_runs_through_the_plane"
+    if not medial_meniscus:
+        return "abstain_no_medial_meniscus"
+    if not found:
+        return "abstain_no_low_signal_joins_the_bones_on_the_inner_side"
+    return "identified"
+
+
+def ligament_on_the_inner_side(
+    dark: np.ndarray,
+    objects: np.ndarray,
+    basis_lps: np.ndarray,
+    outside_picture: np.ndarray,
+) -> np.ndarray:
+    """The MCL on one slice: of the low signal left once the named parts are out, the largest
+    piece on the medial meniscus's side of the joint's middle that reaches within `SHELL_MM` of
+    both the femur and the tibia. Empty when none does, or when the slice names no medial
+    meniscus, no joint, or not both bones."""
+    none = np.zeros(dark.shape, dtype=bool)
+    medial = objects == OBJECT_CODES["medial_meniscus"]
+    joint = objects == OBJECT_CODES["joint"]
+    femur = objects == OBJECT_CODES["femur"]
+    tibia = objects == OBJECT_CODES["tibia"]
+    if not (medial.any() and joint.any() and femur.any() and tibia.any()):
+        return none
+    left = dark & (objects == 0) & ~outside_picture
+    pieces, count = ndi.label(left, structure=np.ones((3, 3), dtype=bool))
+    if not count:
+        return none
+    rows, cols = np.indices(dark.shape)
+    across = basis_lps[0, 0] * rows + basis_lps[0, 1] * cols  # mm toward the left
+    middle = float(across[joint].mean())  # the joint's middle
+    inner = np.sign(float(across[medial].mean()) - middle)
+    labels = np.arange(1, count + 1)
+    spacing_rc = np.linalg.norm(basis_lps, axis=0)
+    near_femur = np.asarray(ndi.distance_transform_edt(~femur, sampling=spacing_rc))
+    near_tibia = np.asarray(ndi.distance_transform_edt(~tibia, sampling=spacing_rc))
+    side = np.sign(np.asarray(ndi.mean(across, pieces, index=labels)) - middle)
+    joining = (
+        (side == inner)
+        & (np.asarray(ndi.minimum(near_femur, pieces, index=labels)) <= SHELL_MM)
+        & (np.asarray(ndi.minimum(near_tibia, pieces, index=labels)) <= SHELL_MM)
+    )
+    if not joining.any():
+        return none
+    sizes = np.bincount(pieces.ravel(), minlength=count + 1)[1:]
+    return pieces == int(labels[joining][np.argmax(sizes[joining])])
+
+
 def patella_code(
     front_to_back_in_plane: bool,
     femur_named: bool,
@@ -676,7 +749,8 @@ def assign_plane(
     knee: str = "",
     fat_suppressed: bool = False,
 ) -> PlaneAssignment:
-    """Name air, skin, femur, tibia, joint, patella and menisci on one plane, from its interiors.
+    """Name air, skin, femur, tibia, joint, patella, menisci, cartilage, the PCL and the MCL on one
+    plane, from its interiors.
 
     `knee` is the header's own word for which knee the scan is, "R", "L" or blank; it sides the
     menisci. `fat_suppressed` is the series' own tag; only with it is the patella named by its
@@ -808,6 +882,15 @@ def assign_plane(
         front_in_plane, fat_suppressed, bones_named, bool(pcl.any())
     )
     objects[pcl] = OBJECT_CODES["pcl"]
+
+    # MCL: on a coronal slice, the low signal left on the medial meniscus's side that joins the
+    # femur and the tibia.
+    medial = bool((objects == OBJECT_CODES["medial_meniscus"]).any())
+    mcl = np.zeros(plane.shape, dtype=bool)
+    if sides_in_plane and medial:
+        mcl = ligament_on_the_inner_side(dark, objects, basis_lps, outside_picture)
+    codes["mcl"] = mcl_code(sides_in_plane, medial, bool(mcl.any()))
+    objects[mcl] = OBJECT_CODES["mcl"]
     return PlaneAssignment(objects, codes, peaks, femur, tibia, menisci, patella)
 
 
@@ -864,10 +947,10 @@ def with_partner(
 
     A bone both name is named where both agree, and where the partner's picture does not reach
     (`UNSEEN`: it has no say there); not at all where they share no place. A part only the partner
-    names (the patella, the menisci, the cartilage, the PCL) is laid on from it, onto this slice's own
-    interiors that nothing else holds; the patella only where it holds this slice's own peak in
-    front of the femur, so the two lenses agree on where it is. The joint is then again what lies
-    between the bones along the leg.
+    names (the patella, the menisci, the cartilage, the PCL, the MCL) is laid on from it, onto this
+    slice's own interiors that nothing else holds; the patella only where it holds this slice's own
+    peak in front of the femur, so the two lenses agree on where it is. The joint is then again
+    what lies between the bones along the leg.
     """
     objects, codes = assignment.objects.copy(), dict(assignment.codes)
     for name in BONES:
@@ -901,6 +984,7 @@ def with_partner(
         ("meniscus", MENISCI),
         ("cartilage", CARTILAGES),
         ("pcl", ("pcl",)),
+        ("mcl", ("mcl",)),
     ):
         if codes.get(name) in NAMED or partner_codes.get(name) not in NAMED:
             continue
