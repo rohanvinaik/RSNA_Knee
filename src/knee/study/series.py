@@ -33,44 +33,22 @@ GEOMETRY_TAGS: tuple[tuple[str, Callable[[pydicom.Dataset], Reading]], ...] = (
 class SeriesGeometry:
     """Each slice's geometry, in stack order, exactly as its tags give it (DICOM LPS, millimetres).
 
-    normal: (3,) float64, unit, the slice normal the stack is ordered along: that of the first file in file-name
-    order. orientation: (n, 6) float64, each slice's row then column direction cosines. position: (n, 3) float64,
-    each slice's ImagePositionPatient. spacing: (n, 2) float64, each slice's PixelSpacing (between rows, between
-    columns). along_normal: (n,) float64, ascending, each position projected on the normal. orientation_spread:
-    the largest absolute difference between any slice's direction cosine and the first slice's, measured and not
-    judged. origin_spread_mm: the largest in-plane displacement, in millimetres, of any slice's origin from the
-    first slice's -- the part of `position[i] - position[0]` that does not lie along the normal -- measured and
-    not judged (task 7.12). Together the two spreads are the precondition under which one slice's frame can
-    stand for the stack's; the slab lookup projects against each slice's own origin and shares only the basis.
-    NaN where the geometry was built without positions to measure it from.
+    orientation: (n, 6) float64, each slice's row then column direction cosines. position: (n, 3) float64,
+    each slice's ImagePositionPatient. spacing: (n, 2) float64, each slice's PixelSpacing (between rows,
+    between columns). The stack is ordered along the first file's slice normal (`stack_geometry`).
     """
 
-    normal: np.ndarray
     orientation: np.ndarray
     position: np.ndarray
     spacing: np.ndarray
-    along_normal: np.ndarray
-    orientation_spread: float
-    origin_spread_mm: float = float("nan")
-
-
-#: How many slices the stage's walk through a stack keeps: the first, the last, and the rest evenly
-#: between them. The walk is what this stage's picture shows (`knee.pictures.study`), retained here
-#: so the writer can save it and the drawer can arrange it without the whole volume.
-WALK_COUNT = 8
-
-#: The per-slice codes this stage records. `stack_codes` counts the second across the series; the
-#: per-slice record keeps WHICH slice, so the walk can label each one.
-SLICE_CODES: tuple[str, ...] = ("decoded", "pixels_not_2d")
 
 
 def selected_slice(count: int, requested: int | None) -> int | None:
-    """The one slice the route reads a plane from: the middle of the stack unless one is requested.
+    """The one slice a series' middle plane is read from: the middle of the stack unless one is requested.
 
     `requested` is the caller's explicit index; None selects floor(count / 2) in the stack's
     order. None back when the stack is empty or the request lies outside it, so the caller names
-    `slice_unavailable` rather than reading past the end. This is the ONE rule for which slice a
-    study is read at (task 7.1); the objects stage and the field's structural reading share it.
+    `slice_unavailable` rather than reading past the end.
 
     post: __return__ is None or (0 <= __return__ < count)
     """
@@ -85,9 +63,9 @@ def selected_slice(count: int, requested: int | None) -> int | None:
 def slice_thickness(header: object) -> float | None:
     """One slice's SliceThickness as stored, in millimetres: finite and positive, else None.
 
-    Read here, once, by the stage that owns the headers (task 7.2). The slab rule
-    (`knee.lenses.slabs`) bounds a slab by THICKNESS and never by spacing, so this is the one
-    number it needs from the acquisition, and the objects stage consumes it from the series.
+    Read here, once, by the stage that owns the headers. A slice holds the places within half its
+    thickness of its plane, so this is the number the run reads to carry a part from one slice of
+    the knee onto another (`knee.objects.assignments.places_on_slice`, `places_from`).
     """
     reader = getattr(header, "get", None)
     if not callable(reader):
@@ -99,63 +77,30 @@ def slice_thickness(header: object) -> float | None:
     return value if np.isfinite(value) and value > 0.0 else None
 
 
-def walk_indices(slices: int, walk_count: int = WALK_COUNT) -> tuple[int, ...]:
-    """The stack indices a walk through `slices` slices visits: evenly spaced, ends included.
-
-    A stack with at most `walk_count` slices is walked whole. Empty when there is nothing to walk.
-    This is the ONE rule for which slices a walk shows; the picture adapter reads it from here.
-
-    post: len(__return__) == min(max(slices, 0), max(walk_count, 0))
-    post: all(0 <= i < slices for i in __return__)
-    """
-    if slices <= 0 or walk_count <= 0:
-        return ()
-    count = min(walk_count, slices)
-    return tuple(
-        int(index) for index in np.linspace(0, slices - 1, count).round().astype(int)
-    )
-
-
 @dataclass(frozen=True, slots=True)
 class Series:
     """One series, whole.
 
-    row: its row of the series table, as given. directory: where its files are. slices: every .dcm file in the
-    directory, in stack order when `geometry` exists, else in file-name order. stack: `codes.stack_codes`.
-    volume: when stack is ("stackable",), the slices' pixels stacked in stack order, (n, rows, columns) in the
-    stored dtype, axis 0 ascending along the normal; else None. geometry: when every slice's position, orientation
-    and pixel spacing are present; else None.
-
-    slice_codes: one of `SLICE_CODES` per slice, in the same order as `slices`. walk_indices and walk: the
-    stack indices `walk_indices` visits and the volume's slices at them, (len(walk_indices), rows, columns) in
-    the stored dtype -- the stage's own picture content, retained so it is never recomputed from a re-read
-    volume; None when there is no volume. slice_thickness_mm: each slice's SliceThickness as stored, in
-    the same order as `slices`, None where the tag is absent or not a positive finite number.
+    row: its row of the series table, as given. slices: every .dcm file in its directory, in stack order when
+    `geometry` exists, else in file-name order. stack: `codes.stack_codes`. volume: when stack is
+    ("stackable",), the slices' pixels stacked in stack order, (n, rows, columns) in the stored dtype, axis 0
+    ascending along the normal; else None. geometry: when every slice's position, orientation and pixel spacing
+    are present; else None. slice_thickness_mm: each slice's SliceThickness as stored, in the same order as
+    `slices`, None where the tag is absent or not a positive finite number.
     """
 
     row: SeriesRow
-    directory: Path
     slices: tuple[Slice, ...]
     stack: tuple[str, ...]
     volume: np.ndarray | None
     geometry: SeriesGeometry | None
-    slice_codes: tuple[str, ...] = ()
-    walk_indices: tuple[int, ...] = ()
-    walk: np.ndarray | None = None
     slice_thickness_mm: tuple[float | None, ...] = ()
 
 
 def read_series(directory: Path, row: SeriesRow) -> Series:
     if not directory.is_dir():
         codes = stack_codes(False, 0, 0, [], 0, 0, 0, 0)
-        return Series(
-            row=row,
-            directory=directory,
-            slices=(),
-            stack=codes,
-            volume=None,
-            geometry=None,
-        )
+        return Series(row=row, slices=(), stack=codes, volume=None, geometry=None)
     slices = [read_slice(path) for path in sorted(directory.glob("*.dcm"))]
     readings = {
         tag: [reader(s.header) for s in slices] for tag, reader in GEOMETRY_TAGS
@@ -193,20 +138,12 @@ def read_series(directory: Path, row: SeriesRow) -> Series:
         )
         slices = [slices[i] for i in order]
     volume = np.stack([s.pixels for s in slices]) if codes == ("stackable",) else None
-    indices = walk_indices(len(volume)) if volume is not None else ()
-    # The per-slice code comes from the stage's own vocabulary (task 7.2), so the record and the
-    # declaration cannot drift apart.
-    decoded, not_2d = SLICE_CODES
     return Series(
         row=row,
-        directory=directory,
         slices=tuple(slices),
         stack=codes,
         volume=volume,
         geometry=geometry,
-        slice_codes=tuple(decoded if s.pixels.ndim == 2 else not_2d for s in slices),
-        walk_indices=indices,
-        walk=volume[list(indices)] if volume is not None else None,
         slice_thickness_mm=tuple(slice_thickness(s.header) for s in slices),
     )
 
@@ -219,22 +156,10 @@ def stack_geometry(
     orientation (n, 6), position (n, 3) and spacing (n, 2) are in file-name order. The order sorts the positions'
     projections on the first file's normal, ascending; ties keep file-name order.
     """
-    normal = slice_normal(orientation[0])
-    distance = along(position, normal)
-    order = np.argsort(distance, kind="stable")
-    ordered = orientation[order]
-    # The in-plane part of each slice origin's displacement from the first slice's, in stack order
-    # (task 7.12): what remains of `position[i] - position[0]` once its component along the normal is
-    # removed. Measured for the record, never judged here.
-    displacement = position[order] - position[order][0]
-    in_plane = displacement - np.outer(displacement @ normal, normal)
+    order = np.argsort(along(position, slice_normal(orientation[0])), kind="stable")
     geometry = SeriesGeometry(
-        normal=normal,
-        orientation=ordered,
+        orientation=orientation[order],
         position=position[order],
         spacing=spacing[order],
-        along_normal=distance[order],
-        orientation_spread=float(np.abs(ordered - ordered[0]).max()),
-        origin_spread_mm=float(np.linalg.norm(in_plane, axis=1).max()),
     )
     return geometry, order

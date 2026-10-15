@@ -28,14 +28,6 @@ REQUIRED: tuple[UID, ...] = (
 )
 
 
-def decoder_plugins() -> dict[str, tuple[str, ...]]:
-    """Each required transfer syntax's name -> the decoder plugins available for it here (empty: none needed for
-    the uncompressed syntaxes, which pydicom reads natively, or none installed)."""
-    return {
-        uid.name: tuple(sorted(get_decoder(uid).available_plugins)) for uid in REQUIRED
-    }
-
-
 def decoder_codes() -> dict[str, str]:
     """Each required transfer syntax's name -> "available" or "unavailable", in this environment."""
     return {

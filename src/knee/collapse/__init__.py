@@ -33,18 +33,14 @@ slice to use? The one that is able to show the anatomical region needed for iden
 anatomical object, and then for diagnosis.»
 ----------------------------------------------------------------------------------------------
 
-The modules here, and what each is (SS13.7 keeps the three kinds apart):
+The modules here, and what each is (SS13.7 keeps the kinds apart):
 
-    codes.py    DECISIONS. Pure, total over their arguments, returning named codes. Every bar a
-                decision reads is an argument, never a constant inside it.
-    noise.py    MEASUREMENTS. The noise law per series: the background population, the channel
-                count, and two independent estimators of sigma that must concur.
-    units.py    MEASUREMENTS. The variance-stabilizing transform, so one unit is one sigma at any
-                intensity -- which is what makes a seam's depth meaningful.
-    regime.py   ORCHESTRATION. The regime key: the cheap whole-field readings taken once per
-                series, which say what a series IS before any expensive work runs.
-
-Naming, so the next chapter does not inherit a collision: the parts of this chapter are NAMED, not
-numbered -- the noise law, the transform, the regime key, the objects and the seam. "Stage 0-4" is
-the thesis's numbering for the LOOP's stages (SS5) and belongs to chapter 3, not here.
+    noise.py         MEASUREMENTS. The background split per series: the valley after the
+                     background's mode in the series' own histogram, the level the lens reads low
+                     signal under.
+    physical.py      MEASUREMENTS. A slice's plane frame in the scanner's millimetres (its places,
+                     the inverse that carries a place onto it, its normal), and one slice's squint.
+    squint_stack.py  ORCHESTRATION. The squint over every slice of a series, each tile's centre in
+                     the scanner's millimetres: the cheap look at the whole series that points
+                     where the expensive work runs.
 """

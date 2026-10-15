@@ -14,6 +14,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 
 from knee.objects.assignments import OBJECT_CODES
+from knee.receipt import digest
 
 OBJECT_COLOURS = {
     "air": (0.25, 0.55, 1.0, 0.45),
@@ -181,11 +182,7 @@ def draw(run: Path, study_uid: str, out: Path) -> dict:
         with np.load(artifact, allow_pickle=False) as saved:
             arrays = dict(saved)
         for name, descriptor in record["arrays"].items():
-            a = arrays[name]
-            digest = sha256(
-                a.dtype.str.encode() + str(a.shape).encode() + a.tobytes()
-            ).hexdigest()
-            if digest != descriptor["digest"]:
+            if digest(arrays[name]) != descriptor["digest"]:
                 raise ValueError("saved_array_digest_mismatch")
         draw_stages(axes[row], arrays, record)
         view, fluid, fat = record["view"]

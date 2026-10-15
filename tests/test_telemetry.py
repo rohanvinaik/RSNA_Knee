@@ -49,8 +49,6 @@ def test_each_study_starts_empty_and_the_scope_before_it_is_restored():
 def test_a_disabled_ledger_records_nothing():
     quiet = Ledger()
     quiet.record("stage.produced", planes=1)
-    with quiet.span("stage.work", planes=1):
-        pass
     assert quiet.events() == ()
 
 
@@ -76,17 +74,17 @@ def test_recording_turns_the_ledger_on_for_a_block_then_restores_it():
 
 
 def test_every_product_read_leaves_nothing_unread():
-    names = ["series.volume.produced", "series.volume.consumed_by.regime"]
+    names = ["series.volume.produced", "series.volume.consumed_by.background"]
     assert unread_products(names) == ()
 
 
 def test_a_product_no_stage_read_is_named():
     names = [
-        "regime.background_split.produced",
-        "regime.dark.produced",
-        "regime.background_split.consumed_by.interiors",
+        "interiors.labels.produced",
+        "interiors.trace_codes.produced",
+        "interiors.labels.consumed_by.field",
     ]
-    assert unread_products(names) == ("regime.dark",)
+    assert unread_products(names) == ("interiors.trace_codes",)
 
 
 def test_reading_a_field_reads_its_product_but_not_the_fields_beside_it():

@@ -1,25 +1,21 @@
 """Compute contracts are data; attaching one never wraps the measured function (§13.5).
 
-THE ONE FORM (task 0.3, the founder: "I guess only one? … the bigger risk is you forgetting that
-there are two formats"; respelled under task 7.11): a module declares its contract once, at module
-level, as `CONTRACT = ComputeContract(...)`, and applies it to the reference kernel its `reference`
-field names with the PLAIN decorator, `@contracted`. The decorator reads the module's `CONTRACT`
-itself. Why plain and not `@contracted(CONTRACT)`: measured 2026-10-12
-(`docs/chapters/02-collapse/measurements/detective-call-form-decorator-20261012.md`), a decorator
-applied in call form makes Detective add mutants it cannot build and return UNGATEABLE for ANY
-function under it, so every kernel's standing was the decorator's and not the kernel's. Every site
-migrated on 2026-10-12; the call form is retired and refused by name, and `scripts/places.py`
-reports any site that still spells it.
+THE ONE FORM (the founder: "I guess only one? … the bigger risk is you forgetting that there are two
+formats"): a module declares its contract once, at module level, as `CONTRACT =
+ComputeContract(...)`, and applies it to the reference kernel its `reference` field names with the
+PLAIN decorator, `@contracted`. The decorator reads the module's `CONTRACT` itself. Why plain and not
+`@contracted(CONTRACT)`: measured 2026-10-12, a decorator applied in call form makes Detective add
+mutants it cannot build and return UNGATEABLE for ANY function under it, so every kernel's standing
+was the decorator's and not the kernel's. The call form is retired and refused by name.
 
-`contracted` also records each kernel it decorates in a registry keyed by the kernel's dotted path,
-`<module>.<qualname>`, so a tool can read every declared contract from one place instead of
-importing the kernels and asking each what it carries (task 7.3). Recording is bookkeeping beside
-the function: the function is returned as it was given, and calling it costs nothing more.
+`contracted` also records each kernel it decorates by the kernel's dotted path,
+`<module>.<qualname>`, so one key is one kernel: a second, different contract under a key already
+declared is refused. Recording is bookkeeping beside the function: the function is returned as it
+was given, and calling it costs nothing more.
 """
 
-from collections.abc import Mapping
 from dataclasses import dataclass
-from types import FunctionType, MappingProxyType
+from types import FunctionType
 from typing import TypeVar
 
 import numpy as np
@@ -43,8 +39,8 @@ class ComputeContract:
     source: str = "What an <Object> Is §13.5; compute-build-codex.md"
 
 
-# Every kernel `contracted` has decorated, by `<module>.<qualname>`. Only `contracted` writes it,
-# and readers get a read-only view from `declared_contracts`.
+# Every kernel `contracted` has decorated, by `<module>.<qualname>`: one key, one kernel. Only
+# `contracted` writes it.
 _DECLARED: dict[str, ComputeContract] = {}
 
 
@@ -72,14 +68,14 @@ def contracted(target: F) -> F:
     It takes the function and finds `CONTRACT` in the function's own module globals; a module
     that declares none, or declares something that is not a `ComputeContract`, is refused by name
     (`contract_undeclared`), because a kernel without a declared contract is exactly what this
-    decorator exists to make impossible. The call form, `@contracted(CONTRACT)`, is retired (task
-    7.11, every site migrated 2026-10-12) and refused by name, `contracted_call_form_retired`, so
-    the spelling that made Detective return UNGATEABLE cannot come back unnoticed.
+    decorator exists to make impossible. The call form, `@contracted(CONTRACT)`, is retired and
+    refused by name, `contracted_call_form_retired`, so the spelling that made Detective return
+    UNGATEABLE cannot come back unnoticed.
     """
     if isinstance(target, ComputeContract):
         error = TypeError("contracted_call_form_retired")
         error.add_note(
-            "apply the plain `@contracted` and declare `CONTRACT` at module level (task 7.11)"
+            "apply the plain `@contracted` and declare `CONTRACT` at module level"
         )
         raise error
     if not isinstance(target, FunctionType):
@@ -90,16 +86,6 @@ def contracted(target: F) -> F:
         error.add_note(f"module: {target.__module__}; kernel: {target.__qualname__}")
         raise error
     return _attach(target, contract)
-
-
-def declared_contracts() -> Mapping[str, ComputeContract]:
-    """Every contract attached so far, by the kernel's dotted path, in the order they were declared.
-
-    A read-only view of the registry, not a copy: a kernel declared after the call appears in it.
-    A module that has not been imported has declared nothing, so what this holds is what the
-    running process has imported.
-    """
-    return MappingProxyType(_DECLARED)
 
 
 def handed_on(array: np.ndarray) -> np.ndarray:

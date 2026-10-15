@@ -2,7 +2,7 @@
 
 The low-signal predicate is information used to constrain an above-split search.
 It is not a claim that cortex is not bone. Every territory and unseeded place is
-retained. See docs/chapters/02-collapse/object-resolution-contract.md (B1).
+retained.
 """
 
 import warnings
@@ -16,7 +16,7 @@ from skimage.segmentation import watershed
 from knee.collapse.physical import numeric_plane, spacing_pair
 from knee.compute.contracts import ComputeContract, contracted, handed_on
 from knee.objects.border_codes import border_code
-from knee.objects.profiles import ProfileReading, sample_profiles
+from knee.objects.profiles import sample_profiles
 
 TRACE_CODES = {
     "bracketed": 1,
@@ -58,15 +58,9 @@ class InteriorReading:
     labels: np.ndarray
     edge_points_rc: np.ndarray
     edge_normals_rc: np.ndarray
-    edge_regions: np.ndarray
     edge_kinds: np.ndarray
-    profiles: ProfileReading | None
-    band_low_mm: np.ndarray
-    band_high_mm: np.ndarray
     trace_points_rc: np.ndarray
     trace_codes: np.ndarray
-    distance_error_bound_mm: float
-    distance_guard: np.ndarray
 
 
 def boundary_edges(labels, dark, available, metric):
@@ -74,7 +68,7 @@ def boundary_edges(labels, dark, available, metric):
     padded = np.pad(labels, 1)
     padded_dark = np.pad(dark, 1)
     padded_available = np.pad(available, 1)
-    points, normals, regions, kinds = [], [], [], []
+    points, normals, kinds = [], [], []
     for dr, dc in ((-1, 0), (0, -1), (0, 1), (1, 0)):
         neighbor = padded[
             1 + dr : 1 + dr + labels.shape[0], 1 + dc : 1 + dc + labels.shape[1]
@@ -96,11 +90,8 @@ def boundary_edges(labels, dark, available, metric):
         direction /= np.sqrt(direction @ metric @ direction)
         points.append(np.column_stack((rows + dr / 2, cols + dc / 2)))
         normals.append(np.broadcast_to(direction, (len(rows), 2)))
-        regions.append(labels[rows, cols])
         kinds.append(kind)
-    return tuple(
-        handed_on(np.concatenate(items)) for items in (points, normals, regions, kinds)
-    )
+    return tuple(handed_on(np.concatenate(items)) for items in (points, normals, kinds))
 
 
 def dark_bands(profiles, split, kinds, points, normals, spacing):
@@ -132,7 +123,7 @@ def dark_bands(profiles, split, kinds, points, normals, spacing):
     lower = np.where(good, profiles.distances_mm[first], np.nan)
     upper = np.where(good, profiles.distances_mm[last], np.nan)
     trace = points + ((lower + upper) / 2)[:, None] * normals / spacing
-    return tuple(handed_on(a) for a in (lower, upper, trace, codes))
+    return handed_on(trace), handed_on(codes)
 
 
 def prominent_peaks(distance: np.ndarray, prominence_mm: float) -> np.ndarray:
@@ -163,10 +154,8 @@ def read_interiors(
 ) -> InteriorReading:
     """Consume measured exclusions within their scope; preserve unresolved places.
 
-    EDT uses the explicitly orthogonal spacing metric; the conservative error
-    bound covers its difference from the retained rounded DICOM basis. Profiles
-    use that original basis metric. The outside guard is a computational bound,
-    never an acquired dark reading. `available` is which of the plane's places are
+    EDT uses the explicitly orthogonal spacing metric; profiles use the original
+    retained DICOM basis metric. `available` is which of the plane's places are
     finite, when the caller has read it once for the series; it is read here otherwise.
     """
     numeric_plane(plane)
@@ -201,7 +190,6 @@ def read_interiors(
         else np.zeros(plane.shape, dtype=bool)
     )
     distance = np.zeros(plane.shape, dtype=np.float64)
-    distance_guard = np.zeros(plane.shape, dtype=np.uint8)
     markers = np.zeros(plane.shape, dtype=np.int32)
     labels = np.zeros(plane.shape, dtype=np.int32)
     code = "measured"
@@ -214,15 +202,8 @@ def read_interiors(
     else:
         interior = available & ~dark
         padded = np.pad(interior, 1)
-        distances, nearest = ndi.distance_transform_edt(
-            padded, sampling=spacing, return_indices=True
-        )
-        causes = np.pad(
-            np.where(dark, 1, np.where(~available, 2, 0)), 1, constant_values=3
-        )
+        distances = np.asarray(ndi.distance_transform_edt(padded, sampling=spacing))
         distance = distances[1:-1, 1:-1].copy()
-        distance_guard = causes[nearest[0], nearest[1]][1:-1, 1:-1].astype(np.uint8)
-        distance_guard[~interior] = 0
         peaks = (
             prominent_peaks(distance, prominence_mm) & interior
             if distance.max() >= prominence_mm
@@ -235,22 +216,16 @@ def read_interiors(
             labels = watershed(
                 -distance, markers, mask=interior, connectivity=1
             ).astype(np.int32)
-    points, normals, regions, kinds = boundary_edges(labels, dark, available, metric)
-    profiles = None
-    lower = np.full(len(points), np.nan)
-    upper = lower.copy()
+    points, normals, kinds = boundary_edges(labels, dark, available, metric)
     trace = np.full(points.shape, np.nan)
     codes = np.zeros(len(points), dtype=np.uint8)
     if len(points):
         profiles = sample_profiles(
             plane, points, normals, offsets, spacing, backend, metric_rc=metric
         )
-        lower, upper, trace, codes = dark_bands(
+        trace, codes = dark_bands(
             profiles, split, kinds, points, normals, np.asarray(spacing)
         )
-    eigenvalues = np.linalg.eigvalsh(metric)
-    relative_bound = float(np.max(np.abs(np.sqrt(eigenvalues) - 1)))
-    extent = float(np.linalg.norm((np.asarray(plane.shape) + 2) * spacing))
     return InteriorReading(
         code,
         handed_on(dark),
@@ -260,13 +235,7 @@ def read_interiors(
         handed_on(labels),
         points,
         normals,
-        regions,
         kinds,
-        profiles,
-        handed_on(lower),
-        handed_on(upper),
         handed_on(trace),
         handed_on(codes),
-        relative_bound * extent,
-        handed_on(distance_guard),
     )

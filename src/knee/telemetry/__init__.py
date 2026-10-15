@@ -10,15 +10,13 @@ Not a stage. A project-wide layer, pulled in by any stage that wants to say what
 
 THE RULE THAT SHAPES IT: nothing here may import structlog, OpenTelemetry or any profiler, because
 this package sits on the PRODUCTION import path and those tools must never reach a Kaggle kernel
-(docs/STAGE_CONTRACT.md; the global performance.md: "Each is per project, never on a production
-import path"). So the ledger is plain stdlib, and the dev-side exporters read it from outside.
+(the global performance.md: "Each is per project, never on a production import path"). So the
+ledger is plain stdlib, and the dev-side instruments read the run from outside.
 
-COUNTED WORK, NOT WALL TIME. A speed claim is a paired measurement -- Detective's opcode budget plus
-pyperf -- never an informal timing. What a stage records here is the work it actually did: samples
-taken, places visited, candidates proposed, raster cells written. Those numbers are deterministic, so
-they are evidence; a duration measured under a profiler is behaviour, and the two are reported
-separately. `elapsed_ns` is recorded only when a ledger is explicitly asked for timings, and it is
-never the basis of a claim.
+COUNTED WORK, NOT WALL TIME. A speed claim is a paired measurement, never an informal timing. What a
+stage records here is the work it actually did: planes read, places visited, values made and handed
+on. Those numbers are deterministic, so they are evidence; a duration measured under a profiler is
+behaviour, and the two are reported separately.
 
 OFF BY DEFAULT. A disabled ledger does no allocation and no formatting, so a production run pays
 nothing for the instrumentation being present.

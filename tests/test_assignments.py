@@ -11,6 +11,7 @@ the scene exactly as the run does, and the assignments read that reading.
 
 import numpy as np
 
+from knee.collapse.physical import PlaneFrame
 from knee.objects.assignments import (
     OBJECT_CODES,
     SLICE_PARTS,
@@ -327,9 +328,9 @@ def test_a_slice_lays_its_names_on_the_same_place_at_another_pixel_size():
     coarse[4:8, 6:10] = OBJECT_CODES["femur"]  # rows 2-4 mm down, columns 3-5 mm back
     seen = np.ones(coarse.shape, dtype=bool)
     seen[19, :] = False  # its last row is margin
-    source = places_from(
-        seen, origin, SAGITTAL_MM * 0.5, origin, SAGITTAL_MM * 0.4, (30, 30), 2.0
-    )
+    this = PlaneFrame(origin, SAGITTAL_MM * 0.5, (0.5, 0.5))
+    other = PlaneFrame(origin, SAGITTAL_MM * 0.4, (0.4, 0.4))
+    source = places_from(seen, this, other, (30, 30), 2.0)
     assert source is not None
     laid = laid_by(coarse, source)
     assert laid[5, 8] == OBJECT_CODES["femur"]  # 2.0 mm down, 3.2 mm back
@@ -341,12 +342,8 @@ def test_a_slice_lays_its_names_on_the_same_place_at_another_pixel_size():
     assert laid_by(white, source)[5, 8] == 1
     assert laid_by(white, source)[24, 0] == UNSEEN
     beside = origin + np.array([5.0, 0.0, 0.0])  # a slice 5 mm to the side
-    assert (
-        places_from(
-            seen, origin, SAGITTAL_MM * 0.5, beside, SAGITTAL_MM * 0.4, (30, 30), 2.0
-        )
-        is None
-    )
+    elsewhere = PlaneFrame(beside, SAGITTAL_MM * 0.4, (0.4, 0.4))
+    assert places_from(seen, this, elsewhere, (30, 30), 2.0) is None
 
 
 def partner_scene() -> tuple[PlaneAssignment, np.ndarray, np.ndarray]:
@@ -375,7 +372,7 @@ def partner_scene() -> tuple[PlaneAssignment, np.ndarray, np.ndarray]:
         "patella": "abstain_fat_as_bright_as_marrow",
         "meniscus": "abstain_side_to_side_runs_through_the_plane",
     }
-    return PlaneAssignment(own, codes, peaks, 1, 2, 0), labels, laid
+    return PlaneAssignment(own, codes, peaks, 1, 2), labels, laid
 
 
 PARTNER_CODES = {
@@ -446,7 +443,6 @@ def test_the_cartilage_one_slice_shows_is_laid_on_the_other_slice_of_the_same_pl
 def test_the_menisci_are_the_dark_wedges_at_the_two_ends_of_the_joint():
     result = assigned(fine_coronal_scene(menisci=True), pixel_mm=FINE_MM)
     assert result.codes["meniscus"] == "identified"
-    assert result.menisci == 2
     assert result.objects[138, 66] == OBJECT_CODES["meniscus"]
     assert result.objects[138, 172] == OBJECT_CODES["meniscus"]
     assert result.objects[138, 120] == OBJECT_CODES["joint"]
@@ -736,7 +732,7 @@ def test_the_air_and_skin_one_slice_names_are_laid_on_the_other_slice_of_the_sam
         "air": "abstain_no_field_outside_the_leg",
         "skin": "abstain_no_air",
     }
-    alone = PlaneAssignment(assignment.objects, own_codes, assignment.peaks, 1, 2, 0)
+    alone = PlaneAssignment(assignment.objects, own_codes, assignment.peaks, 1, 2)
     objects, codes = with_partner(
         alone,
         labels,
@@ -931,9 +927,10 @@ def test_a_slice_holds_the_places_within_half_its_thickness():
     origin = np.array([0.0, 5.0, 0.0])
     near = np.array([[3.0, 5.4, -2.0]])  # 0.4 mm off the plane: row 2, column 3
     off = np.array([[3.0, 9.0, -2.0]])  # 4 mm off it
-    held = places_on_slice(near, origin, CORONAL, (6, 6), 3.0)
+    frame = PlaneFrame(origin, CORONAL, (1.0, 1.0))
+    held = places_on_slice(near, frame, (6, 6), 3.0)
     assert held[2, 3] and held.sum() == 1
-    assert not places_on_slice(off, origin, CORONAL, (6, 6), 3.0).any()
+    assert not places_on_slice(off, frame, (6, 6), 3.0).any()
 
 
 def test_the_region_holding_most_of_the_places_is_the_one_that_holds_them():
