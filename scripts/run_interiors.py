@@ -8,13 +8,13 @@ over every slice, made once and kept with the series; the middle slice, its plan
 `assign_plane` names what the pictures show, each part by its paragraph in
 `knee.objects.assignments`: air, skin, femur, tibia, joint, the patella (by its light, with fat
 suppression), the menisci (sided by the header's own word for which knee it is), the articular
-cartilage, the PCL, the MCL and the joint's fluid. Once every series of the study is read, each
-middle slice is
-read with its partner's, the other sequence's slice of the same place (`partner_of`,
-`read_with_partner`, and `knee.objects.assignments.with_partner`): bones both name, where both agree; a part only the
-partner names, laid on. The arrays the renderers read, and the squint's, are saved per series with
-their digests in a receipt; `object_interiors.draw`, the renderer that drew the proof figure, draws
-the interiors, and `object_assignments.draw` draws the named objects.
+cartilage, the PCL, the MCL, the joint's fluid and Hoffa's fat pad. Once every series of the
+study is read, each middle slice is read with its partner's, the other sequence's slice of the
+same place (`partner_of`, `read_with_partner`, and `knee.objects.assignments.with_partner`): bones
+both name, where both agree; a part only the partner names, laid on. The arrays the renderers
+read, and the squint's, are saved per series with their digests in a receipt;
+`object_interiors.draw`, the renderer that drew the proof figure, draws the interiors, and
+`object_assignments.draw` draws the named objects.
 
 An object the middle slice does not show is named on its own main slice (AGENTS.md, the method's
 first step), saved in a run of its own, one record per part and series, and drawn beside the

@@ -207,6 +207,25 @@ categories of the twelve it relates to (docs/OBJECTS_AND_CONDITIONS.md §6):
   cartilage, named first, takes in the white in the joint within its reach of a bone, so at the foot
   of the outer gutter the white is named cartilage and the fluid is the white above it. The axial
   names no femur, so it names no fluid.
+- HOFFA'S FAT PAD: the infrapatellar fat pad, which «lies just behind the patellar tendon and
+  follows subcutaneous fat on all sequences» (docs/OBJECTS_AND_CONDITIONS.md). Seen on the proof's
+  middle sagittals, 2026-10-15: with fat suppression it is the grey, striated triangle below the
+  patella, behind the patellar tendon and in front of the joint, x1.5 to x2.5 of the femur's light,
+  and the lens draws it in one territory with the patella, which the patella's own light has
+  already carved out; without fat suppression it is as bright as the patella's marrow, and the
+  lens draws the two across the patella's lower part. Its descriptions, each one check with its
+  code (`fat_pad_code`):
+  1. front to back lies in its slice's plane, as on a sagittal slice
+     (abstain_front_to_back_runs_through_the_plane);
+  2. fat is suppressed: without it the fat pad is as bright as the patella's marrow, and it is laid
+     on from the fat-suppressed slice of the same place (`with_partner`), where the two are parted
+     (abstain_fat_as_bright_as_marrow);
+  3. the slice names the patella by its own light (abstain_no_patella);
+  4. it is the rest of the patella's territory below the patella's lowest place along the leg,
+     outside every part named (`below_the_patella`) (abstain_nothing_below_the_patella).
+  It relates to none of the twelve categories directly. Seen also on the proof: its back part,
+  tucked between the femur's condyle and the tibia, is named joint, and its top edge is cut level
+  with the patella's lowest place.
 - MENISCI: on a coronal slice, the dark triangles at the two ends of the joint, between the femur's
   condyle and the tibia's plateau («an isosceles triangle on coronal images», low on every
   sequence: docs/OBJECTS_AND_CONDITIONS.md). Seen on the proof's fat-suppressed coronal,
@@ -349,6 +368,7 @@ OBJECT_CODES = {
     "mcl": 15,
     "lcl": 16,
     "joint_fluid": 17,
+    "hoffa_fat_pad": 18,
 }
 CARTILAGES = ("femoral_cartilage", "tibial_cartilage")
 FOUR_NEIGHBOURS = ndi.generate_binary_structure(2, 1)
@@ -826,6 +846,41 @@ def fluid_in_the_recesses(
     return np.isin(pieces, held[held > 0])
 
 
+def fat_pad_code(
+    front_to_back_in_plane: bool,
+    fat_suppressed: bool,
+    patella_named: bool,
+    found: bool,
+) -> str:
+    """Whether Hoffa's fat pad was named, or why not: each check is one of its descriptions."""
+    if not front_to_back_in_plane:
+        return "abstain_front_to_back_runs_through_the_plane"
+    if not fat_suppressed:
+        return "abstain_fat_as_bright_as_marrow"
+    if not patella_named:
+        return "abstain_no_patella"
+    if not found:
+        return "abstain_nothing_below_the_patella"
+    return "identified"
+
+
+def below_the_patella(
+    labels: np.ndarray,
+    territory: int,
+    patella: np.ndarray,
+    objects: np.ndarray,
+    basis_lps: np.ndarray,
+) -> np.ndarray:
+    """Hoffa's fat pad: the rest of the patella's territory below the patella's lowest place along
+    the leg, outside every part named. Empty when the patella has no places."""
+    if not patella.any():
+        return np.zeros(labels.shape, dtype=bool)
+    rows, cols = np.indices(labels.shape)
+    up = basis_lps[2, 0] * rows + basis_lps[2, 1] * cols  # mm toward the head
+    lowest = float(up[patella].min())
+    return (labels == territory) & (up < lowest) & (objects == 0)
+
+
 def patella_code(
     front_to_back_in_plane: bool,
     femur_named: bool,
@@ -1055,8 +1110,8 @@ def assign_plane(
     fat_suppressed: bool = False,
     fluid_sensitive: bool = False,
 ) -> PlaneAssignment:
-    """Name air, skin, femur, tibia, joint, patella, menisci, cartilage, the PCL, the MCL and the
-    joint's fluid on one plane, from its interiors.
+    """Name air, skin, femur, tibia, joint, patella, menisci, cartilage, the PCL, the MCL, the
+    joint's fluid and Hoffa's fat pad on one plane, from its interiors.
 
     `knee` is the header's own word for which knee the scan is, "R", "L" or blank; it sides the
     menisci. `fat_suppressed` and `fluid_sensitive` are the series' own tags; only with fat
@@ -1206,6 +1261,16 @@ def assign_plane(
         fluid = fluid_in_the_recesses(plane, objects, leg, outside_picture, spacing_rc)
     codes["joint_fluid"] = fluid_code(fluid_bright, bones_named, bool(fluid.any()))
     objects[fluid] = OBJECT_CODES["joint_fluid"]
+
+    # HOFFA'S FAT PAD: with fat suppression, the rest of the patella's territory below it.
+    hoffa = np.zeros(plane.shape, dtype=bool)
+    if front_in_plane and fat_suppressed and patella is not None:
+        patella_places = objects == OBJECT_CODES["patella"]
+        hoffa = below_the_patella(labels, patella, patella_places, objects, basis_lps)
+    codes["hoffa_fat_pad"] = fat_pad_code(
+        front_in_plane, fat_suppressed, patella is not None, bool(hoffa.any())
+    )
+    objects[hoffa] = OBJECT_CODES["hoffa_fat_pad"]
     return PlaneAssignment(objects, codes, peaks, femur, tibia, menisci, patella)
 
 
@@ -1262,10 +1327,10 @@ def with_partner(
 
     A bone both name is named where both agree, and where the partner's picture does not reach
     (`UNSEEN`: it has no say there); not at all where they share no place. A part only the partner
-    names (the patella, the menisci, the cartilage, the PCL, the MCL, the joint's fluid) is laid on
-    from it, onto this slice's own interiors that nothing else holds; the patella only where it
-    holds this slice's own peak in front of the femur, so the two lenses agree on where it is. The
-    joint is then again what lies between the bones along the leg.
+    names (the patella, the menisci, the cartilage, the PCL, the MCL, the joint's fluid, Hoffa's fat
+    pad) is laid on from it, onto this slice's own interiors that nothing else holds; the patella
+    only where it holds this slice's own peak in front of the femur, so the two lenses agree on
+    where it is. The joint is then again what lies between the bones along the leg.
     """
     objects, codes = assignment.objects.copy(), dict(assignment.codes)
     for name in BONES:
@@ -1301,6 +1366,7 @@ def with_partner(
         ("pcl", ("pcl",)),
         ("mcl", ("mcl",)),
         ("joint_fluid", ("joint_fluid",)),
+        ("hoffa_fat_pad", ("hoffa_fat_pad",)),
     ):
         if codes.get(name) in NAMED or partner_codes.get(name) not in NAMED:
             continue
