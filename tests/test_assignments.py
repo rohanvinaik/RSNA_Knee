@@ -766,7 +766,9 @@ def test_the_semimembranosus_is_the_front_tendon_at_the_condyles_back_inner_corn
     back, inner = rows.astype(float), cols - 30.0
     dark = np.zeros(region.shape, dtype=bool)
     dark[41:46, 55:60] = True  # the tendon, against the condyle's back, inside its peak
-    dark[46:51, 59:64] = True  # a second body behind it, against the corner
+    dark[42, 56:59] = False  # the scanner's grain: a crack one pixel wide across it
+    # a second body behind it, against the corner, 3 mm of fat between them
+    dark[49:54, 59:64] = True
     # the PCL's end: inside the notch, outside the condyle's peak
     dark[41:46, 38:43] = True
     dark[43, 10:75] = True  # a fascia line, 1 mm thick
@@ -774,7 +776,9 @@ def test_the_semimembranosus_is_the_front_tendon_at_the_condyles_back_inner_corn
     tendon = semimembranosus_on_slice(
         dark, free, region, condyle, back, inner, np.ones(2)
     )
-    assert tendon[43, 57] and not tendon[48, 61] and not tendon[43, 40]
+    # the tendon whole, its crack too; not the body behind it, the PCL's end or the fascia line
+    assert tendon[43, 57] and tendon[42, 57]
+    assert not tendon[51, 61] and not tendon[43, 40] and not tendon[43, 30]
     # where nothing lies behind the condyle's peak, there is none
     behind_all = Peak(1, 15.0, (60, 50), 0.0)
     assert not semimembranosus_on_slice(
