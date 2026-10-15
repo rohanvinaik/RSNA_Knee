@@ -494,6 +494,17 @@ partner names is laid on from it, onto this slice's own interiors that nothing e
 patella only where it holds this slice's own peak in front of the femur; and the joint is again
 what lies between the bones.
 
+WHAT THE RULES ON A SLICE SHARE. The founder, 2026-10-15: «Compute that resolved one object of the
+knee's anatomy OBVIOUSLY can help resolve the others». Every rule on a slice reads its field
+(`read_field`): the leg, the air and the skin, the territories' peaks and which way the slice
+faces, read once; a part named on a slice of its own reads only that. What several rules weigh a
+place against, the marrow's light over a bone's places, each place's distance from a part, its
+position along the patient's axes and each region's size, is the slice's shared measure
+(`Measures`): read once on the slice when the first rule asks and handed to every rule after it,
+each making and each handing-on counted on the ledger (`knee.telemetry.once`). It is kept by the
+places it was read over, so a rule that asks once a part's places have changed (a meniscus may take
+some of a bone's) reads it again over the places as they then stand.
+
 The leg runs along the patient's superior axis, front to back along the anterior axis, and side to
 side along the left axis, all read from the slice's own frame. Where the leg's axis does not lie in
 the plane (an axial slice), the femur, tibia and joint are not named, and the bones of the slices
@@ -504,14 +515,19 @@ the picture, so nothing is named in it. Nothing here draws; the run's renderer d
 returns.
 """
 
-from collections.abc import Callable
+from collections.abc import Callable, Hashable
 from dataclasses import dataclass
-from functools import cache
+from typing import TypeVar
 
 import numpy as np
 from scipy import ndimage as ndi
 
+from knee.compute.contracts import handed_on
 from knee.objects.interiors import InteriorReading
+from knee.receipt import digest
+from knee.telemetry import once
+
+T = TypeVar("T")
 
 # More along the leg than across it: the cosine of 45 degrees. Geometry.
 ALONG_THE_LEG = float(np.sqrt(0.5))
@@ -603,6 +619,28 @@ OBJECT_CODES = {
     "muscle": 25,
 }
 CARTILAGES = ("femoral_cartilage", "tibial_cartilage")
+# The parts a slice's naming gives a code for (`assign_plane`), in the order it gives them; a part
+# named on a slice of its own says of each of them that it is not named there.
+SLICE_PARTS = (
+    "air",
+    "skin",
+    "femur",
+    "tibia",
+    "joint",
+    "patella",
+    "meniscus",
+    "meniscus_side",
+    "cartilage",
+    "pcl",
+    "patellar_tendon",
+    "quadriceps_tendon",
+    "mcl",
+    "joint_fluid",
+    "hoffa_fat_pad",
+    "suprapatellar_fat",
+    "subcutaneous_fat",
+    "muscle",
+)
 FOUR_NEIGHBOURS = ndi.generate_binary_structure(2, 1)
 
 
@@ -760,50 +798,111 @@ def marrow_light(plane: np.ndarray, bone: np.ndarray) -> float:
     return float(np.median(plane[bone]))
 
 
-def bone_distances(
-    objects: np.ndarray, spacing_rc: np.ndarray
-) -> tuple[np.ndarray, np.ndarray]:
-    """Each place's distance in millimetres from the femur's places and from the tibia's, read once
-    on a slice for every rule that measures a reach to the bones."""
-    femur = objects == OBJECT_CODES["femur"]
-    tibia = objects == OBJECT_CODES["tibia"]
-    return (
-        np.asarray(ndi.distance_transform_edt(~femur, sampling=spacing_rc)),
-        np.asarray(ndi.distance_transform_edt(~tibia, sampling=spacing_rc)),
-    )
+def distance_from(places: np.ndarray, spacing_rc: np.ndarray) -> np.ndarray:
+    """Each place's distance in millimetres from the given places, a part's: the one statement of a
+    reach to a part, which every rule that measures one reads (through `Measures.distance`, once on
+    a slice)."""
+    return np.asarray(ndi.distance_transform_edt(~places, sampling=spacing_rc))
 
 
-def positions_toward_left(shape: tuple[int, int], basis_lps: np.ndarray) -> np.ndarray:
-    """Each place's position toward the patient's left, in millimetres from the slice's first
-    pixel, read once on a slice for every rule that sides a place."""
+def positions_along(
+    shape: tuple[int, int], basis_lps: np.ndarray, axis: int
+) -> np.ndarray:
+    """Each place's position along one of the patient's axes (0 toward the left, 1 toward the back,
+    2 toward the head), in millimetres from the slice's first pixel: the one statement of it, which
+    every rule that sides a place or orders it along the leg reads (through `Measures.along`)."""
     rows, cols = np.indices(shape)
-    return basis_lps[0, 0] * rows + basis_lps[0, 1] * cols
+    return basis_lps[axis, 0] * rows + basis_lps[axis, 1] * cols
+
+
+def region_sizes(labels: np.ndarray) -> np.ndarray:
+    """How many places each region the lens draws holds, by its label, 0 for the places no region
+    holds: the one statement of it, which every rule that weighs a region by its size reads
+    (through `Measures.sizes`)."""
+    return np.bincount(labels.ravel())
+
+
+@dataclass(frozen=True, slots=True)
+class Measures:
+    """What the rules on one slice weigh a place against, read once on the slice and handed to every
+    rule that asks for it (`knee.telemetry.once`, each making and each handing-on counted on the
+    ledger): the marrow's light over a bone's places (`marrow_light`), each place's distance from a
+    part's places (`distance_from`), its position along each of the patient's axes
+    (`positions_along`), and the size of each region the lens draws (`region_sizes`).
+
+    `key` names the slice: its series and index. A value is kept under it with what it was read
+    from, the places by their digest and a distance's pixel size too, so a rule that asks after a
+    part's places have changed (a meniscus may take some of a bone's, a partner may lay its own on)
+    reads it again, and one that asks over the same places is handed the value already read. A
+    kept array is frozen (`handed_on`), since every rule that asks is handed the same one. Without
+    a key nothing is kept, and each is read where it is asked for, as a test or a single call
+    needs.
+    """
+
+    key: Hashable | None
+    plane: np.ndarray
+    basis_lps: np.ndarray
+
+    def _kept(self, kind: str, inputs: Hashable, make: Callable[[], T]) -> T:
+        return make() if self.key is None else once(kind, (self.key, inputs), make)
+
+    def light(self, places: np.ndarray) -> float:
+        """The marrow's light over a bone's places (`marrow_light`)."""
+        return self._kept(
+            "light", digest(places), lambda: marrow_light(self.plane, places)
+        )
+
+    def distance(self, places: np.ndarray, spacing_rc: np.ndarray) -> np.ndarray:
+        """Each place's distance from a part's places, at the given pixel size (`distance_from`)."""
+        size = tuple(float(step) for step in np.asarray(spacing_rc))
+        return self._kept(
+            "distance",
+            (digest(places), size),
+            lambda: handed_on(distance_from(places, spacing_rc)),
+        )
+
+    def along(self, axis: int) -> np.ndarray:
+        """Each place's position along one of the patient's axes (`positions_along`)."""
+        return self._kept(
+            "position",
+            axis,
+            lambda: handed_on(positions_along(self.plane.shape, self.basis_lps, axis)),
+        )
+
+    def sizes(self, labels: np.ndarray) -> np.ndarray:
+        """How many places each region the lens draws holds (`region_sizes`)."""
+        return self._kept(
+            "sizes", digest(labels), lambda: handed_on(region_sizes(labels))
+        )
 
 
 def cartilage_on(
     plane: np.ndarray,
     objects: np.ndarray,
     spacing_rc: np.ndarray,
-    light: float | None = None,
-    distances: Callable[[], tuple[np.ndarray, np.ndarray]] | None = None,
+    measures: Measures | None = None,
 ) -> tuple[np.ndarray, np.ndarray]:
     """The articular cartilage on one slice, femoral and tibial: in the joint, the places brighter
     than the bones' marrow by `CARTILAGE_BRIGHTER`, within `CARTILAGE_MM` of the femur or the tibia,
     each named for the nearer bone. Both empty where the slice names no femur, tibia or joint.
-    `light` is the bones' marrow light (`marrow_light`) and `distances` the slice's reader of its
-    `bone_distances`, when its caller keeps them, so they are read once on the slice."""
+    `measures` are the slice's shared measures, when its caller keeps them: the bones' marrow light
+    and each place's distance from the femur and from the tibia are read from them."""
     femur = objects == OBJECT_CODES["femur"]
     tibia = objects == OBJECT_CODES["tibia"]
     joint = objects == OBJECT_CODES["joint"]
     none = np.zeros(plane.shape, dtype=bool)
     if not (femur.any() and tibia.any() and joint.any()):
         return none, none
-    light = marrow_light(plane, femur | tibia) if light is None else light
+    bones = femur | tibia
+    light = marrow_light(plane, bones) if measures is None else measures.light(bones)
     if light <= 0:
         return none, none
-    to_femur, to_tibia = (
-        bone_distances(objects, spacing_rc) if distances is None else distances()
-    )
+    if measures is None:
+        to_femur = distance_from(femur, spacing_rc)
+        to_tibia = distance_from(tibia, spacing_rc)
+    else:
+        to_femur = measures.distance(femur, spacing_rc)
+        to_tibia = measures.distance(tibia, spacing_rc)
     bright = joint & (plane > CARTILAGE_BRIGHTER * light)
     femoral = bright & (to_femur <= CARTILAGE_MM) & (to_femur <= to_tibia)
     tibial = bright & (to_tibia <= CARTILAGE_MM) & (to_tibia < to_femur)
@@ -830,20 +929,20 @@ def dark_bands(
     objects: np.ndarray,
     spacing_rc: np.ndarray,
     outside_picture: np.ndarray,
-    light: float | None = None,
+    measures: Measures | None = None,
 ) -> np.ndarray:
     """The slice's thick, uniformly dark bands, each piece its own label (0 elsewhere): the places
     whose light over `LIGAMENT_SMOOTH_MM` is under `LIGAMENT_DARKER` of the femur's marrow, outside
     the femur, the tibia and the black margin (`outside_picture`, from `margin`; a stored zero
     inside the leg is the darkest tissue, not the margin), at least `LIGAMENT_THICK_MM` thick. All
-    zero when the slice names no femur, or its light is none. `light` is the femur's marrow light
-    (`marrow_light`), when the caller has read it already."""
+    zero when the slice names no femur, or its light is none. `measures` are the slice's shared
+    measures, when its caller keeps them: the femur's marrow light is read from them."""
     femur = objects == OBJECT_CODES["femur"]
     tibia = objects == OBJECT_CODES["tibia"]
     none = np.zeros(plane.shape, dtype=np.int32)
     if not femur.any():
         return none
-    light = marrow_light(plane, femur) if light is None else light
+    light = marrow_light(plane, femur) if measures is None else measures.light(femur)
     if light <= 0:
         return none
     size = tuple(int(2 * round(LIGAMENT_SMOOTH_MM / step) + 1) for step in spacing_rc)
@@ -854,16 +953,25 @@ def dark_bands(
 
 
 def band_joining(
-    bands: np.ndarray, first: np.ndarray, second: np.ndarray, spacing_rc: np.ndarray
+    bands: np.ndarray,
+    first: np.ndarray,
+    second: np.ndarray,
+    spacing_rc: np.ndarray,
+    measures: Measures | None = None,
 ) -> np.ndarray:
     """Of the dark bands (`dark_bands`), the largest reaching within `SHELL_MM` of both `first` and
-    `second`, two named parts. Empty when none does."""
+    `second`, two named parts. Empty when none does. `measures` are the slice's shared measures,
+    when its caller keeps them: each place's distance from the two parts is read from them."""
     none = np.zeros(bands.shape, dtype=bool)
     count = int(bands.max(initial=0))
     if not count or not (first.any() and second.any()):
         return none
-    near_first = np.asarray(ndi.distance_transform_edt(~first, sampling=spacing_rc))
-    near_second = np.asarray(ndi.distance_transform_edt(~second, sampling=spacing_rc))
+    if measures is None:
+        near_first = distance_from(first, spacing_rc)
+        near_second = distance_from(second, spacing_rc)
+    else:
+        near_first = measures.distance(first, spacing_rc)
+        near_second = measures.distance(second, spacing_rc)
     labels = np.arange(1, count + 1)
     reach_first = np.asarray(ndi.minimum(near_first, bands, index=labels))
     reach_second = np.asarray(ndi.minimum(near_second, bands, index=labels))
@@ -917,24 +1025,29 @@ def fat_under_the_skin(
     plane: np.ndarray,
     objects: np.ndarray,
     spacing_rc: np.ndarray,
-    light: float | None = None,
+    measures: Measures | None = None,
 ) -> np.ndarray:
     """The fat under the skin on a slice without fat suppression: the places outside every part
     named at least `LIKE_THE_FEMUR`'s lower bound of the femur's marrow light, the pieces of them
-    reaching within `SHELL_MM` of the skin. Empty when the slice names no skin or no femur. `light`
-    is the femur's marrow light (`marrow_light`), when the caller has read it already."""
+    reaching within `SHELL_MM` of the skin. Empty when the slice names no skin or no femur.
+    `measures` are the slice's shared measures, when its caller keeps them: the femur's marrow
+    light and each place's distance from the skin are read from them."""
     skin = objects == OBJECT_CODES["skin"]
     femur = objects == OBJECT_CODES["femur"]
     none = np.zeros(plane.shape, dtype=bool)
     if not (skin.any() and femur.any()):
         return none
-    light = marrow_light(plane, femur) if light is None else light
+    light = marrow_light(plane, femur) if measures is None else measures.light(femur)
     if light <= 0:
         return none
     pieces, count = ndi.label((plane >= LIKE_THE_FEMUR[0] * light) & (objects == 0))
     if not count:
         return none
-    near_skin = np.asarray(ndi.distance_transform_edt(~skin, sampling=spacing_rc))
+    near_skin = (
+        distance_from(skin, spacing_rc)
+        if measures is None
+        else measures.distance(skin, spacing_rc)
+    )
     labels = np.arange(1, count + 1)
     reach = np.asarray(ndi.minimum(near_skin, pieces, index=labels))
     return np.isin(pieces, labels[reach <= SHELL_MM])
@@ -961,7 +1074,7 @@ def muscle_bodies(
     spacing_rc: np.ndarray,
     outside_picture: np.ndarray,
     white: np.ndarray,
-    light: float | None = None,
+    measures: Measures | None = None,
 ) -> np.ndarray:
     """Muscle on a slice without fat suppression: the leg's places (neither air nor the black
     margin, `outside_picture`) outside every part named, darker than fat (under `LIKE_THE_FEMUR`'s
@@ -969,14 +1082,14 @@ def muscle_bodies(
     (`thick_parts`); then outside `white`, the places the fat-suppressed, fluid-sensitive slice of
     the same place sees white as fluid (none where no such slice is read). The white is left out
     after the bodies are found, since a vessel or a pocket of fluid inside a belly does not make
-    the belly thinner. Empty when the slice names no air or no femur. `light` is the femur's
-    marrow light (`marrow_light`), when the caller has read it already."""
+    the belly thinner. Empty when the slice names no air or no femur. `measures` are the slice's
+    shared measures, when its caller keeps them: the femur's marrow light is read from them."""
     air = objects == OBJECT_CODES["air"]
     femur = objects == OBJECT_CODES["femur"]
     none = np.zeros(plane.shape, dtype=bool)
     if not (air.any() and femur.any()):
         return none
-    light = marrow_light(plane, femur) if light is None else light
+    light = marrow_light(plane, femur) if measures is None else measures.light(femur)
     if light <= 0:
         return none
     darker = (plane < LIKE_THE_FEMUR[0] * light) & (objects == 0) & ~outside_picture
@@ -988,23 +1101,29 @@ def extensor_tendons(
     objects: np.ndarray,
     spacing_rc: np.ndarray,
     basis_lps: np.ndarray,
+    measures: Measures | None = None,
 ) -> tuple[np.ndarray, np.ndarray]:
     """The patellar and the quadriceps tendon on a sagittal slice: of the dark bands, the one joining
     the patella and the tibia (`band_joining`), the extensor mechanism's; below the patella's lowest
     place along the leg, the patellar tendon, and above its highest, the quadriceps tendon, each
     where no part holds it but the two fat pads beside the patella, which are the rest of its
     territory outside every part named. Alongside the patella it is neither. Both empty when the
-    slice does not name the patella and the tibia."""
+    slice does not name the patella and the tibia. `measures` are the slice's shared measures,
+    when its caller keeps them: each place's distance from the patella and the tibia, and its
+    position along the leg, are read from them."""
     patella = objects == OBJECT_CODES["patella"]
     tibia = objects == OBJECT_CODES["tibia"]
-    band = band_joining(bands, patella, tibia, spacing_rc)
+    band = band_joining(bands, patella, tibia, spacing_rc, measures)
     none = np.zeros(objects.shape, dtype=bool)
     if not band.any():
         return none, none
     fat = (OBJECT_CODES["hoffa_fat_pad"], OBJECT_CODES["suprapatellar_fat"])
     open_to_it = band & np.isin(objects, (0, *fat))
-    rows, cols = np.indices(objects.shape)
-    up = basis_lps[2, 0] * rows + basis_lps[2, 1] * cols  # mm toward the head
+    up = (  # mm toward the head
+        positions_along(objects.shape, basis_lps, 2)
+        if measures is None
+        else measures.along(2)
+    )
     below = open_to_it & (up < float(up[patella].min()))
     above = open_to_it & (up > float(up[patella].max()))
     return below, above
@@ -1039,13 +1158,16 @@ def outer_step(knee: str, next_toward_left_mm: float) -> int:
     return 1 if (next_toward_left_mm > 0) == (knee == "L") else -1
 
 
-def carried_bone(labels: np.ndarray, before: np.ndarray) -> np.ndarray:
+def carried_bone(
+    labels: np.ndarray, before: np.ndarray, measures: Measures | None = None
+) -> np.ndarray:
     """A bone carried from the middle slice to a neighbouring one by place, since anatomy is
     contiguous from slice to slice: the regions the lens draws there most of whose places were the
-    bone on the middle slice (`before`). Empty when none were."""
+    bone on the middle slice (`before`). Empty when none were. `measures` are the slice's shared
+    measures, when its caller keeps them: each region's size is read from them."""
     count = int(labels.max(initial=0)) + 1
     inside = np.bincount(labels[before & (labels > 0)], minlength=count)
-    whole = np.bincount(labels.ravel(), minlength=count)
+    whole = region_sizes(labels) if measures is None else measures.sizes(labels)
     regions = np.flatnonzero(2 * inside > whole)
     return np.isin(labels, regions[regions > 0])
 
@@ -1084,15 +1206,14 @@ def ligament_on_the_inner_side(
     objects: np.ndarray,
     basis_lps: np.ndarray,
     outside_picture: np.ndarray,
-    across: Callable[[], np.ndarray] | None = None,
-    distances: Callable[[], tuple[np.ndarray, np.ndarray]] | None = None,
+    measures: Measures | None = None,
 ) -> np.ndarray:
     """The MCL on one slice: of the low signal left once the named parts are out, the largest
     piece on the medial meniscus's side of the joint's middle that reaches within `SHELL_MM` of
     both the femur and the tibia. Empty when none does, or when the slice names no medial
-    meniscus, no joint, or not both bones. `across` and `distances` are the slice's readers of its
-    `positions_toward_left` and `bone_distances`, when its caller keeps them, so they are read once
-    on the slice and only when a piece needs them."""
+    meniscus, no joint, or not both bones. `measures` are the slice's shared measures, when its
+    caller keeps them: each place's position toward the left and its distance from the femur and
+    from the tibia are read from them, only when a piece needs them."""
     none = np.zeros(dark.shape, dtype=bool)
     medial = objects == OBJECT_CODES["medial_meniscus"]
     joint = objects == OBJECT_CODES["joint"]
@@ -1105,16 +1226,20 @@ def ligament_on_the_inner_side(
     if not count:
         return none
     leftward = (
-        positions_toward_left(dark.shape, basis_lps) if across is None else across()
+        positions_along(dark.shape, basis_lps, 0)
+        if measures is None
+        else measures.along(0)
     )
     middle = float(leftward[joint].mean())  # the joint's middle
     inner = np.sign(float(leftward[medial].mean()) - middle)
     labels = np.arange(1, count + 1)
-    near_femur, near_tibia = (
-        bone_distances(objects, np.linalg.norm(basis_lps, axis=0))
-        if distances is None
-        else distances()
-    )
+    spacing_rc = np.linalg.norm(basis_lps, axis=0)
+    if measures is None:
+        near_femur = distance_from(femur, spacing_rc)
+        near_tibia = distance_from(tibia, spacing_rc)
+    else:
+        near_femur = measures.distance(femur, spacing_rc)
+        near_tibia = measures.distance(tibia, spacing_rc)
     side = np.sign(np.asarray(ndi.mean(leftward, pieces, index=labels)) - middle)
     joining = (
         (side == inner)
@@ -1218,19 +1343,27 @@ def lcl_on_slice(
     tibia_across_mm: float,
     fibula_across_mm: float,
     spacing_rc: np.ndarray,
+    measures: Measures | None = None,
 ) -> np.ndarray:
     """The LCL on its slice: of the regions the lens draws, neither the femur's nor the fibula's,
     those whose middle lies on the fibula's side of the tibia's middle (the knee's outer side) and
     that reach within `SHELL_MM` of both the femur and the fibula; the largest. `across_mm` is each
-    place's position toward the patient's left. Empty when none does."""
+    place's position toward the patient's left. Empty when none does. `measures` are the slice's
+    shared measures, when its caller keeps them: each place's distance from the femur and from the
+    fibula, and each region's size, are read from them."""
     none = np.zeros(labels.shape, dtype=bool)
     count = int(labels.max(initial=0))
     if not (count and femur.any() and fibula.any()):
         return none
     index = np.arange(1, count + 1)
-    to_femur = np.asarray(ndi.distance_transform_edt(~femur, sampling=spacing_rc))
-    to_fibula = np.asarray(ndi.distance_transform_edt(~fibula, sampling=spacing_rc))
-    sizes = np.bincount(labels.ravel(), minlength=count + 1)[1:]
+    if measures is None:
+        to_femur = distance_from(femur, spacing_rc)
+        to_fibula = distance_from(fibula, spacing_rc)
+        sizes = region_sizes(labels)[1:]
+    else:
+        to_femur = measures.distance(femur, spacing_rc)
+        to_fibula = measures.distance(fibula, spacing_rc)
+        sizes = measures.sizes(labels)[1:]
     bone = np.bincount(labels[femur | fibula], minlength=count + 1)[1:] > 0
     middle = np.asarray(ndi.mean(across_mm, labels, index=index))
     outer = np.sign(fibula_across_mm - tibia_across_mm)
@@ -1258,17 +1391,19 @@ def fluid_code(fluid_bright: bool, bones_named: bool, found: bool) -> str:
 
 
 def white_as_fluid(
-    plane: np.ndarray, objects: np.ndarray, light: float | None = None
+    plane: np.ndarray, objects: np.ndarray, measures: Measures | None = None
 ) -> np.ndarray | None:
     """On a fat-suppressed, fluid-sensitive slice, the places white as fluid: more than
     `FLUID_BRIGHTER` times as bright as the bones' marrow, the femur's and the tibia's together.
-    None where the slice names no femur and tibia, or their light is none. `light` is the bones'
-    marrow light (`marrow_light`), when the caller has read it already."""
+    None where the slice names no femur and tibia, or their light is none. `measures` are the
+    slice's shared measures, when its caller keeps them: the bones' marrow light is read from
+    them."""
     femur = objects == OBJECT_CODES["femur"]
     tibia = objects == OBJECT_CODES["tibia"]
     if not (femur.any() and tibia.any()):
         return None
-    light = marrow_light(plane, femur | tibia) if light is None else light
+    bones = femur | tibia
+    light = marrow_light(plane, bones) if measures is None else measures.light(bones)
     if light <= 0:
         return None
     return plane > FLUID_BRIGHTER * light
@@ -1280,11 +1415,13 @@ def fluid_in_the_recesses(
     leg: np.ndarray,
     outside_picture: np.ndarray,
     spacing_rc: np.ndarray,
+    measures: Measures | None = None,
 ) -> np.ndarray:
     """The joint's fluid on a fat-suppressed, fluid-sensitive slice: of the places white as fluid
     (`white`, from `white_as_fluid`), those in the leg outside every part named but the joint; of
     their pieces, those that touch the joint or lie within `SHELL_MM` of the femur, the tibia or
-    the patella, in the joint's own recesses."""
+    the patella, in the joint's own recesses. `measures` are the slice's shared measures, when its
+    caller keeps them: each place's distance from the bones is read from them."""
     femur = objects == OBJECT_CODES["femur"]
     tibia = objects == OBJECT_CODES["tibia"]
     joint = objects == OBJECT_CODES["joint"]
@@ -1297,8 +1434,10 @@ def fluid_in_the_recesses(
         return none
     bones = femur | tibia | (objects == OBJECT_CODES["patella"])
     near = (
-        np.asarray(ndi.distance_transform_edt(~bones, sampling=spacing_rc)) <= SHELL_MM
-    )
+        distance_from(bones, spacing_rc)
+        if measures is None
+        else measures.distance(bones, spacing_rc)
+    ) <= SHELL_MM
     near |= ndi.binary_dilation(joint, structure=eight)
     held = np.unique(pieces[near & (pieces > 0)])
     return np.isin(pieces, held[held > 0])
@@ -1333,14 +1472,20 @@ def rest_of_the_patellas_territory(
     objects: np.ndarray,
     basis_lps: np.ndarray,
     upward: bool = False,
+    measures: Measures | None = None,
 ) -> np.ndarray:
     """A fat pad beside the patella: the rest of the patella's territory beyond the patella along
     the leg, outside every part named; below its lowest place (Hoffa's), or above its highest when
-    `upward` (the suprapatellar fat). Empty when the patella has no places."""
+    `upward` (the suprapatellar fat). Empty when the patella has no places. `measures` are the
+    slice's shared measures, when its caller keeps them: each place's position along the leg is
+    read from them."""
     if not patella.any():
         return np.zeros(labels.shape, dtype=bool)
-    rows, cols = np.indices(labels.shape)
-    up = basis_lps[2, 0] * rows + basis_lps[2, 1] * cols  # mm toward the head
+    up = (  # mm toward the head
+        positions_along(labels.shape, basis_lps, 2)
+        if measures is None
+        else measures.along(2)
+    )
     if upward:
         beyond = up > float(up[patella].max())
     else:
@@ -1469,12 +1614,15 @@ def semimembranosus_on_slice(
     back_mm: np.ndarray,
     inner_mm: np.ndarray,
     spacing_rc: np.ndarray,
+    measures: Measures | None = None,
 ) -> np.ndarray:
     """The semimembranosus tendon at the top of the tibia: the low signal among the places no part
     holds (`free`), its cracks one pixel wide closed (`FOUR_NEIGHBOURS`), and of its pieces at
     least `MENISCUS_THICKNESS_MM` thick, those whose middle lies inside the inner condyle's peak
     (`inner_mm`) and behind it (`back_mm`), the back-inner corner, and that reach within
-    `SHELL_MM` of the condyle's `region`; the front one. Empty when none does."""
+    `SHELL_MM` of the condyle's `region`; the front one. Empty when none does. `measures` are the
+    slice's shared measures, when its caller keeps them: each place's distance from the condyle's
+    region is read from them."""
     # The scanner's grain lifts some of the tendon's pixels just above the lens's level, so the
     # lens draws it cracked; a crack one pixel wide is closed before the thin parts are rubbed away.
     body = ndi.binary_closing(dark & free, structure=FOUR_NEIGHBOURS) & free
@@ -1483,7 +1631,11 @@ def semimembranosus_on_slice(
     if not count:
         return none
     index = np.arange(1, count + 1)
-    to_region = np.asarray(ndi.distance_transform_edt(~region, sampling=spacing_rc))
+    to_region = (
+        distance_from(region, spacing_rc)
+        if measures is None
+        else measures.distance(region, spacing_rc)
+    )
     back = np.asarray(ndi.mean(back_mm, pieces, index=index))
     inner = np.asarray(ndi.mean(inner_mm, pieces, index=index))
     corner = (
@@ -1717,37 +1869,35 @@ def between_along_the_leg(
     return between if rows_axis else between.T
 
 
-def assign_plane(
+@dataclass(frozen=True, slots=True)
+class Field:
+    """A slice's field, read before any part is named and shared by every rule on the slice: the
+    leg (every territory the lens draws, its holes filled), the air outside it and the skin that
+    touches the air, named in `objects` with their codes, each territory's strongest interior peak
+    (the deepest first), and which of the patient's axes lie in the slice's plane (side to side,
+    front to back, along the leg). A part named on a slice of its own reads only this."""
+
+    leg: np.ndarray
+    objects: np.ndarray
+    codes: dict[str, str]
+    peaks: tuple[Peak, ...]
+    in_plane: tuple[bool, bool, bool]
+
+
+def read_field(
     plane: np.ndarray,
     reading: InteriorReading,
     basis_lps: np.ndarray,
-    knee: str = "",
-    fat_suppressed: bool = False,
-    fluid_sensitive: bool = False,
     outside_picture: np.ndarray | None = None,
-) -> PlaneAssignment:
-    """Name air, skin, femur, tibia, joint, patella, menisci, cartilage, the PCL, the MCL, the
-    joint's fluid, Hoffa's fat pad, the suprapatellar fat and the fat under the skin on one plane,
-    from its interiors; and keep the dark bands the PCL is read from, for the extensor tendons, the
-    white the joint's fluid is named from, for muscle on the slice of the same place, and which of
-    the patient's axes lie in the slice's plane.
-
-    `knee` is the header's own word for which knee the scan is, "R", "L" or blank; it sides the
-    menisci. `fat_suppressed` and `fluid_sensitive` are the series' own tags; only with fat
-    suppression is the patella named by its light, and only with both is the fluid white.
-    `outside_picture` is the slice's black margin (`margin`), when the caller has found it already.
-    The values several rules weigh a place against -- the femur's marrow light, the bones' marrow
-    light, each place's distance from the femur and the tibia, its position toward the left -- are
-    read once, when the first rule asks for one, and handed to the rest.
-    """
+) -> Field:
+    """One slice's field (`Field`): AIR, the low signal outside the leg and its black margin where
+    it forms a field (`fields`), and SKIN, the leg's places touching the air (their paragraphs in
+    the module note); the territories' peaks; and which way the slice faces. `outside_picture` is
+    the slice's black margin (`margin`), when the caller has found it already."""
     dark, labels = reading.dark, reading.labels
+    outside_picture = margin(plane) if outside_picture is None else outside_picture
     objects = np.zeros(plane.shape, dtype=np.int8)
     codes: dict[str, str] = {}
-    outside_picture = margin(plane) if outside_picture is None else outside_picture
-    in_plane = axes_in_plane(basis_lps)
-    sides_in_plane, front_in_plane, leg_in_plane = in_plane
-
-    # AIR: the low signal outside the leg, where it is a field. SKIN: the leg's places touching it.
     leg = ndi.binary_fill_holes(labels > 0)
     spacing_rc = np.linalg.norm(basis_lps, axis=0)
     air = fields(dark & ~leg & ~outside_picture, spacing_rc) & leg.any()
@@ -1762,9 +1912,56 @@ def assign_plane(
     skin = leg & ndi.binary_dilation(air, structure=FOUR_NEIGHBOURS)
     objects[skin] = OBJECT_CODES["skin"]
     codes["skin"] = "identified" if skin.any() else "abstain_no_air"
+    peaks = territory_peaks(labels, reading.distance_mm, basis_lps)
+    # frozen: every stage that reads the slice is handed the same arrays; one that names a part
+    # on them names it on a copy
+    return Field(
+        handed_on(leg), handed_on(objects), codes, peaks, axes_in_plane(basis_lps)
+    )
+
+
+def assign_plane(
+    plane: np.ndarray,
+    reading: InteriorReading,
+    basis_lps: np.ndarray,
+    knee: str = "",
+    fat_suppressed: bool = False,
+    fluid_sensitive: bool = False,
+    outside_picture: np.ndarray | None = None,
+    field: Field | None = None,
+    measures: Measures | None = None,
+) -> PlaneAssignment:
+    """Name air, skin, femur, tibia, joint, patella, menisci, cartilage, the PCL, the MCL, the
+    joint's fluid, Hoffa's fat pad, the suprapatellar fat and the fat under the skin on one plane,
+    from its interiors; and keep the dark bands the PCL is read from, for the extensor tendons, the
+    white the joint's fluid is named from, for muscle on the slice of the same place, and which of
+    the patient's axes lie in the slice's plane.
+
+    `knee` is the header's own word for which knee the scan is, "R", "L" or blank; it sides the
+    menisci. `fat_suppressed` and `fluid_sensitive` are the series' own tags; only with fat
+    suppression is the patella named by its light, and only with both is the fluid white.
+    `outside_picture` is the slice's black margin (`margin`) and `field` its field (`read_field`:
+    the leg, the air and the skin, the peaks, which way it faces), when the caller has read them
+    already. `measures` are the slice's shared measures (`Measures`): the marrow's light, each
+    place's distance from a part, its position along the patient's axes, each read once on the
+    slice and handed to every rule that asks; without them each rule reads its own.
+    """
+    dark, labels = reading.dark, reading.labels
+    outside_picture = margin(plane) if outside_picture is None else outside_picture
+    field = (
+        read_field(plane, reading, basis_lps, outside_picture)
+        if field is None
+        else field
+    )
+    objects = field.objects.copy()
+    codes = dict(field.codes)
+    leg, peaks, in_plane = field.leg, field.peaks, field.in_plane
+    sides_in_plane, front_in_plane, leg_in_plane = in_plane
+    spacing_rc = np.linalg.norm(basis_lps, axis=0)
+    air = objects == OBJECT_CODES["air"]
+    skin = objects == OBJECT_CODES["skin"]
 
     # FEMUR and TIBIA: the deepest territory, and the deepest one above or below it.
-    peaks = territory_peaks(labels, reading.distance_mm, basis_lps)
     partner = None
     if leg_in_plane and peaks:
         partner = next(
@@ -1796,29 +1993,9 @@ def assign_plane(
         objects[joint] = OBJECT_CODES["joint"]
         codes["joint"] = "identified" if joint.any() else "abstain_nothing_between"
 
-    # The bones' places do not change after this, so what the rules below weigh against them is
-    # read once, when the first rule asks for it.
-    femur_places = objects == OBJECT_CODES["femur"]
-    tibia_places = objects == OBJECT_CODES["tibia"]
-
-    @cache
-    def femur_light() -> float:
-        return marrow_light(plane, femur_places)
-
-    @cache
-    def bones_light() -> float:
-        return marrow_light(plane, femur_places | tibia_places)
-
-    @cache
-    def distances() -> tuple[np.ndarray, np.ndarray]:
-        return bone_distances(objects, spacing_rc)
-
-    @cache
-    def across() -> np.ndarray:
-        return positions_toward_left(plane.shape, basis_lps)
-
     # PATELLA: on a fat-suppressed sagittal slice, the bone as bright as the femur at the deepest
     # peak in front of the femur's lower end.
+    femur_places = objects == OBJECT_CODES["femur"]
     peak = (
         patella_peak(peaks, femur_places, basis_lps)
         if front_in_plane and femur is not None
@@ -1826,9 +2003,12 @@ def assign_plane(
     )
     piece = np.zeros(plane.shape, dtype=bool)
     if peak is not None and fat_suppressed:
-        piece = patella_piece(plane, labels, peak, femur_light(), spacing_rc) & (
-            objects == 0
+        light = (
+            marrow_light(plane, femur_places)
+            if measures is None
+            else measures.light(femur_places)
         )
+        piece = patella_piece(plane, labels, peak, light, spacing_rc) & (objects == 0)
     codes["patella"] = patella_code(
         front_in_plane,
         femur is not None,
@@ -1851,9 +2031,14 @@ def assign_plane(
         touching = np.unique(pieces[near_joint & (pieces > 0)])
         pieces = np.where(np.isin(pieces, touching), pieces, 0)
         pieces, count = ndi.label(pieces > 0)
-        middle = float(across()[joint_places].mean())  # the joint's middle
-        for piece, leftward in end_pieces(pieces, count, across(), middle):
-            side = meniscus_side(knee, leftward)
+        leftward = (
+            positions_along(plane.shape, basis_lps, 0)
+            if measures is None
+            else measures.along(0)
+        )
+        middle = float(leftward[joint_places].mean())  # the joint's middle
+        for piece, toward_left in end_pieces(pieces, count, leftward, middle):
+            side = meniscus_side(knee, toward_left)
             name = "meniscus" if side == "meniscus" else f"{side}_meniscus"
             objects[pieces == piece] = OBJECT_CODES[name]
             menisci += 1
@@ -1865,9 +2050,7 @@ def assign_plane(
     joint_named = codes["joint"] == "identified"
     femoral = tibial = np.zeros(plane.shape, dtype=bool)
     if sides_in_plane and fat_suppressed and joint_named:
-        femoral, tibial = cartilage_on(
-            plane, objects, spacing_rc, bones_light(), distances
-        )
+        femoral, tibial = cartilage_on(plane, objects, spacing_rc, measures)
     codes["cartilage"] = cartilage_code(
         sides_in_plane, fat_suppressed, joint_named, bool(femoral.any() or tibial.any())
     )
@@ -1881,8 +2064,14 @@ def assign_plane(
     pcl = np.zeros(plane.shape, dtype=bool)
     bands = None
     if front_in_plane and not fat_suppressed and bones_named:
-        bands = dark_bands(plane, objects, spacing_rc, outside_picture, femur_light())
-        pcl = band_joining(bands, femur_places, tibia_places, spacing_rc)
+        bands = dark_bands(plane, objects, spacing_rc, outside_picture, measures)
+        pcl = band_joining(
+            bands,
+            objects == OBJECT_CODES["femur"],
+            objects == OBJECT_CODES["tibia"],
+            spacing_rc,
+            measures,
+        )
         pcl &= np.isin(objects, (0, OBJECT_CODES["joint"]))
     codes["pcl"] = pcl_code(
         front_in_plane, fat_suppressed, bones_named, bool(pcl.any())
@@ -1899,7 +2088,7 @@ def assign_plane(
     mcl = np.zeros(plane.shape, dtype=bool)
     if sides_in_plane and medial:
         mcl = ligament_on_the_inner_side(
-            dark, objects, basis_lps, outside_picture, across, distances
+            dark, objects, basis_lps, outside_picture, measures
         )
     codes["mcl"] = mcl_code(sides_in_plane, medial, bool(mcl.any()))
     objects[mcl] = OBJECT_CODES["mcl"]
@@ -1908,13 +2097,15 @@ def assign_plane(
     # recesses. The white is kept, for the muscle of the slice of the same place without it.
     fluid_bright = fat_suppressed and fluid_sensitive
     white = (
-        white_as_fluid(plane, objects, bones_light())
+        white_as_fluid(plane, objects, measures)
         if fluid_bright and bones_named
         else None
     )
     fluid = np.zeros(plane.shape, dtype=bool)
     if white is not None:
-        fluid = fluid_in_the_recesses(white, objects, leg, outside_picture, spacing_rc)
+        fluid = fluid_in_the_recesses(
+            white, objects, leg, outside_picture, spacing_rc, measures
+        )
     codes["joint_fluid"] = fluid_code(fluid_bright, bones_named, bool(fluid.any()))
     objects[fluid] = OBJECT_CODES["joint_fluid"]
 
@@ -1925,7 +2116,7 @@ def assign_plane(
         pad = np.zeros(plane.shape, dtype=bool)
         if front_in_plane and fat_suppressed and patella is not None:
             pad = rest_of_the_patellas_territory(
-                labels, patella, patella_places, objects, basis_lps, upward
+                labels, patella, patella_places, objects, basis_lps, upward, measures
             )
         codes[name] = fat_pad_code(
             front_in_plane, fat_suppressed, patella is not None, bool(pad.any()), upward
@@ -1936,7 +2127,7 @@ def assign_plane(
     # part named, in the pieces reaching the skin; last, since it is what lies outside the rest.
     fat = np.zeros(plane.shape, dtype=bool)
     if not fat_suppressed and skin.any() and femur is not None:
-        fat = fat_under_the_skin(plane, objects, spacing_rc, femur_light())
+        fat = fat_under_the_skin(plane, objects, spacing_rc, measures)
     codes["subcutaneous_fat"] = subcutaneous_code(
         fat_suppressed, bool(skin.any()), femur is not None, bool(fat.any())
     )

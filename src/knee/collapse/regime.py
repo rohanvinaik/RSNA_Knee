@@ -256,14 +256,17 @@ def read_regime(
         above = values[values > cut]
     terciles, spread_ratio, skew = _shape_readings(above, shape_minimum_population)
 
-    # The second member's population, read with the SAME function over a different structural
-    # selection: everything above the background split rather than above the noise-law cut. It is
-    # computed whether or not the first member resolved, because a seated member does not wait on
-    # another's attendance -- measured 2026-10-12, the first places a pair on 2 of 5 acquisitions of
-    # one study and this on 5 of 5, and where both read they agreed to within one stored unit. That
-    # agreement is overlap, NOT interchangeability (both second readers, independently).
+    # The second member's population, read with the SAME tercile rule (`tercile_edges`) over a
+    # different structural selection: everything above the background split rather than above the
+    # noise-law cut. It is computed whether or not the first member resolved, because a seated
+    # member does not wait on another's attendance -- measured 2026-10-12, the first places a pair
+    # on 2 of 5 acquisitions of one study and this on 5 of 5, and where both read they agreed to
+    # within one stored unit. That agreement is overlap, NOT interchangeability (both second
+    # readers, independently). Only its terciles are kept, so only they are read: the spread and
+    # skew `_shape_readings` reads beside them would be made and thrown away.
     above_split = values[values > split] if np.isfinite(split) else np.empty(0)
-    split_terciles, _, _ = _shape_readings(above_split, shape_minimum_population)
+    split_low, split_high, _ = tercile_edges(above_split, shape_minimum_population)
+    split_terciles = (split_low, split_high)
 
     # The profile along the stack: how much each slice's own foreground share departs from the
     # series', which is SS5.1's "profile down the depth" without a depth model.
