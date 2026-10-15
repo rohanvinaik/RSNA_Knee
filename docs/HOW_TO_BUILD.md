@@ -70,6 +70,12 @@ here.
   on every slice or every study and chase what it gets wrong: «even if a few images are a bit
   weird. Those edge cases are the ENTIRE space of where AI comes in». "Never wrong" is said of the
   lenses, never of the names: «"never wrong" simply refers to the thing doing the measurment».
+- Built for studies you will never see (2026-10-15): «Make sure you're only using deterministic
+  systems. We have solved harder problems than this before in the cell tracking project,
+  articulated in the <object> thesis» · «You are not present in the competition. Don't hand-tune».
+  Look at the proof to see what a rule must describe; then the rule runs alone. Its slice, its
+  bones and its numbers come from anatomy, a source, or the parts already found, never from where
+  you saw the part on the proof.
 - «you keep vastly overcomplicating it until I have to literally throw away the build». The old
   build had «all the parts, but a LOOOOOOOOOOOOOOOT of crap on top»; take «JUST enough to do this
   operation ... nothing more».
@@ -165,7 +171,11 @@ listening»:
    peaks, the territories, the edges, the dark bands; or the same slice in the other sequence of the
    same leg. A part plain in one lens is found by that lens.
 3. Write that plain reading as a short rule on those lenses. Each number comes from anatomy or from
-   the picture, labelled as Claude's reading when it is; each abstention has a named code.
+   the picture, labelled as Claude's reading when it is; each abstention has a named code. Where the
+   part has a slice of its own, the slice comes from a sourced law and the parts already found
+   (the LCL's: the coronal slice through where it attaches on the fibula, LaPrade 2003), never from
+   the slice where you saw it. Parts already found are a rule's targets ("reaches within 2 mm of"),
+   never masks cut out of a lens: a part carried several slices takes in more than itself.
 4. Draw exactly that rule on the proof before it touches the run, and look. If it misses, say why
    from the picture and change it for that reason; never cycle through rules.
 5. Write it in `src/knee/objects/assignments.py`, with a paragraph in the module note saying what it
@@ -178,32 +188,37 @@ listening»:
 ## Where it stands, 2026-10-14
 Check `git log` first; the run prints what each study named ("named, by series"), and the module
 note of `src/knee/objects/assignments.py` has a paragraph for each rule.
-- Resolved on the proof study (commit `ffed51d`), on the middle slices: air, skin, femur, tibia,
+- Resolved on the proof study (commit `6bc63cd`), on the middle slices: air, skin, femur, tibia,
   bone marrow (the inside of each bone named), the joint, the patella, both menisci (sided by the
   header), the articular cartilage, the PCL, the MCL; the fibula on its main slice (the T2
-  sagittal's slice 30); and the ACL on its own slice, the middle slice's neighbour on the knee's
-  outer side (named on the fat-suppressed sagittal's slice 19 and laid onto the T2's). The
-  patella, the menisci, the cartilage, the PCL, the ACL and the MCL are each found on one sequence
-  and laid onto the other sequence's slice of the same place. Every one of them is written in the
-  module note as an «<object>» (§4), its descriptions checked against its code.
-- Next, in the objects document's order: the LCL (on its own main slice; choosing that slice is a
-  step like the ACL's); the joint's fluid and recesses, and the synovium if the pictures hold it;
-  the fat pads (Hoffa's, and the two above the patella); the back of the knee (the medial
-  gastrocnemius head, the semimembranosus tendon); the quadriceps and patellar tendons; the fat
-  under the skin, and muscle. Then the parts that need their own main slices (the menisci on the
-  sagittal, the patella on the axial). Diagnosis only when he says.
+  sagittal's slice 30); the ACL on its own slice, the middle slice's neighbour on the knee's outer
+  side (named on the fat-suppressed sagittal's slice 19 and laid onto the T2's); and the LCL on its
+  own slice, the coronal slice through where it attaches on the fibula's head, 8.2 mm behind the
+  head's front edge (LaPrade 2003; named on the T1 coronal's slice 21 and laid onto the
+  fat-suppressed one). The patella, the menisci, the cartilage, the PCL, the ACL, the MCL and the
+  LCL are each found on one sequence and laid onto the other sequence's slice of the same place.
+  Every one of them is written in the module note as an «<object>» (§4), its descriptions checked
+  against its code.
+- Next, in the objects document's order: the joint's fluid and recesses, and the synovium if the
+  pictures hold it; the fat pads (Hoffa's, and the two above the patella); the back of the knee
+  (the medial gastrocnemius head, the semimembranosus tendon); the quadriceps and patellar tendons;
+  the fat under the skin, and muscle. Then the parts that need their own main slices (the menisci
+  on the sagittal, the patella on the axial). Diagnosis only when he says.
 - Still owed: where the header names no knee, look for the fibula on both sides and let its side
   name the outer one (the second half of the plan for siding the menisci); the fibula is not yet
   laid onto the fat-suppressed sagittal's slice of the same place (Law 9); the fibula's main slice
   is found by reading the lens on its block in every slice, and the ACL's is chosen by place from
-  the header, neither from the squint (§4); and §5's one coherent operation: the run prints the
-  values that no stage reads ("produced and read by no stage"), and on 2026-10-14 there were many.
+  the header, neither from the squint (§4); the LCL's slice is found from the fibula, so it rests on
+  that same reading; and §5's one coherent operation: the run prints the values that no stage
+  reads ("produced and read by no stage"), and on 2026-10-14 there were many.
 - Over-reaches stated in the module note, not chased: the cartilage takes in the notch roof's lining
   and the fluid down the femur's outer side; on the middle slice the PCL takes in the ACL's lower
   fibres, which cross in front of it, and leaves its last stretch down the tibia; the ACL takes in
   the fluid round it and a patch toward the tibia, and leaves its top end at the femur; the MCL is
   named only where it crosses the joint line, about 12 mm of it, and its stretches down the tibia
-  and up the femur are not reached.
+  and up the femur are not reached; the LCL is the band the cord runs in, so it takes in the tissue
+  round the cord and the popliteus tendon at the condyle's notch, and leaves the cord's upper
+  stretch beside the condyle.
 - Nothing is pushed; ask before pushing.
 
 ## The record, 2026-10-14
@@ -247,6 +262,7 @@ note of `src/knee/objects/assignments.py` has a paragraph for each rule.
 | «...yeah. Duh. That's what I've been saying this whole time. Why would that not be valid? It's literally the same leg, obviously the object would be the same in both views. That's the WHOLE thesis» | Called the step that carries a part between two scans of the same slices its own invention, and offered to take it out | §4: one leg, one set of objects |
 | «Finally, you're listening. Persist THIS understanding in the documentation pre-compact» | (the cartilage and the PCL, done by §7's loop) | §2's after-compaction steps, §7, "Where it stands" |
 | «Do the conversation read and the photo look steps again. i need you to connect the epistemology from the conversation to the literal photo output from the current stage we have. Otherwise you don't get the idea here, why it is common sense, why this is a SOLVED problem I've handed you, and you simply need to do some end-stage identity match and wiring» | After the compaction, summed up what to do as a list of steps, without saying what the lens pictures already show | §2: look at the lens pictures with the conversation in mind; what is left is naming the parts and wiring them in |
+| «Make sure you're only using deterministic systems. We have solved harder problems than this before in the cell tracking project, articulated in the <object> thesis» · «You are not present in the competition. Don't hand-tune» | Looked at the LCL slice by slice and began fitting a rule to the slices and columns where it showed, then patched exclusions one after another when the rule missed | §3: built for studies never seen; §7: the slice from a sourced law (the LCL's, from LaPrade 2003), and parts already found as targets, never masks |
 | «Um, reading it whole? Claude, it's over 100 pages long. Why do you think I haven't told you to read it whole before now?» | Started to read his whole paper on what an object is, over 100 pages, to learn what «<object>» means, when his message had just defined it | Reading whole means the whole unit he points to, such as the section he names; where he defines a term in his message, his definition is the one used (§4, «<object>») |
 
 Side notes he relayed the same day, each a lapse a self-check would have caught: the pipeline read
