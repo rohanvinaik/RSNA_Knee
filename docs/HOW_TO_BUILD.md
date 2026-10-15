@@ -51,7 +51,8 @@ here.
      `data/pictures/interiors/<proof uid>/series.png` and its per-series panels, are the current
      stage's output; the named pictures, `data/pictures/assignments/<proof uid>/series.png` and its
      per-series panels, show the parts resolved on the middle slices;
-     `data/pictures/main-slices/<proof uid>/series.png` shows the fibula on its main slice;
+     `data/pictures/main-slices/<proof uid>/series.png` shows the parts named on slices of their
+     own (the fibula, the ACL, the LCL and the semimembranosus tendon);
   4. `git log --oneline -15` and `git status`: what is committed;
   5. then do what his last message asks. When that is naming the parts, the next part is the first
      one under "Where it stands" below, done by the loop in §7. Do not ask him to confirm again what
@@ -205,21 +206,31 @@ note of `src/knee/objects/assignments.py` has a paragraph for each rule.
   reads: the deepest region behind the femur's inner condyle, on the knee's inner side of the
   notch, the femur and tibia carried onto the axial by place from the sagittal and coronal middle
   slices; over the 58 labelled studies it is named on 12 axial series of 11 studies, and of the
-  other axials 46 abstain because the header names no knee. Every one of them is written in the
-  module note as an «<object>» (§4), its descriptions checked against its code.
+  other axials 46 abstain because the header names no knee. The semimembranosus tendon (commit
+  `001d47a`) is named on an axial slice of its own, the top of the tibia: the axial slice nearest
+  the femur that holds the tibia's carried places and none of the femur's (slice 11 on the proof).
+  Its direct arm ends on the back-inner top of the tibia (LaPrade 2007), and there it is the front
+  thick piece of low signal inside and behind the inner condyle's peak, at the tibia's back-inner
+  corner; followed back onto the sagittals, that piece lies on the cord just behind the joint
+  line's back end. Over the 58 labelled studies it is named on 10 axial series of 10 studies; of
+  the other axials 46 abstain because the header names no knee, 16 find no tendon at the back-inner
+  corner, 5 no inner condyle and 4 no tibia below the femur. The study's leg (its femur and tibia,
+  and the notch) is made once and carried onto both parts' slices. Every one of them is written in
+  the module note as an «<object>» (§4), its descriptions checked against its code.
 - Not named, because the pictures do not hold it: the synovium. Looked at on 2026-10-15 at the
   outer recess of the fat-suppressed coronal, at its own pixels: the fluid lies straight between
   the capsule's thin dark line and the femur's shell, with no layer of its own between them; the
   sources read give no normal look for it, and synovitis is told apart with contrast, which no tag
   marks (docs/OBJECTS_AND_CONDITIONS.md).
-- Next, in the objects document's order: the semimembranosus tendon, on the same axial slice (the
-  rest of the back of the knee; the carry onto the axial then serves both parts, made once behind
-  their shared checks); the quadriceps and patellar tendons; the fat under the skin, and muscle.
-  Then the parts that need their own main slices (the menisci on the sagittal, the patella on the
-  axial). Diagnosis only when he says.
+- Next, in the objects document's order: the quadriceps and patellar tendons, on the middle
+  sagittal slices, where medicine sees them best; the fat under the skin, and muscle. Then the
+  parts that need their own main slices (the menisci on the sagittal, the patella on the axial).
+  Diagnosis only when he says.
 - Still owed: where the header names no knee, look for the fibula on both sides and let its side
   name the outer one (the second half of the plan for siding the menisci); the fibula is not yet
-  laid onto the fat-suppressed sagittal's slice of the same place (Law 9); the fibula's main slice
+  laid onto the fat-suppressed sagittal's slice of the same place (Law 9); the parts named on the
+  sagittal and coronal slices are not yet carried onto the axial by place (Law 9, the side note of
+  2026-10-15): only the femur and tibia are, to find the back of the knee; the fibula's main slice
   is found by reading the lens on its block in every slice, and the ACL's is chosen by place from
   the header, neither from the squint (§4); the LCL's slice is found from the fibula, so it rests on
   that same reading; parting the two fat pads above the patella, which lie on either side of the
@@ -241,7 +252,11 @@ note of `src/knee/objects/assignments.py` has a paragraph for each rule.
   is cut level with the patella's lowest place; the suprapatellar fat takes in a little of the
   quadriceps tendon where it meets the patella, and the picture's top edge cuts it; the medial
   gastrocnemius head takes in the popliteal vessels on its outer side, the tissue behind the
-  notch, and a thin strip under the skin along the back of the leg.
+  notch, and a thin strip under the skin along the back of the leg; the semimembranosus tendon is
+  named by the thickest piece of its core, about 2 by 4 mm of the black oval, about 7 by 5 mm,
+  that it is on its slice, because the low-signal lens covers the oval only in pieces
+  (`data/pictures/assignments-zooms-20261015/semimembranosus-axial-slice-11.png`), and the reach
+  test to the condyle's region keeps the piece at the knee without showing it touching the bone.
 - Nothing is pushed; ask before pushing.
 
 ## The record, 2026-10-14
