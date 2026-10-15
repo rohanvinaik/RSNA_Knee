@@ -689,6 +689,26 @@ def test_the_air_and_skin_one_slice_names_are_laid_on_the_other_slice_of_the_sam
     assert objects[10, 3] == OBJECT_CODES["skin"]
 
 
+def test_a_part_the_partner_names_is_laid_over_the_rest_of_the_field():
+    # without fat suppression a body of fluid is as dark as muscle, so this slice named it muscle
+    # by elimination; the fat-suppressed partner names it fluid, and the fluid is laid on there
+    assignment, labels, laid = partner_scene()
+    own = assignment.objects.copy()
+    own[42:48, 20:40] = OBJECT_CODES["muscle"]
+    laid[42:48, 20:40] = OBJECT_CODES["joint_fluid"]
+    alone = PlaneAssignment(own, dict(assignment.codes), assignment.peaks, 1, 2, 0)
+    objects, codes = with_partner(
+        alone,
+        labels,
+        SAGITTAL_MM,
+        np.zeros(labels.shape, dtype=bool),
+        laid,
+        {**PARTNER_CODES, "joint_fluid": "identified"},
+    )
+    assert codes["joint_fluid"] == "laid_from_its_partner"
+    assert objects[45, 30] == OBJECT_CODES["joint_fluid"]
+
+
 def test_the_fat_under_the_skin_is_the_layer_as_bright_as_marrow_reaching_the_skin():
     # one place per millimetre, the leg's edge to the left: the skin, the fat under it, the
     # fascia's thin dark line, muscle at about half the marrow's light, and the femur; deep fat
