@@ -40,6 +40,7 @@ OBJECT_COLOURS = {
     "patellar_tendon": (0.5, 1.0, 0.75, 0.85),
     "quadriceps_tendon": (0.8, 0.7, 1.0, 0.85),
     "subcutaneous_fat": (0.55, 0.25, 0.55, 0.55),
+    "muscle": (0.98, 0.5, 0.45, 0.5),
 }
 
 
@@ -140,6 +141,7 @@ def draw_stages(axes, arrays, record):
             if "subcutaneous_fat" in codes
             else ""
         )
+        + (f"\nSALMON muscle: {codes['muscle']}" if "muscle" in codes else "")
         + (
             f"\nOLIVE medial gastrocnemius head: {codes['medial_gastrocnemius']}"
             if "medial_gastrocnemius" in codes
