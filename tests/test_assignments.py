@@ -43,6 +43,8 @@ from knee.objects.assignments import (
     margin,
     mcl_code,
     meniscus_side,
+    muscle_bodies,
+    muscle_code,
     outer_step,
     pair_code,
     patella_code,
@@ -721,6 +723,41 @@ def test_subcutaneous_code_names_why():
         subcutaneous_code(False, True, True, False) == "abstain_no_fat_under_the_skin"
     )
     assert subcutaneous_code(False, True, True, True) == "identified"
+
+
+def test_muscle_is_the_legs_bodies_darker_than_fat_a_centimetre_across():
+    # one place per millimetre: air at the left, then the leg, its soft tissue as bright as fat;
+    # the femur's marrow at the right; a black margin along the bottom of the picture
+    plane = np.full((80, 80), 95.0)
+    objects = np.zeros((80, 80), dtype=np.int8)
+    objects[:, 0:5] = OBJECT_CODES["air"]
+    plane[:, 0:5] = 5.0
+    objects[0:40, 60:80] = OBJECT_CODES["femur"]
+    plane[0:40, 60:80] = 100.0
+    plane[10:30, 20:40] = 45.0  # a belly 2 cm across
+    plane[40:55, 20:24] = 45.0  # a tendon 4 mm thick
+    plane[0:60, 50] = 10.0  # a fascia line, 1 mm
+    plane[65:80, :] = 0.0  # the black margin, 15 mm deep
+    spacing = np.array([1.0, 1.0])
+    muscle = muscle_bodies(plane, objects, spacing, margin(plane))
+    assert muscle[20, 30]
+    assert not muscle[47, 22]  # the tendon
+    assert not muscle[30, 50]  # the fascia line
+    assert not muscle[20, 2]  # the air
+    assert not muscle[72, 30]  # the black margin
+    assert not muscle[20, 70]  # the femur
+    no_air = np.where(objects == OBJECT_CODES["air"], 0, objects)
+    assert not muscle_bodies(plane, no_air, spacing, margin(plane)).any()
+
+
+def test_muscle_code_names_why():
+    assert muscle_code(True, True, True, True) == (
+        "abstain_as_grey_as_fat_with_fat_suppression"
+    )
+    assert muscle_code(False, False, True, True) == "abstain_no_air"
+    assert muscle_code(False, True, False, True) == "abstain_no_femur"
+    assert muscle_code(False, True, True, False) == "abstain_no_muscle_body"
+    assert muscle_code(False, True, True, True) == "identified"
 
 
 def test_mcl_code_names_why():

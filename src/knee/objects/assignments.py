@@ -329,6 +329,30 @@ categories of the twelve it relates to (docs/OBJECTS_AND_CONDITIONS.md §6):
   quarters of the marrow's light is left out; laid onto the fat-suppressed coronal it lies on that
   slice's grey layer under the skin, leaving the layer's outer 1.5 mm to the skin's rim; the T2
   sagittal names no skin, nor does its partner, so there it abstains.
+- MUSCLE: with the fat under the skin «the rest» of the field: muscle is «intermediate» on T1W
+  and T2W and «low» on proton density, darker than fat and yellow marrow, and «low/intermediate»,
+  as grey as fat, with fat suppression (docs/OBJECTS_AND_CONDITIONS.md). Seen on the proof's T1
+  coronal, 2026-10-15: three grey bellies, the vastus medialis above the inner condyle, a belly
+  between the outer fat band and the femur, and one beside the tibia below the outer plateau, about
+  x0.3 to x0.6 of the femur's marrow light, between the fat, x0.75 and up, and the tendons, the
+  bones' shells and the fascia's lines, darker still and millimetres thin. On the proof's sagittal
+  without fat suppression the muscles behind the knee are darker, under x0.3 of the marrow, so of
+  their light only "darker than fat" holds on every sequence without fat suppression. Its
+  descriptions, each one check with its code (`muscle_code`):
+  1. fat is not suppressed: with it the muscle is as grey as the fat, and it is laid on from the
+     slice of the same place without fat suppression
+     (abstain_as_grey_as_fat_with_fat_suppression);
+  2. the slice names the air, its own or laid on from the other sequence's slice of the same place,
+     so the leg is known (abstain_no_air);
+  3. the slice names the femur, whose marrow's light the fat's is read against (abstain_no_femur);
+  4. it is the leg's places, neither air nor the black margin, outside every part named, darker
+     than fat (under `LIKE_THE_FEMUR`'s lower bound of the femur's marrow light), the bodies of them
+     at least `MUSCLE_MM` across (`muscle_bodies`, `thick_parts`) (abstain_no_muscle_body).
+  It relates to none of the twelve categories directly; the medial gastrocnemius head, a muscle the
+  back of the knee's rule names on the axial, borders Baker's cyst. Seen also on the proof: a
+  belly's narrow ends, under `MUSCLE_MM` across, are not reached, and its outline is rounded where
+  it narrows; laid onto the fat-suppressed coronal it lies on that slice's grey bellies; the
+  sagittal without fat suppression names no air, so there it abstains.
 - MEDIAL GASTROCNEMIUS HEAD: the inner head of the calf's big muscle, which arises from the back of
   the femur's medial condyle; «muscle intermediate»; a Baker's cyst lies «between the medial
   gastrocnemius head and the semimembranosus tendon», and medicine reads the back of the knee on
@@ -485,6 +509,12 @@ AIR_FIELD_MM = 10.0
 MENISCUS_THICKNESS_MM = 2.0
 # A bone is at least a centimetre across: a region smaller than a disc this wide is not one.
 BONE_MM = 10.0
+# A muscle's belly about the knee is centimetres across (the vasti, the hamstrings, the
+# gastrocnemius, the tibialis anterior); its tendons, the fascia and the vessels among the muscles
+# are millimetres (anatomy). Claude's reading of the proof's T1 coronal, 2026-10-15: of the places
+# darker than fat, the bodies at least 10 mm across are the three grey bellies on the slice, and at
+# 5 mm the round tendons beside the joint's inner side come in too.
+MUSCLE_MM = 10.0
 # The fibula's marrow is the tibia's tissue, so on one slice it is about as bright: within a
 # quarter of the tibia's light. Its head lies under the tibia's plateau, at least 3 cm below the
 # tibia's top. Claude's reading of the proof's T2 sagittal, 2026-10-14: the head is x1.00 to x1.08
@@ -557,6 +587,7 @@ OBJECT_CODES = {
     "patellar_tendon": 22,
     "quadriceps_tendon": 23,
     "subcutaneous_fat": 24,
+    "muscle": 25,
 }
 CARTILAGES = ("femoral_cartilage", "tibial_cartilage")
 FOUR_NEIGHBOURS = ndi.generate_binary_structure(2, 1)
@@ -836,6 +867,43 @@ def fat_under_the_skin(
     labels = np.arange(1, count + 1)
     reach = np.asarray(ndi.minimum(near_skin, pieces, index=labels))
     return np.isin(pieces, labels[reach <= SHELL_MM])
+
+
+def muscle_code(
+    fat_suppressed: bool, air_named: bool, femur_named: bool, found: bool
+) -> str:
+    """Whether muscle was named, or why not."""
+    if fat_suppressed:
+        return "abstain_as_grey_as_fat_with_fat_suppression"
+    if not air_named:
+        return "abstain_no_air"
+    if not femur_named:
+        return "abstain_no_femur"
+    if not found:
+        return "abstain_no_muscle_body"
+    return "identified"
+
+
+def muscle_bodies(
+    plane: np.ndarray,
+    objects: np.ndarray,
+    spacing_rc: np.ndarray,
+    outside_picture: np.ndarray,
+) -> np.ndarray:
+    """Muscle on a slice without fat suppression: the leg's places (neither air nor the black
+    margin, `outside_picture`) outside every part named darker than fat (under `LIKE_THE_FEMUR`'s
+    lower bound of the femur's marrow light), the bodies of them at least `MUSCLE_MM` across
+    (`thick_parts`). Empty when the slice names no air or no femur."""
+    air = objects == OBJECT_CODES["air"]
+    femur = objects == OBJECT_CODES["femur"]
+    none = np.zeros(plane.shape, dtype=bool)
+    if not (air.any() and femur.any()):
+        return none
+    light = float(np.median(plane[femur]))
+    if light <= 0:
+        return none
+    darker = (plane < LIKE_THE_FEMUR[0] * light) & (objects == 0) & ~outside_picture
+    return thick_parts(darker, spacing_rc, MUSCLE_MM)
 
 
 def extensor_tendons(
@@ -1749,6 +1817,15 @@ def assign_plane(
         fat_suppressed, bool(skin.any()), femur is not None, bool(fat.any())
     )
     objects[fat] = OBJECT_CODES["subcutaneous_fat"]
+
+    # MUSCLE: without fat suppression, the leg's bodies darker than fat outside every part named.
+    muscle = np.zeros(plane.shape, dtype=bool)
+    if not fat_suppressed and air.any() and femur is not None:
+        muscle = muscle_bodies(plane, objects, spacing_rc, outside_picture)
+    codes["muscle"] = muscle_code(
+        fat_suppressed, bool(air.any()), femur is not None, bool(muscle.any())
+    )
+    objects[muscle] = OBJECT_CODES["muscle"]
     return PlaneAssignment(objects, codes, peaks, femur, tibia, menisci, patella, bands)
 
 
