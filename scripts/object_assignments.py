@@ -32,6 +32,7 @@ OBJECT_COLOURS = {
     "acl": (0.15, 0.3, 1.0, 0.8),
     "mcl": (1.0, 0.25, 0.7, 0.9),
     "lcl": (1.0, 0.3, 0.0, 0.8),
+    "joint_fluid": (0.55, 0.85, 1.0, 0.85),
 }
 
 
@@ -100,7 +101,12 @@ def draw_stages(axes, arrays, record):
         + (f"\nVIOLET fibula: {codes['fibula']}" if "fibula" in codes else "")
         + (f"\nROYAL BLUE ACL: {codes['acl']}" if "acl" in codes else "")
         + (f"\nHOT PINK MCL: {codes['mcl']}" if "mcl" in codes else "")
-        + (f"\nORANGE-RED LCL: {codes['lcl']}" if "lcl" in codes else ""),
+        + (f"\nORANGE-RED LCL: {codes['lcl']}" if "lcl" in codes else "")
+        + (
+            f"\nSKY BLUE joint fluid: {codes['joint_fluid']}"
+            if "joint_fluid" in codes
+            else ""
+        ),
         fontsize=8,
     )
 

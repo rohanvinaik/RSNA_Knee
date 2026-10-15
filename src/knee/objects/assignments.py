@@ -50,7 +50,7 @@ categories of the twelve it relates to (docs/OBJECTS_AND_CONDITIONS.md §6):
      (abstain_nothing_bright_against_the_bones).
   It relates to Medial, Lateral and PF OA. Seen also on the proof: the bright fluid down the
   femur's outer side, and the lining of the notch's roof, lie in the joint within that reach and
-  are named with it.
+  are named with it; the joint's fluid, named after it, is the white beyond its reach.
 - JOINT: what lies between the femur and the tibia along the leg. Its descriptions, each one check
   with its code:
   1. the slice names the femur and the tibia (their codes, above);
@@ -184,6 +184,29 @@ categories of the twelve it relates to (docs/OBJECTS_AND_CONDITIONS.md §6):
   the head's width behind its front, gives the proof's next slice back (22), where the T1's lens
   draws the band in with the femur's region; the rule keeps the abstract's 8.2 mm, chosen before
   either slice was looked at.
+- JOINT FLUID: the fluid of the joint's cavity and its recesses, «low on T1W, high on T2W, very
+  high on fat-suppressed T2W», told apart by «fluid signal in the joint's own recesses»
+  (docs/OBJECTS_AND_CONDITIONS.md). Seen on the proof's fat-suppressed middle slices, 2026-10-15:
+  on the coronal the white down the outer gutter beside the femur's condyle and in the notch, on
+  the sagittal the white above the patella and along the joint's front, x4 to x8 of the bones'
+  marrow light; the popliteal vessels and the vessels under the skin are as white, but lie away
+  from the joint and the bones. Its descriptions, each one check with its code (`fluid_code`):
+  1. the sequence is fat-suppressed and fluid-sensitive (the series' own tags), where fluid is
+     white; on any other it is laid on from the partner slice of the same place (`with_partner`)
+     (abstain_fluid_not_bright_on_this_sequence);
+  2. the slice names the femur and the tibia (abstain_no_femur_and_tibia);
+  3. it is the places in the leg, outside every part named but the joint, at least
+     `FLUID_BRIGHTER` times as bright as the bones' marrow, the pieces of them that touch the joint
+     or lie within `SHELL_MM` of the femur, the tibia or the patella (`fluid_in_the_recesses`)
+     (abstain_no_bright_fluid_in_the_recesses).
+  It relates to Effusion, whose excess it is, and to Synovitis, whose lining it lies against. Seen
+  also on the proof: fluid is sought only among the places no other part holds when the slice is
+  first read, so the white the femur's and tibia's regions take in at the recesses, such as the
+  white at the outer joint line on the coronal, is not reached; it is never sought inside a bone's
+  region, since white inside a bone with fat suppression is a bruise (Contusion), not fluid. The
+  cartilage, named first, takes in the white in the joint within its reach of a bone, so at the foot
+  of the outer gutter the white is named cartilage and the fluid is the white above it. The axial
+  names no femur, so it names no fluid.
 - MENISCI: on a coronal slice, the dark triangles at the two ends of the joint, between the femur's
   condyle and the tibia's plateau («an isosceles triangle on coronal images», low on every
   sequence: docs/OBJECTS_AND_CONDITIONS.md). Seen on the proof's fat-suppressed coronal,
@@ -295,6 +318,12 @@ SHELL_MM = 2.0
 # edge, and on the femur slightly above (1.4 mm) and behind (3.1 mm) the lateral epicondyle; it is
 # 69.6 mm long (LaPrade, Ly, Wentorf and Engebretsen, Am J Sports Med 2003, ten knees).
 LCL_BEHIND_MM = 8.2
+# With fat suppression on a fluid-sensitive sequence fluid is «very high», above cartilage, fat and
+# muscle, which are intermediate to low, and above suppressed marrow, which is very low [Kh]. So
+# fluid is the white at least four times as bright as the bones' marrow: Claude's reading of the
+# proof's fat-suppressed coronal and sagittal, 2026-10-15, where the joint's fluid is x4 to x8 of
+# the marrow's light, the cartilage x2.4 to x3.5, and muscle and fat x1 to x2.
+FLUID_BRIGHTER = 4.0
 # What a slice's codes say when an object is named on it, by its own lens or with its partner's.
 NAMED = ("identified", "agreed_with_its_partner", "laid_from_its_partner")
 # A place of one slice that lies outside its partner's picture, where the partner has no say.
@@ -319,6 +348,7 @@ OBJECT_CODES = {
     "acl": 14,
     "mcl": 15,
     "lcl": 16,
+    "joint_fluid": 17,
 }
 CARTILAGES = ("femoral_cartilage", "tibial_cartilage")
 FOUR_NEIGHBOURS = ndi.generate_binary_structure(2, 1)
@@ -750,6 +780,52 @@ def lcl_on_slice(
     return labels == int(index[joining][np.argmax(sizes[joining])])
 
 
+def fluid_code(fluid_bright: bool, bones_named: bool, found: bool) -> str:
+    """Whether the joint's fluid was named, or why not: each check is one of its descriptions."""
+    if not fluid_bright:
+        return "abstain_fluid_not_bright_on_this_sequence"
+    if not bones_named:
+        return "abstain_no_femur_and_tibia"
+    if not found:
+        return "abstain_no_bright_fluid_in_the_recesses"
+    return "identified"
+
+
+def fluid_in_the_recesses(
+    plane: np.ndarray,
+    objects: np.ndarray,
+    leg: np.ndarray,
+    outside_picture: np.ndarray,
+    spacing_rc: np.ndarray,
+) -> np.ndarray:
+    """The joint's fluid on a fat-suppressed, fluid-sensitive slice: the places in the leg, outside
+    every part named but the joint, at least `FLUID_BRIGHTER` times as bright as the bones' marrow;
+    of their pieces, those that touch the joint or lie within `SHELL_MM` of the femur, the tibia or
+    the patella, in the joint's own recesses. Empty where the slice names no femur and tibia."""
+    femur = objects == OBJECT_CODES["femur"]
+    tibia = objects == OBJECT_CODES["tibia"]
+    joint = objects == OBJECT_CODES["joint"]
+    none = np.zeros(plane.shape, dtype=bool)
+    if not (femur.any() and tibia.any()):
+        return none
+    light = float(np.median(np.concatenate((plane[femur], plane[tibia]))))
+    if light <= 0:
+        return none
+    open_places = np.isin(objects, (0, OBJECT_CODES["joint"]))
+    bright = (plane > FLUID_BRIGHTER * light) & leg & open_places & ~outside_picture
+    eight = np.ones((3, 3), dtype=bool)
+    pieces, count = ndi.label(bright, structure=eight)
+    if not count:
+        return none
+    bones = femur | tibia | (objects == OBJECT_CODES["patella"])
+    near = (
+        np.asarray(ndi.distance_transform_edt(~bones, sampling=spacing_rc)) <= SHELL_MM
+    )
+    near |= ndi.binary_dilation(joint, structure=eight)
+    held = np.unique(pieces[near & (pieces > 0)])
+    return np.isin(pieces, held[held > 0])
+
+
 def patella_code(
     front_to_back_in_plane: bool,
     femur_named: bool,
@@ -977,13 +1053,14 @@ def assign_plane(
     basis_lps: np.ndarray,
     knee: str = "",
     fat_suppressed: bool = False,
+    fluid_sensitive: bool = False,
 ) -> PlaneAssignment:
-    """Name air, skin, femur, tibia, joint, patella, menisci, cartilage, the PCL and the MCL on one
-    plane, from its interiors.
+    """Name air, skin, femur, tibia, joint, patella, menisci, cartilage, the PCL, the MCL and the
+    joint's fluid on one plane, from its interiors.
 
     `knee` is the header's own word for which knee the scan is, "R", "L" or blank; it sides the
-    menisci. `fat_suppressed` is the series' own tag; only with it is the patella named by its
-    light.
+    menisci. `fat_suppressed` and `fluid_sensitive` are the series' own tags; only with fat
+    suppression is the patella named by its light, and only with both is the fluid white.
     """
     dark, labels = reading.dark, reading.labels
     objects = np.zeros(plane.shape, dtype=np.int8)
@@ -1120,6 +1197,15 @@ def assign_plane(
         mcl = ligament_on_the_inner_side(dark, objects, basis_lps, outside_picture)
     codes["mcl"] = mcl_code(sides_in_plane, medial, bool(mcl.any()))
     objects[mcl] = OBJECT_CODES["mcl"]
+
+    # JOINT FLUID: with fat suppression on a fluid-sensitive sequence, the white in the joint's
+    # recesses.
+    fluid_bright = fat_suppressed and fluid_sensitive
+    fluid = np.zeros(plane.shape, dtype=bool)
+    if fluid_bright and bones_named:
+        fluid = fluid_in_the_recesses(plane, objects, leg, outside_picture, spacing_rc)
+    codes["joint_fluid"] = fluid_code(fluid_bright, bones_named, bool(fluid.any()))
+    objects[fluid] = OBJECT_CODES["joint_fluid"]
     return PlaneAssignment(objects, codes, peaks, femur, tibia, menisci, patella)
 
 
@@ -1176,10 +1262,10 @@ def with_partner(
 
     A bone both name is named where both agree, and where the partner's picture does not reach
     (`UNSEEN`: it has no say there); not at all where they share no place. A part only the partner
-    names (the patella, the menisci, the cartilage, the PCL, the MCL) is laid on from it, onto this
-    slice's own interiors that nothing else holds; the patella only where it holds this slice's own
-    peak in front of the femur, so the two lenses agree on where it is. The joint is then again
-    what lies between the bones along the leg.
+    names (the patella, the menisci, the cartilage, the PCL, the MCL, the joint's fluid) is laid on
+    from it, onto this slice's own interiors that nothing else holds; the patella only where it
+    holds this slice's own peak in front of the femur, so the two lenses agree on where it is. The
+    joint is then again what lies between the bones along the leg.
     """
     objects, codes = assignment.objects.copy(), dict(assignment.codes)
     for name in BONES:
@@ -1214,6 +1300,7 @@ def with_partner(
         ("cartilage", CARTILAGES),
         ("pcl", ("pcl",)),
         ("mcl", ("mcl",)),
+        ("joint_fluid", ("joint_fluid",)),
     ):
         if codes.get(name) in NAMED or partner_codes.get(name) not in NAMED:
             continue
