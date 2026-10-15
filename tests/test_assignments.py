@@ -1,5 +1,5 @@
 """Intent tests for the named objects: air, skin, femur over tibia, the joint, patella, menisci,
-fibula, cartilage, the PCL and the ACL.
+fibula, cartilage, the PCL, the ACL and the MCL.
 
 The scene is a small synthetic knee in a coronal frame (rows run inferior, columns run to the left,
 one place per millimetre): air around a leg of soft tissue, a black margin along two sides of the
@@ -25,8 +25,10 @@ from knee.objects.assignments import (
     fibula_on_slice,
     laid_on,
     ligament_joining,
+    ligament_on_the_inner_side,
     main_slice,
     margin,
+    mcl_code,
     meniscus_side,
     outer_step,
     pair_code,
@@ -506,6 +508,67 @@ def test_acl_code_names_why():
     )
     assert acl_code(True, "L", True, True, False) == "abstain_no_region_in_the_joint"
     assert acl_code(True, "L", True, True, True) == "identified"
+
+
+def mcl_scene() -> tuple[np.ndarray, np.ndarray]:
+    """A coronal slice at one place per millimetre, columns toward the patient's left: the femur
+    above and the tibia below, the joint between them with the medial meniscus at its end toward
+    the left and the lateral at the other, and the low-signal lens's marks: a band on each side
+    from beside the femur to beside the tibia, a line further out, and a band beside the tibia
+    alone."""
+    objects = np.zeros((80, 70), dtype=np.int8)
+    objects[0:30, 10:46] = OBJECT_CODES["femur"]
+    objects[40:80, 10:46] = OBJECT_CODES["tibia"]
+    objects[30:40, 14:42] = OBJECT_CODES["joint"]
+    objects[30:40, 42:46] = OBJECT_CODES["medial_meniscus"]
+    objects[30:40, 10:14] = OBJECT_CODES["lateral_meniscus"]
+    dark = np.zeros(objects.shape, dtype=bool)
+    dark[22:50, 47:49] = True  # on the medial meniscus's side, across the joint line
+    dark[22:50, 7:9] = True  # the same on the other side
+    dark[:, 58:60] = True  # further out: near neither bone
+    dark[60:75, 47:49] = True  # beside the tibia alone
+    return dark, objects
+
+
+def test_the_mcl_is_the_low_signal_joining_the_bones_on_the_inner_side():
+    dark, objects = mcl_scene()
+    nowhere = np.zeros(objects.shape, dtype=bool)
+    mcl = ligament_on_the_inner_side(dark, objects, CORONAL, nowhere)
+    assert mcl[35, 47] and mcl[25, 48] and mcl[45, 47]
+    assert not mcl[35, 7]  # it joins both bones too, but on the other side
+    assert not mcl[10, 58]
+    assert not mcl[70, 47]
+    # with no medial meniscus to say which side is inner, nothing is named
+    objects[objects == OBJECT_CODES["medial_meniscus"]] = OBJECT_CODES["joint"]
+    unsided = ligament_on_the_inner_side(dark, objects, CORONAL, nowhere)
+    assert not unsided.any()
+
+
+def test_the_mcl_one_slice_shows_is_laid_on_the_other_slice_of_the_same_place():
+    assignment, labels, laid = partner_scene()
+    laid[30:60, 42:44] = OBJECT_CODES["mcl"]
+    objects, codes = with_partner(
+        assignment,
+        labels,
+        SAGITTAL_MM,
+        np.zeros(labels.shape, dtype=bool),
+        laid,
+        {**PARTNER_CODES, "mcl": "identified"},
+    )
+    assert codes["mcl"] == "laid_from_its_partner"
+    # where this slice's own femur took in the soft tissue the partner names the MCL, the two
+    # disagree on the femur, so the MCL is laid there too
+    assert objects[35, 43] == OBJECT_CODES["mcl"]
+    assert objects[55, 43] == OBJECT_CODES["mcl"]
+
+
+def test_mcl_code_names_why():
+    assert mcl_code(False, True, True) == "abstain_side_to_side_runs_through_the_plane"
+    assert mcl_code(True, False, True) == "abstain_no_medial_meniscus"
+    assert mcl_code(True, True, False) == (
+        "abstain_no_low_signal_joins_the_bones_on_the_inner_side"
+    )
+    assert mcl_code(True, True, True) == "identified"
 
 
 def test_a_joint_with_nothing_bright_against_the_bones_names_no_cartilage():
