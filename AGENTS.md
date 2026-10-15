@@ -31,7 +31,15 @@ object in `docs/OBJECTS_AND_CONDITIONS.md`, one at a time:
 A part plainly visible in one lens is found by that lens, whichever lens it is: «If it's visible in one lens
 but not the other (like "joint fluid")...then great, we know how to find it, problem solved». Seeing a part
 and not yet resolving it is the agent's failure, never the project's. Where the pictures do not hold the
-object at all, it is not named; it is never drawn wrong.
+object at all, it is not named.
+
+The test is validity, not perfection. Rohan, 2026-10-14: «It's not about perfection. It's about validity.»
+Each part is resolved at least once, from the lenses, by a rule that is not tuned to that view; then it is
+done («If you can resolve objects in one view, then you can do it acceptably as a general process, even if a
+few images are a bit weird. Those edge cases are the ENTIRE space of where AI comes in»). "Never wrong" is
+said of the lenses, not of the names: «"never wrong" simply refers to the thing doing the measurment. A
+thermometer is not wrong. Your inference ... might be». A name a rule gets wrong on some other image is not
+a reason to withdraw it.
 
 **One coherent operation.** Rohan, 2026-10-14: «This was supposed to be efficient. JIT and paralell compute,
 cheap measures, analyses shared in a single coherent operation.» The run is one graph of named values, each

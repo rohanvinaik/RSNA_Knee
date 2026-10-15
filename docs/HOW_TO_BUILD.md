@@ -44,7 +44,14 @@ here.
 - «This is basically the whole thing. That's it.» Recognition is pure simple math on the lenses,
   with no AI in it. Each object is resolved at least once without being tuned to one view. Rules
   are built, not tuned. Thresholds come from domain expertise and common sense. Where it cannot
-  tell, it abstains, and it is never wrong.
+  tell, it abstains.
+- Validity, not perfection: «It's not about perfection. It's about validity.» The test for every
+  part is the one he set for the femur and tibia: «from these simple outputs from simple scripts,
+  are we able to find a way that we can define the tibia and femur at least from the background
+  and the other parts of the knee? If the answer is yes, then we are done.» Do not measure a part
+  on every slice or every study and chase what it gets wrong: «even if a few images are a bit
+  weird. Those edge cases are the ENTIRE space of where AI comes in». "Never wrong" is said of the
+  lenses, never of the names: «"never wrong" simply refers to the thing doing the measurment».
 - «you keep vastly overcomplicating it until I have to literally throw away the build». The old
   build had «all the parts, but a LOOOOOOOOOOOOOOOT of crap on top»; take «JUST enough to do this
   operation ... nothing more».
@@ -76,8 +83,8 @@ here.
 - All the parts first, diagnosis after: «First objects, injury diagnosis later»; «we need to
   resolve ALL the parts of the anatomy then go to diagnosis». Settle the resolved ones formally.
 - Plain words, never jargon. «What on earth does that mean?»
-- Never drawn wrong: where a picture does not hold a part, it is not named. A part the pictures do
-  hold is never withdrawn to stop it being drawn wrong; it is fixed («You REMOVED shit??»).
+- Where a picture does not hold a part, it is not named. A part the pictures do hold is never
+  withdrawn because its name is wrong somewhere; it is fixed («You REMOVED shit??»).
 - Look at the picture after every change, everywhere the change reaches (every series, every slice
   a rule leans on), before saying anything about it. «Are you looking at the photos annoyingly
   often? Because if you aren't you're going to fuck this up»
@@ -149,6 +156,8 @@ here.
 | «Read the last 5-10 prompts I sent ... Tell me what you see» | Its texts each ended in its own next step or in waiting; code, runs, speed and writing about itself took the place of naming the parts, and the parts named went backwards | §1, §4 |
 | «God damn it. You REMOVED shit??» | Withdrew the patella at 21:50, minutes after he said a part visible but not yet resolved is to be fixed | §1: fix what you broke; §4: a part the pictures hold is fixed, never withdrawn |
 | «Are you looking at the photos annoyingly often? Because if you aren't you're going to fuck this up» | Changed rules and ran them without looking at every picture they reached: the whole fat-suppressed sagittal, the fibula's slice, the patella off its middle slice (where it then named the femur's condyle) | §4: look after every change, everywhere it reaches |
+| «Remember what "computer vision" means here. I don't think you recall what the idea actually is. It's not about perfection. It's about validity. I haven't described the AI part of this to you yet» | Measured the patella on eleven slices and all 58 studies and treated its wrong names there as failures; had read «never wrong» as a rule for the names | §3: validity, not perfection; "never wrong" is the lenses' |
+| «YES. I have said that MANY TIMES. Read the original conversation from yesterday AGAIN.» | Asked him to confirm what he had said many times | §1, §2 |
 
 Side notes he relayed the same day, each a lapse a self-check would have caught: the pipeline read
 only the middle slice; the menisci were unsided; the read-first rule lived only in Claude's memory;
