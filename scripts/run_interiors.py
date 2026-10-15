@@ -113,6 +113,7 @@ from knee.objects.assignments import (
     PlaneAssignment,
     acl_code,
     acl_on_slice,
+    anterior_synovial_recess,
     assign_plane,
     carried_bone,
     extensor_tendons,
@@ -140,6 +141,7 @@ from knee.objects.assignments import (
     semimembranosus_on_slice,
     slice_through,
     subcutaneous_code,
+    synovium_code,
     tendon_code,
     tibia_top_slice,
     with_partner,
@@ -923,6 +925,72 @@ def name_the_rest_of_the_field(own: Measured, partner: Measured | None) -> None:
             partner.record["assignments"]["codes"][name] = code
 
 
+def name_the_synovial_lining(own: Measured, partner: Measured | None) -> None:
+    """Locate the anterior recess and its fat-facing surface after the parts are combined.
+
+    Keep the cavity and its lining as separate masks: their shared surface must not erase
+    the fluid or fat label. Reuse the existing white measurement and physical-place match.
+    """
+    reads("series", ("row",), "synovium")
+    reads("naming", ("in_plane", "white"), "synovium")
+    reads("partner", ("objects", "codes"), "synovium")
+    objects = own.arrays["a1_objects"]
+    codes = own.record["assignments"]["codes"]
+    sagittal = own.assignment.in_plane[1] and own.assignment.in_plane[2]
+    bright = (
+        int(own.series.row.fat_suppression) == 1
+        and int(own.series.row.fluid_sensitive) == 1
+    )
+    has_patella = bool((objects == OBJECT_CODES["patella"]).any())
+    has_femur = bool((objects == OBJECT_CODES["femur"]).any())
+    white = own.assignment.white
+    recess = lining = np.zeros(objects.shape, dtype=bool)
+    if sagittal and bright and has_patella and has_femur and white is not None:
+        recess, lining = anterior_synovial_recess(
+            white,
+            objects,
+            own.frame.basis_lps,
+            measures_of(
+                own.record["series_uid"],
+                own.record["slice_index"],
+                own.arrays["acquired_plane"],
+                own.frame,
+            ),
+        )
+    code = synovium_code(sagittal, bright, has_patella, has_femur, bool(recess.any()))
+    names = ("anterior_synovial_recess", "synovium")
+    for name, mask in zip(names, (recess, lining), strict=True):
+        own.arrays[f"a2_{name}"] = mask
+        codes[name] = (
+            code
+            if mask.any() or code != "identified"
+            else "abstain_no_fat_facing_surface"
+        )
+    handed("synovial_surfaces", ("recess", "lining"))
+    if code != "identified" or partner is None:
+        return
+    reads("synovial_surfaces", ("recess", "lining"), "partner")
+    source = matched(
+        partner.series,
+        partner.record,
+        partner.frame,
+        partner.arrays["acquired_plane"].shape,
+        own.record,
+        own.frame,
+        own.arrays["acquired_plane"],
+    )
+    if isinstance(source, str):
+        return
+    for name, mask in zip(names, (recess, lining), strict=True):
+        placed = laid_by(mask.astype(np.int16), source) == 1
+        partner.arrays[f"a2_{name}"] = placed
+        partner.record["assignments"]["codes"][name] = (
+            "laid_from_its_partner"
+            if placed.any()
+            else "abstain_outside_partner_picture"
+        )
+
+
 def semimembranosus_slice(
     own: Measured, leg: Leg | None
 ) -> tuple[dict, dict[str, np.ndarray], PlaneFrame] | str:
@@ -1415,6 +1483,8 @@ def save(run_dir: Path, study_uid: str, record: dict, arrays: dict) -> dict:
     part = record.get("main_slice", {}).get("object")
     name = record["series_uid"] if part is None else f"{record['series_uid']}-{part}"
     artifact = Path(study_uid) / f"{name}.npz"
+    if "a2_synovium" in arrays:
+        reads("synovial_surfaces", ("recess", "lining"), "save")
     np.savez_compressed(run_dir / artifact, allow_pickle=False, **arrays)
     record["study_uid"] = study_uid
     record["artifact"] = str(artifact)
@@ -1529,6 +1599,13 @@ def measure_study(
             name_the_extensor_tendons(own, partner)
         for own, partner in zip(measured, partners, strict=True):
             name_the_rest_of_the_field(own, partner)
+        # Fat-suppressed sources locate the recess and its lining; transfer after each
+        # target has its own abstention, so a later target cannot overwrite a transferred mask.
+        for own, partner in sorted(
+            zip(measured, partners, strict=True),
+            key=lambda pair: int(pair[0].series.row.fat_suppression),
+        ):
+            name_the_synovial_lining(own, partner)
         # The back of the knee, on the series the leg runs through: the study's leg, its bones in
         # the scanner's millimetres, made once where the header names the knee there, and carried
         # onto the slices its parts are named on; the medial head on the middle slice, from the
