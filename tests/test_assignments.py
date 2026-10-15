@@ -328,6 +328,25 @@ def test_two_slices_that_disagree_on_where_the_patella_is_name_none():
     assert not (objects == OBJECT_CODES["patella"]).any()
 
 
+def test_the_cartilage_one_slice_shows_is_laid_on_the_other_slice_of_the_same_place():
+    # one leg, so the same cartilage (Rohan: «It's literally the same leg»)
+    assignment, labels, laid = partner_scene()
+    laid[40:42, 20:40] = OBJECT_CODES["femoral_cartilage"]
+    laid[48:50, 20:40] = OBJECT_CODES["tibial_cartilage"]
+    objects, codes = with_partner(
+        assignment,
+        labels,
+        SAGITTAL_MM,
+        np.zeros(labels.shape, dtype=bool),
+        laid,
+        {**PARTNER_CODES, "cartilage": "identified"},
+    )
+    assert codes["cartilage"] == "laid_from_its_partner"
+    assert objects[40, 30] == OBJECT_CODES["femoral_cartilage"]
+    assert objects[49, 30] == OBJECT_CODES["tibial_cartilage"]
+    assert objects[45, 30] == OBJECT_CODES["joint"]
+
+
 def test_the_menisci_are_the_dark_wedges_at_the_two_ends_of_the_joint():
     result = assigned(fine_coronal_scene(menisci=True), pixel_mm=FINE_MM)
     assert result.codes["meniscus"] == "identified"

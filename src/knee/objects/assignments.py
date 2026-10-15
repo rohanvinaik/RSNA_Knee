@@ -19,7 +19,7 @@ Each is named by what the pictures show, read off the interiors' own lenses:
   on a coronal slice with fat suppression, in the joint, the places brighter than the bones' marrow
   by `CARTILAGE_BRIGHTER` within `CARTILAGE_MM` of a bone, named for the nearer bone, femoral or
   tibial (`cartilage_on`). Without fat suppression it is not brighter than marrow, so there it is
-  laid on from the fat-suppressed slice of the same place; the middle sagittal slice passes through
+  laid on from the fat-suppressed slice of the same place (`with_partner`); the middle sagittal slice passes through
   the notch, where no joint surfaces meet, so it is not named there. Seen also on the proof: the
   bright fluid down the femur's outer side, and the lining of the notch's roof, lie in the joint
   within that reach and are named with it.
@@ -61,9 +61,11 @@ Each is named by what the pictures show, read off the interiors' own lenses:
 
 TWO SLICES OF ONE PLACE (`with_partner`). A study images the knee in two sequences on the same
 slices: on the proof, the two sagittals lie on the same planes within 0.002 mm and the two coronals
-too, each pair at its own pixel size (measured through the import, 2026-10-14). Each sequence is a
-lens that shows what the other may not (Rohan, 2026-10-14: «If it's visible in one lens but not the
-other (like "joint fluid")...then great, we know how to find it, problem solved»). On the proof's
+too, each pair at its own pixel size (measured through the import, 2026-10-14). It is one leg, so
+an object found in one is the same object in the other (Rohan, 2026-10-14: «It's literally the same
+leg, obviously the object would be the same in both views. That's the WHOLE thesis»), and each
+sequence shows what the other may not («If it's visible in one lens but not the other (like "joint
+fluid")...then great, we know how to find it, problem solved»). On the proof's
 T1 coronal the joint's band is not dark enough for the low-signal lens, so the femur's and tibia's
 territories run over the joint and its menisci; on its fat-suppressed coronal they do not. So a
 slice is read with its partner, the other sequence's slice of the same place (`laid_on`): a bone
@@ -137,6 +139,7 @@ OBJECT_CODES = {
     "femoral_cartilage": 11,
     "tibial_cartilage": 12,
 }
+CARTILAGES = ("femoral_cartilage", "tibial_cartilage")
 FOUR_NEIGHBOURS = ndi.generate_binary_structure(2, 1)
 
 
@@ -693,9 +696,10 @@ def with_partner(
 
     A bone both name is named where both agree, and where the partner's picture does not reach
     (`UNSEEN`: it has no say there); not at all where they share no place. A part only the partner
-    names is laid on from it, onto this slice's own interiors that nothing else holds; the patella
-    only where it holds this slice's own peak in front of the femur, so the two lenses agree on
-    where it is. The joint is then again what lies between the bones along the leg.
+    names (the patella, the menisci, the cartilage) is laid on from it, onto this slice's own
+    interiors that nothing else holds; the patella only where it holds this slice's own peak in
+    front of the femur, so the two lenses agree on where it is. The joint is then again what lies
+    between the bones along the leg.
     """
     objects, codes = assignment.objects.copy(), dict(assignment.codes)
     for name in BONES:
@@ -724,7 +728,11 @@ def with_partner(
     objects[between] = joint
     if codes.get("joint") in NAMED or between.any():
         codes["joint"] = "identified" if between.any() else "abstain_nothing_between"
-    for name, members in (("patella", ("patella",)), ("meniscus", MENISCI)):
+    for name, members in (
+        ("patella", ("patella",)),
+        ("meniscus", MENISCI),
+        ("cartilage", CARTILAGES),
+    ):
         if codes.get(name) in NAMED or partner_codes.get(name) not in NAMED:
             continue
         theirs = np.isin(laid, [OBJECT_CODES[member] for member in members])
