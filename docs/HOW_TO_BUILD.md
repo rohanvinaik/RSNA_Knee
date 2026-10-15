@@ -188,33 +188,38 @@ listening»:
 ## Where it stands, 2026-10-14
 Check `git log` first; the run prints what each study named ("named, by series"), and the module
 note of `src/knee/objects/assignments.py` has a paragraph for each rule.
-- Resolved on the proof study (commit `75023ac`), on the middle slices: air, skin, femur, tibia,
+- Resolved on the proof study (commit `1d86cfc`), on the middle slices: air, skin, femur, tibia,
   bone marrow (the inside of each bone named), the joint, the patella, both menisci (sided by the
   header), the articular cartilage, the PCL, the MCL, the joint's fluid (the white in the joint's
-  recesses with fat suppressed, laid onto the T1 and the T2); the fibula on its main slice (the T2
+  recesses with fat suppressed, laid onto the T1 and the T2), Hoffa's fat pad (the rest of the
+  patella's territory below the patella) and the suprapatellar fat (the rest of it above the
+  patella: the two fat pads above the patella, named together); the fibula on its main slice (the T2
   sagittal's slice 30); the ACL on its own slice, the middle slice's neighbour on the knee's outer
   side (named on the fat-suppressed sagittal's slice 19 and laid onto the T2's); and the LCL on its
   own slice, the coronal slice through where it attaches on the fibula's head, 8.2 mm behind the
   head's front edge (LaPrade 2003; named on the T1 coronal's slice 21 and laid onto the
   fat-suppressed one). The patella, the menisci, the cartilage, the PCL, the ACL, the MCL, the
-  LCL and the joint's fluid are each found on one sequence and laid onto the other sequence's
-  slice of the same place. Every one of them is written in the module note as an «<object>» (§4),
-  its descriptions checked against its code.
+  LCL, the joint's fluid, Hoffa's fat pad and the suprapatellar fat are each found on one sequence
+  and laid onto the other sequence's slice of the same place. Every one of them is written in the
+  module note as an «<object>» (§4), its descriptions checked against its code.
 - Not named, because the pictures do not hold it: the synovium. Looked at on 2026-10-15 at the
   outer recess of the fat-suppressed coronal, at its own pixels: the fluid lies straight between
   the capsule's thin dark line and the femur's shell, with no layer of its own between them; the
   sources read give no normal look for it, and synovitis is told apart with contrast, which no tag
   marks (docs/OBJECTS_AND_CONDITIONS.md).
-- Next, in the objects document's order: the fat pads (Hoffa's, and the two above the patella);
-  the back of the knee (the medial gastrocnemius head, the semimembranosus tendon); the quadriceps
-  and patellar tendons; the fat under the skin, and muscle. Then the parts that need their own
-  main slices (the menisci on the sagittal, the patella on the axial). Diagnosis only when he says.
+- Next, in the objects document's order: the back of the knee (the medial gastrocnemius head, the
+  semimembranosus tendon); the quadriceps and patellar tendons; the fat under the skin, and
+  muscle. Then the parts that need their own main slices (the menisci on the sagittal, the patella
+  on the axial). Diagnosis only when he says.
 - Still owed: where the header names no knee, look for the fibula on both sides and let its side
   name the outer one (the second half of the plan for siding the menisci); the fibula is not yet
   laid onto the fat-suppressed sagittal's slice of the same place (Law 9); the fibula's main slice
   is found by reading the lens on its block in every slice, and the ACL's is chosen by place from
   the header, neither from the squint (§4); the LCL's slice is found from the fibula, so it rests on
-  that same reading; and §5's one coherent operation: the run prints the values that no stage
+  that same reading; parting the two fat pads above the patella, which lie on either side of the
+  suprapatellar recess: on the proof the recess between them is collapsed, a film of faint white
+  under the fluid's level with fat suppression and a faint dark curve without it, and no lens draws
+  it as a border; and §5's one coherent operation: the run prints the values that no stage
   reads ("produced and read by no stage"), and on 2026-10-14 there were many.
 - Over-reaches stated in the module note, not chased: the cartilage takes in the notch roof's lining
   and the fluid down the femur's outer side; on the middle slice the PCL takes in the ACL's lower
@@ -225,7 +230,10 @@ note of `src/knee/objects/assignments.py` has a paragraph for each rule.
   round the cord and the popliteus tendon at the condyle's notch, and leaves the cord's upper
   stretch beside the condyle; the joint's fluid leaves the white the femur's and tibia's regions
   take in at the recesses, and at the foot of the outer gutter the cartilage, named first, keeps
-  the white within its reach of a bone (the cartilage rule has no upper bound on brightness).
+  the white within its reach of a bone (the cartilage rule has no upper bound on brightness);
+  Hoffa's back part, between the femur's condyle and the tibia, is named joint, and its top edge
+  is cut level with the patella's lowest place; the suprapatellar fat takes in a little of the
+  quadriceps tendon where it meets the patella, and the picture's top edge cuts it.
 - Nothing is pushed; ask before pushing.
 
 ## The record, 2026-10-14
