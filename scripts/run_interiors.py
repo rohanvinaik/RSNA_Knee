@@ -115,6 +115,8 @@ from knee.objects.assignments import (
     acl_on_slice,
     anterior_synovial_recess,
     assign_plane,
+    capsule_at_side_recesses,
+    capsule_code,
     carried_bone,
     extensor_tendons,
     fat_under_the_skin,
@@ -925,51 +927,77 @@ def name_the_rest_of_the_field(own: Measured, partner: Measured | None) -> None:
             partner.record["assignments"]["codes"][name] = code
 
 
-def name_the_synovial_lining(own: Measured, partner: Measured | None) -> None:
-    """Locate the anterior recess and its fat-facing surface after the parts are combined.
+def name_joint_boundaries(own: Measured, partner: Measured | None) -> None:
+    """Locate the anterior recess, its lining surface, and the side recesses' capsular wall.
 
-    Keep the cavity and its lining as separate masks: their shared surface must not erase
-    the fluid or fat label. Reuse the existing white measurement and physical-place match.
+    Save separate masks where tissue surfaces coexist with fluid or collateral structures.
+    Reuse the white reading, shared physical positions, and the pair's physical-place match.
     """
-    reads("series", ("row",), "synovium")
-    reads("naming", ("in_plane", "white"), "synovium")
-    reads("partner", ("objects", "codes"), "synovium")
+    reads("series", ("row",), "joint_boundaries")
+    reads("naming", ("in_plane", "white"), "joint_boundaries")
+    reads("partner", ("objects", "codes"), "joint_boundaries")
     objects = own.arrays["a1_objects"]
     codes = own.record["assignments"]["codes"]
     sagittal = own.assignment.in_plane[1] and own.assignment.in_plane[2]
+    coronal = own.assignment.in_plane[0] and own.assignment.in_plane[2]
     bright = (
         int(own.series.row.fat_suppression) == 1
         and int(own.series.row.fluid_sensitive) == 1
     )
     has_patella = bool((objects == OBJECT_CODES["patella"]).any())
     has_femur = bool((objects == OBJECT_CODES["femur"]).any())
+    has_menisci = all(
+        (objects == OBJECT_CODES[name]).any()
+        for name in ("medial_meniscus", "lateral_meniscus")
+    )
     white = own.assignment.white
-    recess = lining = np.zeros(objects.shape, dtype=bool)
+    recess = lining = capsule = np.zeros(objects.shape, dtype=bool)
+    measures = measures_of(
+        own.record["series_uid"],
+        own.record["slice_index"],
+        own.arrays["acquired_plane"],
+        own.frame,
+    )
     if sagittal and bright and has_patella and has_femur and white is not None:
         recess, lining = anterior_synovial_recess(
             white,
             objects,
             own.frame.basis_lps,
-            measures_of(
-                own.record["series_uid"],
-                own.record["slice_index"],
-                own.arrays["acquired_plane"],
-                own.frame,
-            ),
+            measures,
         )
-    code = synovium_code(sagittal, bright, has_patella, has_femur, bool(recess.any()))
-    names = ("anterior_synovial_recess", "synovium")
-    for name, mask in zip(names, (recess, lining), strict=True):
+    if coronal and bright and has_femur and has_menisci and white is not None:
+        reads("interiors", ("dark",), "joint_boundaries")
+        capsule = capsule_at_side_recesses(
+            own.arrays["b1_dark"],
+            white,
+            objects,
+            own.frame.basis_lps,
+            np.asarray(own.frame.spacing_rc),
+            measures,
+        )
+    recess_code = synovium_code(
+        sagittal, bright, has_patella, has_femur, bool(recess.any())
+    )
+    lining_code = (
+        recess_code
+        if lining.any() or recess_code != "identified"
+        else "abstain_no_fat_facing_surface"
+    )
+    wall_code = capsule_code(
+        coronal, bright, has_femur, has_menisci, bool(capsule.any())
+    )
+    parts = (
+        ("anterior_synovial_recess", recess, recess_code),
+        ("synovium", lining, lining_code),
+        ("joint_capsule", capsule, wall_code),
+    )
+    for name, mask, code in parts:
         own.arrays[f"a2_{name}"] = mask
-        codes[name] = (
-            code
-            if mask.any() or code != "identified"
-            else "abstain_no_fat_facing_surface"
-        )
-    handed("synovial_surfaces", ("recess", "lining"))
-    if code != "identified" or partner is None:
+        codes[name] = code
+    handed("joint_boundaries", ("recess", "lining", "capsule"))
+    if partner is None or not any(code == "identified" for _, _, code in parts):
         return
-    reads("synovial_surfaces", ("recess", "lining"), "partner")
+    reads("joint_boundaries", ("recess", "lining", "capsule"), "partner")
     source = matched(
         partner.series,
         partner.record,
@@ -981,7 +1009,9 @@ def name_the_synovial_lining(own: Measured, partner: Measured | None) -> None:
     )
     if isinstance(source, str):
         return
-    for name, mask in zip(names, (recess, lining), strict=True):
+    for name, mask, code in parts:
+        if code != "identified":
+            continue
         placed = laid_by(mask.astype(np.int16), source) == 1
         partner.arrays[f"a2_{name}"] = placed
         partner.record["assignments"]["codes"][name] = (
@@ -1484,7 +1514,7 @@ def save(run_dir: Path, study_uid: str, record: dict, arrays: dict) -> dict:
     name = record["series_uid"] if part is None else f"{record['series_uid']}-{part}"
     artifact = Path(study_uid) / f"{name}.npz"
     if "a2_synovium" in arrays:
-        reads("synovial_surfaces", ("recess", "lining"), "save")
+        reads("joint_boundaries", ("recess", "lining", "capsule"), "save")
     np.savez_compressed(run_dir / artifact, allow_pickle=False, **arrays)
     record["study_uid"] = study_uid
     record["artifact"] = str(artifact)
@@ -1605,7 +1635,7 @@ def measure_study(
             zip(measured, partners, strict=True),
             key=lambda pair: int(pair[0].series.row.fat_suppression),
         ):
-            name_the_synovial_lining(own, partner)
+            name_joint_boundaries(own, partner)
         # The back of the knee, on the series the leg runs through: the study's leg, its bones in
         # the scanner's millimetres, made once where the header names the knee there, and carried
         # onto the slices its parts are named on; the medial head on the middle slice, from the

@@ -1,4 +1,10 @@
 {
+  "src/knee/objects/assignments.py::capsule_code": {
+    "cut_reasons": [],
+    "function_digest": "fb9b169c9d7118ad",
+    "refusal": "",
+    "standing": "complete"
+  },
   "src/knee/objects/assignments.py::synovium_code": {
     "cut_reasons": [],
     "function_digest": "03613e3b02a5b50f",
