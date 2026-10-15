@@ -1,4 +1,5 @@
-"""Intent tests for the named objects: air, skin, femur over tibia, the joint, patella, menisci, fibula.
+"""Intent tests for the named objects: air, skin, femur over tibia, the joint, patella, menisci,
+fibula, cartilage, the PCL and the ACL.
 
 The scene is a small synthetic knee in a coronal frame (rows run inferior, columns run to the left,
 one place per millimetre): air around a leg of soft tissue, a black margin along two sides of the
@@ -13,8 +14,11 @@ from knee.objects.assignments import (
     UNSEEN,
     Peak,
     PlaneAssignment,
+    acl_code,
+    acl_on_slice,
     assign_plane,
     between_along_the_leg,
+    carried_bone,
     end_pieces,
     fibula_block,
     fibula_code,
@@ -24,6 +28,7 @@ from knee.objects.assignments import (
     main_slice,
     margin,
     meniscus_side,
+    outer_step,
     pair_code,
     patella_code,
     with_partner,
@@ -439,6 +444,68 @@ def test_with_fat_suppression_or_across_a_coronal_slice_no_pcl_is_named():
     assert plain.codes["pcl"] == "abstain_no_dark_band_joins_the_bones"
     for result in (suppressed, coronal, plain):
         assert not (result.objects == OBJECT_CODES["pcl"]).any()
+
+
+def test_the_acl_is_the_region_whose_peak_lies_in_the_joint_between_the_bones():
+    # one place per millimetre, front to the left: the femur above, the tibia below, a body in the
+    # notch between them, and a body in front of the bones, beside the joint but not in it
+    labels = np.zeros((80, 60), dtype=np.int32)
+    labels[0:30, 10:50] = 1  # the femur
+    labels[45:80, 10:50] = 2  # the tibia
+    labels[30:45, 20:40] = 3  # in the notch, between them
+    labels[30:45, 0:8] = 4  # in front of them
+    femur, tibia = labels == 1, labels == 2
+    peaks = (
+        Peak(1, 15.0, (15, 30), 0.0),
+        Peak(2, 14.0, (60, 30), 0.0),
+        Peak(4, 4.0, (37, 4), 0.0),
+        Peak(3, 3.0, (37, 30), 0.0),
+    )
+    nowhere = np.zeros(labels.shape, dtype=bool)
+    acl = acl_on_slice(labels, peaks, femur, tibia, SAGITTAL_MM, nowhere)
+    assert acl[37, 30] and acl.sum() == 15 * 20
+    assert not acl[37, 4]  # beside the joint, not in it
+    # with nothing between the bones whose peak lies there, nothing is named
+    alone = acl_on_slice(labels, peaks[:3], femur, tibia, SAGITTAL_MM, nowhere)
+    assert not alone.any()
+
+
+def test_a_bone_is_carried_to_the_next_slice_as_the_regions_that_were_it():
+    before = np.zeros((40, 20), dtype=bool)
+    before[0:30, :] = True  # the bone on the middle slice
+    labels = np.zeros((40, 20), dtype=np.int32)
+    labels[0:20, :] = 1  # inside it
+    labels[20:28, :] = 2  # inside it too: the lens split the bone here
+    labels[28:40, :] = 3  # two rows of twelve inside it: not the bone
+    carried = carried_bone(labels, before)
+    assert carried[10, 5] and carried[24, 5]
+    assert not carried[35, 5]
+    assert not carried_bone(labels, np.zeros(before.shape, dtype=bool)).any()
+
+
+def test_the_acls_slice_is_the_middles_neighbour_on_the_knees_outer_side():
+    # the outer side is the patient's right for a right knee and the left for a left one; where
+    # the next slice lies toward the patient's left, a right knee's outer neighbour is the one before
+    assert outer_step("R", 3.0) == -1
+    assert outer_step("R", -3.0) == 1
+    assert outer_step("L", 3.0) == 1
+    assert outer_step("L", -3.0) == -1
+
+
+def test_acl_code_names_why():
+    assert acl_code(False, "R", True, True, True) == (
+        "abstain_front_to_back_runs_through_the_plane"
+    )
+    assert acl_code(True, "", True, True, True) == "abstain_header_names_no_knee"
+    assert acl_code(True, "R", False, True, True) == (
+        "abstain_no_femur_and_tibia_to_carry"
+    )
+    # without fat suppression the fat and the ligament fall in one region
+    assert acl_code(True, "R", True, False, True) == (
+        "abstain_not_walled_off_without_fat_suppression"
+    )
+    assert acl_code(True, "L", True, True, False) == "abstain_no_region_in_the_joint"
+    assert acl_code(True, "L", True, True, True) == "identified"
 
 
 def test_a_joint_with_nothing_bright_against_the_bones_names_no_cartilage():

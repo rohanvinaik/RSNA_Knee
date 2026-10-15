@@ -15,11 +15,16 @@ their digests in a receipt; `object_interiors.draw`, the renderer that drew the 
 the interiors, and `object_assignments.draw` draws the named objects.
 
 An object the middle slice does not show is named on its own main slice (AGENTS.md, the method's
-first step), saved in a run of its own and drawn beside the others: so far the fibula
-(`find_fibula`), named there beside the tibia it was found against and nothing else. It reads the
-series' kept squint, but it still reads the interiors lens again on the block of every slice that
-holds it, which the method forbids; the ledger counts those readings (`fibula.lens_readings`)
-until its main slice comes from the squint.
+first step), saved in a run of its own, one record per part and series, and drawn beside the
+others. The fibula (`find_fibula`) is named there beside the tibia it was found against and nothing
+else. It reads the series' kept squint, but it still reads the interiors lens again on the block of
+every slice that holds it, which the method forbids; the ledger counts those readings
+(`fibula.lens_readings`) until its main slice comes from the squint. The ACL (`find_acl`) is named
+on the middle slice's neighbour on the knee's outer side, between the femur and the tibia carried
+there from the middle slice. Its slice is chosen by place, from the header's word for which knee,
+not read off the squint; the lens is read once more, on that slice of each sagittal series
+(`acl.lens_readings`); the ACL is named where fat is suppressed and laid onto the other sequence's
+slice of the same place. A series' silence on a main-slice part is kept as `<series uid>:<part>`.
 
 THE RECEIPT KEEPS EVERY STUDY (`knee.receipt.merged_receipt`): a study run again replaces only its
 own records. Studies run one after another in one process; two processes writing one run folder
@@ -66,16 +71,21 @@ from knee.collapse.physical import PlaneFrame
 from knee.collapse.regime import read_regime
 from knee.collapse.squint_stack import SquintStack, read_squint_stack
 from knee.objects.assignments import (
+    ALONG_THE_LEG,
     NAMED,
     OBJECT_CODES,
     PlaneAssignment,
+    acl_code,
+    acl_on_slice,
     assign_plane,
+    carried_bone,
     fibula_block,
     fibula_code,
     fibula_on_slice,
     laid_on,
     main_slice,
     margin,
+    outer_step,
     with_partner,
 )
 from knee.objects.interiors import EDGE_KINDS, TRACE_CODES, read_interiors
@@ -123,6 +133,8 @@ DRAWN_INTERIORS = (
     "trace_points_rc",
 )
 DRAWN_NAMES = ("objects", "codes", "peaks", "femur", "tibia", "patella")
+# The parts named on a main slice of their own; a series' silence on each is `<series uid>:<part>`.
+MAIN_PARTS = ("fibula", "acl")
 
 
 def handed(product: str, names: Iterable[str]) -> None:
@@ -495,9 +507,153 @@ def find_fibula(
     return main_record, main_arrays
 
 
+def acl_slice(own: Measured) -> tuple[dict, dict[str, np.ndarray], PlaneFrame] | str:
+    """The ACL's slice of one series, read (the ACL's paragraph in `knee.objects.assignments`): the
+    middle slice's neighbour on the knee's outer side, chosen by place from the header and not read
+    off the squint, with the femur and the tibia carried there from the middle slice, and the ACL
+    named where fat is suppressed; or why it was not read."""
+    series, record = own.series, own.record
+    knee = record["assignments"]["knee"]
+    unit = own.frame.basis_lps / np.linalg.norm(own.frame.basis_lps, axis=0)
+    front_in_plane = float(np.linalg.norm(unit[1])) >= ALONG_THE_LEG
+    reads("partner", ("objects",), "acl")
+    before = own.arrays["a1_objects"]
+    femur_before = before == OBJECT_CODES["femur"]
+    tibia_before = before == OBJECT_CODES["tibia"]
+    bones = bool(femur_before.any() and tibia_before.any())
+    code = acl_code(front_in_plane, knee, bones, True, True)
+    if code != "identified":
+        return code
+    reads("series", ("volume",), "acl")
+    volume = series.volume
+    if volume is None or len(volume) < 2:
+        return "no_slice_beside_the_middle"
+    middle = record["slice_index"]
+    step = 1 if middle + 1 < len(volume) else -1
+    neighbour = plane_frame(series, middle + step)
+    if isinstance(neighbour, str):
+        return neighbour
+    toward_left = step * float(neighbour.origin_lps[0] - own.frame.origin_lps[0])
+    z = middle + outer_step(knee, toward_left)
+    if not 0 <= z < len(volume):
+        return "no_slice_on_the_outer_side"
+    frame = plane_frame(series, z)
+    if isinstance(frame, str):
+        return frame
+    reads("regime", ("background_split",), "acl")
+    plane = volume[z]
+    acl_record, arrays, assignment = name_plane(
+        series, z, plane, frame, record["background_split"], knee
+    )
+    ledger.record("acl.lens_readings", planes=1)
+    labels = arrays["b1_labels"]
+    femur = carried_bone(labels, femur_before)
+    tibia = carried_bone(labels, tibia_before)
+    carried = bool(femur.any() and tibia.any())
+    fat_suppressed = int(series.row.fat_suppression) == 1  # the tag is stored as text
+    acl = np.zeros(labels.shape, dtype=bool)
+    if carried and fat_suppressed:
+        acl = acl_on_slice(
+            labels, assignment.peaks, femur, tibia, frame.basis_lps, margin(plane)
+        )
+    # On its slice only the ACL is named, between the bones it was found between; the middle
+    # slice's other objects are not named here: their rules belong to the middle slice.
+    objects = np.zeros(labels.shape, dtype=np.int8)
+    objects[femur] = OBJECT_CODES["femur"]
+    objects[tibia] = OBJECT_CODES["tibia"]
+    objects[acl] = OBJECT_CODES["acl"]
+    arrays["a1_objects"] = objects
+    assigned = acl_record["assignments"]
+    codes = {name: "not_named_on_this_slice" for name in assigned["codes"]}
+    codes["femur"] = codes["tibia"] = "carried_from_the_middle_slice"
+    codes["acl"] = acl_code(True, knee, carried, fat_suppressed, bool(acl.any()))
+    assigned.update(
+        codes=codes,
+        femur=None,
+        tibia=None,
+        patella=None,
+        menisci=0,
+        acl=int(labels[acl].max()) if acl.any() else None,
+    )
+    acl_record["main_slice"] = {"object": "ACL"}
+    return acl_record, arrays, frame
+
+
+def lay_acl(
+    own: Measured,
+    read: tuple[dict, dict[str, np.ndarray], PlaneFrame],
+    partner: tuple[dict, dict[str, np.ndarray], PlaneFrame],
+) -> str:
+    """Lay the ACL the fat-suppressed slice names onto the other sequence's slice of the same place
+    (`laid_on`), onto this slice's own regions that nothing else holds; return its code, or why it
+    was not laid."""
+    record, arrays, frame = read
+    _, partner_arrays, partner_frame = partner
+    reads("series", ("slice_thickness_mm",), "acl")
+    thickness = own.series.slice_thickness_mm[record["slice_index"]]
+    if thickness is None:
+        return "no_slice_thickness"
+    plane = arrays["acquired_plane"]
+    laid = laid_on(
+        partner_arrays["a1_objects"],
+        ~margin(partner_arrays["acquired_plane"]),
+        partner_frame.origin_lps,
+        partner_frame.basis_lps,
+        frame.origin_lps,
+        frame.basis_lps,
+        plane.shape,
+        thickness,
+    )
+    if laid is None:
+        return "not_the_same_place"
+    objects = arrays["a1_objects"]
+    placed = (laid == OBJECT_CODES["acl"]) & (arrays["b1_labels"] > 0) & (objects == 0)
+    if not placed.any():
+        return "abstain_not_walled_off_without_fat_suppression"
+    objects[placed] = OBJECT_CODES["acl"]
+    return "laid_from_its_partner"
+
+
+def find_acl(
+    measured: list[Measured],
+) -> tuple[list[tuple[dict, dict[str, np.ndarray]]], dict[str, str]]:
+    """The ACL named on its own slice in each series (`acl_slice`), and laid from a fat-suppressed
+    slice onto the other sequence's slice of the same place (`lay_acl`): the slices that name it,
+    each record with its arrays, and every other series' silence, keyed `<series uid>:acl`."""
+    read: dict[int, tuple[dict, dict[str, np.ndarray], PlaneFrame]] = {}
+    silences: dict[str, str] = {}
+    for index, own in enumerate(measured):
+        result = acl_slice(own)
+        if isinstance(result, str):
+            silences[f"{own.record['series_uid']}:acl"] = result
+        else:
+            read[index] = result
+    found = []
+    for index, (record, arrays, _) in read.items():
+        own = measured[index]
+        codes = record["assignments"]["codes"]
+        if codes["acl"] == "abstain_not_walled_off_without_fat_suppression":
+            partner = partner_of(measured, index)
+            at = next((i for i, m in enumerate(measured) if m is partner), None)
+            if (
+                at in read
+                and read[at][0]["assignments"]["codes"]["acl"] == "identified"
+            ):
+                codes["acl"] = lay_acl(own, read[index], read[at])
+        if codes["acl"] in NAMED:
+            handed("acl", ("main_slice", "region"))
+            found.append((record, arrays))
+        else:
+            silences[f"{own.record['series_uid']}:acl"] = codes["acl"]
+    return found, silences
+
+
 def save(run_dir: Path, study_uid: str, record: dict, arrays: dict) -> dict:
-    """Save one record's arrays in the run and note them, with their digests, on the record."""
-    artifact = Path(study_uid) / f"{record['series_uid']}.npz"
+    """Save one record's arrays in the run and note them, with their digests, on the record. A main
+    slice's arrays are named for its part as well, since one series may hold several."""
+    part = record.get("main_slice", {}).get("object")
+    name = record["series_uid"] if part is None else f"{record['series_uid']}-{part}"
+    artifact = Path(study_uid) / f"{name}.npz"
     np.savez_compressed(run_dir / artifact, allow_pickle=False, **arrays)
     record["study_uid"] = study_uid
     record["artifact"] = str(artifact)
@@ -547,14 +703,13 @@ def ledger_reading(events: Sequence[Event], totals: dict[str, int]) -> dict:
 
 
 def named_parts(records: list[dict], main_records: list[dict]) -> dict[str, int]:
-    """How many of the study's series named each object; the fibula, how many main slices."""
+    """How many of the study's series named each object, on its middle slice or on the object's own
+    main slice."""
     named: dict[str, int] = {}
-    for record in records:
+    for record in records + main_records:
         for name, code in record["assignments"]["codes"].items():
             if code in NAMED or code == "from_the_header":
                 named[name] = named.get(name, 0) + 1
-    if main_records:
-        named["fibula"] = len(main_records)
     return named
 
 
@@ -598,25 +753,37 @@ def measure_study(
             fibula = find_fibula(own.series, own.record, own.arrays, own.stack)
             records.append(save(run_dir, study_uid, own.record, own.arrays))
             if isinstance(fibula, str):
-                main_unread[own.record["series_uid"]] = fibula
+                main_unread[f"{own.record['series_uid']}:fibula"] = fibula
             else:
                 main_records.append(save(main_run, study_uid, *fibula))
+        acl_found, acl_silences = find_acl(measured)
+        for acl_record, acl_arrays in acl_found:
+            main_records.append(save(main_run, study_uid, acl_record, acl_arrays))
+        main_unread.update(acl_silences)
         # The renderers read the saved run, when they draw it: their reads are its last.
         if drawn and records:
             reads("interiors", DRAWN_INTERIORS, "draw")
             reads("naming", DRAWN_NAMES, "draw")
             # what a slice read with its partner keeps, in place of its own objects and codes
             reads("partner", ("objects", "codes"), "draw")
-        if drawn and main_records:
-            reads("fibula", ("main_slice", "region"), "draw")
+        if drawn:
+            for part in sorted(
+                {r["main_slice"]["object"].lower() for r in main_records}
+            ):
+                reads(part, ("main_slice", "region"), "draw")
         telemetry = ledger_reading(led.events(), led.totals())
+    series_uids = [series.row.series_uid for series in study.series]
     return {
         "study_uid": study_uid,
-        "series_uids": [series.row.series_uid for series in study.series],
+        "series_uids": series_uids,
         "records": records,
         "unread": unread,
         "main_records": main_records,
         "main_unread": main_unread,
+        # the main receipt's own keys, so a part's old silence goes when the study is read again;
+        # a bare series uid clears what was kept before the silences were kept per part
+        "main_keys": series_uids
+        + [f"{uid}:{part}" for uid in series_uids for part in MAIN_PARTS],
         "telemetry": telemetry,
         "named": named_parts(records, main_records),
     }
@@ -641,7 +808,12 @@ def keep(result: dict, run_dir: Path, main_run: Path) -> None:
         result["telemetry"],
     )
     write_receipt(
-        main_run, uid, series_uids, result["main_records"], result["main_unread"], None
+        main_run,
+        uid,
+        result["main_keys"],
+        result["main_records"],
+        result["main_unread"],
+        None,
     )
 
 

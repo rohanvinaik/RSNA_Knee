@@ -44,9 +44,35 @@ Each is named by what the pictures show, read off the interiors' own lenses:
   is under `LIGAMENT_DARKER` of the femur's marrow, at least `LIGAMENT_THICK_MM` thick (the bones'
   thin shells drop out), the largest such piece that reaches within `SHELL_MM` of both the femur and
   the tibia (`ligament_joining`). With fat suppression the marrow is as dark as a ligament, so there
-  it is laid on from the other slice of the same place. Seen also on the proof: it takes in some of
-  the dark tissue around the band, and its last stretch down the back of the tibia stays with the
-  dark tissue behind the tibia.
+  it is laid on from the other slice of the same place. Seen also on the proof: on the middle slice
+  it takes in the ACL's lower fibres, which cross in front of it in the same dark, and its last
+  stretch down the back of the tibia stays with the dark tissue behind the tibia.
+- ACL: the anterior cruciate ligament, inside the notch from the tibia's front-middle up and back
+  to the inner wall of the femur's outer condyle; «less well defined than the PCL», «its bundles
+  outlined by surrounding high-intensity structures», and «going lateral to medial, the ACL comes
+  before the PCL» (docs/OBJECTS_AND_CONDITIONS.md). Seen on the proof's two sagittals, 2026-10-14:
+  on the middle slice the ACL's lower fibres cross in front of the PCL in the same dark; on the next
+  slice toward the knee's outer side (slice 19), the T2 shows it as a dark band from the femur's
+  back down and forward to the tibia's front-middle, striated toward the tibia, and the
+  fat-suppressed slice shows it as a grey, streaked body walled off by the bright fluid round it,
+  which the lens draws as a region of its own with its own peak. So it is named on its own slice by
+  these descriptions, each one check with its code (`acl_code`):
+  1. its slice is sagittal, front to back in the plane (abstain_front_to_back_runs_through_the_plane);
+  2. it lies on the knee's outer side of the middle slice, which on the proof holds the PCL: its
+     slice is the middle slice's neighbour on the side the header names as outer (`outer_step`),
+     chosen by place and not read off the squint (abstain_header_names_no_knee);
+  3. it lies between the femur and the tibia, carried to its slice from the middle one by place,
+     each the regions most of whose places were that bone there, since the lens may split a bone
+     in two there (`carried_bone`; anatomy is contiguous from slice to slice; the fibula's rule
+     carries the one region holding most of the tibia) (abstain_no_femur_and_tibia_to_carry);
+  4. the fluid round it walls it off, which it does only with fat suppression; without it, the fat
+     and the ligament fall in one region, and the ACL is laid on from the fat-suppressed slice of the
+     same place (abstain_not_walled_off_without_fat_suppression);
+  5. its body is the region the lens draws whose peak lies in the joint between those bones, along
+     the leg; the deepest such (`acl_on_slice`) (abstain_no_region_in_the_joint).
+  It relates to the ACL category, «anterior cruciate ligament injury». Seen also on the proof: it
+  takes in the fluid round it and a patch down toward the tibia, and leaves its top end at the
+  femur.
 - MENISCI: on a coronal slice, the dark triangles at the two ends of the joint, between the femur's
   condyle and the tibia's plateau («an isosceles triangle on coronal images», low on every
   sequence: docs/OBJECTS_AND_CONDITIONS.md). So: the low signal with every part thinner than
@@ -161,6 +187,7 @@ OBJECT_CODES = {
     "femoral_cartilage": 11,
     "tibial_cartilage": 12,
     "pcl": 13,
+    "acl": 14,
 }
 CARTILAGES = ("femoral_cartilage", "tibial_cartilage")
 FOUR_NEIGHBOURS = ndi.generate_binary_structure(2, 1)
@@ -361,6 +388,64 @@ def ligament_joining(
     if not joining.any():
         return none
     return pieces == int(labels[joining][np.argmax(sizes[joining])])
+
+
+def acl_code(
+    front_to_back_in_plane: bool,
+    knee: str,
+    bones_carried: bool,
+    fat_suppressed: bool,
+    found: bool,
+) -> str:
+    """Whether the ACL was named on its slice, or why not: each check is one of its descriptions."""
+    if not front_to_back_in_plane:
+        return "abstain_front_to_back_runs_through_the_plane"
+    if knee not in ("R", "L"):
+        return "abstain_header_names_no_knee"
+    if not bones_carried:
+        return "abstain_no_femur_and_tibia_to_carry"
+    if not fat_suppressed:
+        return "abstain_not_walled_off_without_fat_suppression"
+    if not found:
+        return "abstain_no_region_in_the_joint"
+    return "identified"
+
+
+def outer_step(knee: str, next_toward_left_mm: float) -> int:
+    """Which neighbour of the middle slice lies on the knee's outer side: 1 for the next slice, -1
+    for the one before. `next_toward_left_mm` is how far the next slice lies toward the patient's
+    left of the middle one; the outer side is the patient's right for a right knee ("R") and the
+    patient's left for a left one ("L")."""
+    return 1 if (next_toward_left_mm > 0) == (knee == "L") else -1
+
+
+def carried_bone(labels: np.ndarray, before: np.ndarray) -> np.ndarray:
+    """A bone carried from the middle slice to a neighbouring one by place, since anatomy is
+    contiguous from slice to slice: the regions the lens draws there most of whose places were the
+    bone on the middle slice (`before`). Empty when none were."""
+    count = int(labels.max(initial=0)) + 1
+    inside = np.bincount(labels[before & (labels > 0)], minlength=count)
+    whole = np.bincount(labels.ravel(), minlength=count)
+    regions = np.flatnonzero(2 * inside > whole)
+    return np.isin(labels, regions[regions > 0])
+
+
+def acl_on_slice(
+    labels: np.ndarray,
+    peaks: tuple[Peak, ...],
+    femur: np.ndarray,
+    tibia: np.ndarray,
+    basis_lps: np.ndarray,
+    outside_picture: np.ndarray,
+) -> np.ndarray:
+    """The ACL on its slice: the region the lens draws whose peak lies in the joint, between the
+    femur and the tibia along the leg; the deepest such. Empty when no region's peak lies there."""
+    joint = between_along_the_leg(femur, tibia, basis_lps)
+    joint &= ~femur & ~tibia & ~outside_picture
+    for peak in peaks:  # the deepest first
+        if joint[peak.peak_rc]:
+            return labels == peak.territory
+    return np.zeros(labels.shape, dtype=bool)
 
 
 def patella_code(
