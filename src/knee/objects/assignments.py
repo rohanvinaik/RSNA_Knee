@@ -337,8 +337,13 @@ categories of the twelve it relates to (docs/OBJECTS_AND_CONDITIONS.md §6):
   x0.3 to x0.6 of the femur's marrow light, between the fat, x0.75 and up, and the tendons, the
   bones' shells and the fascia's lines, darker still and millimetres thin. On the proof's sagittal
   without fat suppression the muscles behind the knee are darker, under x0.3 of the marrow, so of
-  their light only "darker than fat" holds on every sequence without fat suppression. Its
-  descriptions, each one check with its code (`muscle_code`):
+  their light only "darker than fat" holds on every sequence without fat suppression. Fluid is
+  darker than fat too on T1 («low»), so by its light alone a body of fluid, a Baker's cyst among
+  them, would be named muscle; with fat suppression on a fluid-sensitive sequence fluid is white
+  and muscle grey. So muscle is named once the slice is read with its partner, the other
+  sequence's slice of the same place, and where that partner is fat-suppressed and
+  fluid-sensitive, the places it sees white are left out (a side note of 2026-10-15 asked how
+  fluid stays out of muscle). Its descriptions, each one check with its code (`muscle_code`):
   1. fat is not suppressed: with it the muscle is as grey as the fat, and it is laid on from the
      slice of the same place without fat suppression
      (abstain_as_grey_as_fat_with_fat_suppression);
@@ -346,13 +351,18 @@ categories of the twelve it relates to (docs/OBJECTS_AND_CONDITIONS.md §6):
      so the leg is known (abstain_no_air);
   3. the slice names the femur, whose marrow's light the fat's is read against (abstain_no_femur);
   4. it is the leg's places, neither air nor the black margin, outside every part named, darker
-     than fat (under `LIKE_THE_FEMUR`'s lower bound of the femur's marrow light), the bodies of them
-     at least `MUSCLE_MM` across (`muscle_bodies`, `thick_parts`) (abstain_no_muscle_body).
+     than fat (under `LIKE_THE_FEMUR`'s lower bound of the femur's marrow light), the bodies of
+     them at least `MUSCLE_MM` across (`muscle_bodies`, `thick_parts`); then outside the white the
+     fat-suppressed, fluid-sensitive slice of the same place sees as fluid (`white_as_fluid`, laid
+     on by place), left out once the bodies are found, since a vessel or a pocket of fluid inside
+     a belly does not make the belly thinner (abstain_no_muscle_body).
   It relates to none of the twelve categories directly; the medial gastrocnemius head, a muscle the
   back of the knee's rule names on the axial, borders Baker's cyst. Seen also on the proof: a
   belly's narrow ends, under `MUSCLE_MM` across, are not reached, and its outline is rounded where
   it narrows; laid onto the fat-suppressed coronal it lies on that slice's grey bellies; the
-  sagittal without fat suppression names no air, so there it abstains.
+  sagittal without fat suppression names no air, so there it abstains. Where no fat-suppressed,
+  fluid-sensitive slice of the same place is read, or beyond its picture, nothing tells fluid
+  apart, and a body of fluid darker than fat, a Baker's cyst among them, may be named muscle.
 - MEDIAL GASTROCNEMIUS HEAD: the inner head of the calf's big muscle, which arises from the back of
   the femur's medial condyle; «muscle intermediate»; a Baker's cyst lies «between the medial
   gastrocnemius head and the semimembranosus tendon», and medicine reads the back of the knee on
@@ -606,8 +616,11 @@ class Peak:
 @dataclass(frozen=True, slots=True)
 class PlaneAssignment:
     """The named objects (`OBJECT_CODES`), each object's code, and the peaks they were read from;
-    and the slice's thick, uniformly dark bands (`dark_bands`), where the PCL's rule read them, for
-    any later part a band names (`extensor_tendons`), so they are read once."""
+    the slice's thick, uniformly dark bands (`dark_bands`), where the PCL's rule read them, for
+    any later part a band names (`extensor_tendons`), so they are read once; and, with fat
+    suppression on a fluid-sensitive sequence, the white the joint's fluid was named from
+    (`white_as_fluid`), for the slice of the same place without fat suppression, whose muscle
+    leaves it out, so it too is read once."""
 
     objects: np.ndarray
     codes: dict[str, str]
@@ -617,6 +630,7 @@ class PlaneAssignment:
     menisci: int
     patella: int | None = None
     bands: np.ndarray | None = None
+    white: np.ndarray | None = None
 
 
 def margin(plane: np.ndarray) -> np.ndarray:
@@ -889,11 +903,15 @@ def muscle_bodies(
     objects: np.ndarray,
     spacing_rc: np.ndarray,
     outside_picture: np.ndarray,
+    white: np.ndarray,
 ) -> np.ndarray:
     """Muscle on a slice without fat suppression: the leg's places (neither air nor the black
-    margin, `outside_picture`) outside every part named darker than fat (under `LIKE_THE_FEMUR`'s
+    margin, `outside_picture`) outside every part named, darker than fat (under `LIKE_THE_FEMUR`'s
     lower bound of the femur's marrow light), the bodies of them at least `MUSCLE_MM` across
-    (`thick_parts`). Empty when the slice names no air or no femur."""
+    (`thick_parts`); then outside `white`, the places the fat-suppressed, fluid-sensitive slice of
+    the same place sees white as fluid (none where no such slice is read). The white is left out
+    after the bodies are found, since a vessel or a pocket of fluid inside a belly does not make
+    the belly thinner. Empty when the slice names no air or no femur."""
     air = objects == OBJECT_CODES["air"]
     femur = objects == OBJECT_CODES["femur"]
     none = np.zeros(plane.shape, dtype=bool)
@@ -903,7 +921,7 @@ def muscle_bodies(
     if light <= 0:
         return none
     darker = (plane < LIKE_THE_FEMUR[0] * light) & (objects == 0) & ~outside_picture
-    return thick_parts(darker, spacing_rc, MUSCLE_MM)
+    return thick_parts(darker, spacing_rc, MUSCLE_MM) & ~white
 
 
 def extensor_tendons(
@@ -1173,28 +1191,37 @@ def fluid_code(fluid_bright: bool, bones_named: bool, found: bool) -> str:
     return "identified"
 
 
+def white_as_fluid(plane: np.ndarray, objects: np.ndarray) -> np.ndarray | None:
+    """On a fat-suppressed, fluid-sensitive slice, the places white as fluid: more than
+    `FLUID_BRIGHTER` times as bright as the bones' marrow, the femur's and the tibia's together.
+    None where the slice names no femur and tibia, or their light is none."""
+    femur = objects == OBJECT_CODES["femur"]
+    tibia = objects == OBJECT_CODES["tibia"]
+    if not (femur.any() and tibia.any()):
+        return None
+    light = float(np.median(np.concatenate((plane[femur], plane[tibia]))))
+    if light <= 0:
+        return None
+    return plane > FLUID_BRIGHTER * light
+
+
 def fluid_in_the_recesses(
-    plane: np.ndarray,
+    white: np.ndarray,
     objects: np.ndarray,
     leg: np.ndarray,
     outside_picture: np.ndarray,
     spacing_rc: np.ndarray,
 ) -> np.ndarray:
-    """The joint's fluid on a fat-suppressed, fluid-sensitive slice: the places in the leg, outside
-    every part named but the joint, at least `FLUID_BRIGHTER` times as bright as the bones' marrow;
-    of their pieces, those that touch the joint or lie within `SHELL_MM` of the femur, the tibia or
-    the patella, in the joint's own recesses. Empty where the slice names no femur and tibia."""
+    """The joint's fluid on a fat-suppressed, fluid-sensitive slice: of the places white as fluid
+    (`white`, from `white_as_fluid`), those in the leg outside every part named but the joint; of
+    their pieces, those that touch the joint or lie within `SHELL_MM` of the femur, the tibia or
+    the patella, in the joint's own recesses."""
     femur = objects == OBJECT_CODES["femur"]
     tibia = objects == OBJECT_CODES["tibia"]
     joint = objects == OBJECT_CODES["joint"]
-    none = np.zeros(plane.shape, dtype=bool)
-    if not (femur.any() and tibia.any()):
-        return none
-    light = float(np.median(np.concatenate((plane[femur], plane[tibia]))))
-    if light <= 0:
-        return none
+    none = np.zeros(objects.shape, dtype=bool)
     open_places = np.isin(objects, (0, OBJECT_CODES["joint"]))
-    bright = (plane > FLUID_BRIGHTER * light) & leg & open_places & ~outside_picture
+    bright = white & leg & open_places & ~outside_picture
     eight = np.ones((3, 3), dtype=bool)
     pieces, count = ndi.label(bright, structure=eight)
     if not count:
@@ -1630,8 +1657,9 @@ def assign_plane(
     fluid_sensitive: bool = False,
 ) -> PlaneAssignment:
     """Name air, skin, femur, tibia, joint, patella, menisci, cartilage, the PCL, the MCL, the
-    joint's fluid, Hoffa's fat pad and the suprapatellar fat on one plane, from its interiors; and
-    keep the dark bands the PCL is read from, for the extensor tendons.
+    joint's fluid, Hoffa's fat pad, the suprapatellar fat and the fat under the skin on one plane,
+    from its interiors; and keep the dark bands the PCL is read from, for the extensor tendons, and
+    the white the joint's fluid is named from, for muscle on the slice of the same place.
 
     `knee` is the header's own word for which knee the scan is, "R", "L" or blank; it sides the
     menisci. `fat_suppressed` and `fluid_sensitive` are the series' own tags; only with fat
@@ -1786,11 +1814,12 @@ def assign_plane(
     objects[mcl] = OBJECT_CODES["mcl"]
 
     # JOINT FLUID: with fat suppression on a fluid-sensitive sequence, the white in the joint's
-    # recesses.
+    # recesses. The white is kept, for the muscle of the slice of the same place without it.
     fluid_bright = fat_suppressed and fluid_sensitive
+    white = white_as_fluid(plane, objects) if fluid_bright and bones_named else None
     fluid = np.zeros(plane.shape, dtype=bool)
-    if fluid_bright and bones_named:
-        fluid = fluid_in_the_recesses(plane, objects, leg, outside_picture, spacing_rc)
+    if white is not None:
+        fluid = fluid_in_the_recesses(white, objects, leg, outside_picture, spacing_rc)
     codes["joint_fluid"] = fluid_code(fluid_bright, bones_named, bool(fluid.any()))
     objects[fluid] = OBJECT_CODES["joint_fluid"]
 
@@ -1818,15 +1847,15 @@ def assign_plane(
     )
     objects[fat] = OBJECT_CODES["subcutaneous_fat"]
 
-    # MUSCLE: without fat suppression, the leg's bodies darker than fat outside every part named.
-    muscle = np.zeros(plane.shape, dtype=bool)
-    if not fat_suppressed and air.any() and femur is not None:
-        muscle = muscle_bodies(plane, objects, spacing_rc, outside_picture)
+    # MUSCLE: named once the slice is read with its partner, outside the white that partner sees as
+    # fluid where it is fat-suppressed and fluid-sensitive (`muscle_bodies`); read alone, a slice
+    # keeps muscle's code as not named, and with fat suppression says why.
     codes["muscle"] = muscle_code(
-        fat_suppressed, bool(air.any()), femur is not None, bool(muscle.any())
+        fat_suppressed, bool(air.any()), femur is not None, False
     )
-    objects[muscle] = OBJECT_CODES["muscle"]
-    return PlaneAssignment(objects, codes, peaks, femur, tibia, menisci, patella, bands)
+    return PlaneAssignment(
+        objects, codes, peaks, femur, tibia, menisci, patella, bands, white
+    )
 
 
 def laid_on(
