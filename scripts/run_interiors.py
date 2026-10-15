@@ -8,13 +8,17 @@ over every slice, made once and kept with the series; the middle slice, its plan
 `assign_plane` names what the pictures show, each part by its paragraph in
 `knee.objects.assignments`: air, skin, femur, tibia, joint, the patella (by its light, with fat
 suppression), the menisci (sided by the header's own word for which knee it is), the articular
-cartilage, the PCL, the MCL, the joint's fluid, Hoffa's fat pad and the suprapatellar fat. Once
+cartilage, the PCL, the MCL, the joint's fluid, Hoffa's fat pad, the suprapatellar fat and the fat
+under the skin. Once
 every series of the study is read, each middle slice is read with its partner's, the other sequence's slice of the
 same place (`partner_of`, `read_with_partner`, and `knee.objects.assignments.with_partner`): bones
 both name, where both agree; a part only the partner names, laid on. Then the extensor tendons are
 named on the sagittal slice without fat suppression, where their band is plain, from the dark bands
 its PCL was read from and the patella laid on from its partner, and laid onto that partner
-(`name_the_extensor_tendons`); no lens is read again. The arrays the renderers
+(`name_the_extensor_tendons`); then the rest of the field on each slice without fat suppression,
+the fat under the skin where its skin was laid on, and muscle, outside every part named and the
+white its partner sees as fluid where that partner is fat-suppressed and fluid-sensitive, each
+laid onto the partner (`name_the_rest_of_the_field`); no lens is read again. The arrays the renderers
 read, and the squint's, are saved per series with their digests in a receipt;
 `object_interiors.draw`, the renderer that drew the proof figure, draws the interiors, and
 `object_assignments.draw` draws the named objects.
@@ -593,38 +597,70 @@ def name_the_extensor_tendons(own: Measured, partner: Measured | None) -> None:
             partner.record["assignments"]["codes"][name] = code
 
 
+def partner_white(own: Measured, partner: Measured | None) -> np.ndarray:
+    """At this series' middle slice's places, where its partner, the other sequence's slice of the
+    same place, sees white as fluid: the white the partner kept where it is fat-suppressed and
+    fluid-sensitive (`PlaneAssignment.white`), laid on by place (`laid_on`). None of it where there
+    is no such partner, this slice's thickness is not in its header, the two are not the same
+    place, or the partner's picture does not reach: there nothing tells fluid apart."""
+    none = np.zeros(own.arrays["acquired_plane"].shape, dtype=bool)
+    if partner is None:
+        return none
+    reads("naming", ("white",), "rest_of_the_field")
+    white = partner.assignment.white
+    if white is None:
+        return none
+    reads("series", ("slice_thickness_mm",), "rest_of_the_field")
+    thickness = own.series.slice_thickness_mm[own.record["slice_index"]]
+    if thickness is None:
+        return none
+    laid = laid_on(
+        white.astype(np.int8),
+        ~margin(partner.arrays["acquired_plane"]),
+        partner.frame.origin_lps,
+        partner.frame.basis_lps,
+        own.frame.origin_lps,
+        own.frame.basis_lps,
+        none.shape,
+        thickness,
+    )
+    return none if laid is None else laid == 1
+
+
 def name_the_rest_of_the_field(own: Measured, partner: Measured | None) -> None:
     """The rest of the field (their paragraphs in `knee.objects.assignments`), the fat under the
-    skin and then muscle, on this series' middle slice: where fat is not suppressed but the slice
-    read the skin and the air only once its partner's were laid on, named then, from its light; and
-    whichever a slice without fat suppression names from its own light, laid onto its partner, the
-    fat-suppressed slice of the same place, with one mapping. No lens is read again."""
+    skin and then muscle, on this series' middle slice where fat is not suppressed, once it is read
+    with its partner: the fat where the slice read the skin only once its partner's was laid on,
+    from its light; muscle on every such slice, outside every part named and the white its partner
+    sees as fluid where that partner is fat-suppressed and fluid-sensitive (`partner_white`). Each
+    a slice names from its own light is laid onto its partner with one mapping. No lens is read
+    again."""
+    reads("series", ("row",), "rest_of_the_field")
+    # the tags are stored as text
+    if int(own.series.row.fat_suppression) == 1:
+        return
     reads("partner", ("objects", "codes"), "rest_of_the_field")
     codes = own.record["assignments"]["codes"]
-    objects = own.arrays["a1_objects"]
-    laid_skin = codes.get("subcutaneous_fat") == "abstain_no_skin" and bool(
+    # a copy: the names the slice made alone (`Measured.assignment`) stay as made
+    objects = own.arrays["a1_objects"].copy()
+    plane = own.arrays["acquired_plane"]
+    spacing = np.asarray(own.frame.spacing_rc)
+    femur_named = bool((objects == OBJECT_CODES["femur"]).any())
+    if codes.get("subcutaneous_fat") == "abstain_no_skin" and bool(
         (objects == OBJECT_CODES["skin"]).any()
+    ):
+        fat = fat_under_the_skin(plane, objects, spacing)
+        objects[fat] = OBJECT_CODES["subcutaneous_fat"]
+        codes["subcutaneous_fat"] = subcutaneous_code(
+            False, True, femur_named, bool(fat.any())
+        )
+    muscle = muscle_bodies(
+        plane, objects, spacing, margin(plane), partner_white(own, partner)
     )
-    laid_air = codes.get("muscle") == "abstain_no_air" and bool(
-        (objects == OBJECT_CODES["air"]).any()
-    )
-    if laid_skin or laid_air:
-        # a copy: the names the slice made alone (`Measured.assignment`) stay as made
-        objects = objects.copy()
-        plane = own.arrays["acquired_plane"]
-        spacing = np.asarray(own.frame.spacing_rc)
-        femur_named = bool((objects == OBJECT_CODES["femur"]).any())
-        if laid_skin:
-            fat = fat_under_the_skin(plane, objects, spacing)
-            objects[fat] = OBJECT_CODES["subcutaneous_fat"]
-            codes["subcutaneous_fat"] = subcutaneous_code(
-                False, True, femur_named, bool(fat.any())
-            )
-        if laid_air:
-            muscle = muscle_bodies(plane, objects, spacing, margin(plane))
-            objects[muscle] = OBJECT_CODES["muscle"]
-            codes["muscle"] = muscle_code(False, True, femur_named, bool(muscle.any()))
-        own.arrays["a1_objects"] = objects
+    objects[muscle] = OBJECT_CODES["muscle"]
+    air_named = bool((objects == OBJECT_CODES["air"]).any())
+    codes["muscle"] = muscle_code(False, air_named, femur_named, bool(muscle.any()))
+    own.arrays["a1_objects"] = objects
     # only a slice that names them from its own light lays them on: one they were laid onto does
     # not lay them back
     parts = tuple(
@@ -1259,8 +1295,10 @@ def measure_study(
             )
         # The extensor tendons, on the sagittal slice without fat suppression, from the bands its
         # PCL was read from and the patella its partner laid on; then laid onto that partner. Then
-        # the rest of the field, the fat under the skin and muscle, outside every part named, on a
-        # slice whose skin and air its partner laid on, and laid onto that partner.
+        # the rest of the field on each slice without fat suppression: the fat under the skin where
+        # its partner laid the skin on, and muscle, outside every part named and the white its
+        # partner sees as fluid where that partner is fat-suppressed and fluid-sensitive; each laid
+        # onto that partner.
         for own, partner in zip(measured, partners, strict=True):
             name_the_extensor_tendons(own, partner)
         for own, partner in zip(measured, partners, strict=True):

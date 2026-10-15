@@ -1,7 +1,7 @@
 """Intent tests for the named objects: air, skin, femur over tibia, the joint, patella, menisci,
 fibula, cartilage, the PCL, the ACL, the MCL, the LCL, the joint's fluid, Hoffa's fat pad, the
-suprapatellar fat, the medial gastrocnemius head, the semimembranosus tendon, and the patellar and
-quadriceps tendons.
+suprapatellar fat, the medial gastrocnemius head, the semimembranosus tendon, the patellar and
+quadriceps tendons, the fat under the skin, and muscle.
 
 The scene is a small synthetic knee in a coronal frame (rows run inferior, columns run to the left,
 one place per millimetre): air around a leg of soft tissue, a black margin along two sides of the
@@ -57,6 +57,7 @@ from knee.objects.assignments import (
     subcutaneous_code,
     tendon_code,
     tibia_top_slice,
+    white_as_fluid,
     with_partner,
 )
 from knee.objects.interiors import read_interiors
@@ -739,7 +740,8 @@ def test_muscle_is_the_legs_bodies_darker_than_fat_a_centimetre_across():
     plane[0:60, 50] = 10.0  # a fascia line, 1 mm
     plane[65:80, :] = 0.0  # the black margin, 15 mm deep
     spacing = np.array([1.0, 1.0])
-    muscle = muscle_bodies(plane, objects, spacing, margin(plane))
+    no_white = np.zeros((80, 80), dtype=bool)
+    muscle = muscle_bodies(plane, objects, spacing, margin(plane), no_white)
     assert muscle[20, 30]
     assert not muscle[47, 22]  # the tendon
     assert not muscle[30, 50]  # the fascia line
@@ -747,7 +749,53 @@ def test_muscle_is_the_legs_bodies_darker_than_fat_a_centimetre_across():
     assert not muscle[72, 30]  # the black margin
     assert not muscle[20, 70]  # the femur
     no_air = np.where(objects == OBJECT_CODES["air"], 0, objects)
-    assert not muscle_bodies(plane, no_air, spacing, margin(plane)).any()
+    assert not muscle_bodies(plane, no_air, spacing, margin(plane), no_white).any()
+
+
+def test_muscle_leaves_out_the_fluid_its_fat_suppressed_partner_sees_white():
+    # a slice without fat suppression, one place per millimetre: air at the left, the femur's
+    # marrow at the right, and two bodies 2 cm across, both darker than fat; the fat-suppressed
+    # slice of the same place sees the lower one white, so it is fluid (a Baker's cyst, say)
+    plane = np.full((80, 80), 95.0)
+    objects = np.zeros((80, 80), dtype=np.int8)
+    objects[:, 0:5] = OBJECT_CODES["air"]
+    plane[:, 0:5] = 5.0
+    objects[0:40, 60:80] = OBJECT_CODES["femur"]
+    plane[0:40, 60:80] = 100.0
+    plane[10:30, 20:40] = 45.0  # a belly
+    plane[45:65, 20:40] = 40.0  # the body of fluid
+    white = np.zeros((80, 80), dtype=bool)
+    white[45:65, 20:40] = True
+    spacing = np.array([1.0, 1.0])
+    muscle = muscle_bodies(plane, objects, spacing, margin(plane), white)
+    assert muscle[20, 30]
+    assert not muscle[55, 30]
+    # a vessel 2 mm wide, white with fat suppressed, runs down the belly 6 mm from its edge: it is
+    # left out, and the 6 mm of belly beside it stay muscle, since it does not thin the belly
+    white[10:30, 26:28] = True
+    muscle = muscle_bodies(plane, objects, spacing, margin(plane), white)
+    assert muscle[20, 23] and muscle[20, 33]
+    assert not muscle[20, 27]
+
+
+def test_fluid_is_the_white_four_times_as_bright_as_the_bones_marrow():
+    # a fat-suppressed, fluid-sensitive slice: the femur above, the tibia below, their marrow
+    # suppressed to 100; between them fluid at x4.5 and cartilage at x3.5; the rest grey
+    plane = np.full((20, 20), 150.0)
+    objects = np.zeros((20, 20), dtype=np.int8)
+    objects[0:8, :] = OBJECT_CODES["femur"]
+    objects[12:20, :] = OBJECT_CODES["tibia"]
+    plane[0:8, :] = plane[12:20, :] = 100.0
+    plane[9:11, 5:15] = 450.0  # fluid
+    plane[9:11, 0:5] = 350.0  # cartilage
+    white = white_as_fluid(plane, objects)
+    assert white is not None
+    assert white[10, 10]
+    assert not white[10, 2]  # the cartilage
+    assert not white[4, 4]  # the marrow
+    assert not white[10, 18]  # grey
+    no_tibia = np.where(objects == OBJECT_CODES["tibia"], 0, objects)
+    assert white_as_fluid(plane, no_tibia) is None
 
 
 def test_muscle_code_names_why():
