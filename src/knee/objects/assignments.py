@@ -10,11 +10,18 @@ categories of the twelve it relates to (docs/OBJECTS_AND_CONDITIONS.md §6):
   1. there is a leg on the slice: every territory, its holes filled (abstain_no_leg);
   2. it is the measured low signal outside the leg and its black margin, where it forms a field at
      least `AIR_FIELD_MM` thick (`fields`) (abstain_no_field_outside_the_leg).
+  Where the lens draws the air into its territories, as on the proof's T1 coronal, none lies
+  outside the leg; there it is laid on from the other sequence's slice of the same place
+  (`with_partner`), which names it (laid_from_its_partner).
   It relates to none of the twelve categories: it is the field the leg lies in.
 - SKIN: the leg's edge against the air. Its descriptions, each one check with its code:
   1. there is air on the slice (abstain_no_air);
   2. it is the leg's places that touch the air.
-  It relates to none of the twelve categories.
+  Where the slice names no air of its own, the skin too is laid on from the other sequence's slice
+  of the same place (laid_from_its_partner).
+  It relates to none of the twelve categories. Seen also on the proof: laid onto the T1 coronal,
+  the skin lies on the dark rim between the air and the bright fat, on the rim's outer side, and a
+  few specks of the laid air lie apart from the rest.
 - FEMUR and TIBIA: each is its own large territory, and they hold the strongest interior peaks, one
   above the other along the leg (Rohan, 2026-10-13, on the proof figure: «Good»). Their
   descriptions, each one check with its code (`pair_code`):
@@ -292,6 +299,36 @@ categories of the twelve it relates to (docs/OBJECTS_AND_CONDITIONS.md §6):
   narrower than the light's reach, and higher up, where it is wider, its thin front layer is not
   reached; the picture's top edge cuts it; laid onto the fat-suppressed slice, where the band is
   thinner, the patellar tendon takes in up to 1.5 mm of Hoffa's fat behind it.
+- FAT UNDER THE SKIN: the subcutaneous fat, with muscle «the rest» of the field: fat is «high on
+  T1W, intermediate on T2W» and «low/intermediate» with fat suppression, on the same row as yellow
+  marrow, and Hoffa's fat pad «follows the signal of subcutaneous fat on all pulse sequences»
+  (docs/OBJECTS_AND_CONDITIONS.md). Seen on the proof's T1 coronal, 2026-10-15: down each side of
+  the knee a bright band under the skin, from the skin's dark rim to the fascia's thin dark line
+  on the outer side and to the grey muscle on the inner, x0.75 to x1.9 of the femur's marrow light,
+  brightest beside the coil, the muscle about x0.3 to x0.6. The lens's territories cut across the
+  band, and on that slice draw the air into themselves, so it names no skin of its own; the
+  fat-suppressed coronal of the same place names the air and the skin, and there the fat is grey,
+  as dark as muscle. So the skin is laid onto the T1 from it, and the fat is named on the T1 by its
+  light and laid back. Its descriptions, each one check with its code (`subcutaneous_code`):
+  1. fat is not suppressed: with it the fat is grey, as dark as muscle, and it is laid on from the
+     slice of the same place without fat suppression
+     (abstain_fat_as_dark_as_muscle_with_fat_suppression);
+  2. the slice names the skin, its own or laid on from the other sequence's slice of the same place
+     (abstain_no_skin);
+  3. the slice names the femur, whose marrow's light the fat's is read against (abstain_no_femur);
+  4. it is the places outside every part named at least `LIKE_THE_FEMUR`'s lower bound of the
+     femur's marrow light, the pieces of them reaching within `SHELL_MM` of the skin
+     (`fat_under_the_skin`) (abstain_no_fat_under_the_skin). Both numbers are borrowed, read on
+     the proof by Claude: fat and yellow marrow share a row of [Kh]'s table, so without fat
+     suppression the fat is about as bright as marrow, and only the lower bound of the patella's
+     tolerance is used, since beside the coil the fat is nearly twice the marrow's light;
+     `SHELL_MM`, written for a ligament's reach to its bone, here stands for the skin's dark rim,
+     2 to 3 pixels between the air and the fat on the proof's T1 coronal.
+  It relates to none of the twelve categories directly. Seen also on the proof: it stops at the
+  fascia's thin dark line and leaves the deep fat behind it; a pixel of the band under three
+  quarters of the marrow's light is left out; laid onto the fat-suppressed coronal it lies on that
+  slice's grey layer under the skin, leaving the layer's outer 1.5 mm to the skin's rim; the T2
+  sagittal names no skin, nor does its partner, so there it abstains.
 - MEDIAL GASTROCNEMIUS HEAD: the inner head of the calf's big muscle, which arises from the back of
   the femur's medial condyle; «muscle intermediate»; a Baker's cyst lies «between the medial
   gastrocnemius head and the semimembranosus tendon», and medicine reads the back of the knee on
@@ -519,6 +556,7 @@ OBJECT_CODES = {
     "semimembranosus": 21,
     "patellar_tendon": 22,
     "quadriceps_tendon": 23,
+    "subcutaneous_fat": 24,
 }
 CARTILAGES = ("femoral_cartilage", "tibial_cartilage")
 FOUR_NEIGHBOURS = ndi.generate_binary_structure(2, 1)
@@ -760,6 +798,44 @@ def tendon_code(
             else "abstain_no_dark_band_below_the_patella"
         )
     return "identified"
+
+
+def subcutaneous_code(
+    fat_suppressed: bool, skin_named: bool, femur_named: bool, found: bool
+) -> str:
+    """Whether the fat under the skin was named, or why not."""
+    if fat_suppressed:
+        return "abstain_fat_as_dark_as_muscle_with_fat_suppression"
+    if not skin_named:
+        return "abstain_no_skin"
+    if not femur_named:
+        return "abstain_no_femur"
+    if not found:
+        return "abstain_no_fat_under_the_skin"
+    return "identified"
+
+
+def fat_under_the_skin(
+    plane: np.ndarray, objects: np.ndarray, spacing_rc: np.ndarray
+) -> np.ndarray:
+    """The fat under the skin on a slice without fat suppression: the places outside every part
+    named at least `LIKE_THE_FEMUR`'s lower bound of the femur's marrow light, the pieces of them
+    reaching within `SHELL_MM` of the skin. Empty when the slice names no skin or no femur."""
+    skin = objects == OBJECT_CODES["skin"]
+    femur = objects == OBJECT_CODES["femur"]
+    none = np.zeros(plane.shape, dtype=bool)
+    if not (skin.any() and femur.any()):
+        return none
+    light = float(np.median(plane[femur]))
+    if light <= 0:
+        return none
+    pieces, count = ndi.label((plane >= LIKE_THE_FEMUR[0] * light) & (objects == 0))
+    if not count:
+        return none
+    near_skin = np.asarray(ndi.distance_transform_edt(~skin, sampling=spacing_rc))
+    labels = np.arange(1, count + 1)
+    reach = np.asarray(ndi.minimum(near_skin, pieces, index=labels))
+    return np.isin(pieces, labels[reach <= SHELL_MM])
 
 
 def extensor_tendons(
@@ -1663,6 +1739,16 @@ def assign_plane(
             front_in_plane, fat_suppressed, patella is not None, bool(pad.any()), upward
         )
         objects[pad] = OBJECT_CODES[name]
+
+    # FAT UNDER THE SKIN: without fat suppression, the places as bright as marrow outside every
+    # part named, in the pieces reaching the skin; last, since it is what lies outside the rest.
+    fat = np.zeros(plane.shape, dtype=bool)
+    if not fat_suppressed and skin.any() and femur is not None:
+        fat = fat_under_the_skin(plane, objects, spacing_rc)
+    codes["subcutaneous_fat"] = subcutaneous_code(
+        fat_suppressed, bool(skin.any()), femur is not None, bool(fat.any())
+    )
+    objects[fat] = OBJECT_CODES["subcutaneous_fat"]
     return PlaneAssignment(objects, codes, peaks, femur, tibia, menisci, patella, bands)
 
 
@@ -1720,10 +1806,10 @@ def with_partner(
     A bone both name is named where both agree, and where the partner's picture does not reach
     (`UNSEEN`: it has no say there); not at all where they share no place. A part only the partner
     names (the patella, the menisci, the cartilage, the PCL, the MCL, the joint's fluid, Hoffa's fat
-    pad, the suprapatellar fat) is laid on from it, onto this slice's own interiors that nothing
-    else holds; the patella only where it holds this slice's own peak in front of the femur, so
-    the two lenses agree on where it is. The joint is then again what lies between the bones along
-    the leg.
+    pad, the suprapatellar fat, and last the air and the skin) is laid on from it, onto this
+    slice's own interiors that nothing else holds; the patella only where it holds this slice's own
+    peak in front of the femur, so the two lenses agree on where it is. The joint is then again
+    what lies between the bones along the leg.
     """
     objects, codes = assignment.objects.copy(), dict(assignment.codes)
     for name in BONES:
@@ -1761,6 +1847,9 @@ def with_partner(
         ("joint_fluid", ("joint_fluid",)),
         ("hoffa_fat_pad", ("hoffa_fat_pad",)),
         ("suprapatellar_fat", ("suprapatellar_fat",)),
+        # last, so they take no place another laid part would
+        ("air", ("air",)),
+        ("skin", ("skin",)),
     ):
         if codes.get(name) in NAMED or partner_codes.get(name) not in NAMED:
             continue
