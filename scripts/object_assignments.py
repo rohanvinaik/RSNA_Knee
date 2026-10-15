@@ -28,6 +28,7 @@ OBJECT_COLOURS = {
     "fibula": (0.6, 0.3, 1.0, 0.75),
     "femoral_cartilage": (1.0, 0.85, 0.0, 0.85),
     "tibial_cartilage": (0.0, 0.75, 0.6, 0.85),
+    "pcl": (0.85, 0.1, 0.35, 0.8),
 }
 
 
@@ -52,7 +53,7 @@ def draw_stages(axes, arrays, record):
     named = (
         assigned["femur"],
         assigned["tibia"],
-        assigned.get("patella"),  # withdrawn 2026-10-14; older records still carry it
+        assigned.get("patella"),  # records older than the patella's naming lack it
         assigned.get("fibula"),
     )
     for peak in assigned["peaks"]:
@@ -90,6 +91,7 @@ def draw_stages(axes, arrays, record):
             if "cartilage" in codes
             else ""
         )
+        + (f"\nCRIMSON PCL: {codes['pcl']}" if "pcl" in codes else "")
         + (f"\nVIOLET fibula: {codes['fibula']}" if "fibula" in codes else ""),
         fontsize=8,
     )

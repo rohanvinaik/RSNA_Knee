@@ -35,6 +35,18 @@ Each is named by what the pictures show, read off the interiors' own lenses:
   as bright as the femur, the piece of them holding most of the peak's own disc, its holes filled
   (`patella_piece`). Without fat suppression it is laid on from the fat-suppressed slice of the
   same place (`with_partner`).
+- PCL: the posterior cruciate ligament, «thick, uniformly low-signal and curvilinear», from the
+  femur's notch to the back of the tibia (docs/OBJECTS_AND_CONDITIONS.md). Seen on the proof's
+  middle T2 sagittal, 2026-10-14: a thick dark band behind the femur's condyle curving down to the
+  back of the tibia, x0.05 to x0.25 of the marrow's light; the low-signal lens marks only dots in
+  it, the signal itself shows it whole. A ligament joins two bones. So: on a sagittal slice without
+  fat suppression, the places whose light over `LIGAMENT_SMOOTH_MM` (uniformly dark, not speckled)
+  is under `LIGAMENT_DARKER` of the femur's marrow, at least `LIGAMENT_THICK_MM` thick (the bones'
+  thin shells drop out), the largest such piece that reaches within `SHELL_MM` of both the femur and
+  the tibia (`ligament_joining`). With fat suppression the marrow is as dark as a ligament, so there
+  it is laid on from the other slice of the same place. Seen also on the proof: it takes in some of
+  the dark tissue around the band, and its last stretch down the back of the tibia stays with the
+  dark tissue behind the tibia.
 - MENISCI: on a coronal slice, the dark triangles at the two ends of the joint, between the femur's
   condyle and the tibia's plateau («an isosceles triangle on coronal images», low on every
   sequence: docs/OBJECTS_AND_CONDITIONS.md). So: the low signal with every part thinner than
@@ -118,6 +130,16 @@ PATELLA_ABOVE_MM = 50.0
 # marrow's light, the marrow's own speckle within x0.7 to x1.3.
 CARTILAGE_MM = 3.0
 CARTILAGE_BRIGHTER = 1.5
+# A ligament is «uniformly low-signal»: dark over a small area, not speckle by speckle, so its
+# light is read as the median over 2 mm. The PCL is about 6 mm thick front to back (anatomy); a
+# bone's dark shell is about a millimetre, so a band at least 3 mm thick is not a shell, and a
+# ligament attached to a bone lies within 2 mm of its marrow. Claude's reading of the proof's T2
+# sagittal, 2026-10-14: the PCL x0.05 to x0.25 of the marrow's light; the fat and fluid of the
+# notch x0.5 to x1.4.
+LIGAMENT_SMOOTH_MM = 2.0
+LIGAMENT_DARKER = 0.3
+LIGAMENT_THICK_MM = 3.0
+SHELL_MM = 2.0
 # What a slice's codes say when an object is named on it, by its own lens or with its partner's.
 NAMED = ("identified", "agreed_with_its_partner", "laid_from_its_partner")
 # A place of one slice that lies outside its partner's picture, where the partner has no say.
@@ -138,6 +160,7 @@ OBJECT_CODES = {
     "fibula": 10,
     "femoral_cartilage": 11,
     "tibial_cartilage": 12,
+    "pcl": 13,
 }
 CARTILAGES = ("femoral_cartilage", "tibial_cartilage")
 FOUR_NEIGHBOURS = ndi.generate_binary_structure(2, 1)
@@ -290,6 +313,54 @@ def cartilage_on(
     femoral = bright & (to_femur <= CARTILAGE_MM) & (to_femur <= to_tibia)
     tibial = bright & (to_tibia <= CARTILAGE_MM) & (to_tibia < to_femur)
     return femoral, tibial
+
+
+def pcl_code(
+    front_to_back_in_plane: bool, fat_suppressed: bool, bones_named: bool, found: bool
+) -> str:
+    """Whether the PCL was named, or why not."""
+    if not front_to_back_in_plane:
+        return "abstain_front_to_back_runs_through_the_plane"
+    if fat_suppressed:
+        return "abstain_marrow_as_dark_as_a_ligament_with_fat_suppression"
+    if not bones_named:
+        return "abstain_no_femur_and_tibia"
+    if not found:
+        return "abstain_no_dark_band_joins_the_bones"
+    return "identified"
+
+
+def ligament_joining(
+    plane: np.ndarray, objects: np.ndarray, spacing_rc: np.ndarray
+) -> np.ndarray:
+    """The thick, uniformly dark band joining the femur and the tibia: the places whose light over
+    `LIGAMENT_SMOOTH_MM` is under `LIGAMENT_DARKER` of the femur's marrow, outside the bones and the
+    black margin, at least `LIGAMENT_THICK_MM` thick; the largest piece of them reaching within
+    `SHELL_MM` of both bones. Empty when no piece joins them."""
+    femur = objects == OBJECT_CODES["femur"]
+    tibia = objects == OBJECT_CODES["tibia"]
+    none = np.zeros(plane.shape, dtype=bool)
+    if not (femur.any() and tibia.any()):
+        return none
+    light = float(np.median(plane[femur]))
+    if light <= 0:
+        return none
+    size = tuple(int(2 * round(LIGAMENT_SMOOTH_MM / step) + 1) for step in spacing_rc)
+    uniform = ndi.median_filter(np.asarray(plane, dtype=np.float64), size=size)
+    dark = (uniform < LIGAMENT_DARKER * light) & (plane > 0) & ~femur & ~tibia
+    pieces, count = ndi.label(thick_parts(dark, spacing_rc, LIGAMENT_THICK_MM))
+    if not count:
+        return none
+    near_femur = np.asarray(ndi.distance_transform_edt(~femur, sampling=spacing_rc))
+    near_tibia = np.asarray(ndi.distance_transform_edt(~tibia, sampling=spacing_rc))
+    labels = np.arange(1, count + 1)
+    reach_femur = np.asarray(ndi.minimum(near_femur, pieces, index=labels))
+    reach_tibia = np.asarray(ndi.minimum(near_tibia, pieces, index=labels))
+    sizes = np.bincount(pieces.ravel(), minlength=count + 1)[1:]
+    joining = (reach_femur <= SHELL_MM) & (reach_tibia <= SHELL_MM)
+    if not joining.any():
+        return none
+    return pieces == int(labels[joining][np.argmax(sizes[joining])])
 
 
 def patella_code(
@@ -640,6 +711,18 @@ def assign_plane(
     )
     objects[femoral] = OBJECT_CODES["femoral_cartilage"]
     objects[tibial] = OBJECT_CODES["tibial_cartilage"]
+
+    # PCL: on a sagittal slice without fat suppression, the thick, uniformly dark band joining the
+    # femur and the tibia.
+    bones_named = femur is not None and tibia is not None
+    pcl = np.zeros(plane.shape, dtype=bool)
+    if front_in_plane and not fat_suppressed and bones_named:
+        pcl = ligament_joining(plane, objects, spacing_rc)
+        pcl &= np.isin(objects, (0, OBJECT_CODES["joint"]))
+    codes["pcl"] = pcl_code(
+        front_in_plane, fat_suppressed, bones_named, bool(pcl.any())
+    )
+    objects[pcl] = OBJECT_CODES["pcl"]
     return PlaneAssignment(objects, codes, peaks, femur, tibia, menisci, patella)
 
 
@@ -696,7 +779,7 @@ def with_partner(
 
     A bone both name is named where both agree, and where the partner's picture does not reach
     (`UNSEEN`: it has no say there); not at all where they share no place. A part only the partner
-    names (the patella, the menisci, the cartilage) is laid on from it, onto this slice's own
+    names (the patella, the menisci, the cartilage, the PCL) is laid on from it, onto this slice's own
     interiors that nothing else holds; the patella only where it holds this slice's own peak in
     front of the femur, so the two lenses agree on where it is. The joint is then again what lies
     between the bones along the leg.
@@ -732,6 +815,7 @@ def with_partner(
         ("patella", ("patella",)),
         ("meniscus", MENISCI),
         ("cartilage", CARTILAGES),
+        ("pcl", ("pcl",)),
     ):
         if codes.get(name) in NAMED or partner_codes.get(name) not in NAMED:
             continue
