@@ -26,6 +26,8 @@ OBJECT_COLOURS = {
     "medial_meniscus": (1.0, 0.15, 0.15, 0.9),
     "lateral_meniscus": (0.6, 1.0, 0.0, 0.95),
     "fibula": (0.6, 0.3, 1.0, 0.75),
+    "femoral_cartilage": (1.0, 0.85, 0.0, 0.85),
+    "tibial_cartilage": (0.0, 0.75, 0.6, 0.85),
 }
 
 
@@ -83,6 +85,11 @@ def draw_stages(axes, arrays, record):
         f"CYAN patella: {codes['patella']}\n"
         f"RED medial · LIME lateral · WHITE unsided meniscus: {codes['meniscus']}, "
         f"sides {codes.get('meniscus_side', '-')}"
+        + (
+            f"\nGOLD femoral · TEAL tibial cartilage: {codes['cartilage']}"
+            if "cartilage" in codes
+            else ""
+        )
         + (f"\nVIOLET fibula: {codes['fibula']}" if "fibula" in codes else ""),
         fontsize=8,
     )

@@ -63,10 +63,11 @@ FINE_MM = (
 )
 
 
-def fine_coronal_scene(menisci: bool = False) -> np.ndarray:
+def fine_coronal_scene(menisci: bool = False, cartilage: bool = False) -> np.ndarray:
     """A coronal knee at half-millimetre pixels: bones with a 1 mm shell, round at their ends, and
     the joint between them; with `menisci`, a 7 mm wedge at each end of the joint, reaching out
-    past the bones' edges as menisci do."""
+    past the bones' edges as menisci do; with `cartilage`, a 2 mm layer twice as bright as the
+    marrow on each bone's joint surface, as it is with fat suppression."""
     plane = np.full((280, 240), 2.0)  # air
     plane[20:264, 40:200] = 40.0  # the leg's soft tissue
     for top in (32, 152):  # the femur above, the tibia below
@@ -75,6 +76,9 @@ def fine_coronal_scene(menisci: bool = False) -> np.ndarray:
             100.0  # marrow
         )
     plane[124:152, 76:164] = 25.0  # the joint between them
+    if cartilage:
+        plane[124:128, 76:164] = 200.0  # on the femur
+        plane[148:152, 76:164] = 200.0  # on the tibia
     if menisci:
         plane[124:152, 52:84] = 1.0
         plane[124:152, 156:188] = 1.0
@@ -357,6 +361,37 @@ def test_the_slices_own_frame_decides_the_side_not_the_pictures_left_and_right()
     result = assigned(plane, columns_to_the_right, FINE_MM, "R")
     assert result.objects[138, 172] == OBJECT_CODES["lateral_meniscus"]
     assert result.objects[138, 66] == OBJECT_CODES["medial_meniscus"]
+
+
+def test_with_fat_suppression_the_cartilage_is_the_bright_layer_on_each_bone():
+    plane = fine_coronal_scene(cartilage=True)
+    result = assigned(plane, pixel_mm=FINE_MM, fat_suppressed=True)
+    assert result.codes["cartilage"] == "identified"
+    assert result.objects[126, 120] == OBJECT_CODES["femoral_cartilage"]
+    assert result.objects[150, 120] == OBJECT_CODES["tibial_cartilage"]
+    assert (
+        result.objects[138, 120] == OBJECT_CODES["joint"]
+    )  # the joint between the layers
+    assert result.objects[100, 120] == OBJECT_CODES["femur"]
+
+
+def test_without_fat_suppression_or_across_a_sagittal_slice_no_cartilage_is_named():
+    plain = assigned(fine_coronal_scene(cartilage=True), pixel_mm=FINE_MM)
+    assert plain.codes["cartilage"] == (
+        "abstain_not_brighter_than_marrow_without_fat_suppression"
+    )
+    sagittal = assigned(sagittal_scene(), SAGITTAL, fat_suppressed=True)
+    assert sagittal.codes["cartilage"] == "abstain_side_to_side_runs_through_the_plane"
+    for result in (plain, sagittal):
+        assert not np.isin(
+            result.objects,
+            [OBJECT_CODES["femoral_cartilage"], OBJECT_CODES["tibial_cartilage"]],
+        ).any()
+
+
+def test_a_joint_with_nothing_bright_against_the_bones_names_no_cartilage():
+    result = assigned(fine_coronal_scene(), pixel_mm=FINE_MM, fat_suppressed=True)
+    assert result.codes["cartilage"] == "abstain_nothing_bright_against_the_bones"
 
 
 def test_each_end_takes_a_piece_from_its_own_side_of_the_middle():

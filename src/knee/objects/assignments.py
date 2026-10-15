@@ -12,6 +12,17 @@ Each is named by what the pictures show, read off the interiors' own lenses:
   with the deepest peak, and the deepest one above or below it. The upper is the femur.
 - BONE MARROW: the inside of each bone named here. A bone's territory is its inside, within its
   dark shell, so the marrow needs no rule of its own.
+- ARTICULAR CARTILAGE: the layer on each bone's joint surface, 2 to 3 mm thick where the femur's
+  condyles meet the tibia's plateau. Seen on the proof's fat-suppressed coronal, 2026-10-14: down
+  each column across the joint, the femur's marrow, its dark shell, a bright layer (x2.4 to x3.5
+  of the marrow's light), the dark joint line, the tibia's bright layer, its shell, its marrow. So:
+  on a coronal slice with fat suppression, in the joint, the places brighter than the bones' marrow
+  by `CARTILAGE_BRIGHTER` within `CARTILAGE_MM` of a bone, named for the nearer bone, femoral or
+  tibial (`cartilage_on`). Without fat suppression it is not brighter than marrow, so there it is
+  laid on from the fat-suppressed slice of the same place; the middle sagittal slice passes through
+  the notch, where no joint surfaces meet, so it is not named there. Seen also on the proof: the
+  bright fluid down the femur's outer side, and the lining of the notch's roof, lie in the joint
+  within that reach and are named with it.
 - JOINT: what lies between the femur and the tibia, along the leg.
 - PATELLA: the bone in front of the femur's lower end, on a sagittal slice. Its marrow is the
   femur's tissue, so it is about as bright as the femur, and it has its own peak there. Seen on the
@@ -99,6 +110,12 @@ FIBULA_BELOW_MM = 30.0
 # its peak 15 mm in front of the femur and 23 mm above the femur's lowest place.
 LIKE_THE_FEMUR = (0.75, 1.33)
 PATELLA_ABOVE_MM = 50.0
+# Articular cartilage is 2 to 3 mm thick on the femoral condyles and the tibial plateau (anatomy);
+# with fat suppression it is clearly brighter than the suppressed marrow beneath it. Claude's
+# reading of the proof's fat-suppressed coronal, 2026-10-14: the cartilage x2.4 to x3.5 of the
+# marrow's light, the marrow's own speckle within x0.7 to x1.3.
+CARTILAGE_MM = 3.0
+CARTILAGE_BRIGHTER = 1.5
 # What a slice's codes say when an object is named on it, by its own lens or with its partner's.
 NAMED = ("identified", "agreed_with_its_partner", "laid_from_its_partner")
 # A place of one slice that lies outside its partner's picture, where the partner has no say.
@@ -117,6 +134,8 @@ OBJECT_CODES = {
     "medial_meniscus": 8,
     "lateral_meniscus": 9,
     "fibula": 10,
+    "femoral_cartilage": 11,
+    "tibial_cartilage": 12,
 }
 FOUR_NEIGHBOURS = ndi.generate_binary_structure(2, 1)
 
@@ -230,6 +249,44 @@ def side_code(knee: str, named: int) -> str:
     if knee not in ("R", "L"):
         return "abstain_header_names_no_knee"
     return "from_the_header"
+
+
+def cartilage_code(
+    sides_in_plane: bool, fat_suppressed: bool, joint_named: bool, found: bool
+) -> str:
+    """Whether the articular cartilage was named, or why not."""
+    if not sides_in_plane:
+        return "abstain_side_to_side_runs_through_the_plane"
+    if not fat_suppressed:
+        return "abstain_not_brighter_than_marrow_without_fat_suppression"
+    if not joint_named:
+        return "abstain_no_joint"
+    if not found:
+        return "abstain_nothing_bright_against_the_bones"
+    return "identified"
+
+
+def cartilage_on(
+    plane: np.ndarray, objects: np.ndarray, spacing_rc: np.ndarray
+) -> tuple[np.ndarray, np.ndarray]:
+    """The articular cartilage on one slice, femoral and tibial: in the joint, the places brighter
+    than the bones' marrow by `CARTILAGE_BRIGHTER`, within `CARTILAGE_MM` of the femur or the tibia,
+    each named for the nearer bone. Both empty where the slice names no femur, tibia or joint."""
+    femur = objects == OBJECT_CODES["femur"]
+    tibia = objects == OBJECT_CODES["tibia"]
+    joint = objects == OBJECT_CODES["joint"]
+    none = np.zeros(plane.shape, dtype=bool)
+    if not (femur.any() and tibia.any() and joint.any()):
+        return none, none
+    light = float(np.median(np.concatenate((plane[femur], plane[tibia]))))
+    if light <= 0:
+        return none, none
+    to_femur = np.asarray(ndi.distance_transform_edt(~femur, sampling=spacing_rc))
+    to_tibia = np.asarray(ndi.distance_transform_edt(~tibia, sampling=spacing_rc))
+    bright = joint & (plane > CARTILAGE_BRIGHTER * light)
+    femoral = bright & (to_femur <= CARTILAGE_MM) & (to_femur <= to_tibia)
+    tibial = bright & (to_tibia <= CARTILAGE_MM) & (to_tibia < to_femur)
+    return femoral, tibial
 
 
 def patella_code(
@@ -568,6 +625,18 @@ def assign_plane(
             menisci += 1
     codes["meniscus"] = meniscus_code(sides_in_plane, joint_places.any(), menisci)
     codes["meniscus_side"] = side_code(knee, menisci)
+
+    # ARTICULAR CARTILAGE: on a fat-suppressed coronal slice, the bright layer on each bone, in the
+    # joint.
+    joint_named = codes["joint"] == "identified"
+    femoral = tibial = np.zeros(plane.shape, dtype=bool)
+    if sides_in_plane and fat_suppressed and joint_named:
+        femoral, tibial = cartilage_on(plane, objects, spacing_rc)
+    codes["cartilage"] = cartilage_code(
+        sides_in_plane, fat_suppressed, joint_named, bool(femoral.any() or tibial.any())
+    )
+    objects[femoral] = OBJECT_CODES["femoral_cartilage"]
+    objects[tibial] = OBJECT_CODES["tibial_cartilage"]
     return PlaneAssignment(objects, codes, peaks, femur, tibia, menisci, patella)
 
 
