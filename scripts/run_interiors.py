@@ -102,6 +102,7 @@ from knee.objects.assignments import (
     assign_plane,
     carried_bone,
     extensor_tendons,
+    fat_under_the_skin,
     fibula_block,
     fibula_code,
     fibula_on_slice,
@@ -120,6 +121,7 @@ from knee.objects.assignments import (
     semimembranosus_code,
     semimembranosus_on_slice,
     slice_through,
+    subcutaneous_code,
     tendon_code,
     tibia_top_slice,
     with_partner,
@@ -587,6 +589,44 @@ def name_the_extensor_tendons(own: Measured, partner: Measured | None) -> None:
     for name, code in laid.items():
         if code is not None:
             partner.record["assignments"]["codes"][name] = code
+
+
+def name_the_fat_under_the_skin(own: Measured, partner: Measured | None) -> None:
+    """The fat under the skin (its paragraph in `knee.objects.assignments`) on this series' middle
+    slice: where fat is not suppressed but the slice read the skin only once its partner's was laid
+    on, named then, from its light; and wherever a slice without fat suppression names it, laid onto
+    its partner, the fat-suppressed slice of the same place. No lens is read again."""
+    reads("partner", ("objects", "codes"), "subcutaneous_fat")
+    codes = own.record["assignments"]["codes"]
+    skin = own.arrays["a1_objects"] == OBJECT_CODES["skin"]
+    if codes.get("subcutaneous_fat") == "abstain_no_skin" and skin.any():
+        # a copy: the names the slice made alone (`Measured.assignment`) stay as made
+        objects = own.arrays["a1_objects"].copy()
+        fat = fat_under_the_skin(
+            own.arrays["acquired_plane"], objects, np.asarray(own.frame.spacing_rc)
+        )
+        objects[fat] = OBJECT_CODES["subcutaneous_fat"]
+        own.arrays["a1_objects"] = objects
+        femur_named = bool((objects == OBJECT_CODES["femur"]).any())
+        codes["subcutaneous_fat"] = subcutaneous_code(
+            False, True, femur_named, bool(fat.any())
+        )
+    # only a slice that names it from its own light lays it on: one it was laid onto does not
+    # lay it back
+    if codes.get("subcutaneous_fat") != "identified":
+        return
+    handed("subcutaneous_fat", ("region",))
+    if partner is None:
+        return
+    laid = lay_parts(
+        partner,
+        (partner.record, partner.arrays, partner.frame),
+        (own.record, own.arrays, own.frame),
+        ("subcutaneous_fat",),
+        "subcutaneous_fat",
+    )["subcutaneous_fat"]
+    if laid is not None:
+        partner.record["assignments"]["codes"]["subcutaneous_fat"] = laid
 
 
 def semimembranosus_slice(
@@ -1198,9 +1238,13 @@ def measure_study(
                 else read_with_partner(own, partner)
             )
         # The extensor tendons, on the sagittal slice without fat suppression, from the bands its
-        # PCL was read from and the patella its partner laid on; then laid onto that partner.
+        # PCL was read from and the patella its partner laid on; then laid onto that partner. Then
+        # the fat under the skin, outside every part named, on a slice whose skin its partner
+        # laid on, and laid onto that partner.
         for own, partner in zip(measured, partners, strict=True):
             name_the_extensor_tendons(own, partner)
+        for own, partner in zip(measured, partners, strict=True):
+            name_the_fat_under_the_skin(own, partner)
         # The back of the knee, on the series the leg runs through: the study's leg, its bones in
         # the scanner's millimetres, made once where the header names the knee there, and carried
         # onto the slices its parts are named on; the medial head on the middle slice, from the
@@ -1264,6 +1308,12 @@ def measure_study(
                 for name in ("patellar_tendon", "quadriceps_tendon")
             ):
                 reads("tendons", ("region",), "draw")
+            # the fat under the skin, which a slice without fat suppression names
+            if any(
+                r["assignments"]["codes"].get("subcutaneous_fat") in NAMED
+                for r in records
+            ):
+                reads("subcutaneous_fat", ("region",), "draw")
         if drawn:
             for part in sorted(
                 {r["main_slice"]["object"].lower() for r in main_records}

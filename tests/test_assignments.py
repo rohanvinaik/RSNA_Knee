@@ -26,6 +26,7 @@ from knee.objects.assignments import (
     end_pieces,
     extensor_tendons,
     fat_pad_code,
+    fat_under_the_skin,
     fibula_block,
     fibula_code,
     fibula_on_slice,
@@ -51,6 +52,7 @@ from knee.objects.assignments import (
     semimembranosus_code,
     semimembranosus_on_slice,
     slice_through,
+    subcutaneous_code,
     tendon_code,
     tibia_top_slice,
     with_partner,
@@ -658,6 +660,67 @@ def test_the_mcl_one_slice_shows_is_laid_on_the_other_slice_of_the_same_place():
     # disagree on the femur, so the MCL is laid there too
     assert objects[35, 43] == OBJECT_CODES["mcl"]
     assert objects[55, 43] == OBJECT_CODES["mcl"]
+
+
+def test_the_air_and_skin_one_slice_names_are_laid_on_the_other_slice_of_the_same_place():
+    # where the lens draws the air into its territories the slice names none of its own; the
+    # partner's air and skin are laid on, last, onto the places nothing else holds
+    assignment, labels, laid = partner_scene()
+    laid[:, 0:3] = OBJECT_CODES["air"]
+    laid[:, 3] = OBJECT_CODES["skin"]
+    own_codes = {
+        **assignment.codes,
+        "air": "abstain_no_field_outside_the_leg",
+        "skin": "abstain_no_air",
+    }
+    alone = PlaneAssignment(assignment.objects, own_codes, assignment.peaks, 1, 2, 0)
+    objects, codes = with_partner(
+        alone,
+        labels,
+        SAGITTAL_MM,
+        np.zeros(labels.shape, dtype=bool),
+        laid,
+        {**PARTNER_CODES, "air": "identified", "skin": "identified"},
+    )
+    assert codes["air"] == codes["skin"] == "laid_from_its_partner"
+    assert objects[10, 1] == OBJECT_CODES["air"]
+    assert objects[10, 3] == OBJECT_CODES["skin"]
+
+
+def test_the_fat_under_the_skin_is_the_layer_as_bright_as_marrow_reaching_the_skin():
+    # one place per millimetre, the leg's edge to the left: the skin, the fat under it, the
+    # fascia's thin dark line, muscle at about half the marrow's light, and the femur; deep fat
+    # lies behind the fascia
+    plane = np.full((40, 60), 45.0)
+    objects = np.zeros((40, 60), dtype=np.int8)
+    objects[:, 0] = OBJECT_CODES["skin"]
+    plane[:, 1:7] = 90.0  # the fat under the skin
+    plane[:, 7] = 10.0  # the fascia
+    plane[5:15, 8:14] = 95.0  # the deep fat behind it
+    objects[:, 40:60] = OBJECT_CODES["femur"]
+    plane[:, 40:60] = 100.0  # its marrow
+    plane[20:24, 20:24] = 95.0  # as bright, but far from the skin
+    spacing = np.array([1.0, 1.0])
+    fat = fat_under_the_skin(plane, objects, spacing)
+    assert fat[10, 3] and fat[30, 6]
+    assert not fat[10, 10]  # the deep fat
+    assert not fat[30, 20]  # muscle
+    assert not fat[22, 22]
+    assert not fat[10, 50]  # the femur's marrow, already named
+    no_skin = np.where(objects == OBJECT_CODES["skin"], 0, objects)
+    assert not fat_under_the_skin(plane, no_skin, spacing).any()
+
+
+def test_subcutaneous_code_names_why():
+    assert subcutaneous_code(True, True, True, True) == (
+        "abstain_fat_as_dark_as_muscle_with_fat_suppression"
+    )
+    assert subcutaneous_code(False, False, True, True) == "abstain_no_skin"
+    assert subcutaneous_code(False, True, False, True) == "abstain_no_femur"
+    assert (
+        subcutaneous_code(False, True, True, False) == "abstain_no_fat_under_the_skin"
+    )
+    assert subcutaneous_code(False, True, True, True) == "identified"
 
 
 def test_mcl_code_names_why():

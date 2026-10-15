@@ -39,6 +39,7 @@ OBJECT_COLOURS = {
     "semimembranosus": (0.65, 0.35, 0.1, 0.9),
     "patellar_tendon": (0.5, 1.0, 0.75, 0.85),
     "quadriceps_tendon": (0.8, 0.7, 1.0, 0.85),
+    "subcutaneous_fat": (0.55, 0.25, 0.55, 0.55),
 }
 
 
@@ -132,6 +133,11 @@ def draw_stages(axes, arrays, record):
                 else f"{codes['patellar_tendon']}, {codes.get('quadriceps_tendon', '-')}"
             )
             if "patellar_tendon" in codes
+            else ""
+        )
+        + (
+            f"\nPLUM fat under the skin: {codes['subcutaneous_fat']}"
+            if "subcutaneous_fat" in codes
             else ""
         )
         + (
