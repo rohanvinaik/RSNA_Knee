@@ -1,4 +1,10 @@
 {
+  "src/knee/objects/assignments.py::bursa_code": {
+    "cut_reasons": [],
+    "function_digest": "c2894b1fb38042fd",
+    "refusal": "",
+    "standing": "complete"
+  },
   "src/knee/objects/assignments.py::capsule_code": {
     "cut_reasons": [],
     "function_digest": "fb9b169c9d7118ad",

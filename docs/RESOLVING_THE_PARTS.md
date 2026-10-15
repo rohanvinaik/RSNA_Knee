@@ -426,3 +426,28 @@ The separate mask `a2_joint_capsule` preserves its overlap with collateral struc
 own decision (`capsule_code`), is serialized through the real run, and is laid onto the coronal
 twin by the shared physical-place match. Both coronal outputs were inspected after the proof run.
 This demonstrates the wall at a side recess, not the capsule's entire envelope across all slices.
+
+### Gastrocnemius-semimembranosus bursa: its fluid-filled body
+
+The bursa is the pocket between the medial gastrocnemius and semimembranosus tendon. A visible
+fluid-filled example is study `…13335129881737731410081002627729200903`, axial slice 14, already
+selected by the tendon's existing tibial-top rule. Its report describes a popliteal cyst; the rule
+does not read that report or its label. The acquired picture shows the dark tendon and, behind it,
+the bright pocket along the muscle's edge.
+
+`bursa_on_slice` reads the existing fluid/marrow contrast on that same slice, the tendon, the
+posterior territory selected by the existing region rule, and patient positions. The territory is
+a broad target and includes non-muscle tissue; it is not treated as an exact muscle boundary.
+The body is the largest connected white component with its middle behind the tendon, before the
+posterior territory's middle, on the knee's inner side, and reaching that territory through the
+existing contact allowance. A direct white connection to the tendon is not required: its thin
+neck can be dimmer. This replaces the preview's incorrect assumption that the bright body itself
+must touch the tendon through a 2 mm gap; the visible neck is longer.
+
+The rule reuses the tendon's lens, field and carried leg. Its independent mask is
+`a2_gastrocnemius_semimembranosus_bursa`; the white reading is retained as `a2_fluid_signal`.
+`bursa_code` distinguishes missing landmarks from no white body in the expected place. On the
+proof's axial slice 11 it abstains because no separate posterior region is found there; that is
+not a diagnosis of absence. Through the real run, the fluid body is named on the example study and
+the two main-slice pictures were inspected. The neck's full extent across slices and the bursal
+wall remain wider coverage, not claims made by this mask. Diagnosis is still deferred.

@@ -434,6 +434,9 @@ with no new numerical cutoff, and retains both masks without taking pixels away 
 
 The capsule's dark outer wall at the side recesses is also demonstrated on the proof's coronal
 slice, with a separate mask and decision (`RESOLVING_THE_PARTS.md` §9).
+The bursa's fluid-filled body is demonstrated on study `…13335129881737731410081002627729200903`,
+using the semimembranosus tendon's existing slice and measurements. It has a separate mask and
+decision; its neck and wall across slices are not asserted by that mask (§9).
 
 Rohan also explicitly clarified: «Remember also, we can add lenses as needed». Add a simple,
 objective measurement when the anatomical distinction needs it; no individual lens must isolate

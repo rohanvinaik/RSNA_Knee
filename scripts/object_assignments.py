@@ -45,6 +45,7 @@ OBJECT_COLOURS = {
     "anterior_synovial_recess": (0.1, 0.75, 1.0, 0.65),
     "synovium": (1.0, 1.0, 0.0, 1.0),
     "joint_capsule": (1.0, 0.6, 0.2, 1.0),
+    "gastrocnemius_semimembranosus_bursa": (0.0, 0.9, 1.0, 0.75),
 }
 
 
@@ -172,6 +173,11 @@ def draw_stages(axes, arrays, record):
         + (
             f"\nBROWN semimembranosus tendon: {codes['semimembranosus']}"
             if "semimembranosus" in codes
+            else ""
+        )
+        + (
+            f"\nTURQUOISE gastrocnemius-semimembranosus bursa: {codes['gastrocnemius_semimembranosus_bursa']}"
+            if "gastrocnemius_semimembranosus_bursa" in codes
             else ""
         ),
         fontsize=8,
