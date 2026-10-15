@@ -70,6 +70,9 @@ here.
   one lens but not the other (like "joint fluid")...then great, we know how to find it, problem
   solved». "Visible, but not yet its own region" is your failure, never the project's: «the
   boundary of where you fucked up, not an issue with the project».
+- One leg, one set of objects: a part found in one view of the leg is the same part in every other
+  view of it, so it is carried there by place. «It's literally the same leg, obviously the object
+  would be the same in both views. That's the WHOLE thesis»
 - Medicine's rules are the rules: «"define rules to discriminate between objects in a field" is
   LITERALLY how medicine itself does it». Draft the domain knowledge yourself («This is basic domain
   knowledge. look it up»).
@@ -158,6 +161,7 @@ here.
 | «Are you looking at the photos annoyingly often? Because if you aren't you're going to fuck this up» | Changed rules and ran them without looking at every picture they reached: the whole fat-suppressed sagittal, the fibula's slice, the patella off its middle slice (where it then named the femur's condyle) | §4: look after every change, everywhere it reaches |
 | «Remember what "computer vision" means here. I don't think you recall what the idea actually is. It's not about perfection. It's about validity. I haven't described the AI part of this to you yet» | Measured the patella on eleven slices and all 58 studies and treated its wrong names there as failures; had read «never wrong» as a rule for the names | §3: validity, not perfection; "never wrong" is the lenses' |
 | «YES. I have said that MANY TIMES. Read the original conversation from yesterday AGAIN.» | Asked him to confirm what he had said many times | §1, §2 |
+| «...yeah. Duh. That's what I've been saying this whole time. Why would that not be valid? It's literally the same leg, obviously the object would be the same in both views. That's the WHOLE thesis» | Called the step that carries a part between two scans of the same slices its own invention, and offered to take it out | §4: one leg, one set of objects |
 
 Side notes he relayed the same day, each a lapse a self-check would have caught: the pipeline read
 only the middle slice; the menisci were unsided; the read-first rule lived only in Claude's memory;
