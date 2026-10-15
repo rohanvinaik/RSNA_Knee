@@ -13,7 +13,9 @@ import numpy as np
 
 from knee.objects.assignments import (
     OBJECT_CODES,
+    SLICE_PARTS,
     UNSEEN,
+    Measures,
     Peak,
     PlaneAssignment,
     acl_code,
@@ -50,6 +52,7 @@ from knee.objects.assignments import (
     patella_code,
     places_from,
     places_on_slice,
+    read_field,
     region_holding,
     rest_of_the_patellas_territory,
     semimembranosus_code,
@@ -62,6 +65,7 @@ from knee.objects.assignments import (
     with_partner,
 )
 from knee.objects.interiors import read_interiors
+from knee.telemetry import computing, recording
 
 OFFSETS = np.arange(-3.0, 3.5, 0.5)
 CORONAL = np.array([[0.0, 1.0], [0.0, 0.0], [-1.0, 0.0]])  # rows inferior, columns left
@@ -152,6 +156,70 @@ def assigned(
     return assign_plane(
         plane, reading, basis * pixel_mm, knee, fat_suppressed, fluid_sensitive
     )
+
+
+def test_a_slices_naming_codes_the_parts_slice_parts_lists_in_its_order():
+    # a part named on a slice of its own says each of these is not named there
+    assert tuple(assigned(scene()).codes) == SLICE_PARTS
+    assert tuple(assigned(sagittal_scene(), SAGITTAL, fat_suppressed=True).codes) == (
+        SLICE_PARTS
+    )
+    fine = fine_coronal_scene(menisci=True, cartilage=True)
+    named = assigned(fine, pixel_mm=FINE_MM, fat_suppressed=True, fluid_sensitive=True)
+    assert tuple(named.codes) == SLICE_PARTS
+
+
+def test_a_slice_named_from_its_field_read_first_names_the_same():
+    plane = scene()
+    reading = read_interiors(plane, (1.0, 1.0), 5.0, 3.0, OFFSETS, "reference")
+    alone = assign_plane(plane, reading, CORONAL)
+    field = read_field(plane, reading, CORONAL)
+    # the field names the air and the skin and nothing else
+    assert set(np.unique(field.objects)) == {
+        0,
+        OBJECT_CODES["air"],
+        OBJECT_CODES["skin"],
+    }
+    assert field.codes == {"air": alone.codes["air"], "skin": alone.codes["skin"]}
+    from_field = assign_plane(plane, reading, CORONAL, field=field)
+    assert np.array_equal(from_field.objects, alone.objects)
+    assert from_field.codes == alone.codes
+    assert from_field.peaks == alone.peaks == field.peaks
+    assert from_field.in_plane == alone.in_plane == field.in_plane
+
+
+def test_a_slices_measures_are_read_once_and_again_when_a_parts_places_change():
+    plane = scene()
+    femur = np.zeros(plane.shape, dtype=bool)
+    femur[20:60, 40:80] = True
+    spacing = np.array([1.0, 1.0])
+    with recording() as led, computing():
+        measures = Measures(("series", 7), plane, CORONAL)
+        first = measures.distance(femur, spacing)
+        # the same slice's measures, asked again over the same places: handed on
+        again = Measures(("series", 7), plane, CORONAL).distance(femur.copy(), spacing)
+        # a meniscus took one of the femur's places: read again
+        fewer = femur.copy()
+        fewer[20, 40] = False
+        other = measures.distance(fewer, spacing)
+        light, light_again = measures.light(femur), measures.light(femur)
+        left, left_again = measures.along(0), measures.along(0)
+    assert again is first
+    assert other is not first and first[20, 40] == 0.0 and other[20, 40] == 1.0
+    assert light == light_again == float(np.median(plane[femur]))
+    assert (
+        left is left_again and left[0, 5] == 5.0
+    )  # columns run to the left, 1 mm each
+    assert not first.flags.writeable  # handed on as it is, never changed in place
+    names = [event.name for event in led.events()]
+    assert names.count("distance.made") == 2
+    assert names.count("distance.handed_on") == 1
+    assert names.count("light.made") == 1 and names.count("light.handed_on") == 1
+    assert names.count("position.made") == 1
+    assert names.count("position.handed_on") == 1
+    # without a key nothing is kept: each is read where it is asked for
+    alone = Measures(None, plane, CORONAL)
+    assert alone.distance(femur, spacing) is not alone.distance(femur, spacing)
 
 
 def test_the_scene_names_air_skin_femur_over_tibia_and_the_joint():
