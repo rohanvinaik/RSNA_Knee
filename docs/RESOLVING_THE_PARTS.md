@@ -376,3 +376,38 @@ lenses stands at which slice, what its composite is) is not stated for the knee 
 the next session's to settle with him, from his sentence above and this text. The "views and slices"
 lines of §6 are Claude's provisional readings toward it, to be checked against this text with him;
 they are not that mapping.
+
+## 9. Definition pass, 2026-10-15: objects first, collapse after
+
+Rohan clarified the order: resolve every object with a stable anatomical definition and a competent
+demonstration at least once; the full dimensional-collapse work follows that. Generalization and
+robustness belong to the later AI work he has deliberately not explained. This supersedes the earlier
+"collapse next" ordering, not the description of the intended collapse.
+
+### Anterior synovial recess and synovial lining surface
+
+The cavity, its fluid, and its lining are separate things. On the proof's fat-suppressed sagittal
+slice 18 the bright pocket behind the patella is visibly separated from the femur and from the fat
+in front of it. The rule (`anterior_synovial_recess`) reads the existing white-fluid measurement,
+not the final fluid label: that label leaves out this pocket because it is not within the old rule's
+reach of a bone or the tibiofemoral joint. The pocket's anatomical relation identifies it:
+
+1. A sagittal, fat-suppressed, fluid-sensitive slice names the femur and patella.
+2. The target place is behind the patella's middle, in front of the femur's middle and above the
+   patella's lower end, excluding named solid structures at the target place. All positions come
+   from the patient's axes and named parts.
+3. Of the connected white bodies intersecting that place, keep the largest whole body. This is the
+   anterior recess, not all of the synovial compartment.
+4. Its anterior boundary locates the lining against the fat. The returned surface is sampled on the
+   cavity side: it localizes the lining, and does not measure membrane thickness or its full extent.
+
+The two saved masks are `a2_anterior_synovial_recess` and `a2_synovium`; they coexist with the original
+fluid and tissue labels rather than erasing them. Each has its own named/abstain decision. The
+existing physical-place match lays them onto the other sagittal sequence. The cavity relates to
+Effusion and the lining to Synovitis. There is no new numerical cutoff. Named refusals are in
+`synovium_code` and the module's numbered definition.
+
+Checked through `scripts/run_interiors.py --draw` on the proof, with both sagittal pictures inspected.
+Pictures and records: `data/pictures/definitions-20261015/assignments/<proof uid>/` and
+`data/measurements/definitions-20261015/interiors/`. This supersedes the earlier statement that the
+synovium has no decision of its own. Full cross-view coverage remains the later collapse work.

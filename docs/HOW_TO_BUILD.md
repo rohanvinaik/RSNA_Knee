@@ -418,3 +418,16 @@ not the gate's verdict.
 Earlier sessions' corrections live where they were recorded: the theory's Part V (the builds thrown
 away twice; «You're starting to infer»), and the global `~/.claude/CLAUDE.md` (the reading law of
 2026-10-07; never reading a compaction summary; sub-agents report facts only).
+
+## Definition pass, 2026-10-15
+
+Rohan's current order supersedes "collapse next" above: first resolve every anatomical object with
+a stable, anatomically meaningful definition and a competent demonstration at least once. Then work
+through the full dimensional-collapse thesis for ideal slice selection and the complete object across
+all views. Robustness and generalization belong to his later AI work, which he has not explained yet.
+
+The anterior synovial recess and its fat-facing lining surface now have separate masks and decisions
+through the real entry point (`docs/RESOLVING_THE_PARTS.md` §9). This supersedes "synovium not named"
+in the earlier status record. The lining output localizes the cavity boundary against fat; it does
+not report membrane thickness. Its rule uses the existing fluid measurement and anatomical order,
+with no new numerical cutoff, and retains both masks without taking pixels away from existing parts.

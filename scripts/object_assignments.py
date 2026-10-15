@@ -42,6 +42,8 @@ OBJECT_COLOURS = {
     "quadriceps_tendon": (0.8, 0.7, 1.0, 0.85),
     "subcutaneous_fat": (0.55, 0.25, 0.55, 0.55),
     "muscle": (0.98, 0.5, 0.45, 0.5),
+    "anterior_synovial_recess": (0.1, 0.75, 1.0, 0.65),
+    "synovium": (1.0, 1.0, 0.0, 1.0),
 }
 
 
@@ -95,7 +97,10 @@ def draw_stages(axes, arrays, record):
         fontsize=9,
     )
     for name, colour in OBJECT_COLOURS.items():
-        overlay(axes[2], objects == OBJECT_CODES[name], colour)
+        mask = arrays.get(f"a2_{name}")
+        overlay(
+            axes[2], objects == OBJECT_CODES[name] if mask is None else mask, colour
+        )
     axes[2].set_title(
         f"BLUE air · YELLOW skin: {codes['air']}\n"
         f"ORANGE femur · GREEN tibia · MAGENTA joint: {codes['femur']}\n"
@@ -143,6 +148,16 @@ def draw_stages(axes, arrays, record):
             else ""
         )
         + (f"\nSALMON muscle: {codes['muscle']}" if "muscle" in codes else "")
+        + (
+            f"\nBLUE anterior recess: {codes['anterior_synovial_recess']}"
+            if "anterior_synovial_recess" in codes
+            else ""
+        )
+        + (
+            f"\nYELLOW synovial surface: {codes['synovium']}"
+            if "synovium" in codes
+            else ""
+        )
         + (
             f"\nOLIVE medial gastrocnemius head: {codes['medial_gastrocnemius']}"
             if "medial_gastrocnemius" in codes

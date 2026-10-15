@@ -217,6 +217,22 @@ categories of the twelve it relates to (docs/OBJECTS_AND_CONDITIONS.md §6):
   cartilage, named first, takes in the white in the joint within its reach of a bone, so at the foot
   of the outer gutter the white is named cartilage and the fluid is the white above it. The axial
   names no femur, so it names no fluid.
+- SYNOVIUM, located at the anterior recess's fat-facing surface, and ANTERIOR SYNOVIAL RECESS:
+  the lining and its cavity are different outputs, separate from the joint fluid. Descriptions:
+  1. the slice is sagittal (abstain_not_a_sagittal_slice);
+  2. fluid is bright on a fat-suppressed, fluid-sensitive sequence
+     (abstain_fluid_not_bright_on_this_sequence);
+  3. the patella and femur are named (abstain_no_patella; abstain_no_femur);
+  4. the recess is the largest connected body of the existing white-fluid measurement intersecting
+     the place behind the patella, in front of the femur and above the patella's lower end,
+     outside the named solid structures (abstain_no_fluid_in_the_anterior_recess);
+  5. its anterior boundary, facing the fat pads, locates the synovial lining. It is sampled on
+     the fluid side of that interface; this is not membrane thickness or a claim to its full extent.
+  The cavity and surface are retained as separate masks, since a lining surface and its fluid
+  cannot be faithfully expressed by competing for one integer label. On the proof's sagittal
+  the large bright pocket behind the patella is resolved. The definition uses anatomical order
+  and the existing fluid reading, with no new numerical cutoff. The cavity relates to Effusion,
+  the lining to Synovitis. Both are laid onto the twin by the existing physical-place match.
 - HOFFA'S FAT PAD: the infrapatellar fat pad, which «lies just behind the patellar tendon and
   follows subcutaneous fat on all sequences» (docs/OBJECTS_AND_CONDITIONS.md). Seen on the proof's
   middle sagittals, 2026-10-15: with fat suppression it is the grey, striated triangle below the
@@ -618,6 +634,8 @@ OBJECT_CODES = {
     "quadriceps_tendon": 23,
     "subcutaneous_fat": 24,
     "muscle": 25,
+    "synovium": 26,
+    "anterior_synovial_recess": 27,
 }
 CARTILAGES = ("femoral_cartilage", "tibial_cartilage")
 # The parts a slice's naming gives a code for (`assign_plane`), in the order it gives them; a part
@@ -641,6 +659,8 @@ SLICE_PARTS = (
     "suprapatellar_fat",
     "subcutaneous_fat",
     "muscle",
+    "anterior_synovial_recess",
+    "synovium",
 )
 FOUR_NEIGHBOURS = ndi.generate_binary_structure(2, 1)
 
@@ -1440,6 +1460,76 @@ def fluid_in_the_recesses(
     return np.isin(pieces, held[held > 0])
 
 
+def anterior_synovial_recess(
+    white: np.ndarray,
+    objects: np.ndarray,
+    basis_lps: np.ndarray,
+    measures: Measures | None = None,
+) -> tuple[np.ndarray, np.ndarray]:
+    """The anterior joint recess and its fat-facing lining surface on a sagittal slice.
+
+    Fluid lies behind the patella/extensor mechanism, in front of the femur, and above the
+    patella's lower end (OBJECTS_AND_CONDITIONS, joint cavity and recesses). Of the connected
+    white bodies intersecting that place, keep the largest. The anterior half of its boundary
+    locates the lining against the fat, avoiding the posterior, articular side. This is a
+    surface location sampled on the cavity side, not a measurement of membrane thickness.
+
+    Positions come from the patient's axes and named parts, never study coordinates. The
+    supplied white is the existing fluid reading; no intensity threshold is fitted here.
+    """
+    empty = np.zeros(objects.shape, dtype=bool)
+    femur = objects == OBJECT_CODES["femur"]
+    patella = objects == OBJECT_CODES["patella"]
+    if not (femur.any() and patella.any() and white.any()):
+        return empty, empty.copy()
+    back = (
+        positions_along(objects.shape, basis_lps, 1)
+        if measures is None
+        else measures.along(1)
+    )
+    up = (
+        positions_along(objects.shape, basis_lps, 2)
+        if measures is None
+        else measures.along(2)
+    )
+    pocket = (
+        (back > np.median(back[patella]))
+        & (back < np.median(back[femur]))
+        & (up >= up[patella].min())
+        & ~np.isin(
+            objects, [OBJECT_CODES[name] for name in (*BONES, "patella", "pcl", "acl")]
+        )
+    )
+    pieces, _ = ndi.label(white, structure=np.ones((3, 3), dtype=bool))
+    candidates = np.unique(pieces[pocket & white])
+    candidates = candidates[candidates > 0]
+    if not candidates.size:
+        return empty, empty.copy()
+    sizes = np.bincount(pieces.ravel())
+    region = int(candidates[np.argmax(sizes[candidates])])
+    recess = pieces == region
+    boundary = recess & ~ndi.binary_erosion(recess, structure=FOUR_NEIGHBOURS)
+    lining = boundary & (back < np.median(back[recess]))
+    return recess, lining
+
+
+def synovium_code(
+    sagittal: bool, fluid_bright: bool, patella: bool, femur: bool, recess: bool
+) -> str:
+    """Why the anterior recess and its fat-facing synovial surface are or are not located."""
+    if not sagittal:
+        return "abstain_not_a_sagittal_slice"
+    if not fluid_bright:
+        return "abstain_fluid_not_bright_on_this_sequence"
+    if not patella:
+        return "abstain_no_patella"
+    if not femur:
+        return "abstain_no_femur"
+    if not recess:
+        return "abstain_no_fluid_in_the_anterior_recess"
+    return "identified"
+
+
 def fat_pad_code(
     front_to_back_in_plane: bool,
     fat_suppressed: bool,
@@ -2136,6 +2226,8 @@ def assign_plane(
     codes["muscle"] = muscle_code(
         fat_suppressed, bool(air.any()), femur is not None, False
     )
+    # Located after the sequences have supplied their named parts; these surfaces overlap fluid.
+    codes["anterior_synovial_recess"] = codes["synovium"] = "not_named_on_this_slice"
     return PlaneAssignment(
         objects, codes, peaks, femur, tibia, patella, bands, white, in_plane
     )
