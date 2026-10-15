@@ -10,7 +10,7 @@ from knee.compute.contracts import ComputeContract, contracted, handed_on
 CONTRACT = ComputeContract(
     kind="measurement",
     language="NumPy",
-    reads="2D original plane; physical spacing and tile mm",
+    reads="2D original plane; physical spacing and tile mm; its finite mask when already read",
     writes="4 float64 tile maps and int64 native bounds",
     allocation="64 bytes per output tile; per-tile finite mask, gathered values and NumPy median scratch",
     work="per-tile finite scan/extraction, median selection and extrema reductions",
@@ -96,12 +96,18 @@ class Squint:
 
 @contracted
 def physical_squint(
-    plane: np.ndarray, spacing_rc: tuple[float, float], tile_mm: float
+    plane: np.ndarray,
+    spacing_rc: tuple[float, float],
+    tile_mm: float,
+    finite: np.ndarray | None = None,
 ) -> Squint:
+    """`finite` is which of the plane's pixels are finite, when the caller has read it once for
+    the series; it is read here otherwise."""
     numeric_plane(plane)
     spacing = spacing_pair(spacing_rc)
     if not np.isfinite(tile_mm) or tile_mm <= 0:
         raise ValueError("invalid_tile_mm")
+    finite = np.isfinite(plane) if finite is None else finite
     tile = tuple(max(1, ceil(tile_mm / step)) for step in spacing)
     shape = tuple(
         ceil(size / step) for size, step in zip(plane.shape, tile, strict=True)
@@ -117,7 +123,7 @@ def physical_squint(
                 min(c0 + tile[1], plane.shape[1]),
             )
             block = plane[r0:r1, c0:c1]
-            values = block[np.isfinite(block)]
+            values = block[finite[r0:r1, c0:c1]]
             bounds[r, c] = r0, r1, c0, c1
             coverage[r, c] = values.size / block.size
             if values.size:

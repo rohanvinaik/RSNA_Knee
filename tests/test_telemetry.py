@@ -1,10 +1,49 @@
 """Intent tests for the telemetry: the ledger's own proof gate (its CONTRACT: disabled records
-nothing; counted work is whole), and the route, which names every product no stage read."""
+nothing; counted work is whole), the route, which names every product no stage read, and the
+compute-once store, which makes a value once per study and hands it to every later asker."""
 
 import pytest
 
-from knee.telemetry import Ledger, ledger, recording
+from knee.telemetry import Ledger, computing, ledger, once, recording
 from knee.telemetry.route import unread_products
+
+
+def test_inside_a_study_a_value_is_made_once_and_handed_to_every_later_asker():
+    made = []
+
+    def make() -> list[int]:
+        made.append(1)
+        return [len(made)]
+
+    with recording() as led, computing():
+        first = once("frame", ("series", 3), make)
+        again = once("frame", ("series", 3), make)
+        other = once("frame", ("series", 4), make)
+    assert first is again
+    assert other == [2]
+    assert len(made) == 2
+    assert [event.name for event in led.events()] == [
+        "frame.made",
+        "frame.handed_on",
+        "frame.made",
+    ]
+
+
+def test_outside_a_study_nothing_is_kept():
+    made = []
+    for _ in range(2):
+        once("frame", "key", lambda: made.append(1))
+    assert len(made) == 2
+
+
+def test_each_study_starts_empty_and_the_scope_before_it_is_restored():
+    made = []
+    with computing():
+        once("margin", "key", lambda: made.append("outer"))
+        with computing():
+            once("margin", "key", lambda: made.append("inner"))
+        once("margin", "key", lambda: made.append("outer again"))
+    assert made == ["outer", "inner"]
 
 
 def test_a_disabled_ledger_records_nothing():

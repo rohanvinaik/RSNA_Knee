@@ -84,7 +84,7 @@ import os
 from collections.abc import Callable, Iterable, Sequence
 from concurrent.futures import ProcessPoolExecutor
 from dataclasses import asdict, dataclass, fields
-from hashlib import sha256
+from functools import cache
 from itertools import repeat
 from pathlib import Path
 from typing import Any
@@ -97,7 +97,6 @@ from knee.collapse.physical import PlaneFrame
 from knee.collapse.regime import read_regime
 from knee.collapse.squint_stack import SquintStack, read_squint_stack
 from knee.objects.assignments import (
-    ALONG_THE_LEG,
     NAMED,
     OBJECT_CODES,
     PlaneAssignment,
@@ -113,15 +112,17 @@ from knee.objects.assignments import (
     gastrocnemius_code,
     gastrocnemius_head,
     inner_condyle,
-    laid_on,
+    laid_by,
     lcl_attachment,
     lcl_code,
     lcl_on_slice,
     main_slice,
     margin,
+    marrow_light,
     muscle_bodies,
     muscle_code,
     outer_step,
+    places_from,
     places_on_slice,
     region_holding,
     semimembranosus_code,
@@ -132,8 +133,13 @@ from knee.objects.assignments import (
     tibia_top_slice,
     with_partner,
 )
-from knee.objects.interiors import EDGE_KINDS, TRACE_CODES, read_interiors
-from knee.receipt import merged_receipt
+from knee.objects.interiors import (
+    EDGE_KINDS,
+    TRACE_CODES,
+    InteriorReading,
+    read_interiors,
+)
+from knee.receipt import digest, merged_receipt
 from knee.study.corpus import (
     LOCAL_ROOT,
     Corpus,
@@ -143,7 +149,7 @@ from knee.study.corpus import (
 )
 from knee.study.series import Series, selected_slice
 from knee.study.tables import labeled_uids
-from knee.telemetry import Event, ledger, recording
+from knee.telemetry import Event, computing, ledger, once, recording
 from knee.telemetry.route import unread_products
 
 ROOT = Path(__file__).resolve().parent.parent
@@ -198,27 +204,86 @@ def field_names(value: Any) -> list[str]:
     return [field.name for field in fields(value)]
 
 
-def digest(array: np.ndarray) -> str:
-    """The renderer's own check on a saved array: its dtype, shape and bytes."""
-    return sha256(
-        array.dtype.str.encode() + str(array.shape).encode() + array.tobytes()
-    ).hexdigest()
+def frame_reading(series: Series, z: int) -> PlaneFrame | ValueError:
+    """One slice's frame in the scanner's millimetres, or the error its header raised: made once
+    per slice and handed to every stage that asks for it (the squint, which reads every slice's
+    first, then the middle slice and each part's own slice)."""
+
+    def make() -> PlaneFrame | ValueError:
+        reads("series", ("geometry",), "frame")
+        geometry = series.geometry
+        if geometry is None:
+            return ValueError("the series has no geometry")
+        try:
+            return PlaneFrame.from_dicom(
+                geometry.position[z], geometry.orientation[z], geometry.spacing[z]
+            )
+        except ValueError as error:
+            return error
+
+    return once("frame", (series.row.series_uid, z), make)
 
 
 def plane_frame(series: Series, index: int) -> PlaneFrame | str:
-    """One slice's frame in the scanner's millimetres, or why its header does not read as one."""
-    reads("series", ("geometry",), "frame")
-    geometry = series.geometry
-    if geometry is None:
+    """One slice's frame (`frame_reading`), or why its header does not read as one."""
+    if series.geometry is None:
         return "geometry_unreadable"
-    try:
-        return PlaneFrame.from_dicom(
-            geometry.position[index],
-            geometry.orientation[index],
-            geometry.spacing[index],
+    frame = frame_reading(series, index)
+    return f"geometry_unreadable: {frame}" if isinstance(frame, ValueError) else frame
+
+
+def finite_of(series: Series) -> np.ndarray:
+    """Which of a series' stored values are finite, (Z, R, C): read once for the series and handed
+    to the regime, the squint and every lens read on its slices."""
+    return once(
+        "finite", series.row.series_uid, lambda: np.isfinite(np.asarray(series.volume))
+    )
+
+
+def margin_of(series_uid: str, z: int, plane: np.ndarray) -> np.ndarray:
+    """One slice's black margin (`margin`), found once per slice and handed to every stage that
+    asks: the slice's naming, its reading with its partner, and each part laid onto or from it."""
+    return once("margin", (series_uid, z), lambda: margin(plane))
+
+
+def matched(
+    onto_series: Series,
+    onto: dict,
+    onto_frame: PlaneFrame,
+    onto_shape: tuple[int, int],
+    source: dict,
+    source_frame: PlaneFrame,
+    source_plane: np.ndarray,
+) -> np.ndarray | str:
+    """The places of one slice (`onto`, its record) matched to those of another slice of the same
+    knee (`source`), by `places_from`: made once for the pair, in this direction, and handed to
+    every stage that lays a reading across (the partner reading, the tendons, the rest of the
+    field, a part laid onto its own slice); or why not: this slice's thickness is not in its
+    header ("no_slice_thickness"), or the two are not the same place ("not_the_same_place")."""
+
+    def make() -> np.ndarray | str:
+        reads("series", ("slice_thickness_mm",), "match")
+        thickness = onto_series.slice_thickness_mm[onto["slice_index"]]
+        if thickness is None:
+            return "no_slice_thickness"
+        places = places_from(
+            ~margin_of(source["series_uid"], source["slice_index"], source_plane),
+            source_frame.origin_lps,
+            source_frame.basis_lps,
+            onto_frame.origin_lps,
+            onto_frame.basis_lps,
+            onto_shape,
+            thickness,
         )
-    except ValueError as error:
-        return f"geometry_unreadable: {error}"
+        return "not_the_same_place" if places is None else places
+
+    key = (
+        onto["series_uid"],
+        onto["slice_index"],
+        source["series_uid"],
+        source["slice_index"],
+    )
+    return once("match", key, make)
 
 
 @dataclass(frozen=True, slots=True)
@@ -236,7 +301,8 @@ class Measured:
 
 def measure(series: Series) -> Measured | str:
     """One series' readings: the regime key and the squint, each kept whole, and the interiors and
-    named objects at its middle slice; or why no plane was read."""
+    named objects at its middle slice; or why no plane was read. Which of its values are finite,
+    and every slice's frame, are read once here and handed to the regime, the squint and the lens."""
     reads("series", ("volume", "geometry"), "measure")
     if series.volume is None:
         return "no_stacked_volume"
@@ -248,15 +314,19 @@ def measure(series: Series) -> Measured | str:
     frame = plane_frame(series, index)
     if isinstance(frame, str):
         return frame
+    finite = finite_of(series)
     reads("series", ("volume", "slices", "row"), "regime")
-    regime = read_regime(series)
+    regime = read_regime(series, finite=finite)
     if regime is not None:
         handed("regime", field_names(regime))
     split = regime.background_split if regime is not None else float("nan")
     # The squint, made once for the series and kept with it for any stage to consult; it records
-    # its own reading of the series and its counted work on the ledger.
+    # its own reading of the series and its counted work on the ledger. It reads every slice's
+    # frame, made once for the squint and every stage after it.
     reads("series", ("volume", "geometry", "row", "stack"), "squint_stack")
-    stack = read_squint_stack(series, SQUINT_TILE_MM)
+    stack = read_squint_stack(
+        series, SQUINT_TILE_MM, lambda z: frame_reading(series, z), finite
+    )
     handed("squint_stack", field_names(stack))
     # The header's own word for which knee this is ("R", "L", or blank); it sides the menisci.
     reads("series", ("slices",), "naming")
@@ -283,34 +353,70 @@ def name_plane(
     frame: PlaneFrame,
     split: float,
     knee: str,
+    reader: str | None = None,
 ) -> tuple[dict, dict[str, np.ndarray], PlaneAssignment]:
     """One slice's interiors and its named objects: the record and arrays the renderers read, and
-    the named objects themselves."""
-    reads("series", ("volume", "row", "slices"), "interiors")
-    reads("regime", ("background_split",), "interiors")
-    axes = frame.basis_lps / frame.spacing_rc
-    reading = read_interiors(
-        plane,
-        frame.spacing_rc,
-        split,
-        PROMINENCE_MM,
-        np.asarray(OFFSETS_MM),
-        BACKEND,
-        metric_rc=axes.T @ axes,
-    )
-    handed("interiors", field_names(reading))
-    ledger.record(
-        "interiors.work", planes=1, territories=int(reading.labels.max(initial=0))
-    )
-    reads("interiors", ("dark", "labels", "distance_mm"), "naming")
-    fat_suppressed = int(series.row.fat_suppression) == 1  # the tags are stored as text
-    fluid_sensitive = int(series.row.fluid_sensitive) == 1
-    assignment = assign_plane(
-        plane, reading, frame.basis_lps, knee, fat_suppressed, fluid_sensitive
-    )
-    handed("naming", field_names(assignment))
+    the named objects themselves. The lens is read and the slice named alone once per slice, with
+    what the record says of them: a stage that asks for a slice already read, a part's own slice
+    that is the middle slice or another part's, is handed that reading, and only a fresh record
+    and arrays are made for it. `reader` is the part whose own slice this is, whose lens readings
+    the ledger counts."""
+    uid = series.row.series_uid
+
+    def read() -> tuple[np.ndarray, InteriorReading, PlaneAssignment, dict, list[dict]]:
+        reads("series", ("volume", "row", "slices"), "interiors")
+        reads("regime", ("background_split",), "interiors")
+        axes = frame.basis_lps / frame.spacing_rc
+        reading = read_interiors(
+            plane,
+            frame.spacing_rc,
+            split,
+            PROMINENCE_MM,
+            np.asarray(OFFSETS_MM),
+            BACKEND,
+            metric_rc=axes.T @ axes,
+            available=finite_of(series)[index],
+        )
+        handed("interiors", field_names(reading))
+        ledger.record(
+            "interiors.work", planes=1, territories=int(reading.labels.max(initial=0))
+        )
+        if reader is not None:
+            ledger.record(f"{reader}.lens_readings", planes=1)
+        reads("interiors", ("dark", "labels", "distance_mm"), "naming")
+        fat_suppressed = (
+            int(series.row.fat_suppression) == 1
+        )  # the tags are stored as text
+        fluid_sensitive = int(series.row.fluid_sensitive) == 1
+        assignment = assign_plane(
+            plane,
+            reading,
+            frame.basis_lps,
+            knee,
+            fat_suppressed,
+            fluid_sensitive,
+            margin_of(uid, index, plane),
+        )
+        handed("naming", field_names(assignment))
+        interiors = {
+            "code": reading.code,
+            "territories": int(reading.labels.max(initial=0)),
+            "edge_counts": {
+                kind: int(np.count_nonzero(reading.edge_kinds == value))
+                for kind, value in EDGE_KINDS.items()
+            },
+            "trace_counts": {
+                code: int(np.count_nonzero(reading.trace_codes == value))
+                for code, value in TRACE_CODES.items()
+            },
+            "backend": BACKEND,
+        }
+        peaks = [asdict(peak) for peak in assignment.peaks]
+        return plane.copy(), reading, assignment, interiors, peaks
+
+    acquired, reading, assignment, interiors, peaks = once("lens", (uid, index), read)
     arrays = {
-        "acquired_plane": plane.copy(),
+        "acquired_plane": acquired,
         "b1_dark": reading.dark,
         "b1_available": reading.available,
         "b1_distance_mm": reading.distance_mm,
@@ -329,27 +435,16 @@ def name_plane(
         "slice_index": index,
         "source_plane": series.slices[index].path.name,
         "background_split": split,
-        "interiors": {
-            "code": reading.code,
-            "territories": int(reading.labels.max(initial=0)),
-            "edge_counts": {
-                kind: int(np.count_nonzero(reading.edge_kinds == value))
-                for kind, value in EDGE_KINDS.items()
-            },
-            "trace_counts": {
-                code: int(np.count_nonzero(reading.trace_codes == value))
-                for code, value in TRACE_CODES.items()
-            },
-            "backend": BACKEND,
-        },
+        "interiors": dict(interiors),
         "assignments": {
             "knee": knee,
-            "codes": assignment.codes,
+            # a copy: the stages after this change the record's codes, never the slice's own
+            "codes": dict(assignment.codes),
             "femur": assignment.femur,
             "tibia": assignment.tibia,
             "patella": assignment.patella,
             "menisci": assignment.menisci,
-            "peaks": [asdict(peak) for peak in assignment.peaks],
+            "peaks": list(peaks),
         },
     }
     return record, arrays, assignment
@@ -374,32 +469,28 @@ def partner_of(measured: list[Measured], index: int) -> Measured | None:
 def read_with_partner(own: Measured, partner: Measured) -> str:
     """Read one series' middle slice with its partner's (`with_partner`), keeping the result in its
     record and arrays; or say why it was not: the two slices are not the same place, or this
-    slice's thickness is not in its header to say so."""
-    reads("series", ("slice_thickness_mm",), "partner")
-    thickness = own.series.slice_thickness_mm[own.record["slice_index"]]
-    if thickness is None:
-        return "no_slice_thickness"
+    slice's thickness is not in its header to say so. The two slices' places are matched once
+    (`matched`), and every later stage that lays a reading across reuses the match."""
+    plane = own.arrays["acquired_plane"]
+    source = matched(
+        own.series,
+        own.record,
+        own.frame,
+        plane.shape,
+        partner.record,
+        partner.frame,
+        partner.arrays["acquired_plane"],
+    )
+    if isinstance(source, str):
+        return source
     reads("naming", ("objects", "codes", "peaks"), "partner")
     reads("interiors", ("labels",), "partner")
-    plane = own.arrays["acquired_plane"]
-    laid = laid_on(
-        partner.assignment.objects,
-        ~margin(partner.arrays["acquired_plane"]),
-        partner.frame.origin_lps,
-        partner.frame.basis_lps,
-        own.frame.origin_lps,
-        own.frame.basis_lps,
-        plane.shape,
-        thickness,
-    )
-    if laid is None:
-        return "not_the_same_place"
     objects, codes = with_partner(
         own.assignment,
         own.arrays["b1_labels"],
         own.frame.basis_lps,
-        margin(plane),
-        laid,
+        margin_of(own.record["series_uid"], own.record["slice_index"], plane),
+        laid_by(partner.assignment.objects, source),
         partner.assignment.codes,
     )
     handed("partner", ("objects", "codes"))
@@ -413,11 +504,29 @@ def read_with_partner(own: Measured, partner: Measured) -> str:
     return "read_with_" + partner.record["series_uid"]
 
 
-def axis_in_plane(frame: PlaneFrame, axis: int) -> bool:
-    """Whether a patient axis lies in a slice's plane, more along it than across: 0 side to side,
-    1 front to back, 2 along the leg."""
-    unit = frame.basis_lps / np.linalg.norm(frame.basis_lps, axis=0)
-    return float(np.linalg.norm(unit[axis])) >= ALONG_THE_LEG
+def leg_on(
+    leg: "Leg",
+    series: Series,
+    z: int,
+    frame: PlaneFrame,
+    shape: tuple[int, int],
+    thickness: float,
+) -> tuple[np.ndarray, np.ndarray]:
+    """The leg's femur and tibia carried by place onto one slice of a series the leg runs through
+    (`places_on_slice`): made once per slice and handed to every stage that asks for it (the
+    search for the top of the tibia, and the back of the knee's parts on their slices)."""
+    return once(
+        "leg_on_slice",
+        (series.row.series_uid, z),
+        lambda: (
+            places_on_slice(
+                leg.femur_lps, frame.origin_lps, frame.basis_lps, shape, thickness
+            ),
+            places_on_slice(
+                leg.tibia_lps, frame.origin_lps, frame.basis_lps, shape, thickness
+            ),
+        ),
+    )
 
 
 @dataclass(frozen=True, slots=True)
@@ -448,18 +557,21 @@ class Carried:
 def leg_of(measured: list[Measured]) -> Leg:
     """The study's leg: the femur and the tibia of its middle slices where the leg runs in the
     plane, as their partner reading left them, in the scanner's millimetres; and the notch's plane
-    from the first of them that side to side runs through, a sagittal one."""
+    from the first of them that side to side runs through, a sagittal one. Which way each slice
+    faces is its naming's (`PlaneAssignment.in_plane`), read once."""
     reads("partner", ("objects",), "leg")
+    reads("naming", ("in_plane",), "leg")
     femur, tibia = [np.zeros((0, 3))], [np.zeros((0, 3))]
     notch_origin = notch_normal = None
     for other in measured:
-        if not axis_in_plane(other.frame, 2):
+        sides_in_plane, _, leg_in_plane = other.assignment.in_plane
+        if not leg_in_plane:
             continue
         objects = other.arrays["a1_objects"]
         for name, found in (("femur", femur), ("tibia", tibia)):
             places = np.argwhere(objects == OBJECT_CODES[name]).astype(float)
             found.append(other.frame.to_patient(places))
-        if notch_origin is None and not axis_in_plane(other.frame, 0):
+        if notch_origin is None and not sides_in_plane:
             normal = np.cross(other.frame.basis_lps[:, 0], other.frame.basis_lps[:, 1])
             normal = normal / np.linalg.norm(normal)
             notch_origin = other.frame.origin_lps
@@ -470,17 +582,20 @@ def leg_of(measured: list[Measured]) -> Leg:
 
 
 def carry_onto(
-    leg: Leg, frame: PlaneFrame, shape: tuple[int, int], thickness: float
+    leg: Leg,
+    series: Series,
+    z: int,
+    frame: PlaneFrame,
+    shape: tuple[int, int],
+    thickness: float,
 ) -> Carried:
-    """The leg's bones carried by place onto one slice the leg runs through (`places_on_slice`),
-    with each place's position toward the back and toward the patient's left of the notch."""
+    """The leg's bones carried by place onto one slice the leg runs through (`leg_on`, made once
+    per slice), with each place's position toward the back and toward the patient's left of the
+    notch."""
     reads(
         "leg", ("femur_lps", "tibia_lps", "notch_origin_lps", "notch_normal"), "carry"
     )
-    femur, tibia = (
-        places_on_slice(points, frame.origin_lps, frame.basis_lps, shape, thickness)
-        for points in (leg.femur_lps, leg.tibia_lps)
-    )
+    femur, tibia = leg_on(leg, series, z, frame, shape, thickness)
     rows, cols = np.indices(shape)
     places = frame.to_patient(
         np.column_stack((rows.ravel(), cols.ravel())).astype(float)
@@ -502,10 +617,11 @@ def name_the_back_of_the_knee(own: Measured, leg: Leg | None) -> str:
     assigned = own.record["assignments"]
     knee = assigned["knee"]
     reads("series", ("row",), "gastrocnemius")
+    reads("naming", ("in_plane",), "gastrocnemius")
     # the tag is stored as text
     fat_suppressed = int(own.series.row.fat_suppression) == 1
     code = gastrocnemius_code(
-        not axis_in_plane(own.frame, 2), knee, fat_suppressed, True, True, True, True
+        not own.assignment.in_plane[2], knee, fat_suppressed, True, True, True, True
     )
     if code != "identified" or leg is None:
         return code
@@ -514,7 +630,12 @@ def name_the_back_of_the_knee(own: Measured, leg: Leg | None) -> str:
     if thickness is None:
         return "no_slice_thickness"
     carried = carry_onto(
-        leg, own.frame, own.arrays["acquired_plane"].shape, float(thickness)
+        leg,
+        own.series,
+        own.record["slice_index"],
+        own.frame,
+        own.arrays["acquired_plane"].shape,
+        float(thickness),
     )
     reads("carried", ("femur", "tibia", "back_mm", "toward_left_mm"), "gastrocnemius")
     bone = carried.femur | carried.tibia
@@ -587,7 +708,6 @@ def name_the_extensor_tendons(own: Measured, partner: Measured | None) -> None:
         (partner.record, partner.arrays, partner.frame),
         (own.record, own.arrays, own.frame),
         ("patellar_tendon", "quadriceps_tendon"),
-        "tendons",
         fat,
         # with fat suppression the band is the border between two of the lens's regions
         onto_borders=True,
@@ -600,9 +720,9 @@ def name_the_extensor_tendons(own: Measured, partner: Measured | None) -> None:
 def partner_white(own: Measured, partner: Measured | None) -> np.ndarray:
     """At this series' middle slice's places, where its partner, the other sequence's slice of the
     same place, sees white as fluid: the white the partner kept where it is fat-suppressed and
-    fluid-sensitive (`PlaneAssignment.white`), laid on by place (`laid_on`). None of it where there
-    is no such partner, this slice's thickness is not in its header, the two are not the same
-    place, or the partner's picture does not reach: there nothing tells fluid apart."""
+    fluid-sensitive (`PlaneAssignment.white`), laid on by the pair's one match (`matched`). None
+    of it where there is no such partner, this slice's thickness is not in its header, the two are
+    not the same place, or the partner's picture does not reach: there nothing tells fluid apart."""
     none = np.zeros(own.arrays["acquired_plane"].shape, dtype=bool)
     if partner is None:
         return none
@@ -610,21 +730,18 @@ def partner_white(own: Measured, partner: Measured | None) -> np.ndarray:
     white = partner.assignment.white
     if white is None:
         return none
-    reads("series", ("slice_thickness_mm",), "rest_of_the_field")
-    thickness = own.series.slice_thickness_mm[own.record["slice_index"]]
-    if thickness is None:
-        return none
-    laid = laid_on(
-        white.astype(np.int8),
-        ~margin(partner.arrays["acquired_plane"]),
-        partner.frame.origin_lps,
-        partner.frame.basis_lps,
-        own.frame.origin_lps,
-        own.frame.basis_lps,
+    source = matched(
+        own.series,
+        own.record,
+        own.frame,
         none.shape,
-        thickness,
+        partner.record,
+        partner.frame,
+        partner.arrays["acquired_plane"],
     )
-    return none if laid is None else laid == 1
+    if isinstance(source, str):
+        return none
+    return laid_by(white.astype(np.int8), source) == 1
 
 
 def name_the_rest_of_the_field(own: Measured, partner: Measured | None) -> None:
@@ -632,9 +749,9 @@ def name_the_rest_of_the_field(own: Measured, partner: Measured | None) -> None:
     skin and then muscle, on this series' middle slice where fat is not suppressed, once it is read
     with its partner: the fat where the slice read the skin only once its partner's was laid on,
     from its light; muscle on every such slice, outside every part named and the white its partner
-    sees as fluid where that partner is fat-suppressed and fluid-sensitive (`partner_white`). Each
-    a slice names from its own light is laid onto its partner with one mapping. No lens is read
-    again."""
+    sees as fluid where that partner is fat-suppressed and fluid-sensitive (`partner_white`). The
+    femur's marrow light both weigh their places against is read once, and each part a slice names
+    from its own light is laid onto its partner by the pair's one match. No lens is read again."""
     reads("series", ("row",), "rest_of_the_field")
     # the tags are stored as text
     if int(own.series.row.fat_suppression) == 1:
@@ -645,20 +762,31 @@ def name_the_rest_of_the_field(own: Measured, partner: Measured | None) -> None:
     objects = own.arrays["a1_objects"].copy()
     plane = own.arrays["acquired_plane"]
     spacing = np.asarray(own.frame.spacing_rc)
-    femur_named = bool((objects == OBJECT_CODES["femur"]).any())
-    if codes.get("subcutaneous_fat") == "abstain_no_skin" and bool(
+    femur = objects == OBJECT_CODES["femur"]
+    femur_named = bool(femur.any())
+    air_named = bool((objects == OBJECT_CODES["air"]).any())
+    laid_skin = codes.get("subcutaneous_fat") == "abstain_no_skin" and bool(
         (objects == OBJECT_CODES["skin"]).any()
-    ):
-        fat = fat_under_the_skin(plane, objects, spacing)
+    )
+    # the femur's marrow light, read once for the fat and the muscle, where either is looked for
+    light = (
+        marrow_light(plane, femur) if femur_named and (laid_skin or air_named) else None
+    )
+    if laid_skin:
+        fat = fat_under_the_skin(plane, objects, spacing, light)
         objects[fat] = OBJECT_CODES["subcutaneous_fat"]
         codes["subcutaneous_fat"] = subcutaneous_code(
             False, True, femur_named, bool(fat.any())
         )
     muscle = muscle_bodies(
-        plane, objects, spacing, margin(plane), partner_white(own, partner)
+        plane,
+        objects,
+        spacing,
+        margin_of(own.record["series_uid"], own.record["slice_index"], plane),
+        partner_white(own, partner),
+        light,
     )
     objects[muscle] = OBJECT_CODES["muscle"]
-    air_named = bool((objects == OBJECT_CODES["air"]).any())
     codes["muscle"] = muscle_code(False, air_named, femur_named, bool(muscle.any()))
     own.arrays["a1_objects"] = objects
     # only a slice that names them from its own light lays them on: one they were laid onto does
@@ -678,7 +806,6 @@ def name_the_rest_of_the_field(own: Measured, partner: Measured | None) -> None:
         (partner.record, partner.arrays, partner.frame),
         (own.record, own.arrays, own.frame),
         parts,
-        "rest_of_the_field",
     )
     for name, code in laid.items():
         if code is not None:
@@ -690,13 +817,14 @@ def semimembranosus_slice(
 ) -> tuple[dict, dict[str, np.ndarray], PlaneFrame] | str:
     """The semimembranosus tendon's slice of one series, read (its paragraph in
     `knee.objects.assignments`): the slice through the top of the tibia, just below the joint
-    line, found by carrying the study's leg onto each slice of the series (no lens), where the
-    lens is then read once more; the tendon named at the tibia's back-inner corner; or why it was
-    not read."""
+    line, found by carrying the study's leg onto each slice of the series (no lens; `leg_on`, each
+    slice's once), where the lens is then read once more; the tendon named at the tibia's
+    back-inner corner; or why it was not read."""
     assigned = own.record["assignments"]
     knee = assigned["knee"]
+    reads("naming", ("in_plane",), "semimembranosus")
     code = semimembranosus_code(
-        not axis_in_plane(own.frame, 2), knee, True, True, True, True, True
+        not own.assignment.in_plane[2], knee, True, True, True, True, True
     )
     if code != "identified" or leg is None:
         return code
@@ -716,12 +844,8 @@ def semimembranosus_slice(
         held = [False, False]
         if not isinstance(frame, str) and thickness is not None:
             held = [
-                bool(
-                    places_on_slice(
-                        points, frame.origin_lps, frame.basis_lps, shape, thickness
-                    ).any()
-                )
-                for points in (leg.femur_lps, leg.tibia_lps)
+                bool(places.any())
+                for places in leg_on(leg, own.series, z, frame, shape, thickness)
             ]
         femur_held.append(held[0])
         tibia_held.append(held[1])
@@ -732,11 +856,18 @@ def semimembranosus_slice(
         return semimembranosus_code(True, knee, True, True, False, False, False)
     reads("regime", ("background_split",), "semimembranosus")
     record, arrays, assignment = name_plane(
-        own.series, z, volume[z], frame, own.record["background_split"], knee
+        own.series,
+        z,
+        volume[z],
+        frame,
+        own.record["background_split"],
+        knee,
+        "semimembranosus",
     )
-    ledger.record("semimembranosus.lens_readings", planes=1)
     labels, plane = arrays["b1_labels"], arrays["acquired_plane"]
-    carried = carry_onto(leg, frame, labels.shape, float(thicknesses[z] or 0.0))
+    carried = carry_onto(
+        leg, own.series, z, frame, labels.shape, float(thicknesses[z] or 0.0)
+    )
     reads("carried", ("femur", "tibia", "back_mm", "toward_left_mm"), "semimembranosus")
     toward_left = carried.toward_left_mm
     condyle = tendon = None
@@ -749,7 +880,8 @@ def semimembranosus_slice(
         if condyle is not None:
             tendon = semimembranosus_on_slice(
                 arrays["b1_dark"],
-                (assignment.objects == 0) & ~margin(plane),
+                (assignment.objects == 0)
+                & ~margin_of(own.series.row.series_uid, z, plane),
                 labels == condyle.territory,
                 condyle,
                 carried.back_mm,
@@ -777,8 +909,11 @@ def find_fibula(
     record: dict,
     arrays: dict[str, np.ndarray],
     stack: SquintStack,
-) -> tuple[dict, dict[str, np.ndarray]] | str:
-    """The fibula named on its main slice, from the middle slice's tibia, or why it was not.
+) -> tuple[dict, dict[str, np.ndarray], np.ndarray | None] | str:
+    """The fibula named on its main slice, from the middle slice's tibia, with its places in the
+    scanner's millimetres where front to back lies in that slice's plane, so its front edge can be
+    read (what the LCL's slice is found from, one leg, one set of objects; None where it does not);
+    or why it was not named.
 
     The series' kept squint points to where the fibula must be (`fibula_block`: below the tibia's
     top, on the knee's outer side of its middle). The interiors lens then reads that block again
@@ -812,6 +947,7 @@ def find_fibula(
     reads("regime", ("background_split",), "fibula")
     reads("series", ("volume",), "fibula")
     split = record["background_split"]
+    finite = finite_of(series)
     areas: list[float] = []
     found: list[tuple[int, int, np.ndarray, np.ndarray] | None] = []
     readings = 0
@@ -834,6 +970,7 @@ def find_fibula(
             np.asarray(OFFSETS_MM),
             BACKEND,
             metric_rc=axes.T @ axes,
+            available=finite[z][r0:r1, c0:c1],
         )
         readings += 1
         rows, cols = np.mgrid[r0:r1, c0:c1]
@@ -871,7 +1008,7 @@ def find_fibula(
     held_on_main = found[chosen]
     if isinstance(frame, str) or held_on_main is None:
         return "geometry_unreadable"
-    main_record, main_arrays, _ = name_plane(
+    main_record, main_arrays, main_assignment = name_plane(
         series, chosen, volume[chosen], frame, split, knee
     )
     # On its main slice only the fibula is named, beside the tibia it was found against; each is
@@ -910,7 +1047,15 @@ def find_fibula(
         "areas_mm2": [round(area, 1) for area in areas],
     }
     handed("fibula", ("main_slice", "region"))
-    return main_record, main_arrays
+    # Where front to back lies in the main slice's plane (its naming's `in_plane`), the fibula's
+    # front edge can be read, and its places in millimetres are what the LCL's slice is found from.
+    reads("naming", ("in_plane",), "fibula")
+    places = (
+        frame.to_patient(np.argwhere(objects == OBJECT_CODES["fibula"]).astype(float))
+        if main_assignment.in_plane[1]
+        else None
+    )
+    return main_record, main_arrays, places
 
 
 def acl_slice(own: Measured) -> tuple[dict, dict[str, np.ndarray], PlaneFrame] | str:
@@ -920,8 +1065,8 @@ def acl_slice(own: Measured) -> tuple[dict, dict[str, np.ndarray], PlaneFrame] |
     named where fat is suppressed; or why it was not read."""
     series, record = own.series, own.record
     knee = record["assignments"]["knee"]
-    unit = own.frame.basis_lps / np.linalg.norm(own.frame.basis_lps, axis=0)
-    front_in_plane = float(np.linalg.norm(unit[1])) >= ALONG_THE_LEG
+    reads("naming", ("in_plane",), "acl")
+    front_in_plane = own.assignment.in_plane[1]
     reads("partner", ("objects",), "acl")
     before = own.arrays["a1_objects"]
     femur_before = before == OBJECT_CODES["femur"]
@@ -949,9 +1094,8 @@ def acl_slice(own: Measured) -> tuple[dict, dict[str, np.ndarray], PlaneFrame] |
     reads("regime", ("background_split",), "acl")
     plane = volume[z]
     acl_record, arrays, assignment = name_plane(
-        series, z, plane, frame, record["background_split"], knee
+        series, z, plane, frame, record["background_split"], knee, "acl"
     )
-    ledger.record("acl.lens_readings", planes=1)
     labels = arrays["b1_labels"]
     femur = carried_bone(labels, femur_before)
     tibia = carried_bone(labels, tibia_before)
@@ -960,7 +1104,12 @@ def acl_slice(own: Measured) -> tuple[dict, dict[str, np.ndarray], PlaneFrame] |
     acl = np.zeros(labels.shape, dtype=bool)
     if carried and fat_suppressed:
         acl = acl_on_slice(
-            labels, assignment.peaks, femur, tibia, frame.basis_lps, margin(plane)
+            labels,
+            assignment.peaks,
+            femur,
+            tibia,
+            frame.basis_lps,
+            margin_of(series.row.series_uid, z, plane),
         )
     # On its slice only the ACL is named, between the bones it was found between; the middle
     # slice's other objects are not named here: their rules belong to the middle slice.
@@ -985,23 +1134,6 @@ def acl_slice(own: Measured) -> tuple[dict, dict[str, np.ndarray], PlaneFrame] |
     return acl_record, arrays, frame
 
 
-def where_the_fibula_is(
-    series: Series, record: dict, arrays: dict[str, np.ndarray]
-) -> np.ndarray | None:
-    """The fibula's places on its main slice, in the scanner's millimetres, where front to back lies
-    in that slice's plane, so its front edge can be read: what the LCL's slice is found from, one
-    leg, one set of objects. None where it does not, or where the slice's header does not read as
-    a frame."""
-    frame = plane_frame(series, record["slice_index"])
-    if isinstance(frame, str):
-        return None
-    unit = frame.basis_lps / np.linalg.norm(frame.basis_lps, axis=0)
-    if float(np.linalg.norm(unit[1])) < ALONG_THE_LEG:
-        return None
-    fibula = arrays["a1_objects"] == OBJECT_CODES["fibula"]
-    return frame.to_patient(np.argwhere(fibula).astype(float))
-
-
 def lcl_slice(
     own: Measured, fibula_lps: np.ndarray | None
 ) -> tuple[dict, dict[str, np.ndarray], PlaneFrame] | str:
@@ -1011,8 +1143,8 @@ def lcl_slice(
     slice; and the LCL named where fat is not suppressed; or why it was not read."""
     series, record = own.series, own.record
     assigned = record["assignments"]
-    unit = own.frame.basis_lps / np.linalg.norm(own.frame.basis_lps, axis=0)
-    sides_in_plane = float(np.linalg.norm(unit[0])) >= ALONG_THE_LEG
+    reads("naming", ("in_plane",), "lcl")
+    sides_in_plane = own.assignment.in_plane[0]
     reads("partner", ("objects",), "lcl")
     femur_before = own.arrays["a1_objects"] == OBJECT_CODES["femur"]
     bones = bool(femur_before.any()) and assigned["tibia"] is not None
@@ -1044,9 +1176,14 @@ def lcl_slice(
         return frame
     reads("regime", ("background_split",), "lcl")
     lcl_record, arrays, _ = name_plane(
-        series, z, volume[z], frame, record["background_split"], assigned["knee"]
+        series,
+        z,
+        volume[z],
+        frame,
+        record["background_split"],
+        assigned["knee"],
+        "lcl",
     )
-    ledger.record("lcl.lens_readings", planes=1)
     labels = arrays["b1_labels"]
     femur = carried_bone(labels, femur_before)
     fibula_places = places_on_slice(
@@ -1110,35 +1247,28 @@ def lay_parts(
     read: tuple[dict, dict[str, np.ndarray], PlaneFrame],
     partner: tuple[dict, dict[str, np.ndarray], PlaneFrame],
     parts: tuple[str, ...],
-    stage: str,
     yields: tuple[int, ...] = (),
     onto_borders: bool = False,
 ) -> dict[str, str | None]:
-    """Lay the parts the other sequence's slice of the same place names onto this series' slice
-    (`laid_on`, once for all of them), onto this slice's own regions that nothing else holds but
+    """Lay the parts the other sequence's slice of the same place names onto this series' slice,
+    by the pair's one match (`matched`), onto this slice's own regions that nothing else holds but
     the parts in `yields`, and with `onto_borders` onto the places between its regions too, where
     its lens leaves a thin dark band out of every region: for each part, "laid_from_its_partner",
-    why it was not laid, or None when nothing was laid. `stage` is the reader the ledger
-    records."""
+    why it was not laid, or None when nothing was laid."""
     record, arrays, frame = read
-    _, partner_arrays, partner_frame = partner
-    reads("series", ("slice_thickness_mm",), stage)
-    thickness = own.series.slice_thickness_mm[record["slice_index"]]
-    if thickness is None:
-        return dict.fromkeys(parts, "no_slice_thickness")
-    plane = arrays["acquired_plane"]
-    laid = laid_on(
-        partner_arrays["a1_objects"],
-        ~margin(partner_arrays["acquired_plane"]),
-        partner_frame.origin_lps,
-        partner_frame.basis_lps,
-        frame.origin_lps,
-        frame.basis_lps,
-        plane.shape,
-        thickness,
+    partner_record, partner_arrays, partner_frame = partner
+    source = matched(
+        own.series,
+        record,
+        frame,
+        arrays["acquired_plane"].shape,
+        partner_record,
+        partner_frame,
+        partner_arrays["acquired_plane"],
     )
-    if laid is None:
-        return dict.fromkeys(parts, "not_the_same_place")
+    if isinstance(source, str):
+        return dict.fromkeys(parts, source)
+    laid = laid_by(partner_arrays["a1_objects"], source)
     # a copy: a slice's objects may still be the names it made alone
     objects = arrays["a1_objects"].copy()
     open_to_them = np.isin(objects, (0, *yields))
@@ -1182,7 +1312,7 @@ def find_part(
             partner = partner_of(measured, index)
             at = next((i for i, m in enumerate(measured) if m is partner), None)
             if at in read and read[at][0]["assignments"]["codes"][part] == "identified":
-                laid = lay_parts(own, read[index], read[at], (part,), part)[part]
+                laid = lay_parts(own, read[index], read[at], (part,))[part]
                 codes[part] = laid or codes[part]
         if codes[part] in NAMED:
             handed(part, ("main_slice", "region"))
@@ -1232,17 +1362,25 @@ def write_receipt(
 
 def ledger_reading(events: Sequence[Event], totals: dict[str, int]) -> dict:
     """One study's telemetry: each event's name with how often it came and its summed counted
-    work, the run's totals, and every product produced and read by no stage."""
+    work, the run's totals, every product produced and read by no stage, and, kind by kind, how
+    many values were made once (`knee.telemetry.once`) and how often a made one was handed on."""
     by_name: dict[str, dict[str, int]] = {}
+    computed: dict[str, dict[str, int]] = {}
     for event in events:
         entry = by_name.setdefault(event.name, {"times": 0})
         entry["times"] += 1
         for key, value in event.counts.items():
             entry[key] = entry.get(key, 0) + value
+        for ending in ("made", "handed_on"):
+            if event.name.endswith(f".{ending}"):
+                kind = event.name[: -len(ending) - 1]
+                tally = computed.setdefault(kind, {"made": 0, "handed_on": 0})
+                tally[ending] += 1
     return {
         "events": by_name,
         "totals": totals,
         "read_by_no_stage": list(unread_products(event.name for event in events)),
+        "computed_once": computed,
     }
 
 
@@ -1263,10 +1401,11 @@ def measure_study(
     """Measure every series of one study with the ledger on and save its arrays; return what the
     receipts take (its records, silences and telemetry) and what it named. Writes no receipt, so
     studies can be measured side by side. `drawn` says whether its pictures will be drawn, since
-    only then do the renderers read what they read."""
+    only then do the renderers read what they read. Within the study a value two stages need is
+    made once and handed on (`knee.telemetry.once`), and released when the study is done."""
     (run_dir / study_uid).mkdir(parents=True, exist_ok=True)
     (main_run / study_uid).mkdir(parents=True, exist_ok=True)
-    with recording() as led:
+    with recording() as led, computing():
         study = read_study(corpus, study_uid)
         ledger.record(
             "study.produced",
@@ -1308,8 +1447,9 @@ def measure_study(
         # onto the slices its parts are named on; the medial head on the middle slice, from the
         # lens already read there, before the records are saved, so it is saved and drawn.
         leg = None
+        reads("naming", ("in_plane",), "leg")
         if any(
-            not axis_in_plane(own.frame, 2)
+            not own.assignment.in_plane[2]
             and own.record["assignments"]["knee"] in ("R", "L")
             for own in measured
         ):
@@ -1327,9 +1467,12 @@ def measure_study(
             if isinstance(fibula, str):
                 main_unread[f"{own.record['series_uid']}:fibula"] = fibula
             else:
-                main_records.append(save(main_run, study_uid, *fibula))
+                fibula_record, fibula_arrays, placed = fibula
+                main_records.append(
+                    save(main_run, study_uid, fibula_record, fibula_arrays)
+                )
                 if fibula_lps is None:
-                    fibula_lps = where_the_fibula_is(own.series, *fibula)
+                    fibula_lps = placed
         for part, read_slice, laid_when in (
             ("acl", acl_slice, "abstain_not_walled_off_without_fat_suppression"),
             (
@@ -1397,11 +1540,18 @@ def measure_study(
     }
 
 
+@cache
+def opened(root: Path) -> Corpus:
+    """The corpus at `root`, opened once per process, its decoders checked and its tables read
+    once, for every study the process measures."""
+    return open_corpus(root)
+
+
 def measure_study_at(
     root: Path, study_uid: str, run_dir: Path, main_run: Path, drawn: bool
 ) -> dict:
-    """`measure_study` in a worker process, which opens the corpus at `root` itself."""
-    return measure_study(open_corpus(root), study_uid, run_dir, main_run, drawn)
+    """`measure_study` in a worker process, from the corpus it opened once (`opened`)."""
+    return measure_study(opened(root), study_uid, run_dir, main_run, drawn)
 
 
 def keep(result: dict, run_dir: Path, main_run: Path) -> None:
@@ -1463,9 +1613,14 @@ def report(result: dict, args: argparse.Namespace) -> None:
     uid = result["study_uid"]
     parts = ", ".join(f"{name} {count}" for name, count in result["named"].items())
     unread = ", ".join(result["telemetry"]["read_by_no_stage"])
+    shared = ", ".join(
+        f"{kind} {tally['made']} made, {tally['handed_on']} handed on"
+        for kind, tally in result["telemetry"]["computed_once"].items()
+    )
     print(uid, flush=True)
     print(f"  named, by series: {parts or 'nothing'}", flush=True)
     print(f"  produced and read by no stage: {unread or 'none'}", flush=True)
+    print(f"  computed once and handed on: {shared or 'nothing'}", flush=True)
     if args.draw:
         for picture in draw_study(
             result,
@@ -1513,7 +1668,7 @@ def main() -> None:
     )
     args = parser.parse_args()
     root = ROOT / LOCAL_ROOT
-    corpus = open_corpus(root)
+    corpus = opened(root)
     uids = on_disk(corpus) if args.labeled else args.study_uid
     workers = max(1, min(args.workers, len(uids)))
     if workers == 1:

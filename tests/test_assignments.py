@@ -34,7 +34,7 @@ from knee.objects.assignments import (
     gastrocnemius_code,
     gastrocnemius_head,
     inner_condyle,
-    laid_on,
+    laid_by,
     lcl_attachment,
     lcl_code,
     lcl_on_slice,
@@ -48,6 +48,7 @@ from knee.objects.assignments import (
     outer_step,
     pair_code,
     patella_code,
+    places_from,
     places_on_slice,
     region_holding,
     rest_of_the_patellas_territory,
@@ -258,32 +259,23 @@ def test_a_slice_lays_its_names_on_the_same_place_at_another_pixel_size():
     coarse[4:8, 6:10] = OBJECT_CODES["femur"]  # rows 2-4 mm down, columns 3-5 mm back
     seen = np.ones(coarse.shape, dtype=bool)
     seen[19, :] = False  # its last row is margin
-    laid = laid_on(
-        coarse,
-        seen,
-        origin,
-        SAGITTAL_MM * 0.5,
-        origin,
-        SAGITTAL_MM * 0.4,
-        (30, 30),
-        2.0,
+    source = places_from(
+        seen, origin, SAGITTAL_MM * 0.5, origin, SAGITTAL_MM * 0.4, (30, 30), 2.0
     )
-    assert laid is not None
+    assert source is not None
+    laid = laid_by(coarse, source)
     assert laid[5, 8] == OBJECT_CODES["femur"]  # 2.0 mm down, 3.2 mm back
     assert laid[0, 0] == 0  # seen and named nothing
     assert laid[24, 0] == UNSEEN  # 9.6 mm down: the other slice's margin row
     assert laid[29, 29] == UNSEEN  # 11.6 mm: past the other slice's edge
+    # the one match lays any other reading of the slice too
+    white = (coarse == OBJECT_CODES["femur"]).astype(np.int8)
+    assert laid_by(white, source)[5, 8] == 1
+    assert laid_by(white, source)[24, 0] == UNSEEN
     beside = origin + np.array([5.0, 0.0, 0.0])  # a slice 5 mm to the side
     assert (
-        laid_on(
-            coarse,
-            seen,
-            origin,
-            SAGITTAL_MM * 0.5,
-            beside,
-            SAGITTAL_MM * 0.4,
-            (30, 30),
-            2.0,
+        places_from(
+            seen, origin, SAGITTAL_MM * 0.5, beside, SAGITTAL_MM * 0.4, (30, 30), 2.0
         )
         is None
     )
