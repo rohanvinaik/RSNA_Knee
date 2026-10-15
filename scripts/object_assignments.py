@@ -37,6 +37,8 @@ OBJECT_COLOURS = {
     "suprapatellar_fat": (1.0, 0.95, 0.4, 0.6),
     "medial_gastrocnemius": (0.6, 0.65, 0.1, 0.6),
     "semimembranosus": (0.65, 0.35, 0.1, 0.9),
+    "patellar_tendon": (0.5, 1.0, 0.75, 0.85),
+    "quadriceps_tendon": (0.8, 0.7, 1.0, 0.85),
 }
 
 
@@ -120,6 +122,16 @@ def draw_stages(axes, arrays, record):
         + (
             f"\nLEMON suprapatellar fat: {codes['suprapatellar_fat']}"
             if "suprapatellar_fat" in codes
+            else ""
+        )
+        + (
+            "\nMINT patellar · LAVENDER quadriceps tendon: "
+            + (
+                codes["patellar_tendon"]
+                if codes["patellar_tendon"] == codes.get("quadriceps_tendon")
+                else f"{codes['patellar_tendon']}, {codes.get('quadriceps_tendon', '-')}"
+            )
+            if "patellar_tendon" in codes
             else ""
         )
         + (
