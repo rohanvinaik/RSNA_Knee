@@ -176,19 +176,19 @@ listening»:
 ## Where it stands, 2026-10-14
 Check `git log` first; the run prints what each study named ("named, by series"), and the module
 note of `src/knee/objects/assignments.py` has a paragraph for each rule.
-- Resolved on the proof study (commit `5c8e7d1`), on the middle slices: air, skin, femur, tibia,
+- Resolved on the proof study (commit `ffed51d`), on the middle slices: air, skin, femur, tibia,
   bone marrow (the inside of each bone named), the joint, the patella, both menisci (sided by the
-  header), the articular cartilage, the PCL; the fibula on its main slice (the T2 sagittal's slice
-  30); and the ACL on its own slice, the middle slice's neighbour on the knee's outer side (named
-  on the fat-suppressed sagittal's slice 19 and laid onto the T2's). The patella, the menisci, the
-  cartilage, the PCL and the ACL are each found on one sequence and laid onto the other sequence's
-  slice of the same place.
-- Next, in the objects document's order: the MCL; the LCL (on its own main slice); the joint's
-  fluid and recesses, and the synovium if the pictures hold it; the fat pads (Hoffa's, and the two
-  above the patella); the back of the knee (the medial gastrocnemius head, the semimembranosus
-  tendon); the quadriceps and patellar tendons; the fat under the skin, and muscle. Then the parts
-  that need their own main slices (the menisci on the sagittal, the patella on the axial).
-  Diagnosis only when he says.
+  header), the articular cartilage, the PCL, the MCL; the fibula on its main slice (the T2
+  sagittal's slice 30); and the ACL on its own slice, the middle slice's neighbour on the knee's
+  outer side (named on the fat-suppressed sagittal's slice 19 and laid onto the T2's). The
+  patella, the menisci, the cartilage, the PCL, the ACL and the MCL are each found on one sequence
+  and laid onto the other sequence's slice of the same place.
+- Next, in the objects document's order: the LCL (on its own main slice; choosing that slice is a
+  step like the ACL's); the joint's fluid and recesses, and the synovium if the pictures hold it;
+  the fat pads (Hoffa's, and the two above the patella); the back of the knee (the medial
+  gastrocnemius head, the semimembranosus tendon); the quadriceps and patellar tendons; the fat
+  under the skin, and muscle. Then the parts that need their own main slices (the menisci on the
+  sagittal, the patella on the axial). Diagnosis only when he says.
 - Still owed: where the header names no knee, look for the fibula on both sides and let its side
   name the outer one (the second half of the plan for siding the menisci); the fibula is not yet
   laid onto the fat-suppressed sagittal's slice of the same place (Law 9); the fibula's main slice
@@ -200,7 +200,9 @@ note of `src/knee/objects/assignments.py` has a paragraph for each rule.
 - Over-reaches stated in the module note, not chased: the cartilage takes in the notch roof's lining
   and the fluid down the femur's outer side; on the middle slice the PCL takes in the ACL's lower
   fibres, which cross in front of it, and leaves its last stretch down the tibia; the ACL takes in
-  the fluid round it and a patch toward the tibia, and leaves its top end at the femur.
+  the fluid round it and a patch toward the tibia, and leaves its top end at the femur; the MCL is
+  named only where it crosses the joint line, about 12 mm of it, and its stretches down the tibia
+  and up the femur are not reached.
 - Nothing is pushed; ask before pushing.
 
 ## The record, 2026-10-14
