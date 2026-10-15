@@ -1,52 +1,103 @@
 """Name the objects that are plain in the interiors' pictures, one at a time.
 
-Each is named by what the pictures show, read off the interiors' own lenses:
+Each is an «<object>» (Rohan, 2026-10-14): a set of descriptions of how it appears in these scans,
+read off the interiors' own lenses, each one check with the code it abstains with, and the
+categories of the twelve it relates to (docs/OBJECTS_AND_CONDITIONS.md §6):
 
-- AIR: the measured low signal outside the leg, where it is a field, at least a centimetre thick.
-  The leg is every territory, its holes filled. Measured on the proof study, 2026-10-14: the air
-  fields are 2.5 to 5 cm thick, and the strips where the picture fades into its black margin are a
-  few millimetres; those strips are not air.
-- SKIN: the leg's places that touch the air.
+- AIR: the low signal outside the leg. Measured on the proof study, 2026-10-14: the air fields are
+  2.5 to 5 cm thick, and the strips where the picture fades into its black margin are a few
+  millimetres; those strips are not air. Its descriptions, each one check with its code:
+  1. there is a leg on the slice: every territory, its holes filled (abstain_no_leg);
+  2. it is the measured low signal outside the leg and its black margin, where it forms a field at
+     least `AIR_FIELD_MM` thick (`fields`) (abstain_no_field_outside_the_leg).
+  It relates to none of the twelve categories: it is the field the leg lies in.
+- SKIN: the leg's edge against the air. Its descriptions, each one check with its code:
+  1. there is air on the slice (abstain_no_air);
+  2. it is the leg's places that touch the air.
+  It relates to none of the twelve categories.
 - FEMUR and TIBIA: each is its own large territory, and they hold the strongest interior peaks, one
-  above the other along the leg (Rohan, 2026-10-13, on the proof figure: «Good»). So: the territory
-  with the deepest peak, and the deepest one above or below it. The upper is the femur.
+  above the other along the leg (Rohan, 2026-10-13, on the proof figure: «Good»). Their
+  descriptions, each one check with its code (`pair_code`):
+  1. the leg runs in the plane, more along it than across (abstain_leg_runs_through_the_plane);
+  2. the slice holds at least two territories (abstain_fewer_than_two_territories);
+  3. they are the territory with the deepest peak and the deepest one above or below it along the
+     leg; the upper is the femur and the lower the tibia
+     (abstain_nothing_above_or_below_the_deepest).
+  Read with the other sequence's slice of the same place, each is kept where both name it or the
+  partner's picture does not reach (agreed_with_its_partner), laid on where only the partner names
+  it (laid_from_its_partner), and dropped where they share no place
+  (abstain_the_two_slices_disagree). The femur relates to Medial, Lateral and PF OA, Contusion,
+  Fracture, and the ACL and MCL by their attachments; the tibia to Medial and Lateral OA,
+  Contusion, Fracture, the ACL and MCL by their attachments, and both meniscus tears, as the
+  plateau beneath them.
 - BONE MARROW: the inside of each bone named here. A bone's territory is its inside, within its
-  dark shell, so the marrow needs no rule of its own.
+  dark shell, so the marrow has no check of its own: it is named where its bone is. It relates to
+  Contusion, Fracture and the three OA categories, by the changes beneath the joint surfaces.
 - ARTICULAR CARTILAGE: the layer on each bone's joint surface, 2 to 3 mm thick where the femur's
   condyles meet the tibia's plateau. Seen on the proof's fat-suppressed coronal, 2026-10-14: down
   each column across the joint, the femur's marrow, its dark shell, a bright layer (x2.4 to x3.5
-  of the marrow's light), the dark joint line, the tibia's bright layer, its shell, its marrow. So:
-  on a coronal slice with fat suppression, in the joint, the places brighter than the bones' marrow
-  by `CARTILAGE_BRIGHTER` within `CARTILAGE_MM` of a bone, named for the nearer bone, femoral or
-  tibial (`cartilage_on`). Without fat suppression it is not brighter than marrow, so there it is
-  laid on from the fat-suppressed slice of the same place (`with_partner`); the middle sagittal slice passes through
-  the notch, where no joint surfaces meet, so it is not named there. Seen also on the proof: the
-  bright fluid down the femur's outer side, and the lining of the notch's roof, lie in the joint
-  within that reach and are named with it.
-- JOINT: what lies between the femur and the tibia, along the leg.
+  of the marrow's light), the dark joint line, the tibia's bright layer, its shell, its marrow. Its
+  descriptions, each one check with its code (`cartilage_code`):
+  1. side to side lies in its slice's plane, as on a coronal slice; the middle sagittal slice,
+     which side to side runs through, passes through the notch, where no joint surfaces meet
+     (abstain_side_to_side_runs_through_the_plane);
+  2. fat is suppressed: without it the layer is not brighter than marrow, and there it is laid on
+     from the fat-suppressed slice of the same place (`with_partner`)
+     (abstain_not_brighter_than_marrow_without_fat_suppression);
+  3. the slice names the joint (abstain_no_joint);
+  4. it is the places in the joint brighter than the bones' marrow by `CARTILAGE_BRIGHTER`, within
+     `CARTILAGE_MM` of a bone, named for the nearer bone, femoral or tibial (`cartilage_on`)
+     (abstain_nothing_bright_against_the_bones).
+  It relates to Medial, Lateral and PF OA. Seen also on the proof: the bright fluid down the
+  femur's outer side, and the lining of the notch's roof, lie in the joint within that reach and
+  are named with it.
+- JOINT: what lies between the femur and the tibia along the leg. Its descriptions, each one check
+  with its code:
+  1. the slice names the femur and the tibia (their codes, above);
+  2. it is the places between them on each line along the leg, outside the black margin
+     (`between_along_the_leg`) (abstain_nothing_between).
+  It relates to the three OA categories, by its narrowing, and to Effusion and Synovitis, whose
+  fluid and lining it holds.
 - PATELLA: the bone in front of the femur's lower end, on a sagittal slice. Its marrow is the
   femur's tissue, so it is about as bright as the femur, and it has its own peak there. Seen on the
   proof's two middle sagittals, 2026-10-14 (the patella is plain to the eye in both): with fat
   suppression the patella is a solid oval as dark as the femur, and the fat pad below it is half
   again to two and a half times brighter, so its light parts them; without fat suppression the fat
   pad is as bright as marrow, and two territories meet across the patella's lower part, so there
-  light and territory cannot part them. So: the deepest peak in front of the femur, no higher than
-  `PATELLA_ABOVE_MM` above its lowest place (`patella_peak`); in that peak's territory, the places
-  as bright as the femur, the piece of them holding most of the peak's own disc, its holes filled
-  (`patella_piece`). Without fat suppression it is laid on from the fat-suppressed slice of the
-  same place (`with_partner`).
+  light and territory cannot part them. Its descriptions, each one check with its code
+  (`patella_code`):
+  1. front to back lies in its slice's plane, as on a sagittal slice
+     (abstain_front_to_back_runs_through_the_plane);
+  2. the slice names the femur (abstain_no_femur);
+  3. fat is suppressed: without it the fat pad is as bright as marrow, and there it is laid on from
+     the fat-suppressed slice of the same place, only where it holds this slice's own peak in
+     front of the femur (abstain_fat_as_bright_as_marrow; abstain_the_two_slices_disagree);
+  4. a peak lies in front of the femur, no higher than `PATELLA_ABOVE_MM` above its lowest place;
+     the deepest such (`patella_peak`) (abstain_no_peak_in_front_of_the_femur);
+  5. it is the places in that peak's territory within `LIKE_THE_FEMUR` of the femur's light, the
+     piece holding most of the peak's own disc, its holes filled (`patella_piece`)
+     (abstain_nothing_like_the_femur_at_its_peak).
+  It relates to PF OA, Contusion and Fracture.
 - PCL: the posterior cruciate ligament, «thick, uniformly low-signal and curvilinear», from the
   femur's notch to the back of the tibia (docs/OBJECTS_AND_CONDITIONS.md). Seen on the proof's
   middle T2 sagittal, 2026-10-14: a thick dark band behind the femur's condyle curving down to the
   back of the tibia, x0.05 to x0.25 of the marrow's light; the low-signal lens marks only dots in
-  it, the signal itself shows it whole. A ligament joins two bones. So: on a sagittal slice without
-  fat suppression, the places whose light over `LIGAMENT_SMOOTH_MM` (uniformly dark, not speckled)
-  is under `LIGAMENT_DARKER` of the femur's marrow, at least `LIGAMENT_THICK_MM` thick (the bones'
-  thin shells drop out), the largest such piece that reaches within `SHELL_MM` of both the femur and
-  the tibia (`ligament_joining`). With fat suppression the marrow is as dark as a ligament, so there
-  it is laid on from the other slice of the same place. Seen also on the proof: on the middle slice
-  it takes in the ACL's lower fibres, which cross in front of it in the same dark, and its last
-  stretch down the back of the tibia stays with the dark tissue behind the tibia.
+  it, the signal itself shows it whole. A ligament joins two bones. Its descriptions, each one
+  check with its code (`pcl_code`):
+  1. front to back lies in its slice's plane, as on a sagittal slice
+     (abstain_front_to_back_runs_through_the_plane);
+  2. fat is not suppressed: with it the marrow is as dark as a ligament, and there it is laid on
+     from the other slice of the same place
+     (abstain_marrow_as_dark_as_a_ligament_with_fat_suppression);
+  3. the slice names the femur and the tibia (abstain_no_femur_and_tibia);
+  4. it is the places whose light over `LIGAMENT_SMOOTH_MM` (uniformly dark, not speckled) is under
+     `LIGAMENT_DARKER` of the femur's marrow, at least `LIGAMENT_THICK_MM` thick (the bones' thin
+     shells drop out), the largest such piece reaching within `SHELL_MM` of both the femur and the
+     tibia (`ligament_joining`) (abstain_no_dark_band_joins_the_bones).
+  It relates to none of the twelve categories directly: it is the ACL's neighbour in the notch.
+  Seen also on the proof: on the middle slice it takes in the ACL's lower fibres, which cross in
+  front of it in the same dark, and its last stretch down the back of the tibia stays with the
+  dark tissue behind the tibia.
 - ACL: the anterior cruciate ligament, inside the notch from the tibia's front-middle up and back
   to the inner wall of the femur's outer condyle; «less well defined than the PCL», «its bundles
   outlined by surrounding high-intensity structures», and «going lateral to medial, the ACL comes
@@ -57,7 +108,8 @@ Each is named by what the pictures show, read off the interiors' own lenses:
   fat-suppressed slice shows it as a grey, streaked body walled off by the bright fluid round it,
   which the lens draws as a region of its own with its own peak. So it is named on its own slice by
   these descriptions, each one check with its code (`acl_code`):
-  1. its slice is sagittal, front to back in the plane (abstain_front_to_back_runs_through_the_plane);
+  1. front to back lies in its slice's plane, as on a sagittal slice
+     (abstain_front_to_back_runs_through_the_plane);
   2. it lies on the knee's outer side of the middle slice, which on the proof holds the PCL: its
      slice is the middle slice's neighbour on the side the header names as outer (`outer_step`),
      chosen by place and not read off the squint (abstain_header_names_no_knee);
@@ -82,7 +134,8 @@ Each is named by what the pictures show, read off the interiors' own lenses:
   and the femur's and tibia's regions take its place, so there it is laid on from the
   fat-suppressed slice of the same place (`with_partner`). It is named by these descriptions, each
   one check with its code (`mcl_code`):
-  1. its slice is coronal, side to side in the plane (abstain_side_to_side_runs_through_the_plane);
+  1. side to side lies in its slice's plane, as on a coronal slice
+     (abstain_side_to_side_runs_through_the_plane);
   2. it lies on the inner side of the joint, the side of the medial meniscus, which the header's
      word for which knee sides (abstain_no_medial_meniscus);
   3. it is low signal the lens marks, outside every part already named, on that side of the
@@ -95,26 +148,40 @@ Each is named by what the pictures show, read off the interiors' own lenses:
   recess, lies between it and the meniscus, so the meniscus marks its side and is not reached.
 - MENISCI: on a coronal slice, the dark triangles at the two ends of the joint, between the femur's
   condyle and the tibia's plateau («an isosceles triangle on coronal images», low on every
-  sequence: docs/OBJECTS_AND_CONDITIONS.md). So: the low signal with every part thinner than
-  `MENISCUS_THICKNESS_MM` rubbed away (the bones' thin shells), the pieces of it that touch the
-  joint, each whole, since a meniscus reaches out past the bones' ends, and the piece nearest each
-  end, either side of the joint's middle. Seen on the proof's fat-suppressed coronal, 2026-10-14;
-  on its T1 coronal the joint's dark band is not measured low signal, so nothing is named. The
-  middle sagittal slice passes through the notch, where the joint holds the cruciate ligaments, so
-  menisci are not named there.
-  Which is MEDIAL and which LATERAL: the medial lies toward the other knee, so where the header
-  names the knee (Laterality "R" or "L"; the proof study says "R"), the side follows from the
-  patient's left axis. Where it does not, the menisci stay unsided.
+  sequence: docs/OBJECTS_AND_CONDITIONS.md). Seen on the proof's fat-suppressed coronal,
+  2026-10-14; on its T1 coronal the joint's dark band is not measured low signal, so there they
+  are laid on from the fat-suppressed slice of the same place. Their descriptions, each one check
+  with its code (`meniscus_code`, `side_code`):
+  1. side to side lies in its slice's plane, as on a coronal slice; the middle sagittal slice,
+     which side to side runs through, passes through the notch, where the joint holds the
+     cruciate ligaments (abstain_side_to_side_runs_through_the_plane);
+  2. the slice names the joint (abstain_no_joint);
+  3. they are the low signal with every part thinner than `MENISCUS_THICKNESS_MM` rubbed away (the
+     bones' thin shells), the pieces of it that touch the joint, each whole, since a meniscus
+     reaches out past the bones' ends, and the piece nearest each end, either side of the joint's
+     middle (`end_pieces`) (abstain_no_thick_low_signal_in_the_joint);
+  4. the medial is the one toward the other knee: where a meniscus is named there is a side to
+     read (abstain_no_meniscus), and where the header names the knee (Laterality "R" or "L"; the
+     proof study says "R"), the side follows from the patient's left axis (`meniscus_side`);
+     where it does not, they stay unsided (abstain_header_names_no_knee).
+  The medial meniscus relates to the Medial Meniscus category, Medial OA, and the MCL, which is
+  attached to it; the lateral to the Lateral Meniscus category and Lateral OA.
 - FIBULA: the bone under the tibia's outer back. Its head has the tibia's marrow, so it is as
   bright as the tibia, and it lies about 5 cm below the tibia's top (seen on the proof's T1 coronal
   and T2 sagittal, 2026-10-14; Rohan: «Do you not see the giant fucking bone that is the
-  fibula?»). It is named on its main slice, as the method says: the squint points to where it must
-  be (`fibula_block`: below the tibia's top, on the outer side); the interiors lens reads only that
-  block on each slice that holds it; the fibula there is the region the lens already draws that
-  looks like the tibia, well below its top and behind its middle, apart from the tibia and whole
-  in the block (`fibula_on_slice`); and its main slice is the one where that region is largest.
-  On a fat-suppressed sequence the marrow is darkened to the light of muscle, so it is not named
-  there (`fibula_code`). Seen right on the proof's T2 sagittal, 2026-10-14: slice 30, the bone
+  fibula?»). It is named on its main slice: the squint points to where it must be (`fibula_block`:
+  below the tibia's top, on the outer side), the interiors lens reads only that block on each slice
+  that holds it, and its main slice is the one where its region is largest (`main_slice`). Its
+  descriptions, each one check with its code (`fibula_code`):
+  1. the header names the knee, so its outer side is known (abstain_header_names_no_knee);
+  2. the middle slice names the tibia (abstain_no_tibia);
+  3. fat is not suppressed: with it the marrow is darkened to the light of muscle
+     (abstain_marrow_suppressed_with_the_fat);
+  4. it is the region the lens draws there that looks like the tibia (within `LIKE_THE_TIBIA` of
+     its light), at least a disc `BONE_MM` across, its middle at least `FIBULA_BELOW_MM` below the
+     tibia's top and behind the tibia's middle, apart from the tibia and whole in the block
+     (`fibula_on_slice`) (abstain_no_bone_like_the_tibia_below_it).
+  It relates to Fracture. Seen right on the proof's T2 sagittal, 2026-10-14: slice 30, the bone
   under the tibia's outer condyle, its head and neck.
 
 TWO SLICES OF ONE PLACE (`with_partner`). A study images the knee in two sequences on the same

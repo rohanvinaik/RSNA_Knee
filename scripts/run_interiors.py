@@ -5,11 +5,12 @@ For each series of a study, as the second build's route did (`objects/analysis.p
 `_measure_series`): the regime key, read once over the whole series and kept whole; the squint
 over every slice, made once and kept with the series; the middle slice, its plane frame, and
 `read_interiors` with the frame's spacing and the retained basis as its metric. Then
-`assign_plane` names what the pictures show: air, skin, femur, tibia, joint, the patella (by its
-light, with fat suppression) and menisci, the menisci sided by the header's own word for which knee
-it is. Once every series of the study is read, each middle slice is read with its partner's, the
-other sequence's slice of the same place (`partner_of`, `read_with_partner`, and
-`knee.objects.assignments.with_partner`): bones both name, where both agree; a part only the
+`assign_plane` names what the pictures show, each part by its paragraph in
+`knee.objects.assignments`: air, skin, femur, tibia, joint, the patella (by its light, with fat
+suppression), the menisci (sided by the header's own word for which knee it is), the articular
+cartilage, the PCL and the MCL. Once every series of the study is read, each middle slice is
+read with its partner's, the other sequence's slice of the same place (`partner_of`,
+`read_with_partner`, and `knee.objects.assignments.with_partner`): bones both name, where both agree; a part only the
 partner names, laid on. The arrays the renderers read, and the squint's, are saved per series with
 their digests in a receipt; `object_interiors.draw`, the renderer that drew the proof figure, draws
 the interiors, and `object_assignments.draw` draws the named objects.

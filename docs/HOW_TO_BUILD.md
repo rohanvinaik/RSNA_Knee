@@ -119,7 +119,9 @@ here.
   withdrawn because its name is wrong somewhere; it is fixed («You REMOVED shit??»).
 - Look at the picture after every change, everywhere the change reaches (every series, every slice
   a rule leans on), before saying anything about it. «Are you looking at the photos annoyingly
-  often? Because if you aren't you're going to fuck this up»
+  often? Because if you aren't you're going to fuck this up» And, 2026-10-15: «make sure you're
+  looking OBSESSIVELY at the actual PNG photo output. Computer vision means that the reasoning is
+  BLINDINGLY obvious when seen visually»
 - Never chase unseen studies with a rule per image («even if a few images are a bit weird»), and
   never change the proof's lenses unless he asks.
 
@@ -182,7 +184,8 @@ note of `src/knee/objects/assignments.py` has a paragraph for each rule.
   sagittal's slice 30); and the ACL on its own slice, the middle slice's neighbour on the knee's
   outer side (named on the fat-suppressed sagittal's slice 19 and laid onto the T2's). The
   patella, the menisci, the cartilage, the PCL, the ACL and the MCL are each found on one sequence
-  and laid onto the other sequence's slice of the same place.
+  and laid onto the other sequence's slice of the same place. Every one of them is written in the
+  module note as an «<object>» (§4), its descriptions checked against its code.
 - Next, in the objects document's order: the LCL (on its own main slice; choosing that slice is a
   step like the ACL's); the joint's fluid and recesses, and the synovium if the pictures hold it;
   the fat pads (Hoffa's, and the two above the patella); the back of the knee (the medial
@@ -193,10 +196,8 @@ note of `src/knee/objects/assignments.py` has a paragraph for each rule.
   name the outer one (the second half of the plan for siding the menisci); the fibula is not yet
   laid onto the fat-suppressed sagittal's slice of the same place (Law 9); the fibula's main slice
   is found by reading the lens on its block in every slice, and the ACL's is chosen by place from
-  the header, neither from the squint (§4); the parts resolved before the ACL are described in
-  prose, not yet as the numbered set of descriptions the ACL's paragraph is (§4, «<object>»); and
-  §5's one coherent operation: the run prints the values that no stage reads ("produced and read
-  by no stage"), and on 2026-10-14 there were many.
+  the header, neither from the squint (§4); and §5's one coherent operation: the run prints the
+  values that no stage reads ("produced and read by no stage"), and on 2026-10-14 there were many.
 - Over-reaches stated in the module note, not chased: the cartilage takes in the notch roof's lining
   and the fluid down the femur's outer side; on the middle slice the PCL takes in the ACL's lower
   fibres, which cross in front of it, and leaves its last stretch down the tibia; the ACL takes in
@@ -252,7 +253,8 @@ Side notes he relayed the same day, each a lapse a self-check would have caught:
 only the middle slice; the menisci were unsided; the read-first rule lived only in Claude's memory;
 the recovered squint code still named a missing chapter file; the fibula rule needed the header;
 the "sealed" and "shelled" signs were the removed pile's under new names; Claude's own unapproved
-lines sat in `AGENTS.md`.
+lines sat in `AGENTS.md`. And on 2026-10-15: the parts named before the ACL were still written as
+prose when a report said each part was written as an «<object>».
 
 Earlier sessions' corrections live where they were recorded: the theory's Part V (the builds thrown
 away twice; «You're starting to infer»), and the global `~/.claude/CLAUDE.md` (the reading law of
