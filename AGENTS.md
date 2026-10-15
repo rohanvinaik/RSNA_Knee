@@ -9,8 +9,10 @@ it, is in `docs/HOW_TO_BUILD.md`.
 Read it before anything else, and do not overcomplicate it. Rohan, 2026-10-13: «This is basically the whole
 thing. That's it.» At every session start and after every compaction, before anything else, read whole
 `docs/conversations/2026-10-13-the-thesis.md`, then `docs/THEORY_OF_THE_CASE.md`, then
-`docs/OBJECTS_AND_CONDITIONS.md`, then `docs/HOW_TO_BUILD.md`, and look at the proof study's pictures with
-the conversation in mind: the parts of the knee the lenses already pull out.
+`docs/OBJECTS_AND_CONDITIONS.md`, then `docs/HOW_TO_BUILD.md`, then `docs/RESOLVING_THE_PARTS.md` (how each
+part is resolved: the views, the lenses, the operations; and the provisional entries for the rest), and
+look at the proof study's pictures with the conversation in mind: the parts of the knee the lenses
+already pull out.
 
 **How the knee's objects are named.** Rohan, 2026-10-14: «Reasoning off the actual pngs, basic
 common-sense domain knowledge, the work I ALREADY did and proved, and basic identification and
@@ -20,7 +22,9 @@ object in `docs/OBJECTS_AND_CONDITIONS.md`, one at a time:
    later diagnosed in («Is it not obvious which slice to use?»). The squint
    (`src/knee/collapse/squint_stack.py`) shows every slice of a series cheaply, so finding it is plain.
    Never recompute on every slice («that's completely wrong»; the collapse,
-   `../cell_tracking/docs/pipeline_thesis/paper/what_an_object_is.md` §4).
+   `../cell_tracking/docs/pipeline_thesis/paper/what_an_object_is.md` §4). The run still reads each
+   series' middle slice for most parts, the code's choice and not the thesis's; Rohan, 2026-10-15: «I
+   think that you missed the point of this part of the thesis» (`docs/RESOLVING_THE_PARTS.md` §8).
 2. Look at the actual pictures of that slice, and say plainly, with common-sense domain knowledge, why the
    object looks like itself there.
 3. Write exactly that as a few plain rules on the lenses the interiors already give
@@ -33,8 +37,11 @@ The loop that works, step by step, what to do straight after a compaction, and w
 
 A part plainly visible in one lens is found by that lens, whichever lens it is: «If it's visible in one lens
 but not the other (like "joint fluid")...then great, we know how to find it, problem solved». Seeing a part
-and not yet resolving it is the agent's failure, never the project's. Where the pictures do not hold the
-object at all, it is not named.
+and not yet resolving it is the agent's failure, never the project's. No part is found by one lens alone:
+«It's not SUPPOSED to be isolateed by ANYTHING alone». A part defined by what it lies between is in the
+pictures wherever its neighbours are: «It's literally a form of interstitial fluid. Interstitial. Between
+the tibia and femur. We have the tibia, we have the femur. It's...obviously in there?» Where the pictures
+do not hold the object at all, it is not named.
 
 The test is validity, not perfection. Rohan, 2026-10-14: «It's not about perfection. It's about validity.»
 Each part is resolved at least once, from the lenses, by a rule that is not tuned to that view; then it is

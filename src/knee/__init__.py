@@ -21,6 +21,7 @@ Beside the line, below every stage:
                 each value two stages need, made once and handed on.
     receipt     the run's receipt: every study's records kept, one study's replaced at a time.
 
-The run is `scripts/run_interiors.py`. The thesis is `docs/THEORY_OF_THE_CASE.md`; how it is built,
+The run is `scripts/run_interiors.py`. The thesis is `docs/THEORY_OF_THE_CASE.md`; how each part is
+resolved, by which views, lenses and operations, is `docs/RESOLVING_THE_PARTS.md`; how it is built,
 and every correction that taught it, is `docs/HOW_TO_BUILD.md`.
 """

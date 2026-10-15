@@ -85,6 +85,15 @@ above, which he set before showing them:
 9. One leg, one set of objects (2026-10-14): «It's literally the same leg, obviously the object would be
    the same in both views. That's the WHOLE thesis». An object found in one view of the leg is that
    object in every other view of it.
+10. The views are lossy lenses from independent perspectives (2026-10-15): «the different views, like
+    "fat-bright" vs "fat-dark", and the different axes being viewed, like coronal vs axial, etc, are used
+    as lossy views from independent perspectives, which enable resolution of anatomical elements--the
+    LITERAL thesis of the project, as the standard operating procedure in medicine itself».
+11. Nothing alone (2026-10-15): «It's not SUPPOSED to be isolateed by ANYTHING alone».
+12. Interstitial (2026-10-15): «It's literally a form of interstitial fluid. Interstitial. Between the
+    tibia and femur. We have the tibia, we have the femur. It's...obviously in there?» (Claude's
+    restatement: a part is defined by what it lies between, and is in the pictures wherever its
+    neighbours are.)
 
 ## Part V — The Pathology Record
 The build was thrown away twice. In his words:
