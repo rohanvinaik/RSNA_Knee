@@ -181,6 +181,11 @@ Signal by sequence, as one source tabulates it [Kh]:
 - **Synovial membrane (synovium).** A thin, highly vascularised membrane lining synovial joints, some bursae and
   tendon sheaths [C]; in the knee it lines the capsule and communicates with the suprapatellar bursa [R-KNEE]. Its
   normal look is not stated by the sources read; disease shows as thickened synovium [C].
+  *Told apart by:* place. It lines the capsule [R-KNEE], so it bounds the joint cavity and its recesses, between
+  the femur, the tibia and the patella, around the joint's fluid [R-KNEE], [C]; the cruciates and the popliteus
+  tendon lie inside the capsule but outside it [R-KNEE] *(pairing: Claude)*. Rohan, 2026-10-15: «It's literally a
+  form of interstitial fluid. Interstitial. Between the tibia and femur. We have the tibia, we have the femur.
+  It's...obviously in there?»
   *Involved in:* Synovitis; Baker's (the cyst is synovial-lined) [R-BAKER].
 - **Fat pads.** Three in front: infrapatellar (Hoffa), posterior suprapatellar (prefemoral), anterior suprapatellar
   (quadriceps) [R-KNEE]. Hoffa's lies just behind the patellar tendon and follows subcutaneous fat on all sequences
@@ -255,7 +260,8 @@ Signal by sequence, as one source tabulates it [Kh]:
 
 ## 7. Gaps
 
-- Not described by the sources read: the normal look of the synovium.
+- Not described by the sources read: the normal look of the synovium. It is told apart by place, by what it lines
+  (§4), not by a look of its own.
 - [Kh] gives fluid on PD as low in its Table II and water on PD as intermediate in its Table I.
 - Read but not used: Kenhub's "Normal knee MRI" contradicts [C], [R-BME] and [R-BB] in places (it calls marrow
   oedema bright on T1 and fluid dark on T2).

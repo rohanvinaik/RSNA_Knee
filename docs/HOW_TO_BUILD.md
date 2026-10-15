@@ -274,11 +274,15 @@ note of `src/knee/objects/assignments.py` has a paragraph for each rule.
   hold it"; Rohan, 2026-10-15: «It's literally a form of interstitial fluid. Interstitial. Between the
   tibia and femur. We have the tibia, we have the femur. It's...obviously in there? That's a
   demonstration of your failure to understand the basis of the thesis».
-- Next: (1) the dimensional collapse and how a slice is chosen. Rohan, 2026-10-15: «I think that you
-  missed the point of this part of the thesis, and we need to get to fixing the implementation in
-  another session». The run reads each series' middle slice for most parts, the code's choice and
-  not the thesis's; what the thesis says is in `docs/RESOLVING_THE_PARTS.md` §8. (2) Define each part
-  not yet resolved once, from its provisional entry. Diagnosis only when he says.
+- Next: (1) the dimensional collapse. Rohan, 2026-10-15: «I think that you missed the point of this
+  part of the thesis, and we need to get to fixing the implementation in another session»; and, of
+  the middle slice the run reads for most parts: «The "middle" is a fine standard first slice to
+  select. For other elements that are not obvious in that one slice, etc, that is a fine standard.
+  There are five different views (different angles and fat-bright vs fat-dark), and each has
+  multiple z-slices. That is where the thing being mined is relevant--discovery of ALL elements of
+  the anatomy at their best slices and resolution across the 5 images/3 orientations». The thesis's
+  own text on the collapse, and what the run does now, are in `docs/RESOLVING_THE_PARTS.md` §8. (2)
+  Define each part not yet resolved once, from its provisional entry. Diagnosis only when he says.
 - Still owed: where the header names no knee, look for the fibula on both sides and let its side
   name the outer one (the second half of the plan for siding the menisci); the fibula is not yet
   laid onto the fat-suppressed sagittal's slice of the same place (Law 9); the parts named on the
@@ -394,7 +398,8 @@ note of `src/knee/objects/assignments.py` has a paragraph for each rule.
 | «Do you see how INCREDIBLY problematic that was? ... You keep trying to make the pre-AI part perfect, it's SLIGHTLY imperfect, just ONCE, on a lens I've already described as LOSSY, and you fuck everything up in response. I need you to look properly and tell me with ABSOLUTE fucking certainty that you haven't fucked anything up while I wasn't looking» · «I TOLD you, LOOK at the PNGs RELIGIOUSLY. This is COMPUTER VISION, Claude» | (as above) | §3; §4: look at every picture, at each part's own pixels; define every part once before perfecting any |
 | «It's not just about old vs new code. I don't know what you think is "old", and it's arbitrary anyway. The point is to see how the objects are resolved, identify the logic/rules that enable identification, and ensure it is a sound implementation of computer vision as a thesis that I explained to you» | Set out to prove nothing had changed by running an older commit against the new one | §6: a check is of the parts, their rules and their pictures (`docs/RESOLVING_THE_PARTS.md`), not of one build against another |
 | «On the synovium...huh? The pictures don't hold it? It's literally a form of interstitial fluid. Interstitial. Between the tibia and femur. We have the tibia, we have the femur. It's...obviously in there? That's a demonstration of your failure to understand the basis of the thesis» | Wrote "not named, because the pictures do not hold it" after looking for the synovium's own look, not for what it lies between | §4: a part defined by what it lies between is in the pictures wherever its neighbours are; its provisional entry, `docs/RESOLVING_THE_PARTS.md` §6 |
-| «what do you mean by "all five middle slices"? Read the "what an <object> is thesis ... I think that you missed the point of this part of the thesis, and we need to get to fixing the implementation in another session» | Read each series at its middle slice, the code's choice, and spoke of it as if it were the method | `docs/RESOLVING_THE_PARTS.md` §8: the thesis's own text on collapsing depth and choosing what to read; fix the implementation in the next session |
+| «what do you mean by "all five middle slices"? Read the "what an <object> is thesis ... I think that you missed the point of this part of the thesis, and we need to get to fixing the implementation in another session» | Spoke of the five middle slices as if reading them were the whole of it, missing what the collapse is for: «discovery of ALL elements of the anatomy at their best slices and resolution across the 5 images/3 orientations» | `docs/RESOLVING_THE_PARTS.md` §8: the thesis's own text on the collapse; fix the implementation in the next session |
+| «Okay. That is a not-invalid slection. The "middle" is a fine standard first slice to select. For other elements that are not obvious in that one slice, etc, that is a fine standard.» | Between his question and this answer, wrote into `AGENTS.md`, this file, `docs/RESOLVING_THE_PARTS.md` and three module notes that the middle slice was the code's choice and not the thesis's, under review: its own inference from his question, not his words | §1: restate only what he said; where there is a gap, ask |
 
 Side notes he relayed the same day, each a lapse a self-check would have caught: the pipeline read
 only the middle slice; the menisci were unsided; the read-first rule lived only in Claude's memory;

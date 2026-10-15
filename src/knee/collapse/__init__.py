@@ -9,14 +9,18 @@ From the figure, verbatim:
                a sixth, a sixth and a third, are resolved in full; every other time point
                is followed
 
-How the knee's depth collapses, and how the slice a part is read on is chosen, are under review.
-Rohan, 2026-10-15: «I think that you missed the point of this part of the thesis, and we need to get
-to fixing the implementation in another session». The thesis's own text on both is gathered in
-`docs/RESOLVING_THE_PARTS.md` §8. His method for a part's slice, 2026-10-14: «Is it not obvious which
-slice to use? The one that is able to show the anatomical region needed for identification of each
-anatomical object, and then for diagnosis.» What the run does now: it squints every slice of every
-series (`squint_stack`) and reads one background split per series (`noise`), then reads the lens on
-each series' middle slice and on a few parts' own slices (`scripts/run_interiors.py`).
+For the knee, Rohan, 2026-10-15: «The "middle" is a fine standard first slice to select. For other
+elements that are not obvious in that one slice, etc, that is a fine standard. There are five
+different views (different angles and fat-bright vs fat-dark), and each has multiple z-slices. That is
+where the thing being mined is relevant--discovery of ALL elements of the anatomy at their best slices
+and resolution across the 5 images/3 orientations»; and: «I think that you missed the point of this
+part of the thesis, and we need to get to fixing the implementation in another session». His method
+for a part's slice, 2026-10-14: «Is it not obvious which slice to use? The one that is able to show
+the anatomical region needed for identification of each anatomical object, and then for diagnosis.»
+The thesis's own text on the collapse is gathered in `docs/RESOLVING_THE_PARTS.md` §8. What the run
+does now: it squints every slice of every series (`squint_stack`) and reads one background split per
+series (`noise`), then reads the lens on each series' middle slice and on a few parts' own slices
+(`scripts/run_interiors.py`).
 
 The modules here, and what each is (SS13.7 keeps the kinds apart):
 

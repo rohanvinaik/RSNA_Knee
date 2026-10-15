@@ -75,7 +75,9 @@ def background_split(values: np.ndarray, bins: int = 512, smooth: int = 5) -> fl
     first peak.
 
     Two instruments were tried before this one, and each failed in a way worth keeping written
-    down.
+    down. Each was measured by the noise readings the split then fed, the channel count and the
+    dark estimator's sigma, which were removed with the regime on 2026-10-15 since no stage read
+    them; the split itself is what the lens reads.
 
     A QUANTILE truncates. Taking the lowest fifth by value leaves a sample cut off from above, and
     the identity the channel count rests on holds for a whole distribution, not a lower tail: on a
