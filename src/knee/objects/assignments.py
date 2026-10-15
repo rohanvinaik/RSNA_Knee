@@ -1884,10 +1884,9 @@ def with_partner(
     (`UNSEEN`: it has no say there); not at all where they share no place. A part only the partner
     names (the patella, the menisci, the cartilage, the PCL, the MCL, the joint's fluid, Hoffa's fat
     pad, the suprapatellar fat, and last the air and the skin) is laid on from it, onto this
-    slice's own interiors that nothing else holds but the rest of the field (the fat under the skin
-    and muscle, named by elimination, which yield to it); the patella only where it holds this
-    slice's own peak in front of the femur, so the two lenses agree on where it is. The joint is
-    then again what lies between the bones along the leg.
+    slice's own interiors that nothing else holds; the patella only where it holds this slice's own
+    peak in front of the femur, so the two lenses agree on where it is. The joint is then again
+    what lies between the bones along the leg.
     """
     objects, codes = assignment.objects.copy(), dict(assignment.codes)
     for name in BONES:
@@ -1916,8 +1915,6 @@ def with_partner(
     objects[between] = joint
     if codes.get("joint") in NAMED or between.any():
         codes["joint"] = "identified" if between.any() else "abstain_nothing_between"
-    # the rest of the field, named by elimination, yields to a part the partner names
-    rest = (OBJECT_CODES["subcutaneous_fat"], OBJECT_CODES["muscle"])
     for name, members in (
         ("patella", ("patella",)),
         ("meniscus", MENISCI),
@@ -1939,7 +1936,7 @@ def with_partner(
             if peak is None or not theirs[peak.peak_rc]:
                 codes[name] = "abstain_the_two_slices_disagree"
                 continue
-        placed = theirs & (labels > 0) & np.isin(objects, (0, joint, *rest))
+        placed = theirs & (labels > 0) & np.isin(objects, (0, joint))
         objects[placed] = laid[placed]
         if placed.any():
             codes[name] = "laid_from_its_partner"
