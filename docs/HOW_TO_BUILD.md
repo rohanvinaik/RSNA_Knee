@@ -7,8 +7,10 @@ prevented that. Including fucking LISTENING to me.»
 His words are quoted «», verbatim from the session's record (the pre-compact snapshot of his
 messages, and the messages since). Everything else is Claude's wording of what would have prevented
 the correction. Read this whole at every session start and after every compaction, with
-`docs/conversations/2026-10-13-the-thesis.md`, `docs/THEORY_OF_THE_CASE.md` and
-`docs/OBJECTS_AND_CONDITIONS.md`. The global rules (reading whole units, no grep, no compaction
+`docs/conversations/2026-10-13-the-thesis.md`, `docs/THEORY_OF_THE_CASE.md`,
+`docs/OBJECTS_AND_CONDITIONS.md` and `docs/RESOLVING_THE_PARTS.md` (how each part is resolved: the
+views, the lenses, the operations; and the provisional entries for the parts not yet resolved). The
+global rules (reading whole units, no grep, no compaction
 summary as a source, sub-agents report facts only) are in `~/.claude/CLAUDE.md` and are not repeated
 here.
 
@@ -46,7 +48,8 @@ here.
 - Straight after a compaction, in this order, before anything else:
   1. read the pre-compact snapshot the start-up hook names: his messages, word for word; his last
      one is the task;
-  2. read whole the thesis conversation, the theory, the objects document and this file;
+  2. read whole the thesis conversation, the theory, the objects document, this file and
+     `docs/RESOLVING_THE_PARTS.md`;
   3. look at the proof study's pictures with the conversation in mind. The lens pictures,
      `data/pictures/interiors/<proof uid>/series.png` and its per-series panels, are the current
      stage's output; the named pictures, `data/pictures/assignments/<proof uid>/series.png` and its
@@ -71,6 +74,13 @@ here.
   on every slice or every study and chase what it gets wrong: «even if a few images are a bit
   weird. Those edge cases are the ENTIRE space of where AI comes in». "Never wrong" is said of the
   lenses, never of the names: «"never wrong" simply refers to the thing doing the measurment».
+- Never one lens alone (2026-10-15): «It's not SUPPOSED to be isolateed by ANYTHING alone». A lens
+  that does not single a part out by itself is doing its job; the part is the combination of lenses.
+- A part that is resolved is left alone (2026-10-15): «You keep trying to make the pre-AI part
+  perfect, it's SLIGHTLY imperfect, just ONCE, on a lens I've already described as LOSSY, and you
+  fuck everything up in response.» The work is defining every part once: «You have yet to define what
+  all the anatomical features are even ONCE, and that is a NECESSARY pre-condition to even STARTING
+  the AI layer.»
 - Built for studies you will never see (2026-10-15): «Make sure you're only using deterministic
   systems. We have solved harder problems than this before in the cell tracking project,
   articulated in the <object> thesis» · «You are not present in the competition. Don't hand-tune».
@@ -122,8 +132,11 @@ here.
   it relates to the 12 diagnosis categories». And: «I haven't told you ANYTHING about the AI part
   of the project».
 - Plain words, never jargon. «What on earth does that mean?»
-- Where a picture does not hold a part, it is not named. A part the pictures do hold is never
-  withdrawn because its name is wrong somewhere; it is fixed («You REMOVED shit??»).
+- A part defined by what it lies between is in the pictures wherever its neighbours are (the
+  synovium, 2026-10-15): «It's literally a form of interstitial fluid. Interstitial. Between the tibia
+  and femur. We have the tibia, we have the femur. It's...obviously in there?» Where a picture does
+  not hold a part, it is not named. A part the pictures do hold is never withdrawn because its name
+  is wrong somewhere; it is fixed («You REMOVED shit??»).
 - Look at the picture after every change, everywhere the change reaches (every series, every slice
   a rule leans on), before saying anything about it. «Are you looking at the photos annoyingly
   often? Because if you aren't you're going to fuck this up» And, 2026-10-15: «make sure you're
@@ -254,13 +267,18 @@ note of `src/knee/objects/assignments.py` has a paragraph for each rule.
   them as a kernel would: 15 series, none missing a decision. `--root` is where the competition's
   files are, the kernel's mount (`KAGGLE_ROOT`) when it exists. The bone marrow (named with its
   bone) and the synovium (not named) have no decision of their own in the output.
-- Not named, because the pictures do not hold it: the synovium. Looked at on 2026-10-15 at the
-  outer recess of the fat-suppressed coronal, at its own pixels: the fluid lies straight between
-  the capsule's thin dark line and the femur's shell, with no layer of its own between them; the
-  sources read give no normal look for it, and synovitis is told apart with contrast, which no tag
-  marks (docs/OBJECTS_AND_CONDITIONS.md).
-- Next: the parts that need their own main slices (the menisci on the sagittal, the patella on the
-  axial), and the fibula's main slice from the squint (below). Diagnosis only when he says.
+- Not yet resolved, each with a provisional entry in `docs/RESOLVING_THE_PARTS.md` §6: the
+  synovium, the gastrocnemius–semimembranosus bursa (Baker's), the lateral gastrocnemius head, the
+  popliteal vessels, the patellar retinacula, the lateral complex beyond the LCL, and the other
+  hamstring tendons. Claude had written that the synovium is "not named, because the pictures do not
+  hold it"; Rohan, 2026-10-15: «It's literally a form of interstitial fluid. Interstitial. Between the
+  tibia and femur. We have the tibia, we have the femur. It's...obviously in there? That's a
+  demonstration of your failure to understand the basis of the thesis».
+- Next: (1) the dimensional collapse and how a slice is chosen. Rohan, 2026-10-15: «I think that you
+  missed the point of this part of the thesis, and we need to get to fixing the implementation in
+  another session». The run reads each series' middle slice for most parts, the code's choice and
+  not the thesis's; what the thesis says is in `docs/RESOLVING_THE_PARTS.md` §8. (2) Define each part
+  not yet resolved once, from its provisional entry. Diagnosis only when he says.
 - Still owed: where the header names no knee, look for the fibula on both sides and let its side
   name the outer one (the second half of the plan for siding the menisci); the fibula is not yet
   laid onto the fat-suppressed sagittal's slice of the same place (Law 9); the parts named on the
@@ -372,6 +390,11 @@ note of `src/knee/objects/assignments.py` has a paragraph for each rule.
 | «Compute that resolved one object of the knee's anatomy OBVIOUSLY can help resolve the others ... many literally do the SAME operation, so be thoughtful about it» | Each rule read the marrow's light, a part's distance and the places' positions for itself | §5: measure where the run's time goes first, with the instruments; share what is literally the same (`Measures`), and stop what is made and thrown away |
 | «Recall JIT/C++/Rust» | Shared the repeated work but left the hot Python loops (the squint's tiles, the profiles' codes) uncompiled | §5: a Python loop on a hot path gets a JIT twin, kept only if the answers are the SAME, run against run |
 | «There should be just the one path when we're done with this--the single compute path that identifies the objects corresponding to knee anatomy as one operation, one goal, that will be meant to run on Kaggle» · «The work we're doing is VERY delicate ... Use the tooling in the CI gate and others as needed to ensure we have a single, sane, effective compute operation that takes image studies and puts out the objects of anatomy as resolved features» | Left modules no run reached, values made and read by nothing, the drawing layer imported by the run, and no way to run the test split | §5, one path: read vulture's lists and the run's "read by no stage" list (on the run that draws nothing), and the runtime trace beside the static one (`performance.md`); remove what nothing reads; prove the records the same |
+| «Hold on--"the fibula can't be isolated by brightness alone"??? It's not SUPPOSED to be isolateed by ANYTHING alone? Are you fucking this up?» | Tested one of the fibula's descriptions, its brightness in the squint, on its own, wrote up its failure as a limit of the squint, and planned to rebuild the fibula's rule, which already resolves it | §3: never one lens alone; a part that is resolved is left alone |
+| «Do you see how INCREDIBLY problematic that was? ... You keep trying to make the pre-AI part perfect, it's SLIGHTLY imperfect, just ONCE, on a lens I've already described as LOSSY, and you fuck everything up in response. I need you to look properly and tell me with ABSOLUTE fucking certainty that you haven't fucked anything up while I wasn't looking» · «I TOLD you, LOOK at the PNGs RELIGIOUSLY. This is COMPUTER VISION, Claude» | (as above) | §3; §4: look at every picture, at each part's own pixels; define every part once before perfecting any |
+| «It's not just about old vs new code. I don't know what you think is "old", and it's arbitrary anyway. The point is to see how the objects are resolved, identify the logic/rules that enable identification, and ensure it is a sound implementation of computer vision as a thesis that I explained to you» | Set out to prove nothing had changed by running an older commit against the new one | §6: a check is of the parts, their rules and their pictures (`docs/RESOLVING_THE_PARTS.md`), not of one build against another |
+| «On the synovium...huh? The pictures don't hold it? It's literally a form of interstitial fluid. Interstitial. Between the tibia and femur. We have the tibia, we have the femur. It's...obviously in there? That's a demonstration of your failure to understand the basis of the thesis» | Wrote "not named, because the pictures do not hold it" after looking for the synovium's own look, not for what it lies between | §4: a part defined by what it lies between is in the pictures wherever its neighbours are; its provisional entry, `docs/RESOLVING_THE_PARTS.md` §6 |
+| «what do you mean by "all five middle slices"? Read the "what an <object> is thesis ... I think that you missed the point of this part of the thesis, and we need to get to fixing the implementation in another session» | Read each series at its middle slice, the code's choice, and spoke of it as if it were the method | `docs/RESOLVING_THE_PARTS.md` §8: the thesis's own text on collapsing depth and choosing what to read; fix the implementation in the next session |
 
 Side notes he relayed the same day, each a lapse a self-check would have caught: the pipeline read
 only the middle slice; the menisci were unsided; the read-first rule lived only in Claude's memory;

@@ -1,4 +1,4 @@
-"""THE COLLAPSE (the squint), Figure 8 (§2.8).
+"""THE COLLAPSE (the squint), Figure 8 (§2.8) of *What an <Object> Is*.
 
 From the figure, verbatim:
 
@@ -9,29 +9,14 @@ From the figure, verbatim:
                a sixth, a sixth and a third, are resolved in full; every other time point
                is followed
 
-THE KNEE'S VERSION, given by the founder 2026-10-10: **the knee is two objects that combine.**
-
-Cell tracking collapsed depth and time. The knee collapses neither. Its field splits into two
-<object>s -- the femur and the tibia -- sitting into one another with the joint space between, and
-an injury is a reasoned deviation in how they sit. So this chapter resolves the femur, resolves the
-tibia, resolves the space, structurally and deterministically; diagnosis is then reasoning over the
-relation. Every one of the twelve findings is a deviation in it: a break in an object, a signal
-change within one, the space lost or flooded or inflamed, the spacers and restraints that hold the
-relation, or fluid escaping behind.
-
-What makes the two objects two is the gap between them, and the mechanism is the sibling's own:
-a valley is where one <object> ends and the next begins, and a waist deeper than one flicker keeps
-its two centres (§6, §6.1). Markers come from anatomy rather than from maxima, the superior-
-inferior axis is read from the header rather than the pixels, and a basin is evidence and never
-identity.
-
-----------------------------------------------------------------------------------------------
-This note came back with the code from the second build. The chapter record it named,
-`docs/chapters/02-collapse/`, is not in this project. What governs now is `AGENTS.md`, whose
-method finds each object's main slice with the squint. Rohan, 2026-10-14: «Is it not obvious which
+How the knee's depth collapses, and how the slice a part is read on is chosen, are under review.
+Rohan, 2026-10-15: «I think that you missed the point of this part of the thesis, and we need to get
+to fixing the implementation in another session». The thesis's own text on both is gathered in
+`docs/RESOLVING_THE_PARTS.md` §8. His method for a part's slice, 2026-10-14: «Is it not obvious which
 slice to use? The one that is able to show the anatomical region needed for identification of each
-anatomical object, and then for diagnosis.»
-----------------------------------------------------------------------------------------------
+anatomical object, and then for diagnosis.» What the run does now: it squints every slice of every
+series (`squint_stack`) and reads one background split per series (`noise`), then reads the lens on
+each series' middle slice and on a few parts' own slices (`scripts/run_interiors.py`).
 
 The modules here, and what each is (SS13.7 keeps the kinds apart):
 
