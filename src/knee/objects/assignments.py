@@ -146,6 +146,44 @@ categories of the twelve it relates to (docs/OBJECTS_AND_CONDITIONS.md §6):
   is named only where it crosses the joint line, about 12 mm of it; its stretches down the tibia
   and up the femur are not reached; and the femur's region, which takes in the fluid of the inner
   recess, lies between it and the meniscus, so the meniscus marks its side and is not reached.
+- LCL: the lateral, or fibular, collateral ligament, «a thin cord about 5 cm long» from the femur's
+  outer condyle to the fibula's head, «not attached to the lateral meniscus»
+  (docs/OBJECTS_AND_CONDITIONS.md). It attaches on the outer side of the fibula's head,
+  `LCL_BEHIND_MM` behind its front edge, and on the femur just above and behind the lateral
+  epicondyle (LaPrade et al. 2003). Seen on the proof's coronals, 2026-10-15: on the slice through
+  that place, the T1 shows a grey band on the knee's outer side between the bright fat under the
+  skin and the bones, from beside the femur's outer condyle down to the fibula's head, the dark
+  cord in it, and the lens draws the band as a region of its own; with fat suppression the fat
+  under the skin is as grey as the band, and the lens draws the two as one strip, so there it is
+  laid on from the T1 slice of the same place. It is named on its own slice by these descriptions,
+  each one check with its code (`lcl_code`):
+  1. side to side lies in its slice's plane, as on a coronal slice
+     (abstain_side_to_side_runs_through_the_plane);
+  2. its lower end is on the fibula, the one its own rule names on a main slice where front to back
+     lies in the plane, so its front edge can be read, carried here by place, since it is one leg
+     (abstain_no_fibula);
+  3. the middle slice names the femur, carried to its slice as the regions most of whose places
+     were the femur (`carried_bone`), and the tibia, whose middle marks the knee's middle
+     (abstain_no_femur_and_tibia_to_carry);
+  4. its slice is the one through the place where it attaches on the fibula (`lcl_attachment`,
+     `slice_through`) (abstain_attachment_off_the_slices);
+  5. fat is not suppressed: with it the band and the fat under the skin fall in one region, and
+     the LCL is laid on (abstain_not_parted_from_the_fat_with_fat_suppression);
+  6. the fibula's places on that slice (`places_on_slice`) lie in a region the lens draws
+     (`region_holding`) (abstain_no_fibula_on_the_slice);
+  7. its body is the region the lens draws, neither the femur's nor the fibula's, whose middle lies
+     on the fibula's side of the tibia's middle, the knee's outer side, and that reaches within
+     `SHELL_MM` of both; the largest such (`lcl_on_slice`)
+     (abstain_no_region_joins_the_femur_and_the_fibula).
+  It relates to none of the twelve categories directly: it is the MCL's counterpart on the outer
+  side. Seen also on the proof: the band is wider than the cord, so it takes in the tissue round
+  it and, at its top, the popliteus tendon at the condyle's notch, and it leaves the cord's upper
+  stretch beside the condyle to the region above. On a T1 the fibula's head may share a region
+  with the tibia, so the fibula's region is a target only; the fibula is drawn on the slice as its
+  own places, carried from its main slice. The source's other reading of the attachment, 38% of
+  the head's width behind its front, gives the proof's next slice back (22), where the T1's lens
+  draws the band in with the femur's region; the rule keeps the abstract's 8.2 mm, chosen before
+  either slice was looked at.
 - MENISCI: on a coronal slice, the dark triangles at the two ends of the joint, between the femur's
   condyle and the tibia's plateau («an isosceles triangle on coronal images», low on every
   sequence: docs/OBJECTS_AND_CONDITIONS.md). Seen on the proof's fat-suppressed coronal,
@@ -253,6 +291,10 @@ LIGAMENT_SMOOTH_MM = 2.0
 LIGAMENT_DARKER = 0.3
 LIGAMENT_THICK_MM = 3.0
 SHELL_MM = 2.0
+# The LCL attaches on the outer side of the fibula's head, 8.2 mm (6.8 to 9.7) behind its front
+# edge, and on the femur slightly above (1.4 mm) and behind (3.1 mm) the lateral epicondyle; it is
+# 69.6 mm long (LaPrade, Ly, Wentorf and Engebretsen, Am J Sports Med 2003, ten knees).
+LCL_BEHIND_MM = 8.2
 # What a slice's codes say when an object is named on it, by its own lens or with its partner's.
 NAMED = ("identified", "agreed_with_its_partner", "laid_from_its_partner")
 # A place of one slice that lies outside its partner's picture, where the partner has no say.
@@ -276,6 +318,7 @@ OBJECT_CODES = {
     "pcl": 13,
     "acl": 14,
     "mcl": 15,
+    "lcl": 16,
 }
 CARTILAGES = ("femoral_cartilage", "tibial_cartilage")
 FOUR_NEIGHBOURS = ndi.generate_binary_structure(2, 1)
@@ -586,6 +629,125 @@ def ligament_on_the_inner_side(
         return none
     sizes = np.bincount(pieces.ravel(), minlength=count + 1)[1:]
     return pieces == int(labels[joining][np.argmax(sizes[joining])])
+
+
+def lcl_code(
+    sides_in_plane: bool,
+    fibula_named: bool,
+    bones: bool,
+    on_the_slices: bool,
+    fat_suppressed: bool,
+    fibula_here: bool,
+    found: bool,
+) -> str:
+    """Whether the LCL was named on its slice, or why not: each check is one of its descriptions."""
+    if not sides_in_plane:
+        return "abstain_side_to_side_runs_through_the_plane"
+    if not fibula_named:
+        return "abstain_no_fibula"
+    if not bones:
+        return "abstain_no_femur_and_tibia_to_carry"
+    if not on_the_slices:
+        return "abstain_attachment_off_the_slices"
+    if fat_suppressed:
+        return "abstain_not_parted_from_the_fat_with_fat_suppression"
+    if not fibula_here:
+        return "abstain_no_fibula_on_the_slice"
+    if not found:
+        return "abstain_no_region_joins_the_femur_and_the_fibula"
+    return "identified"
+
+
+def lcl_attachment(fibula_lps: np.ndarray) -> np.ndarray:
+    """Where the LCL attaches on the fibula, in the scanner's millimetres (x toward the patient's
+    left, y toward the back, z up): `LCL_BEHIND_MM` behind the front edge of the fibula's places, at
+    their middle side to side and up and down."""
+    point = np.asarray(fibula_lps, dtype=np.float64).mean(axis=0)
+    point[1] = float(np.min(fibula_lps[:, 1])) + LCL_BEHIND_MM
+    return point
+
+
+def slice_through(
+    point_lps: np.ndarray,
+    origins_lps: np.ndarray,
+    normal: np.ndarray,
+    thicknesses_mm: list[float],
+) -> int | None:
+    """The slice of a series whose plane passes within half its thickness of a place; None when none
+    does. `origins_lps` (Z, 3) are the slices' origins and `normal` the series' unit normal."""
+    offsets = np.abs((np.asarray(point_lps) - np.asarray(origins_lps)) @ normal)
+    nearest = int(np.argmin(offsets))
+    return nearest if offsets[nearest] <= thicknesses_mm[nearest] / 2.0 else None
+
+
+def places_on_slice(
+    points_lps: np.ndarray,
+    origin_lps: np.ndarray,
+    basis_lps: np.ndarray,
+    shape: tuple[int, int],
+    thickness_mm: float,
+) -> np.ndarray:
+    """The pixels of a slice holding the given places, those within half its thickness of its plane.
+    Places are in the scanner's millimetres; the frame is a (3,) origin and the (3, 2) basis of rows
+    and columns, spacing included."""
+    normal = np.cross(basis_lps[:, 0], basis_lps[:, 1])
+    normal = normal / np.linalg.norm(normal)
+    offsets = np.asarray(points_lps, dtype=np.float64) - origin_lps
+    near = np.abs(offsets @ normal) <= thickness_mm / 2.0
+    rc = np.rint(offsets[near] @ np.linalg.pinv(basis_lps).T).astype(int)
+    inside = (
+        (rc[:, 0] >= 0)
+        & (rc[:, 0] < shape[0])
+        & (rc[:, 1] >= 0)
+        & (rc[:, 1] < shape[1])
+    )
+    held = np.zeros(shape, dtype=bool)
+    held[rc[inside, 0], rc[inside, 1]] = True
+    return held
+
+
+def region_holding(labels: np.ndarray, places: np.ndarray) -> np.ndarray:
+    """The region the lens draws that holds most of the given places; empty when none holds any."""
+    held = labels[places & (labels > 0)]
+    if not held.size:
+        return np.zeros(labels.shape, dtype=bool)
+    return labels == int(np.argmax(np.bincount(held)))
+
+
+def lcl_on_slice(
+    labels: np.ndarray,
+    femur: np.ndarray,
+    fibula: np.ndarray,
+    across_mm: np.ndarray,
+    tibia_across_mm: float,
+    fibula_across_mm: float,
+    spacing_rc: np.ndarray,
+) -> np.ndarray:
+    """The LCL on its slice: of the regions the lens draws, neither the femur's nor the fibula's,
+    those whose middle lies on the fibula's side of the tibia's middle (the knee's outer side) and
+    that reach within `SHELL_MM` of both the femur and the fibula; the largest. `across_mm` is each
+    place's position toward the patient's left. Empty when none does."""
+    none = np.zeros(labels.shape, dtype=bool)
+    count = int(labels.max(initial=0))
+    if not (count and femur.any() and fibula.any()):
+        return none
+    index = np.arange(1, count + 1)
+    to_femur = np.asarray(ndi.distance_transform_edt(~femur, sampling=spacing_rc))
+    to_fibula = np.asarray(ndi.distance_transform_edt(~fibula, sampling=spacing_rc))
+    sizes = np.bincount(labels.ravel(), minlength=count + 1)[1:]
+    bone = np.bincount(labels[femur | fibula], minlength=count + 1)[1:] > 0
+    middle = np.asarray(ndi.mean(across_mm, labels, index=index))
+    outer = np.sign(fibula_across_mm - tibia_across_mm)
+    joining = (
+        (sizes > 0)
+        & ~bone
+        & (np.sign(middle - tibia_across_mm) == outer)
+        & (np.asarray(ndi.minimum(to_femur, labels, index=index)) <= SHELL_MM)
+        & (np.asarray(ndi.minimum(to_fibula, labels, index=index)) <= SHELL_MM)
+    )
+    if not joining.any():
+        return none
+    return labels == int(index[joining][np.argmax(sizes[joining])])
 
 
 def patella_code(
