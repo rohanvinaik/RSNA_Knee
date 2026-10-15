@@ -451,3 +451,50 @@ proof's axial slice 11 it abstains because no separate posterior region is found
 not a diagnosis of absence. Through the real run, the fluid body is named on the example study and
 the two main-slice pictures were inspected. The neck's full extent across slices and the bursal
 wall remain wider coverage, not claims made by this mask. Diagnosis is still deferred.
+
+### Lateral gastrocnemius head
+
+The lateral gastrocnemius head is the calf muscle's outer belly behind the femur's outer condyle,
+the medial head's counterpart on the knee's outer side. This supersedes
+its provisional entry in §6: no new lens was needed, and the "muscle's light on the fat-bright twin"
+that entry proposed as an extra description is not used. It is named on the same fat-suppressed
+axial middle slice as the medial head, from the lens already read there.
+
+`name_the_back_of_the_knee` names both heads in one pass. The femur and tibia carried onto the
+axial by place, the notch's plane from the middle sagittal slice, the slice's territories and their
+ordered peaks are computed once and shared by both heads. For each patient side the same two
+operations run: `inner_condyle` picks the bone-holding territory with the deepest peak on that side
+of the notch, and `gastrocnemius_head` picks the deepest territory holding none of the bones' places
+whose peak lies on that side and behind that condyle's peak. The lateral head negates the physical
+inner-axis distance (toward the inner side becomes toward the outer side); nothing else changes and
+there is no new numerical cutoff. Each head is placed only where no object is already named, so no
+earlier part loses a pixel, and the two heads cannot overlap.
+
+The common prerequisites keep their common refusals for both heads (the leg must run through the
+plane, the header must name the knee, fat must be suppressed, the bones must be carried, the middle
+sagittal must give the notch). The two side-specific refusals are `abstain_no_outer_condyle` and
+`abstain_no_body_behind_the_outer_condyle`. Label 30 (`lateral_gastrocnemius`) is saved in
+`a1_objects`, its territory in the record and its decision in the codes, through the same `save`
+and receipt as every other part; the renderer draws it bright green beside the medial head's olive
+and rings its territory's peak.
+
+On the proof (a right knee, axial slice 16; the picture is
+`data/pictures/definitions-20261015/assignments/<proof uid>/05-axial-fs1-fat1.png`) the outer
+condyle is territory 3 (15.2 mm), the lateral head territory 5 (12.5 mm, 3203 px) and the medial
+head territory 6 (10.1 mm); both heads are `identified`. Read off the picture at its own pixels:
+the green fills the grey belly behind the outer condyle from the condyle's back margin to the fascia
+at the back of the leg; it stops at the dark fascia on the outer side, so the tissue beyond it is
+not taken, and at the territory edge toward the midline, which leaves the popliteal artery and its
+bundle to the medial head's territory as before. Its limits and overreach: at its back-inner corner
+it reaches into the dark fat round that bundle, with unnamed low-signal holes in it; the thin strip
+under the skin along the back of the leg, below the lateral head too, is the medial head's
+territory (the medial head's recorded overreach, not a lateral name); and the mask says nothing
+about where the belly ends on other slices. Whether the green is the lateral head is read from the
+picture; the receipt and the tests only check the bookkeeping.
+
+Over the 58 labelled studies, after the canonical run was refreshed with this code, it is named on
+9 axial series of 9 studies; of the other 72 axials, 46 abstain because the header names no knee,
+8 because fat is not suppressed, 15 find no body behind the outer condyle and 3 no outer condyle;
+every sagittal and coronal series says the leg runs in the plane. Both heads are named on the same
+slice in 3 studies, the proof among them. Those other axials are
+not checked for anatomy here: the one demonstration on the proof is the claim.

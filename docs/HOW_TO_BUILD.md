@@ -441,3 +441,28 @@ decision; its neck and wall across slices are not asserted by that mask (§9).
 Rohan also explicitly clarified: «Remember also, we can add lenses as needed». Add a simple,
 objective measurement when the anatomical distinction needs it; no individual lens must isolate
 the object alone. Keep that measurement shared and check its contribution on the actual pictures.
+
+The lateral gastrocnemius head is now named on the same fat-suppressed axial middle slice as the
+medial head, by the medial head's own definition with the physical inner axis negated: the
+bone-holding territory with the deepest peak on the outer side of the notch is the outer condyle,
+and the deepest non-bone territory with its peak on that side and behind the condyle's peak is the
+head (`docs/RESOLVING_THE_PARTS.md` §9). This element needed no new lens: the carried bones, the
+notch, the territories and the ordered peaks are shared by both heads in one pass, there is no new
+cutoff, and already named pixels are preserved. Its two side-specific refusals are
+`abstain_no_outer_condyle` and `abstain_no_body_behind_the_outer_condyle`; the common
+prerequisites keep their common codes. On the proof's axial slice 16 both heads are `identified`:
+the bright green fills the belly behind the outer condyle up to the fascia and the midline
+territory edge, reaches a little into the fat round the popliteal bundle, and the strip under the
+skin along the back stays with the medial head's territory. Over the 58 labelled studies it is
+named on 9 axial series of 9 studies (46 other axials abstain because the header names no knee, 8
+because fat is not suppressed, 15 find no body behind the outer condyle, 3 no outer condyle).
+This supersedes "the lateral gastrocnemius head" in the "Not
+yet resolved" list above; the test split's 3 studies keep their earlier records, without this
+decision, until `--split test` is run again.
+
+For this work Rohan explicitly expanded the Anthropic API worker's role: «Do use that Anthropic API
+connection. I authorize you to allow it full access, not consult-only». It may implement and verify
+the assigned project work. The lateral-head worker used API-key-only authentication, inspected
+images, updated these documents, refreshed the labelled records and ran the gate; its prompt,
+result and usage are in `data/readings/definitions-20261015/lateral-worker/`. The lead checked the
+anatomical result and reviewed its changes before committing.

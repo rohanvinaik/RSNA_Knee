@@ -113,7 +113,11 @@ def test_physical_spacing_controls_reach_to_the_broad_posterior_field():
 def test_reversed_image_axes_preserve_the_same_patient_geometry(axes):
     white, tendon, field, back, inner, spacing = bursa_scene()
     found = bursa_on_slice(
-        *(np.flip(value, axis=axes) for value in (white, tendon, field, back, inner)),
+        np.flip(white, axis=axes),
+        np.flip(tendon, axis=axes),
+        np.flip(field, axis=axes),
+        np.flip(back, axis=axes),
+        np.flip(inner, axis=axes),
         spacing,
     )
     assert np.array_equal(found, np.flip(white, axis=axes))

@@ -421,8 +421,13 @@ categories of the twelve it relates to (docs/OBJECTS_AND_CONDITIONS.md §6):
      (`gastrocnemius_head`) (abstain_no_body_behind_the_inner_condyle).
   It relates to Baker's: the cyst lies between it and the semimembranosus tendon. Seen also on the
   proof: the region takes in the popliteal vessels on its outer side, the tissue behind the notch
-  above it, and a thin strip under the skin along the back of the leg; the lateral head, the same
-  body on the knee's outer side, the lens draws as a region of its own, and it is not named.
+  above it, and a thin strip under the skin along the back of the leg.
+- LATERAL GASTROCNEMIUS HEAD: the same body on the knee's outer side, behind the outer
+  condyle. It uses the medial head's descriptions and the same `inner_condyle` and
+  `gastrocnemius_head` operations with the physical inner-axis negated. The carried bones,
+  notch, labels and peaks are shared by both heads. Its two side-specific refusals are
+  abstain_no_outer_condyle and abstain_no_body_behind_the_outer_condyle; the other
+  `gastrocnemius_code` refusals are unchanged. It is placed only where no object is named.
 - SEMIMEMBRANOSUS TENDON: the inner hamstring's tendon, which ends on the back-inner top of the
   tibia: «The direct arm attached to the proximal aspect of the posteromedial part of the tibia
   ... The attachment was posterior to the medial tibial crest and distal to the posteromedial
@@ -667,6 +672,7 @@ OBJECT_CODES = {
     "anterior_synovial_recess": 27,
     "joint_capsule": 28,
     "gastrocnemius_semimembranosus_bursa": 29,
+    "lateral_gastrocnemius": 30,
 }
 CARTILAGES = ("femoral_cartilage", "tibial_cartilage")
 # The parts a slice's naming gives a code for (`assign_plane`), in the order it gives them; a part
