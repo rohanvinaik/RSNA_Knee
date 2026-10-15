@@ -200,17 +200,23 @@ note of `src/knee/objects/assignments.py` has a paragraph for each rule.
   head's front edge (LaPrade 2003; named on the T1 coronal's slice 21 and laid onto the
   fat-suppressed one). The patella, the menisci, the cartilage, the PCL, the ACL, the MCL, the
   LCL, the joint's fluid, Hoffa's fat pad and the suprapatellar fat are each found on one sequence
-  and laid onto the other sequence's slice of the same place. Every one of them is written in the
+  and laid onto the other sequence's slice of the same place. The medial gastrocnemius head (commit
+  `6d19567`) is named on the fat-suppressed axial's middle slice, whose lens every run already
+  reads: the deepest region behind the femur's inner condyle, on the knee's inner side of the
+  notch, the femur and tibia carried onto the axial by place from the sagittal and coronal middle
+  slices; over the 58 labelled studies it is named on 12 axial series of 11 studies, and of the
+  other axials 46 abstain because the header names no knee. Every one of them is written in the
   module note as an «<object>» (§4), its descriptions checked against its code.
 - Not named, because the pictures do not hold it: the synovium. Looked at on 2026-10-15 at the
   outer recess of the fat-suppressed coronal, at its own pixels: the fluid lies straight between
   the capsule's thin dark line and the femur's shell, with no layer of its own between them; the
   sources read give no normal look for it, and synovitis is told apart with contrast, which no tag
   marks (docs/OBJECTS_AND_CONDITIONS.md).
-- Next, in the objects document's order: the back of the knee (the medial gastrocnemius head, the
-  semimembranosus tendon); the quadriceps and patellar tendons; the fat under the skin, and
-  muscle. Then the parts that need their own main slices (the menisci on the sagittal, the patella
-  on the axial). Diagnosis only when he says.
+- Next, in the objects document's order: the semimembranosus tendon, on the same axial slice (the
+  rest of the back of the knee; the carry onto the axial then serves both parts, made once behind
+  their shared checks); the quadriceps and patellar tendons; the fat under the skin, and muscle.
+  Then the parts that need their own main slices (the menisci on the sagittal, the patella on the
+  axial). Diagnosis only when he says.
 - Still owed: where the header names no knee, look for the fibula on both sides and let its side
   name the outer one (the second half of the plan for siding the menisci); the fibula is not yet
   laid onto the fat-suppressed sagittal's slice of the same place (Law 9); the fibula's main slice
@@ -233,7 +239,9 @@ note of `src/knee/objects/assignments.py` has a paragraph for each rule.
   the white within its reach of a bone (the cartilage rule has no upper bound on brightness);
   Hoffa's back part, between the femur's condyle and the tibia, is named joint, and its top edge
   is cut level with the patella's lowest place; the suprapatellar fat takes in a little of the
-  quadriceps tendon where it meets the patella, and the picture's top edge cuts it.
+  quadriceps tendon where it meets the patella, and the picture's top edge cuts it; the medial
+  gastrocnemius head takes in the popliteal vessels on its outer side, the tissue behind the
+  notch, and a thin strip under the skin along the back of the leg.
 - Nothing is pushed; ask before pushing.
 
 ## The record, 2026-10-14
