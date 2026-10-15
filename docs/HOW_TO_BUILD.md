@@ -215,17 +215,28 @@ note of `src/knee/objects/assignments.py` has a paragraph for each rule.
   line's back end. Over the 58 labelled studies it is named on 10 axial series of 10 studies; of
   the other axials 46 abstain because the header names no knee, 16 find no tendon at the back-inner
   corner, 5 no inner condyle and 4 no tibia below the femur. The study's leg (its femur and tibia,
-  and the notch) is made once and carried onto both parts' slices. Every one of them is written in
-  the module note as an «<object>» (§4), its descriptions checked against its code.
+  and the notch) is made once and carried onto both parts' slices. The patellar and quadriceps
+  tendons (commit `bd6bf6c`) are named on the T2 middle sagittal, where their band is plain: of
+  the slice's thick, uniformly dark bands, which the PCL is read from and which are now made once
+  and kept, the one joining the patella (laid on from the fat-suppressed slice) and the tibia,
+  split at the patella along the leg; then laid back onto the fat-suppressed slice, the border
+  between that slice's regions included, since with fat suppression the thinner band is the
+  border its lens draws between two regions. Over the 58 labelled studies each is named only on
+  the proof: they wait on the patella reaching the T2, which it does on 7 series (on 31 the two
+  slices disagree about it), and on 6 of those the band does not join the patella and the tibia.
+  With them the PCL reads the black margin as the margin, not every stored zero: on the proof it
+  keeps its piece and gains its zero-light holes, its foot toward the back of the tibia and a thin
+  strip of the femur's shell; over the 58 it is now named on 48 T2 sagittals, from 44, in 39
+  studies, from 36. Every one of them is written in the module note as an «<object>» (§4), its
+  descriptions checked against its code.
 - Not named, because the pictures do not hold it: the synovium. Looked at on 2026-10-15 at the
   outer recess of the fat-suppressed coronal, at its own pixels: the fluid lies straight between
   the capsule's thin dark line and the femur's shell, with no layer of its own between them; the
   sources read give no normal look for it, and synovitis is told apart with contrast, which no tag
   marks (docs/OBJECTS_AND_CONDITIONS.md).
-- Next, in the objects document's order: the quadriceps and patellar tendons, on the middle
-  sagittal slices, where medicine sees them best; the fat under the skin, and muscle. Then the
-  parts that need their own main slices (the menisci on the sagittal, the patella on the axial).
-  Diagnosis only when he says.
+- Next, in the objects document's order: the fat under the skin, and muscle. Then the parts that
+  need their own main slices (the menisci on the sagittal, the patella on the axial). Diagnosis
+  only when he says.
 - Still owed: where the header names no knee, look for the fibula on both sides and let its side
   name the outer one (the second half of the plan for siding the menisci); the fibula is not yet
   laid onto the fat-suppressed sagittal's slice of the same place (Law 9); the parts named on the
@@ -258,7 +269,15 @@ note of `src/knee/objects/assignments.py` has a paragraph for each rule.
   a speck resolves it, and it does not), but for its narrow tip toward the tibia's back shell
   (`data/pictures/assignments-zooms-20261015/semimembranosus-axial-slice-11.png`); two dark bodies
   that touch, or lie a pixel or two apart, are read as one; and the reach test to the condyle's
-  region keeps it at the knee without showing it touching the bone.
+  region keeps it at the knee without showing it touching the bone; where the femur's shell,
+  stored as zero, touches the PCL at the condyle's back, the PCL takes in a thin strip of the
+  shell; the extensor band's stretch along the patella's front is named neither tendon; just above
+  the patella the quadriceps tendon's layers are named together with the line of fat between
+  them, and higher up its thin front layer is not reached; the picture's top edge cuts the
+  quadriceps tendon; laid onto the fat-suppressed slice, the patellar tendon takes in up to 1.5 mm
+  of Hoffa's fat behind its band
+  (`data/pictures/assignments-zooms-20261015/extensor-tendons-t2-sagittal-18.png` and
+  `-fs-sagittal-18.png`).
 - Nothing is pushed; ask before pushing.
 
 ## The record, 2026-10-14
@@ -310,7 +329,8 @@ only the middle slice; the menisci were unsided; the read-first rule lived only 
 the recovered squint code still named a missing chapter file; the fibula rule needed the header;
 the "sealed" and "shelled" signs were the removed pile's under new names; Claude's own unapproved
 lines sat in `AGENTS.md`. And on 2026-10-15: the parts named before the ACL were still written as
-prose when a report said each part was written as an «<object>».
+prose when a report said each part was written as an «<object>»; the semimembranosus tendon was
+named, and reported named, as a 2 by 4 mm speck of the 7 by 4 mm oval it is.
 
 Earlier sessions' corrections live where they were recorded: the theory's Part V (the builds thrown
 away twice; «You're starting to infer»), and the global `~/.claude/CLAUDE.md` (the reading law of
