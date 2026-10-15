@@ -1,6 +1,6 @@
 """Intent tests for the named objects: air, skin, femur over tibia, the joint, patella, menisci,
 fibula, cartilage, the PCL, the ACL, the MCL, the LCL, the joint's fluid, Hoffa's fat pad, the
-suprapatellar fat and the medial gastrocnemius head.
+suprapatellar fat, the medial gastrocnemius head and the semimembranosus tendon.
 
 The scene is a small synthetic knee in a coronal frame (rows run inferior, columns run to the left,
 one place per millimetre): air around a leg of soft tissue, a black margin along two sides of the
@@ -45,7 +45,10 @@ from knee.objects.assignments import (
     places_on_slice,
     region_holding,
     rest_of_the_patellas_territory,
+    semimembranosus_code,
+    semimembranosus_on_slice,
     slice_through,
+    tibia_top_slice,
     with_partner,
 )
 from knee.objects.interiors import read_interiors
@@ -738,6 +741,70 @@ def test_gastrocnemius_code_names_why():
         "abstain_no_body_behind_the_inner_condyle"
     )
     assert gastrocnemius_code(True, "R", True, True, True, True, True) == "identified"
+
+
+def test_the_tibias_top_is_the_highest_slice_below_the_femur_that_holds_the_tibia():
+    # slices stored from the foot up: the femur on the top two, the tibia on all but the top
+    femur, tibia = [False, False, False, True, True], [True, True, True, True, False]
+    assert tibia_top_slice(femur, tibia, [0.0, 4.0, 8.0, 12.0, 16.0]) == 2
+    # stored from the head down, the same leg: its order is read from the positions
+    assert tibia_top_slice(femur[::-1], tibia[::-1], [16.0, 12.0, 8.0, 4.0, 0.0]) == 2
+    # with no femur carried at all, the tibia's highest slice; with no tibia, none
+    assert tibia_top_slice([False] * 3, [True] * 3, [0.0, 4.0, 8.0]) == 2
+    assert tibia_top_slice([True, True], [False, False], [0.0, 4.0]) is None
+
+
+def test_the_semimembranosus_is_the_front_tendon_at_the_condyles_back_inner_corner():
+    # an axial slice at one place per millimetre, rows toward the back, columns toward the
+    # patient's left, the notch at column 30: the tibia's inner condyle, its peak at (25, 50),
+    # with its back corner reaching back on the inner side
+    region = np.zeros((70, 90), dtype=bool)
+    region[10:40, 10:70] = True
+    region[40:51, 64:71] = True
+    condyle = Peak(1, 15.0, (25, 50), 0.0)
+    rows, cols = np.indices(region.shape)
+    back, inner = rows.astype(float), cols - 30.0
+    dark = np.zeros(region.shape, dtype=bool)
+    dark[41:46, 55:60] = True  # the tendon, against the condyle's back, inside its peak
+    dark[46:51, 59:64] = True  # a second body behind it, against the corner
+    # the PCL's end: inside the notch, outside the condyle's peak
+    dark[41:46, 38:43] = True
+    dark[43, 10:75] = True  # a fascia line, 1 mm thick
+    free = np.ones(region.shape, dtype=bool)
+    tendon = semimembranosus_on_slice(
+        dark, free, region, condyle, back, inner, np.ones(2)
+    )
+    assert tendon[43, 57] and not tendon[48, 61] and not tendon[43, 40]
+    # where nothing lies behind the condyle's peak, there is none
+    behind_all = Peak(1, 15.0, (60, 50), 0.0)
+    assert not semimembranosus_on_slice(
+        dark, free, region, behind_all, back, inner, np.ones(2)
+    ).any()
+
+
+def test_semimembranosus_code_names_why():
+    assert semimembranosus_code(False, "R", True, True, True, True, True) == (
+        "abstain_leg_runs_in_the_plane"
+    )
+    assert semimembranosus_code(True, "", True, True, True, True, True) == (
+        "abstain_header_names_no_knee"
+    )
+    assert semimembranosus_code(True, "L", False, True, True, True, True) == (
+        "abstain_no_bone_carried"
+    )
+    assert semimembranosus_code(True, "R", True, False, True, True, True) == (
+        "abstain_no_middle_sagittal_slice"
+    )
+    assert semimembranosus_code(True, "R", True, True, False, True, True) == (
+        "abstain_no_tibia_below_the_femur"
+    )
+    assert semimembranosus_code(True, "R", True, True, True, False, True) == (
+        "abstain_no_inner_condyle"
+    )
+    assert semimembranosus_code(True, "R", True, True, True, True, False) == (
+        "abstain_no_tendon_at_the_back_inner_corner"
+    )
+    assert semimembranosus_code(True, "R", True, True, True, True, True) == "identified"
 
 
 def test_lcl_code_names_why():

@@ -33,12 +33,17 @@ of each coronal series (`lcl.lens_readings`); the LCL is named where fat is not 
 onto the other sequence's slice of the same place. A series' silence on a main-slice part is kept
 as `<series uid>:<part>`.
 
-THE BACK OF THE KNEE is named on the middle slice of a series the leg runs through, an axial one,
-whose lens the run has already read: no lens is read again. Where the header names the knee and
-fat is suppressed, the femur and the tibia named on the study's other middle slices, where the
-leg runs in the plane, are carried onto it by place once, with the notch's plane from the middle
-sagittal slice (`carry_bones`, the `carried` product), and the medial gastrocnemius head is named
-behind the bone's inner condyle (`name_the_back_of_the_knee`), before the records are saved.
+THE BACK OF THE KNEE is named on the series the leg runs through, an axial one. Where the header
+names the knee there, the femur and the tibia named on the study's middle slices where the leg
+runs in the plane are put in the scanner's millimetres once, with the notch's plane from the
+middle sagittal slice (`leg_of`, the `leg` product), and carried by place onto each slice a part
+is named on (`carry_onto`, the `carried` product). The medial gastrocnemius head is named on the
+middle slice, whose lens the run has already read, behind the bone's inner condyle
+(`name_the_back_of_the_knee`), before the records are saved. The semimembranosus tendon is named
+on its own slice, the top of the tibia just below the joint line, found by carrying the leg onto
+each slice of the series (`semimembranosus_slice`); the lens is read once more there
+(`semimembranosus.lens_readings`), and the tendon is laid onto the other sequence's slice of the
+same place where that one finds none.
 
 THE RECEIPT KEEPS EVERY STUDY (`knee.receipt.merged_receipt`): a study run again replaces only its
 own records. Studies run one after another in one process; two processes writing one run folder
@@ -108,7 +113,10 @@ from knee.objects.assignments import (
     outer_step,
     places_on_slice,
     region_holding,
+    semimembranosus_code,
+    semimembranosus_on_slice,
     slice_through,
+    tibia_top_slice,
     with_partner,
 )
 from knee.objects.interiors import EDGE_KINDS, TRACE_CODES, read_interiors
@@ -157,7 +165,7 @@ DRAWN_INTERIORS = (
 )
 DRAWN_NAMES = ("objects", "codes", "peaks", "femur", "tibia", "patella")
 # The parts named on a main slice of their own; a series' silence on each is `<series uid>:<part>`.
-MAIN_PARTS = ("fibula", "acl", "lcl")
+MAIN_PARTS = ("fibula", "acl", "lcl", "semimembranosus")
 
 
 def handed(product: str, names: Iterable[str]) -> None:
@@ -392,12 +400,31 @@ def read_with_partner(own: Measured, partner: Measured) -> str:
     return "read_with_" + partner.record["series_uid"]
 
 
+def axis_in_plane(frame: PlaneFrame, axis: int) -> bool:
+    """Whether a patient axis lies in a slice's plane, more along it than across: 0 side to side,
+    1 front to back, 2 along the leg."""
+    unit = frame.basis_lps / np.linalg.norm(frame.basis_lps, axis=0)
+    return float(np.linalg.norm(unit[axis])) >= ALONG_THE_LEG
+
+
+@dataclass(frozen=True, slots=True)
+class Leg:
+    """The femur and the tibia named on a study's middle slices where the leg runs in the plane, in
+    the scanner's millimetres, and the notch's plane, where the first middle sagittal slice passes
+    (None without one), its normal toward the patient's left: one leg, one set of objects, made
+    once for every slice it is carried onto."""
+
+    femur_lps: np.ndarray
+    tibia_lps: np.ndarray
+    notch_origin_lps: np.ndarray | None
+    notch_normal: np.ndarray | None
+
+
 @dataclass(frozen=True, slots=True)
 class Carried:
-    """The bones of a study's middle slices where the leg runs in the plane, carried onto a middle
-    slice the leg runs through, since it is one leg: the femur's and the tibia's places there, each
-    place's position toward the back, and its distance toward the patient's left of the notch, the
-    middle sagittal slice's plane (None when the study has no sagittal slice)."""
+    """The leg's bones carried onto one slice the leg runs through: the femur's and the tibia's
+    places there, each place's position toward the back, and its distance toward the patient's
+    left of the notch (None when the study has no sagittal slice)."""
 
     femur: np.ndarray
     tibia: np.ndarray
@@ -405,73 +432,77 @@ class Carried:
     toward_left_mm: np.ndarray | None
 
 
-def carry_bones(measured: list[Measured], index: int) -> Carried | str:
-    """The femur and the tibia of the study's other middle slices where the leg runs in the plane,
-    carried by place onto this series' middle slice where it runs through the plane
-    (`places_on_slice`), with the notch's plane from the first sagittal one; or why not: the leg
-    runs in this slice's plane, or the slice's thickness is not in its header. Made once per slice,
-    for every part named there."""
-    own = measured[index]
-    unit = own.frame.basis_lps / np.linalg.norm(own.frame.basis_lps, axis=0)
-    if float(np.linalg.norm(unit[2])) >= ALONG_THE_LEG:
-        return "leg_runs_in_the_plane"
-    reads("series", ("slice_thickness_mm",), "carry")
-    thickness = own.series.slice_thickness_mm[own.record["slice_index"]]
-    if thickness is None:
-        return "no_slice_thickness"
-    reads("partner", ("objects",), "carry")
-    shape = own.arrays["acquired_plane"].shape
-    femur, tibia = np.zeros(shape, dtype=bool), np.zeros(shape, dtype=bool)
-    notch = None
+def leg_of(measured: list[Measured]) -> Leg:
+    """The study's leg: the femur and the tibia of its middle slices where the leg runs in the
+    plane, as their partner reading left them, in the scanner's millimetres; and the notch's plane
+    from the first of them that side to side runs through, a sagittal one."""
+    reads("partner", ("objects",), "leg")
+    femur, tibia = [np.zeros((0, 3))], [np.zeros((0, 3))]
+    notch_origin = notch_normal = None
     for other in measured:
-        axes = other.frame.basis_lps / np.linalg.norm(other.frame.basis_lps, axis=0)
-        if other is own or float(np.linalg.norm(axes[2])) < ALONG_THE_LEG:
+        if not axis_in_plane(other.frame, 2):
             continue
         objects = other.arrays["a1_objects"]
-        for name, held in (("femur", femur), ("tibia", tibia)):
+        for name, found in (("femur", femur), ("tibia", tibia)):
             places = np.argwhere(objects == OBJECT_CODES[name]).astype(float)
-            held |= places_on_slice(
-                other.frame.to_patient(places),
-                own.frame.origin_lps,
-                own.frame.basis_lps,
-                shape,
-                thickness,
-            )
-        # The notch: the plane of the first middle slice that side to side runs through.
-        if notch is None and float(np.linalg.norm(axes[0])) < ALONG_THE_LEG:
+            found.append(other.frame.to_patient(places))
+        if notch_origin is None and not axis_in_plane(other.frame, 0):
             normal = np.cross(other.frame.basis_lps[:, 0], other.frame.basis_lps[:, 1])
             normal = normal / np.linalg.norm(normal)
-            notch = (other.frame.origin_lps, normal if normal[0] > 0 else -normal)
+            notch_origin = other.frame.origin_lps
+            notch_normal = normal if normal[0] > 0 else -normal
+    leg = Leg(np.concatenate(femur), np.concatenate(tibia), notch_origin, notch_normal)
+    handed("leg", field_names(leg))
+    return leg
+
+
+def carry_onto(
+    leg: Leg, frame: PlaneFrame, shape: tuple[int, int], thickness: float
+) -> Carried:
+    """The leg's bones carried by place onto one slice the leg runs through (`places_on_slice`),
+    with each place's position toward the back and toward the patient's left of the notch."""
+    reads(
+        "leg", ("femur_lps", "tibia_lps", "notch_origin_lps", "notch_normal"), "carry"
+    )
+    femur, tibia = (
+        places_on_slice(points, frame.origin_lps, frame.basis_lps, shape, thickness)
+        for points in (leg.femur_lps, leg.tibia_lps)
+    )
     rows, cols = np.indices(shape)
-    places = own.frame.to_patient(
+    places = frame.to_patient(
         np.column_stack((rows.ravel(), cols.ravel())).astype(float)
     ).reshape(*shape, 3)
-    toward_left = None if notch is None else (places - notch[0]) @ notch[1]
+    toward_left = None
+    if leg.notch_origin_lps is not None and leg.notch_normal is not None:
+        toward_left = (places - leg.notch_origin_lps) @ leg.notch_normal
     carried = Carried(femur, tibia, places[..., 1], toward_left)
     handed("carried", field_names(carried))
     return carried
 
 
-def name_the_back_of_the_knee(measured: list[Measured], index: int) -> str:
+def name_the_back_of_the_knee(own: Measured, leg: Leg | None) -> str:
     """The medial gastrocnemius head named on this series' middle slice (its paragraph in
-    `knee.objects.assignments`), from the lens the run has already read there and the bones
-    carried onto it (`carry_bones`), which are carried only once its first three descriptions
-    hold, so nothing is carried that no part reads; its code, or why the bones were not carried.
-    No lens is read again."""
-    own = measured[index]
+    `knee.objects.assignments`), from the lens the run has already read there and the study's leg
+    carried onto it (`carry_onto`), which is carried only once its first three descriptions hold,
+    so nothing is carried that no part reads; its code, or why the bones were not carried. No
+    lens is read again."""
     assigned = own.record["assignments"]
     knee = assigned["knee"]
-    unit = own.frame.basis_lps / np.linalg.norm(own.frame.basis_lps, axis=0)
-    through = float(np.linalg.norm(unit[2])) < ALONG_THE_LEG
     reads("series", ("row",), "gastrocnemius")
     # the tag is stored as text
     fat_suppressed = int(own.series.row.fat_suppression) == 1
-    code = gastrocnemius_code(through, knee, fat_suppressed, True, True, True, True)
-    if code != "identified":
+    code = gastrocnemius_code(
+        not axis_in_plane(own.frame, 2), knee, fat_suppressed, True, True, True, True
+    )
+    if code != "identified" or leg is None:
         return code
-    carried = carry_bones(measured, index)
-    if isinstance(carried, str):
-        return carried
+    reads("series", ("slice_thickness_mm",), "gastrocnemius")
+    thickness = own.series.slice_thickness_mm[own.record["slice_index"]]
+    if thickness is None:
+        return "no_slice_thickness"
+    carried = carry_onto(
+        leg, own.frame, own.arrays["acquired_plane"].shape, float(thickness)
+    )
     reads("carried", ("femur", "tibia", "back_mm", "toward_left_mm"), "gastrocnemius")
     bone = carried.femur | carried.tibia
     notch = carried.toward_left_mm
@@ -501,6 +532,93 @@ def name_the_back_of_the_knee(measured: list[Measured], index: int) -> str:
     return gastrocnemius_code(
         True, knee, True, True, True, condyle is not None, bool(placed.any())
     )
+
+
+def semimembranosus_slice(
+    own: Measured, leg: Leg | None
+) -> tuple[dict, dict[str, np.ndarray], PlaneFrame] | str:
+    """The semimembranosus tendon's slice of one series, read (its paragraph in
+    `knee.objects.assignments`): the slice through the top of the tibia, just below the joint
+    line, found by carrying the study's leg onto each slice of the series (no lens), where the
+    lens is then read once more; the tendon named at the tibia's back-inner corner; or why it was
+    not read."""
+    assigned = own.record["assignments"]
+    knee = assigned["knee"]
+    code = semimembranosus_code(
+        not axis_in_plane(own.frame, 2), knee, True, True, True, True, True
+    )
+    if code != "identified" or leg is None:
+        return code
+    reads("leg", ("tibia_lps", "notch_origin_lps"), "semimembranosus")
+    if not len(leg.tibia_lps) or leg.notch_origin_lps is None:
+        return semimembranosus_code(
+            True, knee, bool(len(leg.tibia_lps)), False, False, False, False
+        )
+    reads("series", ("volume", "geometry", "slice_thickness_mm"), "semimembranosus")
+    volume, thicknesses = own.series.volume, own.series.slice_thickness_mm
+    if volume is None:
+        return "no_stacked_volume"
+    femur_held, tibia_held, up_mm = [], [], []
+    for z in range(len(volume)):
+        frame, thickness = plane_frame(own.series, z), thicknesses[z]
+        shape = np.asarray(volume[z]).shape
+        held = [False, False]
+        if not isinstance(frame, str) and thickness is not None:
+            held = [
+                bool(
+                    places_on_slice(
+                        points, frame.origin_lps, frame.basis_lps, shape, thickness
+                    ).any()
+                )
+                for points in (leg.femur_lps, leg.tibia_lps)
+            ]
+        femur_held.append(held[0])
+        tibia_held.append(held[1])
+        up_mm.append(0.0 if isinstance(frame, str) else float(frame.origin_lps[2]))
+    z = tibia_top_slice(femur_held, tibia_held, up_mm)
+    frame = None if z is None else plane_frame(own.series, z)
+    if z is None or frame is None or isinstance(frame, str):
+        return semimembranosus_code(True, knee, True, True, False, False, False)
+    reads("regime", ("background_split",), "semimembranosus")
+    record, arrays, assignment = name_plane(
+        own.series, z, volume[z], frame, own.record["background_split"], knee
+    )
+    ledger.record("semimembranosus.lens_readings", planes=1)
+    labels, plane = arrays["b1_labels"], arrays["acquired_plane"]
+    carried = carry_onto(leg, frame, labels.shape, float(thicknesses[z] or 0.0))
+    reads("carried", ("femur", "tibia", "back_mm", "toward_left_mm"), "semimembranosus")
+    toward_left = carried.toward_left_mm
+    condyle = tendon = None
+    if toward_left is not None:
+        # the inner side is toward the other knee: the patient's left for a right knee
+        inner_mm = toward_left if knee == "R" else -toward_left
+        condyle = inner_condyle(
+            assignment.peaks, labels, carried.femur | carried.tibia, inner_mm
+        )
+        if condyle is not None:
+            tendon = semimembranosus_on_slice(
+                arrays["b1_dark"],
+                (assignment.objects == 0) & ~margin(plane),
+                labels == condyle.territory,
+                condyle,
+                carried.back_mm,
+                inner_mm,
+                np.asarray(frame.spacing_rc),
+            )
+    # On its slice only the tendon is named; the slice's other parts belong to the middle slice.
+    objects = np.zeros(labels.shape, dtype=np.int8)
+    if tendon is not None:
+        objects[tendon] = OBJECT_CODES["semimembranosus"]
+    arrays["a1_objects"] = objects
+    codes = {name: "not_named_on_this_slice" for name in record["assignments"]["codes"]}
+    codes["semimembranosus"] = semimembranosus_code(
+        True, knee, True, True, True, condyle is not None, bool(objects.any())
+    )
+    record["assignments"].update(
+        codes=codes, femur=None, tibia=None, patella=None, menisci=0
+    )
+    record["main_slice"] = {"object": "semimembranosus"}
+    return record, arrays, frame
 
 
 def find_fibula(
@@ -1012,13 +1130,20 @@ def measure_study(
                 if partner is None
                 else read_with_partner(own, partner)
             )
-        # The back of the knee, on each middle slice the leg runs through: the bones of the other
-        # middle slices carried onto it by place, once, where a part named there reads them, and
-        # its parts named from the lens already read there; before the records are saved, so the
-        # names are saved and drawn.
-        for index, own in enumerate(measured):
+        # The back of the knee, on the series the leg runs through: the study's leg, its bones in
+        # the scanner's millimetres, made once where the header names the knee there, and carried
+        # onto the slices its parts are named on; the medial head on the middle slice, from the
+        # lens already read there, before the records are saved, so it is saved and drawn.
+        leg = None
+        if any(
+            not axis_in_plane(own.frame, 2)
+            and own.record["assignments"]["knee"] in ("R", "L")
+            for own in measured
+        ):
+            leg = leg_of(measured)
+        for own in measured:
             own.record["assignments"]["codes"]["medial_gastrocnemius"] = (
-                name_the_back_of_the_knee(measured, index)
+                name_the_back_of_the_knee(own, leg)
             )
         # The fibula found on its main slice is handed to the LCL, which ends on it: the first
         # series, in the study's order, to name it where its front edge can be read.
@@ -1038,6 +1163,11 @@ def measure_study(
                 "lcl",
                 lambda own: lcl_slice(own, fibula_lps),
                 "abstain_not_parted_from_the_fat_with_fat_suppression",
+            ),
+            (
+                "semimembranosus",
+                lambda own: semimembranosus_slice(own, leg),
+                "abstain_no_tendon_at_the_back_inner_corner",
             ),
         ):
             found, silences = find_part(measured, part, read_slice, laid_when)

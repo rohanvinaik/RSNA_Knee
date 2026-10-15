@@ -282,6 +282,47 @@ categories of the twelve it relates to (docs/OBJECTS_AND_CONDITIONS.md §6):
   proof: the region takes in the popliteal vessels on its outer side, the tissue behind the notch
   above it, and a thin strip under the skin along the back of the leg; the lateral head, the same
   body on the knee's outer side, the lens draws as a region of its own, and it is not named.
+- SEMIMEMBRANOSUS TENDON: the inner hamstring's tendon, which ends on the back-inner top of the
+  tibia: «The direct arm attached to the proximal aspect of the posteromedial part of the tibia
+  ... The attachment was posterior to the medial tibial crest and distal to the posteromedial
+  aspect of the joint line» (LaPrade et al. 2007, the medial knee); tendons are low on every
+  sequence, and a Baker's cyst lies between it and the medial gastrocnemius head
+  (docs/OBJECTS_AND_CONDITIONS.md). Seen on the proof, 2026-10-15: on the innermost T2 sagittal
+  slices a dark cord comes down behind the medial condyle and swells into a dark mass on the back
+  of the tibia's top, just below the joint; followed from there onto the fat-suppressed axial, it
+  is the black oval at the back-inner corner of the tibia's top, with the semitendinosus, a
+  smaller black oval, behind it and the medial gastrocnemius head behind both. On the axial middle
+  slice, 21 mm above the joint, its look does not tell it from its neighbours, so it is named on a
+  slice of its own by these descriptions, each one check with its code (`semimembranosus_code`):
+  1. the leg runs through its slice's plane, as on an axial slice (abstain_leg_runs_in_the_plane);
+  2. the header names the knee, so its inner side is known (abstain_header_names_no_knee);
+  3. the femur and the tibia named on the study's middle slices where the leg runs in the plane
+     are carried onto the axial slices by place, since it is one leg (abstain_no_bone_carried);
+  4. the notch, where the middle sagittal slice passes, gives the knee's inner side
+     (abstain_no_middle_sagittal_slice);
+  5. its slice is the top of the tibia, just below the joint line: of the axial slices that hold
+     the tibia's carried places and none of the femur's, below every slice that holds the femur's,
+     the highest along the leg (`tibia_top_slice`) (abstain_no_tibia_below_the_femur);
+  6. the tibia's inner condyle is found there as for the medial head (`inner_condyle`)
+     (abstain_no_inner_condyle);
+  7. it is a low-signal piece at least `MENISCUS_THICKNESS_MM` thick outside every named part (a
+     tendon cut across; a shell or a fascia line is thinner), whose middle lies inside the inner
+     condyle's peak and behind it, the back-inner corner, and that reaches within `SHELL_MM` of the
+     condyle's region; the front one, since the semitendinosus lies behind it
+     (`semimembranosus_on_slice`) (abstain_no_tendon_at_the_back_inner_corner). The condyle's
+     region is the one the lens draws round the bone, and on the proof it takes in the whole top
+     of the knee, soft tissue too, so that reach keeps the piece at the knee; it does not show the
+     piece touching the bone.
+  Where one sequence's slice finds no tendon there, it is laid on from the other sequence's slice
+  of the same place, as the ACL and the LCL are. It relates to
+  Baker's: the cyst lies between it and the medial gastrocnemius head. Seen also on the proof:
+  followed from its piece onto the two sagittals, it lies just behind the joint line's back end,
+  on the cord that runs down behind the tibia to the insertion, behind the medial meniscus's back
+  horn and outside it; the lens's low signal in it is speckled, so the rule names the thickest
+  piece of its core, about 2 by 4 mm, and the rest of the tendon's dark is not reached; the PCL's
+  end on the back of the tibia lies inside the notch but outside the condyle's peak, and is not
+  taken; the medial gastrocnemius head shows on its slice too and is named only on the middle
+  slice.
 - MENISCI: on a coronal slice, the dark triangles at the two ends of the joint, between the femur's
   condyle and the tibia's plateau («an isosceles triangle on coronal images», low on every
   sequence: docs/OBJECTS_AND_CONDITIONS.md). Seen on the proof's fat-suppressed coronal,
@@ -429,6 +470,7 @@ OBJECT_CODES = {
     "hoffa_fat_pad": 18,
     "suprapatellar_fat": 19,
     "medial_gastrocnemius": 20,
+    "semimembranosus": 21,
 }
 CARTILAGES = ("femoral_cartilage", "tibial_cartilage")
 FOUR_NEIGHBOURS = ndi.generate_binary_structure(2, 1)
@@ -1012,6 +1054,89 @@ def gastrocnemius_head(
         if inner_mm[peak.peak_rc] > 0 and back_mm[peak.peak_rc] > behind:
             return labels == peak.territory
     return np.zeros(labels.shape, dtype=bool)
+
+
+def semimembranosus_code(
+    leg_through_plane: bool,
+    knee: str,
+    bone_carried: bool,
+    notch: bool,
+    slice_found: bool,
+    condyle: bool,
+    found: bool,
+) -> str:
+    """Whether the semimembranosus tendon was named on its slice, or why not: each check is one of
+    its descriptions."""
+    if not leg_through_plane:
+        return "abstain_leg_runs_in_the_plane"
+    if knee not in ("R", "L"):
+        return "abstain_header_names_no_knee"
+    if not bone_carried:
+        return "abstain_no_bone_carried"
+    if not notch:
+        return "abstain_no_middle_sagittal_slice"
+    if not slice_found:
+        return "abstain_no_tibia_below_the_femur"
+    if not condyle:
+        return "abstain_no_inner_condyle"
+    if not found:
+        return "abstain_no_tendon_at_the_back_inner_corner"
+    return "identified"
+
+
+def tibia_top_slice(
+    femur_held: list[bool], tibia_held: list[bool], up_mm: list[float]
+) -> int | None:
+    """The slice through the top of the tibia, just below the joint line: of the slices that hold
+    the tibia's carried places and none of the femur's, below every slice that holds the femur's,
+    the highest along the leg (`up_mm`, each slice's position toward the head). None when none
+    does."""
+    lowest_femur = min(
+        (up for held, up in zip(femur_held, up_mm, strict=True) if held),
+        default=float("inf"),
+    )
+    below = [
+        index
+        for index, (femur, tibia, up) in enumerate(
+            zip(femur_held, tibia_held, up_mm, strict=True)
+        )
+        if tibia and not femur and up < lowest_femur
+    ]
+    return max(below, key=lambda index: up_mm[index]) if below else None
+
+
+def semimembranosus_on_slice(
+    dark: np.ndarray,
+    free: np.ndarray,
+    region: np.ndarray,
+    condyle: Peak,
+    back_mm: np.ndarray,
+    inner_mm: np.ndarray,
+    spacing_rc: np.ndarray,
+) -> np.ndarray:
+    """The semimembranosus tendon at the top of the tibia: of the low-signal pieces at least
+    `MENISCUS_THICKNESS_MM` thick among the places no part holds (`free`), those whose middle lies
+    inside the inner condyle's peak (`inner_mm`) and behind it (`back_mm`), the back-inner corner,
+    and that reach within `SHELL_MM` of the condyle's `region`; the front one. Empty when none
+    does."""
+    pieces, count = ndi.label(
+        thick_parts(dark & free, spacing_rc, MENISCUS_THICKNESS_MM)
+    )
+    none = np.zeros(dark.shape, dtype=bool)
+    if not count:
+        return none
+    index = np.arange(1, count + 1)
+    to_region = np.asarray(ndi.distance_transform_edt(~region, sampling=spacing_rc))
+    back = np.asarray(ndi.mean(back_mm, pieces, index=index))
+    inner = np.asarray(ndi.mean(inner_mm, pieces, index=index))
+    corner = (
+        (inner > float(inner_mm[condyle.peak_rc]))
+        & (back > float(back_mm[condyle.peak_rc]))
+        & (np.asarray(ndi.minimum(to_region, pieces, index=index)) <= SHELL_MM)
+    )
+    if not corner.any():
+        return none
+    return pieces == int(index[corner][np.argmin(back[corner])])
 
 
 def patella_code(
