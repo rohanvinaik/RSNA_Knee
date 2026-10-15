@@ -227,16 +227,23 @@ note of `src/knee/objects/assignments.py` has a paragraph for each rule.
   With them the PCL reads the black margin as the margin, not every stored zero: on the proof it
   keeps its piece and gains its zero-light holes, its foot toward the back of the tibia and a thin
   strip of the femur's shell; over the 58 it is now named on 48 T2 sagittals, from 44, in 39
-  studies, from 36. Every one of them is written in the module note as an «<object>» (§4), its
-  descriptions checked against its code.
+  studies, from 36. The fat under the skin (commit `a3ce594`) is named where fat is not
+  suppressed, by its light: the places outside every part named at least three quarters of the
+  marrow's light, in the pieces reaching within 2 mm of the skin; on the proof's T1 coronal the two
+  bright bands down the knee's sides, stopping at the fascia; and laid onto the fat-suppressed slice
+  of the same place, where it is grey, as dark as muscle. For it, air and skin are now laid from
+  one sequence onto the other where a slice names none of its own, as on the proof's T1 coronal,
+  whose lens draws the air into its territories. Over the 58 labelled studies the fat is named in
+  56 (106 series by their own light, 72 laid on), air and skin are laid on 9 series, and every
+  other part keeps its counts. Every one of them is written in the module note as an «<object>»
+  (§4), its descriptions checked against its code.
 - Not named, because the pictures do not hold it: the synovium. Looked at on 2026-10-15 at the
   outer recess of the fat-suppressed coronal, at its own pixels: the fluid lies straight between
   the capsule's thin dark line and the femur's shell, with no layer of its own between them; the
   sources read give no normal look for it, and synovitis is told apart with contrast, which no tag
   marks (docs/OBJECTS_AND_CONDITIONS.md).
-- Next, in the objects document's order: the fat under the skin, and muscle. Then the parts that
-  need their own main slices (the menisci on the sagittal, the patella on the axial). Diagnosis
-  only when he says.
+- Next, in the objects document's order: muscle. Then the parts that need their own main slices
+  (the menisci on the sagittal, the patella on the axial). Diagnosis only when he says.
 - Still owed: where the header names no knee, look for the fibula on both sides and let its side
   name the outer one (the second half of the plan for siding the menisci); the fibula is not yet
   laid onto the fat-suppressed sagittal's slice of the same place (Law 9); the parts named on the
@@ -277,7 +284,10 @@ note of `src/knee/objects/assignments.py` has a paragraph for each rule.
   quadriceps tendon; laid onto the fat-suppressed slice, the patellar tendon takes in up to 1.5 mm
   of Hoffa's fat behind its band
   (`data/pictures/assignments-zooms-20261015/extensor-tendons-t2-sagittal-18.png` and
-  `-fs-sagittal-18.png`).
+  `-fs-sagittal-18.png`); the fat under the skin leaves out a pixel of its band here and there under
+  three quarters of the marrow's light, and laid onto the fat-suppressed coronal it leaves the
+  layer's outer 1.5 mm to the skin's rim; laid onto the T1 coronal, the skin lies on the outer side
+  of the dark rim between the air and the fat, and a few specks of the laid air lie apart.
 - Nothing is pushed; ask before pushing.
 
 ## The record, 2026-10-14
