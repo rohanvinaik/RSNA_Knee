@@ -63,6 +63,21 @@ class InteriorReading:
     trace_codes: np.ndarray
 
 
+@dataclass(frozen=True, slots=True)
+class InteriorRegions:
+    """One plane's geometric interiors before any border is read: the code, the measured low
+    signal, which places are available, each place's distance from the surrounding constraints,
+    the interior peaks and the territories grown from them. The first half of `read_interiors`,
+    for a reader that needs only the territories."""
+
+    code: str
+    dark: np.ndarray
+    available: np.ndarray
+    distance_mm: np.ndarray
+    markers: np.ndarray
+    labels: np.ndarray
+
+
 def boundary_edges(labels, dark, available, metric):
     """All directed four-neighbor interfaces, preserving frame and missing causes."""
     padded = np.pad(labels, 1)
@@ -183,6 +198,63 @@ def read_interiors(
         raise ValueError("invalid_backend")
     if np.isinf(split):
         raise ValueError("invalid_background_split")
+    regions = _regions(plane, spacing, split, prominence_mm, available)
+    points, normals, kinds = boundary_edges(
+        regions.labels, regions.dark, regions.available, metric
+    )
+    trace = np.full(points.shape, np.nan)
+    codes = np.zeros(len(points), dtype=np.uint8)
+    if len(points):
+        profiles = sample_profiles(
+            plane, points, normals, offsets, spacing, backend, metric_rc=metric
+        )
+        trace, codes = dark_bands(
+            profiles, split, kinds, points, normals, np.asarray(spacing)
+        )
+    return InteriorReading(
+        regions.code,
+        regions.dark,
+        regions.available,
+        regions.distance_mm,
+        regions.markers,
+        regions.labels,
+        points,
+        normals,
+        kinds,
+        handed_on(trace),
+        handed_on(codes),
+    )
+
+
+def interior_regions(
+    plane: np.ndarray,
+    spacing_rc: tuple[float, float],
+    split: float,
+    prominence_mm: float,
+    *,
+    available: np.ndarray | None = None,
+) -> InteriorRegions:
+    """The territories alone, without the border readings `read_interiors` adds to them: for a
+    reader that reads only the territories, which then makes nothing it throws away. The same
+    arrays `read_interiors` returns for the same plane; `available` as there."""
+    numeric_plane(plane)
+    spacing = spacing_pair(spacing_rc)
+    if not np.isfinite(prominence_mm) or prominence_mm <= 0:
+        raise ValueError("invalid_prominence_mm")
+    if np.isinf(split):
+        raise ValueError("invalid_background_split")
+    return _regions(plane, spacing, split, prominence_mm, available)
+
+
+def _regions(
+    plane: np.ndarray,
+    spacing: tuple[float, float],
+    split: float,
+    prominence_mm: float,
+    available: np.ndarray | None,
+) -> InteriorRegions:
+    """The geometric interiors of a plane its caller has already checked: the low signal under the
+    split, the distance from it, the prominent peaks and the territories grown from them."""
     available = np.isfinite(plane) if available is None else available
     dark = (
         available & (plane <= split)
@@ -216,26 +288,11 @@ def read_interiors(
             labels = watershed(
                 -distance, markers, mask=interior, connectivity=1
             ).astype(np.int32)
-    points, normals, kinds = boundary_edges(labels, dark, available, metric)
-    trace = np.full(points.shape, np.nan)
-    codes = np.zeros(len(points), dtype=np.uint8)
-    if len(points):
-        profiles = sample_profiles(
-            plane, points, normals, offsets, spacing, backend, metric_rc=metric
-        )
-        trace, codes = dark_bands(
-            profiles, split, kinds, points, normals, np.asarray(spacing)
-        )
-    return InteriorReading(
+    return InteriorRegions(
         code,
         handed_on(dark),
         handed_on(available),
         handed_on(distance),
         handed_on(markers),
         handed_on(labels),
-        points,
-        normals,
-        kinds,
-        handed_on(trace),
-        handed_on(codes),
     )

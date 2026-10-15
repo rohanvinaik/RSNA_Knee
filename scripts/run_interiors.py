@@ -3,8 +3,9 @@ reason it is not; every reading kept.
 
 For each series of a study: its background split, read once over the whole series, the level the
 lens reads low signal under (`knee.collapse.noise.background_split`); the squint over every slice,
-made once and kept with the series; the middle slice, its plane frame, and `read_interiors` with
-the frame's spacing and the retained basis as its metric. Then
+made once and kept with the series; the middle slice (the code's choice of slice, not the
+thesis's: under review, `docs/RESOLVING_THE_PARTS.md` §8), its plane frame, and `read_interiors`
+with the frame's spacing and the retained basis as its metric. Then
 `assign_plane` names what the pictures show, each part by its paragraph in
 `knee.objects.assignments`: air, skin, femur, tibia, joint, the patella (by its light, with fat
 suppression), the menisci (sided by the header's own word for which knee it is), the articular
@@ -147,6 +148,7 @@ from knee.objects.interiors import (
     EDGE_KINDS,
     TRACE_CODES,
     InteriorReading,
+    interior_regions,
     read_interiors,
 )
 from knee.receipt import digest, merged_receipt
@@ -1024,8 +1026,9 @@ def find_fibula(
     or why it was not named.
 
     The series' kept squint points to where the fibula must be (`fibula_block`: below the tibia's
-    top, on the knee's outer side of its middle). The interiors lens then reads that block again
-    on each slice that holds it, which the method forbids and the ledger counts
+    top, on the knee's outer side of its middle). The lens's territories (`interior_regions`, not
+    its border readings, which the fibula does not read) are then read again on that block of
+    each slice that holds it, which the method forbids and the ledger counts
     (`fibula.lens_readings`); the fibula there is the region that looks like the tibia, well below
     its top and behind its middle, apart from the tibia (`fibula_on_slice`); and it is named on
     the slice where that region is largest.
@@ -1069,15 +1072,12 @@ def find_fibula(
         bounds = stack.bounds_rc[block]
         r0, r1 = int(bounds[:, 0].min()), int(bounds[:, 1].max())
         c0, c1 = int(bounds[:, 2].min()), int(bounds[:, 3].max())
-        axes = frame.basis_lps / frame.spacing_rc
-        reading = read_interiors(
+        # the territories only: the fibula reads no border reading
+        reading = interior_regions(
             volume[z][r0:r1, c0:c1],
             frame.spacing_rc,
             split,
             PROMINENCE_MM,
-            np.asarray(OFFSETS_MM),
-            BACKEND,
-            metric_rc=axes.T @ axes,
             available=finite[z][r0:r1, c0:c1],
         )
         readings += 1
