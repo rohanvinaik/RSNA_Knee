@@ -193,7 +193,12 @@ Signal by sequence, as one source tabulates it [Kh]:
 
 - **The popliteal fossa: medial gastrocnemius head, semimembranosus tendon, and the bursa between them.** A bursa
   beneath the medial gastrocnemius head communicates with the joint; the semimembranosus bursa may communicate with
-  it [R-KNEE]. The semimembranosus tendon is easily seen on MRI [C].
+  it [R-KNEE]. The semimembranosus tendon is easily seen on MRI [C]. Its direct arm «attached to the proximal aspect
+  of the posteromedial part of the tibia in a small groove just proximal to the tuberculum tendinis prominence. The
+  attachment was posterior to the medial tibial crest and distal to the posteromedial aspect of the joint line»; its
+  anterior arm attaches deep to the superficial MCL's proximal tibial attachment, distal to the tibial joint line;
+  the medial gastrocnemius tendon attaches on the femur 2.6 mm proximal and 3.1 mm posterior to the gastrocnemius
+  tubercle; the sartorius, gracilis and semitendinosus tendons attach on the anteromedial tibia [LP-MED].
   *Shows:* muscle intermediate, tendon low [Kh].
   *Involved in:* Baker's.
 
@@ -281,3 +286,8 @@ Signal by sequence, as one source tabulates it [Kh]:
   popliteofibular ligament, and lateral gastrocnemius tendon. *Am J Sports Med*, 2003; cadaveric study of ten knees.
   Read in full 15 Oct 2026, at
   https://www.klokeavskade.no/globalassets/publications/laprade_2003_amjs_the-posterolateral-attachments-of-the-knee--.pdf
+- **[LP-MED]** LaPrade RF, Engebretsen AH, Ly TV, Johansen S, Wentorf FA, Engebretsen L. The anatomy of the medial
+  part of the knee. *J Bone Joint Surg Am.* 2007;89:2000–10. doi:10.2106/JBJS.F.01176; cadaveric study of eight
+  knees. Read in full 15 Oct 2026, at
+  https://drrobertlaprademd.com/wp-content/uploads/2015/07/anatomy-of-the-medial-part-of-the-knee-2007.pdf; its
+  tables of measurements are in the journal's online appendix, which was not read.

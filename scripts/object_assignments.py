@@ -36,6 +36,7 @@ OBJECT_COLOURS = {
     "hoffa_fat_pad": (1.0, 0.75, 0.45, 0.65),
     "suprapatellar_fat": (1.0, 0.95, 0.4, 0.6),
     "medial_gastrocnemius": (0.6, 0.65, 0.1, 0.6),
+    "semimembranosus": (0.65, 0.35, 0.1, 0.9),
 }
 
 
@@ -124,6 +125,11 @@ def draw_stages(axes, arrays, record):
         + (
             f"\nOLIVE medial gastrocnemius head: {codes['medial_gastrocnemius']}"
             if "medial_gastrocnemius" in codes
+            else ""
+        )
+        + (
+            f"\nBROWN semimembranosus tendon: {codes['semimembranosus']}"
+            if "semimembranosus" in codes
             else ""
         ),
         fontsize=8,
