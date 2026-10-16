@@ -52,11 +52,15 @@ OBJECT_COLOURS = {
     "joint_capsule": ("SPRING GREEN", (0.0, 1.0, 0.55, 1.0)),
     "gastrocnemius_semimembranosus_bursa": ("PURPLE", (0.7, 0.0, 1.0, 0.75)),
     "semitendinosus": ("SILVER", (0.7, 0.7, 0.7, 0.9)),
+    "gracilis": ("AZURE", (0.1, 0.35, 0.65, 0.95)),
     "quadriceps_fat_pad": ("COBALT", (0.05, 0.1, 0.5, 0.85)),
     "prefemoral_fat_pad": ("COPPER", (0.65, 0.15, 0.0, 0.85)),
     "medial_patellar_retinaculum": ("AMBER", (0.75, 0.75, 0.0, 0.95)),
     "lateral_patellar_retinaculum": ("ROSE", (0.9, 0.45, 0.7, 0.95)),
     "popliteus_tendon": ("SAGE", (0.4, 0.75, 0.45, 0.95)),
+    "iliotibial_band": ("AQUAMARINE", (0.0, 0.6, 0.9, 0.95)),
+    "biceps_femoris_tendon": ("KHAKI", (0.75, 0.7, 0.35, 0.95)),
+    "sartorius": ("ULTRAMARINE", (0.35, 0.0, 1.0, 0.8)),
 }
 # The legend's word for each part's colour.
 WORDS = {name: word for name, (word, _) in OBJECT_COLOURS.items()}
@@ -141,6 +145,17 @@ def draw_stages(axes, arrays, record):
             else ""
         )
         + (f"\n{WORDS['acl']} ACL: {codes['acl']}" if "acl" in codes else "")
+        + (
+            f"\n{WORDS['iliotibial_band']} iliotibial band: {codes['iliotibial_band']}"
+            if "iliotibial_band" in codes
+            else ""
+        )
+        + (
+            f"\n{WORDS['biceps_femoris_tendon']} biceps femoris tendon: "
+            f"{codes['biceps_femoris_tendon']}"
+            if "biceps_femoris_tendon" in codes
+            else ""
+        )
         + (f"\n{WORDS['mcl']} MCL: {codes['mcl']}" if "mcl" in codes else "")
         + (f"\n{WORDS['lcl']} LCL: {codes['lcl']}" if "lcl" in codes else "")
         + (
@@ -252,6 +267,16 @@ def draw_stages(axes, arrays, record):
             f"\n{WORDS['semitendinosus']} semitendinosus tendon: "
             f"{codes['semitendinosus']}"
             if "semitendinosus" in codes
+            else ""
+        )
+        + (
+            f"\n{WORDS['gracilis']} gracilis tendon: {codes['gracilis']}"
+            if "gracilis" in codes
+            else ""
+        )
+        + (
+            f"\n{WORDS['sartorius']} sartorius: {codes['sartorius']}"
+            if "sartorius" in codes
             else ""
         )
         + (

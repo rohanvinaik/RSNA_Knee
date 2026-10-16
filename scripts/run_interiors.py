@@ -43,8 +43,16 @@ slice of the same place (`find_part`, `lay_part`). The LCL (`lcl_slice`) is name
 slice through the place where it attaches on the fibula, the fibula being the one found on its
 main slice, its places handed on from there (`find_fibula`); the lens is read once more, on that slice
 of each coronal series (`lcl.lens_readings`); the LCL is named where fat is not suppressed and laid
-onto the other sequence's slice of the same place. A series' silence on a main-slice part is kept
-as `<series uid>:<part>`.
+onto the other sequence's slice of the same place. The biceps femoris tendon
+(`biceps_femoris_slice`) is named on a fat-bright sagittal series' slice just beyond the fibular
+head's lateral face, from the fibula already found: its native main slice is recovered from the
+fibula's places, its marrow light read there once in both acquisitions (the twin's by the scanner's
+millimetres, never by equal indices), and the walk outward to the head's edge (`lateral_to_the_head`)
+asks for a slice's head only when it reaches it, each kept in the record. The lens is read once
+more on the slice chosen (`biceps_femoris_tendon.lens_readings`) and the rule reads the light of
+the two acquisitions, with the places the twin or the native margin never saw left unseen (NaN);
+the mask is laid onto the twin's slice of the same place (`find_part`, `lay_parts`) with its own
+decision. A series' silence on a main-slice part is kept as `<series uid>:<part>`.
 
 THE BACK OF THE KNEE is named on the series the leg runs through, an axial one. Where the header
 names the knee there, the femur and the tibia named on the study's middle slices where the leg
@@ -57,7 +65,14 @@ are saved. The semimembranosus tendon is named
 on its own slice, the top of the tibia just below the joint line, found by carrying the leg onto
 each slice of the series (`semimembranosus_slice`); the lens is read once more there
 (`semimembranosus.lens_readings`), and the tendon is laid onto the other sequence's slice of the
-same place where that one finds none.
+same place where that one finds none. That group (the tendon, the semitendinosus and the
+gracilis) is resolved once, after the study's leg and the back of the knee and before the middle
+slices are saved (`find_part`), and not again among the later main parts: its records are saved
+and its silences kept as ever. The SARTORIUS is named on each middle axial that is
+fat-suppressed and fluid-sensitive (`name_sartorius`) from the gracilis's places, the first
+native gracilis of that group put in the scanner's millimetres once (`gracilis_source`) and
+projected onto the axial as a location target; no lens is read again, and the contrast over the
+slice is read once, there.
 
 THE RECEIPT KEEPS EVERY STUDY (`knee.receipt.merged_receipt`): a study run again replaces only its
 own records. Studies run one after another in one process; two processes writing one run folder
@@ -132,11 +147,16 @@ from knee.objects.assignments import (
     fat_under_the_skin,
     fibula_block,
     fibula_code,
+    fibula_like_head,
     fibula_on_slice,
     gastrocnemius_code,
     gastrocnemius_head,
+    gracilis_on_slice,
+    head_area_mm2,
+    iliotibial_band_on_slice,
     inner_condyle,
     laid_by,
+    lateral_to_the_head,
     lcl_attachment,
     lcl_code,
     lcl_on_slice,
@@ -144,15 +164,19 @@ from knee.objects.assignments import (
     margin,
     muscle_bodies,
     muscle_code,
+    native_dark_bodies,
     outer_step,
     places_from,
     places_on_slice,
     popliteal_lumens,
     popliteus_in_notch,
+    projected_places,
+    proximal_biceps_on_slice,
     read_field,
     region_holding,
     relative_signal,
     retinacular_walls,
+    sartorius_on_slice,
     semimembranosus_code,
     semimembranosus_on_slice,
     semitendinosus_on_slice,
@@ -162,6 +186,7 @@ from knee.objects.assignments import (
     synovium_code,
     tendon_code,
     tibia_top_slice,
+    twin_marrow_light,
     with_partner,
 )
 from knee.objects.interiors import (
@@ -224,14 +249,20 @@ MAIN_PARTS = (
     "lcl",
     "semimembranosus",
     "semitendinosus",
+    "gracilis",
     "patellar_retinacula",
     *RETINACULA,
     "popliteus_tendon",
+    "biceps_femoris_tendon",
 )
+# The biceps femoris tendon's own slice is found on the fat-bright sagittal series, and its mask is
+# laid onto the fat-suppressed twin's slice of the same place: the twin's decision until then.
+BICEPS = "biceps_femoris_tendon"
+BICEPS_LAID_WHEN = "abstain_mask_not_laid_from_the_fat_bright_native_view"
 # Parts sharing another part's selected slice and its readings.
 MAIN_COMPANIONS = {
     "lcl": ("popliteus_tendon",),
-    "semimembranosus": ("semitendinosus",),
+    "semimembranosus": ("semitendinosus", "gracilis"),
     "patellar_retinacula": RETINACULA,
 }
 # The joint's boundaries: each the field it is handed on as, and the part it names.
@@ -1303,6 +1334,47 @@ def name_suprapatellar_pads(own: Measured, partner: Measured | None) -> None:
             )
 
 
+def name_iliotibial_band(own: Measured, partner: Measured | None) -> None:
+    """Read the ITB on the existing middle coronal, then lay its trace onto the twin.
+    The middle slice's native fat and bone names provide the targets; no lens is read again.
+    FS targets are initialized before non-FS sources, as for the joint boundaries.
+    """
+    plane = own.arrays["acquired_plane"]
+    reads("series", ("row",), "iliotibial_band")
+    reads("partner", ("objects", "codes"), "iliotibial_band")
+    reads("interiors", ("available",), "iliotibial_band")
+    mask, readings, code = iliotibial_band_on_slice(
+        plane,
+        own.arrays["a1_objects"],
+        own.arrays["b1_available"],
+        own.frame.basis_lps,
+        own.record["assignments"]["knee"],
+        int(own.series.row.fat_suppression) == 1,
+        measures=measures_of(
+            own.record["series_uid"], own.record["slice_index"], plane, own.frame
+        ),
+    )
+    own.arrays["a2_iliotibial_band"] = mask
+    for name, value in readings.items():
+        own.arrays[f"a2_itb_{name}"] = value
+    own.record["assignments"]["codes"]["iliotibial_band"] = code
+    if code != "identified":
+        return
+    handed("iliotibial_band", ("region",))
+    if partner is None or int(partner.series.row.fat_suppression) != 1:
+        return
+    laid = lay_parts(
+        partner,
+        (partner.record, partner.arrays, partner.frame),
+        (own.record, own.arrays, own.frame),
+        ("iliotibial_band",),
+        product="iliotibial_band",
+    )
+    partner.record["assignments"]["codes"]["iliotibial_band"] = (
+        laid["iliotibial_band"] or "abstain_outside_partner_picture"
+    )
+
+
 def semimembranosus_slice(
     own: Measured, leg: Leg | None
 ) -> tuple[dict, dict[str, np.ndarray], PlaneFrame] | str:
@@ -1366,6 +1438,8 @@ def semimembranosus_slice(
     condyle = tendon = None
     semitendinosus = np.zeros(labels.shape, dtype=bool)
     st_code = "abstain_no_semimembranosus_reference"
+    gracilis = np.zeros(labels.shape, dtype=bool)
+    gr_code = "abstain_no_semimembranosus_reference"
     if toward_left is not None:
         # the inner side is toward the other knee: the patient's left for a right knee
         inner_mm = toward_left if knee == "R" else -toward_left
@@ -1406,6 +1480,39 @@ def semimembranosus_slice(
             semitendinosus, st_code = semitendinosus_on_slice(
                 bodies, tendon, condyle, carried.back_mm, inner_mm, spacing, shared
             )
+            if tendon.any() and semitendinosus.any():
+                reads("interiors", ("dark",), "native_hamstring_bodies")
+                reads(
+                    "carried", ("back_mm", "toward_left_mm"), "native_hamstring_bodies"
+                )
+                native_bodies = native_dark_bodies(
+                    arrays["b1_dark"],
+                    (field.objects == 0) & ~margin_of(uid, z, plane),
+                    carried.back_mm,
+                    inner_mm,
+                )
+                handed("native_hamstring_bodies", field_names(native_bodies))
+                reads("native_hamstring_bodies", field_names(native_bodies), "gracilis")
+                reads("semimembranosus", ("region",), "gracilis")
+                reads("semitendinosus", ("region",), "gracilis")
+                gracilis, gr_readings, gr_code = gracilis_on_slice(
+                    native_bodies,
+                    tendon,
+                    semitendinosus,
+                    carried.back_mm,
+                    inner_mm,
+                    spacing,
+                    knee,
+                    shared,
+                )
+                for name, value in gr_readings.items():
+                    arrays[f"a2_gracilis_{name}"] = value
+            elif tendon.any():
+                gr_code = "abstain_no_semitendinosus_reference"
+    arrays["a2_gracilis"] = gracilis
+    record["assignments"]["codes"]["gracilis"] = gr_code
+    if gr_code == "identified":
+        handed("gracilis", ("region",))
     arrays["a2_semitendinosus"] = semitendinosus
     record["assignments"]["codes"]["semitendinosus"] = st_code
     if st_code == "identified":
@@ -1471,6 +1578,109 @@ def semimembranosus_slice(
     )
     record["main_slice"] = {"object": "semimembranosus"}
     return record, arrays, frame
+
+
+# What the sartorius rule reads of its own readings, and what it keeps without reading.
+SARTORIUS_READ = (
+    "gracilis_target",
+    "smooth",
+    "surround",
+    "lightness",
+    "grey_bodies",
+    "body_inner_mm",
+    "body_back_mm",
+    "body_size_pixels",
+    "eligible_ids",
+    "target_distance_mm",
+    "eligible_reach_mm",
+)
+SARTORIUS_KEPT = (
+    "gracilis_source_lps",
+    "surround_window_pixels",
+    "gracilis_source_separation_mm",
+    "body_status",
+)
+
+
+def gracilis_source(
+    measured: list[Measured], found: list[tuple[dict, dict[str, np.ndarray]]]
+) -> np.ndarray | str:
+    """The gracilis's places in the scanner's millimetres, put there once from the first of the
+    study's semimembranosus-group records (`find_part`, the ones that name the tendon) whose
+    gracilis its own lens named (`identified`, not one laid from a partner), through the frame of
+    the slice it was named on (`plane_frame`); or why there are none. Handed on to every middle
+    axial's sartorius, which projects them (`name_sartorius`): they are a location there, not a
+    mask."""
+    for record, arrays in found:
+        if record["assignments"]["codes"].get("gracilis") != "identified":
+            continue
+        reads("gracilis", ("region",), "gracilis_places")
+        places = np.argwhere(arrays["a2_gracilis"])
+        if not len(places):
+            continue
+        series = next(
+            m.series for m in measured if m.record["series_uid"] == record["series_uid"]
+        )
+        frame = plane_frame(series, record["slice_index"])
+        if isinstance(frame, str):
+            return "abstain_gracilis_source_geometry_unreadable"
+        handed("gracilis_places", ("lps",))
+        return frame.to_patient(places.astype(float))
+    return "abstain_no_native_gracilis"
+
+
+def name_sartorius(own: Measured, source: np.ndarray | str) -> None:
+    """The sartorius named on this series' middle slice where the leg does not run in its plane, an
+    axial one, fat-suppressed and fluid-sensitive (its paragraph in `knee.objects.assignments`),
+    from the lens already read there and the gracilis's places (`gracilis_source`, `source`, or why
+    there are none) projected onto it. Its mask is separate (`a2_sartorius`) and every reading the
+    rule made is kept beside it (`a2_sartorius_<reading>`); the slice's own names are left as they
+    are. The contrast over the slice is read at most once, and only once the cheap prerequisites
+    hold; no lens is read again."""
+    plane = own.arrays["acquired_plane"]
+    own.arrays["a2_sartorius"] = np.zeros(plane.shape, dtype=bool)
+    codes = own.record["assignments"]["codes"]
+    reads("naming", ("in_plane",), "sartorius")
+    reads("series", ("row",), "sartorius")
+    if own.assignment.in_plane[2]:
+        codes["sartorius"] = "abstain_leg_runs_in_the_plane"
+        return
+    if not (
+        int(own.series.row.fat_suppression) == 1
+        and int(own.series.row.fluid_sensitive) == 1
+    ):
+        codes["sartorius"] = "abstain_requires_fluid_sensitive_fat_suppression"
+        return
+    if isinstance(source, str):
+        codes["sartorius"] = source
+        return
+    uid, index = own.record["series_uid"], own.record["slice_index"]
+    reads("interiors", ("dark", "available"), "sartorius")
+    reads("gracilis_places", ("lps",), "sartorius")
+    mask, readings, code = sartorius_on_slice(
+        plane,
+        own.arrays["b1_dark"],
+        ~own.arrays["b1_available"] | margin_of(uid, index, plane),
+        source,
+        own.frame,
+        own.record["assignments"]["knee"],
+        measures_of(uid, index, plane, own.frame),
+    )
+    own.arrays["a2_sartorius"] = mask
+    for name, value in readings.items():
+        own.arrays[f"a2_sartorius_{name}"] = value
+    codes["sartorius"] = code
+    made = [name for name in (*SARTORIUS_READ, *SARTORIUS_KEPT) if name in readings]
+    handed("sartorius_readings", made)
+    reads(
+        "sartorius_readings",
+        [name for name in made if name in SARTORIUS_READ],
+        "sartorius",
+    )
+    if "lightness" in readings:
+        ledger.record("sartorius.contrast_readings", planes=1)
+    if code == "identified":
+        handed("sartorius", ("region",))
 
 
 def retinacula_slice(
@@ -1904,6 +2114,287 @@ def lcl_slice(
     return lcl_record, arrays, frame
 
 
+def seen_native(series: Series, z: int) -> tuple[np.ndarray, np.ndarray]:
+    """One native slice's stored light and the places it has none for (not finite, or the black
+    margin the reconstruction never filled), read once per slice and handed to every stage of the
+    biceps femoris tendon that asks: the head's body, the reference light, the rule. The rule is
+    given the light with the unseen places NaN, so no place it never saw reads as darkness."""
+
+    def read() -> tuple[np.ndarray, np.ndarray]:
+        reads("series", ("volume",), BICEPS)
+        uid = series.row.series_uid
+        raw = np.asarray(series.volume[z], dtype=np.float64)
+        return handed_on(raw), handed_on(~np.isfinite(raw) | margin_of(uid, z, raw))
+
+    return once("biceps_native_light", (series.row.series_uid, z), read)
+
+
+def biceps_twin(
+    native: Measured, twin: Measured, z: int
+) -> tuple[np.ndarray, int] | str:
+    """The fat-suppressed twin's light laid onto the pixels of the native slice `z`, NaN where the
+    twin has no say (outside its picture or in its black margin), and the twin's own slice index;
+    or why not. The twin's slice is the one whose plane passes through the native slice's place,
+    found by the scanner's millimetres and never by equal indices (`slice_through`); the pair is
+    matched once, native pixels onto the twin's (`matched`)."""
+
+    def read() -> tuple[np.ndarray, int] | str:
+        series, other = native.series, twin.series
+        frame = plane_frame(series, z)
+        reads("series", ("geometry", "slice_thickness_mm", "volume"), BICEPS)
+        if isinstance(frame, str) or other.geometry is None or other.volume is None:
+            return "geometry_unreadable"
+        known = [float(t) for t in other.slice_thickness_mm if t is not None]
+        if len(known) != len(other.slice_thickness_mm):
+            return "abstain_no_slice_thickness"
+        origins = np.asarray(
+            [np.asarray(p, dtype=float) for p in other.geometry.position]
+        )
+        index = slice_through(frame.origin_lps, origins, twin.frame.normal(), known)
+        if index is None:
+            return "abstain_twin_has_no_slice_at_this_place"
+        twin_frame = plane_frame(other, index)
+        if isinstance(twin_frame, str):
+            return twin_frame
+        plane = other.volume[index]
+        raw, _ = seen_native(series, z)
+        source = matched(
+            series,
+            {"series_uid": series.row.series_uid, "slice_index": z},
+            frame,
+            raw.shape,
+            {"series_uid": other.row.series_uid, "slice_index": index},
+            twin_frame,
+            plane,
+        )
+        if isinstance(source, str):
+            return f"abstain_{source}"
+        laid = laid_by(np.asarray(plane, dtype=np.float64), source)
+        handed("biceps_twin", ("laid",))
+        return handed_on(np.where(source >= 0, laid, np.nan)), index
+
+    return once("biceps_twin", (native.series.row.series_uid, z), read)
+
+
+def biceps_native(
+    own: Measured, twin: Measured | None, fibula_lps: np.ndarray | None
+) -> tuple[dict, dict[str, np.ndarray], PlaneFrame, str, int] | str:
+    """The biceps femoris tendon's slice on a fat-bright series, read (its paragraph in
+    `knee.objects.assignments`), with its twin's series and slice: from the fibula already found
+    (`find_fibula`), whose places recover its main slice here; the head's marrow light read there
+    once, and the twin's over the same places; then the walk outward to the head's lateral face
+    (`lateral_to_the_head`), which asks for a slice's head only when it reaches it, each kept; and
+    on the slice it chooses, the lens and field once (`read_part_slice`) and the rule
+    (`proximal_biceps_on_slice`) with that same head. Or why it was not read. Every head the walk
+    measured, its areas and status per slice (NaN and unread where the walk never went), the lights
+    and the twin as laid are kept in the arrays beside the rule's own readings."""
+    series, record = own.series, own.record
+    uid = series.row.series_uid
+    knee = record["assignments"]["knee"]
+    reads("fibula", ("main_slice", "region"), BICEPS)
+    if fibula_lps is None:
+        return "abstain_no_fibula"
+    if twin is None:
+        return "abstain_no_fat_suppressed_twin"
+    reads("series", ("geometry", "slice_thickness_mm", "volume"), BICEPS)
+    geometry, volume = series.geometry, series.volume
+    thicknesses = series.slice_thickness_mm
+    if geometry is None or volume is None:
+        return "geometry_unreadable"
+    origins = np.asarray([np.asarray(p, dtype=float) for p in geometry.position])
+    if (
+        origins.ndim != 2
+        or origins.shape[1] != 3
+        or not np.all(np.isfinite(origins))
+        or len(thicknesses) != len(origins)
+        or len(volume) != len(origins)
+    ):
+        return "geometry_unreadable"
+    normal = own.frame.normal()
+    places = np.asarray(fibula_lps, dtype=np.float64)
+    other = twin
+    heads: dict[int, tuple[np.ndarray, np.ndarray, str, float]] = {}
+
+    def reference() -> tuple[int | None, float, float, str | None]:
+        """The fibula's native main slice, its marrow light there in both acquisitions and, if the
+        twin could not be read there, why: made once, when the walk first asks for a head."""
+
+        def read() -> tuple[int | None, float, float, str | None]:
+            none = float("nan")
+            main = slice_through(
+                places.mean(axis=0), origins, normal, [float(t) for t in thicknesses]
+            )
+            if main is None:
+                return main, none, none, "abstain_no_slice_holds_the_fibula"
+            frame = plane_frame(series, main)
+            if isinstance(frame, str):
+                return main, none, none, frame
+            plane, unseen = seen_native(series, main)
+            support = projected_places(places, frame, plane.shape) & ~unseen
+            light = (
+                float(measures_of(uid, main, plane, frame).light(support))
+                if support.any()
+                else none
+            )
+            laid = biceps_twin(own, other, main)
+            if isinstance(laid, str):
+                return main, light, none, laid
+            reads("biceps_twin", ("laid",), "biceps_reference")
+            return main, light, twin_marrow_light(laid[0], support), None
+
+        return once("biceps_reference", uid, read)
+
+    def head_area(z: int) -> float:
+        """The head's area on native slice z (`head_area_mm2`), its body measured once."""
+        if z not in heads:
+            frame = plane_frame(series, z)
+            plane, unseen = seen_native(series, z)
+            if isinstance(frame, str):
+                none = np.zeros(plane.shape, dtype=bool)
+                heads[z] = (none, none, "geometry_unreadable", float("nan"))
+            else:
+                _, light, _, _ = reference()
+                target = projected_places(places, frame, plane.shape)
+                body, code = fibula_like_head(
+                    np.where(unseen, np.nan, plane), target, light
+                )
+                area = head_area_mm2(body, code, np.asarray(frame.spacing_rc))
+                heads[z] = (body, target, code, area)
+                handed("biceps_head", ("body", "area"))
+        reads("biceps_head", ("area",), "biceps_slice_law")
+        return heads[z][3]
+
+    z, areas, status, law = lateral_to_the_head(
+        places, origins, normal, thicknesses, knee, head_area
+    )
+    ledger.record(f"{BICEPS}.head_readings", planes=len(heads))
+    if z is None:
+        if law == "abstain_head_unreadable_on_the_way" and heads:
+            return list(heads.values())[-1][2]  # why the head could not be read there
+        return law
+    main, light, twin_light, why = reference()
+    frame = plane_frame(series, z)
+    if isinstance(frame, str):
+        return frame
+    laid = biceps_twin(own, other, z)
+    if isinstance(laid, str):
+        return laid
+    if why is not None or main is None:
+        return why or "abstain_no_slice_holds_the_fibula"
+    twin_light_map, twin_index = laid
+    reads("background", ("split",), BICEPS)
+    part_record, arrays, _ = read_part_slice(
+        series, z, volume[z], frame, record["background_split"], knee, BICEPS
+    )
+    plane, unseen = seen_native(series, z)
+    body = heads[z][0]
+    reads("biceps_head", ("body",), BICEPS)
+    reads("biceps_twin", ("laid",), BICEPS)
+    mask, readings, code = proximal_biceps_on_slice(
+        np.where(unseen, np.nan, plane),
+        twin_light_map,
+        frame.basis_lps,
+        light,
+        twin_light,
+        body,
+        int(series.row.fat_suppression) == 1,
+        measures_of(uid, z, plane, frame),
+    )
+    walked = list(heads)
+    arrays["a1_objects"] = np.zeros(plane.shape, dtype=np.int8)
+    arrays["a2_biceps_femoris_tendon"] = mask
+    for name, value in readings.items():
+        arrays[f"a2_biceps_{name}"] = value
+    arrays.update(
+        a2_biceps_head_slices=np.asarray(walked, dtype=np.int32),
+        a2_biceps_head_bodies=np.stack([heads[w][0] for w in walked]),
+        a2_biceps_head_targets=np.stack([heads[w][1] for w in walked]),
+        a2_biceps_head_areas_mm2=np.asarray(areas, dtype=np.float64),
+        a2_biceps_head_slice_status=np.asarray(status, dtype=np.int8),
+        a2_biceps_fibula_main_slice=np.asarray(main, dtype=np.int32),
+        a2_biceps_selected_slice=np.asarray(z, dtype=np.int32),
+        a2_biceps_twin_slice=np.asarray(twin_index, dtype=np.int32),
+        a2_biceps_reference_light=np.asarray(light, dtype=np.float64),
+        a2_biceps_reference_twin_light=np.asarray(twin_light, dtype=np.float64),
+        a2_biceps_fibula_places_lps=places,
+        a2_biceps_twin_laid=twin_light_map,
+        a2_biceps_native_unseen=unseen,
+    )
+    part_record["assignments"]["codes"][BICEPS] = code
+    part_record["main_slice"] = {
+        "object": BICEPS,
+        "fibula_main_slice": int(main),
+        "selected_slice": int(z),
+        "twin_series_uid": other.series.row.series_uid,
+        "twin_slice_index": int(twin_index),
+        "head_codes": {str(w): heads[w][2] for w in walked},
+    }
+    return part_record, arrays, frame, other.series.row.series_uid, twin_index
+
+
+def biceps_femoris_slice(
+    own: Measured, measured: list[Measured], fibula_lps: np.ndarray | None
+) -> tuple[dict, dict[str, np.ndarray], PlaneFrame] | str:
+    """The biceps femoris tendon's slice of one series, read once for the pair: on the fat-bright
+    series by `biceps_native` (kept for its twin, made by whichever of the two asks first), and on
+    its fat-suppressed twin the slice of the same place in the scanner's millimetres, read for its
+    lens and field only, to which `find_part` lays the native mask (`lay_parts`); or why it was not
+    read: no fibula, no twin, no view, no head, no tendon."""
+    reads("series", ("row",), BICEPS)
+    fat_suppressed = (
+        int(own.series.row.fat_suppression) == 1
+    )  # the tag is stored as text
+    if fat_suppressed:
+        native_at = partner_of(
+            measured, next(i for i, m in enumerate(measured) if m is own)
+        )
+        if native_at is None:
+            return "abstain_no_fat_bright_native_view"
+    else:
+        native_at = own
+    twin = partner_of(
+        measured, next(i for i, m in enumerate(measured) if m is native_at)
+    )
+    native = once(
+        "biceps_native",
+        native_at.series.row.series_uid,
+        lambda: biceps_native(native_at, twin, fibula_lps),
+    )
+    if isinstance(native, str):
+        return native
+    record, arrays, frame, twin_uid, twin_index = native
+    if not fat_suppressed:
+        return record, arrays, frame
+    if twin_uid != own.series.row.series_uid:
+        return "abstain_the_native_view_has_another_twin"
+    volume = own.series.volume
+    twin_frame = plane_frame(own.series, twin_index)
+    if volume is None or isinstance(twin_frame, str):
+        return "geometry_unreadable"
+    reads("background", ("split",), BICEPS)
+    twin_record, twin_arrays, _ = read_part_slice(
+        own.series,
+        twin_index,
+        volume[twin_index],
+        twin_frame,
+        own.record["background_split"],
+        own.record["assignments"]["knee"],
+        BICEPS,
+    )
+    # on this slice the mask is the native one's, laid; until then nothing is named
+    twin_arrays["a1_objects"] = np.zeros(twin_arrays["acquired_plane"].shape, np.int8)
+    twin_arrays["a2_biceps_femoris_tendon"] = np.zeros(
+        twin_arrays["acquired_plane"].shape, dtype=bool
+    )
+    twin_record["assignments"]["codes"][BICEPS] = BICEPS_LAID_WHEN
+    twin_record["main_slice"] = {
+        "object": BICEPS,
+        "native_series_uid": record["series_uid"],
+        "native_slice_index": int(record["slice_index"]),
+    }
+    return twin_record, twin_arrays, twin_frame
+
+
 def lay_parts(
     own: Measured,
     read: tuple[dict, dict[str, np.ndarray], PlaneFrame],
@@ -2139,6 +2630,13 @@ def measure_study(
         ):
             name_joint_boundaries(own, partner)
             name_suprapatellar_pads(own, partner)
+        # Initialize FS refusals before a non-FS source lays its separate ITB mask onto them.
+        for own, partner in sorted(
+            zip(measured, partners, strict=True),
+            key=lambda pair: int(pair[0].series.row.fat_suppression),
+            reverse=True,
+        ):
+            name_iliotibial_band(own, partner)
         # The back of the knee, on the series the leg runs through: the study's leg, its bones in
         # the scanner's millimetres, made once where the header names the knee there, and carried
         # onto the slices its parts are named on; both heads on the middle slice, from the
@@ -2160,6 +2658,22 @@ def measure_study(
             own.record["assignments"]["codes"].update(
                 name_the_back_of_the_knee(own, leg)
             )
+        # The semimembranosus group (the tendon, the semitendinosus and the gracilis) is resolved
+        # once here, ahead of the middle slices' save below, since the sartorius on a middle axial
+        # reads the gracilis's physical places from it: its records are saved and its silences
+        # kept exactly as the later main parts' are, and it is not read again after them.
+        found, silences = find_part(
+            measured,
+            "semimembranosus",
+            lambda own: semimembranosus_slice(own, leg),
+            "abstain_no_tendon_at_the_back_inner_corner",
+        )
+        for part_record, part_arrays in found:
+            main_records.append(save(main_run, study_uid, part_record, part_arrays))
+        main_unread.update(silences)
+        source = gracilis_source(measured, found)
+        for own in measured:
+            name_sartorius(own, source)
         # The fibula found on its main slice is handed to the LCL, which ends on it: the first
         # series, in the study's order, to name it where its front edge can be read.
         fibula_lps = None
@@ -2183,14 +2697,14 @@ def measure_study(
                 "abstain_not_parted_from_the_fat_with_fat_suppression",
             ),
             (
-                "semimembranosus",
-                lambda own: semimembranosus_slice(own, leg),
-                "abstain_no_tendon_at_the_back_inner_corner",
-            ),
-            (
                 "patellar_retinacula",
                 lambda own: retinacula_slice(own, leg, patella_centre),
                 None,
+            ),
+            (
+                BICEPS,
+                lambda own: biceps_femoris_slice(own, measured, fibula_lps),
+                BICEPS_LAID_WHEN,
             ),
         ):
             found, silences = find_part(measured, part, read_slice, laid_when)
@@ -2238,6 +2752,16 @@ def measure_study(
                     ),
                     "draw",
                 )
+            if any(
+                r["assignments"]["codes"].get("iliotibial_band") in NAMED
+                for r in records
+            ):
+                reads("iliotibial_band", ("region",), "draw")
+            # the sartorius, which a middle axial names from the gracilis's places
+            if any(
+                r["assignments"]["codes"].get("sartorius") in NAMED for r in records
+            ):
+                reads("sartorius", ("region",), "draw")
             # the extensor tendons, which the sagittal middle slices name
             if any(
                 r["assignments"]["codes"].get(name) in NAMED
@@ -2268,6 +2792,10 @@ def measure_study(
                 for r in main_records
             ):
                 reads("popliteus_tendon", ("region",), "draw")
+            if any(
+                r["assignments"]["codes"].get("gracilis") in NAMED for r in main_records
+            ):
+                reads("gracilis", ("region",), "draw")
             # the bursa, which the semimembranosus tendon's slice names
             if any(
                 r["assignments"]["codes"].get("gastrocnemius_semimembranosus_bursa")

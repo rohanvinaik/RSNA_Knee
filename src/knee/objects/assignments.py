@@ -4,6 +4,43 @@ Each is an «<object>» (Rohan, 2026-10-14): a set of descriptions of how it app
 read off the interiors' own lenses, each one check with the code it abstains with, and the
 categories of the twelve it relates to (docs/OBJECTS_AND_CONDITIONS.md §6):
 
+- ILIOTIBIAL BAND (ITB): «a distal continuation of the deep fascia lata of the thigh which inserts
+  onto Gerdy's tubercle on the anterolateral proximal tibia», «seen as a broad, thick band of low
+  signal extending from the anterolateral thigh», in front of the LCL and the biceps tendon (Chien
+  et al. 2020, PDF pp. 14-15, Figure 29). Seen on the proof's non-fat-suppressed coronals,
+  2026-10-16 (raw, at native pixels, slices 6 to 15): outside the femur's lateral condyle the bright
+  subcutaneous fat lies in a vertical band, and directly on its deep surface runs one thin dark
+  line, about 0 to 130 against the fat's 400 to 700 and the muscle's 250 to 450, from the top of the
+  picture down past the joint to the tibia's top-lateral corner; below that it goes on as the
+  crural fascia. It is named on the existing middle coronal (a standard first slice) by these
+  descriptions, each one check with its code (`itb_code`, `iliotibial_band`):
+  1. side to side and the leg both lie in the slice's plane, as on a coronal slice
+     (abstain_side_to_side_runs_through_the_plane; abstain_leg_runs_through_the_plane);
+  2. the header names the knee, so its outer side is known (abstain_header_names_no_knee);
+  3. fat is not suppressed: the layer is the subcutaneous fat the sequences without suppression
+     name; on the fat-suppressed twin the ITB is laid on (abstain_not_parted_from_the_fat_with_fat_suppression);
+  4. the slice names the femur, the tibia and the subcutaneous fat (abstain_no_femur_and_tibia;
+     abstain_no_subcutaneous_fat); on each native cross-section across the leg (the sections are
+     indexed along the native axis the leg runs along) the layer is that fat lying outboard of the
+     bones (abstain_no_fat_outside_the_bones);
+  5. the line is the lowest acquired signal in the strip deeper than the layer's deep edge by at
+     most `SHELL_MM`, kept whole when its tied minimum is one contiguous run and darker than the
+     median light of the layer and of the next `SHELL_MM` beyond the strip, the deep neighbour: a dip
+     between two lighter tissues, not a slope from fat to muscle. `SHELL_MM` is the 2 mm reach
+     every rule here allows a thin dark band to its neighbour; no signal cutoff is added, nothing
+     is smoothed, and no section is read from its neighbours (abstain_no_dark_line_deep_to_the_fat);
+  6. the band is kept from the picture's top down to the most superior section where a line comes
+     within `SHELL_MM` of the tibia, its insertion (abstain_band_does_not_reach_the_tibia), and
+     passes a section holding the femur (abstain_band_not_beside_the_femur).
+  This localizes the band's course as a trace: it does not measure thickness or the exact insertion
+  on Gerdy's tubercle, and leaves out the sections whose line is not a clean dip (on the proof 48
+  of 384 sections are not darker than both sides, 8 have two separated tied minima). It names the
+  deep fascia where it lies against the subcutaneous fat, so a band deeper than the fat would not
+  be reached, and the slice law is the middle coronal's, not a search for the band's best slice.
+  The layer, strip, candidate lines and per-section light are retained as readings. It relates to
+  none of the twelve conditions directly: it is the outer neighbour of the lateral complex the LCL
+  belongs to.
+
 - POPLITEUS TENDON: the structure in the lateral femoral sulcus, localized on the coronal slice
   through the fibular attachment already selected for the LCL. It is named on the
   non-fat-suppressed slice and laid onto its twin by the existing physical-place match. Its
@@ -19,6 +56,76 @@ categories of the twelve it relates to (docs/OBJECTS_AND_CONDITIONS.md §6):
   This localizes the tendon in the sulcus on this slice, may include a cortex rim or partial
   cross-section, and does not claim its full course. It relates to none of the twelve conditions
   directly.
+
+- BICEPS FEMORIS TENDON (proximal): the dark cord that joins the posterior thigh muscle to the
+  fibular head, part of the lateral complex with the LCL and the iliotibial band
+  (docs/OBJECTS_AND_CONDITIONS.md; Chien et al. 2020, where it lies behind the ITB and beside the
+  LCL). Seen on the proof's fat-bright sagittals, 2026-10-16 (the inspected prototype picture): on
+  the slice just beyond the fibular head's lateral face, a long dark body runs from the lower end
+  of the posterior thigh muscle down to the head's marrow; the LCL, which also reaches the head,
+  lies on the slices medial to it. It is named on a slice of its own by these descriptions, each
+  one check with its code (`lateral_to_the_head`, `proximal_biceps_on_slice`):
+  1. its slice: from the fibula's main slice, the fibula's places are carried along the series
+     normal as a projection, not a slab (`projected_places`), and the walk goes toward the knee's
+     outer side while the marrow-like body holding them (`fibula_like_head`) is still at least a
+     disc `BONE_DISC_MM2` (a disc `BONE_MM` across); the answer is the first slice outward where it
+     is not. Read lazily, slice by slice, with no scan of the series: a slice the walk never read
+     keeps NaN, not 0, since "cannot say" is not "measured empty" (`HEAD_SLICE_STATUS`)
+     (abstain_header_names_no_knee; abstain_no_fibula; abstain_slices_do_not_run_side_to_side;
+     abstain_the_series_has_one_slice; abstain_no_slice_thickness;
+     abstain_no_slice_holds_the_fibula; abstain_head_unreadable_on_the_way;
+     abstain_the_fibula_is_not_a_disc_on_its_main_slice;
+     abstain_the_series_ends_before_the_head_does);
+  2. the head's body on a slice is the region as bright as the fibula's own marrow (within
+     `LIKE_THE_TIBIA` of its light) that holds most of the projected fibula's places, after
+     specks and bridges narrower than three native pixels are taken out by one erosion and
+     dilation with a 3 x 3 square (a sampling-scale operation: its reach in millimetres is the
+     pixel pitch, not an anatomical 3 mm; being an opening it closes no crack and fills no hole);
+     no projected fibula, no body, or two bodies holding exactly as many places give no head
+     (abstain_no_fibula_marrow_light; abstain_no_projected_fibula;
+     abstain_no_marrow_like_body_at_the_fibula; abstain_tied_head_bodies);
+  3. the slice is a sagittal one without fat suppression, where the head's marrow is bright and the
+     cord dark, with its fat-suppressed twin laid on the same pixels, and the fibula's marrow
+     light in both acquisitions is known and positive (abstain_empty_slice;
+     abstain_marrow_as_dark_as_a_ligament_with_fat_suppression;
+     abstain_front_to_back_runs_through_the_plane; abstain_leg_runs_through_the_plane;
+     abstain_no_fibula_marrow_light; abstain_no_suppressed_marrow_light;
+     abstain_no_twin_on_the_slice; abstain_no_fibular_head_on_the_slice);
+  4. the cord is dark in both acquisitions, each read as a median along the leg over
+     `LIGAMENT_THICK_MM`, and a place the filter cannot fully see (outside the twin's picture, or
+     not finite) has no reading at all, never a zero that would read as dark: without fat
+     suppression no brighter than `LIGAMENT_DARKER` of the head's marrow (muscle is as dark, so
+     this alone is not it); with it no brighter than the head's own suppressed marrow, which
+     muscle, about twice as bright there, is not;
+  5. it lies between a muscle and the head along the leg: below the lower end of the muscle belly
+     and above the head's top. The belly is the largest body above the head, at least `BONE_MM`
+     across, dark without suppression and, suppressed, brighter than the marrow-like band and
+     under `FLUID_BRIGHTER` times the head's suppressed marrow; two exactly equal largest bodies
+     abstain (abstain_no_muscle_belly_above_the_head; abstain_tied_muscle_bellies);
+  6. cortex surrounds marrow: nothing within `SHELL_MM` of a marrow-like body (a thick body at
+     least `LIKE_THE_TIBIA`'s lower bound of the head's light, or the head) is taken
+     (abstain_nothing_dark_between_the_muscle_and_the_head);
+  7. a competent piece: a part at least `LIGAMENT_THICK_MM` thick, at least a disc
+     `BONE_DISC_MM2` in area, reaching within `BONE_MM` of both the belly and the head; the
+     largest, an exact tie abstaining. Every piece's area, reaches and length are kept, the
+     competent ones flagged (abstain_no_competent_piece_joins_the_muscle_and_the_head;
+     abstain_tied_competent_pieces).
+  What the baseline constants do here. Marrow contrast separates the tissues, never one lens
+  alone: `LIKE_THE_TIBIA` says what is the marrow's tissue, `LIGAMENT_DARKER` what is darker than
+  marrow and so tendon or muscle, `FLUID_BRIGHTER` the top of the muscle band in the twin. The
+  physical body scale separates a belly or a core from a thin seam: `BONE_MM` for the belly, the
+  head and the piece's area, `LIGAMENT_THICK_MM` for the cord's thickness and the filter's length.
+  `SHELL_MM` and the reach of `BONE_MM` are allowances for broad targets (a marrow body's cortex,
+  the belly's and the head's loose ends), not measurements of thickness or of an attachment.
+  Limitations, stated and not chased: it is a localization at one validity demonstration, not
+  precision or generalization. The head's area on the slice that is chosen lies close to the
+  `BONE_MM` disc's boundary, so the slice choice is a proxy for "just beyond the head's lateral
+  face" and flips with a pixel or two (no threshold has been tuned to it). The piece may take in
+  the LCL's neighbourhood and the arm of the muscle in front, since the dark cord and its
+  neighbours are one dark body in these scans, and it leaves any part of the cord that lies
+  within `SHELL_MM` of a bright body or on another slice. A thick bright body near the cord (fat)
+  counts as marrow and removes its surroundings. It relates to none of the twelve conditions
+  directly: the lateral complex's tendon, no label names it.
 
 - AIR: the low signal outside the leg. Measured on the proof study, 2026-10-14: the air fields are
   2.5 to 5 cm thick, and the strips where the picture fades into its black margin are a few
@@ -537,6 +644,94 @@ categories of the twelve it relates to (docs/OBJECTS_AND_CONDITIONS.md §6):
   behind the semimembranosus is selected; no proof position, label or new cutoff enters the rule.
   If the dark bodies join, this definition cannot separate them. This is a cross-section, not a
   claim about the tendon's whole course. None of the twelve categories names it directly.
+- GRACILIS TENDON: the thin dark cord on the knee's inner side, on the semimembranosus tendon's
+  tibial-top axial slice. The gracilis, with the sartorius and the semitendinosus, attaches on the
+  anteromedial tibia, so it lies further forward and further to the inner side than the two
+  hamstring tendons behind it (LaPrade et al. 2007, the medial knee; docs/OBJECTS_AND_CONDITIONS.md).
+  Seen on the inspected prototype picture, 2026-10-16 (the proof's axial slice, raw at native
+  pixels): beside the semimembranosus's and the semitendinosus's black ovals, toward the inner
+  skin and in front of the semitendinosus, a separate, thinner dark cord, a few pixels across,
+  with bright fat and vessels round it. The shared body reading (`dark_tendon_bodies`) closes
+  one-pixel cracks with a 4-neighbour structure and rubs away every part thinner than
+  `MENISCUS_THICKNESS_MM` (a disc 4 pixels across at this pitch), which removes this cord. So
+  it is read by a complementary sampling lens, `native_dark_bodies`, at the pixel scale: the
+  same low signal outside the air, skin and black margin, closed by the 3 x 3 square (8
+  neighbours) and opened by the 4-neighbour cross, which rubs away the parts too thin to hold
+  the cross (under three pixels across) and trims a kept body's corners.
+  Both are sampling-scale operations, not anatomical sizes or signal levels; the shared lens
+  and the two named tendons are left as they are. Its descriptions, checked by
+  `gracilis_on_slice`, each one check with its code:
+  1. the header names the knee, so its inner side is known (abstain_header_names_no_knee);
+  2. the semimembranosus and the semitendinosus are both named, the two references
+     (abstain_no_semimembranosus_reference; abstain_no_semitendinosus_reference);
+  3. the native lens holds dark bodies (abstain_no_native_dark_body);
+  4. a candidate is a whole body that overlaps neither named tendon, whose mean lies on the
+     inner side of both tendons' means and in front of the semitendinosus's mean
+     (abstain_no_body_medial_to_both_and_in_front_of_the_semitendinosus);
+  5. of those it is the one nearest the pair of tendons in physical distance, retained whole,
+     the distance read from the slice's shared measures; an exact tie abstains
+     (abstain_tied_nearest_bodies).
+  The labels, each body's mean inner and back positions, the eligible bodies and their
+  distances are all retained as readings. No proof coordinate, component number or signal
+  cutoff enters the rule, and no ratio or window from any other part. If the cord is joined to
+  another dark body at the pixel scale it cannot be separated; this is a cross-section, not
+  the tendon's course. It relates to none of the twelve categories directly. The sartorius is
+  defined next, from this tendon's physical places.
+- SARTORIUS: the long strap muscle of the inner thigh, whose tendon joins the gracilis's and
+  the semitendinosus's on the anteromedial tibia, in front of and on the inner side of them
+  (LaPrade et al. 2007, the medial knee; the pes anserinus source in
+  data/readings/definitions-20261015/remaining-anatomy-reading.md). It is muscle higher up, so on
+  the knee's middle axial it is no tendon's dark oval but a flat grey sheet of muscle, brighter
+  than the fat suppressed round it. Seen on the inspected prototype pictures, 2026-10-16
+  (sartorius-middle-overview.png and -close.png, the proof's middle axial, slice 16, fat
+  suppressed): a flattened grey body on the knee's inner side, in front of where the gracilis
+  lies, a substantial sheet, with a small bright vessel beside it and a lobe behind it that the
+  rule takes in. The middle axial is the standard first slice (Rohan, 2026-10-15), and the
+  gracilis is named on another slice of the series, 20 mm from it on the proof, so its places are
+  only a LOCATION TARGET on this one, not the cord's boundary on this slice. Its descriptions, each one check
+  with its code (`sartorius_on_slice`, `name_sartorius`):
+  1. the leg runs through the slice's plane, as on an axial slice, and the sequence is
+     fat-suppressed and fluid-sensitive, the one the grey sheet's light was read on
+     (abstain_leg_runs_in_the_plane; abstain_requires_fluid_sensitive_fat_suppression);
+  2. a gracilis was named by its own lens on the semimembranosus tendon's slice, the first such
+     among the study's early records of that group, its places put in the scanner's millimetres
+     once and handed on (`gracilis_source`; abstain_no_native_gracilis;
+     abstain_gracilis_source_geometry_unreadable), and the header names the knee, so its inner
+     side is known (abstain_header_names_no_knee);
+  3. those places are projected along this slice's normal, however far off its plane they lie
+     (`projected_places`): the target (abstain_gracilis_projects_outside_the_picture);
+  4. relative lightness (`local_lightness`): the light after a `SAMPLING_PIXELS` median, over the
+     median of the seen, not-low light of the surrounding window `LOCAL_CONTRAST_MM` across on each
+     axis, the window's pixel count read from the slice's own pixel pitch and made odd. Places
+     the lens reads as low signal, that are not finite or that lie in the black margin have no
+     reading, never a dark one, and are left out of every surround; an empty surround, or one
+     whose median is zero, gives NaN, not a ratio (abstain_no_local_contrast);
+  5. the muscle-grey bodies (`muscle_grey_bodies`): the places whose relative lightness lies in
+     `MUSCLE_GREY` (from the lower bound up to, not including, the upper), after an opening by a
+     `SAMPLING_PIXELS` square, as whole 8-connected bodies (abstain_no_soft_tissue_grey_body);
+  6. a body's mean lies on the knee's inner side of the target's mean and in front of it, both
+     read from the patient's axes (abstain_no_grey_body_medial_to_and_in_front_of_the_gracilis_target);
+  7. and it reaches within `GRACILIS_REACH_MM` of the target in physical distance
+     (abstain_no_grey_body_within_reach_of_the_gracilis_target);
+  8. of those it is the largest, whole; two of exactly the largest size abstain
+     (abstain_tied_largest_bodies).
+  What the baseline constants are. They are explicit baseline common-sense readings of this
+  kind of scan, not universal MRI biology and not a parameter fit; none was searched or tuned.
+  `LOCAL_CONTRAST_MM` is a surround wider than any small tendon, vessel or muscle sheet here is
+  thick, so the surround is mostly the tissue round the sheet and not the sheet; `MUSCLE_GREY` is
+  Claude's reading of the first visual comparison on the proof's axial: the fat suppressed to
+  about 60 to 90, muscle about 130 to 175, and white things (vessel wall, cartilage, fluid) 250
+  and up, which against such a surround is a ratio from 1.5 up to, not including, 3;
+  `GRACILIS_REACH_MM` is a broad locational allowance between a target that is only projected and
+  a sheet, not a size and not an attachment; `SAMPLING_PIXELS` is the native sampling lens (the
+  pixel either side), not an anatomical dimension. Every reading actually computed is kept as
+  an array (the target, the smoothed light, the surround, the relative lightness, the labelled
+  bodies, their means, sizes, reaches and status), and a reading is present only once the rule
+  reached it. Limitations, stated and not chased: it localizes the sheet on one slice, not the
+  muscle's course or thickness; it takes in a small vessel's halo and a lobe behind the sheet;
+  the target's distance from the slice is only reported (`gracilis_source_separation_mm`), and a
+  source far from the slice is no claim that the gracilis runs there. It relates to none of the
+  twelve categories directly.
 - GASTROCNEMIUS-SEMIMEMBRANOSUS BURSA: the fluid-filled pocket between the medial
   gastrocnemius and semimembranosus tendon. Descriptions (bursa_code):
   1. fluid is bright on this fat-suppressed, fluid-sensitive axial slice
@@ -660,7 +855,7 @@ conditions directly.
 """
 
 import warnings
-from collections.abc import Callable, Hashable
+from collections.abc import Callable, Hashable, Sequence
 from dataclasses import dataclass
 from typing import TypeVar
 
@@ -686,6 +881,16 @@ AIR_FIELD_MM = 10.0
 MENISCUS_THICKNESS_MM = 2.0
 # A bone is at least a centimetre across: a region smaller than a disc this wide is not one.
 BONE_MM = 10.0
+# The area of a disc `BONE_MM` across: the smallest region that is a bone's body and not a sliver.
+BONE_DISC_MM2 = float(np.pi * (BONE_MM / 2.0) ** 2)
+# What the outward walk to the fibular head (`lateral_to_the_head`) says of each slice it was asked
+# about: 0 never read (its area stays NaN, which is not the same as measured empty).
+HEAD_SLICE_STATUS = {
+    "unread": 0,
+    "head_still_a_disc": 1,
+    "head_no_longer_a_disc": 2,
+    "head_unreadable": 3,
+}
 # A muscle's belly about the knee is centimetres across (the vasti, the hamstrings, the
 # gastrocnemius, the tibialis anterior); its tendons, the fascia and the vessels among the muscles
 # are millimetres (anatomy). Claude's reading of the proof's T1 coronal, 2026-10-15: of the places
@@ -733,6 +938,25 @@ LCL_BEHIND_MM = 8.2
 # proof's fat-suppressed coronal and sagittal, 2026-10-15, where the joint's fluid is x4 to x8 of
 # the marrow's light, the cartilage x2.4 to x3.5, and muscle and fat x1 to x2.
 FLUID_BRIGHTER = 4.0
+# The sartorius is read from baseline common-sense readings of the proof's fat-suppressed axial
+# (Claude, 2026-10-16), not universal MRI biology and not a fit: the surround a sheet's light is
+# weighed against is `LOCAL_CONTRAST_MM` across, wider than any small tendon, vessel or muscle
+# sheet is thick; `SAMPLING_PIXELS` is the native sampling lens, the pixel either side, not an
+# anatomical size; muscle's light against its surround is `MUSCLE_GREY`, from the first visual
+# comparison (fat suppressed about 60 to 90, muscle 130 to 175, white things 250 and up), a ratio
+# from the first bound up to, not including, the second; `GRACILIS_REACH_MM` is a broad
+# locational allowance to a target that is only projected.
+LOCAL_CONTRAST_MM = 20.0
+SAMPLING_PIXELS = 3
+MUSCLE_GREY = (1.5, 3.0)
+GRACILIS_REACH_MM = 10.0
+# What `sartorius_on_slice` says of each muscle-grey body it weighed.
+SARTORIUS_BODY_STATUS = {
+    "not_medial_and_in_front": 0,
+    "beyond_reach": 1,
+    "within_reach": 2,
+    "selected": 3,
+}
 # What a slice's codes say when an object is named on it, by its own lens or with its partner's.
 NAMED = ("identified", "agreed_with_its_partner", "laid_from_its_partner")
 # A place of one slice that lies outside its partner's picture, where the partner has no say.
@@ -779,6 +1003,10 @@ OBJECT_CODES = {
     "medial_patellar_retinaculum": 36,
     "lateral_patellar_retinaculum": 37,
     "popliteus_tendon": 38,
+    "iliotibial_band": 39,
+    "biceps_femoris_tendon": 40,
+    "gracilis": 41,
+    "sartorius": 42,
 }
 RETINACULA = (
     "medial_patellar_retinaculum",
@@ -818,8 +1046,13 @@ SLICE_PARTS = (
     "patellar_retinacula",
     *RETINACULA,
     "popliteus_tendon",
+    "iliotibial_band",
+    "biceps_femoris_tendon",
+    "gracilis",
+    "sartorius",
 )
 FOUR_NEIGHBOURS = ndi.generate_binary_structure(2, 1)
+EIGHT_NEIGHBOURS = ndi.generate_binary_structure(2, 2)
 
 
 @dataclass(frozen=True, slots=True)
@@ -1489,14 +1722,27 @@ def places_on_slice(
     (`PlaneFrame.normal`, `PlaneFrame.to_native`) carry them onto it."""
     points = np.asarray(points_lps, dtype=np.float64)
     near = np.abs((points - frame.origin_lps) @ frame.normal()) <= thickness_mm / 2.0
-    rc = np.rint(frame.to_native(points[near])).astype(int)
+    return projected_places(points[near], frame, shape)
+
+
+def projected_places(
+    points_lps: np.ndarray, frame: PlaneFrame, shape: tuple[int, int]
+) -> np.ndarray:
+    """The pixels of a slice that places in the scanner's millimetres project onto along its normal,
+    however far off its plane they lie (`places_on_slice` keeps only those within half its
+    thickness, and calls this for them); a place whose projection falls outside the picture holds
+    no pixel. Empty for no places; a malformed array is `PlaneFrame.to_native`'s ValueError."""
+    held = np.zeros(shape, dtype=bool)
+    points = np.asarray(points_lps, dtype=np.float64)
+    if points.size == 0:
+        return held
+    rc = np.rint(frame.to_native(points)).astype(int)
     inside = (
         (rc[:, 0] >= 0)
         & (rc[:, 0] < shape[0])
         & (rc[:, 1] >= 0)
         & (rc[:, 1] < shape[1])
     )
-    held = np.zeros(shape, dtype=bool)
     held[rc[inside, 0], rc[inside, 1]] = True
     return held
 
@@ -1591,6 +1837,572 @@ def popliteus_in_notch(
     selected = components == selected_id
     readings["selected_component"] = selected
     return selected, readings, "identified"
+
+
+def itb_code(
+    sides_in_plane: bool,
+    leg_in_plane: bool,
+    knee: str,
+    fat_suppressed: bool,
+    reading: str,
+) -> str:
+    """Whether the ITB was named on a slice, or why not: each check is one of its descriptions.
+    `reading` is what `iliotibial_band` said of the slice's own measurements."""
+    if not sides_in_plane:
+        return "abstain_side_to_side_runs_through_the_plane"
+    if not leg_in_plane:
+        return "abstain_leg_runs_through_the_plane"
+    if knee not in ("R", "L"):
+        return "abstain_header_names_no_knee"
+    if fat_suppressed:
+        return "abstain_not_parted_from_the_fat_with_fat_suppression"
+    return reading
+
+
+def iliotibial_band(
+    plane: np.ndarray,
+    fat: np.ndarray,
+    femur: np.ndarray,
+    tibia: np.ndarray,
+    outside: np.ndarray,
+    available: np.ndarray,
+    outward_mm: np.ndarray,
+    up_mm: np.ndarray,
+    to_tibia_mm: np.ndarray,
+    leg_axis: int,
+) -> tuple[np.ndarray, dict[str, np.ndarray], str]:
+    """The iliotibial band as the dark fascial line on the deep surface of the leg's outer
+    subcutaneous fat, from the thigh down to the tibia.
+
+    Chien et al. 2020: the ITB is the deep fascia of the thigh continued down the outside of the
+    knee to the tibia, «a broad, thick band of low signal». It lies directly under the fat, so on
+    each native cross-section across the leg (a line of pixels; `leg_axis` is the native axis the
+    leg runs along, the sections' index) the rule reads:
+
+    - the layer: the named subcutaneous fat lying outboard of the bones on that section
+      (`outward_mm` is each place's position toward the knee's outer side);
+    - the strip: the places not fat, bone, air, skin or unavailable, deeper than the layer's deep
+      edge by at most `SHELL_MM`, the reach the rules already allow a thin dark band to its
+      neighbour; the deep neighbour is the next `SHELL_MM` beyond it;
+    - the line: the strip's lowest acquired signal, kept whole when its tied minimum is one
+      contiguous run, and only when it is darker than the median light of the layer and of the deep
+      neighbour, so it is a dip between two lighter tissues, not the first step of a slope from fat
+      to muscle. No cutoff, no smoothing, no interpolation across sections.
+
+    The band is kept from the top of the picture down to the most superior section where a line
+    comes within `SHELL_MM` of the tibia, its insertion (Gerdy's tubercle); below it the line goes
+    on as the leg's crural fascia, which is not named. It must pass a section holding the femur.
+    A one-pixel trace of the band's course is measured, not its thickness, nor the exact insertion.
+    Returns the mask, the retained readings and the code.
+    """
+    shape = plane.shape
+    maps = (fat, femur, tibia, outside, available, outward_mm, up_mm, to_tibia_mm)
+    if (
+        plane.ndim != 2
+        or any(np.shape(m) != shape for m in maps)
+        or leg_axis not in (0, 1)
+    ):
+        raise ValueError(
+            "iliotibial_band expects same-shaped 2-D maps and a native axis 0 or 1"
+        )
+
+    def across(values: np.ndarray) -> np.ndarray:
+        """Rows are the sections, whichever native axis the leg runs along (its own inverse)."""
+        return values if leg_axis == 0 else values.T
+
+    light, fat_s, outside_s, ok_s = (
+        across(plane),
+        across(np.asarray(fat, dtype=bool)),
+        across(np.asarray(outside, dtype=bool)),
+        across(np.asarray(available, dtype=bool)),
+    )
+    femur_s, tibia_s = (
+        across(np.asarray(femur, dtype=bool)),
+        across(np.asarray(tibia, dtype=bool)),
+    )
+    out_s, up_s, near_tibia = across(outward_mm), across(up_mm), across(to_tibia_mm)
+    bones = femur_s | tibia_s
+    count = light.shape[0]
+    layer = np.zeros(light.shape, dtype=bool)
+    strip = np.zeros(light.shape, dtype=bool)
+    lines = np.zeros(light.shape, dtype=bool)
+    # per section: 0 no layer, 1 line, 2 tied minima apart, 3 no dip, 4 no strip or deep neighbour
+    status = np.zeros(count, dtype=np.int8)
+    deep_edge = np.full(count, np.nan)
+    layer_light = np.full(count, np.nan)
+    line_light = np.full(count, np.nan)
+    deep_light = np.full(count, np.nan)
+    section_up = up_s.mean(axis=1)
+    readings: dict[str, np.ndarray] = {}
+
+    def finish(mask_s: np.ndarray, stop_up: float, code: str):
+        readings.update(
+            fat_layer=across(layer),
+            strip=across(strip),
+            candidate_lines=across(lines),
+            section_axis=np.asarray(leg_axis, dtype=np.int8),
+            section_status=status,
+            section_fat_deep_edge_mm=deep_edge,
+            section_fat_light=layer_light,
+            section_line_light=line_light,
+            section_deep_light=deep_light,
+            distal_stop_up_mm=np.asarray(stop_up, dtype=np.float64),
+        )
+        return across(mask_s), readings, code
+
+    nothing = np.zeros(light.shape, dtype=bool)
+    if not fat_s.any():
+        return finish(nothing, np.nan, "abstain_no_subcutaneous_fat")
+    if not (femur_s.any() and tibia_s.any()):
+        return finish(nothing, np.nan, "abstain_no_femur_and_tibia")
+    # each section's outermost bone place; infinite where it holds none
+    edge = np.full(count, np.inf)
+    for i in np.flatnonzero(bones.any(axis=1)):
+        edge[i] = out_s[i][bones[i]].max()
+    layer = fat_s & ok_s & (out_s > edge[:, None])
+    if not layer.any():
+        return finish(nothing, np.nan, "abstain_no_fat_outside_the_bones")
+
+    reach = float(SHELL_MM)
+    for i in np.flatnonzero(layer.any(axis=1)):
+        under = out_s[i][layer[i]].min()  # the layer's deep edge
+        gap = under - out_s[i]  # how far deeper than the edge, millimetres
+        usable = ok_s[i] & ~outside_s[i] & ~fat_s[i]
+        strip[i] = usable & ~bones[i] & (gap > 0.0) & (gap <= reach)
+        beyond = usable & (gap > reach) & (gap <= 2.0 * reach)
+        deep_edge[i] = under
+        layer_light[i] = float(np.median(light[i][layer[i]]))
+        if not strip[i].any() or not beyond.any():
+            status[i] = 4
+            continue
+        lowest = float(light[i][strip[i]].min())
+        tied = strip[i] & (light[i] == lowest)
+        # the tied places in order across the section
+        along = tied[np.argsort(out_s[i])].astype(np.int8)
+        line_light[i] = lowest
+        deep_light[i] = float(np.median(light[i][beyond]))
+        if np.count_nonzero(np.diff(np.r_[0, along]) == 1) != 1:
+            status[i] = 2
+        elif lowest < layer_light[i] and lowest < deep_light[i]:
+            status[i] = 1
+            lines[i] = tied
+        else:
+            status[i] = 3
+    if not lines.any():
+        return finish(nothing, np.nan, "abstain_no_dark_line_deep_to_the_fat")
+
+    reaching = np.flatnonzero((lines & (near_tibia <= reach)).any(axis=1))
+    if not reaching.size:
+        return finish(nothing, np.nan, "abstain_band_does_not_reach_the_tibia")
+    # the most superior section where a line reaches the tibia
+    stop_up = float(section_up[reaching].max())
+    kept = lines & (section_up >= stop_up)[:, None]
+    if not (kept.any(axis=1) & femur_s.any(axis=1)).any():
+        return finish(nothing, stop_up, "abstain_band_not_beside_the_femur")
+    return finish(kept, stop_up, "identified")
+
+
+def iliotibial_band_on_slice(
+    plane: np.ndarray,
+    objects: np.ndarray,
+    available: np.ndarray,
+    basis_lps: np.ndarray,
+    knee: str,
+    fat_suppressed: bool,
+    measures: Measures | None = None,
+) -> tuple[np.ndarray, dict[str, np.ndarray], str]:
+    """The ITB on one slice (its paragraph in the module note): the slice must be a coronal one
+    (side to side and the leg both in its plane), the header must name the knee so its outer side is
+    known, fat must not be suppressed (the layer is the named subcutaneous fat, which the sequences
+    without suppression name; the partner lays it onto the other), on the existing middle coronal. Of the slice's named parts it reads the
+    subcutaneous fat, the femur, the tibia, the air and the skin. `measures` are the slice's shared
+    measures, when its caller keeps them: each place's position toward the left and along the leg,
+    and its distance from the tibia, are read from them. Returns the mask, the retained readings
+    (empty where a prerequisite refused before anything was measured) and the code."""
+    shape = plane.shape
+    sides, _, leg = axes_in_plane(basis_lps)
+    tibia = objects == OBJECT_CODES["tibia"]
+    refusal = itb_code(sides, leg, knee, fat_suppressed, "identified")
+    if refusal != "identified":
+        return np.zeros(shape, dtype=bool), {}, refusal
+    spacing_rc = np.linalg.norm(basis_lps, axis=0)
+    if measures is None:
+        left = positions_along(shape, basis_lps, 0)
+        up = positions_along(shape, basis_lps, 2)
+        to_tibia = (
+            distance_from(tibia, spacing_rc) if tibia.any() else np.full(shape, np.inf)
+        )
+    else:
+        left, up = measures.along(0), measures.along(2)
+        to_tibia = (
+            measures.distance(tibia, spacing_rc)
+            if tibia.any()
+            else np.full(shape, np.inf)
+        )
+    # the outer side is the patient's right for a right knee, whose left axis points inward
+    outer = -1.0 if knee == "R" else 1.0
+    mask, readings, reading = iliotibial_band(
+        plane,
+        objects == OBJECT_CODES["subcutaneous_fat"],
+        objects == OBJECT_CODES["femur"],
+        tibia,
+        np.isin(objects, (OBJECT_CODES["air"], OBJECT_CODES["skin"])),
+        available,
+        outer * left,
+        up,
+        to_tibia,
+        int(np.argmax(np.abs(np.asarray(basis_lps)[2]))),
+    )
+    return (
+        mask,
+        readings,
+        itb_code(sides, leg, knee, fat_suppressed, reading),
+    )
+
+
+def unique_largest(sizes: np.ndarray) -> int | None:
+    """The index of the one largest size; None when there are none or the largest is shared, since
+    two bodies of exactly the same size are not told apart by their size."""
+    sizes = np.asarray(sizes)
+    if not sizes.size:
+        return None
+    winners = np.flatnonzero(sizes == sizes.max())
+    return int(winners[0]) if len(winners) == 1 else None
+
+
+def twin_marrow_light(twin: np.ndarray, places: np.ndarray) -> float:
+    """The marrow's light in the fat-suppressed twin laid on a slice's pixels (NaN where it has no
+    say) over a bone's places: the median of the places it sees, NaN when it sees none."""
+    seen = np.asarray(places, dtype=bool) & np.isfinite(twin)
+    return float(np.median(twin[seen])) if seen.any() else float("nan")
+
+
+def fibula_like_head(
+    plane: np.ndarray, target: np.ndarray, light: float
+) -> tuple[np.ndarray, str]:
+    """The fibular head's body on one fat-bright slice: the region as bright as the fibula's own
+    marrow (within `LIKE_THE_TIBIA` of `light`) that holds most of `target`, the fibula's places
+    projected onto the slice (`projected_places`). Specks and bridges narrower than three native
+    pixels are taken out first, by one erosion and dilation with a 3 x 3 square: a sampling-scale
+    operation, whose reach in millimetres is the pixel pitch and not an anatomical size, and which
+    being an opening closes no crack and fills no hole. Returns the mask and
+    its code; the mask is empty, and nothing is made up, when `light` is not finite and positive,
+    the target is empty, no body holds a place of it, or two bodies hold exactly as many."""
+    values = np.asarray(plane, dtype=np.float64)
+    places = np.asarray(target, dtype=bool)
+    if values.ndim != 2 or places.shape != values.shape:
+        raise ValueError("head_inputs_must_share_a_2d_shape")
+    none = np.zeros(values.shape, dtype=bool)
+    if not (np.isfinite(light) and light > 0):
+        return none, "abstain_no_fibula_marrow_light"
+    if not places.any():
+        return none, "abstain_no_projected_fibula"
+    low, high = LIKE_THE_TIBIA
+    like = ndi.binary_opening(
+        (values >= low * light) & (values <= high * light),
+        structure=np.ones((3, 3), dtype=bool),
+    )
+    bodies, _ = ndi.label(like)
+    held = bodies[places & (bodies > 0)]
+    if not held.size:
+        return none, "abstain_no_marrow_like_body_at_the_fibula"
+    holds = np.bincount(held)[1:]
+    winner = unique_largest(holds)
+    if winner is None:
+        return none, "abstain_tied_head_bodies"
+    return bodies == winner + 1, "identified"
+
+
+def head_area_mm2(head: np.ndarray, code: str, spacing_rc: np.ndarray) -> float:
+    """What `fibula_like_head` says of the head's area in square millimetres: its area when named;
+    0.0 when the fibula's places held no marrow-like body (measured: the head is gone there); NaN
+    where it cannot be said (no light, the fibula projects outside the picture, a tie, or no
+    usable pixel pitch)."""
+    spacing = np.asarray(spacing_rc, dtype=np.float64)
+    if (
+        spacing.shape != (2,)
+        or not np.all(np.isfinite(spacing))
+        or np.any(spacing <= 0)
+    ):
+        return float("nan")
+    if code == "identified":
+        return float(np.count_nonzero(head)) * float(np.prod(spacing))
+    if code == "abstain_no_marrow_like_body_at_the_fibula":
+        return 0.0
+    return float("nan")
+
+
+def lateral_to_the_head(
+    fibula_lps: np.ndarray,
+    origins_lps: np.ndarray,
+    normal: np.ndarray,
+    thicknesses_mm: Sequence[float | None],
+    knee: str,
+    head_area_at: Callable[[int], float],
+) -> tuple[int | None, np.ndarray, np.ndarray, str]:
+    """The slice just beyond the fibular head's lateral face, by the walk the module note describes:
+    from the slice through the fibula's places (`slice_through`), outward toward the knee's outer
+    side while the head's body is still at least `BONE_DISC_MM2`; the answer is the first slice
+    where it is not. `head_area_at(z)` is the head's area on slice z in square millimetres (NaN
+    where it cannot be said; `head_area_mm2`), asked of a slice only when the walk reaches it, and
+    the caller keeps whatever it made there, so nothing is made twice. `origins_lps` (Z, 3) are the
+    slices' origins and `normal` the series' normal; `knee` is the header's "R" or "L".
+
+    Returns (index or None, area per slice, status per slice, code). A slice the walk never read
+    keeps NaN in the areas and `HEAD_SLICE_STATUS["unread"]` in the status."""
+    origins = np.asarray(origins_lps, dtype=np.float64)
+    places = np.asarray(fibula_lps, dtype=np.float64)
+    if origins.ndim != 2 or origins.shape[1] != 3 or not np.all(np.isfinite(origins)):
+        raise ValueError("invalid_slice_origins")
+    count = len(origins)
+    if len(thicknesses_mm) != count:
+        raise ValueError("thicknesses_must_match_the_slices")
+    axis = np.asarray(normal, dtype=np.float64)
+    if axis.shape != (3,) or not np.all(np.isfinite(axis)) or not np.any(axis):
+        raise ValueError("invalid_series_normal")
+    axis = axis / np.linalg.norm(axis)
+    areas = np.full(count, np.nan)
+    status = np.zeros(count, dtype=np.int8)
+    if knee not in ("R", "L"):
+        return None, areas, status, "abstain_header_names_no_knee"
+    if places.size == 0:
+        return None, areas, status, "abstain_no_fibula"
+    if places.ndim != 2 or places.shape[1] != 3 or not np.all(np.isfinite(places)):
+        raise ValueError("invalid_fibula_places")
+    if count < 2:
+        return None, areas, status, "abstain_the_series_has_one_slice"
+    if abs(float(axis[0])) < ALONG_THE_LEG:
+        return None, areas, status, "abstain_slices_do_not_run_side_to_side"
+    thickness = np.asarray(
+        [np.nan if t is None else float(t) for t in thicknesses_mm], dtype=np.float64
+    )
+    if not np.all(np.isfinite(thickness)) or np.any(thickness <= 0):
+        return None, areas, status, "abstain_no_slice_thickness"
+    main = slice_through(places.mean(axis=0), origins, axis, list(thickness))
+    if main is None:
+        return None, areas, status, "abstain_no_slice_holds_the_fibula"
+    # the outer side is the patient's right for a right knee, the left axis' negative
+    outward = -1.0 if knee == "R" else 1.0
+    along = outward * float(
+        origins[min(main + 1, count - 1), 0] - origins[max(main - 1, 0), 0]
+    )
+    if along == 0.0:
+        return None, areas, status, "abstain_slices_do_not_run_side_to_side"
+    step = 1 if along > 0 else -1
+    z = main
+    while 0 <= z < count:
+        area = float(head_area_at(z))
+        areas[z] = area
+        if not np.isfinite(area) or area < 0:
+            status[z] = HEAD_SLICE_STATUS["head_unreadable"]
+            return None, areas, status, "abstain_head_unreadable_on_the_way"
+        if area < BONE_DISC_MM2:
+            status[z] = HEAD_SLICE_STATUS["head_no_longer_a_disc"]
+            break
+        status[z] = HEAD_SLICE_STATUS["head_still_a_disc"]
+        z += step
+    if not 0 <= z < count:
+        return None, areas, status, "abstain_the_series_ends_before_the_head_does"
+    if z == main:
+        return (
+            None,
+            areas,
+            status,
+            "abstain_the_fibula_is_not_a_disc_on_its_main_slice",
+        )
+    return z, areas, status, "identified"
+
+
+def smoothed_along_the_leg(
+    values: np.ndarray, basis_lps: np.ndarray, length_mm: float
+) -> tuple[np.ndarray, int]:
+    """The median of `values` over `length_mm` along the leg (the native axis nearer the patient's
+    superior axis, read from the basis, never assumed to be the rows), and the window in pixels.
+    NaN wherever any pixel of the window is not finite: a place the filter cannot fully see has no
+    reading, so an unseen pixel never lowers a median into false darkness."""
+    basis = np.asarray(basis_lps, dtype=np.float64)
+    leg_axis = int(np.argmax(np.abs(basis[2])))
+    pitch = float(np.linalg.norm(basis[:, leg_axis]))
+    window = int(2 * round(length_mm / 2.0 / pitch) + 1)
+    size = (window, 1) if leg_axis == 0 else (1, window)
+    seen = np.isfinite(values)
+    median = ndi.median_filter(np.where(seen, values, 0.0), size=size, mode="nearest")
+    supported = (
+        ndi.minimum_filter(seen.astype(np.uint8), size=size, mode="nearest") == 1
+    )
+    return np.where(supported, median, np.nan), window
+
+
+def proximal_biceps_on_slice(
+    plane: np.ndarray,
+    twin: np.ndarray,
+    basis_lps: np.ndarray,
+    light: float,
+    twin_light: float,
+    head: np.ndarray,
+    fat_suppressed: bool = False,
+    measures: Measures | None = None,
+) -> tuple[np.ndarray, dict[str, np.ndarray], str]:
+    """The proximal biceps femoris tendon on its slice (its paragraph in the module note).
+
+    `plane` is the fat-bright sagittal slice and `twin` its fat-suppressed twin laid on the same
+    pixels (NaN where it has no say); `light` and `twin_light` are the fibula's marrow light in
+    each (`twin_marrow_light` for the twin's); `head` is the head's body here (`fibula_like_head`);
+    `fat_suppressed` is the plane's own tag; `measures` are the slice's shared measures, when its
+    caller keeps them: each place's position along the leg and its distance from the marrow, the
+    head and the belly are read from them. The pixel pitch is the basis' own.
+
+    Returns the mask, every reading actually made and the code. A reading is present only once
+    the rule reached it: a refusal leaves out what it never measured instead of filling it with a
+    zero that would read as measured. Every value is an ndarray, none of object dtype."""
+    values = np.asarray(plane, dtype=np.float64)
+    laid = np.asarray(twin, dtype=np.float64)
+    places = np.asarray(head, dtype=bool)
+    basis = np.asarray(basis_lps, dtype=np.float64)
+    if values.ndim != 2 or laid.shape != values.shape or places.shape != values.shape:
+        raise ValueError("biceps_inputs_must_share_a_2d_shape")
+    if basis.shape != (3, 2) or not np.all(np.isfinite(basis)):
+        raise ValueError("invalid_lps_basis")
+    spacing_rc = np.linalg.norm(basis, axis=0)
+    if np.any(spacing_rc <= 0):
+        raise ValueError("invalid_lps_basis")
+    empty = np.zeros(values.shape, dtype=bool)
+    readings: dict[str, np.ndarray] = {}
+
+    def refuse(code: str) -> tuple[np.ndarray, dict[str, np.ndarray], str]:
+        return empty, readings, code
+
+    if not values.size:
+        return refuse("abstain_empty_slice")
+    if fat_suppressed:
+        return refuse("abstain_marrow_as_dark_as_a_ligament_with_fat_suppression")
+    _, front_in_plane, leg_in_plane = axes_in_plane(basis)
+    if not front_in_plane:
+        return refuse("abstain_front_to_back_runs_through_the_plane")
+    if not leg_in_plane:
+        return refuse("abstain_leg_runs_through_the_plane")
+    if not (np.isfinite(light) and light > 0):
+        return refuse("abstain_no_fibula_marrow_light")
+    if not (np.isfinite(twin_light) and twin_light > 0):
+        return refuse("abstain_no_suppressed_marrow_light")
+    if not np.isfinite(laid).any():
+        return refuse("abstain_no_twin_on_the_slice")
+    if not places.any():
+        return refuse("abstain_no_fibular_head_on_the_slice")
+
+    def reach(of: np.ndarray) -> np.ndarray:
+        return (
+            distance_from(of, spacing_rc)
+            if measures is None
+            else measures.distance(of, spacing_rc)
+        )
+
+    low, high = LIKE_THE_TIBIA
+    pixel_mm2 = float(np.prod(spacing_rc))
+    leg_axis = int(np.argmax(np.abs(basis[2])))
+    smooth, window = smoothed_along_the_leg(values, basis, LIGAMENT_THICK_MM)
+    smooth_twin, _ = smoothed_along_the_leg(laid, basis, LIGAMENT_THICK_MM)
+    superior = (
+        positions_along(values.shape, basis, 2)
+        if measures is None
+        else measures.along(2)
+    )
+    dark = smooth <= LIGAMENT_DARKER * light
+    tendon_like = dark & (smooth_twin <= twin_light)
+    muscle_like = (
+        dark
+        & (smooth_twin > high * twin_light)
+        & (smooth_twin < FLUID_BRIGHTER * twin_light)
+    )
+    marrow = thick_parts(values >= low * light, spacing_rc, BONE_MM) | places
+    to_marrow = reach(marrow)
+    to_head = reach(places)
+    head_top = float(superior[places].max())
+    readings.update(
+        fibula_marrow_light_fat_bright=np.asarray(light, dtype=np.float64),
+        fibula_marrow_light_fat_suppressed=np.asarray(twin_light, dtype=np.float64),
+        smoothing_window_pixels=np.asarray(window, dtype=np.int32),
+        leg_axis=np.asarray(leg_axis, dtype=np.int8),
+        smoothed_fat_bright=smooth,
+        smoothed_fat_suppressed_twin=smooth_twin,
+        superior_mm=np.asarray(superior, dtype=np.float64),
+        dark_fat_bright=dark,
+        tendon_like=tendon_like,
+        muscle_like=muscle_like,
+        marrow_bodies=marrow,
+        distance_to_marrow_mm=np.asarray(to_marrow, dtype=np.float64),
+        head_region=places,
+        distance_to_head_mm=np.asarray(to_head, dtype=np.float64),
+        head_top_mm=np.asarray(head_top, dtype=np.float64),
+    )
+
+    # a muscle above the head: the largest body at least BONE_MM across, whole
+    bodies = thick_parts(muscle_like, spacing_rc, BONE_MM)
+    parts, count = ndi.label(bodies)
+    readings["muscle_bodies"] = bodies
+    readings["muscle_body_labels"] = parts.astype(np.int32)
+    index = np.arange(1, count + 1)
+    sizes = np.bincount(parts.ravel(), minlength=count + 1)[1:]
+    middle = (
+        np.asarray(ndi.mean(superior, parts, index=index)) if count else np.empty(0)
+    )
+    above = index[middle > head_top]
+    if not above.size:
+        return refuse("abstain_no_muscle_belly_above_the_head")
+    chosen = unique_largest(sizes[above - 1])
+    if chosen is None:
+        return refuse("abstain_tied_muscle_bellies")
+    belly = parts == above[chosen]
+    muscle_bottom = float(superior[belly].min())
+    readings.update(
+        muscle_belly=belly,
+        muscle_bottom_mm=np.asarray(muscle_bottom, dtype=np.float64),
+        muscle_area_mm2=np.asarray(
+            np.count_nonzero(belly) * pixel_mm2, dtype=np.float64
+        ),
+        distance_to_belly_mm=np.asarray(reach(belly), dtype=np.float64),
+    )
+
+    # a dark cord between them along the leg, clear of any marrow's cortex
+    between = (superior < muscle_bottom) & (superior > head_top)
+    candidate = thick_parts(
+        tendon_like & (to_marrow > SHELL_MM) & between, spacing_rc, LIGAMENT_THICK_MM
+    )
+    pieces, found = ndi.label(candidate, structure=np.ones((3, 3), dtype=bool))
+    readings.update(
+        between_muscle_and_head=between,
+        dark_piece_candidates=candidate,
+        piece_labels=pieces.astype(np.int32),
+        piece_count=np.asarray(found, dtype=np.int32),
+    )
+    if not found:
+        return refuse("abstain_nothing_dark_between_the_muscle_and_the_head")
+    ids = np.arange(1, found + 1)
+    counts = np.bincount(pieces.ravel(), minlength=found + 1)[1:]
+    area = counts * pixel_mm2
+    to_belly = readings["distance_to_belly_mm"]
+    reach_belly = np.asarray(ndi.minimum(to_belly, pieces, index=ids))
+    reach_head = np.asarray(ndi.minimum(to_head, pieces, index=ids))
+    top = np.asarray(ndi.maximum(superior, pieces, index=ids))
+    bottom = np.asarray(ndi.minimum(superior, pieces, index=ids))
+    competent = (
+        (area >= BONE_DISC_MM2) & (reach_belly <= BONE_MM) & (reach_head <= BONE_MM)
+    )
+    readings.update(
+        piece_area_mm2=area,
+        piece_reach_to_belly_mm=reach_belly,
+        piece_reach_to_head_mm=reach_head,
+        piece_length_along_leg_mm=top - bottom + abs(float(basis[2, leg_axis])),
+        piece_competent=competent,
+    )
+    if not competent.any():
+        return refuse("abstain_no_competent_piece_joins_the_muscle_and_the_head")
+    best = unique_largest(counts[competent])
+    if best is None:
+        return refuse("abstain_tied_competent_pieces")
+    selected = int(ids[competent][best])
+    readings["selected_piece"] = np.asarray(selected, dtype=np.int32)
+    return pieces == selected, readings, "identified"
 
 
 def lcl_on_slice(
@@ -2340,6 +3152,31 @@ def dark_tendon_bodies(
     return TendonBodies(handed_on(labels), handed_on(back), handed_on(inner))
 
 
+def native_dark_bodies(
+    dark: np.ndarray,
+    free: np.ndarray,
+    back_mm: np.ndarray,
+    inner_mm: np.ndarray,
+) -> TendonBodies:
+    """The same low signal at the pixel scale, a lens complementary to `dark_tendon_bodies`, for a
+    cord thinner than its small-body scale: close cracks by the 3 x 3 square (8 neighbours), keep
+    it where `free` (not air, skin or the black margin), rub away the parts too thin to hold a
+    4-neighbour cross (under three pixels across; an opening, which also trims a kept body's
+    corners), and label 4-connected bodies with their mean positions. Both operations
+    are sampling-scale, not anatomical sizes or signal levels. The caller supplies `dark`, `free`
+    and the two positions from the slice's shared reading, once; the shared lens is untouched."""
+    body = ndi.binary_closing(dark & free, structure=EIGHT_NEIGHBOURS) & free
+    labels, count = ndi.label(
+        ndi.binary_opening(body, structure=FOUR_NEIGHBOURS), structure=FOUR_NEIGHBOURS
+    )
+    index = np.arange(1, count + 1)
+    back = np.asarray(ndi.mean(back_mm, labels, index=index)) if count else np.empty(0)
+    inner = (
+        np.asarray(ndi.mean(inner_mm, labels, index=index)) if count else np.empty(0)
+    )
+    return TendonBodies(handed_on(labels), handed_on(back), handed_on(inner))
+
+
 def semimembranosus_on_slice(
     bodies: TendonBodies,
     region: np.ndarray,
@@ -2410,6 +3247,262 @@ def semitendinosus_on_slice(
     if len(nearest) != 1:
         return none, "abstain_tied_nearest_bodies"
     return bodies.labels == int(eligible[nearest[0]]), "identified"
+
+
+def gracilis_on_slice(
+    bodies: TendonBodies,
+    semimembranosus: np.ndarray,
+    semitendinosus: np.ndarray,
+    back_mm: np.ndarray,
+    inner_mm: np.ndarray,
+    spacing_rc: np.ndarray,
+    knee: str,
+    measures: Measures | None = None,
+) -> tuple[np.ndarray, dict[str, np.ndarray], str]:
+    """The separate whole dark body (`bodies`, from `native_dark_bodies`) on the knee's inner side
+    of both named tendons and in front of the semitendinosus, overlapping neither, nearest the
+    pair in physical distance. `back_mm` and `inner_mm` are the slice's positions (`inner_mm`
+    toward the knee's inner side, which `knee`, the header's "R" or "L", names); `measures` supply
+    the distance to the pair where the run keeps them. An exact nearest tie abstains.
+
+    Returns the mask, the readings made (a reading is present only once the rule reached it; all
+    ndarrays: `native_body_labels`, `native_body_inner_mm`, `native_body_back_mm`, `eligible_ids`
+    and `eligible_distance_mm`, the latter two in the same order) and the code."""
+    none = np.zeros(bodies.labels.shape, dtype=bool)
+    readings: dict[str, np.ndarray] = {}
+    if knee not in ("R", "L"):
+        return none, readings, "abstain_header_names_no_knee"
+    if not semimembranosus.any():
+        return none, readings, "abstain_no_semimembranosus_reference"
+    if not semitendinosus.any():
+        return none, readings, "abstain_no_semitendinosus_reference"
+    count = len(bodies.back_mm)
+    if not count:
+        return none, readings, "abstain_no_native_dark_body"
+    readings.update(
+        native_body_labels=bodies.labels,
+        native_body_inner_mm=bodies.inner_mm,
+        native_body_back_mm=bodies.back_mm,
+    )
+    index = np.arange(1, count + 1)
+    pair = semimembranosus | semitendinosus
+    touches = np.bincount(bodies.labels[pair], minlength=count + 1)[1:] > 0
+    eligible = index[
+        ~touches
+        & (
+            bodies.inner_mm
+            > max(
+                float(inner_mm[semimembranosus].mean()),
+                float(inner_mm[semitendinosus].mean()),
+            )
+        )
+        & (bodies.back_mm < float(back_mm[semitendinosus].mean()))
+    ]
+    readings["eligible_ids"] = eligible.astype(np.int32)
+    if not eligible.size:
+        return (
+            none,
+            readings,
+            "abstain_no_body_medial_to_both_and_in_front_of_the_semitendinosus",
+        )
+    to_pair = (
+        distance_from(pair, spacing_rc)
+        if measures is None
+        else measures.distance(pair, spacing_rc)
+    )
+    distances = np.asarray(ndi.minimum(to_pair, bodies.labels, index=eligible))
+    readings["eligible_distance_mm"] = distances
+    nearest = np.flatnonzero(distances == distances.min())
+    if len(nearest) != 1:
+        return none, readings, "abstain_tied_nearest_bodies"
+    return bodies.labels == int(eligible[nearest[0]]), readings, "identified"
+
+
+def window_pixels(spacing_rc: np.ndarray, length_mm: float) -> tuple[int, int]:
+    """The odd window (rows, columns) in pixels that covers `length_mm` physically on each axis, from
+    the slice's own pixel pitch (the nearest whole count, made odd so a pixel is its centre)."""
+    steps = np.asarray(spacing_rc, dtype=np.float64)
+    if steps.shape != (2,) or not np.all(np.isfinite(steps)) or np.any(steps <= 0):
+        raise ValueError("invalid_spacing")
+    counts = np.rint(length_mm / steps).astype(int)
+    rows, cols = (int(n + 1 if n % 2 == 0 else n) for n in counts)
+    return rows, cols
+
+
+def median_of_seen(window: np.ndarray) -> float:
+    """The median of the finite values of a window; NaN when it holds none."""
+    seen = window[np.isfinite(window)]
+    return float(np.median(seen)) if seen.size else float("nan")
+
+
+def local_lightness(
+    plane: np.ndarray, excluded: np.ndarray, spacing_rc: np.ndarray
+) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
+    """Each place's light against its surroundings, in the slice's own millimetres: the plane after
+    a `SAMPLING_PIXELS` median of seen, non-low samples (`smooth`), over the median of the seen light of the window
+    `LOCAL_CONTRAST_MM` across on each axis round it (`surround`).
+
+    `excluded` are the places with no reading: the low signal, what is not finite and the black
+    margin. They have none (NaN), never a dark one, in `smooth`, in every surround and in the
+    ratio; places outside the picture are unseen too. A surround that holds nothing seen, or whose
+    median is zero, gives NaN, not a ratio. Returns (lightness, smooth, surround), float arrays of
+    the plane's shape."""
+    values = np.asarray(plane, dtype=np.float64)
+    gone = np.asarray(excluded, dtype=bool) | ~np.isfinite(values)
+    if values.ndim != 2 or gone.shape != values.shape:
+        raise ValueError("lightness_inputs_must_share_a_2d_shape")
+    smooth = ndi.generic_filter(
+        np.where(gone, np.nan, values),
+        median_of_seen,
+        size=SAMPLING_PIXELS,
+        mode="constant",
+        cval=np.nan,
+    )
+    smooth[gone] = np.nan
+    surround = ndi.generic_filter(
+        smooth,
+        median_of_seen,
+        size=window_pixels(spacing_rc, LOCAL_CONTRAST_MM),
+        mode="constant",
+        cval=np.nan,
+    )
+    lightness = np.full(values.shape, np.nan)
+    with np.errstate(invalid="ignore"):
+        np.divide(smooth, surround, out=lightness, where=surround > 0)
+    return lightness, smooth, surround
+
+
+def muscle_grey_bodies(lightness: np.ndarray) -> np.ndarray:
+    """The whole 8-connected bodies of muscle-grey light: the places whose relative lightness lies
+    in `MUSCLE_GREY` (the lower bound up to, not including, the upper), after an opening by a
+    `SAMPLING_PIXELS` square that rubs away what is narrower than the sampling lens. Each body its
+    own label, 0 elsewhere; no reading (NaN) is never grey."""
+    low, high = MUSCLE_GREY
+    with np.errstate(invalid="ignore"):
+        grey = (lightness >= low) & (lightness < high)
+    body = ndi.binary_opening(grey, structure=np.ones((SAMPLING_PIXELS,) * 2, bool))
+    labels, _ = ndi.label(body, structure=EIGHT_NEIGHBOURS)
+    return np.asarray(labels, dtype=np.int32)
+
+
+def sartorius_on_slice(
+    plane: np.ndarray,
+    low: np.ndarray,
+    unseen: np.ndarray,
+    gracilis_lps: np.ndarray,
+    frame: PlaneFrame,
+    knee: str,
+    measures: Measures | None = None,
+) -> tuple[np.ndarray, dict[str, np.ndarray], str]:
+    """The sartorius on a fat-suppressed axial slice (its paragraph in the module note): of the
+    muscle-grey bodies (`muscle_grey_bodies` of `local_lightness`), the largest whole one on the
+    knee's inner side of the gracilis's places and in front of them, reaching within
+    `GRACILIS_REACH_MM` of them. Two of exactly the largest size abstain.
+
+    `gracilis_lps` are the gracilis's places in the scanner's millimetres, from the slice it was
+    named on, and `frame` is this slice's: they are projected along its normal
+    (`projected_places`) into a target, however far off its plane they lie. `low` is the lens's
+    low signal and `unseen` what has no light here (not available, or the black margin); `knee` is
+    the header's "R" or "L", which names the inner side. `measures` are the slice's shared
+    measures, when its caller keeps them: each place's position along the patient's axes and its
+    distance from the target are read from them.
+
+    Returns the mask, every reading actually made (arrays only, present once the rule reached
+    it: the target, its source's separation from the plane, the window, `smooth`, `surround`,
+    `lightness`, the labelled bodies with their inner and back means, sizes and status
+    (`SARTORIUS_BODY_STATUS`), the target's distance, and the eligible bodies with their reach)
+    and the code."""
+    values = np.asarray(plane, dtype=np.float64)
+    gone = np.asarray(low, dtype=bool) | np.asarray(unseen, dtype=bool)
+    if values.ndim != 2 or gone.shape != values.shape:
+        raise ValueError("sartorius_inputs_must_share_a_2d_shape")
+    empty = np.zeros(values.shape, dtype=bool)
+    readings: dict[str, np.ndarray] = {}
+
+    def refuse(code: str) -> tuple[np.ndarray, dict[str, np.ndarray], str]:
+        return empty, readings, code
+
+    if knee not in ("R", "L"):
+        return refuse("abstain_header_names_no_knee")
+    places = np.asarray(gracilis_lps, dtype=np.float64)
+    if places.size == 0:
+        return refuse("abstain_no_gracilis_source")
+    target = projected_places(places, frame, values.shape)
+    readings["gracilis_source_lps"] = places
+    readings["gracilis_target"] = target
+    readings["gracilis_source_separation_mm"] = np.asarray(
+        abs(float((places.mean(axis=0) - frame.origin_lps) @ frame.normal()))
+    )
+    if not target.any():
+        return refuse("abstain_gracilis_projects_outside_the_picture")
+
+    spacing_rc = np.asarray(frame.spacing_rc, dtype=np.float64)
+    lightness, smooth, surround = local_lightness(values, gone, spacing_rc)
+    readings.update(
+        surround_window_pixels=np.asarray(
+            window_pixels(spacing_rc, LOCAL_CONTRAST_MM), dtype=np.int32
+        ),
+        smooth=smooth,
+        surround=surround,
+        lightness=lightness,
+    )
+    if not np.isfinite(lightness).any():
+        return refuse("abstain_no_local_contrast")
+    labels = muscle_grey_bodies(lightness)
+    readings["grey_bodies"] = labels
+    count = int(labels.max())
+    if not count:
+        return refuse("abstain_no_soft_tissue_grey_body")
+
+    basis = frame.basis_lps
+    left = (
+        positions_along(values.shape, basis, 0)
+        if measures is None
+        else measures.along(0)
+    )
+    back = (
+        positions_along(values.shape, basis, 1)
+        if measures is None
+        else measures.along(1)
+    )
+    inner = left if knee == "R" else -left  # toward the other knee
+    index = np.arange(1, count + 1)
+    body_inner = np.asarray(ndi.mean(inner, labels, index=index))
+    body_back = np.asarray(ndi.mean(back, labels, index=index))
+    size = np.bincount(labels.ravel(), minlength=count + 1)[1:]
+    status = np.zeros(count, dtype=np.int8)
+    readings.update(
+        body_inner_mm=body_inner,
+        body_back_mm=body_back,
+        body_size_pixels=size,
+        body_status=status,
+    )
+    eligible = index[
+        (body_inner > float(inner[target].mean()))
+        & (body_back < float(back[target].mean()))
+    ]
+    readings["eligible_ids"] = eligible.astype(np.int32)
+    if not eligible.size:
+        return refuse(
+            "abstain_no_grey_body_medial_to_and_in_front_of_the_gracilis_target"
+        )
+    to_target = (
+        distance_from(target, spacing_rc)
+        if measures is None
+        else measures.distance(target, spacing_rc)
+    )
+    reach = np.asarray(ndi.minimum(to_target, labels, index=eligible))
+    readings.update(target_distance_mm=to_target, eligible_reach_mm=reach)
+    status[eligible - 1] = SARTORIUS_BODY_STATUS["beyond_reach"]
+    near = eligible[reach <= GRACILIS_REACH_MM]
+    status[near - 1] = SARTORIUS_BODY_STATUS["within_reach"]
+    if not near.size:
+        return refuse("abstain_no_grey_body_within_reach_of_the_gracilis_target")
+    chosen = unique_largest(size[near - 1])
+    if chosen is None:
+        return refuse("abstain_tied_largest_bodies")
+    status[near[chosen] - 1] = SARTORIUS_BODY_STATUS["selected"]
+    return labels == int(near[chosen]), readings, "identified"
 
 
 def bursa_on_slice(
@@ -3052,6 +4145,16 @@ def assign_plane(
     for name in RETINACULA:
         codes[name] = "abstain_requires_the_patellar_slice"
     codes["popliteus_tendon"] = "abstain_requires_the_lcl_slice"
+    # The ITB is read from the parts this naming has just made (`iliotibial_band_on_slice`), by the
+    # stage after it, which replaces this code with its own.
+    codes["iliotibial_band"] = "abstain_requires_the_itb_reading"
+    # The biceps tendon is read on a slice of its own, lateral to the fibular head.
+    codes["biceps_femoris_tendon"] = "abstain_requires_the_biceps_slice"
+    # The gracilis is read on the semimembranosus tendon's slice, from the two hamstring tendons.
+    codes["gracilis"] = "abstain_requires_the_semimembranosus_slice"
+    # The sartorius is read on the middle axial from the gracilis's physical places, by the stage
+    # after the semimembranosus group (`name_sartorius`), which replaces this code with its own.
+    codes["sartorius"] = "abstain_requires_the_gracilis_source"
     return PlaneAssignment(
         objects, codes, peaks, femur, tibia, patella, bands, white, in_plane
     )
