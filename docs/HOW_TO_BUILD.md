@@ -489,3 +489,42 @@ previews and code proposals, but still need integration and real-pipeline verifi
 and sartorius remain to be discriminated individually. The exact status, artifact paths and API
 closeout are in `docs/ANATOMY_DEFINITION_CHECKPOINT.md`; do not count those previews as completed
 objects. The verified code checkpoint remains `c1b8bdb`.
+
+## The island check and the colours, 2026-10-16
+
+Rohan: «Fix the issues, the "island check" and the repeated colors element. The pipeline should not
+be throwing away compute for no reason, only to compute something sensibly consumable by another
+aspect of the pipeline later».
+
+- The island check. Saving is not reading (the run's module note, TELEMETRY): `save` declares no
+  read. The definition pass had it read its values "by save", which kept them off the list of what
+  no stage reads. Now each value a stage hands on is declared where it is made, and each read where
+  it happens: the vessel rule reads the enclosed darkness and the corridor, the bursa rule its
+  white, the partner a part laid onto it (`lay_parts`, and the joint's boundaries), the pictures
+  what they draw. A part's mask is handed on once it is named. On the proof's run that draws
+  nothing, what no stage reads is: the squint's tiles (owed to the choice of each part's slice); the
+  lens's border readings, which only the pictures read (the proof's lens, unchanged unless he asks);
+  the femur's and patella's territory numbers; the parts only the pictures read; and the vessel
+  rule's closed lumens, kept by design (`RESOLVING_THE_PARTS.md` §9) and read by nothing. Other
+  studies list more, each what its own run left unread: a part with no twin to be laid onto, or
+  whose twin's places did not match, a fibula no LCL read, a bursa only the pictures read. On the
+  proof's run that draws, only the squint's tiles and the closed lumens.
+- The vessel rule no longer gathers every closed lumen's places on the slice only to set aside those
+  outside the corridor: one pass finds which lie wholly in it. Over the 58 labelled studies and the
+  test split every record (each decision, silence and saved array) is the same as before; only the
+  telemetry changed.
+- The colours. Each part has its own colour and its own word in the legend, from one table
+  (`OBJECT_COLOURS` in `scripts/object_assignments.py`); `tests/test_part_colours.py` keeps any two
+  from sharing a word or a colour, or lying nearer than 0.2 in red, green and blue (Claude's
+  reading: the clashes were 0.05 to 0.15 apart; Hoffa's apricot and the suprapatellar lemon, the
+  nearest older pair that reads as two, are 0.21 apart). New: the anterior recess INDIGO, the
+  synovial surface PEAR, the joint capsule SPRING GREEN, the artery FUCHSIA, the vein TURQUOISE, the
+  bursa PURPLE, the femoral cartilage CREAM (its gold lay 0.11 from the skin's yellow). Whether two
+  colours read apart on the scan is checked on the pictures: an independent reading of the proof's
+  (the Fable consult, `data/readings/colours-20261016/`) found the vein's first colour read as the
+  air and the lining's as the joint, both changed (it had placed the lining in the joint, wrongly;
+  the two were still one family of pink in one picture); it also found the joint's magenta and the MCL's
+  hot pink hard to tell apart where both are thin lines at the joint's inner edge, and the capsule's
+  spring green near the lateral meniscus's lime, neither changed. At the series pictures' size the
+  smallest parts (the recess and its lining, the two lumens, the semimembranosus tendon) are a few
+  pixels; they read at their own pixels.

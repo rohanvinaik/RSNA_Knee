@@ -2161,16 +2161,17 @@ def popliteal_lumens(
     labels = np.asarray(labels, dtype=np.int32)
     body = thick_parts(depth > 0, spacing, VESSEL_BODY_MM)
     touched = np.unique(labels[body])
+    # a lumen with any place outside the corridor is not wholly in it: one pass finds them all, so
+    # no other lumen's places are gathered only to be set aside
+    outside = set(np.unique(labels[~corridor]).tolist())
     candidates = []
     means = {}
     anterior_positions = {}
     for label in touched:
         component_id = int(label)
-        if component_id == 0:
+        if component_id == 0 or component_id in outside:
             continue
         component = labels == component_id
-        if not np.all(corridor[component]):
-            continue
         means[component_id] = float(depth[component].mean())
         anterior_positions[component_id] = float(back[component].mean())
         candidates.append(component_id)

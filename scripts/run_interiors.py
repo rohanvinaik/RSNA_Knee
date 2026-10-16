@@ -208,6 +208,12 @@ DRAWN_INTERIORS = (
 DRAWN_NAMES = ("objects", "codes", "peaks", "femur", "tibia", "patella")
 # The parts named on a main slice of their own; a series' silence on each is `<series uid>:<part>`.
 MAIN_PARTS = ("fibula", "acl", "lcl", "semimembranosus")
+# The joint's boundaries: each the field it is handed on as, and the part it names.
+JOINT_BOUNDARIES = (
+    ("recess", "anterior_synovial_recess"),
+    ("lining", "synovium"),
+    ("capsule", "joint_capsule"),
+)
 
 
 def handed(product: str, names: Iterable[str]) -> None:
@@ -729,7 +735,6 @@ def name_the_back_of_the_knee(own: Measured, leg: Leg | None) -> dict[str, str]:
     vessel_shape = own.arrays["b1_labels"].shape
     own.arrays["a2_popliteal_artery"] = np.zeros(vessel_shape, dtype=bool)
     own.arrays["a2_popliteal_vein"] = np.zeros(vessel_shape, dtype=bool)
-    handed("popliteal_lumens", ("artery", "vein"))
     for name in vessel_names:
         assigned[name] = None
         vessel_codes[name] = "not_named_on_this_slice"
@@ -848,6 +853,8 @@ def name_the_back_of_the_knee(own: Measured, leg: Leg | None) -> dict[str, str]:
         & (carried.back_mm < behind_heads)
     )
     depth = enclosed_darkness(own.arrays["acquired_plane"])
+    handed("popliteal_lumens", ("enclosed_darkness", "corridor"))
+    reads("popliteal_lumens", ("enclosed_darkness", "corridor"), "popliteal_lumens")
     artery, vein, components, vessel_code = popliteal_lumens(
         depth, corridor, carried.back_mm, np.asarray(own.frame.spacing_rc)
     )
@@ -860,10 +867,10 @@ def name_the_back_of_the_knee(own: Measured, leg: Leg | None) -> dict[str, str]:
     )
     for name in vessel_names:
         vessel_codes[name] = vessel_code
-    handed(
-        "popliteal_lumens",
-        ("enclosed_darkness", "corridor", "components"),
-    )
+    # every closed lumen the rule weighed is kept with the reading; no stage reads them
+    handed("popliteal_lumens", ("components",))
+    if vessel_code == "identified":
+        handed("popliteal_lumens", ("artery", "vein"))
     return head_codes
 
 
@@ -919,6 +926,7 @@ def name_the_extensor_tendons(own: Measured, partner: Measured | None) -> None:
         fat,
         # with fat suppression the band is the border between two of the lens's regions
         onto_borders=True,
+        product="tendons",
     )
     for name, code in laid.items():
         if code is not None:
@@ -1020,6 +1028,7 @@ def name_the_rest_of_the_field(own: Measured, partner: Measured | None) -> None:
         (partner.record, partner.arrays, partner.frame),
         (own.record, own.arrays, own.frame),
         parts,
+        product="rest_of_the_field",
     )
     for name, code in laid.items():
         if code is not None:
@@ -1031,6 +1040,7 @@ def name_joint_boundaries(own: Measured, partner: Measured | None) -> None:
 
     Save separate masks where tissue surfaces coexist with fluid or collateral structures.
     Reuse the white reading, shared physical positions, and the pair's physical-place match.
+    Each part the slice identifies is handed on, and read by the partner where it is laid on.
     """
     reads("series", ("row",), "joint_boundaries")
     reads("naming", ("in_plane", "white"), "joint_boundaries")
@@ -1085,18 +1095,24 @@ def name_joint_boundaries(own: Measured, partner: Measured | None) -> None:
     wall_code = capsule_code(
         coronal, bright, has_femur, has_menisci, bool(capsule.any())
     )
-    parts = (
-        ("anterior_synovial_recess", recess, recess_code),
-        ("synovium", lining, lining_code),
-        ("joint_capsule", capsule, wall_code),
+    parts = tuple(
+        (field, name, mask, code)
+        for (field, name), mask, code in zip(
+            JOINT_BOUNDARIES,
+            (recess, lining, capsule),
+            (recess_code, lining_code, wall_code),
+            strict=True,
+        )
     )
-    for name, mask, code in parts:
+    for _, name, mask, code in parts:
         own.arrays[f"a2_{name}"] = mask
         codes[name] = code
-    handed("joint_boundaries", ("recess", "lining", "capsule"))
-    if partner is None or not any(code == "identified" for _, _, code in parts):
+    identified = tuple(field for field, _, _, code in parts if code == "identified")
+    if not identified:
         return
-    reads("joint_boundaries", ("recess", "lining", "capsule"), "partner")
+    handed("joint_boundaries", identified)
+    if partner is None:
+        return
     source = matched(
         partner.series,
         partner.record,
@@ -1108,7 +1124,8 @@ def name_joint_boundaries(own: Measured, partner: Measured | None) -> None:
     )
     if isinstance(source, str):
         return
-    for name, mask, code in parts:
+    reads("joint_boundaries", identified, "partner")
+    for _, name, mask, code in parts:
         if code != "identified":
             continue
         placed = laid_by(mask.astype(np.int16), source) == 1
@@ -1238,6 +1255,7 @@ def semimembranosus_slice(
         )
         arrays["a2_fluid_signal"] = white
         handed("bursal_fluid", ("white",))
+        reads("bursal_fluid", ("white",), "bursa")
         reads("carried", ("back_mm", "toward_left_mm"), "bursa")
         bursal = bursa_on_slice(
             white,
@@ -1249,7 +1267,8 @@ def semimembranosus_slice(
             shared,
         )
     arrays["a2_gastrocnemius_semimembranosus_bursa"] = bursal
-    handed("bursa", ("region",))
+    if bursal.any():
+        handed("bursa", ("region",))
     record["assignments"]["codes"]["gastrocnemius_semimembranosus_bursa"] = bursa_code(
         bright,
         tendon is not None and bool(tendon.any()),
@@ -1582,12 +1601,15 @@ def lay_parts(
     parts: tuple[str, ...],
     yields: tuple[int, ...] = (),
     onto_borders: bool = False,
+    *,
+    product: str,
 ) -> dict[str, str | None]:
     """Lay the parts the other sequence's slice of the same place names onto this series' slice,
     by the pair's one match (`matched`), onto this slice's own regions that nothing else holds but
     the parts in `yields`, and with `onto_borders` onto the places between its regions too, where
     its lens leaves a thin dark band out of every region: for each part, "laid_from_its_partner",
-    why it was not laid, or None when nothing was laid."""
+    why it was not laid, or None when nothing was laid. Once the places match, the region laid is
+    read here: `<product>.region`, read by the partner."""
     record, arrays, frame = read
     partner_record, partner_arrays, partner_frame = partner
     source = matched(
@@ -1601,6 +1623,7 @@ def lay_parts(
     )
     if isinstance(source, str):
         return dict.fromkeys(parts, source)
+    reads(product, ("region",), "partner")
     laid = laid_by(partner_arrays["a1_objects"], source)
     # a copy: a slice's objects may still be the names it made alone
     objects = arrays["a1_objects"].copy()
@@ -1645,8 +1668,8 @@ def find_part(
             partner = partner_of(measured, index)
             at = next((i for i, m in enumerate(measured) if m is partner), None)
             if at in read and read[at][0]["assignments"]["codes"][part] == "identified":
-                laid = lay_parts(own, read[index], read[at], (part,))[part]
-                codes[part] = laid or codes[part]
+                laid = lay_parts(own, read[index], read[at], (part,), product=part)
+                codes[part] = laid[part] or codes[part]
         if codes[part] in NAMED:
             handed(part, ("main_slice", "region"))
             found.append((record, arrays))
@@ -1657,24 +1680,12 @@ def find_part(
 
 def save(run_dir: Path, study_uid: str, record: dict, arrays: dict) -> dict:
     """Save one record's arrays in the run and note them, with their digests, on the record. A main
-    slice's arrays are named for its part as well, since one series may hold several."""
+    slice's arrays are named for its part as well, since one series may hold several. Saving is not
+    reading: what is kept here declares no read, so a value no stage reads stays on the list of
+    what no stage reads (the module note, TELEMETRY)."""
     part = record.get("main_slice", {}).get("object")
     name = record["series_uid"] if part is None else f"{record['series_uid']}-{part}"
     artifact = Path(study_uid) / f"{name}.npz"
-    if "a2_synovium" in arrays:
-        reads("joint_boundaries", ("recess", "lining", "capsule"), "save")
-    if "a2_gastrocnemius_semimembranosus_bursa" in arrays:
-        reads("bursa", ("region",), "save")
-    if "a2_fluid_signal" in arrays:
-        reads("bursal_fluid", ("white",), "save")
-    if "a2_popliteal_artery" in arrays:
-        reads("popliteal_lumens", ("artery", "vein"), "save")
-    if "a2_enclosed_darkness" in arrays:
-        reads(
-            "popliteal_lumens",
-            ("enclosed_darkness", "corridor", "components"),
-            "save",
-        )
     np.savez_compressed(run_dir / artifact, allow_pickle=False, **arrays)
     record["study_uid"] = study_uid
     record["artifact"] = str(artifact)
@@ -1848,7 +1859,6 @@ def measure_study(
         if drawn and records:
             reads("interiors", DRAWN_INTERIORS, "draw")
             reads("naming", DRAWN_NAMES, "draw")
-            reads("popliteal_lumens", ("artery", "vein"), "draw")
             # what a slice read with its partner keeps, in place of its own objects and codes
             reads("partner", ("objects", "codes"), "draw")
             # the back of the knee's part, which a middle slice the leg runs through names
@@ -1858,6 +1868,21 @@ def measure_study(
                 for name in ("medial_gastrocnemius", "lateral_gastrocnemius")
             ):
                 reads("gastrocnemius", ("region",), "draw")
+            # the lumens between the heads, which that slice names
+            if any(
+                r["assignments"]["codes"].get(name) == "identified"
+                for r in records
+                for name in ("popliteal_artery", "popliteal_vein")
+            ):
+                reads("popliteal_lumens", ("artery", "vein"), "draw")
+            # the joint's boundaries, each where a slice names it
+            boundaries = tuple(
+                field
+                for field, name in JOINT_BOUNDARIES
+                if any(r["assignments"]["codes"].get(name) in NAMED for r in records)
+            )
+            if boundaries:
+                reads("joint_boundaries", boundaries, "draw")
             # the extensor tendons, which the sagittal middle slices name
             if any(
                 r["assignments"]["codes"].get(name) in NAMED
@@ -1878,6 +1903,13 @@ def measure_study(
                 {r["main_slice"]["object"].lower() for r in main_records}
             ):
                 reads(part, ("main_slice", "region"), "draw")
+            # the bursa, which the semimembranosus tendon's slice names
+            if any(
+                r["assignments"]["codes"].get("gastrocnemius_semimembranosus_bursa")
+                == "identified"
+                for r in main_records
+            ):
+                reads("bursa", ("region",), "draw")
         telemetry = ledger_reading(led.events(), led.totals())
     series_uids = [series.row.series_uid for series in study.series]
     return {

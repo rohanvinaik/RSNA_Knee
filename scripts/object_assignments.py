@@ -16,40 +16,44 @@ import numpy as np
 from knee.objects.assignments import OBJECT_CODES
 from knee.receipt import digest
 
+# Each part's colour in the pictures, with the one word the legend calls it by. No two parts share a
+# word or a colour (`tests/test_part_colours.py`): a part is told from its neighbours by its colour.
 OBJECT_COLOURS = {
-    "air": (0.25, 0.55, 1.0, 0.45),
-    "skin": (1.0, 0.9, 0.1, 1.0),
-    "femur": (1.0, 0.55, 0.1, 0.55),
-    "tibia": (0.2, 0.85, 0.35, 0.55),
-    "joint": (0.95, 0.2, 0.95, 0.7),
-    "patella": (0.0, 0.85, 1.0, 0.6),
-    "meniscus": (1.0, 1.0, 1.0, 0.9),
-    "medial_meniscus": (1.0, 0.15, 0.15, 0.9),
-    "lateral_meniscus": (0.6, 1.0, 0.0, 0.95),
-    "fibula": (0.6, 0.3, 1.0, 0.75),
-    "femoral_cartilage": (1.0, 0.85, 0.0, 0.85),
-    "tibial_cartilage": (0.0, 0.75, 0.6, 0.85),
-    "pcl": (0.85, 0.1, 0.35, 0.8),
-    "acl": (0.15, 0.3, 1.0, 0.8),
-    "mcl": (1.0, 0.25, 0.7, 0.9),
-    "lcl": (1.0, 0.3, 0.0, 0.8),
-    "joint_fluid": (0.55, 0.85, 1.0, 0.85),
-    "hoffa_fat_pad": (1.0, 0.75, 0.45, 0.65),
-    "suprapatellar_fat": (1.0, 0.95, 0.4, 0.6),
-    "medial_gastrocnemius": (0.6, 0.65, 0.1, 0.6),
-    "lateral_gastrocnemius": (0.1, 1.0, 0.2, 0.75),
-    "popliteal_artery": (1.0, 0.0, 0.0, 0.9),
-    "popliteal_vein": (0.0, 1.0, 1.0, 0.9),
-    "semimembranosus": (0.65, 0.35, 0.1, 0.9),
-    "patellar_tendon": (0.5, 1.0, 0.75, 0.85),
-    "quadriceps_tendon": (0.8, 0.7, 1.0, 0.85),
-    "subcutaneous_fat": (0.55, 0.25, 0.55, 0.55),
-    "muscle": (0.98, 0.5, 0.45, 0.5),
-    "anterior_synovial_recess": (0.1, 0.75, 1.0, 0.65),
-    "synovium": (1.0, 1.0, 0.0, 1.0),
-    "joint_capsule": (1.0, 0.6, 0.2, 1.0),
-    "gastrocnemius_semimembranosus_bursa": (0.0, 0.9, 1.0, 0.75),
+    "air": ("BLUE", (0.25, 0.55, 1.0, 0.45)),
+    "skin": ("YELLOW", (1.0, 0.9, 0.1, 1.0)),
+    "femur": ("ORANGE", (1.0, 0.55, 0.1, 0.55)),
+    "tibia": ("GREEN", (0.2, 0.85, 0.35, 0.55)),
+    "joint": ("MAGENTA", (0.95, 0.2, 0.95, 0.7)),
+    "patella": ("CYAN", (0.0, 0.85, 1.0, 0.6)),
+    "meniscus": ("WHITE", (1.0, 1.0, 1.0, 0.9)),
+    "medial_meniscus": ("RED", (1.0, 0.15, 0.15, 0.9)),
+    "lateral_meniscus": ("LIME", (0.6, 1.0, 0.0, 0.95)),
+    "fibula": ("VIOLET", (0.6, 0.3, 1.0, 0.75)),
+    "femoral_cartilage": ("CREAM", (1.0, 1.0, 0.7, 0.85)),
+    "tibial_cartilage": ("TEAL", (0.0, 0.75, 0.6, 0.85)),
+    "pcl": ("CRIMSON", (0.85, 0.1, 0.35, 0.8)),
+    "acl": ("ROYAL BLUE", (0.15, 0.3, 1.0, 0.8)),
+    "mcl": ("HOT PINK", (1.0, 0.25, 0.7, 0.9)),
+    "lcl": ("ORANGE-RED", (1.0, 0.3, 0.0, 0.8)),
+    "joint_fluid": ("SKY BLUE", (0.55, 0.85, 1.0, 0.85)),
+    "hoffa_fat_pad": ("APRICOT", (1.0, 0.75, 0.45, 0.65)),
+    "suprapatellar_fat": ("LEMON", (1.0, 0.95, 0.4, 0.6)),
+    "medial_gastrocnemius": ("OLIVE", (0.6, 0.65, 0.1, 0.6)),
+    "lateral_gastrocnemius": ("BRIGHT GREEN", (0.1, 1.0, 0.2, 0.75)),
+    "popliteal_artery": ("FUCHSIA", (1.0, 0.0, 0.6, 0.9)),
+    "popliteal_vein": ("TURQUOISE", (0.25, 0.88, 0.82, 0.9)),
+    "semimembranosus": ("BROWN", (0.65, 0.35, 0.1, 0.9)),
+    "patellar_tendon": ("MINT", (0.5, 1.0, 0.75, 0.85)),
+    "quadriceps_tendon": ("LAVENDER", (0.8, 0.7, 1.0, 0.85)),
+    "subcutaneous_fat": ("PLUM", (0.55, 0.25, 0.55, 0.55)),
+    "muscle": ("SALMON", (0.98, 0.5, 0.45, 0.5)),
+    "anterior_synovial_recess": ("INDIGO", (0.3, 0.05, 0.7, 0.75)),
+    "synovium": ("PEAR", (0.8, 0.95, 0.2, 1.0)),
+    "joint_capsule": ("SPRING GREEN", (0.0, 1.0, 0.55, 1.0)),
+    "gastrocnemius_semimembranosus_bursa": ("PURPLE", (0.7, 0.0, 1.0, 0.75)),
 }
+# The legend's word for each part's colour.
+WORDS = {name: word for name, (word, _) in OBJECT_COLOURS.items()}
 
 
 def overlay(axis, mask, colour):
@@ -102,44 +106,53 @@ def draw_stages(axes, arrays, record):
         "Territories and their strongest peaks\nRINGED: the territories named as bones",
         fontsize=9,
     )
-    for name, colour in OBJECT_COLOURS.items():
+    for name, (_, colour) in OBJECT_COLOURS.items():
         mask = arrays.get(f"a2_{name}")
         overlay(
             axes[2], objects == OBJECT_CODES[name] if mask is None else mask, colour
         )
     axes[2].set_title(
-        f"BLUE air · YELLOW skin: {codes['air']}\n"
-        f"ORANGE femur · GREEN tibia · MAGENTA joint: {codes['femur']}\n"
-        f"CYAN patella: {codes['patella']}\n"
-        f"RED medial · LIME lateral · WHITE unsided meniscus: {codes['meniscus']}, "
+        f"{WORDS['air']} air · {WORDS['skin']} skin: {codes['air']}\n"
+        f"{WORDS['femur']} femur · {WORDS['tibia']} tibia · {WORDS['joint']} joint: "
+        f"{codes['femur']}\n"
+        f"{WORDS['patella']} patella: {codes['patella']}\n"
+        f"{WORDS['medial_meniscus']} medial · {WORDS['lateral_meniscus']} lateral · "
+        f"{WORDS['meniscus']} unsided meniscus: {codes['meniscus']}, "
         f"sides {codes.get('meniscus_side', '-')}"
         + (
-            f"\nGOLD femoral · TEAL tibial cartilage: {codes['cartilage']}"
+            f"\n{WORDS['femoral_cartilage']} femoral · "
+            f"{WORDS['tibial_cartilage']} tibial cartilage: {codes['cartilage']}"
             if "cartilage" in codes
             else ""
         )
-        + (f"\nCRIMSON PCL: {codes['pcl']}" if "pcl" in codes else "")
-        + (f"\nVIOLET fibula: {codes['fibula']}" if "fibula" in codes else "")
-        + (f"\nROYAL BLUE ACL: {codes['acl']}" if "acl" in codes else "")
-        + (f"\nHOT PINK MCL: {codes['mcl']}" if "mcl" in codes else "")
-        + (f"\nORANGE-RED LCL: {codes['lcl']}" if "lcl" in codes else "")
+        + (f"\n{WORDS['pcl']} PCL: {codes['pcl']}" if "pcl" in codes else "")
         + (
-            f"\nSKY BLUE joint fluid: {codes['joint_fluid']}"
+            f"\n{WORDS['fibula']} fibula: {codes['fibula']}"
+            if "fibula" in codes
+            else ""
+        )
+        + (f"\n{WORDS['acl']} ACL: {codes['acl']}" if "acl" in codes else "")
+        + (f"\n{WORDS['mcl']} MCL: {codes['mcl']}" if "mcl" in codes else "")
+        + (f"\n{WORDS['lcl']} LCL: {codes['lcl']}" if "lcl" in codes else "")
+        + (
+            f"\n{WORDS['joint_fluid']} joint fluid: {codes['joint_fluid']}"
             if "joint_fluid" in codes
             else ""
         )
         + (
-            f"\nAPRICOT Hoffa's fat pad: {codes['hoffa_fat_pad']}"
+            f"\n{WORDS['hoffa_fat_pad']} Hoffa's fat pad: {codes['hoffa_fat_pad']}"
             if "hoffa_fat_pad" in codes
             else ""
         )
         + (
-            f"\nLEMON suprapatellar fat: {codes['suprapatellar_fat']}"
+            f"\n{WORDS['suprapatellar_fat']} suprapatellar fat: "
+            f"{codes['suprapatellar_fat']}"
             if "suprapatellar_fat" in codes
             else ""
         )
         + (
-            "\nMINT patellar · LAVENDER quadriceps tendon: "
+            f"\n{WORDS['patellar_tendon']} patellar · "
+            f"{WORDS['quadriceps_tendon']} quadriceps tendon: "
             + (
                 codes["patellar_tendon"]
                 if codes["patellar_tendon"] == codes.get("quadriceps_tendon")
@@ -149,53 +162,66 @@ def draw_stages(axes, arrays, record):
             else ""
         )
         + (
-            f"\nPLUM fat under the skin: {codes['subcutaneous_fat']}"
+            f"\n{WORDS['subcutaneous_fat']} fat under the skin: "
+            f"{codes['subcutaneous_fat']}"
             if "subcutaneous_fat" in codes
             else ""
         )
-        + (f"\nSALMON muscle: {codes['muscle']}" if "muscle" in codes else "")
         + (
-            f"\nBLUE anterior recess: {codes['anterior_synovial_recess']}"
+            f"\n{WORDS['muscle']} muscle: {codes['muscle']}"
+            if "muscle" in codes
+            else ""
+        )
+        + (
+            f"\n{WORDS['anterior_synovial_recess']} anterior recess: "
+            f"{codes['anterior_synovial_recess']}"
             if "anterior_synovial_recess" in codes
             else ""
         )
         + (
-            f"\nYELLOW synovial surface: {codes['synovium']}"
+            f"\n{WORDS['synovium']} synovial surface: {codes['synovium']}"
             if "synovium" in codes
             else ""
         )
         + (
-            f"\nORANGE joint capsule: {codes['joint_capsule']}"
+            f"\n{WORDS['joint_capsule']} joint capsule: {codes['joint_capsule']}"
             if "joint_capsule" in codes
             else ""
         )
         + (
-            f"\nOLIVE medial gastrocnemius head: {codes['medial_gastrocnemius']}"
+            f"\n{WORDS['medial_gastrocnemius']} medial gastrocnemius head: "
+            f"{codes['medial_gastrocnemius']}"
             if "medial_gastrocnemius" in codes
             else ""
         )
         + (
-            f"\nBRIGHT GREEN lateral gastrocnemius head: {codes['lateral_gastrocnemius']}"
+            f"\n{WORDS['lateral_gastrocnemius']} lateral gastrocnemius head: "
+            f"{codes['lateral_gastrocnemius']}"
             if "lateral_gastrocnemius" in codes
             else ""
         )
         + (
-            f"\nRED popliteal artery lumen: {codes['popliteal_artery']}"
+            f"\n{WORDS['popliteal_artery']} popliteal artery lumen: "
+            f"{codes['popliteal_artery']}"
             if "popliteal_artery" in codes
             else ""
         )
         + (
-            f"\nCYAN popliteal vein lumen: {codes['popliteal_vein']}"
+            f"\n{WORDS['popliteal_vein']} popliteal vein lumen: "
+            f"{codes['popliteal_vein']}"
             if "popliteal_vein" in codes
             else ""
         )
         + (
-            f"\nBROWN semimembranosus tendon: {codes['semimembranosus']}"
+            f"\n{WORDS['semimembranosus']} semimembranosus tendon: "
+            f"{codes['semimembranosus']}"
             if "semimembranosus" in codes
             else ""
         )
         + (
-            f"\nTURQUOISE gastrocnemius-semimembranosus bursa: {codes['gastrocnemius_semimembranosus_bursa']}"
+            f"\n{WORDS['gastrocnemius_semimembranosus_bursa']} "
+            "gastrocnemius-semimembranosus bursa: "
+            f"{codes['gastrocnemius_semimembranosus_bursa']}"
             if "gastrocnemius_semimembranosus_bursa" in codes
             else ""
         ),
