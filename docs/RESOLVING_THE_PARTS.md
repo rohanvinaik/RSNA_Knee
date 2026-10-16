@@ -94,7 +94,9 @@ Each is a measurement, never wrong and lossy.
 5. **The territories**: regions grown from the peaks over the places not low signal, each with its
    strongest peak and the peak's depth.
 6. **The border readings**: the territories' edges and the dark bands read across them. They are
-   drawn in the pictures; no rule reads them yet.
+   drawn in the pictures and read for nothing else: only a run that draws (`--draw`, development
+   only) reads them, on each middle slice; a run that draws nothing, as in competition, reads the
+   territories alone (`interior_regions`). No rule reads them.
 7. **The squint**: every slice of a series reduced to 10 mm tiles, each tile's median, minimum,
    maximum and coverage, and its centre in millimetres (`knee.collapse.squint_stack`). It is the cheap
    look at the whole series that points where the expensive work runs.

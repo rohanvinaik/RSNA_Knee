@@ -49,21 +49,6 @@ CONTRACT = ComputeContract(
 
 
 @dataclass(frozen=True, slots=True)
-class InteriorReading:
-    code: str
-    dark: np.ndarray
-    available: np.ndarray
-    distance_mm: np.ndarray
-    markers: np.ndarray
-    labels: np.ndarray
-    edge_points_rc: np.ndarray
-    edge_normals_rc: np.ndarray
-    edge_kinds: np.ndarray
-    trace_points_rc: np.ndarray
-    trace_codes: np.ndarray
-
-
-@dataclass(frozen=True, slots=True)
 class InteriorRegions:
     """One plane's geometric interiors before any border is read: the code, the measured low
     signal, which places are available, each place's distance from the surrounding constraints,
@@ -76,6 +61,19 @@ class InteriorRegions:
     distance_mm: np.ndarray
     markers: np.ndarray
     labels: np.ndarray
+
+
+@dataclass(frozen=True, slots=True)
+class InteriorReading(InteriorRegions):
+    """The territories (`InteriorRegions`) and the border readings across them: every edge between
+    two regions, with its outward direction and its kind, and the dark band the profile across it
+    shows. The territories' fields come first, so a reader of the territories reads either."""
+
+    edge_points_rc: np.ndarray
+    edge_normals_rc: np.ndarray
+    edge_kinds: np.ndarray
+    trace_points_rc: np.ndarray
+    trace_codes: np.ndarray
 
 
 def boundary_edges(labels, dark, available, metric):

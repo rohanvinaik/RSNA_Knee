@@ -108,6 +108,11 @@ def draw(run: Path, study_uid: str, out: Path) -> dict:
     ]
     if not records:
         raise ValueError("no production interior records for the selected study")
+    # the border readings are read only by a run that draws (`run_interiors.py --draw`)
+    if any("b1_edge_points_rc" not in r["arrays"] for r in records):
+        raise ValueError(
+            "the run read no border readings: run it with --draw to draw them"
+        )
     out.mkdir(parents=True, exist_ok=True)
     gallery, axes = plt.subplots(
         len(records),

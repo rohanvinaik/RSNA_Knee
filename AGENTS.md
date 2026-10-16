@@ -61,6 +61,24 @@ computed once and handed to every consumer; nothing is computed and thrown away,
 ledger, vulture and the gate stay on, and the pipeline is checked through its real entry point
 (`scripts/run_interiors.py`). Details: `docs/HOW_TO_BUILD.md` §5.
 
+**Running and testing.** The one path is `.venv/bin/python scripts/run_interiors.py`: `--study-uid
+<uid> …` for given studies, `--labeled` for every labelled study on disk, `--split test` for the
+studies a Kaggle kernel is given; `--root` is where the competition's files are (the kernel's mount
+when it exists). Drawing is development only. Rohan, 2026-10-16: «drawing only happens as part of
+development, so the compute expenditure should be entirely optional, a clean and obvious flag that
+will be turned off by default when in competition mode». That flag is `--draw`, off by default and
+never passed in competition: only with it are the pictures drawn, and only with it is anything
+computed that only the pictures read (each middle slice's border readings, `read_interiors`). A run
+without it, the one a kernel runs, reads the lens's territories alone (`interior_regions`, the same
+arrays, pinned by `tests/test_interiors.py`), never loads the drawing layer, and keeps no border
+arrays in its records. To look at a part, run the proof with `--draw`; to check the run as the
+competition runs it, run it without. A change meant to leave the outputs alone is checked against
+the receipts from before it: copy `data/measurements/interiors/receipt.json` and
+`data/measurements/main-slices/receipt.json` aside, rerun the labelled studies, and compare each
+receipt with its copy (`.venv/bin/python scripts/compare_receipts.py <before> <after>`, with
+`--borders-aside` when only one of the two runs drew): every record's decisions and saved arrays by
+their digests, and the silences; it exits 1 when any differ. The gate is `scripts/ci_local.sh`.
+
 Do not:
 - build rule machinery;
 - chase unseen studies with a new rule per image («even if a few images are a bit weird»);
