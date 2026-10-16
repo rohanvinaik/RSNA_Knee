@@ -601,3 +601,54 @@ Vulture's 13 advisory contract declarations and fields remain. The localization 
 cortex rim and leaves the outer portion; full course and precision are deferred. Details and the
 recorded independent Fable reading: `docs/RESOLVING_THE_PARTS.md` §9. Next in step 4: biceps femoris,
 then iliotibial band; step 5 is still gracilis and sartorius.
+
+## Last four anatomical definitions, 2026-10-16
+
+In `4a126fc`, biceps femoris, iliotibial band, gracilis and sartorius now each have an independent
+mask and named decision through the real entry point. This completes the outstanding anatomical list in
+`ANATOMY_DEFINITION_CHECKPOINT.md`, at Rohan's criterion of a justified rule and a measurable,
+competent demonstration once. It supersedes the earlier remaining-object lists, not the recorded
+limitations. Full course, exact boundaries, generalization and diagnosis are not claimed.
+
+- ITB: the acquired-signal dip directly deep to lateral subcutaneous fat, passing femur and
+  reaching proximal tibia; existing middle non-FS coronal, carried onto the FS twin.
+- Biceps femoris: the substantial dark body below the posterior thigh muscle toward the fibular
+  head, using a lateral peripheral sagittal selected from the named head and its marrow support;
+  both acquisitions distinguish tendon from muscle and fat.
+- Gracilis: the separate thin dark body medial to the two already named posteromedial tendons,
+  anterior to semitendinosus; a native-pixel body lens on their existing axial slice.
+- Sartorius: the largest nearby grey muscle body medial and anterior to the projected gracilis
+  location target, on the existing middle FS axial. The new local-lightness lens measures seen
+  samples against their seen surround; its explicit visual baseline constants were not searched
+  or tuned. The projection is a location reference, not a tendon boundary on that other slice.
+
+The source definitions, constants, named refusals, actual observations and limits are recorded
+in `RESOLVING_THE_PARTS.md` §9. All four actual output pictures were inspected at native pixels.
+The semimembranosus group now runs once before middle-slice persistence, so gracilis is available
+to sartorius; every prior group record and upstream silence remains, and the middle save point
+is intact. Cheap prerequisites avoid a local-contrast reading on inappropriate views.
+
+The full gate passed with 357 tests, with the production import contract kept and no type or
+dependency findings. Vulture lists 12 advisory contract declarations/fields; it is not claimed
+clean. The ledger still reports retained readings with no later consumer: the squint's pending
+collapse readings, vessel components, and sartorius source points/window/separation/body statuses;
+without drawing it also lists masks used only by development pictures. Saving is not a read.
+
+Independent checks caught and fixed the API worker's initial median filter: excluded samples
+could influence neighbouring ratios before masking. Two adversarial checks now pin that excluded
+stored values cannot change any contrast reading and nonfinite samples have no light or ratio.
+The anatomical selector and its constants were unchanged; the final proof mask is 188 pixels.
+
+Nine Sonnet prototype/implementation workers completed at a recorded total of $17.4480384;
+separate Fable readings returned token usage without monetary amounts. Payloads were authorized
+by Rohan, credentials were not exported in packets, and all prompts/results/usage remain in
+`data/readings/definitions-20261016/`. Worker claims were checked by the lead against source,
+the real run and its actual pictures. Next: the dimensional collapse in §8, with Rohan's full
+object thesis; the definition pass is no longer waiting on another anatomical element.
+
+The labelled and test splits have been refreshed with that code. The comparison against the
+saved pre-change receipts preserves all 351 previous middle-slice records and 48 previous
+main-slice records, including earlier decisions, silences and array digests, with only the four
+additions and optional border readings set aside. The final canonical proof drawn afterwards
+also preserves the previous borders. Its arrays and decisions exactly match the inspected final
+alternate run. Evidence: `data/readings/definitions-20261016/remaining-production/`.

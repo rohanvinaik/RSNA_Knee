@@ -1,4 +1,4 @@
-# Anatomy definition checkpoint — 2026-10-15, plan updated 2026-10-16
+# Anatomy definition checkpoint — definition pass completed 2026-10-16
 
 Paused at Rohan's request: «Can you find a clean pause point? Resolve whatever is in flight cleanly,
 then tell me what's left before we can say we can resolve all the elements of knee anatomy reasonably».
@@ -6,6 +6,17 @@ On 2026-10-16 he asked for the plan to be kept here: «Save this out properly, s
 exactly what to do to continue/complete this».
 
 ## Where the code stands
+
+**Current implementation: `4a126fc`. All five plan steps below are complete.** The final four
+parts were each run through the real entry point and their actual output pictures inspected.
+The full gate passes with 357 tests. Labelled and test records have been refreshed: all 351
+earlier middle-slice records and 48 earlier main-slice records preserve every earlier decision,
+silence and saved-array digest, setting aside only the four new objects and optional borders.
+The final drawn proof also preserves the earlier border readings. Canonical output now contains
+351 middle records and 50 main records, the two additions being the biceps source and twin.
+Evidence: `data/readings/definitions-20261016/remaining-production/`, particularly
+`final-verification.json`, `final-canonical-drawn-comparison.json` and `final-gate.log`.
+
 
 The separated suprapatellar fat pads are now resolved in `096f667` (2026-10-16), step 2 below.
 The semitendinosus was resolved in `ee5480b`, step 1. Both steps use existing selected slices,
@@ -16,8 +27,10 @@ and the test split:
 `fc4ca86` (each read declared where it happens; each part its own colour; the vessel rule's
 candidates found in one pass) and `8901990` (the lens's border readings read only with `--draw`;
 how to run and test, in `AGENTS.md`, "Running and testing"). Step 3 is resolved in
-`be52965`, with its shared-slice reporting preserved in `d948e0e`. The popliteus portion of
-step 4 is resolved in `8fa091d`; biceps femoris, iliotibial band, gracilis and sartorius remain.
+`be52965`, with its shared-slice reporting preserved in `d948e0e`. Step 4's popliteus
+is resolved in `8fa091d`. The remaining biceps femoris, iliotibial band,
+gracilis and sartorius are now implemented and verified below; the anatomical definition list
+is complete at Rohan's stated criterion. Full-dimensional resolution is the next phase.
 
 The stopping criterion is Rohan's (2026-10-15): «We're resolving the elements of knee anatomy right
 now. Exact specification and precise measurement is for the AI parts, which I have yet to specify. We
@@ -26,7 +39,7 @@ CAN we measure them? That is sufficient». For each part below: a rule from anat
 already found, and a region the run names and saves, shown competently once on the pictures. The full
 dimensional collapse and the later AI work are not prerequisites; they come after.
 
-## Plan to complete, in this order
+## Completed plan, in order
 
 Each step is one part, or one group, taken through the loop of `docs/HOW_TO_BUILD.md` §7: look at it
 on the pictures at its own pixels; write the plain reading as a few descriptions on the lenses, each
@@ -96,7 +109,7 @@ the pictures decide. Mark a step done here, with its commit, when it is.
    `retinacula-local-build/` (`metadata.json`, `preview.py`); its stored empty candidates are
    unresolved, not anatomical absence.
 
-4. **The lateral complex beyond the LCL: popliteus DONE; biceps femoris and iliotibial band remain.**
+4. **The lateral complex beyond the LCL — DONE, `4a126fc`, 2026-10-16.**
    The popliteus is resolved in `8fa091d` (2026-10-16): the largest connected part of the existing
    LCL region occupying a concavity of the carried femur's convex envelope. The native T1 LCL
    slice supplies the definition, reusing its selected slice, lens and carried femur. Its own
@@ -110,32 +123,41 @@ the pictures decide. Mark a step done here, with its commit, when it is.
    cross-section. It does not assert the full course. The full gate passed with 246 tests;
    earlier proof results are unchanged. The independent anatomical reading and usage are kept in
    `data/readings/definitions-20261016/popliteus-reading/`; the lead checked the actual mask.
-   Next: biceps femoris, then iliotibial band. Read first: the lateral-complex section of the Chien article in
-   `data/readings/definitions-20261015/anatomy-sources/` (read whole on 2026-10-15, with its
-   figures), and look at the prepared views (`lateral-complex-local-prep/`; pictures
-   `lateral-complex-*.png` in `data/pictures/definitions-20261015/`). Claude's readings, to check on
-   the pictures:
-   - the popliteus tendon: now separately resolved as described above; the earlier LCL region's
-     recorded overreach remains, and its labels are preserved;
-   - the biceps femoris tendon: the dark band reaching the fibula's head, behind and outside the LCL;
-   - the iliotibial band: the thin dark band down the front of the outer side to the tibia's
-     front-outer edge, likely on a slice in front of the LCL's, chosen by place from parts already
-     found.
+   The remaining lateral definitions are now resolved too:
+   - Biceps femoris: the substantial dark body below posterior thigh muscle toward the fibular
+     head, combining native and matched FS light. A lazy head-body reading selects a lateral
+     peripheral sagittal from the named fibula, without a proof index. The real proof identifies
+     2,276 native pixels and carries 1,463 onto the twin (slice 34, observations). Actual output:
+     `data/pictures/definitions-20261016/biceps-proof.png` (KHAKI). The anterior arm may include
+     distal LCL tissue; this is not a precise conjoint-insertion or full-course separation.
+   - ITB: the local dark dip deep to lateral subcutaneous fat, passing the femur and reaching
+     proximal tibia on the existing middle non-FS coronal, with no new signal cutoff. Actual
+     output: `data/pictures/definitions-20261016/itb-proof.png` (AQUAMARINE): native 221 pixels,
+     twin 139, slice 15 (observations). This is a fascial trace, not a thickness measurement.
 
-   Each is the MCL's and LCL's kind of rule: a dark band joining two parts already found. The saved
-   mean fibula support includes the shaft: do not call that point its head.
+5. **Gracilis and sartorius — DONE, `4a126fc`, 2026-10-16.** Gracilis is the thinner separate dark body
+   medial to semimembranosus and semitendinosus, anterior to the latter, nearest their pair among
+   eligible bodies. Its native-pixel sampling lens reuses the existing low signal and patient
+   axes on their established axial slice. The real proof identifies 22 pixels, preserving
+   semimembranosus 72 and semitendinosus 46. Actual inspected output:
+   `data/pictures/definitions-20261016/gracilis-proof.png` (AZURE, BROWN, SILVER).
 
-5. **Gracilis and sartorius.** After the semitendinosus, by their order along the knee's inner side.
-   Claude's reading, to confirm with the medial-knee source (LaPrade 2007, `[LP-MED]` in
-   `docs/OBJECTS_AND_CONDITIONS.md`), the pes source recorded in
-   `data/readings/definitions-20261015/remaining-anatomy-reading.md` (Zhong et al. 2018, §3.1–3.2
-   only: the sartorius, the gracilis and the semitendinosus front to back where they attach, the
-   semitendinosus behind and outside the other two at the back-inner knee) and the pictures, before
-   writing anything: at the joint line, along the inner side from back to front, the semitendinosus
-   (behind the semimembranosus tendon, step 1), the gracilis as a small dark oval, and the
-   sartorius, mostly muscle there.
+   Sartorius is a flattened grey muscle sheet medial and anterior to the projected gracilis
+   location reference on the middle FS axial. The new objective local-lightness reading uses
+   seen samples and their seen surround; the muscle-grey class and reach are explicit first
+   visual baseline readings, not a parameter search. It keeps the largest whole eligible body,
+   refusing exact ties. The source is a location target from another slice, not an asserted
+   tendon boundary or intervening course. The semimembranosus group runs once earlier in the
+   same production graph so its gracilis points are available before middle persistence.
+   The real proof identifies 188 pixels on slice 16; actual inspected output:
+   `data/pictures/definitions-20261016/sartorius-final-close.png` (ULTRAMARINE), with the whole
+   knee in `sartorius-final-overview.png`. Small halo/lobe overreach remains documented.
+   The full gate passes with 357 tests, including two independent checks that caught and fixed
+   excluded samples influencing the worker's initial median. All constants and the anatomical
+   selector stayed fixed. Retained provenance/status readings remain honestly listed as unread.
 
-When all five are done, the anatomy definition pass is complete. Next comes the dimensional collapse
+All five steps are done: the anatomy definition pass is complete at the stated once-per-object
+criterion. Next comes the dimensional collapse
 (`docs/RESOLVING_THE_PARTS.md` §8): every part at its best slices across the five views. The AI part
 is Rohan's to describe; diagnosis only when he says.
 
@@ -203,7 +225,16 @@ for an anatomical name. Do not automatically retry the budget-exhausted consulta
 
 At the original pause the local helpers stopped at saved artifact checkpoints, with no partial
 integration in the production tree. Step 1 above records the subsequent completed implementation.
-Resume from the original thesis
-conversation and current source, then use this file to locate the evidence; inspect each preview
-before integrating it. Run the real proof entry point, inspect its pictures and run the gate
-before marking any of the remaining features complete.
+The original pause proposals above remain historical evidence. They have been superseded by
+the completed production definitions in steps 1–5 and `RESOLVING_THE_PARTS.md` §9. On resuming,
+read the original thesis conversation and current source, then begin the dimensional-collapse
+discussion; do not rebuild the already demonstrated anatomical definitions.
+
+## Final worker closeout — 2026-10-16
+
+The nine Sonnet prototype/implementation workers for these last four parts all terminated
+successfully. Their recorded total is $17.4480384, computed from their launch metadata and saved
+in `data/readings/definitions-20261016/remaining-production/worker-closeout.json`. The separate
+Fable consultations returned token usage without monetary cost. No worker remains active.
+The lead independently checked the source, the actual output and preservation; worker results
+alone are not anatomical evidence. The older closeout above is the earlier paused pass.

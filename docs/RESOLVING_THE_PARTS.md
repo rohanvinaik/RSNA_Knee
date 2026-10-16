@@ -163,6 +163,11 @@ are listed in each part's paragraph in the module note.
 
 ## 6. Provisional entries: the parts not yet resolved
 
+**Historical plans, now completed.** The production definitions and their inspected demonstrations
+are in §9; the last four are implemented in `4a126fc`. This section preserves the original
+reasoning and the cross-view tasks, not a current unresolved-anatomy list. The current checkpoint
+is `docs/ANATOMY_DEFINITION_CHECKPOINT.md`.
+
 Each entry is a plan for the loop (§7), not a rule, and every reading in it is Claude's and provisional
 until the pictures check it: the part's meaning; the kind of tissue it is and how that kind is already
 resolved; where it lies among the parts already found; which of the five views show it and where its
@@ -668,3 +673,171 @@ the lead inspected the geometric preview and actual production result. Prompt, p
 reading, response and usage are in `data/readings/definitions-20261016/popliteus-reading/`
 (9,323 input tokens, 7,619 output tokens; no monetary amount was returned). This supersedes the
 popliteus part of §6's provisional lateral-complex entry; biceps femoris and iliotibial band remain.
+
+### Iliotibial band — 2026-10-16
+
+The ITB is localized on the existing non-fat-suppressed middle coronal: the dark fascial line
+directly deep to the lateral subcutaneous fat, passing the lateral femur and reaching the
+proximal tibia. Chien 2020's complete lateral-knee subsection and Figure 29 supply the anatomy;
+the actual raw stack and enlarged output supply the visual check. This slice lies anterior to
+the proof's LCL slice. The production rule does not add a separate LCL-slice comparison or search.
+
+On each native cross-section across the leg, the named fat outboard of the named bones defines
+the outer layer. Read the acquired-signal minimum in the available non-fat, non-bone strip within
+the existing 2 mm contact allowance deep to its inner edge. Keep a contiguous minimum only when
+darker than both the fat and the next equally wide strip deeper in the leg. Thus a monotonic
+fat-to-muscle transition does not name a band. Separated tied minima abstain locally; nothing is
+smoothed or interpolated. Keep the trace above the most superior section where it reaches the
+tibia through that allowance, and require a section beside the femur. The continuation below
+that level is retained as a candidate reading, without naming it ITB.
+
+`iliotibial_band_on_slice` reads the existing named fat, bones, patient axes and shared tibial
+distance. `name_iliotibial_band` runs before the existing save point and lays the separate
+`a2_iliotibial_band` mask onto the FS twin through the pair's cached match. All earlier primary
+labels remain intact. The layer, strip, candidate trace, per-section status and light readings,
+and distal stop are retained as `a2_itb_*` arrays. Missing landmarks, no valid dark dip or a band
+that does not reach the tibia have named refusals. No new signal cutoff or proof coordinate is used.
+
+The real proof run identifies 221 pixels on non-FS coronal slice 15 and lays 139 pixels onto its
+FS twin; counts and index are observations. Both acquired/output pairs were inspected at native
+pixels and shown in `data/pictures/definitions-20261016/itb-proof.png` (AQUAMARINE). Earlier proof
+records, their decisions and saved-array digests are unchanged, apart from added ITB fields.
+This resolves a trace of the course where the band adjoins fat, not its thickness, exact Gerdy's
+tubercle insertion or full extent. Thin sections can abstain, and a deeper band would not be
+reached by this particular relation. There is no direct competition condition for the ITB.
+Sonnet's implementation and usage are retained in `data/readings/definitions-20261016/itb-worker/`;
+the lead independently inspected and integrated the result. This supersedes the ITB part of §6.
+
+### Biceps femoris tendon — 2026-10-16
+
+The competent portion is the substantial dark tendon below the posterior thigh muscle, reaching
+toward the fibular head, on a sagittal slice near its lateral face. The first axial/distal
+survey did not separate the conjoint insertion from cortex and LCL; that survey is not counted
+as a resolved object. The subsequent sagittal prototype and actual production output were
+inspected. The anterior arm can include the distal LCL neighbourhood; this is a localization,
+not separation of every fibre at the conjoint insertion.
+
+The already named fibula's physical places recover its main sagittal plane and provide marrow
+light in both acquisitions. Walking outward from there, `lateral_to_the_head` asks only for the
+marrow-like head body on each reached slice. The first body below the existing 1 cm bone-disc
+area selects the lateral peripheral slice. This is a proxy for the head's lateral face, close
+to its area boundary on the proof; it is not tuned to the observed index. The head's native-pixel
+opening is a sampling operation. Measured-empty bodies and unreadable or unvisited slices are
+kept distinct by their codes, status and NaN areas. The rule never scans full anatomical
+assignments across the series.
+
+On the selected slice, acquired light is read as a median along the leg: dark against the
+non-FS marrow, and no brighter than suppressed marrow in the physically matched FS acquisition.
+That combination separates the cord from fat and the brighter FS muscle. Select the largest
+competent dark body below the largest muscle belly above the head and above the head, clear
+of bright-body cortex, reaching both broad targets. The existing physical body and reach scales
+have their roles stated in the module definition; exact largest ties abstain. An unseen pixel
+gives no filter reading. The selected body and every actual contrast, head, area, status and
+reach reading are retained, with an independent mask `a2_biceps_femoris_tendon` and named decision.
+
+`biceps_native` resolves the source once; `biceps_femoris_slice` reuses it for the paired sequence.
+The twin's slice is found by physical place, with no equal-index assumption. The existing match
+and `lay_parts` carry the mask without changing earlier primary labels. Through the real entry
+point the proof identifies 2,276 source pixels and carries 1,463 onto the FS twin, both on
+slice 34 (observations). Both enlarged output pairs were inspected and shown:
+`data/pictures/definitions-20261016/biceps-proof.png` (KHAKI). Source and twin reference light
+are 350 and 57 on this proof; these too are observations. Besides the LCL overreach, the mask
+omits tissue near bright bodies and does not claim the full course. There is no direct label
+among the twelve. Sonnet's prototypes, implementation, wiring and usage are retained in the
+`biceps-*` readings directories for this date. Fable's preceding sagittal reading located a
+different thin-band candidate; its approximate positions were not used as selector constants.
+The lead accepted the subsequent actual substantial-body output. This supersedes the biceps
+part of §6's provisional lateral-complex entry.
+
+### Gracilis tendon — 2026-10-16
+
+On the semimembranosus tendon's existing tibial-top axial slice, gracilis is the thinner,
+separate dark cord medial to both semimembranosus and semitendinosus and anterior to the latter.
+`native_dark_bodies` measures the same low-signal map through a complementary sampling lens:
+close native-pixel cracks with a 3×3 square, then open with the four-neighbour cross and label
+the bodies. This retains a cord the existing 2 mm body operation removes. The old shared lens,
+semimembranosus and semitendinosus are untouched; patient positions and available field are reused.
+
+`gracilis_on_slice` excludes bodies overlapping either known tendon, then applies those medial
+and anterior relations to whole bodies and keeps the nearest to their pair in physical distance.
+Missing references, no eligible body or an exact nearest tie give named refusals. No signal
+cutoff, proof coordinate, component number or new anatomical size enters this selector.
+Labels, mean positions, eligible IDs and distances remain saved beside `a2_gracilis` and its
+decision. It is a companion of the existing semimembranosus group, with no second slice or lens
+search; the native-pixel lens is made once on that slice.
+
+The real proof run identifies 22 pixels on axial slice 11, the inspected separate cord, while
+the previous semimembranosus and semitendinosus remain 72 and 46 pixels. These counts and index
+are observations. The acquired/low-signal/three-outline output was inspected and shown:
+`data/pictures/definitions-20261016/gracilis-proof.png` (AZURE gracilis, BROWN semimembranosus,
+SILVER semitendinosus). Native opening can trim the corners, and joined dark bodies remain a
+limit; this is a competent cross-section, not the full tendon. Its anatomical relation agrees
+with the medial-knee sources and Vohra 2011's Figure 1 key points (`OBJECTS_AND_CONDITIONS.md`
+[V]). No competition condition names it directly. Sonnet's prototype and implementation are in
+`medial-prototype-worker/` and `gracilis-implementation/`; the lead independently checked the
+actual masks. This supersedes the gracilis part of §6's provisional hamstrings entry.
+
+### Sartorius muscle — 2026-10-16
+
+On the proof's middle fat-suppressed axial, sartorius is a flattened grey muscle sheet medial
+and anterior to gracilis, rather than another black tendon cross-section. Vohra 2011's complete
+Imaging Anatomy section and Figure 1 key points give the medial relationship ([V] in
+`OBJECTS_AND_CONDITIONS.md`); the actual acquired slice and enlarged production output supply
+the visual check. The middle slice is the existing standard first slice, not a new slice search.
+
+`local_lightness` measures a native 3-pixel median of seen, non-low acquired samples against
+the median of the seen light in a surrounding 20 mm window, whose odd pixel dimensions come
+from the actual spacing. Unavailable, nonfinite, low-signal and out-of-picture samples contribute
+nothing to either median; excluded places have no smoothed light or ratio. Empty or zero
+surrounds give NaN. The lens measures contrast and knows no anatomical name.
+`muscle_grey_bodies` opens the relative-lightness class [1.5, 3) with a native 3×3 square and
+labels eight-connected bodies. These constants are explicit first visual/common-sense baseline
+readings: the grey sheet is brighter than suppressed fat and below the white vessels, cartilage
+and fluid. They were not searched or adjusted to recover a chosen mask, and are not claims of
+universal MRI tissue ratios. The native sampling operation is not an anatomical thickness.
+
+The established gracilis cross-section supplies scanner-space points once. Projecting those
+points along the middle slice's normal gives a location target, not the gracilis boundary on
+that different slice. `sartorius_on_slice` keeps the largest whole grey body whose mean lies
+medial and anterior to that target and which reaches within 10 mm of it. This is a broad
+locational allowance, not a muscle size or attachment measurement. Exact largest ties and
+missing prerequisites have named refusals. The source points, projected target, source-plane
+separation, smoothed light, surround, ratio, labelled bodies, sizes, positions, reaches and
+statuses are retained beside the independent `a2_sartorius` mask.
+
+The semimembranosus/semitendinosus/gracilis group is resolved once earlier in the same run,
+before middle records are saved. Its records and upstream silences are kept, its later duplicate
+call is removed, and `name_sartorius` uses the existing middle lens and shared measurements.
+The middle save point remains intact. There is no second anatomical compute path and no change
+to earlier primary labels.
+
+The real proof entry point identifies 188 pixels on axial slice 16; the source gracilis is
+20.12 mm away, and the surround is 41×41 pixels there. These are observations. The corrected
+production picture is `data/pictures/definitions-20261016/sartorius-final-close.png`
+(ULTRAMARINE sartorius; cyan squares denote only the projected gracilis target). The full gate
+passed with 357 tests, including driver ordering/persistence and checks that changing an excluded
+stored value cannot alter any contrast reading and that a nonfinite pixel has no light or ratio.
+Those last checks caught and corrected the worker's initial median filter, which masked excluded
+values only after filtering. The anatomical selector and its constants were unchanged.
+
+This localizes one muscle sheet, not its full course or thickness. A small vessel halo and a
+posterior lobe can remain in the body; the source projection alone asserts no intervening tendon
+course. The source points, window, separation and body-status readings are retained and listed
+as unread by the ledger, rather than represented as downstream consumers. No competition category
+names sartorius directly. Sonnet's implementation and usage are retained in
+`data/readings/definitions-20261016/sartorius-implementation/`; the lead corrected the measurement
+and checked the final result independently. This completes the last part of §6's provisional
+hamstrings entry. Full dimensional collapse remains the next phase (§8).
+
+### Final definition-pass verification — 2026-10-16
+
+Implementation `4a126fc` completes the anatomical list at the agreed once-per-object criterion.
+The full gate passed with 357 tests; the import contract is kept, type and dependency checks
+are clear, and Vulture still reports 12 advisory contract declarations/fields. Labelled and test
+records were refreshed. All 351 earlier middle-slice and 48 earlier main-slice records preserve
+their previous decisions, silences and saved-array digests with the four additions and optional
+borders set aside; the final drawn canonical proof preserves its earlier border readings too.
+All proof arrays and decisions match the inspected final alternate run. The new canonical main
+record count is 50, including the two biceps records. The measurements and reports are retained
+in `data/readings/definitions-20261016/remaining-production/`. These checks establish integration
+and preservation, not anatomical validation on every study. Next comes §8's full collapse.

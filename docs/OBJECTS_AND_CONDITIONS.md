@@ -207,6 +207,12 @@ Signal by sequence, as one source tabulates it [Kh]:
   *Shows:* muscle intermediate, tendon low [Kh].
   *Involved in:* Baker's.
 
+- **Gracilis and sartorius at patellofemoral level.** The semimembranosus is the largest
+  posteromedial muscle continuing to that level, with semitendinosus immediately posterior.
+  The smaller sartorius muscle lies more medially, with the gracilis tendon interposed [V].
+  This describes that level; the three pes tendons' distal insertion order is not a substitute
+  for identifying the tissue actually cut by a particular slice *(pairing: Codex)*.
+
 ### Landmarks and the rest of the field
 
 - **Extensor mechanism.** The quadriceps tendon, patella and patellar tendon; both tendons uniformly low and best seen
@@ -297,3 +303,9 @@ Signal by sequence, as one source tabulates it [Kh]:
   knees. Read in full 15 Oct 2026, at
   https://drrobertlaprademd.com/wp-content/uploads/2015/07/anatomy-of-the-medial-part-of-the-knee-2007.pdf; its
   tables of measurements are in the journal's online appendix, which was not read.
+- **[V]** Vohra S, Arnold G, Doshi S, Marcantonio D. Normal MR Imaging Anatomy of the Knee.
+  *Magn Reson Imaging Clin N Am.* 2011;19:637–653. doi:10.1016/j.mric.2011.05.012.
+  Read 16 Oct 2026: the complete Imaging Anatomy section and Appendix Figures 1–6 captions/key
+  points, including the medial-muscle relationships in Figure 1's key points. The remaining
+  appendix and references were not read. Available at
+  https://www.smartview.co/wp-content/uploads/2014/02/imagen-MR-normal-anatomia-rodilla.pdf.
