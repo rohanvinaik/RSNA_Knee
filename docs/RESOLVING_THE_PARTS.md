@@ -387,6 +387,12 @@ the next session's to settle with him, from his sentence above and this text. Th
 lines of §6 are Claude's provisional readings toward it, to be checked against this text with him;
 they are not that mapping.
 
+**Planning update, 2026-10-16:** The anatomy definitions are now demonstrated (§9). The proposed
+MRI application of the collapse, its implementation order and the checked Fable consultation
+are in `docs/DIMENSIONAL_COLLAPSE_PLAN.md`. This is a proposal, not an implemented replacement
+for the current selectors. It preserves the middle as a valid bootstrap and starts with one
+complete fibula selection/extent/cross-view operation through the existing lateral consumers.
+
 ## 9. Definition pass, 2026-10-15: objects first, collapse after
 
 Rohan clarified the order: resolve every object with a stable anatomical definition and a competent

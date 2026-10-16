@@ -32,6 +32,12 @@ is resolved in `8fa091d`. The remaining biceps femoris, iliotibial band,
 gracilis and sartorius are now implemented and verified below; the anatomical definition list
 is complete at Rohan's stated criterion. Full-dimensional resolution is the next phase.
 
+The proposed next-phase implementation is written in `docs/DIMENSIONAL_COLLAPSE_PLAN.md`
+(2026-10-16), with the independent Fable consultation and comparison in
+`data/readings/collapse-20261016/`. Read that plan with `RESOLVING_THE_PARTS.md` §8 before building.
+It is planning only; the collapse has not yet been implemented. The first complete case proposed
+there is fibula selection, extent and cross-view observations feeding its lateral consumers.
+
 The stopping criterion is Rohan's (2026-10-15): «We're resolving the elements of knee anatomy right
 now. Exact specification and precise measurement is for the AI parts, which I have yet to specify. We
 have to get the pipeline to produce a binary response--CAN we establish a rule for the lumens? And
