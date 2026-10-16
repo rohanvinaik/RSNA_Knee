@@ -466,3 +466,18 @@ the assigned project work. The lateral-head worker used API-key-only authenticat
 images, updated these documents, refreshed the labelled records and ran the gate; its prompt,
 result and usage are in `data/readings/definitions-20261015/lateral-worker/`. The lead checked the
 anatomical result and reviewed its changes before committing.
+
+On resuming the vessel work Rohan clarified the stopping criterion: «We're resolving the elements
+of knee anatomy right now. Exact specification and precise measurement is for the AI parts, which
+I have yet to specify. We have to get the pipeline to produce a binary response--CAN we establish
+a rule for the lumens? And CAN we measure them? That is sufficient». For this definition pass,
+the demonstrated rule and measurable regions answer those two questions. Do not make exact
+boundaries, precise calipers or an expanded specification campaign another prerequisite. Check
+the implementation through the real pipeline and its pictures, then move on.
+
+The popliteal artery and vein lumens now meet that criterion on the proof's axial slice 16.
+Enclosed darkness measures the dark bodies within brighter enclosures; their place between the
+two gastrocnemius heads and behind the condyles selects the pair, ordered artery in front of vein.
+Both return `identified`, both have saved nonempty masks, and the actual output picture was
+inspected (`RESOLVING_THE_PARTS.md` §9). This supersedes the vessels' earlier unresolved status.
+The next unresolved element in §6's order is the patellar retinacula.

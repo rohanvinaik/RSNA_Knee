@@ -38,6 +38,8 @@ OBJECT_COLOURS = {
     "suprapatellar_fat": (1.0, 0.95, 0.4, 0.6),
     "medial_gastrocnemius": (0.6, 0.65, 0.1, 0.6),
     "lateral_gastrocnemius": (0.1, 1.0, 0.2, 0.75),
+    "popliteal_artery": (1.0, 0.0, 0.0, 0.9),
+    "popliteal_vein": (0.0, 1.0, 1.0, 0.9),
     "semimembranosus": (0.65, 0.35, 0.1, 0.9),
     "patellar_tendon": (0.5, 1.0, 0.75, 0.85),
     "quadriceps_tendon": (0.8, 0.7, 1.0, 0.85),
@@ -175,6 +177,16 @@ def draw_stages(axes, arrays, record):
         + (
             f"\nBRIGHT GREEN lateral gastrocnemius head: {codes['lateral_gastrocnemius']}"
             if "lateral_gastrocnemius" in codes
+            else ""
+        )
+        + (
+            f"\nRED popliteal artery lumen: {codes['popliteal_artery']}"
+            if "popliteal_artery" in codes
+            else ""
+        )
+        + (
+            f"\nCYAN popliteal vein lumen: {codes['popliteal_vein']}"
+            if "popliteal_vein" in codes
             else ""
         )
         + (

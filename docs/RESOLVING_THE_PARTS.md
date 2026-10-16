@@ -102,6 +102,9 @@ Each is a measurement, never wrong and lossy.
    patient's axes (toward the left, the back, the head).
 9. **The twin**: the other sequence's slice of the same place, its parts and its light laid on by the
    pair's one match of places.
+10. **Enclosed darkness**: how far a dark interior lies below its brighter enclosure. Erosion
+    reconstruction from the acquired image border fills enclosed depressions; subtracting the
+    acquired signal gives their depth (`enclosed_darkness`). No grey-level cutoff is chosen.
 
 What several rules weigh a place against is read once per slice (`Measures`): the marrow's light over a
 bone's places, each place's distance from a part, its position along an axis, each region's size.
@@ -498,3 +501,33 @@ Over the 58 labelled studies, after the canonical run was refreshed with this co
 every sagittal and coronal series says the leg runs in the plane. Both heads are named on the same
 slice in 3 studies, the proof among them. Those other axials are
 not checked for anatomy here: the one demonstration on the proof is the claim.
+
+### Popliteal artery and vein lumens
+
+On the proof's fat-suppressed axial slice 16, the artery's dark round interior is enclosed by a
+brighter ring; the vein's elongated dark interior lies behind it. Both lie behind the condyles,
+between the gastrocnemius heads. This supersedes §6's provisional white-body description: this
+definition reads the enclosed dark lumens visible on this slice.
+
+The rule combines the enclosed-darkness lens with the anatomical positions already measured for
+the two heads and condyles. Consider complete connected interiors between the two head peaks,
+behind both condyle peaks and before the heads' posterior extent. Keep interiors with a body at
+the existing 2 mm small-body scale, which separates a body from a thin seam; retain the whole
+component, not just its thick core. Of these, select the two with greatest mean enclosed darkness.
+Their posterior positions name the anterior lumen artery and the posterior lumen vein, using
+the anatomical order in `OBJECTS_AND_CONDITIONS.md` [Kh]. There are no proof coordinates or chosen
+grey levels in the rule. Missing landmarks, fewer than two eligible bodies, or indistinguishable
+posterior positions produce named abstentions.
+
+Through `scripts/run_interiors.py --draw`, both are `identified` on the proof's axial slice.
+The saved masks `a2_popliteal_artery` and `a2_popliteal_vein` hold 44 and 48 pixels respectively;
+these are observations, not constants in the rule. The depth reading, corridor and all closed
+components are retained alongside them. Both masks coexist with the earlier tissue labels.
+The canonical assignment picture and the close view
+`data/pictures/definitions-20261015/popliteal-lumens-proof.png` were inspected against the acquired
+signal: each outline follows its separate dark lumen body.
+
+Rohan's criterion for this stage is whether a rule can be established and the lumens measured.
+Both answers are yes. Exact specification and precise measurement belong to the later AI work
+he has yet to specify; this completes this element's definition pass. These vessels are landmarks,
+with no direct category among the twelve conditions.

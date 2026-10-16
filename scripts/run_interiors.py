@@ -122,6 +122,7 @@ from knee.objects.assignments import (
     capsule_at_side_recesses,
     capsule_code,
     carried_bone,
+    enclosed_darkness,
     extensor_tendons,
     fat_under_the_skin,
     fibula_block,
@@ -141,6 +142,7 @@ from knee.objects.assignments import (
     outer_step,
     places_from,
     places_on_slice,
+    popliteal_lumens,
     read_field,
     region_holding,
     semimembranosus_code,
@@ -722,6 +724,20 @@ def name_the_back_of_the_knee(own: Measured, leg: Leg | None) -> dict[str, str]:
     names = ("medial_gastrocnemius", "lateral_gastrocnemius")
     for name in names:
         assigned[name] = None
+    vessel_names = ("popliteal_artery", "popliteal_vein")
+    vessel_codes = assigned["codes"]
+    vessel_shape = own.arrays["b1_labels"].shape
+    own.arrays["a2_popliteal_artery"] = np.zeros(vessel_shape, dtype=bool)
+    own.arrays["a2_popliteal_vein"] = np.zeros(vessel_shape, dtype=bool)
+    handed("popliteal_lumens", ("artery", "vein"))
+    for name in vessel_names:
+        assigned[name] = None
+        vessel_codes[name] = "not_named_on_this_slice"
+
+    def abstain_vessels(code: str) -> None:
+        for vessel in vessel_names:
+            vessel_codes[vessel] = code
+
     knee = assigned["knee"]
     reads("series", ("row",), "gastrocnemius")
     reads("naming", ("in_plane",), "gastrocnemius")
@@ -731,12 +747,15 @@ def name_the_back_of_the_knee(own: Measured, leg: Leg | None) -> dict[str, str]:
         not own.assignment.in_plane[2], knee, fat_suppressed, True, True, True, True
     )
     if code != "identified":
+        abstain_vessels(code)
         return dict.fromkeys(names, code)
     if leg is None:
+        abstain_vessels("abstain_no_bone_carried")
         return dict.fromkeys(names, "abstain_no_bone_carried")
     reads("series", ("slice_thickness_mm",), "gastrocnemius")
     thickness = own.series.slice_thickness_mm[own.record["slice_index"]]
     if thickness is None:
+        abstain_vessels("abstain_no_slice_thickness")
         return dict.fromkeys(names, "no_slice_thickness")
     carried = carry_onto(
         leg,
@@ -753,6 +772,7 @@ def name_the_back_of_the_knee(own: Measured, leg: Leg | None) -> dict[str, str]:
         code = gastrocnemius_code(
             True, knee, True, bool(bone.any()), notch is not None, False, False
         )
+        abstain_vessels(code)
         return dict.fromkeys(names, code)
     reads("naming", ("peaks",), "gastrocnemius")
     reads("interiors", ("labels",), "gastrocnemius")
@@ -762,7 +782,10 @@ def name_the_back_of_the_knee(own: Measured, leg: Leg | None) -> dict[str, str]:
     inner_mm = notch if knee == "R" else -notch
     # a copy: the names the slice made alone (`Measured.assignment`) stay as made
     objects = own.arrays["a1_objects"].copy()
-    codes = {}
+    head_codes = {}
+    head_masks = {}
+    head_peaks = {}
+    condyles = {}
     lateral_codes = {
         "abstain_no_inner_condyle": "abstain_no_outer_condyle",
         "abstain_no_body_behind_the_inner_condyle": "abstain_no_body_behind_the_outer_condyle",
@@ -775,18 +798,73 @@ def name_the_back_of_the_knee(own: Measured, leg: Leg | None) -> dict[str, str]:
             head = gastrocnemius_head(
                 peaks, labels, bone, condyle, carried.back_mm, toward
             )
+        condyles[name] = condyle
+        head_masks[name] = head
         placed = head & (objects == 0)
         objects[placed] = OBJECT_CODES[name]
         assigned[name] = int(labels[head].max()) if head.any() else None
+        if head.any():
+            territory = int(labels[head].max())
+            head_peaks[name] = next(
+                peak for peak in peaks if peak.territory == territory
+            )
         placed_any |= bool(placed.any())
         code = gastrocnemius_code(
             True, knee, True, True, True, condyle is not None, bool(placed.any())
         )
-        codes[name] = lateral_codes.get(code, code) if name == names[1] else code
+        head_codes[name] = lateral_codes.get(code, code) if name == names[1] else code
     own.arrays["a1_objects"] = objects
     if placed_any:
         handed("gastrocnemius", ("region",))
-    return codes
+
+    if not all(
+        head_codes.get(name) == "identified" and name in head_peaks for name in names
+    ):
+        abstain_vessels("abstain_requires_both_gastrocnemius_heads")
+        return head_codes
+    condyle_peaks = [condyles[name] for name in names]
+    if any(peak is None for peak in condyle_peaks):
+        abstain_vessels("abstain_requires_both_gastrocnemius_heads")
+        return head_codes
+
+    reads(
+        "carried",
+        ("back_mm", "toward_left_mm"),
+        "popliteal_lumens",
+    )
+    reads("naming", ("peaks",), "popliteal_lumens")
+    reads("interiors", ("labels",), "popliteal_lumens")
+    head_side = [float(inner_mm[head_peaks[name].peak_rc]) for name in names]
+    front_of_condyles = max(
+        float(carried.back_mm[peak.peak_rc])
+        for peak in condyle_peaks
+        if peak is not None
+    )
+    behind_heads = max(float(carried.back_mm[head_masks[name]].max()) for name in names)
+    corridor = (
+        (inner_mm > min(head_side))
+        & (inner_mm < max(head_side))
+        & (carried.back_mm > front_of_condyles)
+        & (carried.back_mm < behind_heads)
+    )
+    depth = enclosed_darkness(own.arrays["acquired_plane"])
+    artery, vein, components, vessel_code = popliteal_lumens(
+        depth, corridor, carried.back_mm, np.asarray(own.frame.spacing_rc)
+    )
+    own.arrays.update(
+        a2_enclosed_darkness=depth,
+        a2_vessel_corridor=corridor,
+        a2_closed_lumens=components,
+        a2_popliteal_artery=artery,
+        a2_popliteal_vein=vein,
+    )
+    for name in vessel_names:
+        vessel_codes[name] = vessel_code
+    handed(
+        "popliteal_lumens",
+        ("enclosed_darkness", "corridor", "components"),
+    )
+    return head_codes
 
 
 def name_the_extensor_tendons(own: Measured, partner: Measured | None) -> None:
@@ -1589,6 +1667,14 @@ def save(run_dir: Path, study_uid: str, record: dict, arrays: dict) -> dict:
         reads("bursa", ("region",), "save")
     if "a2_fluid_signal" in arrays:
         reads("bursal_fluid", ("white",), "save")
+    if "a2_popliteal_artery" in arrays:
+        reads("popliteal_lumens", ("artery", "vein"), "save")
+    if "a2_enclosed_darkness" in arrays:
+        reads(
+            "popliteal_lumens",
+            ("enclosed_darkness", "corridor", "components"),
+            "save",
+        )
     np.savez_compressed(run_dir / artifact, allow_pickle=False, **arrays)
     record["study_uid"] = study_uid
     record["artifact"] = str(artifact)
@@ -1762,6 +1848,7 @@ def measure_study(
         if drawn and records:
             reads("interiors", DRAWN_INTERIORS, "draw")
             reads("naming", DRAWN_NAMES, "draw")
+            reads("popliteal_lumens", ("artery", "vein"), "draw")
             # what a slice read with its partner keeps, in place of its own objects and codes
             reads("partner", ("objects", "codes"), "draw")
             # the back of the knee's part, which a middle slice the leg runs through names

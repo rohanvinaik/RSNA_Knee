@@ -428,6 +428,19 @@ categories of the twelve it relates to (docs/OBJECTS_AND_CONDITIONS.md §6):
   notch, labels and peaks are shared by both heads. Its two side-specific refusals are
   abstain_no_outer_condyle and abstain_no_body_behind_the_outer_condyle; the other
   `gastrocnemius_code` refusals are unchanged. It is placed only where no object is named.
+- POPLITEAL ARTERY AND VEIN: the closed tube cross-sections behind the femoral notch, between
+  the two gastrocnemius heads. `enclosed_darkness` raises each dark closed interior from its
+  recorded image-border values by erosion reconstruction and subtracts the acquired light; no
+  grey-level cutoff is used. `popliteal_lumens` labels every positive interior with 8-neighbour
+  connectivity, then considers only complete components inside the corridor between the two head
+  peaks, behind both condyle peaks and in front of the heads' posterior extent. A component must
+  be touched by `thick_parts` at `VESSEL_BODY_MM` (2 mm), the same physical body-versus-thin-seam
+  scale used for other small anatomical bodies; this is not a vessel diameter or wall estimate.
+  Of those components, the two with greatest mean enclosed darkness are retained whole. Their
+  mean posterior positions order the anterior one as the artery and the posterior one as the vein.
+  Fewer than two eligible components abstain as `abstain_no_lumen_pair`; equal posterior means
+  abstain as `abstain_ambiguous_vessel_order`. This names lumen cross-sections only, with no claim
+  about vessel walls or continuity.
 - SEMIMEMBRANOSUS TENDON: the inner hamstring's tendon, which ends on the back-inner top of the
   tibia: «The direct arm attached to the proximal aspect of the posteromedial part of the tibia
   ... The attachment was posterior to the medial tibial crest and distal to the posteromedial
@@ -565,12 +578,14 @@ the picture, so nothing is named in it. Nothing here draws; the run's renderer d
 returns.
 """
 
+import warnings
 from collections.abc import Callable, Hashable
 from dataclasses import dataclass
 from typing import TypeVar
 
 import numpy as np
 from scipy import ndimage as ndi
+from skimage.morphology import reconstruction
 
 from knee.collapse.physical import PlaneFrame
 from knee.compute.contracts import handed_on
@@ -595,6 +610,7 @@ BONE_MM = 10.0
 # darker than fat, the bodies at least 10 mm across are the three grey bellies on the slice, and at
 # 5 mm the round tendons beside the joint's inner side come in too.
 MUSCLE_MM = 10.0
+VESSEL_BODY_MM = 2.0
 # The fibula's marrow is the tibia's tissue, so on one slice it is about as bright: within a
 # quarter of the tibia's light. Its head lies under the tibia's plateau, at least 3 cm below the
 # tibia's top. Claude's reading of the proof's T2 sagittal, 2026-10-14: the head is x1.00 to x1.08
@@ -673,6 +689,8 @@ OBJECT_CODES = {
     "joint_capsule": 28,
     "gastrocnemius_semimembranosus_bursa": 29,
     "lateral_gastrocnemius": 30,
+    "popliteal_artery": 31,
+    "popliteal_vein": 32,
 }
 CARTILAGES = ("femoral_cartilage", "tibial_cartilage")
 # The parts a slice's naming gives a code for (`assign_plane`), in the order it gives them; a part
@@ -700,6 +718,8 @@ SLICE_PARTS = (
     "synovium",
     "joint_capsule",
     "gastrocnemius_semimembranosus_bursa",
+    "popliteal_artery",
+    "popliteal_vein",
 )
 FOUR_NEIGHBOURS = ndi.generate_binary_structure(2, 1)
 
@@ -2086,6 +2106,84 @@ def thick_parts(
     return ndi.binary_opening(mask, structure=disc)
 
 
+def enclosed_darkness(plane: np.ndarray) -> np.ndarray:
+    """Depth of dark closed interiors below their brighter enclosure, measured by erosion
+    reconstruction from the native image border. No grey-level cutoff is applied."""
+    values = np.asarray(plane, dtype=np.float64)
+    if values.ndim != 2:
+        raise ValueError("plane_must_be_2d")
+    if not np.all(np.isfinite(values)):
+        raise ValueError("plane_must_be_finite")
+    if values.size == 0:
+        return np.zeros(values.shape, dtype=np.float64)
+    seed = np.full(values.shape, float(np.max(values)), dtype=np.float64)
+    seed[0, :] = values[0, :]
+    seed[-1, :] = values[-1, :]
+    seed[:, 0] = values[:, 0]
+    seed[:, -1] = values[:, -1]
+    with warnings.catch_warnings():
+        warnings.filterwarnings(
+            "ignore",
+            category=DeprecationWarning,
+            module=r"skimage\.morphology\.grayreconstruct",
+        )
+        enclosure = reconstruction(
+            seed, values, method="erosion", footprint=np.ones((3, 3), dtype=bool)
+        )
+    return np.asarray(enclosure - values, dtype=np.float64)
+
+
+def popliteal_lumens(
+    depth: np.ndarray,
+    corridor: np.ndarray,
+    back_mm: np.ndarray,
+    spacing_rc: np.ndarray,
+) -> tuple[np.ndarray, np.ndarray, np.ndarray, str]:
+    """Select the two strongest complete, thick-body-supported closed lumens in the corridor;
+    the one farther forward is the artery and the other the vein. Component labels retain all
+    positive enclosed-darkness readings, including components not selected as vessels."""
+    depth = np.asarray(depth, dtype=np.float64)
+    back = np.asarray(back_mm, dtype=np.float64)
+    corridor = np.asarray(corridor, dtype=bool)
+    spacing = np.asarray(spacing_rc, dtype=np.float64)
+    if depth.ndim != 2 or corridor.shape != depth.shape or back.shape != depth.shape:
+        raise ValueError("vessel_inputs_must_share_a_2d_shape")
+    if not np.all(np.isfinite(depth)) or not np.all(np.isfinite(back)):
+        raise ValueError("vessel_inputs_must_be_finite")
+    if (
+        spacing.shape != (2,)
+        or not np.all(np.isfinite(spacing))
+        or np.any(spacing <= 0)
+    ):
+        raise ValueError("invalid_spacing")
+    empty = np.zeros(depth.shape, dtype=bool)
+    labels, _ = ndi.label(depth > 0, structure=np.ones((3, 3), dtype=bool))
+    labels = np.asarray(labels, dtype=np.int32)
+    body = thick_parts(depth > 0, spacing, VESSEL_BODY_MM)
+    touched = np.unique(labels[body])
+    candidates = []
+    means = {}
+    anterior_positions = {}
+    for label in touched:
+        component_id = int(label)
+        if component_id == 0:
+            continue
+        component = labels == component_id
+        if not np.all(corridor[component]):
+            continue
+        means[component_id] = float(depth[component].mean())
+        anterior_positions[component_id] = float(back[component].mean())
+        candidates.append(component_id)
+    if len(candidates) < 2:
+        return empty, empty.copy(), labels, "abstain_no_lumen_pair"
+    strongest = sorted(candidates, key=lambda item: (-means[item], item))[:2]
+    first, second = strongest
+    if anterior_positions[first] == anterior_positions[second]:
+        return empty, empty.copy(), labels, "abstain_ambiguous_vessel_order"
+    artery_id, vein_id = sorted(strongest, key=lambda item: anterior_positions[item])
+    return labels == artery_id, labels == vein_id, labels, "identified"
+
+
 def end_pieces(
     pieces: np.ndarray, count: int, across: np.ndarray, middle: float
 ) -> list[tuple[int, bool]]:
@@ -2405,6 +2503,7 @@ def assign_plane(
     codes["gastrocnemius_semimembranosus_bursa"] = (
         "abstain_requires_the_semimembranosus_slice"
     )
+    codes["popliteal_artery"] = codes["popliteal_vein"] = "not_named_on_this_slice"
     return PlaneAssignment(
         objects, codes, peaks, femur, tibia, patella, bands, white, in_plane
     )
