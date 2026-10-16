@@ -1968,7 +1968,13 @@ def find_part(
                 codes[part] = laid[part] or codes[part]
         for name in companions:
             if codes[name] not in NAMED:
-                silences[f"{record['series_uid']}:{name}"] = codes[name]
+                # This tendon requires the semimembranosus; retain the upstream reason when
+                # that reference fails. The two retinacula have independent decisions.
+                silences[f"{record['series_uid']}:{name}"] = (
+                    codes[part]
+                    if part == "semimembranosus" and codes[part] not in NAMED
+                    else codes[name]
+                )
         if codes[part] in NAMED:
             handed(part, ("main_slice", "region"))
             found.append((record, arrays))

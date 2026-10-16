@@ -97,3 +97,27 @@ def test_find_part_keeps_partial_identification_and_records_the_other_wall_silen
 
     assert found == [(record, arrays)]
     assert silences == {f"series-a:{LATERAL}": "abstain_no_outboard_wall_minimum"}
+
+
+def test_shared_tendon_slice_keeps_the_upstream_missing_reference_reason():
+    own = _own()
+    record = {
+        "series_uid": "series-a",
+        "assignments": {
+            "codes": {
+                "semimembranosus": "abstain_no_inner_condyle",
+                "semitendinosus": "abstain_no_semimembranosus_reference",
+            }
+        },
+    }
+    frame = run_interiors.PlaneFrame(
+        np.zeros(3), np.array([[0.0, 1.0], [1.0, 0.0], [0.0, 0.0]]), (1.0, 1.0)
+    )
+    found, silences = run_interiors.find_part(
+        [own], "semimembranosus", lambda measured: (record, {}, frame), None
+    )
+    assert found == []
+    assert silences == {
+        "series-a:semimembranosus": "abstain_no_inner_condyle",
+        "series-a:semitendinosus": "abstain_no_inner_condyle",
+    }
