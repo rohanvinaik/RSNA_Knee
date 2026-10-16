@@ -37,7 +37,8 @@ object in `docs/OBJECTS_AND_CONDITIONS.md`, one at a time:
    object.
 
 The loop that works, step by step, what to do straight after a compaction, and where the parts stand:
-`docs/HOW_TO_BUILD.md` §2, §7 and "Where it stands".
+`docs/HOW_TO_BUILD.md` §2, §7 and "Where it stands". The parts still to resolve, in order, with what
+to read and look at first for each: `docs/ANATOMY_DEFINITION_CHECKPOINT.md`, "Plan to complete".
 
 A part plainly visible in one lens is found by that lens, whichever lens it is: «If it's visible in one lens
 but not the other (like "joint fluid")...then great, we know how to find it, problem solved». Seeing a part
