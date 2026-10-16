@@ -26,6 +26,7 @@ from knee.objects.assignments import (
     between_along_the_leg,
     carried_bone,
     dark_bands,
+    dark_tendon_bodies,
     end_pieces,
     extensor_tendons,
     fat_pad_code,
@@ -1057,16 +1058,15 @@ def test_the_semimembranosus_is_the_front_tendon_at_the_condyles_back_inner_corn
     dark[41:46, 38:43] = True
     dark[43, 10:75] = True  # a fascia line, 1 mm thick
     free = np.ones(region.shape, dtype=bool)
-    tendon = semimembranosus_on_slice(
-        dark, free, region, condyle, back, inner, np.ones(2)
-    )
+    bodies = dark_tendon_bodies(dark, free, np.ones(2), back, inner)
+    tendon = semimembranosus_on_slice(bodies, region, condyle, back, inner, np.ones(2))
     # the tendon whole, its crack too; not the body behind it, the PCL's end or the fascia line
     assert tendon[43, 57] and tendon[42, 57]
     assert not tendon[51, 61] and not tendon[43, 40] and not tendon[43, 30]
     # where nothing lies behind the condyle's peak, there is none
     behind_all = Peak(1, 15.0, (60, 50), 0.0)
     assert not semimembranosus_on_slice(
-        dark, free, region, behind_all, back, inner, np.ones(2)
+        bodies, region, behind_all, back, inner, np.ones(2)
     ).any()
 
 
