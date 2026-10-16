@@ -562,3 +562,16 @@ decisions and arrays are unchanged. The full gate passed with 211 tests. Details
 `docs/RESOLVING_THE_PARTS.md` §9; picture:
 `data/pictures/definitions-20261016/semitendinosus-proof.png`. This supersedes semitendinosus's
 preview-only status above. Continue at step 2 of `docs/ANATOMY_DEFINITION_CHECKPOINT.md`.
+
+## Separate suprapatellar fat pads, 2026-10-16
+
+The quadriceps and prefemoral fat pads are now resolved (`096f667`): in the already named
+suprapatellar-fat field, the opposed light of the two physically matched sagittal acquisitions
+locates their internal seam; fat in front is the quadriceps pad, behind is the prefemoral pad.
+The rule adds no numerical cutoff, keeps ambiguous sections unresolved and does not smooth
+between them. The native masks and seam are laid onto the twin by the existing match; the
+aligned light and ratio are kept too. Both production pictures and their enlarged view were
+inspected. Earlier proof decisions and arrays are unchanged; the full gate passed with 216 tests.
+Limits and picture: `docs/RESOLVING_THE_PARTS.md` §9,
+`data/pictures/definitions-20261016/suprapatellar-pads-proof.png`. This supersedes the earlier
+preview-only status. Continue at step 3 of `docs/ANATOMY_DEFINITION_CHECKPOINT.md`.

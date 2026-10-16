@@ -559,3 +559,38 @@ semitendinosus. These are two separate dark bodies. This resolves a cross-sectio
 tendon's course; joined dark bodies remain a limitation. No competition condition names it
 directly. This supersedes the semitendinosus part of §6's provisional hamstrings entry; gracilis
 and sartorius remain unresolved.
+
+### Quadriceps and prefemoral fat pads — 2026-10-16
+
+In `096f667` the combined suprapatellar fat is split into the anterior quadriceps wedge behind
+the quadriceps tendon and the posterior prefemoral strip against the femur. Their intervening
+recess is faint bright on the FS sagittal and dark on the non-FS twin. The earlier preview's
+FS-only maximum sometimes followed the field's outer edge. The production definition combines
+the two acquired signals at the same physical places, using the pair's existing match.
+
+`relative_signal` is the ratio of those acquired signals, with unavailable or zero-denominator
+readings kept as NaN. Positive multiplicative changes to either acquisition preserve its
+within-slice ordering; additive offsets need not. `suprapatellar_pads` reads independent
+cross-sections along the native axis closest to patient superior. Inside the already named fat,
+the greatest internal ratio locates the seam, with fat on both sides. A flat section or separated
+equal maxima gives no seam there; a contiguous maximum band is kept whole. Nothing is
+interpolated between sections. The named fat anterior to the seam is the quadriceps pad;
+posterior is the prefemoral pad. Patient-axis positions are shared, with no proof coordinates,
+new signal cutoff or fitted smoothing.
+
+The real entry point identifies both on the proof's FS sagittal slice 18 and lays them onto its
+non-FS twin. Separate arrays are `a2_quadriceps_fat_pad`, `a2_prefemoral_fat_pad` and
+`a2_suprapatellar_recess_ridge`; the source also keeps `a2_nonfs_signal` and `a2_relative_signal`.
+The FS masks hold 472, 744 and 47 pixels respectively, observations rather than rules. The full
+two sagittal outputs and the enlarged picture were inspected:
+`data/pictures/definitions-20261016/suprapatellar-pads-proof.png`. All earlier proof decisions
+and arrays are unchanged. The gate passed with 216 tests.
+
+This is a competent partition on the selected slice. The seam can deviate near its ends, the
+inherited combined mask includes neighbouring tissue, and the top of the picture clips the
+pads. The result asserts neither membrane thickness nor full extent. Neither pad has a direct
+competition label; their recess relates to Effusion. This supersedes §6's provisional fat-pad
+entry. Fable independently described the anterior wedge and the strip on the femur, flagged the
+nearby cortex and the faint upper seam, and explicitly did not claim the proposed computation
+was verified; the lead checked the actual production output. The prompt, prior lead reading,
+answer and API usage are retained in `data/readings/definitions-20261016/fat-pad-seam/`.
