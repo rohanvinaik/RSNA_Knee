@@ -15,8 +15,8 @@ maintenance commits changed no decision, silence or saved array over the 58 labe
 and the test split:
 `fc4ca86` (each read declared where it happens; each part its own colour; the vessel rule's
 candidates found in one pass) and `8901990` (the lens's border readings read only with `--draw`;
-how to run and test, in `AGENTS.md`, "Running and testing"). Steps 3–5 below remain evidence,
-previews and proposals only; do not count those as done.
+how to run and test, in `AGENTS.md`, "Running and testing"). Step 3 is now resolved in
+`be52965`; steps 4–5 remain evidence and proposals only.
 
 The stopping criterion is Rohan's (2026-10-15): «We're resolving the elements of knee anatomy right
 now. Exact specification and precise measurement is for the AI parts, which I have yet to specify. We
@@ -65,11 +65,23 @@ the pictures decide. Mark a step done here, with its commit, when it is.
    The independent Fable image reading and usage are retained in
    `data/readings/definitions-20261016/fat-pad-seam/`. Next: step 3.
 
-3. **Medial and lateral patellar retinacula.** Slice chosen, pictures inspected, no rule yet. On the
+3. **Medial and lateral patellar retinacula — DONE, `be52965`, 2026-10-16.** On the
    axial slice through the sagittal patella's centre (`slice_through`; slice 22 on the proof) both
    bright recesses beside the patella show, and outside each a dark band runs back toward the
    condyle: the retinaculum, the outer wall of the recess away from the femur, between the patella
-   and the condyle (the capsule's rule, `capsule_at_side_recesses`, at these recesses). Claude's
+   and the condyle. The production rule selects the largest bright recess on each side reaching
+   the native patella- and femur-holding regions through the existing 2 mm contact allowance.
+   Between the patella target's posterior middle and the femoral region's strongest peak, each
+   native cross-section reads the exact minimum signal in the outer strip beside that recess.
+   It keeps contiguous ties darker than the neighbouring fluid; separated ties abstain locally.
+   Both walls share the selected slice, lens, carried landmarks and measurements. Their own masks
+   and decisions are retained; the rule adds no grey-level cutoff or proof coordinates.
+   The real proof run identifies medial 70 pixels and lateral 65 pixels (observations, not rules).
+   The enlarged actual output was inspected and shown:
+   `data/pictures/definitions-20261016/retinacula-proof.png` (AMBER medial, ROSE lateral).
+   This locates each band, not thickness or the full course. The full gate passed with 229 tests;
+   Vulture retains its 13 advisory contract declarations and fields. Next: step 4.
+   Claude's
    reading of why the last attempt stalled: the patella carried from one sagittal slice lands on the
    axial as a thin line (`data/pictures/definitions-20261015/retinacula-current-evidence.png`). A
    line is enough as a target, never as a mask: the patella on the axial is the lens's region holding
