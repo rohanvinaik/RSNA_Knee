@@ -107,6 +107,7 @@ def test_shared_tendon_slice_keeps_the_upstream_missing_reference_reason():
             "codes": {
                 "semimembranosus": "abstain_no_inner_condyle",
                 "semitendinosus": "abstain_no_semimembranosus_reference",
+                "gracilis": "abstain_no_semimembranosus_reference",
             }
         },
     }
@@ -120,4 +121,5 @@ def test_shared_tendon_slice_keeps_the_upstream_missing_reference_reason():
     assert silences == {
         "series-a:semimembranosus": "abstain_no_inner_condyle",
         "series-a:semitendinosus": "abstain_no_inner_condyle",
+        "series-a:gracilis": "abstain_no_inner_condyle",
     }
