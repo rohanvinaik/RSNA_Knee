@@ -594,3 +594,37 @@ entry. Fable independently described the anterior wedge and the strip on the fem
 nearby cortex and the faint upper seam, and explicitly did not claim the proposed computation
 was verified; the lead checked the actual production output. The prompt, prior lead reading,
 answer and API usage are retained in `data/readings/definitions-20261016/fat-pad-seam/`.
+
+### Medial and lateral patellar retinacula — 2026-10-16
+
+In `be52965`, both retinacula are localized as the dark outer bands beside the bright recesses
+between the patella and femoral condyles. The native named patella is carried in physical space;
+its centre selects one axial slice for both walls (slice 22 on the proof). The header names the
+knee's inner and outer sides. The sequence must be fluid-sensitive and fat-suppressed.
+
+The carried patella and femur are sparse targets, not segmented axial bone masks. Their native
+lens regions are reach targets only. The posterior interval runs from the carried patella's mean
+posterior position to the strongest existing peak in the femur-holding region. On each side of
+the patella's mean inner position, select the largest connected white-fluid body in that interval
+reaching both holder regions through the existing 2 mm contact allowance. The white reading uses
+the existing fluid-to-marrow relation on carried femoral support.
+
+On each native cross-section nearest patient posterior, read the acquired-signal minimum in the
+available nonwhite strip extending outboard from the selected recess by that same contact
+allowance. Keep the whole contiguous tied minimum only when darker than the neighbouring fluid
+on that section; separated ties give no wall there. This is the lead's reading of the visible
+band, without a new signal cutoff, smoothing or proof coordinates. Both sides share the lens,
+landmarks and measurements. Missing landmarks and missing recesses have named refusals.
+
+The real entry point identifies both on the proof: `a2_medial_patellar_retinaculum` holds 70 pixels
+and `a2_lateral_patellar_retinaculum` 65 pixels. These counts are observations, not rules. The
+selected recesses, exterior strips and per-section readings remain saved alongside the masks.
+The production output and enlarged view were inspected and shown:
+`data/pictures/definitions-20261016/retinacula-proof.png` (AMBER medial, ROSE lateral). Earlier
+proof decisions and arrays are unchanged. The full gate passed with 229 tests, including empty
+references, missing recesses, brighter exterior strips, contiguous and separated ties, transposed
+native axes, reversed anatomical sides, driver refusals and individual abstention recording.
+
+This resolves each band on one slice, not its thickness or full three-dimensional course. Coarse
+holder regions can include surrounding tissue; they are never treated as exact bone boundaries.
+Neither retinaculum has a direct competition label. This supersedes §6's provisional entry.

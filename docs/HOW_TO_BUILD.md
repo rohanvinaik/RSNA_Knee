@@ -575,3 +575,16 @@ inspected. Earlier proof decisions and arrays are unchanged; the full gate passe
 Limits and picture: `docs/RESOLVING_THE_PARTS.md` §9,
 `data/pictures/definitions-20261016/suprapatellar-pads-proof.png`. This supersedes the earlier
 preview-only status. Continue at step 3 of `docs/ANATOMY_DEFINITION_CHECKPOINT.md`.
+
+## Patellar retinacula, 2026-10-16
+
+Both are now resolved in `be52965`: the dark outer bands beside the two bright patellar recesses,
+on the one axial slice selected by the native named patella's physical centre. Both walls share
+the lens, carried bone targets and measurements. The rule combines anatomical order, the existing
+fluid reading and contact allowance, and exact acquired-signal minima outside each recess;
+separated tied minima abstain locally. There is no new signal cutoff or proof coordinate.
+The real proof run identifies both, with separate masks and decisions; the actual enlarged output
+was inspected and shown (`data/pictures/definitions-20261016/retinacula-proof.png`). Earlier proof
+outputs are unchanged. The gate passed with 229 tests; Vulture still lists 13 advisory contract
+declarations and fields. The masks locate the bands, not thickness or full course. Details:
+`docs/RESOLVING_THE_PARTS.md` §9. Continue at step 4 of the checkpoint: the lateral complex.
