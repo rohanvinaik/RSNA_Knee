@@ -533,3 +533,29 @@ Rohan's criterion for this stage is whether a rule can be established and the lu
 Both answers are yes. Exact specification and precise measurement belong to the later AI work
 he has yet to specify; this completes this element's definition pass. These vessels are landmarks,
 with no direct category among the twelve conditions.
+
+### Semitendinosus tendon — 2026-10-16
+
+The semimembranosus tendon's axial slice also shows the semitendinosus as a separate dark oval
+behind it, on the knee's inner side. In `ee5480b`, `dark_tendon_bodies` performs the existing
+semimembranosus candidate construction once: low signal outside the air, skin and black margin,
+with one-pixel cracks closed, the existing 2 mm small-body operation, and connected components.
+It also reads each body's mean posterior and inner positions once. Both selectors receive the
+same labels and positions; the semimembranosus selection keeps its established behaviour.
+
+`semitendinosus_on_slice` selects bodies whose mean lies inside the inner condyle's peak and
+behind the semimembranosus body's posterior extent. Of those, it keeps the whole body nearest
+the named tendon in physical distance. Missing references, no eligible body or an exact nearest
+distance tie return named abstentions. The anatomical relations select it, with no proof
+coordinates, component numbers or new numerical cutoff. A separate mask, `a2_semitendinosus`,
+retains the result alongside the earlier labels. The shared candidate map and positions are
+kept too. There is no second slice search or lens reading.
+
+The real entry point names the proof's axial slice 11: semitendinosus 46 pixels, semimembranosus
+72 pixels. The latter and every earlier proof decision and array are unchanged. The enlarged
+raw/low-signal/outline picture was inspected at its own pixels:
+`data/pictures/definitions-20261016/semitendinosus-proof.png`, BROWN semimembranosus and SILVER
+semitendinosus. These are two separate dark bodies. This resolves a cross-section, not the whole
+tendon's course; joined dark bodies remain a limitation. No competition condition names it
+directly. This supersedes the semitendinosus part of §6's provisional hamstrings entry; gracilis
+and sartorius remain unresolved.
