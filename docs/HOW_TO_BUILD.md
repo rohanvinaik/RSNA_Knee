@@ -58,7 +58,8 @@ here.
      own (the fibula, the ACL, the LCL and the semimembranosus tendon);
   4. `git log --oneline -15` and `git status`: what is committed;
   5. then do what his last message asks. When that is naming the parts, the next part is the first
-     one under "Where it stands" below, done by the loop in §7. Do not ask him to confirm again what
+     step not yet done in the plan of `docs/ANATOMY_DEFINITION_CHECKPOINT.md`, done by the loop in
+     §7 ("Where it stands" below is the record up to 2026-10-15). Do not ask him to confirm again what
      is recorded here («YES. I have said that MANY TIMES»), and do not re-measure finished parts on
      other slices or studies.
 
