@@ -588,3 +588,16 @@ was inspected and shown (`data/pictures/definitions-20261016/retinacula-proof.pn
 outputs are unchanged. The gate passed with 229 tests; Vulture still lists 13 advisory contract
 declarations and fields. The masks locate the bands, not thickness or full course. Details:
 `docs/RESOLVING_THE_PARTS.md` §9. Continue at step 4 of the checkpoint: the lateral complex.
+
+## Popliteus tendon, 2026-10-16
+
+The popliteus is separately resolved in `8fa091d`: the largest part of the existing LCL region
+occupying the femur's lateral contour concavity, measured by its convex envelope. It reuses the
+LCL's selected non-FS coronal slice, lens and carried femur; the target is retained. Its independent
+mask is laid onto the FS twin through the shared match without altering earlier labels.
+The real proof run and both output pictures were inspected, including the enlarged SAGE mask in
+`data/pictures/definitions-20261016/popliteus-proof.png`. The full gate passed with 246 tests;
+Vulture's 13 advisory contract declarations and fields remain. The localization can retain a
+cortex rim and leaves the outer portion; full course and precision are deferred. Details and the
+recorded independent Fable reading: `docs/RESOLVING_THE_PARTS.md` §9. Next in step 4: biceps femoris,
+then iliotibial band; step 5 is still gracilis and sartorius.

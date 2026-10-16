@@ -628,3 +628,43 @@ native axes, reversed anatomical sides, driver refusals and individual abstentio
 This resolves each band on one slice, not its thickness or full three-dimensional course. Coarse
 holder regions can include surrounding tissue; they are never treated as exact bone boundaries.
 Neither retinaculum has a direct competition label. This supersedes §6's provisional entry.
+
+### Popliteus tendon at the lateral femoral sulcus — 2026-10-16
+
+In `8fa091d`, the popliteus has a separate mask and decision on the LCL's existing coronal slice.
+On the T1 proof picture, the tendon occupies the inward notch in the outer condyle, medial to the
+longitudinal outer strip and above the joint line. The existing LCL region already includes this
+body. Its identity is positional: the dark/grey tendon in the condyle's sulcus, distinguished from
+the bright marrow and the more lateral cord. No new grey-level cutoff is needed.
+
+`convex_envelope` measures the pixel-centre convex hull of a mask, with only floating-point
+roundoff allowed in its half-plane test. It knows no anatomical question. `popliteus_in_notch`
+intersects that envelope's exterior-to-femur places with the existing LCL region, then keeps the
+largest four-connected component. The femur is the region already carried from the same series'
+middle slice by the LCL step. Thus both the anatomical slice and its lens and bone target are
+reused; the previously computed femoral target is now retained, rather than discarded. Empty
+targets, degenerate hulls and no eligible notch have named readings/refusals.
+
+The non-FS definition supplies `a2_popliteus_tendon`; it coexists with the original `a1_objects`
+LCL label. The pair's existing match carries this independent mask onto the fat-suppressed view,
+where the native femoral territory merges much of the tendon into bone. An unseen mapping is
+explicitly excluded, and a transferred mask never erases another object's label. The envelope,
+vertices, equations, candidate mask and candidate labels remain saved. The rule adds neither a
+new anatomical scale nor a coordinate taken from the proof.
+
+Through the real entry point, the T1 proof's coronal slice 21 returns `identified`, 251 pixels;
+the paired FS slice returns `laid_from_its_partner`, 155 pixels. These are observations. Both
+production pictures and the enlarged view were inspected and shown:
+`data/pictures/definitions-20261016/popliteus-proof.png` (SAGE). The full gate passed with 246
+tests; earlier proof decisions and arrays are preserved. The new tests include empty/collinear
+inputs, a convex bone with no notch, exclusion of unrelated regions, transposition/reflection,
+overlapping label and mask transfer, unavailable pixels and missing mappings.
+
+This is a localization in the sulcus: it can include a cortex rim and leaves the outer portion
+of the cross-section, and does not claim the whole tendon course. No competition category names
+it directly. The independent Fable reading agreed that the notch content is consistent with
+tendon by position, offered alternative local candidates and did not verify a computation;
+the lead inspected the geometric preview and actual production result. Prompt, prior lead
+reading, response and usage are in `data/readings/definitions-20261016/popliteus-reading/`
+(9,323 input tokens, 7,619 output tokens; no monetary amount was returned). This supersedes the
+popliteus part of §6's provisional lateral-complex entry; biceps femoris and iliotibial band remain.
