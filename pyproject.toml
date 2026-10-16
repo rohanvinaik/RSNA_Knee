@@ -81,7 +81,7 @@ extend-select = ["B"]
 [tool.ruff.lint.isort]
 # The drawing scripts are the run's sibling modules, resolved because a script's directory is on
 # sys.path when it is run as a script. They are ours, not third-party.
-known-first-party = ["knee", "object_interiors", "object_assignments"]
+known-first-party = ["knee", "object_interiors", "object_assignments", "object_bones", "object_patella", "object_joint", "object_recess"]
 
 [tool.ty.src]
 exclude = ["archive", "archive2"]
@@ -89,7 +89,7 @@ exclude = ["archive", "archive2"]
 [tool.deptry]
 extend_exclude = ["archive", "archive2"]
 # The drawing scripts are the run's neighbouring scripts, not external distributions.
-known_first_party = ["knee", "object_interiors", "object_assignments"]
+known_first_party = ["knee", "object_interiors", "object_assignments", "object_bones", "object_patella", "object_joint", "object_recess"]
 
 [tool.deptry.per_rule_ignores]
 # Detective/Wesker are development readers; Hamilton is the development observation graph; and

@@ -29,6 +29,7 @@ def merged_receipt(
     records: list[dict],
     unread: dict[str, str],
     telemetry: dict | None,
+    objects: dict | None = None,
 ) -> dict:
     """The receipt with this study's records, silences and telemetry in place of what it held for
     the study before, and every other study's kept as it was.
@@ -36,7 +37,9 @@ def merged_receipt(
     `old` is the receipt already in the run folder, None when there is none; `request` the
     settings this run reads under; `series_uids` every series of the study, read or not, so a
     series silent before and read now loses its old silence. `telemetry` is the study's ledger
-    reading, or None when this receipt does not carry it. Raises `ValueError`
+    reading, or None when this receipt does not carry it. `objects` is the study's anatomical
+    objects (`knee.collapse.observations.describe_objects`), kept per study like its telemetry,
+    or None when this receipt does not carry them. Raises `ValueError`
     ("receipt_request_differs") when `old` holds records made under other settings, since this
     receipt's request would misdescribe them.
     """
@@ -58,9 +61,19 @@ def merged_receipt(
     }
     if telemetry is not None:
         telemetries[study_uid] = telemetry
-    return {
+    described = {
+        uid: reading
+        for uid, reading in old.get("objects", {}).items()
+        if uid != study_uid
+    }
+    if objects is not None:
+        described[study_uid] = objects
+    receipt = {
         "request": request,
         "records": kept + list(records),
         "unread": silences,
         "telemetry": telemetries,
     }
+    if described:
+        receipt["objects"] = described
+    return receipt
