@@ -611,6 +611,36 @@ axis does not (a sagittal slice), the menisci are not; where the front-to-back a
 coronal slice), the patella is not. The black margin the reconstruction never filled is outside
 the picture, so nothing is named in it. Nothing here draws; the run's renderer draws what this
 returns.
+
+
+PATELLAR RETINACULA: low-signal bands from the patella to the femoral condyles, best seen on axial
+images (`docs/OBJECTS_AND_CONDITIONS.md`, Extensor mechanism). On the slice through the carried
+patella's centre, the two walls are read separately. Each description has its own named code:
+0. the leg runs through the plane, the header names its side, and the acquisition is fluid-sensitive
+and fat-suppressed (`abstain_leg_runs_in_the_plane`, `abstain_header_names_no_knee`,
+`abstain_requires_fluid_sensitive_fat_suppression`). The patella's centre selects its slice by
+physical place, with named refusals for missing geometry, thickness or an off-stack centre;
+1. the sparse patella and femur places are carried from their named slice; `region_holding` finds
+their native lens regions as reach targets only (`abstain_no_patella_carried`,
+`abstain_no_femur_carried`, `abstain_no_patellar_region`, `abstain_no_femoral_region`);
+2. the posterior interval runs from the patella places' mean posterior position to the strongest
+existing peak inside the femur-holding region; no peak or nonpositive interval abstains
+(`abstain_no_femoral_peak`, `abstain_no_posterior_interval`);
+3. on each side of the patella's inner-axis middle, the largest connected white-fluid component
+within the interval must reach within `SHELL_MM` of both holder regions. Those regions are not
+used as masks (`abstain_no_fluid_recess_at_the_patella`);
+4. on each native cross-section nearest the patient's posterior axis, the exterior strip runs
+outboard from that white component's edge by at most `SHELL_MM`, within the interval, among
+available nonwhite places;
+5. the whole tied minimum acquired-signal band in that strip is named only if contiguous and
+below the selected white component's median signal on the same section
+(`abstain_no_outboard_wall_minimum`).
+The positive-inner and negative-inner walls are `medial_patellar_retinaculum` and
+`lateral_patellar_retinaculum`; each identified mask localizes the wall on this slice only. It does
+not measure thickness or claim the retinaculum's full course. The existing 2 mm contact allowance
+locates neighbouring tissue; it is not a thickness estimate. The outer-strip minimum is the lead's
+reading of the visible band, with no new grey-level cutoff. They relate to none of the twelve
+conditions directly.
 """
 
 import warnings
@@ -729,7 +759,13 @@ OBJECT_CODES = {
     "semitendinosus": 33,
     "quadriceps_fat_pad": 34,
     "prefemoral_fat_pad": 35,
+    "medial_patellar_retinaculum": 36,
+    "lateral_patellar_retinaculum": 37,
 }
+RETINACULA = (
+    "medial_patellar_retinaculum",
+    "lateral_patellar_retinaculum",
+)
 CARTILAGES = ("femoral_cartilage", "tibial_cartilage")
 # The parts a slice's naming gives a code for (`assign_plane`), in the order it gives them; a part
 # named on a slice of its own says of each of them that it is not named there.
@@ -761,6 +797,8 @@ SLICE_PARTS = (
     "semitendinosus",
     "quadriceps_fat_pad",
     "prefemoral_fat_pad",
+    "patellar_retinacula",
+    *RETINACULA,
 )
 FOUR_NEIGHBOURS = ndi.generate_binary_structure(2, 1)
 
@@ -1707,6 +1745,232 @@ def capsule_code(
     if not wall:
         return "abstain_no_dark_outer_wall_at_the_recesses"
     return "identified"
+
+
+def retinacular_walls(
+    plane: np.ndarray,
+    white: np.ndarray,
+    labels: np.ndarray,
+    peaks: tuple[Peak, ...],
+    patella_target: np.ndarray,
+    femur_target: np.ndarray,
+    basis_lps: np.ndarray,
+    back_mm: np.ndarray,
+    inner_mm: np.ndarray,
+    spacing_rc: np.ndarray,
+    available: np.ndarray,
+    measures: Measures | None = None,
+) -> tuple[dict[str, np.ndarray], dict[str, str]]:
+    """Measure the outer wall strip beside each bright patellofemoral recess.
+
+    The carried patella and femur are landmarks. Their lens regions are reach targets only:
+    the largest white component on each side must come within SHELL_MM of both. The posterior
+    interval runs from the patella target's mean position to the strongest existing femoral peak.
+    On each native cross-section, the strip lies outboard of the selected white component by at
+    most SHELL_MM. Its whole tied minimum signal band is named only when contiguous and darker
+    than the adjacent white component. This localizes the wall once; it does not measure its
+    thickness or full course.
+    """
+    shape = plane.shape
+    names = {
+        "positive_inner": (RETINACULA[0], 1.0),
+        "negative_inner": (RETINACULA[1], -1.0),
+    }
+    posterior_axis = int(np.argmax(np.abs(np.asarray(basis_lps)[1, :])))
+    section_count = shape[posterior_axis]
+    arrays: dict[str, np.ndarray] = {
+        object_name: np.zeros(shape, dtype=bool) for object_name, _ in names.values()
+    }
+    arrays.update(
+        {
+            "retinacula_white": np.asarray(white, dtype=bool),
+            "retinacula_available": np.asarray(available, dtype=bool),
+            "retinacula_patella_holder": np.zeros(shape, dtype=bool),
+            "retinacula_femur_holder": np.zeros(shape, dtype=bool),
+            "retinacula_posterior_interval": np.zeros(shape, dtype=bool),
+            "retinacula_femur_peak_rc": np.asarray([-1, -1], dtype=np.int32),
+            "retinacula_femur_peak_depth_mm": np.asarray(np.nan),
+            "retinacula_back_mm": np.asarray(back_mm, dtype=np.float64),
+            "retinacula_inner_mm": np.asarray(inner_mm, dtype=np.float64),
+            "retinacula_native_section_axis": np.asarray(posterior_axis, dtype=np.int8),
+        }
+    )
+    arrays["retinacula_posterior_interval_bounds_mm"] = np.asarray(
+        [np.nan, np.nan], dtype=np.float64
+    )
+    for side in names:
+        arrays[f"retinacula_{side}_component_labels"] = np.zeros(shape, dtype=np.int32)
+        arrays[f"retinacula_{side}_selected_recess"] = np.zeros(shape, dtype=bool)
+        arrays[f"retinacula_{side}_strip"] = np.zeros(shape, dtype=bool)
+        arrays[f"retinacula_{side}_minimum_band"] = np.zeros(shape, dtype=bool)
+        arrays[f"retinacula_{side}_row_minimum"] = np.full(
+            section_count, np.nan, dtype=np.float64
+        )
+        arrays[f"retinacula_{side}_adjacent_white_median"] = np.full(
+            section_count, np.nan, dtype=np.float64
+        )
+        arrays[f"retinacula_{side}_row_status"] = np.zeros(section_count, dtype=np.int8)
+        arrays[f"retinacula_{side}_tied_minimum_runs"] = np.zeros(
+            section_count, dtype=np.int16
+        )
+
+    codes: dict[str, str] = {}
+    patella_target = np.asarray(patella_target, dtype=bool)
+    femur_target = np.asarray(femur_target, dtype=bool)
+    patella_holder = region_holding(labels, patella_target)
+    femur_holder = region_holding(labels, femur_target)
+    arrays["retinacula_patella_holder"] = patella_holder
+    arrays["retinacula_femur_holder"] = femur_holder
+
+    prerequisites = ""
+    if not patella_target.any():
+        prerequisites = "abstain_no_patella_carried"
+    elif not femur_target.any():
+        prerequisites = "abstain_no_femur_carried"
+    elif not patella_holder.any():
+        prerequisites = "abstain_no_patellar_region"
+    elif not femur_holder.any():
+        prerequisites = "abstain_no_femoral_region"
+
+    femur_peak = None
+    if not prerequisites:
+        femur_peaks = [
+            peak
+            for peak in peaks
+            if 0 <= peak.peak_rc[0] < shape[0]
+            and 0 <= peak.peak_rc[1] < shape[1]
+            and femur_holder[peak.peak_rc]
+        ]
+        if femur_peaks:
+            femur_peak = max(femur_peaks, key=lambda peak: peak.depth_mm)
+            arrays["retinacula_femur_peak_rc"] = np.asarray(
+                femur_peak.peak_rc, dtype=np.int32
+            )
+            arrays["retinacula_femur_peak_depth_mm"] = np.asarray(
+                femur_peak.depth_mm, dtype=np.float64
+            )
+        else:
+            prerequisites = "abstain_no_femoral_peak"
+
+    posterior_start = posterior_end = np.nan
+    if not prerequisites and femur_peak is not None:
+        posterior_start = float(np.asarray(back_mm)[patella_target].mean())
+        posterior_end = float(back_mm[femur_peak.peak_rc])
+        if posterior_end <= posterior_start:
+            prerequisites = "abstain_no_posterior_interval"
+        else:
+            interval = (back_mm >= posterior_start) & (back_mm <= posterior_end)
+            arrays["retinacula_posterior_interval"] = interval
+            arrays["retinacula_posterior_interval_bounds_mm"] = np.asarray(
+                [posterior_start, posterior_end], dtype=np.float64
+            )
+
+    if prerequisites:
+        for object_name, _ in names.values():
+            codes[object_name] = prerequisites
+        return arrays, codes
+
+    midline = float(np.asarray(inner_mm)[patella_target].mean())
+    arrays["retinacula_patella_midline_inner_mm"] = np.asarray(midline)
+    patella_distance = (
+        measures.distance(patella_holder, spacing_rc)
+        if measures is not None
+        else distance_from(patella_holder, spacing_rc)
+    )
+    femur_distance = (
+        measures.distance(femur_holder, spacing_rc)
+        if measures is not None
+        else distance_from(femur_holder, spacing_rc)
+    )
+    arrays["retinacula_patella_holder_distance_mm"] = patella_distance
+    arrays["retinacula_femur_holder_distance_mm"] = femur_distance
+    valid_white = np.asarray(white, dtype=bool) & np.asarray(available, dtype=bool)
+    arrays["retinacula_valid_white"] = valid_white
+
+    for side, (object_name, sign) in names.items():
+        side_mask = sign * (inner_mm - midline) > 0.0
+        candidate = valid_white & arrays["retinacula_posterior_interval"] & side_mask
+        components, component_count = ndi.label(candidate, structure=FOUR_NEIGHBOURS)
+        arrays[f"retinacula_{side}_component_labels"] = components.astype(np.int32)
+        eligible: list[tuple[int, int]] = []
+        for component_id in range(1, component_count + 1):
+            component = components == component_id
+            reaches_patella = np.any(patella_distance[component] <= SHELL_MM)
+            reaches_femur = np.any(femur_distance[component] <= SHELL_MM)
+            if reaches_patella and reaches_femur:
+                eligible.append((int(component.sum()), component_id))
+        if not eligible:
+            codes[object_name] = "abstain_no_fluid_recess_at_the_patella"
+            continue
+        _, selected_id = max(eligible)
+        recess = components == selected_id
+        arrays[f"retinacula_{side}_selected_recess"] = recess
+
+        def section(values):
+            return values if posterior_axis == 0 else values.T
+
+        inner_section = section(inner_mm)
+        available_section = section(arrays["retinacula_available"])
+        white_section = section(white)
+        recess_section = section(recess)
+        plane_section = section(plane)
+        strip_section = np.zeros(plane_section.shape, dtype=bool)
+        minimum_section = np.zeros(plane_section.shape, dtype=bool)
+        minimum_values = arrays[f"retinacula_{side}_row_minimum"]
+        white_values = arrays[f"retinacula_{side}_adjacent_white_median"]
+        row_status = arrays[f"retinacula_{side}_row_status"]
+        tied_runs = arrays[f"retinacula_{side}_tied_minimum_runs"]
+        outward_section = sign * (inner_section - midline)
+        interval_section = section(arrays["retinacula_posterior_interval"])
+        for section_index in range(plane_section.shape[0]):
+            recess_across = recess_section[section_index]
+            if not recess_across.any():
+                continue
+            outboard_edge = float(outward_section[section_index, recess_across].max())
+            separation = outward_section[section_index] - outboard_edge
+            strip = (
+                (separation >= 0.0)
+                & (separation <= SHELL_MM)
+                & interval_section[section_index]
+                & available_section[section_index]
+                & ~white_section[section_index]
+                & (outward_section[section_index] > 0.0)
+            )
+            strip_section[section_index] = strip
+            columns = np.flatnonzero(strip)
+            if not columns.size:
+                continue
+            adjacent = float(np.median(plane_section[section_index, recess_across]))
+            minimum = float(np.min(plane_section[section_index, columns]))
+            tied = strip & (plane_section[section_index] == minimum)
+            tied_columns = np.flatnonzero(tied)
+            starts = np.r_[0, np.flatnonzero(np.diff(tied_columns) > 1) + 1]
+            run_count = len(starts)
+            minimum_values[section_index] = minimum
+            white_values[section_index] = adjacent
+            tied_runs[section_index] = run_count
+            if run_count > 1:
+                row_status[section_index] = 2
+            elif minimum < adjacent:
+                row_status[section_index] = 1
+                minimum_section[section_index] = tied
+            else:
+                row_status[section_index] = 3
+
+        arrays[f"retinacula_{side}_strip"] = (
+            strip_section if posterior_axis == 0 else strip_section.T
+        )
+        arrays[f"retinacula_{side}_minimum_band"] = (
+            minimum_section if posterior_axis == 0 else minimum_section.T
+        )
+        if minimum_section.any():
+            arrays[object_name] = (
+                minimum_section if posterior_axis == 0 else minimum_section.T
+            )
+            codes[object_name] = "identified"
+        else:
+            codes[object_name] = "abstain_no_outboard_wall_minimum"
+    return arrays, codes
 
 
 def fat_pad_code(
@@ -2681,6 +2945,9 @@ def assign_plane(
     codes["quadriceps_fat_pad"] = codes["prefemoral_fat_pad"] = (
         "not_named_on_this_slice"
     )
+    codes["patellar_retinacula"] = "abstain_requires_the_patellar_slice"
+    for name in RETINACULA:
+        codes[name] = "abstain_requires_the_patellar_slice"
     return PlaneAssignment(
         objects, codes, peaks, femur, tibia, patella, bands, white, in_plane
     )
