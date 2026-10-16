@@ -4,6 +4,22 @@ Each is an «<object>» (Rohan, 2026-10-14): a set of descriptions of how it app
 read off the interiors' own lenses, each one check with the code it abstains with, and the
 categories of the twelve it relates to (docs/OBJECTS_AND_CONDITIONS.md §6):
 
+- POPLITEUS TENDON: the structure in the lateral femoral sulcus, localized on the coronal slice
+  through the fibular attachment already selected for the LCL. It is named on the
+  non-fat-suppressed slice and laid onto its twin by the existing physical-place match. Its
+  descriptions, each one check with its code:
+  1. the LCL-selected slice is the reference (abstain_requires_the_lcl_slice);
+  2. carry the femur from the same series' middle slice into the saved lens regions, and retain the
+     existing LCL region as a relational target only (abstain_no_femoral_region;
+     abstain_no_lcl_region);
+  3. measure the carried femur's pixel-centre convex envelope (`convex_envelope`; measured,
+     abstain_fewer_than_three_points, abstain_no_area), then name the largest four-connected part
+     of the LCL region inside that envelope and outside the femur (`popliteus_in_notch`;
+     abstain_no_lateral_femoral_notch).
+  This localizes the tendon in the sulcus on this slice, may include a cortex rim or partial
+  cross-section, and does not claim its full course. It relates to none of the twelve conditions
+  directly.
+
 - AIR: the low signal outside the leg. Measured on the proof study, 2026-10-14: the air fields are
   2.5 to 5 cm thick, and the strips where the picture fades into its black margin are a few
   millimetres; those strips are not air. Its descriptions, each one check with its code:
@@ -650,6 +666,7 @@ from typing import TypeVar
 
 import numpy as np
 from scipy import ndimage as ndi
+from scipy.spatial import ConvexHull, QhullError
 from skimage.morphology import reconstruction
 
 from knee.collapse.physical import PlaneFrame
@@ -761,6 +778,7 @@ OBJECT_CODES = {
     "prefemoral_fat_pad": 35,
     "medial_patellar_retinaculum": 36,
     "lateral_patellar_retinaculum": 37,
+    "popliteus_tendon": 38,
 }
 RETINACULA = (
     "medial_patellar_retinaculum",
@@ -799,6 +817,7 @@ SLICE_PARTS = (
     "prefemoral_fat_pad",
     "patellar_retinacula",
     *RETINACULA,
+    "popliteus_tendon",
 )
 FOUR_NEIGHBOURS = ndi.generate_binary_structure(2, 1)
 
@@ -1488,6 +1507,90 @@ def region_holding(labels: np.ndarray, places: np.ndarray) -> np.ndarray:
     if not held.size:
         return np.zeros(labels.shape, dtype=bool)
     return labels == int(np.argmax(np.bincount(held)))
+
+
+def convex_envelope(
+    mask: np.ndarray,
+) -> tuple[np.ndarray, np.ndarray, np.ndarray, str]:
+    """Rasterize the convex hull of a 2-D mask's pixel centres.
+
+    The hull half-plane test allows only floating-point roundoff, scaled to the native
+    coordinate and equation magnitudes. This tolerance is numerical, not anatomical.
+    """
+    places = np.asarray(mask, dtype=bool)
+    if places.ndim != 2:
+        raise ValueError("convex_envelope expects a 2-D mask")
+    vertices = np.empty((0, 2), dtype=np.int32)
+    equations = np.empty((0, 3), dtype=np.float64)
+    envelope = np.zeros(places.shape, dtype=bool)
+    points = np.argwhere(places)
+    if len(points) < 3:
+        return envelope, vertices, equations, "abstain_fewer_than_three_points"
+    try:
+        hull = ConvexHull(points)
+    except QhullError:
+        return envelope, vertices, equations, "abstain_no_area"
+    if not hull.volume > 0.0:
+        return envelope, vertices, equations, "abstain_no_area"
+
+    vertices = points[hull.vertices].astype(np.int32, copy=False)
+    equations = hull.equations.astype(np.float64, copy=True)
+    rows, cols = np.indices(places.shape, dtype=np.float64)
+    envelope[:] = True
+    epsilon = np.finfo(np.float64).eps
+    max_row = max(places.shape[0] - 1, 0)
+    max_col = max(places.shape[1] - 1, 0)
+    for a, b, c in equations:
+        residual = a * rows + b * cols + c
+        scale = abs(a) * max_row + abs(b) * max_col + abs(c) + 1.0
+        envelope &= residual <= epsilon * scale * 64.0
+    return envelope, vertices, equations, "measured"
+
+
+def popliteus_in_notch(
+    femur: np.ndarray, lcl: np.ndarray
+) -> tuple[np.ndarray, dict[str, np.ndarray], str]:
+    """Select the largest LCL-region component in the femoral convex-envelope concavity."""
+    femur_places = np.asarray(femur, dtype=bool)
+    lcl_places = np.asarray(lcl, dtype=bool)
+    if femur_places.ndim != 2 or lcl_places.ndim != 2:
+        raise ValueError("popliteus_in_notch expects 2-D masks")
+    if femur_places.shape != lcl_places.shape:
+        raise ValueError("femur and LCL masks must have the same shape")
+    empty = np.zeros(femur_places.shape, dtype=bool)
+    readings: dict[str, np.ndarray] = {
+        "envelope": empty.copy(),
+        "vertices": np.empty((0, 2), dtype=np.int32),
+        "equations": np.empty((0, 3), dtype=np.float64),
+        "candidate": empty.copy(),
+        "candidate_labels": np.zeros(femur_places.shape, dtype=np.int32),
+        "selected_component": empty.copy(),
+        "convex_envelope_code": np.asarray("not_measured"),
+    }
+    if not femur_places.any():
+        return empty, readings, "abstain_no_femoral_region"
+    if not lcl_places.any():
+        return empty, readings, "abstain_no_lcl_region"
+
+    envelope, vertices, equations, envelope_code = convex_envelope(femur_places)
+    readings["envelope"] = envelope
+    readings["vertices"] = vertices
+    readings["equations"] = equations
+    readings["convex_envelope_code"] = np.asarray(envelope_code)
+    if envelope_code != "measured":
+        return empty, readings, "abstain_no_lateral_femoral_notch"
+
+    candidate = envelope & ~femur_places & lcl_places
+    components, count = ndi.label(candidate, structure=FOUR_NEIGHBOURS)
+    readings["candidate"] = candidate
+    readings["candidate_labels"] = components.astype(np.int32, copy=False)
+    if count == 0:
+        return empty, readings, "abstain_no_lateral_femoral_notch"
+    sizes = np.bincount(components.ravel(), minlength=count + 1)
+    selected_id = int(np.argmax(sizes[1:]) + 1)
+    selected = components == selected_id
+    readings["selected_component"] = selected
+    return selected, readings, "identified"
 
 
 def lcl_on_slice(
@@ -2948,6 +3051,7 @@ def assign_plane(
     codes["patellar_retinacula"] = "abstain_requires_the_patellar_slice"
     for name in RETINACULA:
         codes[name] = "abstain_requires_the_patellar_slice"
+    codes["popliteus_tendon"] = "abstain_requires_the_lcl_slice"
     return PlaneAssignment(
         objects, codes, peaks, femur, tibia, patella, bands, white, in_plane
     )
