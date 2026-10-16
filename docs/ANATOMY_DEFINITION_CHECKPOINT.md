@@ -7,14 +7,15 @@ exactly what to do to continue/complete this».
 
 ## Where the code stands
 
-The semitendinosus tendon is now resolved in `ee5480b` (2026-10-16), step 1 below. It shares the
-semimembranosus slice and the dark bodies, including their measured positions, computed once.
+The separated suprapatellar fat pads are now resolved in `096f667` (2026-10-16), step 2 below.
+The semitendinosus was resolved in `ee5480b`, step 1. Both steps use existing selected slices,
+share their measurements, and retain separate masks and named decisions.
 The previous anatomy checkpoint was `c1b8bdb`, the popliteal artery and vein lumens. The intervening
 maintenance commits changed no decision, silence or saved array over the 58 labelled studies
 and the test split:
 `fc4ca86` (each read declared where it happens; each part its own colour; the vessel rule's
 candidates found in one pass) and `8901990` (the lens's border readings read only with `--draw`;
-how to run and test, in `AGENTS.md`, "Running and testing"). Steps 2–5 below remain evidence,
+how to run and test, in `AGENTS.md`, "Running and testing"). Steps 3–5 below remain evidence,
 previews and proposals only; do not count those as done.
 
 The stopping criterion is Rohan's (2026-10-15): «We're resolving the elements of knee anatomy right
@@ -48,18 +49,21 @@ the pictures decide. Mark a step done here, with its commit, when it is.
    records, every earlier decision, silence and saved array is unchanged (optional borders set
    aside). The labelled and test records have been refreshed.
 
-2. **The two fat pads above the patella, parted.** Inspected preview and a small code proposal ready:
-   the suprapatellar fat split along the collapsed recess between the pads, the quadriceps pad in
-   front and the prefemoral pad behind, on the sagittal middle slices. Read first, whole:
-   `data/readings/definitions-20261015/fat-pads-local-prep/suprapatellar_pads_code_proposal.md` and
-   `measurements.json`; look at
-   `data/pictures/definitions-20261015/suprapatellar-ridge-preview-provisional.png`. Claude's reading
-   (2026-10-16): the preview finds the seam from the brightest place in each row of the
-   fat-suppressed slice, and some rows stray; the seam shows in both scans of the same place, a
-   faint white film with fat suppressed and a thin dark curve without, so take it where the two
-   agree, through the pair's one match of places (never one lens alone). Keep the helper small (the
-   cross-sections need not be walked in superior order), reuse the shared patient-position
-   measurements, and use the patient's axes, never proof coordinates.
+2. **The two fat pads above the patella — DONE, `096f667`, 2026-10-16.** The existing
+   suprapatellar-fat field is parted around the internal recess: quadriceps fat anterior,
+   prefemoral fat posterior. `relative_signal` measures acquired FS signal relative to the
+   aligned non-FS twin; the pair's existing physical match is reused. On each cross-section
+   along the leg, the greatest internal relative signal locates the seam, with named fat on
+   both sides; flat or separated tied maxima abstain locally, contiguous ties keep the band.
+   No section is interpolated and no numerical cutoff is added. The source retains both pad
+   masks, the seam, the aligned twin light and ratio; the masks and seam are laid onto the
+   twin. The real proof run names both pads; its earlier decisions and arrays are unchanged.
+   The actual picture, inspected at its own pixels:
+   `data/pictures/definitions-20261016/suprapatellar-pads-proof.png` (COBALT quadriceps, COPPER
+   prefemoral, BLACK seam). Deviations near the seam's ends and the inherited combined mask's
+   overreach remain stated limitations, not a precision campaign. Gate: 216 tests passed.
+   The independent Fable image reading and usage are retained in
+   `data/readings/definitions-20261016/fat-pad-seam/`. Next: step 3.
 
 3. **Medial and lateral patellar retinacula.** Slice chosen, pictures inspected, no rule yet. On the
    axial slice through the sagittal patella's centre (`slice_through`; slice 22 on the proof) both
