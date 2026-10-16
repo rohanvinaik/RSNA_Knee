@@ -51,6 +51,7 @@ OBJECT_COLOURS = {
     "synovium": ("PEAR", (0.8, 0.95, 0.2, 1.0)),
     "joint_capsule": ("SPRING GREEN", (0.0, 1.0, 0.55, 1.0)),
     "gastrocnemius_semimembranosus_bursa": ("PURPLE", (0.7, 0.0, 1.0, 0.75)),
+    "semitendinosus": ("SILVER", (0.7, 0.7, 0.7, 0.9)),
 }
 # The legend's word for each part's colour.
 WORDS = {name: word for name, (word, _) in OBJECT_COLOURS.items()}
@@ -216,6 +217,12 @@ def draw_stages(axes, arrays, record):
             f"\n{WORDS['semimembranosus']} semimembranosus tendon: "
             f"{codes['semimembranosus']}"
             if "semimembranosus" in codes
+            else ""
+        )
+        + (
+            f"\n{WORDS['semitendinosus']} semitendinosus tendon: "
+            f"{codes['semitendinosus']}"
+            if "semitendinosus" in codes
             else ""
         )
         + (

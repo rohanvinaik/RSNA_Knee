@@ -486,6 +486,22 @@ categories of the twelve it relates to (docs/OBJECTS_AND_CONDITIONS.md §6):
   end on the back of the tibia lies inside the notch but outside the condyle's peak, and is not
   taken; the medial gastrocnemius head shows on its slice too and is named only on the middle
   slice.
+- SEMITENDINOSUS TENDON: the separate dark oval behind the semimembranosus tendon on its
+  tibial-top axial slice (the shared slice's prerequisites are those of semimembranosus above).
+  Its descriptions, checked by `semitendinosus_on_slice`:
+  1. the semimembranosus reference is named (abstain_no_semimembranosus_reference);
+  2. the inner condyle's peak is known (abstain_no_inner_condyle_peak);
+  3. the slice's shared dark-body reading holds candidates (abstain_no_dark_body_candidates).
+     The crack closure, small-body scale, labels and mean patient positions are made once by
+     `dark_tendon_bodies` and handed to both tendon selectors; there is no fallback construction;
+  4. a body's mean lies inside the inner condyle's peak and behind the semimembranosus body's
+     posterior extent (abstain_no_body_meets_both_spatial_relations);
+  5. of those bodies it is the one nearest the named tendon in physical distance, retained whole;
+     an exact tie abstains (abstain_tied_nearest_bodies).
+  A separate mask preserves the existing names. On the proof's axial slice 11 the smaller oval
+  behind the semimembranosus is selected; no proof position, label or new cutoff enters the rule.
+  If the dark bodies join, this definition cannot separate them. This is a cross-section, not a
+  claim about the tendon's whole course. None of the twelve categories names it directly.
 - GASTROCNEMIUS-SEMIMEMBRANOSUS BURSA: the fluid-filled pocket between the medial
   gastrocnemius and semimembranosus tendon. Descriptions (bursa_code):
   1. fluid is bright on this fat-suppressed, fluid-sensitive axial slice
@@ -691,6 +707,7 @@ OBJECT_CODES = {
     "lateral_gastrocnemius": 30,
     "popliteal_artery": 31,
     "popliteal_vein": 32,
+    "semitendinosus": 33,
 }
 CARTILAGES = ("femoral_cartilage", "tibial_cartilage")
 # The parts a slice's naming gives a code for (`assign_plane`), in the order it gives them; a part
@@ -720,6 +737,7 @@ SLICE_PARTS = (
     "gastrocnemius_semimembranosus_bursa",
     "popliteal_artery",
     "popliteal_vein",
+    "semitendinosus",
 )
 FOUR_NEIGHBOURS = ndi.generate_binary_structure(2, 1)
 
@@ -1831,9 +1849,38 @@ def tibia_top_slice(
     return max(below, key=lambda index: up_mm[index]) if below else None
 
 
-def semimembranosus_on_slice(
+@dataclass(frozen=True, slots=True)
+class TendonBodies:
+    """The whole dark bodies on one slice and their mean physical positions, read once.
+    Position arrays are indexed by the body's label minus one; zero is outside every body."""
+
+    labels: np.ndarray
+    back_mm: np.ndarray
+    inner_mm: np.ndarray
+
+
+def dark_tendon_bodies(
     dark: np.ndarray,
     free: np.ndarray,
+    spacing_rc: np.ndarray,
+    back_mm: np.ndarray,
+    inner_mm: np.ndarray,
+) -> TendonBodies:
+    """Close the low signal's one-pixel cracks, keep thick bodies and read their positions.
+    This is the semimembranosus selector's existing candidate construction, shared with the
+    semitendinosus; it introduces no new thickness or signal level."""
+    body = ndi.binary_closing(dark & free, structure=FOUR_NEIGHBOURS) & free
+    labels, count = ndi.label(thick_parts(body, spacing_rc, MENISCUS_THICKNESS_MM))
+    index = np.arange(1, count + 1)
+    back = np.asarray(ndi.mean(back_mm, labels, index=index)) if count else np.empty(0)
+    inner = (
+        np.asarray(ndi.mean(inner_mm, labels, index=index)) if count else np.empty(0)
+    )
+    return TendonBodies(handed_on(labels), handed_on(back), handed_on(inner))
+
+
+def semimembranosus_on_slice(
+    bodies: TendonBodies,
     region: np.ndarray,
     condyle: Peak,
     back_mm: np.ndarray,
@@ -1841,18 +1888,12 @@ def semimembranosus_on_slice(
     spacing_rc: np.ndarray,
     measures: Measures | None = None,
 ) -> np.ndarray:
-    """The semimembranosus tendon at the top of the tibia: the low signal among the places no part
-    holds (`free`), its cracks one pixel wide closed (`FOUR_NEIGHBOURS`), and of its pieces at
-    least `MENISCUS_THICKNESS_MM` thick, those whose middle lies inside the inner condyle's peak
-    (`inner_mm`) and behind it (`back_mm`), the back-inner corner, and that reach within
-    `SHELL_MM` of the condyle's `region`; the front one. Empty when none does. `measures` are the
-    slice's shared measures, when its caller keeps them: each place's distance from the condyle's
-    region is read from them."""
-    # The scanner's grain lifts some of the tendon's pixels just above the lens's level, so the
-    # lens draws it cracked; a crack one pixel wide is closed before the thin parts are rubbed away.
-    body = ndi.binary_closing(dark & free, structure=FOUR_NEIGHBOURS) & free
-    pieces, count = ndi.label(thick_parts(body, spacing_rc, MENISCUS_THICKNESS_MM))
-    none = np.zeros(dark.shape, dtype=bool)
+    """The front dark body at the tibia's back-inner corner, reaching the condyle's region.
+    `bodies` is this slice's shared dark-body reading, including its one-pixel crack closure
+    and existing small-body scale. Its means lie inside and behind the condyle's peak.
+    `measures` supplies the shared distance to that region where the run keeps it."""
+    none = np.zeros(bodies.labels.shape, dtype=bool)
+    count = len(bodies.back_mm)
     if not count:
         return none
     index = np.arange(1, count + 1)
@@ -1861,16 +1902,53 @@ def semimembranosus_on_slice(
         if measures is None
         else measures.distance(region, spacing_rc)
     )
-    back = np.asarray(ndi.mean(back_mm, pieces, index=index))
-    inner = np.asarray(ndi.mean(inner_mm, pieces, index=index))
     corner = (
-        (inner > float(inner_mm[condyle.peak_rc]))
-        & (back > float(back_mm[condyle.peak_rc]))
-        & (np.asarray(ndi.minimum(to_region, pieces, index=index)) <= SHELL_MM)
+        (bodies.inner_mm > float(inner_mm[condyle.peak_rc]))
+        & (bodies.back_mm > float(back_mm[condyle.peak_rc]))
+        & (np.asarray(ndi.minimum(to_region, bodies.labels, index=index)) <= SHELL_MM)
     )
     if not corner.any():
         return none
-    return pieces == int(index[corner][np.argmin(back[corner])])
+    return bodies.labels == int(index[corner][np.argmin(bodies.back_mm[corner])])
+
+
+def semitendinosus_on_slice(
+    bodies: TendonBodies,
+    semimembranosus: np.ndarray,
+    condyle: Peak | None,
+    back_mm: np.ndarray,
+    inner_mm: np.ndarray,
+    spacing_rc: np.ndarray,
+    measures: Measures | None = None,
+) -> tuple[np.ndarray, str]:
+    """The separate whole dark body behind the semimembranosus, nearest it on the inner side.
+    Shared body means, the named tendon and the condyle locate it; no slice coordinates,
+    component IDs or new numerical cutoff select it."""
+    none = np.zeros(bodies.labels.shape, dtype=bool)
+    if not semimembranosus.any():
+        return none, "abstain_no_semimembranosus_reference"
+    if condyle is None:
+        return none, "abstain_no_inner_condyle_peak"
+    count = len(bodies.back_mm)
+    if not count:
+        return none, "abstain_no_dark_body_candidates"
+    index = np.arange(1, count + 1)
+    eligible = index[
+        (bodies.inner_mm > float(inner_mm[condyle.peak_rc]))
+        & (bodies.back_mm > float(back_mm[semimembranosus].max()))
+    ]
+    if not eligible.size:
+        return none, "abstain_no_body_meets_both_spatial_relations"
+    to_tendon = (
+        distance_from(semimembranosus, spacing_rc)
+        if measures is None
+        else measures.distance(semimembranosus, spacing_rc)
+    )
+    distances = np.asarray(ndi.minimum(to_tendon, bodies.labels, index=eligible))
+    nearest = np.flatnonzero(distances == distances.min())
+    if len(nearest) != 1:
+        return none, "abstain_tied_nearest_bodies"
+    return bodies.labels == int(eligible[nearest[0]]), "identified"
 
 
 def bursa_on_slice(
@@ -2505,6 +2583,7 @@ def assign_plane(
         "abstain_requires_the_semimembranosus_slice"
     )
     codes["popliteal_artery"] = codes["popliteal_vein"] = "not_named_on_this_slice"
+    codes["semitendinosus"] = "abstain_requires_the_semimembranosus_slice"
     return PlaneAssignment(
         objects, codes, peaks, femur, tibia, patella, bands, white, in_plane
     )

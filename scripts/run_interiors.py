@@ -125,6 +125,7 @@ from knee.objects.assignments import (
     capsule_at_side_recesses,
     capsule_code,
     carried_bone,
+    dark_tendon_bodies,
     enclosed_darkness,
     extensor_tendons,
     fat_under_the_skin,
@@ -150,6 +151,7 @@ from knee.objects.assignments import (
     region_holding,
     semimembranosus_code,
     semimembranosus_on_slice,
+    semitendinosus_on_slice,
     slice_through,
     subcutaneous_code,
     synovium_code,
@@ -211,7 +213,7 @@ DRAWN_INTERIORS = (
 )
 DRAWN_NAMES = ("objects", "codes", "peaks", "femur", "tibia", "patella")
 # The parts named on a main slice of their own; a series' silence on each is `<series uid>:<part>`.
-MAIN_PARTS = ("fibula", "acl", "lcl", "semimembranosus")
+MAIN_PARTS = ("fibula", "acl", "lcl", "semimembranosus", "semitendinosus")
 # The joint's boundaries: each the field it is handed on as, and the part it names.
 JOINT_BOUNDARIES = (
     ("recess", "anterior_synovial_recess"),
@@ -1235,6 +1237,8 @@ def semimembranosus_slice(
     reads("field", ("peaks", "objects"), "semimembranosus")
     toward_left = carried.toward_left_mm
     condyle = tendon = None
+    semitendinosus = np.zeros(labels.shape, dtype=bool)
+    st_code = "abstain_no_semimembranosus_reference"
     if toward_left is not None:
         # the inner side is toward the other knee: the patient's left for a right knee
         inner_mm = toward_left if knee == "R" else -toward_left
@@ -1242,18 +1246,44 @@ def semimembranosus_slice(
             field.peaks, labels, carried.femur | carried.tibia, inner_mm
         )
         if condyle is not None:
-            tendon = semimembranosus_on_slice(
+            spacing = np.asarray(frame.spacing_rc)
+            shared = measures_of(uid, z, plane, frame)
+            reads("interiors", ("dark",), "hamstring_bodies")
+            reads("carried", ("back_mm", "toward_left_mm"), "hamstring_bodies")
+            bodies = dark_tendon_bodies(
                 arrays["b1_dark"],
                 # the places neither the air, the skin nor the black margin hold
                 (field.objects == 0) & ~margin_of(uid, z, plane),
+                spacing,
+                carried.back_mm,
+                inner_mm,
+            )
+            handed("hamstring_bodies", field_names(bodies))
+            arrays["a2_dark_tendon_candidates"] = bodies.labels
+            arrays["a2_dark_tendon_back_mm"] = bodies.back_mm
+            arrays["a2_dark_tendon_inner_mm"] = bodies.inner_mm
+            reads("hamstring_bodies", field_names(bodies), "semimembranosus")
+            tendon = semimembranosus_on_slice(
+                bodies,
                 labels == condyle.territory,
                 condyle,
                 carried.back_mm,
                 inner_mm,
-                np.asarray(frame.spacing_rc),
-                measures_of(uid, z, plane, frame),
+                spacing,
+                shared,
             )
-    # On its slice only the tendon is named; the slice's other parts belong to the middle slice.
+            reads("hamstring_bodies", field_names(bodies), "semitendinosus")
+            reads("semimembranosus", ("region",), "semitendinosus")
+            reads("carried", ("back_mm", "toward_left_mm"), "semitendinosus")
+            reads("field", ("peaks",), "semitendinosus")
+            semitendinosus, st_code = semitendinosus_on_slice(
+                bodies, tendon, condyle, carried.back_mm, inner_mm, spacing, shared
+            )
+    arrays["a2_semitendinosus"] = semitendinosus
+    record["assignments"]["codes"]["semitendinosus"] = st_code
+    if st_code == "identified":
+        handed("semitendinosus", ("region",))
+    # The tendons share this slice; the middle slice keeps its own tissue names.
     objects = np.zeros(labels.shape, dtype=np.int8)
     if tendon is not None:
         objects[tendon] = OBJECT_CODES["semimembranosus"]
@@ -1892,6 +1922,17 @@ def measure_study(
             for part_record, part_arrays in found:
                 main_records.append(save(main_run, study_uid, part_record, part_arrays))
             main_unread.update(silences)
+            if part == "semimembranosus":
+                # The second tendon shares this slice and its readings; it has no second search.
+                for key, why in silences.items():
+                    uid, _ = key.rsplit(":", 1)
+                    main_unread[f"{uid}:semitendinosus"] = why
+                for part_record, _ in found:
+                    st_code = part_record["assignments"]["codes"]["semitendinosus"]
+                    if st_code not in NAMED:
+                        main_unread[f"{part_record['series_uid']}:semitendinosus"] = (
+                            st_code
+                        )
         # The renderers read the saved run, when they draw it: their reads are its last.
         if drawn and records:
             reads("interiors", DRAWN_INTERIORS, "draw")
@@ -1940,6 +1981,11 @@ def measure_study(
                 {r["main_slice"]["object"].lower() for r in main_records}
             ):
                 reads(part, ("main_slice", "region"), "draw")
+            if any(
+                r["assignments"]["codes"].get("semitendinosus") in NAMED
+                for r in main_records
+            ):
+                reads("semitendinosus", ("region",), "draw")
             # the bursa, which the semimembranosus tendon's slice names
             if any(
                 r["assignments"]["codes"].get("gastrocnemius_semimembranosus_bursa")
