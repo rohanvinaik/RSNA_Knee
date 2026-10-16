@@ -486,6 +486,25 @@ categories of the twelve it relates to (docs/OBJECTS_AND_CONDITIONS.md §6):
   end on the back of the tibia lies inside the notch but outside the condyle's peak, and is not
   taken; the medial gastrocnemius head shows on its slice too and is named only on the middle
   slice.
+- QUADRICEPS AND PREFEMORAL FAT PADS: the anterior wedge behind the quadriceps tendon and
+  the posterior strip against the femur, separated by the suprapatellar recess. Descriptions:
+  1. the source is sagittal (abstain_not_a_sagittal_slice) and fluid-sensitive with fat suppressed
+     (abstain_requires_fluid_sensitive_fat_suppression);
+  2. the combined suprapatellar fat is already named (abstain_no_suprapatellar_fat);
+  3. a non-fat-suppressed twin images the same place (abstain_no_non_fat_suppressed_twin;
+     abstain_no_slice_thickness; abstain_not_the_same_place). Its acquired light is carried by
+     the pair's one existing physical match;
+  4. on each cross-section along the leg, the internal seam is the greatest relative FS/non-FS
+     signal inside the combined fat, with fat on both sides. Flat sections and separated tied
+     maxima abstain locally; contiguous ties retain the whole band. No section is interpolated
+     (abstain_no_internal_seam when none speaks);
+  5. the named fat anterior to that seam is the quadriceps pad; posterior is the prefemoral pad.
+  The ratio is an objective reading (`relative_signal`), not a tissue name, and no new numerical
+  cutoff is used. Both masks and the seam are retained separately, then laid onto the twin. The
+  source retains the aligned light and ratio too. On the proof the two main shapes are separated;
+  the seam can deviate near its ends, and the inherited combined field can take in neighbouring
+  tissue. This is a partition on the selected slice, not membrane thickness or a full extent.
+  The two pads border the recess involved in Effusion; neither has a direct competition label.
 - SEMITENDINOSUS TENDON: the separate dark oval behind the semimembranosus tendon on its
   tibial-top axial slice (the shared slice's prerequisites are those of semimembranosus above).
   Its descriptions, checked by `semitendinosus_on_slice`:
@@ -708,6 +727,8 @@ OBJECT_CODES = {
     "popliteal_artery": 31,
     "popliteal_vein": 32,
     "semitendinosus": 33,
+    "quadriceps_fat_pad": 34,
+    "prefemoral_fat_pad": 35,
 }
 CARTILAGES = ("femoral_cartilage", "tibial_cartilage")
 # The parts a slice's naming gives a code for (`assign_plane`), in the order it gives them; a part
@@ -738,6 +759,8 @@ SLICE_PARTS = (
     "popliteal_artery",
     "popliteal_vein",
     "semitendinosus",
+    "quadriceps_fat_pad",
+    "prefemoral_fat_pad",
 )
 FOUR_NEIGHBOURS = ndi.generate_binary_structure(2, 1)
 
@@ -1736,6 +1759,77 @@ def rest_of_the_patellas_territory(
     return (labels == territory) & beyond & (objects == 0)
 
 
+def relative_signal(numerator: np.ndarray, denominator: np.ndarray) -> np.ndarray:
+    """One acquired nonnegative signal relative to another at the same physical places.
+    A zero or unavailable denominator has no ratio, recorded as NaN. Multiplicative changes
+    of either acquisition scale the ratios uniformly; additive changes need not."""
+    first = np.asarray(numerator, dtype=np.float64)
+    second = np.asarray(denominator, dtype=np.float64)
+    if first.ndim != 2 or second.shape != first.shape:
+        raise ValueError("signals_must_share_a_2d_shape")
+    ratio = np.full(first.shape, np.nan)
+    valid = np.isfinite(first) & np.isfinite(second) & (first >= 0) & (second > 0)
+    with np.errstate(over="ignore"):
+        np.divide(first, second, out=ratio, where=valid)
+    ratio[~np.isfinite(ratio)] = np.nan
+    return handed_on(ratio)
+
+
+def suprapatellar_pads(
+    ratio: np.ndarray,
+    combined: np.ndarray,
+    basis_lps: np.ndarray,
+    back_mm: np.ndarray,
+) -> tuple[np.ndarray, np.ndarray, np.ndarray, str]:
+    """Part the named suprapatellar fat about the internal opposed-contrast seam.
+    On cross-sections along the leg, the seam is the largest FS/non-FS ratio strictly inside
+    the combined fat, with fat on both sides. Flat or separated tied maxima give no seam.
+    Contiguous ties retain the whole ridge. No section is interpolated from its neighbours."""
+    signal = np.asarray(ratio, dtype=np.float64)
+    combined = np.asarray(combined, dtype=bool)
+    back = np.asarray(back_mm, dtype=np.float64)
+    basis = np.asarray(basis_lps, dtype=np.float64)
+    if signal.ndim != 2 or combined.shape != signal.shape or back.shape != signal.shape:
+        raise ValueError("pad_readings_must_share_a_2d_shape")
+    if basis.shape != (3, 2) or not np.all(np.isfinite(basis)):
+        raise ValueError("invalid_lps_basis")
+    if not np.all(np.isfinite(back)):
+        raise ValueError("invalid_posterior_positions")
+    row_axis = abs(basis[2, 0]) >= abs(basis[2, 1])
+    mask, posterior = (combined, back) if row_axis else (combined.T, back.T)
+    signal = signal if row_axis else signal.T
+    anterior, rear, ridge = (np.zeros(mask.shape, dtype=bool) for _ in range(3))
+    for row in range(mask.shape[0]):
+        ids = np.flatnonzero(mask[row])
+        if not len(ids):
+            continue
+        y = posterior[row, ids]
+        inside = (y > y.min()) & (y < y.max()) & np.isfinite(signal[row, ids])
+        candidates = ids[inside]
+        if not len(candidates):
+            continue
+        values = signal[row, candidates]
+        if np.all(values == values[0]):
+            continue
+        tied = candidates[values == values.max()]
+        if int(tied[-1] - tied[0] + 1) != len(tied):
+            continue
+        ridge[row, tied] = True
+        seam = posterior[row, tied]
+        anterior[row, ids[y < seam.min()]] = True
+        rear[row, ids[y > seam.max()]] = True
+    if not row_axis:
+        anterior, rear, ridge = anterior.T, rear.T, ridge.T
+    code = (
+        "abstain_no_suprapatellar_fat"
+        if not combined.any()
+        else "identified"
+        if ridge.any()
+        else "abstain_no_internal_seam"
+    )
+    return anterior, rear, ridge, code
+
+
 def gastrocnemius_code(
     leg_through_plane: bool,
     knee: str,
@@ -2584,6 +2678,9 @@ def assign_plane(
     )
     codes["popliteal_artery"] = codes["popliteal_vein"] = "not_named_on_this_slice"
     codes["semitendinosus"] = "abstain_requires_the_semimembranosus_slice"
+    codes["quadriceps_fat_pad"] = codes["prefemoral_fat_pad"] = (
+        "not_named_on_this_slice"
+    )
     return PlaneAssignment(
         objects, codes, peaks, femur, tibia, patella, bands, white, in_plane
     )
