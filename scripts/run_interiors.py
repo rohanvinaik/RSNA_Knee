@@ -148,6 +148,7 @@ from knee.objects.assignments import (
     places_from,
     places_on_slice,
     popliteal_lumens,
+    popliteus_in_notch,
     read_field,
     region_holding,
     relative_signal,
@@ -225,9 +226,11 @@ MAIN_PARTS = (
     "semitendinosus",
     "patellar_retinacula",
     *RETINACULA,
+    "popliteus_tendon",
 )
 # Parts sharing another part's selected slice and its readings.
 MAIN_COMPANIONS = {
+    "lcl": ("popliteus_tendon",),
     "semimembranosus": ("semitendinosus",),
     "patellar_retinacula": RETINACULA,
 }
@@ -1883,6 +1886,19 @@ def lcl_slice(
         bool(fibula.any()),
         bool(lcl.any()),
     )
+    arrays["a2_lcl_carried_femur"] = femur
+    if fat_suppressed:
+        arrays["a2_popliteus_tendon"] = np.zeros(labels.shape, dtype=bool)
+        codes["popliteus_tendon"] = "abstain_requires_the_nonfs_notch_view"
+    else:
+        reads("lcl", ("region",), "popliteus_tendon")
+        popliteus, notch_readings, popliteus_code = popliteus_in_notch(femur, lcl)
+        arrays["a2_popliteus_tendon"] = popliteus
+        for name, value in notch_readings.items():
+            arrays[f"a2_popliteus_{name}"] = value
+        codes["popliteus_tendon"] = popliteus_code
+        if popliteus.any():
+            handed("popliteus_tendon", ("region",))
     lcl_assigned.update(lcl=int(labels[lcl].max()) if lcl.any() else None)
     lcl_record["main_slice"] = {"object": "LCL"}
     return lcl_record, arrays, frame
@@ -1926,6 +1942,13 @@ def lay_parts(
         open_to_them &= arrays["b1_labels"] > 0
     codes: dict[str, str | None] = {}
     for part in parts:
+        mask = partner_arrays.get(f"a2_{part}")
+        if mask is not None:
+            reads(part, ("region",), "partner")
+            placed = (source >= 0) & laid_by(mask, source) & arrays["b1_available"]
+            arrays[f"a2_{part}"] = placed
+            codes[part] = "laid_from_its_partner" if placed.any() else None
+            continue
         code = OBJECT_CODES[part]
         placed = (laid == code) & open_to_them
         objects[placed] = code
@@ -1964,8 +1987,11 @@ def find_part(
             partner = partner_of(measured, index)
             at = next((i for i, m in enumerate(measured) if m is partner), None)
             if at in read and read[at][0]["assignments"]["codes"][part] == "identified":
-                laid = lay_parts(own, read[index], read[at], (part,), product=part)
-                codes[part] = laid[part] or codes[part]
+                laid = lay_parts(
+                    own, read[index], read[at], (part, *companions), product=part
+                )
+                for name, code in laid.items():
+                    codes[name] = code or codes[name]
         for name in companions:
             if codes[name] not in NAMED:
                 # This tendon requires the semimembranosus; retain the upstream reason when
@@ -2237,6 +2263,11 @@ def measure_study(
                 for r in main_records
             ):
                 reads("semitendinosus", ("region",), "draw")
+            if any(
+                r["assignments"]["codes"].get("popliteus_tendon") in NAMED
+                for r in main_records
+            ):
+                reads("popliteus_tendon", ("region",), "draw")
             # the bursa, which the semimembranosus tendon's slice names
             if any(
                 r["assignments"]["codes"].get("gastrocnemius_semimembranosus_bursa")

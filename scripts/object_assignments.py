@@ -56,6 +56,7 @@ OBJECT_COLOURS = {
     "prefemoral_fat_pad": ("COPPER", (0.65, 0.15, 0.0, 0.85)),
     "medial_patellar_retinaculum": ("AMBER", (0.75, 0.75, 0.0, 0.95)),
     "lateral_patellar_retinaculum": ("ROSE", (0.9, 0.45, 0.7, 0.95)),
+    "popliteus_tendon": ("SAGE", (0.4, 0.75, 0.45, 0.95)),
 }
 # The legend's word for each part's colour.
 WORDS = {name: word for name, (word, _) in OBJECT_COLOURS.items()}
@@ -142,6 +143,11 @@ def draw_stages(axes, arrays, record):
         + (f"\n{WORDS['acl']} ACL: {codes['acl']}" if "acl" in codes else "")
         + (f"\n{WORDS['mcl']} MCL: {codes['mcl']}" if "mcl" in codes else "")
         + (f"\n{WORDS['lcl']} LCL: {codes['lcl']}" if "lcl" in codes else "")
+        + (
+            f"\n{WORDS['popliteus_tendon']} popliteus tendon: {codes['popliteus_tendon']}"
+            if "popliteus_tendon" in codes
+            else ""
+        )
         + (
             f"\n{WORDS['joint_fluid']} joint fluid: {codes['joint_fluid']}"
             if "joint_fluid" in codes
