@@ -1,8 +1,11 @@
 # Dimensional collapse for knee MRI
 
-**Status: proposed implementation plan, 2026-10-16.** Prepared at Rohan's request after the
-anatomical definition pass (`4a126fc`, checkpoint `3bede6a`). This document plans the next phase;
-it does not report an implemented collapse. Recognition code was not changed for this plan.
+**Status: approved plan; implementation in progress, 2026-10-16.** Prepared at Rohan's request
+after the anatomical definition pass (`4a126fc`, checkpoint `3bede6a`), then approved: «I like it!
+Use the same "cheap sub agents and Anthropic API sub-agents" to build the thing as mechanized
+and effective/clean as possible». The steps below specify the full build; their presence here
+does not report that they are implemented. The first fibula case is undergoing integration and
+verification; later anatomical families remain to be built.
 
 Rohan's scope is both selection of the slice ideal for resolving each object and resolution of
 that object across all available study information. The established anatomical definitions stay
@@ -13,6 +16,17 @@ the basis. The later AI work and diagnosis remain his to specify.
 **Whole acquired stacks → shared cheap readings → anatomical neighbourhood and local depth
 profiles → detailed resolution on useful native planes → one anatomical object described by
 all its sourced observations and measured extent.**
+
+Rohan's implementation requirement, 2026-10-16: “Also, note that computational efficiency in the
+production path is a key output. Full compute for building and diagnosis is fine, but the
+production path should be computationally minimal.” Production compute is an acceptance output:
+measure the real drawing-off path, share identical readings, avoid development-only work and
+unnecessary detailed planes, and preserve measurements when optimizing. Rohan subsequently
+emphasized that the collapse is itself computationally efficient: the low-resolution lenses
+resolve the best view for recognition, and recognition computes against that selected view.
+This is the mechanism the implementation must preserve, rather than merely optimizing loops
+after doing unnecessary recognition work. Development evidence can
+read the full data to establish the method; that exploration does not become production work.
 
 The original stacks stay available. Every measured value is retained and shared with its actual
 consumers. Reduced views expose the dimensions a question reads; they do not replace the record.
@@ -254,3 +268,40 @@ not verdicts assigned by an advisor.
 Complete prompt, source sections, prior lead reading/draft, verbatim answer, API metadata and
 comparison: `data/readings/collapse-20261016/` (ignored project evidence). The consultation
 informs this proposal; it does not verify unimplemented selectors or anatomy on images.
+
+
+## Implementation review, 2026-10-16
+
+The first API family implementations are provisional until they meet this plan's end-to-end
+requirements. An added observation with no real consumer, a known false anatomical name, or a
+broad search that restores unnecessary detailed computation is not a completed family. Preserve
+the competent definitions and inspect legitimate changed selections; receipt equality is not a
+requirement to leave new observations unwired. The lead's current concrete review findings and
+clarification are in `data/readings/collapse-20261016/api-build-and-search-priors/PARENT_REVIEW.md`.
+Complete integration, validity and measured production efficiency before cohort search-prior
+analysis treats those selections as ideal observations.
+
+## Acceptance clarification from Rohan during implementation
+
+Rohan: “Noted, but that's fine. We need the capacity to recognize, accuracy and completeness is for AI. We just need to define these objects as "platonic" versions of them, correct in the general case, not perfect or complete.”
+
+This governs the implementation requirements above: the deliverable is a domain-grounded concept and competent deterministic recognition capacity, with useful slice selection and efficient wiring. Imperfect boundaries, residual misses and incomplete coverage are not new blockers. The build keeps the observations it actually makes and states unknowns without requiring exhaustive recovery or perfect continuation. Accuracy and completeness remain for the later AI layers Rohan has yet to specify.
+
+## Volume and the encoding layer: Rohan's source pointer
+
+Rohan: 'Do note that the "<object>" thesis lays out how volume is to be computed as a natural extension of the full encoding layer--bundling operations in HDC, specifically the idiomatic form of HDC that was created for this representation.'
+
+The source mechanism must be read before implementing volume-dependent encoding. Generic HDC mechanics or a requirement for dense geometric reconstruction must not substitute for that account. The current recognition and useful-view build remains governed by the capacity criterion above.
+
+## Implementation status, posterior family and lumens/bursa, 2026-10-16
+
+The posterior family (both gastrocnemius heads, semimembranosus, semitendinosus, gracilis, the
+sartorius, the biceps femoris tendon), the artery and vein lumens and the gastrocnemius-
+semimembranosus bursa now reach the grouped per-study object output with native, laid, projected and
+named-unresolved observations, as do the iliotibial band and the popliteus tendon. The tubes among
+them (the three tendons, the lumens, the bursa's fluid) also have a cheap longitudinal ridge
+reading on the series the leg runs through (`knee.collapse.posterior`), kept with its stops as a
+pointer, not the part's course. The capacity is demonstrated once on the proof and the positive
+bursa study through `scripts/run_interiors.py`; the cohort run and statistics, the muscles'
+longitudinal descriptions and the bursa's neck and wall remain unbuilt. The record and its limits:
+`docs/RESOLVING_THE_PARTS.md` §9, last section.

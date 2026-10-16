@@ -772,10 +772,15 @@ categories of the twelve it relates to (docs/OBJECTS_AND_CONDITIONS.md §6):
 - FIBULA: the bone under the tibia's outer back. Its head has the tibia's marrow, so it is as
   bright as the tibia, and it lies about 5 cm below the tibia's top (seen on the proof's T1 coronal
   and T2 sagittal, 2026-10-14; Rohan: «Do you not see the giant fucking bone that is the
-  fibula?»). It is named on its main slice: the squint points to where it must be (`fibula_block`:
-  below the tibia's top, on the outer side), the interiors lens reads only that block on each slice
-  that holds it, and its main slice is the one where its region is largest (`main_slice`). Its
-  descriptions, each one check with its code (`fibula_code`):
+  fibula?»). It is named on its main slice, the one where its region is largest (`main_slice`).
+  Where that slice is looked for is pointed by cheap readings and never found by the lens on every
+  slice: the squint's tiles bound a corridor (`fibula_corridor`: below the tibia's top, on the outer
+  side, behind the tibia's middle), and a finer block reading there (`fibula_pointer`: blocks as
+  bright as the tibia, with parts thinner than `BONE_MM` rubbed away, the body that holds the
+  tibia's carried places and its middle being the tibia, and any other body behind and below it
+  could be the fibula) says where a body could be, as a pointer and never as the fibula. Where the
+  tibia cannot be told it says unknown, not absent. The lens and the description below run only on
+  the planes it points to. Its descriptions, each one check with its code (`fibula_code`):
   1. the header names the knee, so its outer side is known (abstain_header_names_no_knee);
   2. the middle slice names the tibia (abstain_no_tibia);
   3. fat is not suppressed: with it the marrow is darkened to the light of muscle
@@ -783,9 +788,13 @@ categories of the twelve it relates to (docs/OBJECTS_AND_CONDITIONS.md §6):
   4. it is the region the lens draws there that looks like the tibia (within `LIKE_THE_TIBIA` of
      its light), at least a disc `BONE_MM` across, its middle at least `FIBULA_BELOW_MM` below the
      tibia's top and behind the tibia's middle, apart from the tibia and whole in the block
-     (`fibula_on_slice`) (abstain_no_bone_like_the_tibia_below_it).
+     (`fibula_on_slice`) (abstain_no_bone_like_the_tibia_below_it); where the corridor could not be
+     read the refusal says so (abstain_fibula_corridor_unreadable).
   It relates to Fracture. Seen right on the proof's T2 sagittal, 2026-10-14: slice 30, the bone
-  under the tibia's outer condyle, its head and neck.
+  under the tibia's outer condyle, its head and neck; the profile's support there runs over slices
+  27 to 33, both ends measured, and it is also found on the T1 coronal. What is saved is its section
+  on the pointed plane(s), its support and what is not known, not the whole bone, which runs off
+  the picture.
 
 TWO SLICES OF ONE PLACE (`with_partner`). A study images the knee in two sequences on the same
 slices: on the proof, the two sagittals lie on the same planes within 0.002 mm and the two coronals
@@ -890,6 +899,13 @@ HEAD_SLICE_STATUS = {
     "head_still_a_disc": 1,
     "head_no_longer_a_disc": 2,
     "head_unreadable": 3,
+}
+FIBULA_POINTER_STATUS = {
+    "not_read": 0,
+    "none": 1,
+    "body": 2,
+    "unreadable": 3,
+    "cut": 4,
 }
 # A muscle's belly about the knee is centimetres across (the vasti, the hamstrings, the
 # gastrocnemius, the tibialis anterior); its tendons, the fascia and the vessels among the muscles
@@ -3329,12 +3345,6 @@ def window_pixels(spacing_rc: np.ndarray, length_mm: float) -> tuple[int, int]:
     return rows, cols
 
 
-def median_of_seen(window: np.ndarray) -> float:
-    """The median of the finite values of a window; NaN when it holds none."""
-    seen = window[np.isfinite(window)]
-    return float(np.median(seen)) if seen.size else float("nan")
-
-
 def local_lightness(
     plane: np.ndarray, excluded: np.ndarray, spacing_rc: np.ndarray
 ) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
@@ -3347,29 +3357,15 @@ def local_lightness(
     ratio; places outside the picture are unseen too. A surround that holds nothing seen, or whose
     median is zero, gives NaN, not a ratio. Returns (lightness, smooth, surround), float arrays of
     the plane's shape."""
+    from knee.objects.local_lightness import local_lightness_jit
+
     values = np.asarray(plane, dtype=np.float64)
-    gone = np.asarray(excluded, dtype=bool) | ~np.isfinite(values)
-    if values.ndim != 2 or gone.shape != values.shape:
+    hidden = np.asarray(excluded, dtype=bool)
+    if values.ndim != 2 or hidden.shape != values.shape:
         raise ValueError("lightness_inputs_must_share_a_2d_shape")
-    smooth = ndi.generic_filter(
-        np.where(gone, np.nan, values),
-        median_of_seen,
-        size=SAMPLING_PIXELS,
-        mode="constant",
-        cval=np.nan,
+    return local_lightness_jit(
+        values, hidden, window_pixels(spacing_rc, LOCAL_CONTRAST_MM)
     )
-    smooth[gone] = np.nan
-    surround = ndi.generic_filter(
-        smooth,
-        median_of_seen,
-        size=window_pixels(spacing_rc, LOCAL_CONTRAST_MM),
-        mode="constant",
-        cval=np.nan,
-    )
-    lightness = np.full(values.shape, np.nan)
-    with np.errstate(invalid="ignore"):
-        np.divide(smooth, surround, out=lightness, where=surround > 0)
-    return lightness, smooth, surround
 
 
 def muscle_grey_bodies(lightness: np.ndarray) -> np.ndarray:
@@ -3725,6 +3721,136 @@ def fibula_code(knee: str, tibia_named: bool, fat_suppressed: bool, found: bool)
     if not found:
         return "abstain_no_bone_like_the_tibia_below_it"
     return "identified"
+
+
+def fibula_corridor(
+    centres_lps: np.ndarray,
+    tibia_top_mm: float,
+    tibia_middle_lps: np.ndarray,
+    knee: str,
+) -> np.ndarray:
+    """The squint tiles of the fibula's corridor: `fibula_block` (below the tibia's top, on the knee's
+    outer side of the tibia's middle) and behind the tibia's middle, where the fibula's description
+    puts its middle (`fibula_on_slice`). Positions are the tiles' centres in the scanner's
+    millimetres, y toward the back; a tile with no centre is not in it. Empty when the header names
+    no knee."""
+    block = fibula_block(centres_lps, tibia_top_mm, tibia_middle_lps, knee)
+    behind = np.asarray(centres_lps)[..., 1] > float(tibia_middle_lps[1])
+    return block & behind
+
+
+@dataclass(frozen=True, slots=True)
+class FibulaPointer:
+    """What one slice's cheap reading says of the fibula (`fibula_pointer`): its status
+    (`FIBULA_POINTER_STATUS`), the area of the largest whole body that could be the fibula in square
+    millimetres (0.0 only where a body was measured absent, NaN where nothing can be said), that
+    body's middle in the scanner's millimetres (NaN where there is none), the body and the tibia's
+    reference body on the block grid, and how many bodies could be the fibula."""
+
+    status: int
+    area_mm2: float
+    centroid_lps: np.ndarray
+    body: np.ndarray
+    tibia: np.ndarray
+    candidates: int
+
+
+def fibula_pointer(
+    median: np.ndarray,
+    cell_mm: np.ndarray,
+    centres_lps: np.ndarray,
+    tibia_cells: np.ndarray,
+    tibia_middle_cells: np.ndarray,
+    light: float,
+    tibia_top_mm: float,
+    tibia_middle_lps: np.ndarray,
+    knee: str,
+    cut: np.ndarray,
+) -> FibulaPointer:
+    """Where one slice's finer cheap reading (`knee.collapse.profile.block_medians` over the
+    corridor's window) holds a body that could be the fibula: a pointer, never the fibula itself,
+    which `fibula_on_slice` decides on the lens where this points.
+
+    The fibula's description read on blocks, with the tibia's own relations: blocks whose median
+    is as bright as the tibia's marrow (within `LIKE_THE_TIBIA` of `light`), with every part
+    thinner than `BONE_MM` rubbed away (`thick_parts`, so a bone and not a skin-fat layer); the
+    tibia's reference body is the one holding most of `tibia_cells`, the blocks holding the tibia's
+    places carried from the middle slice, and it is the tibia only where it also holds the tibia's
+    middle (`tibia_middle_cells`, the block holding the middle slice's deepest tibia peak): the
+    tibia's two anchors on the slice agree. Beyond the tibia's lateral edge they do not, the
+    carried places then lying on whatever bone is under them, and a body cannot be told from the
+    tibia there: that is unknown, not absent. Every other body whose middle lies behind the
+    tibia's middle, on the knee's outer side of it and at least `FIBULA_BELOW_MM` below the
+    tibia's top could be the fibula. `cut` marks the blocks on the window's border where it is not the picture's
+    own edge: a body there is not a whole object in view, as in `fibula_on_slice`, and is not read as
+    the fibula or as its absence.
+
+    Statuses: `body` (the largest whole candidate's area, its middle, and the count); `none`
+    (bodies were read and none could be the fibula: measured absent, area 0.0); `cut` (a candidate
+    reaches the window's cut border and no whole one exists: unknown, NaN); `unreadable` (the light
+    is not positive, or the tibia's anchors do not agree on one body here, so nothing can be told
+    from the tibia: unknown, NaN). Unseen blocks (NaN) are never marrow-like and never dark; they only
+    cannot be part of a body.
+    """
+    values = np.asarray(median, dtype=np.float64)
+    nowhere = np.zeros(values.shape, dtype=bool)
+    unknown = np.full(3, np.nan)
+
+    def pointer(status: int, area: float = np.nan, found: int = 0) -> FibulaPointer:
+        return FibulaPointer(status, area, unknown, nowhere, nowhere, found)
+
+    if not (np.isfinite(light) and light > 0):
+        return pointer(FIBULA_POINTER_STATUS["unreadable"])
+    low, high = LIKE_THE_TIBIA
+    like = np.isfinite(values) & (values >= low * light) & (values <= high * light)
+    bodies, count = ndi.label(thick_parts(like, np.asarray(cell_mm), BONE_MM))
+    held = bodies[np.asarray(tibia_cells, dtype=bool) & (bodies > 0)]
+    middle_held = bodies[np.asarray(tibia_middle_cells, dtype=bool) & (bodies > 0)]
+    if not held.size or not middle_held.size:
+        return pointer(FIBULA_POINTER_STATUS["unreadable"])
+    tibia = int(np.argmax(np.bincount(held)))
+    if tibia != int(np.argmax(np.bincount(middle_held))):
+        return pointer(FIBULA_POINTER_STATUS["unreadable"])
+    cell_area = float(cell_mm[0]) * float(cell_mm[1])
+    centres = np.asarray(centres_lps, dtype=np.float64)
+    whole, clipped = [], 0
+    for body in range(1, count + 1):
+        if body == tibia:
+            continue
+        places = bodies == body
+        middle = centres[places].mean(axis=0)
+        outer = (
+            middle[0] < tibia_middle_lps[0]
+            if knee == "R"
+            else middle[0] > tibia_middle_lps[0]
+        )
+        below = tibia_top_mm - middle[2] >= FIBULA_BELOW_MM
+        behind = middle[1] > tibia_middle_lps[1]
+        if not (outer and below and behind):
+            continue
+        if (places & np.asarray(cut, dtype=bool)).any():
+            clipped += 1
+            continue
+        whole.append((float(np.count_nonzero(places)) * cell_area, body, middle))
+    if not whole:
+        status = "cut" if clipped else "none"
+        return FibulaPointer(
+            FIBULA_POINTER_STATUS[status],
+            np.nan if clipped else 0.0,
+            unknown,
+            nowhere,
+            bodies == tibia,
+            clipped,
+        )
+    area, body, middle = max(whole, key=lambda found: found[0])
+    return FibulaPointer(
+        FIBULA_POINTER_STATUS["body"],
+        area,
+        middle,
+        bodies == body,
+        bodies == tibia,
+        len(whole) + clipped,
+    )
 
 
 def thick_parts(

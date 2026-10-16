@@ -847,3 +847,72 @@ All proof arrays and decisions match the inspected final alternate run. The new 
 record count is 50, including the two biceps records. The measurements and reports are retained
 in `data/readings/definitions-20261016/remaining-production/`. These checks establish integration
 and preservation, not anatomical validation on every study. Next comes §8's full collapse.
+
+### The back of the knee in the per-study object output; tubes and the bursa — 2026-10-16
+
+Status of one build (uncommitted, with the rest of the dimensional collapse); no definition above
+was changed. The posterior family's established rules (both gastrocnemius heads, the artery and vein
+lumens, semimembranosus, semitendinosus, gracilis, the sartorius, the bursa) and the three lateral
+parts already resolved (iliotibial band, popliteus tendon, biceps femoris tendon) had no rows in
+the grouped `objects[study_uid]` output. `index_posterior` in `scripts/run_interiors.py` now says,
+from each part's own masks and codes and counting nothing again, by provenance: **native**
+(resolved on the slice that named it, with that record's artifact and array), **laid** (from the
+twin, where `lay_parts` laid it), **projected** (a location target on every other series' nearest
+slice from its largest native section, never a boundary; skipped on the series that hold it laid)
+and **unresolved** with the rule's own code (a part the rule refused is not absent; `find_part`'s
+silences are said on the series that gave them). Where the support is a boolean mask there is no
+label; the heads and semimembranosus are coded in `a1_objects` and carry theirs.
+
+**The one new measurement** is `knee.collapse.posterior.trace_tube`, the cheap continuation of a
+tube along the leg. A tendon, vessel lumen or bursa fluid found as a cross-section on an axial slice
+is projected onto the nearest slice of each series the leg runs through. From there a ridge (dark
+for the tendons and the enclosed-dark lumens; bright for the bursa's fluid, only on a fluid-sensitive
+fat-suppressed series) is followed one pixel step at a time in both directions. It is the darkest
+(brightest) place within the part's own measured cross width of the previous centre, and holds
+only where it is darker (brighter) than an equally wide strip on each side: the iliotibial band's
+relation, no signal cutoff, no lens, no extruded footprint. Each end stops by a name
+(`clipped_by_the_scan`, `stopped_unseen`, `stopped_not_set_apart_from_the_flanks`,
+`stopped_tied_separated_extremes`); an unseen pixel is never read as dark; a start that does not
+hold the relation is a reading, not an absence. The result is a native *reading* on that series, with
+its places kept (flat packed with offsets) in `a3_posterior_trace_<part>_*` of the record holding
+the cross-section, beside the tibia's top and the femur's lowest place (`a3_posterior_context_up_mm`)
+so its extent is read against the joint line. It is a pointer, not the part's boundary, full course or
+volume, and following a neighbouring structure is not grounds to withdraw the native part. The
+heads, sartorius, iliotibial band, popliteus and biceps tendon get no trace: the muscles are
+bellies, and the others already are longitudinal on their own slices.
+
+Through the real entry point, drawing off, on the proof and on the bursa study
+`…13335129881737731410081002627729200903` (axial slice 14 holds its bursa, 1359 pixels; the proof's
+bursa abstains, shown as an unresolved saying): all twelve parts appear in the objects output
+where their rule named them or refused. On the proof the artery, semimembranosus, semitendinosus and
+gracilis are followed on the sagittal and coronal series (for example gracilis 100 and 65 points on the
+two sagittals; semimembranosus 8 to 59 points); the vein's start does not hold the relation
+(`at_the_target_stopped_not_set_apart_from_the_flanks`, and a tie between separated extremes) and
+says so. On the bursa study the bursa's fluid is followed down the coronal FS slice (164 points) and
+along the sagittal FS slice (14 points, weak); on the non-fluid-sensitive series it is refused by
+name (`fluid_is_not_bright_in_this_sequence`). No neck, wall or whole course is claimed. Pictures
+inspected at the series' own pixels (`data/readings/collapse-20261016/api-build-and-search-priors/
+child-posterior-resume/pics/`): semimembranosus on the FS sagittal 5 and T1 coronal 27, gracilis on
+the T2 sagittal 3, artery on the T2 sagittal 18, bursa on the coronal FS 27 and sagittal FS 10.
+The ridge follows a dark band or a bright pocket in each; whether a dark ridge is the tendon rather
+than a neighbouring fascia is not decided here. Not inspected: the vein's and semitendinosus's
+traces, and the laid and target rows as pictures.
+
+Work: the ledger counts 16 trace readings on the proof (6 on the bursa study) and no lens or field
+read beyond the earlier run's 37 and 30 (27 and 16). The continuation reuses `seen_native`:
+the proof adds two distinct slice-light readings and hands fourteen more on from the cache.
+The worker's cProfile run records about 0.14 s for the posterior index in a 16 s run. Address
+corrections made at the same time: the fibula's native axial readings and the patella's projected
+tendon targets no longer carry an integer label against a boolean support (the territory number
+stays in `a3_fibula_axial_labels`, and a packed row is addressed by the offsets and shapes beside it);
+a twin laid onto from more than one series keeps each source's rows (bones, patella, joint, recess)
+under a name made from the source's full series uid, since an abbreviation does not establish
+identity (`source_prefix`; before, a later source overwrote an earlier one's arrays and the earlier
+rows pointed into the wrong array). The middle slices' own context naming (joint, unsided meniscus,
+air, skin, subcutaneous fat, muscle) is also indexed where named, as the middle slice's naming with
+no best-slice claim, no projection and no continuation; the unsided meniscus has no pixels on the
+proof (the sided menisci replace it), so it says so as unresolved. A check of every observation
+against the saved arrays of ten labelled studies and the proof finds no mismatched address. Limits: only the proof, the bursa study, the test split (all abstain: no knee
+header) and ten labelled studies were run; the rest is the cohort run; the muscles have no
+continuation; the unresolved rows for a series the leg runs through
+(`abstain_leg_runs_in_the_plane`) mean the rule was not asked there, not that the part is absent.

@@ -74,10 +74,16 @@ def source_record(uid, gracilis="identified"):
         {
             "series_uid": uid,
             "slice_index": 11,
+            "view": ["Axial", "1", "1"],
             "assignments": {"codes": codes},
             "main_slice": {"object": "semimembranosus"},
         },
-        {"a2_gracilis": CORD.copy(), "acquired_plane": np.ones(SHAPE)},
+        {
+            "a2_gracilis": CORD.copy(),
+            "a2_semitendinosus": np.zeros(SHAPE, dtype=bool),
+            "a1_objects": np.zeros(SHAPE, dtype=np.int8),
+            "acquired_plane": np.ones(SHAPE),
+        },
         FRAME,
     )
 
@@ -229,13 +235,21 @@ def study(monkeypatch, tmp_path: Path):
         "name_joint_boundaries",
         "name_suprapatellar_pads",
         "name_iliotibial_band",
+        "name_the_bones",
+        "name_the_patella",
+        "name_the_joint",
     ):
         monkeypatch.setattr(run, name, lambda *args: None)
+    monkeypatch.setattr(
+        run, "name_the_recess", lambda measured, *args: [([], []) for _ in measured]
+    )
     monkeypatch.setattr(
         run, "leg_of", lambda m: SimpleNamespace(patella_lps=np.empty((0, 3)))
     )
     monkeypatch.setattr(run, "name_the_back_of_the_knee", lambda own, leg: {})
     monkeypatch.setattr(run, "plane_frame", lambda series, z: FRAME)
+    # these series hold no volume: the posterior family's projections are the heavy stage stood in for
+    monkeypatch.setattr(run, "bone_target", lambda places, other: "no_stacked_volume")
 
     def semimembranosus(own, leg):
         order.append(("semimembranosus", own.series.row.series_uid))
@@ -286,7 +300,10 @@ def test_the_group_is_resolved_once_and_its_places_are_consumed_before_any_middl
     sartorius = [i for i, e in enumerate(order) if e[0] == "sartorius"]
     group_save = order.index(("save", "ax", "semimembranosus"))
     assert sartorius and max(sartorius) < first_middle_save
-    assert group_save < min(sartorius)
+    # the group's records are written once, after the sartorius consumed its places and the
+    # posterior family added what it keeps in their arrays, and before the fibula's turn
+    assert max(sartorius) < group_save < order.index(("fibula",))
+    assert order.count(("save", "ax", "semimembranosus")) == 1
     assert order.index(("fibula",)) > max(sartorius)
     assert all(e[2] == "ndarray" for e in order if e[0] == "sartorius")
     # every middle save still happens inside the fibula loop, as before: after the fibula's turn
