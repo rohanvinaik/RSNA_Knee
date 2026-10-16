@@ -52,6 +52,8 @@ OBJECT_COLOURS = {
     "joint_capsule": ("SPRING GREEN", (0.0, 1.0, 0.55, 1.0)),
     "gastrocnemius_semimembranosus_bursa": ("PURPLE", (0.7, 0.0, 1.0, 0.75)),
     "semitendinosus": ("SILVER", (0.7, 0.7, 0.7, 0.9)),
+    "quadriceps_fat_pad": ("COBALT", (0.05, 0.1, 0.5, 0.85)),
+    "prefemoral_fat_pad": ("COPPER", (0.65, 0.15, 0.0, 0.85)),
 }
 # The legend's word for each part's colour.
 WORDS = {name: word for name, (word, _) in OBJECT_COLOURS.items()}
@@ -112,6 +114,9 @@ def draw_stages(axes, arrays, record):
         overlay(
             axes[2], objects == OBJECT_CODES[name] if mask is None else mask, colour
         )
+    ridge = arrays.get("a2_suprapatellar_recess_ridge")
+    if ridge is not None and ridge.any():
+        axes[2].contour(ridge, levels=[0.5], colors=["black"], linewidths=0.5)
     axes[2].set_title(
         f"{WORDS['air']} air · {WORDS['skin']} skin: {codes['air']}\n"
         f"{WORDS['femur']} femur · {WORDS['tibia']} tibia · {WORDS['joint']} joint: "
@@ -149,6 +154,14 @@ def draw_stages(axes, arrays, record):
             f"\n{WORDS['suprapatellar_fat']} suprapatellar fat: "
             f"{codes['suprapatellar_fat']}"
             if "suprapatellar_fat" in codes
+            else ""
+        )
+        + (
+            f"\n{WORDS['quadriceps_fat_pad']} quadriceps pad: "
+            f"{codes['quadriceps_fat_pad']}"
+            f"\n{WORDS['prefemoral_fat_pad']} prefemoral pad: "
+            f"{codes['prefemoral_fat_pad']} · BLACK seam"
+            if "quadriceps_fat_pad" in codes
             else ""
         )
         + (

@@ -149,11 +149,13 @@ from knee.objects.assignments import (
     popliteal_lumens,
     read_field,
     region_holding,
+    relative_signal,
     semimembranosus_code,
     semimembranosus_on_slice,
     semitendinosus_on_slice,
     slice_through,
     subcutaneous_code,
+    suprapatellar_pads,
     synovium_code,
     tendon_code,
     tibia_top_slice,
@@ -1176,6 +1178,97 @@ def name_joint_boundaries(own: Measured, partner: Measured | None) -> None:
         )
 
 
+def name_suprapatellar_pads(own: Measured, partner: Measured | None) -> None:
+    """Separate the two pads from their named combined field and the two acquired signals.
+    Only the FS source resolves them; the same physical-place matches carry its result back."""
+    reads("series", ("row",), "suprapatellar_pads")
+    reads("naming", ("in_plane",), "suprapatellar_pads")
+    reads("partner", ("objects", "codes"), "suprapatellar_pads")
+    plane = own.arrays["acquired_plane"]
+    names = ("quadriceps_fat_pad", "prefemoral_fat_pad")
+    fields = (*names, "suprapatellar_recess_ridge")
+    for name in fields:
+        own.arrays[f"a2_{name}"] = np.zeros(plane.shape, dtype=bool)
+    codes = own.record["assignments"]["codes"]
+
+    def refuse(code: str) -> None:
+        for name in names:
+            codes[name] = code
+
+    sagittal = own.assignment.in_plane[1] and own.assignment.in_plane[2]
+    if not sagittal:
+        refuse("abstain_not_a_sagittal_slice")
+        return
+    if not (
+        int(own.series.row.fat_suppression) == 1
+        and int(own.series.row.fluid_sensitive) == 1
+    ):
+        refuse("abstain_requires_fluid_sensitive_fat_suppression")
+        return
+    combined = own.arrays["a1_objects"] == OBJECT_CODES["suprapatellar_fat"]
+    if not combined.any():
+        refuse("abstain_no_suprapatellar_fat")
+        return
+    if partner is None or int(partner.series.row.fat_suppression) != 0:
+        refuse("abstain_no_non_fat_suppressed_twin")
+        return
+    source = matched(
+        own.series,
+        own.record,
+        own.frame,
+        plane.shape,
+        partner.record,
+        partner.frame,
+        partner.arrays["acquired_plane"],
+    )
+    if isinstance(source, str):
+        refuse("abstain_" + source)
+        return
+    reads("series", ("volume",), "relative_signal")
+    paired = laid_by(partner.arrays["acquired_plane"].astype(np.float64), source)
+    paired[source < 0] = np.nan
+    handed("paired_light", ("signal",))
+    reads("paired_light", ("signal",), "relative_signal")
+    ratio = relative_signal(plane, paired)
+    handed("signal_ratio", ("value",))
+    reads("signal_ratio", ("value",), "suprapatellar_pads")
+    shared = measures_of(
+        own.record["series_uid"], own.record["slice_index"], plane, own.frame
+    )
+    anterior, posterior, ridge, code = suprapatellar_pads(
+        ratio, combined, own.frame.basis_lps, shared.along(1)
+    )
+    own.arrays["a2_nonfs_signal"] = paired
+    own.arrays["a2_relative_signal"] = ratio
+    for name, mask in zip(fields, (anterior, posterior, ridge), strict=True):
+        own.arrays[f"a2_{name}"] = mask
+    refuse(code)
+    if code != "identified":
+        return
+    handed("suprapatellar_pads", fields)
+    reverse = matched(
+        partner.series,
+        partner.record,
+        partner.frame,
+        partner.arrays["acquired_plane"].shape,
+        own.record,
+        own.frame,
+        plane,
+    )
+    if isinstance(reverse, str):
+        return
+    reads("suprapatellar_pads", fields, "partner")
+    for name in fields:
+        placed = laid_by(own.arrays[f"a2_{name}"].astype(np.int16), reverse) == 1
+        partner.arrays[f"a2_{name}"] = placed
+        if name in names:
+            partner.record["assignments"]["codes"][name] = (
+                "laid_from_its_partner"
+                if placed.any()
+                else "abstain_outside_partner_picture"
+            )
+
+
 def semimembranosus_slice(
     own: Measured, leg: Leg | None
 ) -> tuple[dict, dict[str, np.ndarray], PlaneFrame] | str:
@@ -1874,6 +1967,7 @@ def measure_study(
             key=lambda pair: int(pair[0].series.row.fat_suppression),
         ):
             name_joint_boundaries(own, partner)
+            name_suprapatellar_pads(own, partner)
         # The back of the knee, on the series the leg runs through: the study's leg, its bones in
         # the scanner's millimetres, made once where the header names the knee there, and carried
         # onto the slices its parts are named on; both heads on the middle slice, from the
@@ -1961,6 +2055,19 @@ def measure_study(
             )
             if boundaries:
                 reads("joint_boundaries", boundaries, "draw")
+            if any(
+                r["assignments"]["codes"].get("quadriceps_fat_pad") in NAMED
+                for r in records
+            ):
+                reads(
+                    "suprapatellar_pads",
+                    (
+                        "quadriceps_fat_pad",
+                        "prefemoral_fat_pad",
+                        "suprapatellar_recess_ridge",
+                    ),
+                    "draw",
+                )
             # the extensor tendons, which the sagittal middle slices name
             if any(
                 r["assignments"]["codes"].get(name) in NAMED
