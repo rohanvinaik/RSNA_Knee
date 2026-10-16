@@ -161,6 +161,12 @@ here.
   (`--split test` takes the studies a Kaggle kernel is given), a decision on every part out. What
   no stage reads is judged on the run that draws nothing, the one a kernel runs; a run that draws
   declares the pictures' reads and hides the rest.
+- Drawing is development only (2026-10-16): «drawing only happens as part of development, so the
+  compute expenditure should be entirely optional, a clean and obvious flag that will be turned off
+  by default when in competition mode». The flag is `--draw`, off by default and never passed in a
+  kernel: only with it are the pictures drawn and anything computed that only they read (each
+  middle slice's border readings). Without it the lens is its territories alone, and a record keeps
+  no border arrays. Running and testing, in brief: `AGENTS.md`, "Running and testing".
 - «Make sure the pipeline actually works. From the import "chapter 1" ..., taking in movies, it
   should spit out all the parts of anatomy we can result thus far». Check through the real entry
   point, on the movies it takes in.
@@ -171,7 +177,7 @@ here.
   gate runs before every commit. «I assume you dropped all the telemetry tools, vulture, the CI
   gate, etc?»
 - Measure with the instruments, never a one-off script; keep a speed-up only if the answers are the
-  same, run against run.
+  same, run against run (`scripts/compare_receipts.py`; `AGENTS.md`, "Running and testing").
 
 ### 6. Report what is true
 - Never say a thing works, or is done, until you have run it through the real entry point and looked
@@ -199,8 +205,9 @@ listening»:
 4. Draw exactly that rule on the proof before it touches the run, and look. If it misses, say why
    from the picture and change it for that reason; never cycle through rules.
 5. Write it in `src/knee/objects/assignments.py`, with a paragraph in the module note saying what it
-   names, how, and where it over-reaches; add a test; run the proof through `scripts/run_interiors.py`;
-   look at every picture it reaches; run the gate; commit; rerun the labelled studies so `data/`
+   names, how, and where it over-reaches; add a test; run the proof through
+   `scripts/run_interiors.py --draw` (the pictures are drawn only with `--draw`); look at every
+   picture it reaches; run the gate; commit; rerun the labelled studies so `data/`
    matches the code; show him the picture.
 6. The part is done: resolved at least once. Do not measure it across slices or studies and chase
    what it gets wrong; those images are the AI part, later. Go to the next part.
@@ -503,7 +510,7 @@ aspect of the pipeline later».
   white, the partner a part laid onto it (`lay_parts`, and the joint's boundaries), the pictures
   what they draw. A part's mask is handed on once it is named. On the proof's run that draws
   nothing, what no stage reads is: the squint's tiles (owed to the choice of each part's slice); the
-  lens's border readings, which only the pictures read (the proof's lens, unchanged unless he asks);
+  lens's code, readable places and peaks, made with its territories and read only by the pictures;
   the femur's and patella's territory numbers; the parts only the pictures read; and the vessel
   rule's closed lumens, kept by design (`RESOLVING_THE_PARTS.md` §9) and read by nothing. Other
   studies list more, each what its own run left unread: a part with no twin to be laid onto, or
@@ -528,3 +535,16 @@ aspect of the pipeline later».
   spring green near the lateral meniscus's lime, neither changed. At the series pictures' size the
   smallest parts (the recess and its lining, the two lumens, the semimembranosus tendon) are a few
   pixels; they read at their own pixels.
+- Drawing only when asked. Rohan: «Yes, drawing only happens as part of development, so the compute
+  expenditure should be entirely optional, a clean and obvious flag that will be turned off by
+  default when in competition mode». The flag is `--draw`, off by default. Only with it does a
+  middle slice's lens read its border readings (`read_interiors`: every edge between the
+  territories, the profile across it and the dark band it shows), which only the lens pictures
+  read; every other reading, and every reading of a run that draws nothing (the one a kernel runs),
+  is the territories alone (`interior_regions`, the same arrays, pinned by `tests/test_interiors.py`).
+  A part's own slice never reads them: no picture draws its borders. A record keeps border arrays
+  and counts only where they were read, and the lens renderer run by hand on a run that read none
+  refuses by name. On the proof a run that draws nothing takes 4.6 to 4.7 s, from 5.2 to 5.4 s.
+  Over the 58 labelled studies and the test split every record (351 middle-slice, 44 main-slice) is
+  the same with the borders set aside (`scripts/compare_receipts.py --borders-aside`); the proof's
+  and the bursa study's middle slices, drawn, keep border readings the same as before. This settles the border readings owed in "Where it stands".

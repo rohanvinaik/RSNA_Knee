@@ -4,8 +4,9 @@ reason it is not; every reading kept.
 For each series of a study: its background split, read once over the whole series, the level the
 lens reads low signal under (`knee.collapse.noise.background_split`); the squint over every slice,
 made once and kept with the series; the middle slice (the standard first slice,
-`docs/RESOLVING_THE_PARTS.md` §8), its plane frame, and `read_interiors` with the frame's spacing
-and the retained basis as its metric. Then
+`docs/RESOLVING_THE_PARTS.md` §8), its plane frame, and its lens: the territories (`interior_regions`),
+and for a run that draws, the border readings across them too (`read_interiors`, with the frame's
+spacing and the retained basis as its metric), which only the pictures read. Then
 `assign_plane` names what the pictures show, each part by its paragraph in
 `knee.objects.assignments`: air, skin, femur, tibia, joint, the patella (by its light, with fat
 suppression), the menisci (sided by the header's own word for which knee it is), the articular
@@ -72,14 +73,16 @@ renderers' included (`DRAWN_INTERIORS`, `DRAWN_NAMES`); no stage records its own
 check is as true as those declarations and no truer.
 
 The settings are the proof run's own (`data/measurements/codex-wiring-rereview-20261012`):
-prominence 3 mm, and border offsets from -3 to 3 mm in 0.5 mm steps. The backend is the JIT twin
-of the profile sampler, as that run used; its records are the reference's, checked run against run
-on all 58 labelled studies, 2026-10-14: 336 series, every saved array the same.
+prominence 3 mm, and border offsets from -3 to 3 mm in 0.5 mm steps. The border readings, read only
+to draw, sample their profiles with the JIT twin of the profile sampler, as that run used; its
+records are the reference's, checked run against run on all 58 labelled studies, 2026-10-14: 336
+series, every saved array the same.
 
 Studies are measured in parallel, one worker process each, and each saves its own arrays; the main
 process alone writes the receipts, in the order the studies were asked for. Pictures are drawn only
 with `--draw`, from the saved run, after its study is in the receipt; the drawing layer is imported
-only then, so a run that draws nothing never loads it.
+only then, so a run that draws nothing never loads it. What only the pictures read is read only
+then too: a run that draws nothing, the one a kernel runs, reads no border.
 
 Run from anywhere: `.venv/bin/python scripts/run_interiors.py --study-uid <uid> [<uid> ...]`;
 `--labeled` for every labelled study whose series are all on disk; `--split test` (or `train`) for
@@ -158,6 +161,7 @@ from knee.objects.interiors import (
     EDGE_KINDS,
     TRACE_CODES,
     InteriorReading,
+    InteriorRegions,
     interior_regions,
     read_interiors,
 )
@@ -326,11 +330,12 @@ class Measured:
     frame: PlaneFrame
 
 
-def measure(series: Series) -> Measured | str:
+def measure(series: Series, drawn: bool) -> Measured | str:
     """One series' readings: its background split and its squint, each read once over the whole
     series, and the interiors and named objects at its middle slice; or why no plane was read.
     Which of its values are finite, and every slice's frame, are read once here and handed to the
-    split, the squint and the lens."""
+    split, the squint and the lens. `drawn` says whether the study's pictures will be drawn, the
+    only reader of the middle slice's border readings."""
     reads("series", ("volume", "geometry"), "measure")
     if series.volume is None:
         return "no_stacked_volume"
@@ -360,7 +365,7 @@ def measure(series: Series) -> Measured | str:
     reads("series", ("slices",), "naming")
     knee = str(getattr(series.slices[index].header, "Laterality", "") or "").strip()
     record, arrays, assignment = name_plane(
-        series, index, series.volume[index], frame, split, knee
+        series, index, series.volume[index], frame, split, knee, borders=drawn
     )
     record["squint"] = {
         "code": stack.code,
@@ -380,45 +385,67 @@ def lens_of(
     frame: PlaneFrame,
     split: float,
     reader: str | None = None,
-) -> tuple[np.ndarray, InteriorReading, dict]:
+    *,
+    borders: bool = False,
+) -> tuple[np.ndarray, InteriorRegions, dict]:
     """One slice's lens reading, made once per slice and handed to every stage that asks for that
     slice (its naming, and a part named on it, whose slice may be the middle slice or another
     part's): the acquired plane, the interiors, and what the record says of them. `reader` is the
-    part whose own slice this is, whose lens readings the ledger counts."""
+    part whose own slice this is, whose lens readings the ledger counts.
 
-    def read() -> tuple[np.ndarray, InteriorReading, dict]:
+    With `borders` the border readings across the territories are read too (`read_interiors`).
+    Only the pictures read them, so only a middle slice of a run that draws asks for them; every
+    other reading is the territories alone (`interior_regions`, the same arrays), and a run that
+    draws nothing reads no border. The middle slices are read first (`measure`), so a part's slice
+    that is a middle slice is handed the middle slice's lens."""
+
+    def read() -> tuple[np.ndarray, InteriorRegions, dict]:
         reads("series", ("volume", "row", "slices"), "interiors")
         reads("background", ("split",), "interiors")
-        axes = frame.basis_lps / frame.spacing_rc
-        reading = read_interiors(
-            plane,
-            frame.spacing_rc,
-            split,
-            PROMINENCE_MM,
-            np.asarray(OFFSETS_MM),
-            BACKEND,
-            metric_rc=axes.T @ axes,
-            available=finite_of(series)[index],
-        )
+        reading: InteriorRegions
+        if borders:
+            axes = frame.basis_lps / frame.spacing_rc
+            reading = read_interiors(
+                plane,
+                frame.spacing_rc,
+                split,
+                PROMINENCE_MM,
+                np.asarray(OFFSETS_MM),
+                BACKEND,
+                metric_rc=axes.T @ axes,
+                available=finite_of(series)[index],
+            )
+        else:
+            reading = interior_regions(
+                plane,
+                frame.spacing_rc,
+                split,
+                PROMINENCE_MM,
+                available=finite_of(series)[index],
+            )
         handed("interiors", field_names(reading))
         ledger.record(
             "interiors.work", planes=1, territories=int(reading.labels.max(initial=0))
         )
         if reader is not None:
             ledger.record(f"{reader}.lens_readings", planes=1)
-        interiors = {
+        interiors: dict[str, Any] = {
             "code": reading.code,
             "territories": int(reading.labels.max(initial=0)),
-            "edge_counts": {
-                kind: int(np.count_nonzero(reading.edge_kinds == value))
-                for kind, value in EDGE_KINDS.items()
-            },
-            "trace_counts": {
-                code: int(np.count_nonzero(reading.trace_codes == value))
-                for code, value in TRACE_CODES.items()
-            },
-            "backend": BACKEND,
         }
+        # what the border readings found, where they were read
+        if isinstance(reading, InteriorReading):
+            interiors.update(
+                edge_counts={
+                    kind: int(np.count_nonzero(reading.edge_kinds == value))
+                    for kind, value in EDGE_KINDS.items()
+                },
+                trace_counts={
+                    code: int(np.count_nonzero(reading.trace_codes == value))
+                    for code, value in TRACE_CODES.items()
+                },
+                backend=BACKEND,
+            )
         # frozen, as the interiors' own fields are: every stage that reads the slice is handed it
         return handed_on(plane.copy()), reading, interiors
 
@@ -430,7 +457,7 @@ def field_of(
     index: int,
     plane: np.ndarray,
     frame: PlaneFrame,
-    reading: InteriorReading,
+    reading: InteriorRegions,
 ) -> Field:
     """One slice's field (`read_field`: the leg, the air and the skin, the territories' peaks, which
     way the slice faces), made once per slice and handed to its naming and to any part named on
@@ -459,12 +486,13 @@ def slice_record(
     index: int,
     split: float,
     knee: str,
-    lens: tuple[np.ndarray, InteriorReading, dict],
+    lens: tuple[np.ndarray, InteriorRegions, dict],
     field: Field,
 ) -> tuple[dict, dict[str, np.ndarray]]:
     """The record and arrays one slice's reading makes before a part is named on it: the lens's
     arrays and what the record says of them, the field's names and peaks, and every part of a
-    slice's naming (`SLICE_PARTS`) not named there, until the stage that names one says so."""
+    slice's naming (`SLICE_PARTS`) not named there, until the stage that names one says so. The
+    border readings are kept where the lens read them, for the pictures."""
     acquired, reading, interiors = lens
     arrays = {
         "acquired_plane": acquired,
@@ -473,12 +501,15 @@ def slice_record(
         "b1_distance_mm": reading.distance_mm,
         "b1_markers": reading.markers,
         "b1_labels": reading.labels,
-        "b1_edge_points_rc": reading.edge_points_rc,
-        "b1_edge_normals_rc": reading.edge_normals_rc,
-        "b1_trace_codes": reading.trace_codes,
-        "b1_trace_points_rc": reading.trace_points_rc,
-        "a1_objects": field.objects,
     }
+    if isinstance(reading, InteriorReading):
+        arrays.update(
+            b1_edge_points_rc=reading.edge_points_rc,
+            b1_edge_normals_rc=reading.edge_normals_rc,
+            b1_trace_codes=reading.trace_codes,
+            b1_trace_points_rc=reading.trace_points_rc,
+        )
+    arrays["a1_objects"] = field.objects
     row = series.row
     record = {
         "series_uid": row.series_uid,
@@ -506,12 +537,18 @@ def name_plane(
     frame: PlaneFrame,
     split: float,
     knee: str,
+    *,
+    borders: bool,
 ) -> tuple[dict, dict[str, np.ndarray], PlaneAssignment]:
-    """A middle slice read and named: its lens (`lens_of`) and its field (`field_of`), and the parts
-    named on it alone (`assign_plane`, with the slice's shared measures), each made once per slice;
-    the record and arrays the renderers read, and the named objects themselves."""
+    """A middle slice read and named: its lens (`lens_of`, with its border readings when `borders`,
+    for a run that draws) and its field (`field_of`), and the parts named on it alone
+    (`assign_plane`, with the slice's shared measures), each made once per slice; the record and
+    arrays the renderers read, and the named objects themselves."""
     uid = series.row.series_uid
-    lens = lens_of(series, index, plane, frame, split)
+    lens = lens_of(series, index, plane, frame, split, borders=borders)
+    # the middle slices are read before any part's slice, so a run that draws reads their borders
+    if borders and not isinstance(lens[1], InteriorReading):
+        raise RuntimeError("middle_slice_lens_read_without_its_borders")
     field = field_of(series, index, plane, frame, lens[1])
 
     def name() -> PlaneAssignment:
@@ -1775,7 +1812,7 @@ def measure_study(
         measured: list[Measured] = []
         for series in study.series:
             handed("series", field_names(series))
-            reading = measure(series)
+            reading = measure(series, drawn)
             if isinstance(reading, str):
                 unread[series.row.series_uid] = reading
             else:
@@ -2054,7 +2091,9 @@ def main() -> None:
     parser.add_argument(
         "--draw",
         action="store_true",
-        help="draw each study's pictures from the saved run",
+        help="development only: draw each study's pictures, and read what only they read (each "
+        "middle slice's border readings); off by default, as in competition, where a run reads "
+        "no border",
     )
     parser.add_argument(
         "--run", type=Path, default=ROOT / "data/measurements/interiors"

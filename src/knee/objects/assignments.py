@@ -589,7 +589,7 @@ from skimage.morphology import reconstruction
 
 from knee.collapse.physical import PlaneFrame
 from knee.compute.contracts import handed_on
-from knee.objects.interiors import InteriorReading
+from knee.objects.interiors import InteriorRegions
 from knee.receipt import digest
 from knee.telemetry import once
 
@@ -2245,7 +2245,7 @@ class Field:
 
 def read_field(
     plane: np.ndarray,
-    reading: InteriorReading,
+    reading: InteriorRegions,
     basis_lps: np.ndarray,
     outside_picture: np.ndarray | None = None,
 ) -> Field:
@@ -2281,7 +2281,7 @@ def read_field(
 
 def assign_plane(
     plane: np.ndarray,
-    reading: InteriorReading,
+    reading: InteriorRegions,
     basis_lps: np.ndarray,
     knee: str = "",
     fat_suppressed: bool = False,
