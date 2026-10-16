@@ -131,7 +131,9 @@ def test_driver_carries_once_and_names_each_head_without_overwriting_objects(
         return carried
 
     monkeypatch.setattr(run_interiors, "carry_onto", carry_once)
-    leg = run_interiors.Leg(np.empty((0, 3)), np.empty((0, 3)), None, None)
+    leg = run_interiors.Leg(
+        np.empty((0, 3)), np.empty((0, 3)), None, None, np.empty((0, 3))
+    )
     codes = run_interiors.name_the_back_of_the_knee(own, leg)
     assert codes == {
         "medial_gastrocnemius": "identified",
@@ -181,7 +183,9 @@ def test_driver_names_the_lateral_missing_part_without_changing_the_medial_resul
 ):
     own, carried = measured_scene(outer_condyle=outer_condyle, outer_head=outer_head)
     monkeypatch.setattr(run_interiors, "carry_onto", lambda *args: carried)
-    leg = run_interiors.Leg(np.empty((0, 3)), np.empty((0, 3)), None, None)
+    leg = run_interiors.Leg(
+        np.empty((0, 3)), np.empty((0, 3)), None, None, np.empty((0, 3))
+    )
     codes = run_interiors.name_the_back_of_the_knee(own, leg)
     assert codes["medial_gastrocnemius"] == "identified"
     assert codes["lateral_gastrocnemius"] == expected

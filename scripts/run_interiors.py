@@ -112,6 +112,7 @@ from knee.objects.assignments import (
     FLUID_BRIGHTER,
     NAMED,
     OBJECT_CODES,
+    RETINACULA,
     SLICE_PARTS,
     Field,
     Measures,
@@ -150,6 +151,7 @@ from knee.objects.assignments import (
     read_field,
     region_holding,
     relative_signal,
+    retinacular_walls,
     semimembranosus_code,
     semimembranosus_on_slice,
     semitendinosus_on_slice,
@@ -215,7 +217,20 @@ DRAWN_INTERIORS = (
 )
 DRAWN_NAMES = ("objects", "codes", "peaks", "femur", "tibia", "patella")
 # The parts named on a main slice of their own; a series' silence on each is `<series uid>:<part>`.
-MAIN_PARTS = ("fibula", "acl", "lcl", "semimembranosus", "semitendinosus")
+MAIN_PARTS = (
+    "fibula",
+    "acl",
+    "lcl",
+    "semimembranosus",
+    "semitendinosus",
+    "patellar_retinacula",
+    *RETINACULA,
+)
+# Parts sharing another part's selected slice and its readings.
+MAIN_COMPANIONS = {
+    "semimembranosus": ("semitendinosus",),
+    "patellar_retinacula": RETINACULA,
+}
 # The joint's boundaries: each the field it is handed on as, and the part it names.
 JOINT_BOUNDARIES = (
     ("recess", "anterior_synovial_recess"),
@@ -688,12 +703,13 @@ class Leg:
     """The femur and the tibia named on a study's middle slices where the leg runs in the plane, in
     the scanner's millimetres, and the notch's plane, where the first middle sagittal slice passes
     (None without one), its normal toward the patient's left: one leg, one set of objects, made
-    once for every slice it is carried onto."""
+    once for every slice it is carried onto. The native named patella is retained too."""
 
     femur_lps: np.ndarray
     tibia_lps: np.ndarray
     notch_origin_lps: np.ndarray | None
     notch_normal: np.ndarray | None
+    patella_lps: np.ndarray
 
 
 @dataclass(frozen=True, slots=True)
@@ -712,10 +728,12 @@ def leg_of(measured: list[Measured]) -> Leg:
     """The study's leg: the femur and the tibia of its middle slices where the leg runs in the
     plane, as their partner reading left them, in the scanner's millimetres; and the notch's plane
     from the first of them that side to side runs through, a sagittal one. Which way each slice
-    faces is its naming's (`PlaneAssignment.in_plane`), read once."""
-    reads("partner", ("objects",), "leg")
+    faces is its naming's (`PlaneAssignment.in_plane`), read once. The patella comes from the
+    first native identification, without resampling its laid twin."""
+    reads("partner", ("objects", "codes"), "leg")
     reads("naming", ("in_plane",), "leg")
     femur, tibia = [np.zeros((0, 3))], [np.zeros((0, 3))]
+    patella = np.zeros((0, 3))
     notch_origin = notch_normal = None
     for other in measured:
         sides_in_plane, _, leg_in_plane = other.assignment.in_plane
@@ -725,11 +743,24 @@ def leg_of(measured: list[Measured]) -> Leg:
         for name, found in (("femur", femur), ("tibia", tibia)):
             places = np.argwhere(objects == OBJECT_CODES[name]).astype(float)
             found.append(other.frame.to_patient(places))
+        # The native FS definition supplies one patella, rather than resampling its laid twin.
+        if (
+            not len(patella)
+            and other.record["assignments"]["codes"].get("patella") == "identified"
+        ):
+            places = np.argwhere(objects == OBJECT_CODES["patella"]).astype(float)
+            patella = other.frame.to_patient(places)
         if notch_origin is None and not sides_in_plane:
             normal = other.frame.normal()
             notch_origin = other.frame.origin_lps
             notch_normal = normal if normal[0] > 0 else -normal
-    leg = Leg(np.concatenate(femur), np.concatenate(tibia), notch_origin, notch_normal)
+    leg = Leg(
+        np.concatenate(femur),
+        np.concatenate(tibia),
+        notch_origin,
+        notch_normal,
+        patella,
+    )
     handed("leg", field_names(leg))
     return leg
 
@@ -1439,6 +1470,109 @@ def semimembranosus_slice(
     return record, arrays, frame
 
 
+def retinacula_slice(
+    own: Measured, leg: Leg | None, patella_centre: np.ndarray | None
+) -> tuple[dict, dict[str, np.ndarray], PlaneFrame] | str:
+    """The axial slice through the already named patella, read once for both retinacula."""
+    reads("naming", ("in_plane",), "patellar_retinacula")
+    reads("series", ("row",), "patellar_retinacula")
+    if own.assignment.in_plane[2]:
+        return "abstain_leg_runs_in_the_plane"
+    knee = own.record["assignments"]["knee"]
+    if knee not in ("R", "L"):
+        return "abstain_header_names_no_knee"
+    if not (
+        int(own.series.row.fat_suppression) == 1
+        and int(own.series.row.fluid_sensitive) == 1
+    ):
+        return "abstain_requires_fluid_sensitive_fat_suppression"
+    if leg is None:
+        return "abstain_no_bone_carried"
+    if patella_centre is None:
+        return "abstain_no_patella_carried"
+    if not len(leg.femur_lps):
+        return "abstain_no_femur_carried"
+    reads("patella", ("centre_lps",), "patellar_retinacula")
+    reads("leg", ("femur_lps", "patella_lps"), "patellar_retinacula")
+    reads("series", ("volume", "geometry", "slice_thickness_mm"), "patellar_retinacula")
+    volume, geometry = own.series.volume, own.series.geometry
+    if volume is None or geometry is None:
+        return "abstain_no_readable_series"
+    thicknesses = own.series.slice_thickness_mm
+    if any(t is None for t in thicknesses):
+        return "abstain_no_slice_thickness"
+    thickness_values = [float(t) for t in thicknesses if t is not None]
+    z = slice_through(
+        patella_centre, geometry.position, own.frame.normal(), thickness_values
+    )
+    if z is None:
+        return "abstain_patella_off_the_slices"
+    frame = plane_frame(own.series, z)
+    if isinstance(frame, str):
+        return frame
+    reads("background", ("split",), "patellar_retinacula")
+    record, arrays, field = read_part_slice(
+        own.series,
+        z,
+        volume[z],
+        frame,
+        own.record["background_split"],
+        knee,
+        "patellar_retinacula",
+    )
+    reads("interiors", ("labels", "available"), "patellar_retinacula")
+    reads("field", ("peaks", "objects"), "patellar_retinacula")
+    plane = arrays["acquired_plane"]
+    femur, _ = leg_on(leg, own.series, z, frame, plane.shape, thickness_values[z])
+    patella = places_on_slice(leg.patella_lps, frame, plane.shape, thickness_values[z])
+    available = (
+        arrays["b1_available"]
+        & (field.objects == 0)
+        & ~margin_of(own.record["series_uid"], z, plane)
+    )
+    shared = measures_of(own.record["series_uid"], z, plane, frame)
+    marrow_places = femur & available
+    light = shared.light(marrow_places) if marrow_places.any() else 0.0
+    white = (
+        (plane > FLUID_BRIGHTER * light) & available
+        if light > 0
+        else np.zeros(plane.shape, bool)
+    )
+    handed("retinacular_fluid", ("white",))
+    reads("retinacular_fluid", ("white",), "patellar_retinacula")
+    back, side = shared.along(1), shared.along(0)
+    inner = side if knee == "R" else -side
+    readings, codes = retinacular_walls(
+        plane,
+        white,
+        arrays["b1_labels"],
+        field.peaks,
+        patella,
+        femur,
+        frame.basis_lps,
+        back,
+        inner,
+        np.asarray(frame.spacing_rc),
+        available,
+        shared,
+    )
+    arrays["a2_retinacula_carried_patella"] = patella
+    arrays["a2_retinacula_carried_femur"] = femur
+    arrays["a2_retinacula_field_objects"] = field.objects
+    for name, value in readings.items():
+        arrays[f"a2_{name}"] = value
+    # This record names the two walls; the field's air/skin remain retained as readings above.
+    arrays["a1_objects"] = np.zeros(plane.shape, dtype=np.int8)
+    record["assignments"]["codes"].update(codes)
+    record["assignments"]["codes"]["patellar_retinacula"] = (
+        "identified"
+        if any(code in NAMED for code in codes.values())
+        else "abstain_no_retinacular_wall"
+    )
+    record["main_slice"] = {"object": "patellar_retinacula"}
+    return record, arrays, frame
+
+
 def find_fibula(
     series: Series,
     record: dict,
@@ -1806,7 +1940,7 @@ def find_part(
     read_slice: Callable[
         [Measured], tuple[dict, dict[str, np.ndarray], PlaneFrame] | str
     ],
-    laid_when: str,
+    laid_when: str | None,
 ) -> tuple[list[tuple[dict, dict[str, np.ndarray]]], dict[str, str]]:
     """A part named on its own slice in each series (`read_slice`: `acl_slice`, `lcl_slice`), and
     laid from the sequence that names it onto the other sequence's slice of the same place where
@@ -1814,10 +1948,12 @@ def find_part(
     arrays, and every other series' silence, keyed `<series uid>:<part>`."""
     read: dict[int, tuple[dict, dict[str, np.ndarray], PlaneFrame]] = {}
     silences: dict[str, str] = {}
+    companions = MAIN_COMPANIONS.get(part, ())
     for index, own in enumerate(measured):
         result = read_slice(own)
         if isinstance(result, str):
-            silences[f"{own.record['series_uid']}:{part}"] = result
+            for name in (part, *companions):
+                silences[f"{own.record['series_uid']}:{name}"] = result
         else:
             read[index] = result
     found = []
@@ -1830,6 +1966,9 @@ def find_part(
             if at in read and read[at][0]["assignments"]["codes"][part] == "identified":
                 laid = lay_parts(own, read[index], read[at], (part,), product=part)
                 codes[part] = laid[part] or codes[part]
+        for name in companions:
+            if codes[name] not in NAMED:
+                silences[f"{record['series_uid']}:{name}"] = codes[name]
         if codes[part] in NAMED:
             handed(part, ("main_slice", "region"))
             found.append((record, arrays))
@@ -1980,6 +2119,11 @@ def measure_study(
             for own in measured
         ):
             leg = leg_of(measured)
+        patella_centre = None
+        if leg is not None and len(leg.patella_lps):
+            reads("leg", ("patella_lps",), "patella_centre")
+            patella_centre = leg.patella_lps.mean(axis=0)
+            handed("patella", ("centre_lps",))
         for own in measured:
             own.record["assignments"]["codes"].update(
                 name_the_back_of_the_knee(own, leg)
@@ -2011,22 +2155,16 @@ def measure_study(
                 lambda own: semimembranosus_slice(own, leg),
                 "abstain_no_tendon_at_the_back_inner_corner",
             ),
+            (
+                "patellar_retinacula",
+                lambda own: retinacula_slice(own, leg, patella_centre),
+                None,
+            ),
         ):
             found, silences = find_part(measured, part, read_slice, laid_when)
             for part_record, part_arrays in found:
                 main_records.append(save(main_run, study_uid, part_record, part_arrays))
             main_unread.update(silences)
-            if part == "semimembranosus":
-                # The second tendon shares this slice and its readings; it has no second search.
-                for key, why in silences.items():
-                    uid, _ = key.rsplit(":", 1)
-                    main_unread[f"{uid}:semitendinosus"] = why
-                for part_record, _ in found:
-                    st_code = part_record["assignments"]["codes"]["semitendinosus"]
-                    if st_code not in NAMED:
-                        main_unread[f"{part_record['series_uid']}:semitendinosus"] = (
-                            st_code
-                        )
         # The renderers read the saved run, when they draw it: their reads are its last.
         if drawn and records:
             reads("interiors", DRAWN_INTERIORS, "draw")

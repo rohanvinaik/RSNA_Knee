@@ -184,7 +184,10 @@ def test_driver_builds_the_same_between_heads_corridor_under_side_reversal(
 
     monkeypatch.setattr(run_interiors, "popliteal_lumens", select)
     run_interiors.name_the_back_of_the_knee(
-        own, run_interiors.Leg(np.empty((0, 3)), np.empty((0, 3)), None, None)
+        own,
+        run_interiors.Leg(
+            np.empty((0, 3)), np.empty((0, 3)), None, None, np.empty((0, 3))
+        ),
     )
 
     assert observed["corridor"][8:15, 10:20].all()
@@ -214,7 +217,10 @@ def test_driver_saves_layered_lumens_and_preserves_prior_object_pixels(monkeypat
     original = own.arrays["a1_objects"].copy()
 
     head_codes = run_interiors.name_the_back_of_the_knee(
-        own, run_interiors.Leg(np.empty((0, 3)), np.empty((0, 3)), None, None)
+        own,
+        run_interiors.Leg(
+            np.empty((0, 3)), np.empty((0, 3)), None, None, np.empty((0, 3))
+        ),
     )
 
     assert set(head_codes) == {"medial_gastrocnemius", "lateral_gastrocnemius"}

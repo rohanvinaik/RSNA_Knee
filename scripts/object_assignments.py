@@ -54,6 +54,8 @@ OBJECT_COLOURS = {
     "semitendinosus": ("SILVER", (0.7, 0.7, 0.7, 0.9)),
     "quadriceps_fat_pad": ("COBALT", (0.05, 0.1, 0.5, 0.85)),
     "prefemoral_fat_pad": ("COPPER", (0.65, 0.15, 0.0, 0.85)),
+    "medial_patellar_retinaculum": ("AMBER", (0.75, 0.75, 0.0, 0.95)),
+    "lateral_patellar_retinaculum": ("ROSE", (0.9, 0.45, 0.7, 0.95)),
 }
 # The legend's word for each part's colour.
 WORDS = {name: word for name, (word, _) in OBJECT_COLOURS.items()}
@@ -173,6 +175,14 @@ def draw_stages(axes, arrays, record):
                 else f"{codes['patellar_tendon']}, {codes.get('quadriceps_tendon', '-')}"
             )
             if "patellar_tendon" in codes
+            else ""
+        )
+        + (
+            f"\n{WORDS['medial_patellar_retinaculum']} medial patellar retinaculum: "
+            f"{codes['medial_patellar_retinaculum']}"
+            f"\n{WORDS['lateral_patellar_retinaculum']} lateral patellar retinaculum: "
+            f"{codes['lateral_patellar_retinaculum']}"
+            if "medial_patellar_retinaculum" in codes
             else ""
         )
         + (
