@@ -15,8 +15,9 @@ maintenance commits changed no decision, silence or saved array over the 58 labe
 and the test split:
 `fc4ca86` (each read declared where it happens; each part its own colour; the vessel rule's
 candidates found in one pass) and `8901990` (the lens's border readings read only with `--draw`;
-how to run and test, in `AGENTS.md`, "Running and testing"). Step 3 is now resolved in
-`be52965`; steps 4–5 remain evidence and proposals only.
+how to run and test, in `AGENTS.md`, "Running and testing"). Step 3 is resolved in
+`be52965`, with its shared-slice reporting preserved in `d948e0e`. The popliteus portion of
+step 4 is resolved in `8fa091d`; biceps femoris, iliotibial band, gracilis and sartorius remain.
 
 The stopping criterion is Rohan's (2026-10-15): «We're resolving the elements of knee anatomy right
 now. Exact specification and precise measurement is for the AI parts, which I have yet to specify. We
@@ -80,7 +81,11 @@ the pictures decide. Mark a step done here, with its commit, when it is.
    The enlarged actual output was inspected and shown:
    `data/pictures/definitions-20261016/retinacula-proof.png` (AMBER medial, ROSE lateral).
    This locates each band, not thickness or the full course. The full gate passed with 229 tests;
-   Vulture retains its 13 advisory contract declarations and fields. Next: step 4.
+   Vulture retains its 13 advisory contract declarations and fields. The labelled and test records
+   were refreshed. All 351 earlier middle-slice and 44 earlier main-slice records, their masks,
+   decisions and silences are preserved (new decisions and optional borders set aside).
+   The shared-slice correction in `d948e0e` keeps the tendon reference's specific upstream
+   abstention reason; the full gate then passed with 230 tests. Next: step 4.
    Claude's
    reading of why the last attempt stalled: the patella carried from one sagittal slice lands on the
    axial as a thin line (`data/pictures/definitions-20261015/retinacula-current-evidence.png`). A
@@ -91,15 +96,27 @@ the pictures decide. Mark a step done here, with its commit, when it is.
    `retinacula-local-build/` (`metadata.json`, `preview.py`); its stored empty candidates are
    unresolved, not anatomical absence.
 
-4. **The lateral complex beyond the LCL: popliteus tendon, biceps femoris tendon, iliotibial band.**
-   Nothing built. Read first: the lateral-complex section of the Chien article in
+4. **The lateral complex beyond the LCL: popliteus DONE; biceps femoris and iliotibial band remain.**
+   The popliteus is resolved in `8fa091d` (2026-10-16): the largest connected part of the existing
+   LCL region occupying a concavity of the carried femur's convex envelope. The native T1 LCL
+   slice supplies the definition, reusing its selected slice, lens and carried femur. Its own
+   mask and named decision are saved beside the earlier LCL labels, and the pair's shared match
+   lays the mask onto the fat-suppressed twin. No grey cutoff, new anatomical scale or proof
+   coordinate is used. The convex envelope, vertices, equations and candidate readings are kept.
+   Actual production output, inspected and shown:
+   `data/pictures/definitions-20261016/popliteus-proof.png` (SAGE), T1 slice 21 identified with
+   251 pixels, twin laid with 155 pixels (observations, not constants). This localizes the tendon
+   in its sulcus; the contour can retain a cortex rim and leaves the outer portion of the
+   cross-section. It does not assert the full course. The full gate passed with 246 tests;
+   earlier proof results are unchanged. The independent anatomical reading and usage are kept in
+   `data/readings/definitions-20261016/popliteus-reading/`; the lead checked the actual mask.
+   Next: biceps femoris, then iliotibial band. Read first: the lateral-complex section of the Chien article in
    `data/readings/definitions-20261015/anatomy-sources/` (read whole on 2026-10-15, with its
    figures), and look at the prepared views (`lateral-complex-local-prep/`; pictures
    `lateral-complex-*.png` in `data/pictures/definitions-20261015/`). Claude's readings, to check on
    the pictures:
-   - the popliteus tendon: the dark oval in the notch of the femur's outer condyle, on the LCL's own
-     coronal slice. Today the LCL's band takes it in, a recorded over-reach: name it as its own
-     region and leave the LCL as it is;
+   - the popliteus tendon: now separately resolved as described above; the earlier LCL region's
+     recorded overreach remains, and its labels are preserved;
    - the biceps femoris tendon: the dark band reaching the fibula's head, behind and outside the LCL;
    - the iliotibial band: the thin dark band down the front of the outer side to the tibia's
      front-outer edge, likely on a slice in front of the LCL's, chosen by place from parts already
