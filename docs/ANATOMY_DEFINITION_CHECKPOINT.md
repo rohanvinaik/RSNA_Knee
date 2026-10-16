@@ -35,9 +35,12 @@ the pictures decide. Mark a step done here, with its commit, when it is.
    one nearest that tendon among the bodies that satisfy those relations, on the semimembranosus
    tendon's own axial slice (`semimembranosus_slice`). Read first, whole:
    `data/readings/definitions-20261015/hamstrings-local-prep/semitendinosus_code_proposal.md`; then
-   look at `data/pictures/definitions-20261015/semitendinosus-candidate-provisional.png`. Share the
-   dark-body labels the semimembranosus rule already makes on that slice, compute nothing twice, and
-   keep the semimembranosus selector's behaviour.
+   look at `data/pictures/definitions-20261015/semitendinosus-candidate-provisional.png`. Make the
+   dark-body labels once on that slice, in `semimembranosus_slice`, and hand them to both selectors,
+   with no fallback: the proposal's optional `candidate_labels=None`, which builds them again when
+   they are not handed in, would be a second path that only a test reaches (`semimembranosus_on_slice`
+   has one caller in the run, `semimembranosus_slice`, and one test, which then hands them in as the
+   run does; `docs/HOW_TO_BUILD.md` §5, one path). Keep the semimembranosus selector's behaviour.
 
 2. **The two fat pads above the patella, parted.** Inspected preview and a small code proposal ready:
    the suprapatellar fat split along the collapsed recess between the pads, the quadriceps pad in
