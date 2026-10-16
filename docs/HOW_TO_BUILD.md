@@ -549,3 +549,16 @@ aspect of the pipeline later».
   Over the 58 labelled studies and the test split every record (351 middle-slice, 44 main-slice) is
   the same with the borders set aside (`scripts/compare_receipts.py --borders-aside`); the proof's
   and the bursa study's middle slices, drawn, keep border readings the same as before. This settles the border readings owed in "Where it stands".
+
+## Semitendinosus definition, 2026-10-16
+
+The semitendinosus is now resolved (`ee5480b`) on the semimembranosus tendon's own axial slice:
+the separate whole dark body behind that tendon, inside the inner condyle's peak, nearest the
+tendon among the bodies satisfying those relations. Both selectors receive the same dark-body
+labels and mean physical positions, computed once, with no fallback and no second lens or
+slice search. Its separate mask and named decision are saved and drawn SILVER beside the BROWN
+semimembranosus. The proof's actual output was inspected at its own pixels; all earlier proof
+decisions and arrays are unchanged. The full gate passed with 211 tests. Details and limitations:
+`docs/RESOLVING_THE_PARTS.md` §9; picture:
+`data/pictures/definitions-20261016/semitendinosus-proof.png`. This supersedes semitendinosus's
+preview-only status above. Continue at step 2 of `docs/ANATOMY_DEFINITION_CHECKPOINT.md`.

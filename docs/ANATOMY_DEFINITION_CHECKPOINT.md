@@ -7,12 +7,15 @@ exactly what to do to continue/complete this».
 
 ## Where the code stands
 
-The last part of the anatomy resolved is `c1b8bdb`, the popliteal artery and vein lumens. The commits
-after it changed no decision, silence or saved array over the 58 labelled studies and the test split:
+The semitendinosus tendon is now resolved in `ee5480b` (2026-10-16), step 1 below. It shares the
+semimembranosus slice and the dark bodies, including their measured positions, computed once.
+The previous anatomy checkpoint was `c1b8bdb`, the popliteal artery and vein lumens. The intervening
+maintenance commits changed no decision, silence or saved array over the 58 labelled studies
+and the test split:
 `fc4ca86` (each read declared where it happens; each part its own colour; the vessel rule's
 candidates found in one pass) and `8901990` (the lens's border readings read only with `--draw`;
-how to run and test, in `AGENTS.md`, "Running and testing"). The work on the parts below produced
-evidence, previews and proposals only. None of it is in the production tree; do not count it as done.
+how to run and test, in `AGENTS.md`, "Running and testing"). Steps 2–5 below remain evidence,
+previews and proposals only; do not count those as done.
 
 The stopping criterion is Rohan's (2026-10-15): «We're resolving the elements of knee anatomy right
 now. Exact specification and precise measurement is for the AI parts, which I have yet to specify. We
@@ -30,17 +33,20 @@ draw it on the proof before it touches the run; then wire it in, test, run, look
 refresh `data/`, and show Rohan the picture. The readings marked "Claude's reading" are provisional:
 the pictures decide. Mark a step done here, with its commit, when it is.
 
-1. **Semitendinosus tendon.** Inspected preview and code proposal ready. The separate whole dark
-   body behind the established semimembranosus tendon, on the inner side of the inner condyle, the
-   one nearest that tendon among the bodies that satisfy those relations, on the semimembranosus
-   tendon's own axial slice (`semimembranosus_slice`). Read first, whole:
-   `data/readings/definitions-20261015/hamstrings-local-prep/semitendinosus_code_proposal.md`; then
-   look at `data/pictures/definitions-20261015/semitendinosus-candidate-provisional.png`. Make the
-   dark-body labels once on that slice, in `semimembranosus_slice`, and hand them to both selectors,
-   with no fallback: the proposal's optional `candidate_labels=None`, which builds them again when
-   they are not handed in, would be a second path that only a test reaches (`semimembranosus_on_slice`
-   has one caller in the run, `semimembranosus_slice`, and one test, which then hands them in as the
-   run does; `docs/HOW_TO_BUILD.md` §5, one path). Keep the semimembranosus selector's behaviour.
+1. **Semitendinosus tendon — DONE, `ee5480b`, 2026-10-16.** The separate whole dark body behind
+   the established semimembranosus tendon, inside the inner condyle's peak, nearest that tendon
+   among bodies satisfying both relations. The rule uses the existing semimembranosus axial slice
+   and adds no numerical cutoff. `dark_tendon_bodies` makes the crack-closed, thick-body labels
+   and their mean patient positions once; both selectors receive this `TendonBodies` reading,
+   with no fallback. Its mask is `a2_semitendinosus`, with its own decision. The proof's axial
+   slice 11 names the separate 46-pixel body behind the unchanged 72-pixel semimembranosus;
+   these counts are observations, never selection rules. The actual output, at its own pixels:
+   `data/pictures/definitions-20261016/semitendinosus-proof.png` (BROWN semimembranosus, SILVER
+   semitendinosus). The real entry point was run and inspected, and the full gate passed with
+   211 tests. Next: step 2. The older proposal below is historical; its optional candidate-map
+   fallback was deliberately not implemented. Across all 351 middle-slice and 44 main-slice
+   records, every earlier decision, silence and saved array is unchanged (optional borders set
+   aside). The labelled and test records have been refreshed.
 
 2. **The two fat pads above the patella, parted.** Inspected preview and a small code proposal ready:
    the suprapatellar fat split along the collapsed recess between the pads, the quadriceps pad in
@@ -162,8 +168,9 @@ Rohan's pause request: **$6.0503875**, terminal reason `aborted_streaming`. Tota
 `retinacula-worker/` and `lateral-complex-worker/` under the readings parent. Neither is authority
 for an anatomical name. Do not automatically retry the budget-exhausted consultation.
 
-The local helpers stopped at saved artifact checkpoints. No new recognition code, dependency
-changes or partial integration is left in the production tree. Resume from the original thesis
+At the original pause the local helpers stopped at saved artifact checkpoints, with no partial
+integration in the production tree. Step 1 above records the subsequent completed implementation.
+Resume from the original thesis
 conversation and current source, then use this file to locate the evidence; inspect each preview
 before integrating it. Run the real proof entry point, inspect its pictures and run the gate
 before marking any of the remaining features complete.
