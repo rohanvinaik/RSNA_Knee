@@ -481,3 +481,11 @@ two gastrocnemius heads and behind the condyles selects the pair, ordered artery
 Both return `identified`, both have saved nonempty masks, and the actual output picture was
 inspected (`RESOLVING_THE_PARTS.md` §9). This supersedes the vessels' earlier unresolved status.
 The next unresolved element in §6's order is the patellar retinacula.
+
+At Rohan's next pause request, the remaining work was closed at saved preview/proposal checkpoints,
+with no further production recognition changes. The retinacula and lateral complex remain
+unimplemented; the semitendinosus and separated suprapatellar fat pads have inspected candidate
+previews and code proposals, but still need integration and real-pipeline verification. Gracilis
+and sartorius remain to be discriminated individually. The exact status, artifact paths and API
+closeout are in `docs/ANATOMY_DEFINITION_CHECKPOINT.md`; do not count those previews as completed
+objects. The verified code checkpoint remains `c1b8bdb`.
