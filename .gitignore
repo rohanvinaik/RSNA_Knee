@@ -32,3 +32,5 @@ htmlcov/
 .prism/
 coverage.xml
 .serena/
+# Sonar's scanner working folder (scripts/sonar_local.py reads this scan's task id from it)
+.scannerwork/

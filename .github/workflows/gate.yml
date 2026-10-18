@@ -1,7 +1,8 @@
 # The full declared gate (scripts/ci_local.sh) on every push and pull request: the gate a commit passes
 # on Rohan's machine, run from the locked environment. Rohan, 2026-10-18: «Sonar should be part of the
 # CI gate for this project, and a full CI gate should also run upon push to github». The gate's Sonar
-# step starts a SonarQube container on the runner, as it does on his machine.
+# step starts a SonarQube container on the runner, as it does on his machine, from the same pinned
+# server and scanner images with the same rules (scripts/sonar_local.py).
 name: gate
 
 on:

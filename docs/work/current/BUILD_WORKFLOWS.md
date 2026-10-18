@@ -92,7 +92,8 @@ Settled by your recorded words, stated so you can correct them:
   <main>/data/raw`, `--run` and `--main-run` inside the attempt directory, accepted receipts by absolute
   path). Candidate CLI runs are serial (`--workers 1`). Agents run the tests and the gate's static checks,
   never its Sonar step: one server holds one project history, and analysing a candidate's tree there would
-  move the baseline the lead's gate judges new code against. Parallel CLI runs and the full gate are the
+  make its latest analysis, which the lead's gate prints and reads, describe code that was never
+  integrated. Parallel CLI runs and the full gate are the
   lead's, in the main tree, after integration.
 - **Candidates:** new files marked intent-to-add (`git add -N`, nothing committed), then `git diff` into
   `candidate.diff` with its SHA-256. The verifier applies it in its own fresh worktree, checks the digest
@@ -336,7 +337,8 @@ accepted until G1's own checks.
   rule).
 - Wave-1 results used unchecked (W2 re-checks or regenerates them; nothing cited before that).
 - A changed premise mid-workflow (stop, confirm, quarantine, revise, relaunch with fresh attempt ids).
-- A candidate's analysis moving the Sonar baseline (agents never run the Sonar step).
+- A candidate's analysis replacing the Sonar server's record of the integrated tree (agents never run
+  the Sonar step).
 - An unenforced reading law (stated in every prompt; the hook wiring is a SquishOS repair for Rohan to
   decide separately).
 

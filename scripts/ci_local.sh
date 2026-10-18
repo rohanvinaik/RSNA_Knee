@@ -75,12 +75,15 @@ echo "== vulture (advisory) 2/2: nothing ANYWHERE calls it, tests included"
 .venv/bin/vulture src scripts tests ||
     echo "vulture: every line here is an island whose consumer is owed, or dead code to archive"
 
-# SONAR. Blocking: the scanner ran, the server's quality gate is OK, and no bug or vulnerability is
-# open (the bar in the global verification-gates.md). Code smells, coverage and duplication print as
-# information. A deliberate construct Sonar misreads gets `# NOSONAR(<rule key>)` on its line (the only
-# form Sonar accepts: nothing may follow it) and its reason in a comment just above; a real finding is
-# fixed.
-echo "== sonar (blocking: quality gate OK, no open bug or vulnerability)"
+# SONAR. Blocking, bare correctness only: the scan and its analysis ran, the open bugs and
+# vulnerabilities were read, and none is open. Rohan, 2026-10-18: «Both git and local should use a sane
+# profile of Sonar rules. Yes, agree, don't over-fit to targets, only bare correctness issues should be
+# blocking». One pinned SonarQube and scanner with the full "Sonar way comprehensive" rules, here and on
+# GitHub. The quality gate and its new-code conditions, the code smells by rule, coverage and
+# duplication print as information, read like vulture's lists. A deliberate construct Sonar misreads
+# gets `# NOSONAR(<rule key>)` on its line (the only form Sonar accepts: nothing may follow it) and its
+# reason in a comment just above; a real finding is fixed.
+echo "== sonar (blocking: no open bug or vulnerability; the rest is information)"
 .venv/bin/python scripts/sonar_local.py gate || fail=1
 
 if [ "$fail" -ne 0 ]; then

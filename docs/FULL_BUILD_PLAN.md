@@ -654,9 +654,11 @@ where already applicable; no new orchestration engine or Kedro migration is need
 this plan. Static references plus actual runtime calls establish whether values are shared.
 
 Read `scripts/ci_local.sh` and its current configuration rather than copying a remembered gate.
-It runs, from the locked environment, Ruff, format, the tests under coverage, Import Linter, advisory
-deptry/ty/two Vulture scans and a blocking Sonar check (quality gate OK, no open bug or vulnerability:
-`scripts/sonar_local.py gate`); the same gate runs on GitHub on every push (`.github/workflows/gate.yml`;
+It runs, from the locked environment, Ruff, format, the tests under coverage, zizmor on the workflows,
+Import Linter, advisory deptry/ty/two Vulture scans and a Sonar check that blocks only on an open bug or
+vulnerability and prints its quality gate, smells, coverage and duplication as information
+(`scripts/sonar_local.py gate`; Rohan, 2026-10-18: «don't over-fit to targets, only bare correctness
+issues should be blocking»); the same gate runs on GitHub on every push (`.github/workflows/gate.yml`;
 Rohan, 2026-10-18: «Sonar should be part of the CI gate for this project, and a full CI gate should also
 run upon push to github»). Read all advisories; a passing blocking gate does not clear them. Use Hypothesis for geometry/cache/lossless
 properties, Detective and CrossHair for suitable pure decisions/contracts, not to certify anatomy
