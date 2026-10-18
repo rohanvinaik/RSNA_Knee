@@ -196,7 +196,9 @@ beside them stayed here.
 - The tools stay on: the telemetry ledger records what each stage reads and hands on (his
   «central place» for it), vulture and the route check make an island impossible to miss, and the
   gate runs before every commit. «I assume you dropped all the telemetry tools, vulture, the CI
-  gate, etc?»
+  gate, etc?» The gate includes Sonar and runs again on GitHub on every push (2026-10-18: «Sonar
+  should be part of the CI gate for this project, and a full CI gate should also run upon push to
+  github»; `AGENTS.md`, "Running and testing").
 - Measure with the instruments, never a one-off script; keep a speed-up only if the answers are the
   same, run against run (`scripts/compare_receipts.py`; `AGENTS.md`, "Running and testing"). That is
   the test for an equivalent speed-up (a cache, a refactor, a compiled twin). Running a measurement
@@ -310,7 +312,7 @@ state is `docs/FULL_BUILD_PLAN.md` §13. What stays here is still owed or still 
   three quarters of the marrow's light, and laid onto the fat-suppressed coronal it leaves the
   layer's outer 1.5 mm to the skin's rim; laid onto the T1 coronal, the skin lies on the outer side
   of the dark rim between the air and the fat, and a few specks of the laid air lie apart.
-- Nothing is pushed; ask before pushing.
+- Commit and push as the work goes: "Commit and push, 2026-10-18", below, with his words.
 
 ## The record, 2026-10-14
 
@@ -637,3 +639,25 @@ What prevents both:
   plan. A label added after the numbers are written is how the first P2a dismissal spread.
 - Each time it was the same failure as P2a's and the seeds': an easy check standing in for the real
   question, and the unknown case defaulting to the loss (FULL_BUILD_PLAN §§1.1–1.2).
+
+
+## Commit and push, 2026-10-18
+
+His words: «Also, just freaking commit to git. The repo is private, and you've completely invented this
+"private data" issue. It's a public competition, and It's my own creative work, on a private git repo.
+Not pushing leaves hundreds of thousands of lines of code left on just this one laptop. and it's stupid.
+I never told you to restrict commits». And: «Obviously, GitHub is for code, not for GB's of data».
+
+What the agent had done: left 262 commits unpushed under this file's own "ask before pushing" line;
+held the workflow plan's documents uncommitted until he approved the plan; and called showing
+competition pictures to the Fable consult a privacy decision only he could make.
+
+What prevents it:
+
+- Commit code and documents as the work goes, and push them to `origin` after the gate
+  (`scripts/ci_local.sh`, its Sonar step included) and the pre-push checks in SquishOS
+  `repo-hygiene.md`: the lockfile audit with all extras and groups, zizmor on the workflows, and a
+  secret scan of the commits being pushed, not only of the files on disk. Every push runs the whole
+  gate again on GitHub (`.github/workflows/gate.yml`); read that run.
+- `data/` stays out of git: GitHub is for code, not gigabytes of data (33 GB on 2026-10-18).
+- Invent no privacy restriction on his own work or on the public competition's material.

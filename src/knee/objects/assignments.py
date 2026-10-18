@@ -2278,7 +2278,8 @@ def lateral_to_the_head(
     along = outward * float(
         origins[min(main + 1, count - 1), 0] - origins[max(main - 1, 0), 0]
     )
-    if along == 0.0:
+    # Exact on purpose: only the sign of `along` is used, and exactly zero has none.
+    if along == 0.0:  # NOSONAR(S1244)
         return None, areas, status, "abstain_slices_do_not_run_side_to_side"
     step = 1 if along > 0 else -1
     z = main

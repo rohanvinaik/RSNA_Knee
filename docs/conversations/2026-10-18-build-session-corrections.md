@@ -241,3 +241,61 @@ No, you can continue with the cleanup. I wanted you to pause to do thus closer r
 Um, that's a SUPER cavelier way of handling a critical correctness issue?
 
 Complete the grounding fix and the correctness one, actually compete those tasks then come back to me for confirmation
+
+**18:25**
+Please review these changes, tell me if the workflow/build epistemology and engineering steps are clear and unambiguous:
+
+> **The other session's report, pasted (not his words):**
+> **These are substantive improvements.** `d3d697c` repairs the cleanup failure; `2b41281` now distinguishes location priors, native measurements and anatomical inference clearly. I have not independently repeated its production acceptance.
+>
+> Grounding still needs protection at the point where an agent chooses its next operation. Reading the correct documents alone hasn’t prevented objective substitution.
+>
+> The remaining requirements are:
+>
+> - **One current task record**, with historical instructions clearly separated.
+> - **Explicit worker context**: the cheap-worker launch uses safe mode, which disables CLAUDE.md and hooks.
+> - **Bounded transformation contracts**, checked before implementation—not merely a paraphrase of the thesis.
+> - **Dependency-based invalidation**, so corrected premises promptly stop or quarantine affected jobs.
+> - **Independent integration checks** against actual consumers, native images and the governing meaning.
+>
+> I wrote:
+>
+> - [Grounding and parallel-worker guide](/Users/rohanvinaik/Projects/Kaggle_Killer/competitions/RSNA_Knee/docs/GROUNDING_AND_WORKER_GUIDE.md)—packet templates, launch procedure, example parallel wave, supervision, invalidation, acceptance and handoff.
+> - [Detailed review](/Users/rohanvinaik/Projects/Kaggle_Killer/competitions/RSNA_Knee/docs/reviews/2026-10-18-grounding-review.md)—what improved, remaining ambiguities and verification limits.
+>
+> The canonical plan now points to the guide. It explicitly separates procedures usable today from enforcement still to build. Documentation only; no production changes, worker launches or commits.
+
+**18:46** (the record holds this message twice, seven seconds apart; the second ends with a colon and carries the pasted report)
+Made these changes, please look at them and see if they address your concerns, and plan out workflows that will complete the specified build of the full project as articulated thus far (Sonnet xhigh effort for the agents). Come to me with your full plan when you've designed it, consult codex on the plan:
+
+> **The other session's report, pasted (not his words):**
+> Implemented all nine documentation fixes.
+>
+> - [Plan §13](/Users/rohanvinaik/Projects/Kaggle_Killer/competitions/RSNA_Knee/docs/FULL_BUILD_PLAN.md) now indexes one [active packet](/Users/rohanvinaik/Projects/Kaggle_Killer/competitions/RSNA_Knee/docs/work/current/README.md) and defines the sole handoff template.
+> - NEXT is a pointer card; old instructions are preserved as dated history.
+> - The [worker guide](/Users/rohanvinaik/Projects/Kaggle_Killer/competitions/RSNA_Knee/docs/GROUNDING_AND_WORKER_GUIDE.md) now specifies routes, complete review payloads, semantic-check triggers and ownership.
+> - Corrected the global routing source and synchronized client instructions.
+>
+> **41 documentation checks passed.** Core corrections and contracts remain unchanged. The global setup check confirms fresh instructions and valid routes, but reports separate hook, archive-manifest and inventory discrepancies.
+>
+> No production code changed; nothing committed.
+
+**18:59**
+Also, just freaking commit to git. The repo is private, and you've completely invented this "private data" issue. It's a public competition, and It's my own creative work, on a private git repo. Not pushing leaves hundreds of thousands of lines of code left on just this one laptop. and it's stupid. I never told you to restrict commits
+
+## After the third compaction
+
+Mid-turn, in the order received (the record gives these no times):
+
+Oh good GOD you hit another compact. Just read the codex chat in full to make sure you're grounded. Your post-compact summary is anti-correlated with the truth
+
+What are you "locating"? It's just "/Users/rohanvinaik/Projects/Kaggle_Killer/competitions/RSNA_Knee/data/readings/collapse-20261017/full-build/targeted-compute-20261018/workflow-plan-review-20261018/codex-answer.md"
+And the prompt that triggered it, obviously
+
+Obviously, GitHub is for code, not for GB's of data
+
+Set up sonar as well, using the local setup guidance with the docker image
+
+Sonar should be part of the CI gate for this project, and a full CI gate should also run upon push to github. Code quality/performance engineering, etc
+
+Any other code efficiency tooling/actions that might be worth adding to GitHub? Anything new, using cursor, or even a standard code efficiency/performance engineering toolkit/gate to add in?

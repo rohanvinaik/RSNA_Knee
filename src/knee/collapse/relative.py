@@ -172,7 +172,8 @@ def key_plane(
     if not np.all(np.isfinite(n)):
         return bad("normal_nonfinite")
     big = float(np.max(np.abs(n)))
-    if big == 0.0:
+    # Exact on purpose: only an all-zero normal cannot be scaled by its maximum.
+    if big == 0.0:  # NOSONAR(S1244)
         return bad("normal_zero")
     scaled = n / big
     scaled_length = float(np.linalg.norm(scaled))
