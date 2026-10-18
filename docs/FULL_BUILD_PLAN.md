@@ -655,7 +655,8 @@ this plan. Static references plus actual runtime calls establish whether values 
 
 Read `scripts/ci_local.sh` and its current configuration rather than copying a remembered gate.
 It runs, from the locked environment, Ruff, format, the tests under coverage, zizmor on the workflows,
-Import Linter, advisory deptry/ty/two Vulture scans and a Sonar check that blocks only on an open bug or
+Import Linter, advisory deptry/ty, Ruff's PERF and stable FURB rules and two Vulture scans, and a Sonar
+check that blocks only on an open bug or
 vulnerability and prints its quality gate, smells, coverage and duplication as information
 (`scripts/sonar_local.py gate`; Rohan, 2026-10-18: «don't over-fit to targets, only bare correctness
 issues should be blocking»); the same gate runs on GitHub on every push (`.github/workflows/gate.yml`;
