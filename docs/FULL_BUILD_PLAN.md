@@ -11,6 +11,14 @@ objects**, their independently native descriptions in available orientations, on
 map, retained evidence and named uncertainty. Correctness and compute efficiency come from the
 same anatomical structure. Finish that ground layer before the human-specified later AI/diagnosis.
 
+**Mechanical implementation contract:** use §§14–15 before assigning or accepting any remaining
+work. They define 22 measurement products, their existing/required consumers and permitted
+interpretations, 26 anatomical-family contracts, and concrete P2b wiring. A packet must name its
+input/output contract IDs and actual consumer. REUSE/WIRE work is mechanical; a missing native
+selector marked DEFINE NATIVE RULE must be supplied by the lead from the actual images and
+§7's rule-review procedure before a worker implements it. No proxy score or preferred
+intermediate output fills that semantic gap.
+
 ## 1. Mechanism and non-negotiable distinctions
 
 Read the original conversation with its pictures: simple, complementary, lossy measurements
@@ -55,6 +63,102 @@ SIGNIFICANCE_WEIGHTING §§4–5, 13–16. One useful fact constrains a cluster 
 complementary views can unlock constraints neither supplies alone. Derived consequences make
 held information usable; they do not create fresh evidence. No other-domain scaling constants,
 new significance-score engine or corpus-induction system is imported into this ground layer.
+
+### 1.1 Required epistemology: a failed construction does not retire the capability
+
+**Human correction, 2026-10-18.** Rohan objected to the P2a dismissal and asked that the build/
+handoff prevent its recurrence. The concrete error: a script measured padded bounding rectangles,
+then the record asserted that an unimplemented tile-level region would fail too. That assertion
+had no measurement behind it. The earlier Codex review was too generous in treating the decision
+as a reasonable reprioritization. This correction governs every stage, not just P2a.
+
+1. **State the question before choosing its proxy.** A useful leg/background domain is a spatial
+   region, potentially irregular, tiled or composed from complementary views and known anatomy.
+   The smallest enclosing rectangle is one possible execution envelope, not the region itself.
+   A rectangle covering most of the image says nothing by itself about how much irrelevant
+   background an actual region can exclude or which dependent questions it can constrain.
+2. **Report exactly the operation performed.** Name the construction, inputs, views, scope,
+   measurement and consumer. An unbuilt tile mask has no measured outcome. A test of one padded
+   rectangle is not a test of every spatial representation. Label an inference as an inference;
+   never promote it to a measured result or copy it into the next handoff as established fact.
+3. **Diagnose the residual within the thesis.** If edge-connected darkness enters dark marrow,
+   that construction confounds exterior with tissue. Use the other available distinctions—
+   enclosure, geometry, neighbouring slices/views and resolved anatomy—to make the question
+   useful. No individual lens must solve it alone. Do not turn that failure into abandonment,
+   hand-tuned instance metrics, a weighted verdict, or a default ML replacement.
+4. **A prior's value includes its consequences.** Its own rectangular crop may save little while
+   its region, containment or anatomical exclusions narrow many later identities and scopes.
+   Trace those actual consumers. One local area ratio or timing share is not authority to remove
+   a foundational information handoff. Share an existing equivalent producer rather than add
+   duplicate work simply to tick a task box.
+5. **Keep the capability open until demonstrated and connected.** Useful once is enough; perfect
+   segmentation and universal success are not required. Mark an unsuccessful construction as
+   such and retain its evidence. Do not mark the capability complete, unnecessary, disproved or
+   permanently skipped. Other independent work may continue without silently deleting it.
+6. **Keep authorship and authority exact.** Agent analysis remains agent analysis even if a human
+   relays it. Do not attribute a Codex paragraph to Rohan or manufacture approval from it. A
+   repeated claim in a README, plan, prompt and commit is still one claim, not corroboration.
+
+Before closing a structural task, record its actual region/measurement, at least one useful
+native demonstration, which expensive decision consumes it before running, and which downstream
+questions it narrows. If these are not supplied, record the remaining work; do not invent a
+negative conclusion. Native anatomy remains the criterion, not the proxy an agent found easiest.
+
+### 1.2 Required epistemology: representation fidelity before intermediate-mask optimization
+
+**Human correction, 2026-10-18.** Rohan supplied an agent report that called an AX14 calibration
+change (74.5→71) and loss of 63 bright-rim pixels "hurt accuracy", then proposed carrying only
+section interiors inside a 2 mm shell. Those are the agent's reported observations/proposal,
+not an independently established accuracy result or an accepted remedy. Rohan clarified:
+«It should be REASONABLY accurate, but alignment with the theory of the project as a computer
+vision pipeline is WAAAAY more important». This applies across the entire ground-layer build.
+The distinctions below restate an agent's review that he pasted under his words «You are
+FUCKING this up AGAIN:»: agent text he endorsed, not his words (verbatim record:
+`docs/conversations/2026-10-18-build-session-corrections.md`, 16:37 and 16:42).
+
+The task is to implement a correct, useful anatomical description and its information flow.
+Reasonable native competence is required. Cleaner intermediate masks, fewer ambiguous pixels,
+a preferred calibration value, larger support, or agreement with an old result are not substitute
+objectives. Do not optimize an intermediate proxy until it becomes the task being solved.
+
+- **A changed reading is a changed reading.** Report the actual calibration/count and inspect
+  what the image says it represents. Neither its numerical direction nor its difference from
+  an old result proves accuracy improved or declined. If a region visibly names another
+  structure, identify that specific anatomical/semantic error; do not dismiss it, but fix the
+  definition or information handoff rather than fit the proxy numbers.
+- **Keep what each representation means.** A projected location prior, a source section with
+  its own scope/uncertainty, a native bone observation, a coarse enclosure, and samples used
+  for marrow calibration answer different questions. Carry that distinction through existing
+  records and consumers. An uncertain edge does not become certain native bone or marrow by
+  projection or union. Conversely, uncertainty does not make the whole useful source unusable.
+- **Repair a conflation where it occurs.** If a consumer treats a broad bone-location support
+  as definitive native marrow, diagnose that producer–consumer mismatch. Preserve the source
+  reading and use native signal plus complementary geometry/anatomical relations to answer the
+  marrow question. Do not erase source evidence to make the misinterpreted mask look cleaner.
+- **An anatomical law is not an arbitrary morphology instruction.** "Marrow is within bone"
+  constrains marrow's anatomical identity. It does not by itself specify eroding every source
+  section by 2 mm. A shell/interior operation may be useful only with an independently stated
+  measurement role and native evidence. Reusing an existing number does not establish that
+  role. Do not choose a width or seed variant because it restores 74.5, recovers 63 pixels, or
+  looks closer to a preferred intermediate output.
+- **Complementarity is allowed to be messy.** The descriptions are lossy by construction. Use
+  their conjunctions, exclusions, context and retained disagreements to constrain the residual
+  question. Do not require each input lens or seed cloud to be a clean full object before it
+  may contribute. "More seeds do not guarantee better anatomy" prohibits an unsupported success
+  claim; it does not instruct the agent to purify seeds until local metrics improve.
+- **Experiments serve a stated question.** Comparing early, pooled and interior seed variants
+  is development work, not inherently a mistake. Before accepting one, state what property it
+  measures, why that property answers the anatomical question, and which downstream decision
+  uses it. Choose by that explanation and reasonable native competence, not a ranking of proxy
+  outputs on selected study slices. Preserve the variants/readings; no per-study tuning.
+
+Before a semantic/seed-filtering change, write three short statements in its task packet:
+(1) the intended meaning of the producer and consumer; (2) the specific mismatch observed, if
+any, with native image evidence separated from numerical change; (3) why the proposed general
+operation repairs that mismatch under the thesis. Then implement the smallest repair through
+all actual consumers. This is a clarification of the existing data contract, not a new rule
+engine, exhaustive accuracy campaign, perfect-boundary requirement or request for repeated
+human approval. Once the faithful description is reasonably competent, continue the build.
 
 ## 2. Source checkpoint and present state
 
@@ -204,7 +308,25 @@ addresses, run the gate. This changes scope; no whole-frame equality requirement
 188-pixel competent sheet visible or explain a changed competent description from the image.
 A smaller visited area alone is not a runtime speed claim.
 
-### P2a — shared rough leg/domain producer
+### P2a — shared rough leg/domain producer — OPEN, required
+
+The existing `p2a-leg-domain-20261018/` experiment tested only a 10 mm-padded bounding rectangle
+around two candidate envelopes. It did not implement or evaluate tile-level execution, measure
+work over an irregular leg region, or exercise such a region through a production consumer.
+The broad rectangles and the leaking flood are observations about those constructions only.
+The assertion that a tile version would have the same failure is withdrawn as unsupported.
+Commit `398b856` records the earlier overbroad dismissal; its message is historical error, not
+permission to skip P2a. The packet README now states this correction explicitly.
+
+Next bounded P2a packet: keep the actual candidate region or tile occupancy separate from its
+padded enclosing box; inspect it against the acquired anatomy; retain unknown and enclosed dark
+tissue; combine available complementary context where the first construction fails. Count the
+actual query places/tiles and operation-specific context needed by a chosen real consumer.
+Demonstrate useful exclusion or a useful downstream anatomical constraint, then connect that
+producer before the expensive work. Count real visited work, not only the box. If a consumer
+requires a broad envelope, record that consumer's scope without ruling out other consumers or
+representations. This specifies the work, not a new threshold or a perfect-mask prerequisite.
+P2b/P3 may proceed independently; P2a remains on the required build list until this is done.
 
 Reuse already computed finite/margin/background/squint data before the middle-slice expensive
 lens. Produce a useful per-slice or per-tile leg envelope and available scope, not a perfect leg
@@ -225,6 +347,17 @@ the bound intended to precede that lens.
 
 ### P2b — later native bones feed dependent native questions
 
+**Read §1.2 and the concrete producer–consumer contract in §14.4 before changing seed selection
+or calibration.** P2b publishes what the later native
+sections actually supply and makes it usable by downstream questions. It is not a campaign to
+improve AX14's coarse-core mask or restore an earlier calibration/rim count. The reported
+74.5→71 and 63-pixel difference do not by themselves establish an accuracy regression.
+If projected support is being mistaken for native marrow, repair that semantic distinction at
+the real producer/consumer. "Marrow within bone" alone does not justify a universal 2 mm erosion.
+Any `prototype_interior_seeds.py` or comparison of variants remains development evidence until
+its measurement meaning, general anatomical justification and real consumer are established.
+No source/seed variant is accepted merely for producing preferred intermediate numbers.
+
 Read E + `later-bone-context-trace-20261018/README.md` and the actual complete units:
 `Leg`, `leg_of`, `leg_on`, `name_the_bones`, `keep_bone_planes`, `bone_target`,
 `native_femur_coarse_context`, `coarse_section`. Lead traces references before changes.
@@ -240,8 +373,10 @@ Give updated support context an immutable identity/version; include it in `leg_o
 coarse/profile cache that depends on it, or explicitly invalidate those entries. Previously
 cached early projections must not survive under a new bone context. Verify same frame + different
 context misses, same complete context reuses, and ordering reaches the intended later readers.
-Inspect AX11/12/14 and affected cartilage/fat outputs through actual DICOM frames. More seeds
-alone do not establish better anatomy. No repeated whole-study recognition/fixed-point loop.
+Inspect AX11/12/14 and affected cartilage/fat outputs through actual DICOM frames for reasonable
+anatomical competence and faithful representation. Neither more seeds nor a cleaner core alone
+establishes a better implementation; retain scope and uncertainty instead of optimizing a mask
+in isolation. No repeated whole-study recognition/fixed-point loop.
 
 ### P3 — pass known bones into patella/recess questions
 
@@ -323,6 +458,30 @@ For each row:
 The lead's anatomical/image decision remains necessary where no rule is chosen yet. The build
 around it is mechanizable. A new agent must not invent an unapproved rule and call that mechanical
 execution, nor ask Rohan to repeat the established thesis as a substitute for looking.
+
+**How each rule is decided (Rohan's choices, 2026-10-18).** The lead put the question to him as
+options; his choices and words are recorded verbatim in
+`docs/conversations/2026-10-18-build-session-corrections.md`. At 16:57 UTC he chose the option
+"Codex check only"; at 17:15 UTC, after a side note that a model-only Codex cannot see the
+pictures, he chose "Codex + Fable", having written «Yes, change that, Codex is the main consult
+interface». For the P4–P6 pictures he chose "Each family wave" (11:25 UTC). For every row of P4–P6:
+
+1. The lead drafts the rule from the native pictures with §1.2's three statements (what the
+   producer and consumer mean; the anatomical fact seen in the native images, separated from any
+   number; why the operation follows from that anatomy).
+2. Codex, the main consult interface (model-only, `codex-consultation.md`), checks it against the
+   thesis.
+3. The Fable consult, the only route that takes a picture
+   (`~/Projects/SquishOS/ops/agents/bin/anthropic-consult --prompt <file> --image <png> --out <md>`,
+   `anthropic-consultation.md`; it spends API credits), is shown the rule's picture sheet and asked
+   whether the pictured anatomy supports the rule.
+4. A rule both readers agree with is built without waiting for Rohan; any disagreement goes to him
+   before building.
+5. The lead inspects every view and records its reading; Rohan sees each family wave's pictures
+   together at the end of that wave.
+
+A row's evidence keeps the draft, the Codex prompt and answer, the Fable prompt, picture sheet and
+answer, and the picture packet the rule rests on. Each reader is one voice, never a verdict.
 
 ## 8. P7–P10: finish the whole-operation structural retrofit
 
@@ -406,7 +565,9 @@ caller and sibling route. Check fresh indexed bodies against actual files. Aider
 the installed unrestricted mapper can expose archives, so use an archive-excluding invocation
 or active-source AST inventories instead. Helpers do not start separate Serena fleets.
 
-Each task packet contains:
+Each task packet contains the concrete M/F/task contract references from §§14–15, not only
+a generic request to improve the result. Its completion record supplies the six statements in
+§15.3. Each task packet contains:
 
 | Field | Required content |
 |---|---|
@@ -577,16 +738,224 @@ in-flight mutation or worker completion being represented as production success.
 
 **Progress, 2026-10-18:** P0 done (`B + p0-inventory-20261018/`; bulk commit `7b61b54`). P1 accepted
 (`B + p1-sartorius-scope-20261018/`): sartorius contrast bounded to the gracilis-target window, the
-188-pixel sheet unchanged. P2a: one construction measured (`B + p2a-leg-domain-20261018/`): a
-padded rectangle around the leg (its box plus 10 mm) covers 90–100% of each of the ten proof/bursa
-middle frames, so that rectangular crop is not built. Rohan: «The figures show that this particular
-padded rectangular crop saves little on these ten frames. That supports moving on to more
-selective anatomical regions; it does not establish that background exclusion or nonrectangular
-regions are generally unhelpful.» Both remain open under P2a; the earlier wording that dismissed
-them is withdrawn.
+188-pixel sheet unchanged. **P2a remains OPEN and required.** Its packet measured padded boxes;
+no tile-level region or production region consumer was tested. The usable candidate boxes on nine
+of the ten inspected middle frames occupy about 90–100%; the remaining cheap flood keeps a wrong
+corner. These facts do not establish that useful background exclusion is unavailable. The earlier
+claim and commit `398b856`'s dismissal are superseded by §1.1 and the corrected P2a contract.
+**P2b increment 1 accepted** (`B + p2b-bone-context-20261018/`): later identified native bone sections
+are published once (`refine_leg`) as location priors with an immutable leg identity keying every
+`once` cache inside the leg-taking functions (AST query and output in the packet), handed to the
+native fat and axial cartilage readers; earlier readers keep the early leg. The §1.2 conflation found
+there is repaired: the axial cartilage band is calibrated on the native component its reader selects
+(Claude's analogue of the places the original cartilage rule reads, not the same construction), no
+longer on the coarse core grown from location priors (three statements, Codex's answers, images and
+comparisons in that packet). An independent check of that record found gaps, closed in the packet's
+README and `verification.md`: the Codex answers were missing; two context changes were unlisted (proof
+axial z27/z29, bursa coronal z16, drawn and inspected: no output changed); no consumer of the refined
+context reads axial slices 11 and 12 in this increment; the reader now selects before it calibrates,
+which changed its refusal order. P2b increment 2 remains: hand the refined leg to `axial_bone_planes`
+and `fibula_key_planes` (they move the map's axial zero) with their own inspection, which covers axial
+slices 11 and 12. `name_the_joint`, like the patella and recess readers, still builds the early leg
+itself (P3). Open, recorded: whether broad sections suit `coarse_section`'s cut level.
 
-**Exact next action:** P2b. Dispatch factual P2 tracing/early-domain image
-packets to subscription workers in parallel where independent. Publish shared native bone
-context before further dependent ACL/tibial-cartilage work. Continue the table through P11;
-P12/P13 keep their stated primary-contract/human-specification dependencies. No fresh thesis
-redesign, repeated consultation, commit, push or submission is requested by this handoff.
+**Continuation:** finish and verify any in-flight P2b work without disrupting its source epoch.
+Prepare the actual region/tile-and-consumer P2a packet described above; retain it explicitly in
+NEXT_SESSION_PROMPT while other independent work proceeds. Publish shared native bone context
+before further dependent ACL/tibial-cartilage work. Continue the table through P11 without
+silently retiring P2a. P12/P13 keep their stated primary-contract/human-specification dependencies.
+No fresh thesis redesign, repeated endorsement consultation or history rewrite is requested.
+
+
+## 14. Measurement and consumer contracts
+
+**Added at Rohan's explicit request, 2026-10-18.** These are the meanings and permitted uses of
+the existing measurements, followed by the remaining task contracts in §15. They are instructions
+for work in the existing plain functions and records, not a request to build a contract engine,
+another pipeline, or a new set of scores. §§1.1–1.2 govern every contract.
+
+### 14.1 How a mechanical builder must use these contracts
+
+A task packet names its input and output contract IDs below, exact source units/files, and its
+production consumer. The worker implements that transformation. It may not replace the anatomical
+question with an easier measurable objective. If a specified input is unavailable, preserve the
+named unavailable/partial result; do not invent support or silently substitute another product.
+A useful approximate description remains usable with its stated scope and uncertainty.
+
+Three work states are distinct:
+
+- **REUSE:** the measurement/operation already exists. Use it with its current documented meaning;
+  do not introduce another implementation or tune its constants to a new example.
+- **WIRE:** the required handoff is specified. A worker can implement addresses, projection,
+  caching, ordering, persistence, consumer arguments and appropriate invariant tests mechanically.
+- **DEFINE NATIVE RULE:** the location and anatomical distinction are specified, but the final
+  combination selecting tissue in a missing view has not been accepted. The lead must inspect
+  the existing images, write the short rule from anatomy and the lenses, and put it into the
+  packet. Helpers can prepare the native readings meanwhile. Do not treat this as permission to
+  optimize variants, nor as a reason to ask Rohan to explain the thesis again. No new approval
+  ritual is required for ordinary grounded rule construction within the authorized build.
+
+Every spatial product retains its actual acquisition/frame/slice, scope/offset, available and
+unqueried places, and source address or derivation. Geometry may be referenced once rather than
+copied everywhere. A derived product retains links to its inputs; original readings are kept.
+Existing masks/arrays/observation records are sufficient carriers: add only the missing fields
+needed by a real consumer. Missing, unknown, measured-empty, tied, partial and resolved remain
+named and distinct. A full-frame-shaped boolean array is not automatically a full-frame measurement.
+
+In the tables, **existing consumers** name established code paths, not a claim that every pending
+change is accepted. **Required consumers** name the intended remaining wiring. A producer must
+not claim that a required consumer is already connected. Source evidence for the inspected units
+is B + `measurement-contracts-20261018/source-evidence.json`; the worktree can advance, so check
+its actual current units. The plan's contracts do not certify those live edits.
+
+### 14.2 Input, spatial and geometric measurements
+
+| ID / product | Meaning and producer | Existing / required consumer and permitted decision | Anatomical or physical justification | Forbidden substitution / required check |
+|---|---|---|---|---|
+| M01 — acquired signal and availability | The recorded intensity at an actual voxel, with finite/reconstruction availability. `measure`, `finite_of`, `margin_of` and the acquisition/frame readers own these inputs once. | Every native measurement reads available acquired values; geometry-dependent readers use M02. P2a may use availability as context. | MRI sequence determines tissue contrast. A stored value outside reconstructed/available support says nothing about tissue. | Zero intensity is not globally air. Unavailable samples cannot become dark tissue, background evidence or a negative anatomical vote. Changing excluded stored values must not alter a reading that excludes them. |
+| M02 — native frame, spacing and slab | `PlaneFrame`, `plane_frame`, native image shape and actual thickness map voxel coordinates to patient millimetres. `places_on_slice` reads actual slab membership; `projected_places` is a location projection. | `leg_on`, source profiles, native target creation, physical distances, source windows and key-plane geometry. | All series observe one knee in a common physical frame, with different sampling and obliquity. | A projected point is not proof that tissue occupies that native pixel/slab. Do not copy indices between sequences, replace thickness with index proximity, or silently use a different frame. Test oblique/anisotropic, off-slab, missing and clipped geometry. |
+| M03 — background split and low-signal class | `background_split` measures the series' own histogram valley; a low map states intensity at/below that split. It is a signal measurement, not an anatomical label. | `lens_of`/`interior_regions`, low-signal band/body readers; required P2a context combined with other readings. | Tissue classes have different contrast, and cortex, tendons and ligaments may all be dark. | Never equate low signal with not-leg. No fitted per-study cutoff to repair an object. Preserve histogram/split scope; a signal-class failure does not retire the anatomical question. |
+| M04 — squint stack | `read_squint_stack`/`physical_squint`: each 10 mm tile's exact median/minimum/maximum/coverage, bounds and physical centre per slice. No tile statistic names tissue. | Existing profiles consume relevant grid/geometry; P2a and future cheap search may consume the actual intensity/coverage values. Declare the particular field read. | Cheap large-scale structure can locate plausible anatomical regions before finer questions. | Do not invent a median consumer or assert an unbuilt tile rule failed. Do not require one statistic to recognize an object. Preserve partial/ragged tile semantics; batch reuse changes computation, not values. |
+| M05 — useful leg/domain region | Required P2a product from cheap existing readings plus justified complementary context. Its region/tiles, enclosing box and operation-specific halo are distinct values. Construction remains OPEN. | Required input to chosen expensive native reader(s) before measurement; later narrower anatomical domains can refine it. | Relevant anatomy is in the leg; the exterior does not require object recognition. Dark internal tissue is still eligible. | Box area is not region area. An irregular mask applied only after full-frame computation is not a compute-saving handoff. Inspect the actual region, count queried places/context and trace a real consumer. Imperfect but useful is sufficient. |
+| M06 — native interiors, distance and territories | `interior_regions` measures distance from low-signal constraints and peak-grown territories inside its declared scope; `Measures` shares named geometric summaries. A territory is a geometric reading. | `assign_plane`, `name_the_bones`, patella/joint/field and other existing selectors combine these readings with anatomy. | Enclosed tissue bodies and their relative positions separate large knee structures. | Largest/deepest is not universal identity. No territory becomes bone merely because a generic function returned it. Preserve local boundary conditions, offsets and scope; drawing-only borders are separate and off in production. |
+| M07 — addressed native anatomical source | A source is a named native observation with the exact support array/row, acquisition, slice and its definition's limits. Source-to-LPS conversion records measured source places, not a full reconstructed volume. `native_*_sources`, `keep_bone_planes` and source collectors own it. | Source eligibility, M09 profiles, M10 targets/windows, `refine_leg`, other anatomy-dependent selectors. | One object's observed location constrains that same object and its neighbours in other views. | Laid/projected/read-only rows cannot be silently promoted to independently native evidence. Source choice first respects the object's anatomical region/course; area can distinguish eligible sources, not create their identity. Keep broad-support uncertainty. |
+| M08 — projected support / shared bone-location context | `leg_of` and `refine_leg` publish source-derived patient-space places; `leg_on` projects/intersects them into native targets. Later sections add locational information with links to M07. | Existing back-of-knee readers use early context. Required later context reaches `native_femur_coarse_context` and compatible later bone/attachment readers; P3 supplies the relevant context to patella/recess. | Bone positions constrain articular surfaces, contained marrow and attachments. | This is a location prior, not definitive native bone or marrow. Preserve provenance/role, early versus later context and their cache identities. No default erosion, source withdrawal or seed ranking to restore an old calibration. |
+| M09 — coarse bone enclosure | `block_medians` → `coarse_depth` → `coarse_section` over native blocks. Depth measures enclosed contrast; seeds locate touched native coarse bodies. Current selection level is derived from held positive depths; competing bone seeds can yield `SHARED`. `native_core` expands that coarse result to the native grid. | `axial_bone_planes`, `fibula_key_planes`, `patella_key_planes`; shared `native_femur_coarse_context` feeds `native_fat_coarse_femur_context` and `native_femoral_cartilage_candidates`. | Bone compartments are enclosed structures whose known physical places point into native bone-related contrast. | An expanded block is not a precise boundary or automatically a marrow sample. `SHARED` is unresolved attribution, not absent bone. The median level/area is a reading, not a value to optimize. Do not tune seeds for core cleanliness. |
+| M10 — source-to-slab profiles and candidate order | `native_meniscus_profiles` and the existing cartilage/fat profile builders count/address source overlap through actual slabs and combine it with map proposals. They point to candidate questions. | Native meniscus/PCL/cartilage/fat readers choose which frames to inspect; their independent native support, not the profile count alone, supplies a key-plane observation. | Anatomy is contiguous and physically shared across views, so a known section narrows relevant slices elsewhere. | Profile maxima are not automatic recognition. Retain ties/off-slab/unknown and old status-code meanings. Share geometry only where semantics match; do not merge different status dictionaries by numeric coincidence. |
+| M11 — query window and context halo | `source_window` bounds actual source locations using an authored physical extent; filter halo adds samples needed for the specified operation. A source point need not be an object centre. | Local meniscus/PCL/body readers and scoped sartorius; required analogous P3/P5/P6 consumers. | A localized object has a constrained extent/reach; its neighbourhood supplies context. | Do not halve extent by assuming an in-object point is central. Keep query/context/availability distinct. A local miss describes its question, not global absence. A broad window does not invalidate other region representations. |
+
+### 14.3 Local tissue measurements and object-support decisions
+
+| ID / product | Meaning and producer | Existing / required consumer and permitted decision | Anatomical or physical justification | Forbidden substitution / required check |
+|---|---|---|---|---|
+| M12 — enclosed darkness / native components | `enclosed_darkness` measures darkness below surrounding enclosure on acquired signal. `enclosed_body_at_sources` adds a caller-specified existing body operation, connected labels and source-contact readings within M11. | Vessel/lumen and tendon/body selectors; existing native meniscus/PCL adapters; a future family only after its rule names these measurements. | Dark bodies surrounded by brighter tissue can distinguish tendons, ligaments, lumens or other structures when their anatomical relations agree. | Enclosure alone is not identity. Retain depth, positive class, opened result, labels and selected component as separate readings. A selected body can coexist with partial scope; do not make every unavailable pixel negate it. |
+| M13 — physical distance, contact, thickness/body operation | `Measures.distance`, native distance maps, `thick_parts` and named body operations measure reach/scale in their own roles. Existing 2 mm contact/body and 3 mm PCL operations retain their documented meanings. | Menisci between bones; ligament/extensor contacts; lumen/tendon body eligibility; bone/cartilage proximity. | Attachment, adjacency and distinct bodies impose different geometric questions. | A contact allowance is not anatomical thickness or an erosion instruction. Reusing a number does not transfer its meaning. Do not add a shell to purify source seeds without a separate justified measurement role. Preserve anisotropy and exact tie/border semantics. |
+| M14 — marrow reference light | `Measures.light` measures median acquired light over the caller's explicit bone-derived native sample support. Retain sample address/meaning, sequence and returned value. The attribution to marrow is the anatomical inference of the calling definition. | Existing dark-band, fat/white-fluid and cartilage relations; `femoral_cartilage_on_plane` receives the callback and declares which native support it reads. P3 passes usable sequence-specific calibration instead of re-naming both bones. | Marrow lies within bone and supplies an in-study tissue reference; sequence changes its appearance. | Neither M08 projected target nor M09 coarse expansion is automatically the native sample. Do not target a particular median or impose a purity/perfection campaign. A declared approximate bone-based reference can be competent; its scope remains explicit. Changes such as 74.5→71 are readings, not accuracy verdicts. |
+| M15 — relative tissue contrast / opposed acquisition | Existing cartilage-to-marrow, fluid-to-marrow, fat-to-marrow and physically paired acquired-signal readings, including `relative_signal` and native opposed-fat samples. Retain positive/negative/disagreement/unknown separately. | Cartilage/white-fluid/field selectors; suprapatellar-pad seam; `native_fat_opposed_samples` and fat-pad observers. | Different sequences give complementary contrasts of the same tissues; their physical locations identify what is being compared. | No single ratio decides identity. Keep established relations/constants and their provenance; do not fit them to a desired mask. Unseen/zero-denominator is not negative compatibility. Do not compare unmatched positions or use one sequence's intensity as another's marrow reference. |
+| M16 — native fat candidate basins | Shared native physical gradient/IFT candidate measurements and markers in `native_fat_pad_candidates`; source locations, native peaks and coarse bone context have distinct roles. | Native Q/P fat-pad selectors; Hoffa's original territory selector retains its distinct definition. Actual opposed-signal compatibility supplies further information. | Fat pads lie between extensor structures, recess and femur; competing context helps distinguish neighbouring fat. | A gradient basin or coarse marker is not tissue truth. Do not equate smaller/more compact basins with better anatomy. Reuse actual gradient work; retain diagnostics honestly if no later consumer reads them. |
+| M17 — local soft-tissue contrast | `local_lightness`/`scoped_local_lightness` read seen native light against seen surround; `muscle_grey_bodies` measures the established grey-body class. `name_sartorius` supplies one gracilis projection and a scoped query. | `sartorius_on_slice` combines body, medial/anterior ordering and existing reach; required future sartorius views must preserve that semantic distinction at their anatomical level. | Sartorius is a muscle sheet relative to the thin gracilis, not another dark tendon cross-section. | Keep raw/context/query/finite/available readings and existing constants. Do not pick a contrast threshold by recovering 188 pixels. The accepted count is evidence of one demonstration, never a target for subsequent studies. |
+| M18 — native extrema, walls, seams and course pointers | Acquired-signal minima versus flanks, fluid boundaries, matched relative-signal seam, convex-envelope concavity and `trace_tube` each measure their stated local property. Their products are not interchangeable. | Retinacula/capsule/lining; ITB deep-fat dip; Q/P separation; popliteus sulcus; posterior traces locate missing-view questions. | A wall lies on the appropriate side of a cavity, fascia deep to fat, tendon in a sulcus, and a course continues beside relevant neighbours. | A trace is not a full native body or volume. A lining edge is not membrane thickness. Keep separated ties and local stops; no smoothing/interpolation solely to complete a preferred contour. An axial cross-section and longitudinal trace answer different descriptions. |
+| M19 — resolved native object support / observation | A family decision applies its stated anatomical relations to complementary measurements and returns a native support or named uncertainty. `Observation` retains support addresses/counts/frame/view and provenance; existing adapters and `describe_objects` own aggregation. | `offer_native_family`/`offer_map_rows`/`refine_map`, subsequent source collectors, grouped object output and intended later representation. | An object is the joint description of its physically constrained evidence, not its label or one metric. | Preserve original native/laid/projected/read/refused descriptions. No promotion of projected mask to independent evidence. At the inspected map path, metadata/counts/geometry are consumed; do not claim support pixels were read there. Reasonable competent identity once is the criterion. |
+| M20 — key-plane constraints, common reference and guide | `KeyPlane`, `StudyMap`/`MapContext`, physical plane construction and authored anatomical relations supply per-object partial/full reference constraints, pair vectors and expected native locations. | `mapping.guide` consumers in bone/patella/joint/recess/fibula/native-family searches; object output retains constraints and named partial endpoints. | One knee has one physical set of objects with relative positions. Three key orientations jointly constrain the reference; known neighbours narrow later questions. | A point is not a tissue voxel/boundary; area may distinguish existing candidate sections but is not universal obviousness. Never use a centroid as the reference, force a prior onto observation, or count a derived guide as new confirmation. Refresh before dependent calls without repeatedly re-running recognition. |
+| M21 — work, persistence and cohort reports | Ledger/once, digests, receipts, actual query/context counts, profiling and pair-variation reports measure execution/preservation/coverage. | Integrator verifies real paths, reuse, retained information and performance; cohort variation supplements the authored map. | Shared useful information should reduce repeated work and constrain several questions; output must preserve what was observed. | None of these reports defines anatomy. No pixel/count/calibration objective, fake consumer, SD for n<2, imported speed multiplier, or claim of accuracy from map coverage. Equivalent refactors preserve answers; intended semantic/scope changes receive an explicit adjudication. |
+| M22 — exact later encoding | Versioned banks and integer row-count bundles encode the retained named measurements under the author's exact carrier/layout. MRI place/depth/support layout is a later explicit contract. | P12 representation, then the human-specified P13 consumers. | Bundling provides one exact additive/subtractive language for complementary descriptions and their contexts. | No generic HDC classifier, weighted vote, invented volume from key planes or default ML tail. No recomputation of recognition to write already held measurements. Unspecified MRI/diagnostic choices stay explicit; they do not block ground-layer completion. |
+
+### 14.4 P2b's concrete producer–consumer contract
+
+This is the mechanical next-stage contract behind the recent confusion:
+
+1. `keep_bone_planes`/`name_the_bones` retain native identified section supports (M07), their
+   actual frames, row/slice addresses and outcomes. Preserve their inherited overreach. They do
+   not emit a promise of pure marrow or an exact full 3D bone surface.
+2. `refine_leg` publishes their usable physical locations once as later shared context (M08),
+   linked to those original sections. Existing arrays/records may provide the linkage. Keep early
+   context available to earlier consumers. Do not default to eroding every source section.
+3. `leg_on` uses context identity plus acquisition/slice geometry to supply location/slab targets;
+   updated context cannot hit an early-context cache entry. `native_femur_coarse_context` shares
+   the same raw block/depth readings while recalculating the context-dependent section (M09).
+4. `native_fat_coarse_femur_context` consumes that coarse result as competing-marker/enclosure
+   context for fat candidates. It does not certify every marked native pixel as bone/marrow.
+5. `native_femoral_cartilage_candidates` consumes the coarse result to locate a native bone-related
+   question. Native enclosure/component selection (M12/M19) and the explicitly addressed sample
+   used by `Measures.light` (M14) are separate from the coarse target. Their status and support
+   remain visible. The cartilage relation then reads the native signal band and proximity to its
+   bone/surface, with the independently native sagittal/coronal source locations (M13/M15).
+6. The resulting native cartilage observation enters M19/M20 before dependent guide requests.
+   Its count and calibration are reported but never used to choose which seed representation
+   should be preferred. Inspect whether it reasonably describes the intended anatomy.
+
+At the source inspection for these contracts, the cartilage path passes `selected_enclosure`
+to the marrow callback instead of directly calibrating on the coarse expansion. The builder's
+subsequent P2b increment-1 acceptance and repair runs are recorded in §13 and
+`p2b-bone-context-20261018/README.md`; this contract edit preserves that record and does not
+independently re-perform its acceptance audit. The native component's attribution is still an
+anatomical inference with its documented limits. Source evidence is retained under
+`measurement-contracts-20261018/`. Do not justify the repair by its calibration or pixel counts.
+The earlier seed-shell direction is withdrawn development evidence, not a competing accepted
+objective. P2b's remaining axial-anchor/fibula consumers keep their own task boundary.
+
+**P2b's tests pin meanings and wiring:** only eligible native sections contribute; source masks
+and outcomes remain retained; source-frame projection round-trips; changed context misses the
+old projection/coarse cache; identical context reuses; the fat and cartilage readers actually
+receive the later context; calibration's sample address is distinguishable from the coarse target;
+unknown is not empty. Do not assert that adding seeds must always increase/decrease the median,
+make the core smaller, recover the old rim count, or improve an accuracy score.
+
+## 15. Remaining task and anatomical-family contracts
+
+### 15.1 Work packets with a fixed objective
+
+| Task | Inputs → output meaning | Required real consumer / wiring | What the worker can build mechanically | Completion and explicit non-objective |
+|---|---|---|---|---|
+| P2a — OPEN | M01–M04 plus justified complementary context → M05 useful actual region/tiles, with box/halo separate. | Chosen expensive middle/native reader before it computes; later anatomical scope may refine the same product. | Produce native-region/tile evidence packet and actual operation work counts; after the lead chooses the simple region rule, wire its scope/unknown handling into that consumer. | Useful native region or downstream constraint demonstrated and consumed. Not “minimum rectangle fraction”, perfect background segmentation, or rejection of all domains after one flood fails. |
+| P2b | Retained M07 sections → M08 updated context → shared M09 native coarse question. | `leg_on`, `native_femur_coarse_context`, fat and cartilage consumers in §14.4. | Publication, provenance links, context identity/cache changes, explicit arguments and invariant tests; retain early context. | New information reaches actual dependent questions with reasonable native competence. Not calibration stability or purified seed masks. |
+| P3 | M07–M09 usable bone context, M14 sequence-specific calibration, patella/map location → local patella or recess native question. | `patella_plane`, `patella_scope`, `recess_anterior_plane` and every sibling caller. | Pass shared usable context; bound before the heavy reader; share identical requests; retain named missing/fallback outcomes. | Avoid rediscovering supplied bones and use the actual patella/cavity relation. Not a smaller box at any cost, whole-frame equality, or a second whole-frame read after successful local resolution. |
+| P4–P6 | Eligible existing native sources, M02/M10/M11 location and native complementary readings → M19 body/surface in each missing orientation. | Family source collectors, `offer_native_family`, common map and grouped output. | Once its F-contract below has a chosen native rule: one adapter, shared primitives, native addresses/statuses, tests and immediate offer. Prepare evidence for DEFINE NATIVE RULE rows meanwhile. | General rule and competent native demonstration once per requested orientation. Not universal correctness, source count, arbitrary largest component or a variant leaderboard. |
+| P7/P9 | Existing products and actual caller dependencies → useful scopes/shared calculations with unchanged meanings and honest lineage. | All expensive readers and their actual next decision, not only drawing/save. | Deduplicate identical inputs; key real context; wire scopes and read declarations; preserve family status interpretation and retained arrays. | Concrete dependency used before work; same answer for equivalent refactors, explicit changes for new scopes. Not a clean Vulture/ledger count obtained by deleting evidence or inventing reads. |
+| P8 | M19 catalogue/fields plus native bone-associated support → complete accounted-for concepts and contained marrow descriptions. | Coherent object output and later representation. | Address retained supports, preserve generic/specific/diffuse semantics, emit named missing outcomes. | Every requested concept accounted for without fake points or an invented extra object. Not a target catalogue count or reconstructed full anatomy from labels. |
+| P10/P11 | M21 measurements and frozen production evidence → equivalent kernels where justified and verified coherent runtime. | The existing no-draw CLI, serial/parallel/public/cohort paths. | Appropriate kernel twins, real entry-point runs, source/receipt/address audits and actual work/profile reports. | Preserved meanings and demonstrated production behavior. No optimization substitutes for missing object capacity; no speed/accuracy claim from isolated counters. |
+| P12/P13 | Retained measurements → exact specified encoding → later human-specified inference/output. | Existing pipeline's declared downstream interface; competition serializer after diagnostic contract. | Implement supplied layout/carrier and later inference contract, with exact arithmetic/schema tests. | No invented AI/diagnosis mechanism or dense-volume formula. Ground-layer completion is an independent deliverable. |
+
+### 15.2 Fixed anatomical questions and output consumers
+
+These are the anatomical decision contracts. Facts and accepted operations are in
+OBJECTS_AND_CONDITIONS and RESOLVING_THE_PARTS; those full units govern the exact existing
+constants and limits. Each row feeds **M19 → M20 → dependent source/guide consumers and grouped
+object output**. That shared destination is required for every row and is not a claim that an
+unfinished native-view adapter exists. The row also names the concrete next anatomical question
+its result supports. Reuse existing measurements; choose no new numerical criterion by trying
+values until a desired output appears.
+
+| ID / object output | Anatomical invariant that determines identity | Measurements and existing owner(s) to reuse | Next anatomical consumer / why useful | Build boundary |
+|---|---|---|---|---|
+| F01 — femur, tibia | Superior/inferior bones forming the tibiofemoral articulation, with their native enclosed bodies and cortex/marrow context. | M06–M09; `assign_plane`, `name_the_bones`, `keep_bone_planes`, shared coarse section. | Joint between them, cartilage on articular faces, cruciates/collaterals at attachments, posterior condyle context. | Retain accepted native rules; WIRE later context under §14.4. Do not replace key-plane reference by a shaft-dependent centroid. |
+| F02 — patella | Anterior bone at distal femur, between quadriceps and patellar tendon context. | M06–M11/M14; `patella_plane`, existing patella search and key planes. | Extensor chain, retinacula, anterior cavity and fat pads. | REUSE accepted identity; P3 WIRE bone/calibration context before its reader. No mandatory bone rediscovery. |
+| F03 — fibula | Separate lateral/posterior proximal bone below tibial joint level. | Existing `find_fibula`, profile/head and native key-plane support; M02/M09/M10. | LCL and biceps fibular attachment; lateral sidedness context where available. | REUSE accepted sections and native axial bridge. No brightness-only identification or bone treated as an infallible global reference. |
+| F04 — bone-associated marrow | Interior tissue associated with a particular native bone support and its acquisition's contrast. | M07/M14; existing bone masks/native section/calibration records, retaining approximate-support limits. | Same-sequence tissue contrasts and later contusion/fracture/OA representation under future specification. | WIRE explicit output address without an invented independent point. Neither full coarse enclosure nor eroded seeds automatically constitutes marrow. |
+| F05 — joint / generic recess | Joint lies between native femur/tibia surfaces; general recess is an interstitial relation with specific cavity descriptions, not a fabricated extra body. | `between_along_the_leg`, `name_the_joint`, native joint adapter, recess corridors; M06/M13/M19. | Menisci/cartilage/cruciates in their compartments and joint-fluid/capsule context. | REUSE accepted bridges; preserve generic/specific semantics in P8. Not every bright pixel is joint, and a semantic slot needs no invented independent mask. |
+| F06 — medial/lateral menisci; generic meniscus | Sided dark fibrocartilage wedges between condyle and plateau; horns and body are descriptions of the same sided object. | Existing coronal definition, `name_native_menisci`, M10–M13 and sided bone/joint context. | Corresponding cartilage/compartment; medial meniscus also constrains MCL context. | REUSE accepted three-view capacity; no perfection pass or source redefinition from one fragmented lens. |
+| F07 — femoral cartilage | Articular surface on the femur, distinguished from bone interior, free fluid and unrelated cortex by surface/context and native contrast. | `femoral_cartilage_on_plane`, `native_femoral_cartilage_candidates`; M09 locates, M12/M14/M15/M13 measure native question. | Compartment and patellofemoral surface descriptions; later OA inference only when specified. | REUSE accepted competence; any P2b-induced semantic repair follows §14.4. Not a target bright-rim count or marrow median. |
+| F08 — tibial cartilage | Layer on the tibial articular plateau facing femur, distinguished from spine/shaft cortex and intervening meniscus/fluid. | Existing SAG/COR native descriptions, M07–M15, actual plateau/bone context. | Tibiofemoral compartment and its interstitial structures. | AX is DEFINE NATIVE RULE from the retained packet; the superior-most/spine strip and unique contact component are not accepted selectors. Do not copy femoral code without its tibial surface relation. |
+| F09 — ACL | Heterogeneous ligament in the notch between tibial intercondylar and lateral femoral attachment regions, with its course distinguished from PCL/cortex/fluid. | Existing native SAG own-slice source, M07/M10/M11 plus bone/notch/PCL context and complementary native signal. | Notch/attachment context for the other cruciate and later requested ACL inference. | AX/COR are DEFINE NATIVE RULE. Not PCL uniform-darkness, largest body alone, or projected source contact as complete identity. Use actual late source producer before adapter. |
+| F10 — PCL | Posterior-notch ligament between medial femoral and posterior tibial attachment regions, distinct from calf/cortex/subcutaneous bodies. | `native_pcl_sources`, `name_native_pcl_sections`, M10–M13; accepted source/body/opening/contact contract. | ACL/notch context and later guided anatomy. | REUSE competent three-plane description. WIRE general anatomical source eligibility; do not select an anatomically ineligible larger label or tune to the four recorded errors. |
+| F11 — MCL | Medial band connecting femoral epicondylar region to proximal tibia outside medial compartment and deep to pes context. | Existing coronal definition, native sources, medial meniscus/joint/bone context, M03/M12/M13/M18 as its chosen rule requires. | Medial compartment and medial tendon ordering. | SAG/AX are DEFINE NATIVE RULE. Endpoint/course/sidedness is the question; no unique grey threshold distinguishes every ligament. |
+| F12 — LCL | Lateral cord from femoral condyle to fibular head, separate by course from popliteus and biceps. | `lcl_on_slice`, fibula/head selection, existing source reach/body readings. | Popliteus sulcus and biceps attachment distinction. | SAG/AX are DEFINE NATIVE RULE; REUSE existing coronal definition and attachment-guided slice. Do not require exact separation of every fibre. |
+| F13 — popliteus tendon | Tendon in the lateral femoral sulcus, medial to LCL at that level. | `popliteus_in_notch`, existing femoral convex envelope and LCL native support, M18. | Lateral-complex identity exclusions and attachment/course context. | SAG/AX are DEFINE NATIVE RULE. A source sulcus mask points, not a projected native boundary in every view. |
+| F14 — iliotibial band | Lateral fascia deep to subcutaneous fat, passing femur toward proximal tibia. | `iliotibial_band_on_slice`, fat/bone axes and native relative-minimum versus flanks. | Superficial/deep ordering of lateral structures. | SAG/AX are DEFINE NATIVE RULE; retain the existing coronal trace and its limits. Not any lateral dark line or an interpolated perfect band. |
+| F15 — biceps femoris tendon | Posterolateral tendon continuing from muscle toward fibular head beside the LCL. | `biceps_native`/`biceps_femoris_slice`, fibular head, posterior muscle, matched sequence contrasts. | Fibular attachment/lateral-complex context. | COR/AX are DEFINE NATIVE RULE; reuse selected native SAG source. Keep known conjoint-insertion overlap, not a fibre-perfect separation prerequisite. |
+| F16 — patellar and quadriceps tendons | Extensor chain: patella–tibia below and tendon above patella toward quadriceps. | `name_the_extensor_tendons`, shared `dark_bands`, existing native axial/coronal section adapters. | Anterior fat pads and cavity bounds. | REUSE accepted three-view descriptions. Bound shared band work only with context actually available at that caller; do not clip the extensor chain with a bone-only box. |
+| F17 — Hoffa, Q/P and combined suprapatellar fat | Hoffa behind patellar tendon; quadriceps and prefemoral pads on opposed sides of the suprapatellar recess. Combined Q/P is their same-slice union with both usable. | Existing pad definitions, `native_fat_pad_candidates`, opposed signal and seam, M14–M18. | Anterior cavity/lining and extensor surface relations. | REUSE competent descriptions, share supplied coarse context and scope. Preserve component roles and unknown compatibility; do not maximize basin compactness or force a union when one component is unresolved. |
+| F18 — joint fluid / anterior synovial recess | Fluid in the anatomically bounded joint/recess space; cavity support is distinct from solid tissue and its lining. | Existing white-fluid relation, native pockets, `name_the_recess`, `name_coronal_anterior_recess`, `axial_joint_fluid`. | Lining/capsule walls, fat-pad separation and local retinacular context. | REUSE accepted native bridges; P3 WIRE bounded cavity context. Do not call every bright body fluid or require a three-plane reference to be a fluid voxel. |
+| F19 — synovial lining / capsule | Cavity-facing lining and exterior capsular band are different sides/relations of the native cavity, with separate observations. | Existing `cavity_lining_observations`, wall/extrema readings and capsule bridges, M18. | Recess/retinacular boundaries and future requested conditions. | REUSE accepted local descriptions. No membrane thickness, complete envelope or dense segmentation prerequisite. |
+| F20 — medial/lateral patellar retinacula | Bands beside patellofemoral recesses connecting the corresponding patellar/femoral sides. | `retinacula_slice`, native wall readings and `name_cross_view_retinacula`; patella/femur/fluid context. | Companion fluid/capsule/lining and anterior anatomy. | REUSE accepted three-view capacity; scope at the real caller before expensive work. Keep capsule overlap limits and local ties. |
+| F21 — both gastrocnemius heads | Native muscle bellies posterior to their respective femoral condyles, separated by fascia and physical sidedness. | `name_the_back_of_the_knee`, shared condyle/head territories and early/native bone context. | Inter-head vessel corridor; medial head with semimembranosus bounds bursa. | SAG/COR are DEFINE NATIVE RULE. Reuse AX source; a belly needs muscle/compartment evidence, not a projected oval or full longitudinal trace assumed from it. |
+| F22 — semimembranosus / semitendinosus | Posteromedial tibial-related tendon and separate posterior neighbour at the appropriate level. | Existing `semimembranosus_slice`, `dark_tendon_bodies`, `semitendinosus_on_slice`; native source and course pointers. | Bursa seam, gracilis distinction and medial tendon context. | SAG/COR are DEFINE NATIVE RULE. Native trace is a location reading until the body's rule is chosen; exact full tendon course is not required. |
+| F23 — gracilis / sartorius | Thin medial/anterior tendon relative to posterior tendons; nearby sartorius is a distinct muscle sheet, with level-specific relations. | `gracilis_on_slice`, shared source group, M17 and physical position/reach; P1 scoped contrast retained. | Each localizes the other medial soft-tissue question; tibial attachment context helps constrain course. | SAG/COR are DEFINE NATIVE RULE. Do not apply distal insertion order blindly at patellofemoral level, or purify the projected gracilis mask to manufacture sartorius identity. |
+| F24 — popliteal artery / vein | Distinct lumens in the posterior inter-head corridor, artery anterior to vein at the established source level. | `popliteal_lumens`, shared enclosed darkness/body/corridor, axial sources and `trace_tube` pointers. | Posterior anatomy and exclusion from tendon/bursal fluid questions. | SAG/COR are DEFINE NATIVE RULE. Retain distinct lumen/course readings; exact calipers and full vessel reconstruction are not required. |
+| F25 — gastrocnemius–semimembranosus bursa | Fluid body between the named medial head and tendon; distinguish adjacent joint fluid and vessels by that relation. | `bursa_on_slice`, native source on the known visible bursa study, fluid contrast and neighbour context. | Posterior interstitial space and future human-specified Baker's inference. | SAG/COR are DEFINE NATIVE RULE. Use the visible example; a refusal on proof is not absence. Neck/wall/full course are deferred limits, not new perfection requirements. |
+| F26 — air, skin, subcutaneous fat, general muscle | Exterior field, leg edge, superficial fat and remaining muscle field with their physical/tissue relations. | `read_field`, `name_the_rest_of_the_field`, actual paired signal/availability, M01–M06/M14/M15. | Useful leg domain, ITB superficial context, muscle/attachment and posterior compartments. | REUSE existing diffuse masks and WIRE useful earlier M05 guidance. No invented unique reference points, generic muscle substituted for a named head, or identification of every dark place as air. |
+
+The future anatomical-rule packet for a DEFINE NATIVE RULE row must resolve the **specific**
+missing selector, not repeat the whole project plan. It names the relevant F-row, native source,
+candidate frame/scope, complementary M-readings, ordered anatomical conditions, exact tie/refusal
+handling, and one inspected competent example. This is the only unfinished semantic choice a
+mechanical implementation worker receives; it must be filled by the lead before that worker
+implements the selector. Apply §7's existing rule-review procedure (the recorded Codex and Fable
+checks and disagreement route); this adds no further approval step. All independent evidence/wiring
+tasks can proceed meanwhile.
+
+### 15.3 Acceptance record that prevents objective substitution
+
+For each completed packet record these six statements in its existing README/status record:
+
+1. **Question:** the F-contract or structural task being implemented, in anatomical/plain words.
+2. **Reads:** the M-contracts with actual source addresses, acquisition/scope and meaning.
+3. **Produces:** the stated measurement versus anatomical inference, retained separately where needed.
+4. **Consumed by:** the real function/decision that uses each result, before its measurement if targeting.
+5. **Why valid:** the physical/anatomical relation and the actual native competent demonstration.
+6. **Verified:** the appropriate invariant and real-CLI/address/image checks, including retained uncertainty.
+
+Calibration shifts, pixel counts, box area, source counts, profile maxima, test totals and runtime
+remain reported observations. They cannot replace any of those six statements, become acceptance
+targets, or silently redefine the task. An explicit unresolved selector is better than a mechanically
+implemented proxy pretending to be the specified anatomical operation.

@@ -313,7 +313,7 @@ def test_missing_native_marrow_is_named_unknown_not_an_exception(monkeypatch) ->
     monkeypatch.setattr(
         run,
         "measures_of",
-        lambda *_args: SimpleNamespace(light=lambda _mask: None),
+        lambda *_args: SimpleNamespace(light=lambda _mask: None, distance=None),
     )
     rows = run.name_femoral_cartilage([own], _sources(), "study", None, None)
 
@@ -375,7 +375,7 @@ def test_unavailable_outer_border_is_open_and_its_stored_values_are_ignored(
     monkeypatch.setattr(
         run,
         "measures_of",
-        lambda *_args: SimpleNamespace(light=lambda _mask: None),
+        lambda *_args: SimpleNamespace(light=lambda _mask: None, distance=None),
     )
     depth_inputs = []
     depth_outputs = []
@@ -391,7 +391,9 @@ def test_unavailable_outer_border_is_open_and_its_stored_values_are_ignored(
 
     rows = run.name_femoral_cartilage([own], _sources(), "study", None, None)
 
-    assert rows[0][1][0].code == "native_slice_0:native_marrow_level_unavailable"
+    # The band's calibration follows the native component the core selects; this core (the
+    # bright ring) touches no positive enclosed component, so the selection is what refuses.
+    assert rows[0][1][0].code == "native_slice_0:no_positive_enclosure_touched_by_core"
     prefix = "a4_axial_femoral_cartilage_context_depth_input"
     values = own.arrays[f"{prefix}_values"]
     offsets = own.arrays[f"{prefix}_offsets"]

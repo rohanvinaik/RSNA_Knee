@@ -3,6 +3,7 @@ from __future__ import annotations
 import numpy as np
 
 from knee.collapse.cartilage import femoral_cartilage_on_plane
+from knee.objects.assignments import marrow_light
 
 
 def _case() -> tuple[np.ndarray, ...]:
@@ -24,7 +25,7 @@ def _case() -> tuple[np.ndarray, ...]:
     return raw, available, core, enclosure, sagittal, coronal
 
 
-def _measure(values: tuple[np.ndarray, ...], marrow: float = 10.0) -> dict:
+def _measure(values: tuple[np.ndarray, ...], marrow: float | None = 10.0) -> dict:
     raw, available, core, enclosure, sagittal, coronal = values
     return femoral_cartilage_on_plane(
         raw,
@@ -33,7 +34,7 @@ def _measure(values: tuple[np.ndarray, ...], marrow: float = 10.0) -> dict:
         enclosure,
         sagittal,
         coronal,
-        marrow,
+        lambda _places: marrow,
         (1.0, 1.0),
     )
 
@@ -176,8 +177,38 @@ def test_malformed_context_and_nonfinite_available_values_are_unknown() -> None:
     assert nonfinite["status"] == "native_values_unavailable"
 
 
-def test_nonpositive_or_nonfinite_marrow_level_is_unknown() -> None:
+def test_nonpositive_nonfinite_or_missing_marrow_level_is_unknown() -> None:
     values = _case()
-    for level in (0.0, float("nan"), float("inf")):
+    for level in (0.0, float("nan"), float("inf"), None):
         result = _measure(values, level)
-        assert result["status"] == "native_measurement_unavailable"
+        assert result["status"] == "native_marrow_level_unavailable"
+        assert result["selected_enclosure"].any()
+        assert not result["selected"].any()
+
+
+def test_calibration_reads_the_selected_component_not_the_coarse_core() -> None:
+    raw, available, core, enclosure, sagittal, coronal = _case()
+    asked: list[np.ndarray] = []
+
+    def light(places: np.ndarray) -> float:
+        asked.append(places.copy())
+        return marrow_light(raw, places)
+
+    def measure(core_mask: np.ndarray) -> dict:
+        return femoral_cartilage_on_plane(
+            raw, available, core_mask, enclosure, sagittal, coronal, light, (1.0, 1.0)
+        )
+
+    first = measure(core)
+    wider = core.copy()
+    wider[1:4, 25:29] = True  # a coarse-core block outside the component it selects
+    raw[1:4, 25:29] = 1000.0  # bright there: it must not reach the calibration
+    second = measure(wider)
+
+    assert first["status"] == second["status"] == "selected_native_component"
+    assert np.array_equal(asked[0], first["selected_enclosure"] & available)
+    assert np.array_equal(asked[1], second["selected_enclosure"])
+    assert not asked[1][1:4, 25:29].any()
+    assert first["marrow_median"] == second["marrow_median"]
+    assert first["marrow_median"] == marrow_light(raw, first["selected_enclosure"])
+    assert np.array_equal(first["selected"], second["selected"])

@@ -28,6 +28,47 @@ Keep useful results, their known overreach and unresolved alternatives. A miss c
 the question using the other views and neighbours. Do not require a proof of perfect exclusion,
 perfect borders or exhaustive recovery before using a competent prior.
 
+## A failed proxy does not invalidate structural targeting
+
+Rohan's 2026-10-18 correction applies to the whole build. P2a's script measured padded enclosing
+rectangles, then an agent asserted that an unbuilt tile-level version would fail and used that
+claim to dismiss the required prior. This was an unsupported generalization. The capability
+remains open; FULL_BUILD_PLAN §1.1 and P2a give the corrected task.
+
+Keep an actual spatial region separate from the rectangle enclosing it. A broad rectangle can
+contain a great deal of irrelevant exterior, and its area does not measure the work an irregular
+or tiled domain would visit. A poorly discriminating lens remains a measurement to combine with
+other views, geometry and anatomical relations. Diagnose why it failed; resolve the residual with
+that structure. Do not respond by abandoning the specified capability, demanding perfection,
+fitting a rule per study, or replacing the thesis with a default ML/scoring approach.
+
+A cheap fact can also constrain several later identities and regions even when its first consumer
+uses a broad frame. Trace those real consequences before judging usefulness. State which
+construction was measured and what it actually establishes; untested alternatives remain
+untested. Repetition in plans and commit messages does not strengthen the evidence. Agent
+interpretation must retain its authorship and cannot be recast as Rohan's specification.
+
+## A useful representation is not a purified intermediate mask
+
+Rohan's subsequent 2026-10-18 correction makes the priority explicit: the ground layer must be
+reasonably competent and faithfully instantiate the computer-vision thesis. Intermediate mask
+cleanliness, calibration stability and pixel counts are readings, not optimization targets.
+A change in them cannot alone establish improved or reduced anatomical accuracy. Inspect the
+native anatomy and the meaning of the operation; correct actual misidentification through its
+general definition and complementary context.
+
+Projected support, source uncertainty, native bone evidence, coarse enclosure and marrow-sample
+eligibility must keep their distinct meanings at each consumer. If broad location support is
+being treated as definitive marrow, repair that conflation. Do not purify the source first as
+an assumed prerequisite for using it. "Marrow within bone" supplies a containment relation, not
+a universal instruction to erode every section by 2 mm. Any interior/shell measurement needs
+its own stated role, independent of whether it restores a preferred calibration or pixel count.
+
+The AX14 seed-variant episode and operational guard are FULL_BUILD_PLAN §1.2 and P2b. Experiments
+may compare constructions, but the selection criterion is a justified general measurement and
+reasonable native competence. Preserve the lossy descriptions and their disagreements; resolve
+the residual jointly. Do not turn a representation task into an intermediate-accuracy campaign.
+
 ## The one production operation
 
 1. Read acquisition metadata, finite support, background and the cheap stack measurements once.

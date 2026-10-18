@@ -1106,6 +1106,62 @@ human-specified representation/AI/diagnostic dependencies. Earlier dated plans r
 
 ## The leg-bound conclusion, 2026-10-18
 
-| His words | What Claude had done | What would have prevented it |
-|---|---|---|
-| «Pause--you fucked this up, this is EXACTLY the sort of conclusion I told you REPEATEDLY is NOT the correct epistemology for this project: My main reservation is the wording of the leg-bound conclusion. The figures show that this particular padded rectangular crop saves little on these ten frames. That supports moving on to more selective anatomical regions; it does not establish that background exclusion or nonrectangular regions are generally unhelpful.» | Measured one padded rectangle around the leg (its box plus 10 mm) on ten middle frames, then wrote "the not-leg prior cannot bound the lens usefully", used the cheap envelope's one differing frame as a reason to build nothing, and stated as fact that a tile version "has the same failure", which was never measured | A measurement describes the construction measured, on the frames measured: write exactly that. One construction that saves little is the boundary of that construction, not evidence against the principle (useful bounds, not perfect ones: Law 14); what was not tried is not ruled out (§3, §6) |
+Rohan's direct instruction in this review: «Please edit the build/handoff plan document to try
+and prevent such idiocy on the part of the other agent in the future». He then identified the
+concrete evidence gap: the script measured padded envelope boxes, not a tile-level region,
+while the unsupported conclusion propagated to the README, plan, handoff and commit message.
+His words when he stopped the work, in the Claude session: «Pause--you fucked this up, this is
+EXACTLY the sort of conclusion I told you REPEATEDLY is NOT the correct epistemology for this
+project». The passage after them in that message, beginning "My main reservation", is Codex's
+(verbatim record: `docs/conversations/2026-10-18-build-session-corrections.md`, 16:14).
+
+The failure: substituting one easy-to-measure proxy for the required capability, treating its
+failure as grounds to dismiss that capability, and restating the inference as measured fact.
+The original tile-level claim had no implementation or measurement behind it. Codex's first
+review was too generous. A later correction also attributed Codex's review paragraph to Rohan;
+that authorship error is corrected in the plan, handoff and packet README.
+
+What prevents recurrence, throughout this project:
+
+- State the anatomical/structural question before choosing a proxy. A region is not its bounding
+  rectangle. Report only the construction actually measured; never rule out an untested one.
+- A failed lossy reading is input to the next complementary structural question, not a reason
+  to abandon the specified capability, hand-tune to the study or introduce a default ML verdict.
+- Evaluate usefulness through actual consumers and the dependent questions they constrain.
+  One local box area or timing share does not account for those consequences.
+- Keep the task open until useful competence and its real production handoff are demonstrated.
+  Independent work may continue, but its progress must not silently retire the missing capacity.
+- Keep human statements, agent inference and measured evidence distinct. Repetition across
+  documents or a commit does not corroborate a claim or give an agent's opinion human authority.
+
+P2a remains OPEN. FULL_BUILD_PLAN §1.1 and P2a state the operational task; NEXT_SESSION_PROMPT
+places this correction before continuation instructions. The padded-box packet is retained as
+limited evidence, and commit `398b856`'s dismissal is superseded without rewriting history.
+
+
+## The seed-purification substitution, 2026-10-18
+
+Rohan supplied an agent's AX14 report that called calibration 74.5→71 and loss of 63 bright-rim
+pixels "hurt accuracy", followed by a proposed comparison of early/pooled/2 mm-interior seeds.
+These are the supplied agent report and proposal, not a new independently verified measurement
+or accepted implementation. Rohan's correction: «It should be REASONABLY accurate, but alignment
+with the theory of the project as a computer vision pipeline is WAAAAY more important». The
+distinctions below restate an agent's review that he pasted under his words «You are FUCKING this
+up AGAIN:»: agent text he endorsed, not his words (verbatim record:
+`docs/conversations/2026-10-18-build-session-corrections.md`, 16:37 and 16:42).
+
+The mistake is substituting intermediate-mask cleanliness/calibration stability for faithful
+representation and useful anatomical information flow. A changed reading is not an accuracy
+verdict. A projected uncertain edge is not definitive native bone or marrow; if a consumer
+confuses them, fix that semantic contract. Do not respond by filtering every source until a
+preferred core/value returns. The relation "marrow within bone" does not by itself justify
+2 mm erosion or any other specific morphology. Nor does a warning that more seeds need not
+improve anatomy license an accuracy/seed-purification campaign.
+
+Before such a change: state the producer's and consumer's meanings, identify the actual
+conflation from native evidence if present, and explain why the general measurement repairs
+it. Comparing variants can answer that stated question; ranking them by restored calibration
+or pixel counts cannot replace it. Keep the lossy evidence, complementary context, named
+uncertainty and actual consumer. Correct obvious anatomical mistakes, demonstrate reasonable
+competence, and move on. Do not demand perfect intermediate objects before combining them.
+FULL_BUILD_PLAN §1.2/P2b and NEXT_SESSION_PROMPT now carry this instruction before continuation.
