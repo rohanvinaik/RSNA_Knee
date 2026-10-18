@@ -257,6 +257,7 @@ from knee.objects.assignments import (
     FIBULA_POINTER_STATUS,
     FLUID_BRIGHTER,
     FOUR_NEIGHBOURS,
+    GRACILIS_REACH_MM,
     HEAD_SLICE_STATUS,
     LIGAMENT_SMOOTH_MM,
     LIGAMENT_THICK_MM,
@@ -1820,6 +1821,29 @@ SARTORIUS_KEPT = (
     "surround_window_pixels",
     "gracilis_source_separation_mm",
     "body_status",
+    "contrast_scope_window_rc",
+    "contrast_scope_offset_rc",
+    "contrast_scope_shape_rc",
+    "contrast_scope_clipped",
+    "contrast_scope_half_span_pixels_rc",
+    "contrast_scope_target_bbox_rc",
+    "contrast_query_window",
+    "contrast_effective_available",
+    "contrast_context_rc",
+    "contrast_halo_pixels_rc",
+    "contrast_context_raw",
+    "contrast_context_excluded",
+    "contrast_context_available",
+    "contrast_context_not_low",
+    "contrast_context_finite",
+    "contrast_context_effective_available",
+    "contrast_context_lightness",
+    "contrast_context_smooth",
+    "contrast_context_surround",
+    "contrast_input_finite",
+    "contrast_finite",
+    "contrast_actual_available",
+    "contrast_not_low",
 )
 
 
@@ -1850,14 +1874,38 @@ def gracilis_source(
     return "abstain_no_native_gracilis"
 
 
+def sartorius_scope(target: np.ndarray, frame, shape: tuple[int, int]) -> dict | None:
+    """The sartorius search window around the projected gracilis target: the authored full
+    extent plus `GRACILIS_REACH_MM` on each side, handed to `source_window` as a full span
+    (the target is a location, not the object's centre). None when there is no target."""
+    if not target.any():
+        return None
+    span = anatomy_map.target_span_mm("sartorius")
+    if span is None:
+        return {"status": "no_authored_sartorius_span"}
+    full = (
+        2.0 * (float(span[0]) + GRACILIS_REACH_MM),
+        2.0 * (float(span[1]) + GRACILIS_REACH_MM),
+        2.0 * (float(span[2]) + GRACILIS_REACH_MM),
+    )
+    return source_window(
+        np.argwhere(target).astype(np.float64),
+        full,
+        frame,
+        (int(shape[0]), int(shape[1])),
+    )
+
+
 def name_sartorius(own: Measured, source: np.ndarray | str) -> None:
     """The sartorius named on this series' middle slice where the leg does not run in its plane, an
     axial one, fat-suppressed and fluid-sensitive (its paragraph in `knee.objects.assignments`),
     from the lens already read there and the gracilis's places (`gracilis_source`, `source`, or why
     there are none) projected onto it. Its mask is separate (`a2_sartorius`) and every reading the
     rule made is kept beside it (`a2_sartorius_<reading>`); the slice's own names are left as they
-    are. The contrast over the slice is read at most once, and only once the cheap prerequisites
-    hold; no lens is read again."""
+    are. The places are projected once and a search window around them (the authored extent plus
+    the gracilis reach) is built from that target before any contrast is read; the contrast is
+    then read at most once, only inside that window and the context it needs, and only once the
+    cheap prerequisites hold; no lens is read again."""
     plane = own.arrays["acquired_plane"]
     own.arrays["a2_sartorius"] = np.zeros(plane.shape, dtype=bool)
     codes = own.record["assignments"]["codes"]
@@ -1878,6 +1926,11 @@ def name_sartorius(own: Measured, source: np.ndarray | str) -> None:
     uid, index = own.record["series_uid"], own.record["slice_index"]
     reads("interiors", ("dark", "available"), "sartorius")
     reads("gracilis_places", ("lps",), "sartorius")
+    places = np.asarray(source, dtype=np.float64)
+    target = scope = None
+    if places.size:
+        target = projected_places(places, own.frame, plane.shape)  # once
+        scope = sartorius_scope(target, own.frame, plane.shape)
     mask, readings, code = sartorius_on_slice(
         plane,
         own.arrays["b1_dark"],
@@ -1886,6 +1939,9 @@ def name_sartorius(own: Measured, source: np.ndarray | str) -> None:
         own.frame,
         own.record["assignments"]["knee"],
         measures_of(uid, index, plane, own.frame),
+        target,
+        scope,
+        own.arrays["b1_available"],
     )
     own.arrays["a2_sartorius"] = mask
     for name, value in readings.items():
@@ -1900,6 +1956,13 @@ def name_sartorius(own: Measured, source: np.ndarray | str) -> None:
     )
     if "lightness" in readings:
         ledger.record("sartorius.contrast_readings", planes=1)
+    if "contrast_context_raw" in readings:
+        ledger.record(
+            "sartorius.contrast_scope_work",
+            context_pixels=int(readings["contrast_context_raw"].size),
+            query_pixels=int(readings["contrast_query_window"].sum()),
+            effective_pixels=int(readings["contrast_effective_available"].sum()),
+        )
     if code == "identified":
         handed("sartorius", ("region",))
 
