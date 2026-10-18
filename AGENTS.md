@@ -80,7 +80,16 @@ the receipts from before it: copy `data/measurements/interiors/receipt.json` and
 `data/measurements/main-slices/receipt.json` aside, rerun the labelled studies, and compare each
 receipt with its copy (`.venv/bin/python scripts/compare_receipts.py <before> <after>`, with
 `--borders-aside` when only one of the two runs drew): every record's decisions and saved arrays by
-their digests, and the silences; it exits 1 when any differ. The gate is `scripts/ci_local.sh`, run
+their digests, and the silences; it exits 1 when any differ. Each costly kernel's costliest call from
+the production run on the proof study is recorded in `benchmarks/recorded/` (`.venv/bin/python
+benchmarks/record_calls.py`, where the competition's files are; refreshed when the production path
+changes what it hands a kernel) and replayed exactly in `benchmarks/`, which needs no study data
+(`.venv/bin/python -m pytest benchmarks -rP`; `--memray --most-allocations=0` adds each replay's memory
+at its peak, and `--fail-on-increase` fails a replay holding more than at its last run here):
+information, never a target (Rohan, 2026-10-18: «We shouldn't have hardcoded values, wire in the ones
+we compute in the production path»; «Drop the requirements for study data»). On GitHub the same
+replays run in the gate and under CodSpeed (`.github/workflows/codspeed.yml`), which compares each
+commit's CPU and memory figures with the last. The gate is `scripts/ci_local.sh`, run
 from the locked environment (`uv sync` first). Its last step is Sonar (`scripts/sonar_local.py gate`),
 blocking only on bare correctness: the scan ran and no bug or vulnerability is open; the quality gate,
 code smells, coverage and duplication print as information. Rohan, 2026-10-18: «Both git and local

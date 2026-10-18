@@ -7,6 +7,9 @@ went to Codex; its reading (`codex-answer.md`) and the lead's adjudication (`lea
 `data/readings/collapse-20261017/full-build/targeted-compute-20261018/workflow-plan-review-20261018/`, with
 revision 1 as it stood when the answer came (`BUILD_WORKFLOWS-at-codex-answer.md`). Nothing here is
 launched until he approves; the plan itself is committed and pushed («just freaking commit to git»).
+Since revision 2 the lead has added one step to every gate (§2, §3), after the kernel benchmarks moved
+to recorded production calls at Rohan's 21:19 words (FULL_BUILD_PLAN §9, step 6), and noted the CodSpeed
+run each push now starts (§8).
 
 This is an execution design for `docs/FULL_BUILD_PLAN.md`, not another master plan. The order is the
 plan's §4: P2b → P2a → P3 → P4 → P5 → P6, with P7 and P9 items folded in as each family is touched and
@@ -50,8 +53,10 @@ Settled by your recorded words, stated so you can correct them:
 - Image acceptance: every changed native frame and source support, reconstructed from its address.
 - Integration into `scripts/run_interiors.py` and the shared modules, one increment at a time; the real
   CLI runs (proof/bursa serial and parallel, public, the cohort where due); the full gate with its Sonar
-  step and advisory lists; §15.3's six statements; MAP/RESOLVING acceptance records; the active packet;
-  commits, pushes, and the GitHub gate run on each pushed commit.
+  step and advisory lists; the kernel benchmarks' recording, refreshed from the integrated source when an
+  increment changes a benchmarked kernel or what production hands it (plan §9, step 6; a worktree has no
+  data, so the recorder stops there); §15.3's six statements; MAP/RESOLVING acceptance records; the
+  active packet; commits, pushes, and the GitHub gate run on each pushed commit.
 - The job table (§3).
 - Stop points: family-wave picture sheets to Rohan; any disagreement between Codex, Fable and the lead;
   a step the P12 contract leaves unspecified; P13.
@@ -120,8 +125,10 @@ Settled by your recorded words, stated so you can correct them:
 - **Acceptance (plan §9, §15.3):** the lead integrates, runs the real CLI into new output roots,
   reconstructs every new native support from its address and inspects the actual DICOM frame, compares
   receipts (equivalent refactors must match; intended scope or semantic changes get a full changed-output
-  account), runs the full gate (`scripts/ci_local.sh`, Sonar included) and reads its advisories, writes
-  the six statements, records MAP/RESOLVING acceptance, updates the active packet, commits, runs the
+  account), runs the full gate (`scripts/ci_local.sh`, Sonar included) and reads its advisories,
+  refreshes the kernel benchmarks' recording when the increment changes what production hands a
+  benchmarked kernel (plan §9, step 6), writes the six statements, records MAP/RESOLVING acceptance,
+  updates the active packet, commits, runs the
   pre-push checks (the lockfile audit, zizmor, a secret scan of the commits being pushed), pushes, and
   reads the GitHub gate run on the pushed commit.
 
@@ -320,7 +327,8 @@ accepted until G1's own checks.
 - Real-CLI runs: proof/bursa serial at every gate and in parallel by the lead, the public split at every
   gate; the labelled cohort at family-wave ends and P11.
 - The gate's Sonar step adds about three minutes per gate on this machine (the scanner image runs under
-  emulation here); each push also runs the whole gate on a GitHub runner.
+  emulation here); each push also runs the whole gate on a GitHub runner, and each push to main the
+  kernel benchmarks under CodSpeed (`.github/workflows/codspeed.yml`).
 
 ## 9. Risks this plan guards against
 

@@ -356,3 +356,14 @@ Agree with you suggestions, let's work them in
 You can read the transcript to ground, then let's continue with the work.
 
 And yeah, I know you broke my rules multiple times. You simply refuse to listen, so whatever, I'm moving on
+
+**20:50**, mid-turn, while the lead was writing kernel benchmarks on synthetic planes:
+We shouldn't have hardcoded values, wire in the ones we compute in the production path
+
+## After the fifth compaction
+
+**21:19**, answering the lead's report, which asked whether to finish the benchmarks (then replaying the
+production run's calls on the proof study, so needing the studies), build a GitHub job on this Mac that
+runs the real pipeline on the proof and bursa studies after each push, and drop CodSpeed or feed it the
+proof study with a Kaggle token:
+Drop the requirements for study data, fully build and push everything to github to make sure everything is set up for performance engineering sanity and basic quality checks upon push and the pre-push gate. Then show me the workflow plan
