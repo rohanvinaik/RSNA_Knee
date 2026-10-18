@@ -61,12 +61,13 @@ attribute an advisor's words or decisions to the human.
 
 ## Ground first
 
-Follow AGENTS.md: original thesis conversation, THEORY_OF_THE_CASE, OBJECTS_AND_CONDITIONS,
-HOW_TO_BUILD, RESOLVING_THE_PARTS, then look at the proof cell/knee lens pictures with that
-conversation in mind. Read MAP §§0/8.8/8.36, TARGETED_ANATOMICAL_COMPUTE, the full anatomical-priors
-conversation, FULL_BUILD_PLAN, and the relevant primary `<object>` and SIGNIFICANCE_WEIGHTING
-units it names. Whole logical units, no text searches, archives invisible. Lead owns meaning,
-rule choice, image acceptance and the single production writer. Helpers return facts/code.
+Follow the grounding sequence in `docs/FULL_BUILD_PLAN.md` §0. It carries this reading: the
+original thesis conversation, THEORY_OF_THE_CASE, OBJECTS_AND_CONDITIONS, HOW_TO_BUILD,
+RESOLVING_THE_PARTS, then the proof cell/knee and lens pictures with that conversation in mind;
+the MAP from its §0, TARGETED_ANATOMICAL_COMPUTE, the full anatomical-priors conversation,
+FULL_BUILD_PLAN, and the relevant primary `<object>` and SIGNIFICANCE_WEIGHTING units it names.
+Whole logical units, no text searches, archives invisible. Lead owns meaning, rule choice, image
+acceptance and the single production writer. Helpers return facts/code.
 
 Useful anatomical priors constrain identity and compute together before expensive measurements.
 Bounds need only be useful. A dark tile can contain tissue; missing information is not absence.
@@ -93,7 +94,8 @@ The accepted epoch gate passed 1,087 tests; recorded serial/parallel/public exit
 baseline run roots are E + `pcl-coronal-production/proof-bursa-recorded/{interiors,main}`, with
 parallel/test siblings recorded in the checkpoint. Original unrecorded serial exit is unknown;
 its receipts match the later recorded run. HEAD `a118db8` plus inherited dirty/untracked source
-is the build; a commit hash alone is insufficient. Verify live hashes before current-state claims.
+is the build; a commit hash alone is insufficient. (Dated: `7b61b54` then committed that work and
+later commits followed; read `git log`.) Verify live hashes before current-state claims.
 The planning handoff changes documentation only. Older Packet B cohort counts are a different
 epoch; the 43-concept matrix is static source evidence, not current completion/accuracy.
 
@@ -106,7 +108,9 @@ epoch; the 43-concept matrix is static source evidence, not current completion/a
    (`B + p2b-bone-context-20261018/`: later native bone sections published as location priors with
    an immutable identity; the axial cartilage band calibrated on its selected native component).
    Next: P2b increment 2 (`axial_bone_planes`, `fibula_key_planes` receive the refined leg) and the
-   actual region/tile-and-consumer P2a packet; keep both visible. Anatomy rules in P4–P6 follow
+   actual region/tile-and-consumer P2a packet; keep both visible. A wave-1 fact packet framed with
+   area and coverage shares and an invented tile rule was stopped and withdrawn
+   (`B + wave1-packets-20261018/p2a-regions-WITHDRAWN-20261018/WITHDRAWN.md`): not P2a evidence. Anatomy rules in P4–P6 follow
    FULL_BUILD_PLAN §7's process (Rohan's choice, 2026-10-18 17:15 UTC, among the lead's options:
    Codex checks each rule against the thesis and the Fable consult reads its picture sheet;
    disagreements go to him; «Yes, change that, Codex is the main consult interface»; record:
@@ -144,6 +148,8 @@ epoch; the 43-concept matrix is static source evidence, not current completion/a
   gives 170 femur/0 tibia pixels; later native supports yield a separate comparison-only 415/39.
   `name_the_bones` does not refresh original `Leg`/coarse seeds. `leg_on` keys only series/slice;
   changing context requires cache identity/invalidation. More seeds are not anatomical proof.
+  (Dated: P2b increment 1, `2b41281`, publishes the later sections once and keys `leg_on` and the
+  coarse context by the leg's identity.)
 - **ACL:** B + `acl-native-preview-20261018/`. Readable AX/COR native frames, original territories
   and fixed enclosure/body previews exist. Native source is SAG-FS z19 in main-layer output.
   Largest-body/PCL-uniform-dark/source-contact alone are not an accepted ACL rule.

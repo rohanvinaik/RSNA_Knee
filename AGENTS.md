@@ -7,12 +7,12 @@ it, is in `docs/HOW_TO_BUILD.md`.
 
 **Read the thesis first.** Everything in RSNA_Knee serves one thesis: `docs/THEORY_OF_THE_CASE.md`, Part I.
 Read it before anything else, and do not overcomplicate it. Rohan, 2026-10-13: «This is basically the whole
-thing. That's it.» At every session start and after every compaction, before anything else, read whole
-`docs/conversations/2026-10-13-the-thesis.md`, then `docs/THEORY_OF_THE_CASE.md`, then
-`docs/OBJECTS_AND_CONDITIONS.md`, then `docs/HOW_TO_BUILD.md`, then `docs/RESOLVING_THE_PARTS.md` (how each
-part is resolved: the views, the lenses, the operations; and the provisional entries for the rest), and
-look at the proof study's pictures with the conversation in mind: the parts of the knee the lenses
-already pull out.
+thing. That's it.» At every session start and after every compaction, before anything else, follow the
+grounding sequence in `docs/FULL_BUILD_PLAN.md` §0: the pre-compact snapshot, then whole
+`docs/conversations/2026-10-13-the-thesis.md`, `docs/THEORY_OF_THE_CASE.md`,
+`docs/OBJECTS_AND_CONDITIONS.md`, `docs/HOW_TO_BUILD.md` and `docs/RESOLVING_THE_PARTS.md` (how each part
+is resolved: the views, the lenses, the operations; and the provisional entries for the rest), then the
+proof study's pictures with the conversation in mind: the parts of the knee the lenses already pull out.
 
 **How the knee's objects are named.** Rohan, 2026-10-14: «Reasoning off the actual pngs, basic
 common-sense domain knowledge, the work I ALREADY did and proved, and basic identification and
@@ -34,11 +34,13 @@ object in `docs/OBJECTS_AND_CONDITIONS.md`, one at a time:
 3. Write exactly that as a few plain rules on the lenses the interiors already give
    (`src/knee/objects/assignments.py`).
 4. Run `scripts/run_interiors.py` on the proof study, look at the picture, and show Rohan before the next
-   object.
+   object (during P4–P6, at the end of each family wave: Rohan's choice, 2026-10-18,
+   `docs/FULL_BUILD_PLAN.md` §7).
 
-The loop that works, step by step, what to do straight after a compaction, and where the parts stand:
-`docs/HOW_TO_BUILD.md` §2, §7 and "Where it stands". The parts still to resolve, in order, with what
-to read and look at first for each: `docs/ANATOMY_DEFINITION_CHECKPOINT.md`, "Plan to complete".
+The loop that works: `docs/HOW_TO_BUILD.md` §7. Straight after a compaction: `docs/FULL_BUILD_PLAN.md` §0.
+Where the build stands and the next task: its §13; the remaining work in order, with each task's
+contract: its §§4–7 and §§14–15. Every part was defined once by 2026-10-16, which completed
+`docs/ANATOMY_DEFINITION_CHECKPOINT.md`'s "Plan to complete".
 
 A part plainly visible in one lens is found by that lens, whichever lens it is: «If it's visible in one lens
 but not the other (like "joint fluid")...then great, we know how to find it, problem solved». Seeing a part
@@ -83,7 +85,12 @@ their digests, and the silences; it exits 1 when any differ. The gate is `script
 Do not:
 - build rule machinery;
 - chase unseen studies with a new rule per image («even if a few images are a bit weird»);
-- change the proof pipeline's lenses unless he asks;
+- change what a proof lens measures unless he asks. Running a lens on a useful anatomical region instead
+  of the whole frame is not a change to the lens: Rohan, 2026-10-18, «This seems like the pipeline
+  misread why I said that lenses "shouldn't be changed", and prevented them from being used on
+  smaller/bounded regions, which is entirely in like with the core thesis I've presented for this
+  project». A bounded reading may differ near its edge; keep its scope and offsets and look at the
+  native result (`docs/HOW_TO_BUILD.md` §4);
 - report in jargon;
 - hand Rohan the choice of a remedy for something you broke («YOU'RE the one who fucked it up»);
   fix it;
@@ -98,7 +105,9 @@ They're invisible unless I tell you to look in them».
 
 **RSNA_Knee is a classical-AI project. It is not ML.** It may look like it
 is "missing the model." It is not — that is the thesis. Before proposing ANY architecture,
-approach, or "improvement":
+approach, or "improvement" (carrying out Rohan's own `docs/FULL_BUILD_PLAN.md`, which he approved
+for building, is not a new proposal; its §7 sets how anatomy rules are checked; anything beyond it
+comes through this gate):
 
 1. Read `docs/THEORY_OF_THE_CASE.md` (this folder) — the design and why classical AI wins
    here. If it is still a stub, ask the founder to fill it (or fill it WITH them) before

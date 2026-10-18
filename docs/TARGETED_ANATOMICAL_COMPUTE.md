@@ -93,6 +93,10 @@ answers. This equivalence check must never become a whole-frame-only rule.
 
 ## Immediate build order
 
+(Dated note, 2026-10-18: the order of remaining work is now `docs/FULL_BUILD_PLAN.md` §4, with its §13
+the current state. Since this list was written the PCL was accepted, RELATIVE_POSITION_MAP §§8.35–8.36;
+tibial axial cartilage and the ACL remain, plan P4. The principles in these bullets still hold.)
+
 - Finish the source-pinned femoral axial increment: accepted at RELATIVE_POSITION_MAP §8.26.
 - Sagittal meniscus descriptions are accepted at RELATIVE_POSITION_MAP §8.27: original local
   enclosure/body measurements in useful full-extent windows around native coronal source points.
