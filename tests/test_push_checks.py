@@ -138,6 +138,71 @@ def test_a_binary_change_adds_no_lines() -> None:
     assert tool().added_lines(diff) == []
 
 
+def test_a_merge_adds_only_the_lines_no_parent_has() -> None:
+    diff = (
+        "diff --cc notes.md\n"
+        "index 1111111,2222222..3333333\n"
+        "--- a/notes.md\n"
+        "+++ b/notes.md\n"
+        "@@@ -1,1 -1,1 +1,1 @@@\n"
+        "- main\n"
+        " -side\n"
+        "+ a line from the second parent\n"
+        " +a line from the first parent\n"
+        "++resolved\n"
+    )
+    assert tool().added_lines(diff) == ["resolved"]
+
+
+def git_in(repo: Path, *arguments: str, check: bool = True) -> None:
+    subprocess.run(
+        [
+            "git",
+            "-c",
+            "commit.gpgsign=false",
+            "-c",
+            "user.email=test@example.invalid",
+            "-c",
+            "user.name=test",
+            *arguments,
+        ],
+        cwd=repo,
+        capture_output=True,
+        check=check,
+    )
+
+
+def test_a_commit_adds_its_lines_and_a_merge_only_what_it_resolves(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    checks = tool()
+    notes = tmp_path / "notes.md"
+    git_in(tmp_path, "init", "-q", "-b", "main")
+    notes.write_text("base\n", encoding="utf-8")
+    git_in(tmp_path, "add", "-A")
+    git_in(tmp_path, "commit", "-q", "-m", "base")
+    git_in(tmp_path, "checkout", "-q", "-b", "side")
+    notes.write_text("side\n", encoding="utf-8")
+    git_in(tmp_path, "commit", "-q", "-am", "side")
+    git_in(tmp_path, "checkout", "-q", "main")
+    notes.write_text("main\n", encoding="utf-8")
+    git_in(tmp_path, "commit", "-q", "-am", "main")
+    git_in(tmp_path, "merge", "-q", "side", check=False)
+    notes.write_text("resolved\n", encoding="utf-8")
+    git_in(tmp_path, "commit", "-q", "-am", "conflicted merge")
+    git_in(tmp_path, "checkout", "-q", "-b", "other")
+    (tmp_path / "other.md").write_text("other\n", encoding="utf-8")
+    git_in(tmp_path, "add", "-A")
+    git_in(tmp_path, "commit", "-q", "-m", "other")
+    git_in(tmp_path, "checkout", "-q", "main")
+    git_in(tmp_path, "merge", "-q", "--no-ff", "-m", "clean merge", "other")
+    monkeypatch.setattr(checks, "ROOT", tmp_path)
+    assert checks.commit_additions("side") == {"notes.md": ["side"]}
+    assert checks.commit_additions("main~1") == {"notes.md": ["resolved"]}
+    assert checks.commit_additions("other") == {"other.md": ["other"]}
+    assert checks.commit_additions("main") == {}
+
+
 def report(*entries: object) -> dict[str, object]:
     return {"dependencies": list(entries), "fixes": []}
 

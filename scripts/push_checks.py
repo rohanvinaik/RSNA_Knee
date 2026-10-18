@@ -11,7 +11,8 @@ files on disk). Git hands the hook each ref being pushed, with its local and rem
   change during the run. A tree the gate has not passed on is gated now when it is the clean checkout being
   pushed; any other is refused, since the gate checks the working tree;
 - scans every line the pushed commits add, file by file under each file's own name, for secrets
-  (detect-secrets). The only findings it accepts are the kernel-benchmark recording's own digests and its
+  (detect-secrets); a merge adds the lines it writes itself, in none of its parents (`commit_additions`).
+  The only findings it accepts are the kernel-benchmark recording's own digests and its
   commit in `benchmarks/recorded/manifest.json`, matched exactly, since detect-secrets reads any long hex
   string as a possible secret. A line carrying `# pragma: allowlist secret`, detect-secrets' own mark for a
   finding reviewed as no secret, is not a finding: that is how a false finding is answered, never
@@ -117,16 +118,18 @@ def finding_verdict(
 
 
 def added_lines(diff: str) -> list[str]:
-    """The lines a unified diff of one file adds, its headers left out."""
+    """The lines a diff of one file adds, its headers left out. A hunk header's run of '@' gives the number
+    of parents, one prefix column each (two or more in a merge's combined diff); a line is added only when
+    every column is a '+', and the columns are left out."""
     lines: list[str] = []
-    in_hunk = False
+    columns = 0
     for line in diff.splitlines():
-        if line.startswith("diff --git "):
-            in_hunk = False
+        if line.startswith("diff "):
+            columns = 0
         elif line.startswith("@@"):
-            in_hunk = True
-        elif in_hunk and line.startswith("+"):
-            lines.append(line[1:])
+            columns = len(line) - len(line.lstrip("@")) - 1
+        elif columns and line[:columns] == "+" * columns:
+            lines.append(line[columns:])
     return lines
 
 
@@ -151,6 +154,32 @@ def pushed_commits(local_sha: str, remote_sha: str, remote: str) -> list[str]:
     return git("rev-list", "--reverse", *span).split()
 
 
+def commit_additions(sha: str) -> dict[str, list[str]]:
+    """The lines one commit adds, by file. A merge is read as its combined diff (`--cc`), so its own lines
+    are those in none of its parents, a conflict's resolution; what it brings from a parent is that
+    parent's commits' work, scanned with them or already on the remote."""
+    additions: dict[str, list[str]] = {}
+    changed = git(
+        "diff-tree", "--no-commit-id", "--name-only", "-r", "--root", "--cc", sha
+    )
+    for path in changed.splitlines():
+        diff = git(
+            "show",
+            "--format=",
+            "--unified=0",
+            "--no-color",
+            "--no-ext-diff",
+            "--cc",
+            sha,
+            "--",
+            path,
+        )
+        lines = added_lines(diff)
+        if lines:
+            additions[path] = lines
+    return additions
+
+
 def scan(commits: list[str]) -> list[str]:
     """The secret scan of the lines `commits` add, each file's under its own name. Accepted findings are
     printed; the rest are returned, each named by commit, file, line and kind."""
@@ -160,26 +189,11 @@ def scan(commits: list[str]) -> list[str]:
         base = Path(folder)
         written = 0
         for sha in commits:
-            changed = git(
-                "diff-tree", "--no-commit-id", "--name-only", "-r", "--root", sha
-            )
-            for path in changed.splitlines():
-                diff = git(
-                    "show",
-                    "--format=",
-                    "--unified=0",
-                    "--no-color",
-                    "--no-ext-diff",
-                    sha,
-                    "--",
-                    path,
-                )
-                lines = added_lines(diff)
-                if lines:
-                    target = base / sha / path
-                    target.parent.mkdir(parents=True, exist_ok=True)
-                    target.write_text("\n".join(lines) + "\n", encoding="utf-8")
-                    written += 1
+            for path, lines in commit_additions(sha).items():
+                target = base / sha / path
+                target.parent.mkdir(parents=True, exist_ok=True)
+                target.write_text("\n".join(lines) + "\n", encoding="utf-8")
+                written += 1
         done = run(["uvx", DETECT_SECRETS, "scan", "--all-files", "."], cwd=base)
         if done.returncode != 0:
             raise Unchecked(f"detect-secrets failed: {done.stderr.strip()}")
