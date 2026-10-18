@@ -1,0 +1,12 @@
+#!/usr/bin/env bash
+# The pre-push gate (scripts/push_checks.py, which says what it checks): git runs this before every push
+# from a clone set up once with
+#     .venv/bin/python scripts/push_checks.py install
+# and refuses the push when it exits non-zero. Rohan, 2026-10-18: «Set it as an automatic hook».
+set -u
+root="$(git rev-parse --show-toplevel)" || exit 1
+if [ ! -x "$root/.venv/bin/python" ]; then
+    echo "push gate: REFUSED: $root/.venv/bin/python is missing: run uv sync"
+    exit 1
+fi
+exec "$root/.venv/bin/python" "$root/scripts/push_checks.py" hook "$@"

@@ -694,9 +694,11 @@ For every production increment:
    calls, and commit it with the increment. Record the mechanism,
    accepted image and source/run evidence in the dated RESOLVING/MAP acceptance record; update
    detailed remaining work only in §13's active packet. NEXT stays a pointer card. Commit that clean
-   checkpoint with explicit paths, run the pre-push checks, push it before the next packet and read the
-   GitHub gate run on it (Rohan, 2026-10-18: «just freaking commit to git»; HOW_TO_BUILD, "Commit and
-   push, 2026-10-18").
+   checkpoint with explicit paths and push it before the next packet: git runs the pre-push hook
+   (`scripts/push_checks.py`: the gate unless it passed on that tree, the secret scan, and the advisory
+   lockfile audit); read its whole output, then the GitHub gate run on the commit (Rohan, 2026-10-18:
+   «just freaking commit to git»; «Set it as an automatic hook»; HOW_TO_BUILD, "Commit and push,
+   2026-10-18").
 
 ## 10. Local Claude Max implementation route
 

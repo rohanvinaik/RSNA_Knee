@@ -657,10 +657,16 @@ competition pictures to the Fable consult a privacy decision only he could make.
 
 What prevents it:
 
-- Commit code and documents as the work goes, and push them to `origin` after the gate
-  (`scripts/ci_local.sh`, its Sonar step included) and the pre-push checks in SquishOS
-  `repo-hygiene.md`: the lockfile audit with all extras and groups, zizmor on the workflows, and a
-  secret scan of the commits being pushed, not only of the files on disk. Every push runs the whole
-  gate again on GitHub (`.github/workflows/gate.yml`); read that run.
+- Commit code and documents as the work goes, and push them to `origin`. Before every push git runs
+  `.githooks/pre-push` (`scripts/push_checks.py`, set up once per clone with `.venv/bin/python
+  scripts/push_checks.py install`; Rohan, 2026-10-18: «Set it as an automatic hook»), which carries out
+  the pre-push checks of SquishOS `repo-hygiene.md`: the gate (`scripts/ci_local.sh`, its zizmor and
+  Sonar steps included) unless it has already passed on exactly the tree being pushed, and a secret scan
+  of the lines the pushed commits add, not only of the files on disk, either refusing the push when it
+  fails or cannot run; then the lockfile audit with all extras and groups, which names its result and
+  refuses nothing, its findings being leads, not verdicts (the lead's proposal, which he accepted:
+  «Agree with your fixes, implement them so we have a working gate/CI action»). Read the hook's whole
+  output; `git push --no-verify` skips all of it, which this rule does not allow. Every push runs the
+  gate and the audit again on GitHub (`.github/workflows/gate.yml`); read that run.
 - `data/` stays out of git: GitHub is for code, not gigabytes of data (33 GB on 2026-10-18).
 - Invent no privacy restriction on his own work or on the public competition's material.

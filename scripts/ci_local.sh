@@ -19,6 +19,15 @@ for tool in "$HOME/tools/Detective" "$HOME/tools/Wesker"; do
 done
 fail=0
 
+# THE PUSH GATE'S STAMP. The tree this run checks, read before any step, is stamped at the end when the
+# gate passed and the tree did not change during the run, so the pre-push hook (.githooks/pre-push,
+# scripts/push_checks.py) does not run the gate again for a push of exactly that tree. Not on GitHub,
+# where nothing is pushed from the run.
+gate_tree=""
+if [ -z "${CI:-}" ]; then
+    gate_tree="$(.venv/bin/python scripts/push_checks.py tree 2>/dev/null || true)"
+fi
+
 for tool in ruff lint-imports deptry ty vulture; do
     if [ ! -x ".venv/bin/$tool" ]; then
         echo "missing .venv/bin/$tool: run uv sync"
@@ -117,5 +126,9 @@ echo "== sonar (blocking: no open bug or vulnerability; the rest is information)
 if [ "$fail" -ne 0 ]; then
     echo "GATE: FAILED"
     exit 1
+fi
+if [ -z "${CI:-}" ]; then
+    .venv/bin/python scripts/push_checks.py stamp "$gate_tree" ||
+        echo "push gate: this run's tree was not stamped"
 fi
 echo "GATE: PASSED"

@@ -29,15 +29,29 @@ jobs:
           fetch-depth: 0
           persist-credentials: false
 
-      # The cache key hashes the project's own lock only: the archives' lock files are invisible
-      # unless Rohan says to look in them (2026-10-13).
+      # uv as on Rohan's machine (`uv --version`: 0.12.13), so the gate here runs the same tool; change it
+      # here and in codspeed.yml together. The cache key hashes the project's own lock only: the archives'
+      # lock files are invisible unless Rohan says to look in them (2026-10-13).
       - name: Install uv
         uses: astral-sh/setup-uv@1c37ad07a6a961277cf70c0d37d6f313000f5884 # v10.3.0
         with:
+          version: "0.12.13"
           cache-dependency-glob: uv.lock
 
       - name: Install the locked environment
         run: uv sync --frozen
+
+      # The lockfile audit with all extras and groups (SquishOS repo-hygiene.md), the one the pre-push hook
+      # makes before every push (scripts/push_checks.py), made again here. Advisory: it prints its named
+      # result (no_known_flaws; flaws_found, each flaw with its package and the versions that fix it; or
+      # audit_did_not_run, with pip-audit's messages saying why) and exits 1 for any result but
+      # no_known_flaws, and the job carries on past this step (continue-on-error), so the gate below always
+      # runs. Its findings are leads, not verdicts (repo-hygiene.md). That was the lead's proposal, which
+      # Rohan accepted, 2026-10-18: «Agree with your fixes, implement them so we have a working gate/CI
+      # action».
+      - name: The lockfile audit (all extras and groups; advisory)
+        continue-on-error: true
+        run: .venv/bin/python scripts/push_checks.py audit
 
       - name: Raise the memory-map limit SonarQube's search engine needs
         run: sudo sysctl -w vm.max_map_count=524288

@@ -7,16 +7,16 @@ that index. Worker attempts and acceptance packets are dated evidence, not anoth
 ## TASK ID / PACKET REVISION / STATE
 
 - Task ID: `BUILD-WORKFLOW-PLAN-20261018`.
-- Packet revision: 5. Revision 4, as committed in `667e28b`, is preserved verbatim at
-  `docs/work/history/BUILD-WORKFLOW-PLAN-20261018-r4.md`; revision 3 at
+- Packet revision: 6. Revision 5, as committed in `3c76320`, is preserved verbatim at
+  `docs/work/history/BUILD-WORKFLOW-PLAN-20261018-r5.md`; revision 4 at
+  `docs/work/history/BUILD-WORKFLOW-PLAN-20261018-r4.md`, revision 3 at
   `docs/work/history/BUILD-WORKFLOW-PLAN-20261018-r3.md`, revision 2 at
   `docs/work/history/BUILD-WORKFLOW-PLAN-20261018-r2.md`; revision 1 (task `GROUNDING-DOC-FIX-20261018`,
   written by the Codex session) at `docs/work/history/GROUNDING-DOC-FIX-20261018.md`.
-- State: `PLAN_FOR_REVIEW`; the workflow plan waits for Rohan's approval and is shown to him after this
-  revision's commit.
-- Activity: the gate's performance and quality tooling, at his 20:06 decision and his 21:19 words, is
-  built (this revision's commit); then the workflow plan (`BUILD_WORKFLOWS.md`, revision 2 with one gate
-  step added) goes to Rohan. No build workflow is launched by this task.
+- State: `PLAN_FOR_REVIEW`; the workflow plan (`BUILD_WORKFLOWS.md`, revision 2) was shown to Rohan at
+  22:05 and waits for his assessment («I'll get back to you with the workflow asessment», 22:08).
+- Activity: the pre-push hook and the GitHub gate's advisory lockfile audit, at his 22:08 and 22:27 words
+  (this revision's commit). No build workflow is launched by this task.
 
 ## CURRENT REQUEST / AUTHORITATIVE EXCHANGES / ACTUAL AUTHORS
 
@@ -49,6 +49,17 @@ Rohan, verbatim, all recorded in `docs/conversations/2026-10-18-build-session-co
 - 21:19, after the fifth compaction, answering the lead's report: «Drop the requirements for study data,
   fully build and push everything to github to make sure everything is set up for performance engineering
   sanity and basic quality checks upon push and the pre-push gate. Then show me the workflow plan».
+- 22:08, answering the lead's report (its lines on the missing pre-push hook and on enabling CodSpeed are
+  quoted in the record): «Set it as an automatic hook. Also, I set up CodSpeed. Should be good to go,
+  finish up everything on the CI/push gate side of things. I'll get back to you with the workflow
+  asessment».
+- 22:20, mid-turn, a side agent's note that the hook's lockfile audit, as first written, refused every push
+  while any dependency had a reported flaw, or when the flaw lists could not be reached (agent text, in the
+  record).
+- 22:27, after the sixth compaction, to the lead's message that checked the note against the code, named
+  two of the lead's mistakes and recommended an audit that names its result and refuses nothing: «Agree
+  with your fixes, implement them so we have a working gate/CI action». The recommendation is the lead's
+  text, quoted in the record.
 - His process choices of 2026-10-18 stand: Claude as the lead and single writer (11:25); pictures at the
   end of each family wave (11:25); the §7 rule review by Codex plus the Fable consult (17:15).
 
@@ -57,11 +68,16 @@ Rohan, verbatim, all recorded in `docs/conversations/2026-10-18-build-session-co
 - Pushed earlier today: `f405450..d3d697c` (the 262 commits that were only on this machine; evidence in
   `data/readings/collapse-20261017/full-build/targeted-compute-20261018/push-checks-20261018/`), then
   `bb6fe7a`, `dbd36b0`, `def77ff`, `9722caf` (one pinned Sonar on both machines, blocking only on bugs and
-  vulnerabilities) and `667e28b` (Ruff's PERF and stable FURB rules, advisory).
-- This revision's commit follows `667e28b`; `git log` is the record. Its production source changes: none
-  (`benchmarks/`, the gate, the workflows and the documents). The recording in `benchmarks/recorded/` was
-  made from `667e28b`'s production source; its manifest lists the uncommitted files at the time, none of
-  them production code.
+  vulnerabilities), `667e28b` (Ruff's PERF and stable FURB rules, advisory) and `3c76320` (the kernel
+  benchmarks on recorded production calls, the memory check and the CodSpeed workflow). On GitHub after
+  it: `6c66e72`, the CodSpeed bot's pin of CodSpeedHQ/action to v5.5.0 in `codspeed.yml`, and `5a45e7d`,
+  Rohan's merge of it (pull request #1, 22:18 UTC), whose gate (run 39171662867) and CodSpeed (run
+  39171662909) runs succeeded.
+- This revision's commit follows `5a45e7d`, rebased onto it before it was ever pushed; `git log` is the
+  record. Its production source changes: none
+  (the push gate and its tests, the two workflows, `scripts/ci_local.sh` and the documents). The recording
+  in `benchmarks/recorded/` was made from `667e28b`'s production source, unchanged since; its manifest lists
+  the uncommitted files at the time, none of them production code.
 
 ## OWNER / PERMITTED WRITES / WORKER ROUTES
 
@@ -81,14 +97,25 @@ memray's memory at the peak and `--fail-on-increase` against the last successful
 The CodSpeed workflow (`.github/workflows/codspeed.yml`) runs the same replays under CPU simulation and
 memory instruments on every push to main and compares commits: information, never a required check.
 
+Before every push git runs `.githooks/pre-push` (`scripts/push_checks.py`; `core.hooksPath` is
+`.githooks` in this clone, set by `push_checks.py install`, which disabled nothing: `.git/hooks/` held only
+git's samples). It runs the gate unless the gate has passed on exactly the tree being pushed
+(`scripts/ci_local.sh` stamps the tree it ran on when it passes and the tree did not change during the
+run), and a secret scan (detect-secrets 1.5.0) of the lines the pushed commits add, accepting only the
+kernel recording's own digests and commit; either refuses the push when it fails or cannot run. The
+lockfile audit (pip-audit 2.10.1 over `uv export --all-extras --all-groups`) names its result from
+pip-audit's JSON report, `no_known_flaws`, `flaws_found` or `audit_did_not_run`, prints each flaw once
+with the versions that fix it and each package it could not audit, and refuses nothing. The GitHub gate
+runs the same audit before its gate step, with `continue-on-error` (the command exits 1 for any result but
+`no_known_flaws`), so the gate always runs. Both workflows install uv 0.12.13, the version on this machine.
+
 ## NEXT SINGLE ACTION / PROPOSED OPERATION / JUSTIFICATION
 
 Done: the Sonar piece (`9722caf`); Ruff's PERF and stable FURB rules (`667e28b`); the kernel benchmarks
-on recorded production calls, the memory check and the CodSpeed workflow (this revision's commit; its
-GitHub runs are read after the push). Dropped at his 21:19 words: the self-hosted runner on this Mac (it
-existed to give a GitHub job the studies) and downloading the proof study to GitHub's runners. Next:
-show Rohan the workflow plan. For Rohan: CodSpeed accepts uploads once the repository is enabled on
-codspeed.io, a one-time step with his account.
+on recorded production calls, the memory check and the CodSpeed workflow (`3c76320`); the pre-push hook
+and the GitHub gate's advisory audit (this revision's commit; its GitHub runs are read after the push). Dropped at his 21:19 words: the
+self-hosted runner on this Mac (it existed to give a GitHub job the studies) and downloading the proof
+study to GitHub's runners. Next: Rohan's assessment of the workflow plan, shown to him at 22:05.
 
 ## OPEN SEMANTIC CHOICE / PREREQUISITES / OTHER OPEN BUILD ITEMS
 
@@ -120,11 +147,25 @@ second comparing each replay with the first, once plain, and once as CodSpeed's 
 workflows (a permission without a comment, two jobs without names), all fixed. The receipts, comparisons
 and logs are in `data/readings/collapse-20261017/full-build/targeted-compute-20261018/benchmark-recording-20261018/`
 (its `README.md` lists each with its command). The
-local gate on this revision: `bash scripts/ci_local.sh`, exit 0 (GATE: PASSED): 1,111 tests passed;
+local gate on revision 5: `bash scripts/ci_local.sh`, exit 0 (GATE: PASSED): 1,111 tests passed;
 zizmor found nothing in either workflow; the kernel costs passed (9 replays, the third successive run
 with `--fail-on-increase`); Sonar 0 open bugs or vulnerabilities and, for information, the same 705
 smells by rule; Ruff's PERF/FURB leads the same 7 PERF401; vulture's lists unchanged; deptry and ty
-clean.
+clean. `3c76320`'s GitHub runs (`gh run view`): the gate, run 39170088807, success at every step; CodSpeed,
+run 39170088803, failure at its benchmark step, whose log the lead read at 22:03 as the upload refused
+("Repository not found") before Rohan enabled the repository.
+
+This revision's checks of the push gate, each with its command, exit and result:
+`data/readings/collapse-20261017/full-build/targeted-compute-20261018/push-gate-hook-20261018/README.md`
+(pip-audit's real reports; the audit without uv names its result `audit_did_not_run`; the secret scan
+without uvx refuses; the hook passes a deletion and refuses a commit the gate never passed; planted
+secrets refused). Its tests: `tests/test_push_checks.py`, 21 passed. The first push of this revision's
+commit was refused by the hook's own secret scan: detect-secrets read the constant in
+`scripts/push_checks.py` that names its pinned version as a secret keyword (the hook's output,
+`push-refused-secret-keyword.log` in that folder). That line now carries detect-secrets' own mark for a
+finding reviewed as no secret, and the commit was amended before anything was pushed. The local gate's
+whole output on this revision's tree is kept in that folder as `gate.log`, written after this record,
+which therefore does not carry its numbers.
 
 ## INSPECTED IMAGE ADDRESSES / RESULT AND UNKNOWN SEMANTICS
 
@@ -163,13 +204,18 @@ it was committed.
 
 ## VERIFICATION STILL OWED / RECHECK BASIS
 
-The GitHub gate run and the CodSpeed run on this revision's commit. The workflow plan is unexecuted and
+The GitHub gate run and the CodSpeed run on this revision's commit: that the audit step ran and the gate
+step ran after it, and that CodSpeed's benchmark step succeeds (on `5a45e7d`, its first run since Rohan
+enabled the repository, the step whose upload had been refused on `3c76320` succeeded). The audit
+has not yet met a reported flaw on GitHub, so how the run page shows a step that exits 1 under
+`continue-on-error` is unobserved. The workflow plan is unexecuted and
 W1's script is a draft for review (it parses). Before W1: the plan's §4 preconditions, including the
 dry-run worktree. Fresh-session loading of the project CLAUDE.md imports remains to be observed.
 
 ## HANDOFF TIME / EVIDENCE LINKS
 
-Prepared 2026-10-18T21:49:45Z. Evidence: `docs/work/current/BUILD_WORKFLOWS.md`; the Codex prompt, answer
+Prepared 2026-10-18T22:48:29Z. Evidence: the push gate's checks under
+`.../targeted-compute-20261018/push-gate-hook-20261018/`; `docs/work/current/BUILD_WORKFLOWS.md`; the Codex prompt, answer
 and adjudication under `data/readings/collapse-20261017/full-build/targeted-compute-20261018/workflow-plan-review-20261018/`;
 the Sonar reports under `.../targeted-compute-20261018/sonar-setup-20261018/`; the recording's manifest,
 `benchmarks/recorded/manifest.json`, and its evidence under

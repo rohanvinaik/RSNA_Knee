@@ -367,3 +367,46 @@ production run's calls on the proof study, so needing the studies), build a GitH
 runs the real pipeline on the proof and bursa studies after each push, and drop CodSpeed or feed it the
 proof study with a Kaggle token:
 Drop the requirements for study data, fully build and push everything to github to make sure everything is set up for performance engineering sanity and basic quality checks upon push and the pre-push gate. Then show me the workflow plan
+
+**22:08**, answering the lead's report:
+
+> **The lead's report (not his words), the lines his answer takes up.** "There's still no automatic
+> pre-push hook. I run the gate and the security checks by hand before each push; I can add a hook if you
+> want it automatic." And: "CodSpeed needs one step from you. Sign in at codspeed.io with GitHub and enable
+> RSNA_Knee."
+
+Set it as an automatic hook. Also, I set up CodSpeed. Should be good to go, finish up everything on the CI/push gate side of things. I'll get back to you with the workflow asessment
+
+**22:20**, mid-turn, relaying a side agent's note:
+
+> **Side-agent text he relayed (not his words):**
+> Heads up · The new automatic push check refuses pushes whenever any dependency has a reported security flaw, so work could stay unpushed.
+>
+> **New security flaws can block your pushes**
+> - You asked for the pre-push checks to run on their own. So **every `git push` now runs them first**, and the push is refused if any check fails or can't run.
+> - One check, the **lockfile audit**, looks up every package the project installs in public lists of known security flaws. That includes dev-only tools like profilers.
+> - When a flaw is reported in any of them, **every push is refused** until that package is upgraded. That holds even if your change has nothing to do with it.
+> - It also refuses the push if those lists can't be reached.
+> - **Consider having the hook warn instead of block for this one check.** The GitHub gate would still run it on every push.
+
+## After the sixth compaction
+
+**22:27**, answering the lead's message, which checked the note against the hook's code, named two of the
+lead's mistakes, and recommended:
+
+> **The lead's text (not his words), from that message.** Under "Two problems the note doesn't mention,
+> both my mistakes":
+> - The hook says the same "did not pass" whether flaws were found or the audit couldn't run, though those need different fixes.
+> - On GitHub I put the audit step before the gate. A reported flaw would stop the tests and Sonar from running there at all.
+>
+> Under "My recommendation":
+> - The audit runs on every push, in the hook and on GitHub, and prints all of its output with a plain result:
+>   - no known flaws;
+>   - flaws found, with the package, the flaw and the version that fixes it;
+>   - or it couldn't run, and why.
+> - It never refuses a push or fails the GitHub run, and the GitHub gate always runs after it.
+> - The gate and the secret scan keep refusing. A secret that leaves this machine can't be taken back; a known flaw in a dependency is no worse after a push than before it.
+>
+> And: The other option is to keep it blocking, with a file in the repo listing each flaw you've looked at and accepted, and why. A push could then get through without `--no-verify`.
+
+Agree with your fixes, implement them so we have a working gate/CI action

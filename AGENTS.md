@@ -99,7 +99,15 @@ rules, here and on GitHub: the kept container `rsna-knee-sonar` on port 9001 (`s
 replaces it when the pin moves), its credentials minted once outside the repo in
 `~/.config/rsna-knee/sonar-local.env`, Docker Desktop started if it is not running. The same gate runs
 on GitHub on every push (`.github/workflows/gate.yml`). Rohan, 2026-10-18: «Sonar should be part of the CI gate for this
-project, and a full CI gate should also run upon push to github».
+project, and a full CI gate should also run upon push to github». Before every push git runs
+`.githooks/pre-push` (`scripts/push_checks.py`; set up once per clone with `.venv/bin/python
+scripts/push_checks.py install`). Rohan, 2026-10-18: «Set it as an automatic hook». The hook runs the gate
+unless the gate has already passed on exactly the tree being pushed, and a secret scan of the lines the
+pushed commits add; either refuses the push when it fails or cannot run. It then runs the lockfile audit
+with all extras and groups, which names its result (no known flaws, flaws found, or did not run, and why)
+and refuses nothing; the GitHub gate runs that audit again before its gate step, which always runs. The
+advisory audit was the lead's proposal, which he accepted: «Agree with your fixes, implement them so we
+have a working gate/CI action». Read the hook's whole output; `git push --no-verify` skips all of it.
 
 Do not:
 - build rule machinery;
