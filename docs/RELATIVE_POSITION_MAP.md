@@ -1857,3 +1857,26 @@ descriptions remain accepted); R3–R6 remain in the roadmap.
 FULL_BUILD_PLAN P1: the sartorius contrast runs on the gracilis-target window plus its exact surround
 halo; the map, every other record and the 188-pixel sheet are unchanged. Evidence:
 `data/readings/collapse-20261017/full-build/targeted-compute-20261018/p1-sartorius-scope-20261018/`.
+
+### 8.38 Later bone sections reach the later coarse readers; cartilage calibration on native places — 2026-10-18
+
+FULL_BUILD_PLAN P2b, increment 1. After `name_the_bones`, `refine_leg` adds the places of every
+identified native bone section to the carried leg once, as location priors; the leg's identity (a
+digest of its places) keys `leg_on` and `native_femur_coarse_context`, its arrays are read-only, and
+the native fat and axial cartilage readers receive it while earlier readers keep the early leg. The
+refined priors move the coarse reader's cut level and therefore the coarse core: on the proof's axial
+z14 the core takes in blocks of the second condyle, a block at the back of the notch, a small block in
+the notch beside the tibia seeds and a sliver outside the first condyle's rim (the early core was
+already that condyle's body plus a small block outside its rim); on the bursa study's fat-suppressed
+coronal z16 the fat context's core moves from a small notch block onto the distal femur. Under
+FULL_BUILD_PLAN §1.2 the axial cartilage reader was found consuming the coarse enclosure as its
+marrow-calibration samples; it now reads the marrow's light over the native component it selects,
+Claude's analogue of the original rule's reading over the named femur and tibia territories (not the
+same construction), and selects before it calibrates. Proof axial z14 support: 996 px, the same
+condyle's ring. The fat supports cover the same regions (proof coronal z9 prefemoral 943 → 945 px); the
+bursa axial z26 quadriceps candidate grows 222 → 313 px with no support either way. Only the proof's
+axial record changes against the pre-repair epoch; main, parallel and public as before. Gate: 1,103
+tests. No consumer of the refined context reads axial slices 11 or 12 in this increment. The bones'
+axial key planes and `fibula_key_planes` still receive the early leg (increment 2, with its own
+inspection, which covers those slices). Evidence:
+`data/readings/collapse-20261017/full-build/targeted-compute-20261018/p2b-bone-context-20261018/`.

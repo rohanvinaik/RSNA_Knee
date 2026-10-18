@@ -1302,3 +1302,19 @@ projected gracilis target (2 × its authored extent plus the 10 mm reach) and th
 that window needs, so every in-window value equals the whole-slice one and the rest is unmeasured.
 The proof's 188-pixel sheet keeps its digest. Evidence and the inspected frame:
 `data/readings/collapse-20261017/full-build/targeted-compute-20261018/p1-sartorius-scope-20261018/`.
+
+## Axial femoral cartilage calibration on the bone's native places, 2026-10-18
+
+The axial femoral cartilage definition (§8.26 of the map) is unchanged in its relations: the coarse
+femur core selects the unique largest positive enclosed-darkness component it touches; candidates lie
+outside it, within the cartilage reach, brighter than 1.5 times and at most 4 times the marrow's light,
+touching both source targets. What changed is which places give "the marrow's light": the selected
+native component's available places, not the coarse core grown from carried location priors. Reading
+that component as the bone's places on this frame is Claude's inference; it is the analogue of the
+original cartilage rule, which reads the marrow's light over the femur and tibia territories the naming
+rule names, not the same construction. The order of its refusals changed with it: the component is now
+selected before any calibration, so a frame whose core touches no positive component refuses at the
+selection (`no_positive_enclosure_touched_by_core`), where the runner used to refuse first on the
+core's light (`native_marrow_level_unavailable`); that name now means no usable light over the selected
+component. The proof's axial z14 support is 996 px, the same condyle's ring. Evidence:
+`data/readings/collapse-20261017/full-build/targeted-compute-20261018/p2b-bone-context-20261018/`.

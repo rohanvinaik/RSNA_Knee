@@ -34,16 +34,24 @@ def femoral_cartilage_on_plane(
     positive_enclosure: np.ndarray,
     sagittal_target: np.ndarray,
     coronal_target: np.ndarray,
-    marrow_median: float,
+    marrow_light: Callable[[np.ndarray], float | None],
     spacing_rc: tuple[float, float] | np.ndarray,
     distance: Callable[[np.ndarray, np.ndarray], np.ndarray] | None = None,
 ) -> dict[str, Any]:
     """Measure a whole femoral surface candidate from one native axial frame.
 
-    The existing coarse femur core selects one whole native positive enclosed-darkness component.
-    Its hole-filled complement is a separate enclosure reading. The candidate uses the existing
-    cartilage brightness and reach relations, bounded above by the same-core fluid relation, and
-    remains whole when it touches both independent source-location targets.
+    The existing coarse femur core (a coarse enclosure the carried bone places point to) selects one
+    whole native positive enclosed-darkness component, read as the bone's places on this frame as that
+    native lens draws them (an anatomical inference with that lens's uncertainty). The band is
+    calibrated on the marrow's light over that component's available places (`marrow_light`, the
+    shared `Measures.light`): the analogue on this frame of the original cartilage rule, which reads it
+    over the femur and tibia territories the naming rule names; it is not the same construction. The
+    coarse core only selects the component. The component is selected before any calibration, so a
+    core touching no positive component refuses at the selection, and no usable light over the
+    selected component is `native_marrow_level_unavailable`. Its hole-filled complement is a separate
+    enclosure reading: it gives the cartilage reach and is excluded from the band. The candidate uses
+    the existing cartilage brightness and reach relations, bounded above by the same-component fluid
+    relation, and remains whole when it touches both independent source-location targets.
     """
     plane = np.asarray(raw)
     valid = np.asarray(available)
@@ -63,16 +71,9 @@ def femoral_cartilage_on_plane(
         return {"status": "native_context_shape_unavailable", "selected": empty}
     try:
         spacing = np.asarray(spacing_rc, dtype=float)
-        marrow = float(marrow_median)
     except (TypeError, ValueError, OverflowError):
         return {"status": "native_measurement_unavailable", "selected": empty}
-    if (
-        spacing.shape != (2,)
-        or not np.isfinite(spacing).all()
-        or np.any(spacing <= 0)
-        or not np.isfinite(marrow)
-        or marrow <= 0
-    ):
+    if spacing.shape != (2,) or not np.isfinite(spacing).all() or np.any(spacing <= 0):
         return {"status": "native_measurement_unavailable", "selected": empty}
     finite_valid = valid & np.isfinite(plane)
     if np.any(valid & ~np.isfinite(plane)):
@@ -123,6 +124,19 @@ def femoral_cartilage_on_plane(
             "filled_enclosure": filled,
             "fill_difference": fill_difference,
             "status": "enclosure_neighbors_unavailable",
+        }
+    try:
+        marrow_value = marrow_light(selected_enclosure & finite_valid)
+        marrow = float("nan") if marrow_value is None else float(marrow_value)
+    except (TypeError, ValueError, OverflowError):
+        marrow = float("nan")
+    if not np.isfinite(marrow) or marrow <= 0:
+        return {
+            **base,
+            "selected_enclosure": selected_enclosure,
+            "filled_enclosure": filled,
+            "fill_difference": fill_difference,
+            "status": "native_marrow_level_unavailable",
         }
 
     def measure_distance(target: np.ndarray) -> np.ndarray:

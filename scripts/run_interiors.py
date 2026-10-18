@@ -252,7 +252,6 @@ from knee.collapse.study_map import Guide, StudyMap
 from knee.compute.contracts import handed_on
 from knee.objects.assignments import (
     BONE_MM,
-    CARTILAGE_BRIGHTER,
     FIBULA_BELOW_MM,
     FIBULA_POINTER_STATUS,
     FLUID_BRIGHTER,
@@ -926,7 +925,7 @@ def leg_on(
     search for the top of the tibia, and the back of the knee's parts on their slices)."""
     return once(
         "leg_on_slice",
-        (series.row.series_uid, z),
+        (series.row.series_uid, z, leg.identity or leg_identity(leg)),
         lambda: (
             places_on_slice(leg.femur_lps, frame, shape, thickness),
             places_on_slice(leg.tibia_lps, frame, shape, thickness),
@@ -939,13 +938,44 @@ class Leg:
     """The femur and the tibia named on a study's middle slices where the leg runs in the plane, in
     the scanner's millimetres, and the notch's plane, where the first middle sagittal slice passes
     (None without one), its normal toward the patient's left: one leg, one set of objects, made
-    once for every slice it is carried onto. The native named patella is retained too."""
+    once for every slice it is carried onto. The native named patella is retained too. `identity`
+    names exactly these places (`leg_identity`), so a slice's carried projection is cached per leg:
+    the leg refined by the later native bone sections (`refine_leg`) is never answered with the
+    early leg's projection."""
 
     femur_lps: np.ndarray
     tibia_lps: np.ndarray
     notch_origin_lps: np.ndarray | None
     notch_normal: np.ndarray | None
     patella_lps: np.ndarray
+    identity: str = ""
+
+    def __post_init__(self) -> None:
+        # The identity names these places, so they never change after it is made: each array is
+        # the leg's own read-only copy (an array already read-only is the leg's and kept as is).
+        for name in (
+            "femur_lps",
+            "tibia_lps",
+            "notch_origin_lps",
+            "notch_normal",
+            "patella_lps",
+        ):
+            value = getattr(self, name)
+            if value is None:
+                continue
+            array = np.asarray(value)
+            if array.flags.writeable:
+                array = array.copy()
+                array.flags.writeable = False
+            object.__setattr__(self, name, array)
+
+
+def leg_identity(leg: "Leg") -> str:
+    """The digest of the leg's places and notch: equal places, equal identity."""
+    parts = [digest(leg.femur_lps), digest(leg.tibia_lps), digest(leg.patella_lps)]
+    for value in (leg.notch_origin_lps, leg.notch_normal):
+        parts.append("none" if value is None else digest(np.asarray(value)))
+    return ":".join(parts)
 
 
 @dataclass(frozen=True, slots=True)
@@ -997,6 +1027,7 @@ def leg_of(measured: list[Measured]) -> Leg:
         notch_normal,
         patella,
     )
+    leg = replace(leg, identity=leg_identity(leg))
     handed("leg", field_names(leg))
     return leg
 
@@ -6588,6 +6619,62 @@ def name_the_bones(
         own.record["observations"] = observation_rows(here)
         own.record["observations_by_provenance"] = tally(here)
         own.record["observations_unresolved"] = unresolved_rows(missing)
+
+
+def refine_leg(leg: Leg, measured: list[Measured]) -> Leg:
+    """The leg with the later native bone sections published once: to the early middle-slice places
+    (`leg_of`) are added the places of every pointed plane `name_the_bones` resolved natively
+    (`a3_<bone>_plane_region` rows whose outcome is `identified`), each converted through its own
+    slice's frame. Laid, projected and reading-only rows are not support and are not added. Each
+    contributing series records which of its slices it published (`bones.published_to_leg`), so
+    every added place is addressable. Where no section was resolved the early leg is returned as it
+    is; otherwise a new leg with its own identity, so a cache keyed by the leg never hands on the
+    early leg's projection for it. The readers that ran before the bones keep the early leg."""
+    reads("bones", ("planes",), "leg_refined")
+    identified = OUTCOMES.index(IDENTIFIED)
+    added: dict[str, list[np.ndarray]] = {"femur": [], "tibia": []}
+    for own in measured:
+        published: dict[str, list[int]] = {}
+        for bone in ("femur", "tibia"):
+            slices = own.arrays.get(f"a3_{bone}_plane_slices")
+            regions = own.arrays.get(f"a3_{bone}_plane_region")
+            outcomes = own.arrays.get(f"a3_{bone}_plane_outcome")
+            if slices is None or regions is None or outcomes is None:
+                continue
+            for row, (z, outcome) in enumerate(zip(slices, outcomes, strict=True)):
+                if int(outcome) != identified or not regions[row].any():
+                    continue
+                frame = plane_frame(own.series, int(z))
+                if isinstance(frame, str):
+                    continue
+                added[bone].append(
+                    frame.to_patient(np.argwhere(regions[row]).astype(float))
+                )
+                published.setdefault(bone, []).append(int(z))
+        if published:
+            own.record.setdefault("bones", {})["published_to_leg"] = {
+                bone: {"support": f"a3_{bone}_plane_region", "slices": zs}
+                for bone, zs in published.items()
+            }
+    sections = len(added["femur"]) + len(added["tibia"])
+    ledger.record(
+        "leg.refined",
+        sections=sections,
+        femur_places=int(sum(len(p) for p in added["femur"])),
+        tibia_places=int(sum(len(p) for p in added["tibia"])),
+    )
+    if not sections:
+        return leg
+    refined = Leg(
+        np.concatenate([leg.femur_lps, *added["femur"]]),
+        np.concatenate([leg.tibia_lps, *added["tibia"]]),
+        leg.notch_origin_lps,
+        leg.notch_normal,
+        leg.patella_lps,
+    )
+    refined = replace(refined, identity=leg_identity(refined))
+    handed("leg", field_names(refined))
+    return refined
 
 
 # -- THE STUDY MAP: three key planes per object -> one 3D position -> every pair -> where to look ------
@@ -17437,6 +17524,7 @@ def native_femur_coarse_context(
             return {"status": "slice_thickness_unavailable"}
         if not np.isfinite(thickness) or thickness <= 0.0:
             return {"status": "slice_thickness_unavailable"}
+        reads("leg", ("femur_lps", "tibia_lps"), "native_femur_coarse_context")
         try:
             femur_seed, tibia_seed = leg_on(leg, series, z, frame, raw.shape, thickness)
         except (AttributeError, TypeError, ValueError, OverflowError):
@@ -17522,7 +17610,8 @@ def native_femur_coarse_context(
         )
         return context
 
-    key = (uid, int(z), id(leg), tuple(raw.shape), digest(np.asarray(raw)))
+    identity = None if leg is None else (leg.identity or leg_identity(leg))
+    key = (uid, int(z), identity, tuple(raw.shape), digest(np.asarray(raw)))
     return once("native_femur_coarse_context", key, measure)
 
 
@@ -19233,22 +19322,9 @@ def native_femoral_cartilage_candidates(
             return {**base, "status": "native_enclosed_depth_unavailable"}
         positive = (depth > 0) & available
         measures = measures_of(uid, z, raw, frame)
-        try:
-            marrow_value = measures.light(core & available)
-            if marrow_value is None:
-                raise ValueError("native_marrow_level_unavailable")
-            marrow = float(marrow_value)
-        except (TypeError, ValueError, OverflowError):
-            return {**base, "status": "native_marrow_level_unavailable"}
-        if not np.isfinite(marrow) or marrow <= 0.0:
-            return {**base, "status": "native_marrow_level_unavailable"}
-        base.update(
-            {
-                "marrow_median": marrow,
-                "brightness_level": CARTILAGE_BRIGHTER * marrow,
-                "fluid_level": FLUID_BRIGHTER * marrow,
-            }
-        )
+        # The band's marrow light is read over the native component the core selects (the bone's
+        # places as the native lens draws them), inside `femoral_cartilage_on_plane`; the coarse core
+        # is a coarse enclosure that only selects it (FULL_BUILD_PLAN 1.2).
         result = femoral_cartilage_on_plane(
             raw,
             available,
@@ -19256,7 +19332,7 @@ def native_femoral_cartilage_candidates(
             positive,
             targets["sagittal"],
             targets["coronal"],
-            marrow,
+            measures.light,
             frame.spacing_rc,
             measures.distance,
         )
@@ -19277,7 +19353,6 @@ def native_femoral_cartilage_candidates(
             "source_profile_unique_pixels": int(profiles["unique_counts"][z])
             if np.isfinite(profiles["unique_counts"][z])
             else None,
-            "marrow_median": marrow,
         }
 
     for z in candidate_order:
@@ -23502,6 +23577,9 @@ def measure_study(
         reference = "legacy_single_bone_reference_not_used_by_the_physical_map"
         # The femur and the tibia through the stacks, pointed planes only, kept in the middle records.
         name_the_bones(measured, partners, carried, study_uid)
+        # The bones' later native sections, published once (`refine_leg`) for the coarse readers that
+        # follow; the readers before the bones keep the early leg.
+        refined = refine_leg(carried, measured)
         # THE STUDY MAP, before any other family searches: the bones' selected planes (sagittal and
         # coronal from their own cheap profiles, axial from the enclosed section) make each bone's
         # position; every object has a record, every ordered pair a vector or a named unresolved
@@ -23561,7 +23639,7 @@ def measure_study(
         native_fat_candidates: list[dict[str, list[dict[str, Any]]]] = []
         for own in measured:
             candidates = native_fat_pad_candidates(
-                own, native_fat_sources, mapping, carried
+                own, native_fat_sources, mapping, refined
             )
             native_fat_candidates.append(candidates)
         needs_opposed_calibration = any(
@@ -23638,7 +23716,7 @@ def measure_study(
         )
         offer_completed_family("coronal_extensor_said", coronal_extensor_said)
         axial_femoral_cartilage_said = name_femoral_cartilage(
-            measured, cartilage_sources, study_uid, mapping, carried
+            measured, cartilage_sources, study_uid, mapping, refined
         )
         offer_completed_family(
             "axial_femoral_cartilage_said", axial_femoral_cartilage_said

@@ -6,6 +6,59 @@ order**, superseding scheduling in COHERENT_BUILD_ROADMAP/THREE_VIEW_PRODUCTION_
 Human words and the theory outrank all plans. The deliverable is the whole deterministic
 recognition operation, not just PCL or another isolated optimization.
 
+## Required implementation contracts — read before the next worker packet
+
+FULL_BUILD_PLAN §§14–15 define the actual work contracts: 22 measurement products and their
+meanings/consumers, the P2b producer–consumer chain, fixed task objectives, and 26 anatomical-
+family contracts. Every packet names the input/output M-contract IDs, its F-row or task, and the
+real function that consumes the result. Use §15.3's six-statement acceptance record. Do not
+replace this with a request to improve accuracy, clean masks or compare calibration values.
+
+REUSE existing measurements; WIRE the specified handoff mechanically. A row marked DEFINE
+NATIVE RULE still needs the lead's short native anatomical selector from the retained images
+and the existing §7 rule-review procedure before a worker implements that selector. Prepare the
+measurements/wiring independently; do not fill the missing meaning by choosing whichever variant
+wins on selected slices. This is not a new framework or an added approval loop. Source evidence
+is retained under B + `measurement-contracts-20261018/`; the contract edit does not itself certify
+live worktree functions or re-perform the builder's P2b increment-1 acceptance. For the remaining
+P2b work, §14.4 specifies the product roles and tests; §13/packet records keep the current stage.
+
+## Mandatory correction before P2b — do not optimize the proxy instead of the representation
+
+Read FULL_BUILD_PLAN §1.2 and its P2b notice before further seed filtering/calibration changes.
+An agent reported calibration 74.5→71 and 63 fewer bright-rim pixels as "hurt accuracy", then
+proposed a 2 mm interior-shell seed variant. Those changes alone establish no accuracy verdict,
+and the proposal is not an accepted repair. Rohan requires reasonable competence and, first,
+faithful implementation of the computer-vision thesis.
+
+Keep projected location support, uncertain source sections, native bone observations, coarse
+cores and native marrow-calibration samples distinct through their actual consumers. If one
+is being consumed as another, fix that semantic handoff. "Marrow is within bone" does not by
+itself prescribe eroding every source by 2 mm. Do not shrink/filter information to restore an
+old calibration, recover a preferred pixel count or make a lossy prior look pure.
+
+Variant experiments are allowed when they answer a stated anatomical/measurement question.
+Accept an operation because its meaning and general rule are sound and the native description
+is reasonably competent—not because it wins an intermediate-mask comparison on these slices.
+Record producer/consumer meaning, any observed conflation, and why the repair addresses it.
+Preserve all readings and uncertainty; continue once competent. No perfection prerequisite.
+
+## Mandatory correction before continuing — P2a remains OPEN
+
+Read FULL_BUILD_PLAN §1.1 and its corrected P2a task. The leg-window experiment measured padded
+rectangles, not tile-level or irregular-region execution. It did not establish that background
+exclusion is unhelpful. The earlier claim that a tile version would fail was untested; commit
+`398b856`'s dismissal is superseded. Do not mark P2a complete or unnecessary, or quietly drop it
+because another task can proceed. Finish in-flight P2b work and retain the real region/consumer
+P2a task in the active queue.
+
+Across every family: one failed lossy lens/proxy is not a negative verdict on a specified
+structural capability. Combine complementary measurements and known anatomy to resolve the
+residual; build for useful competence, not perfection. A wide bounding box is not the area of
+an irregular region and does not measure all the prior's downstream consequences. Report only
+what was actually tested. The previous review paragraph was written by Codex, not Rohan; do not
+attribute an advisor's words or decisions to the human.
+
 ## Ground first
 
 Follow AGENTS.md: original thesis conversation, THEORY_OF_THE_CASE, OBJECTS_AND_CONDITIONS,
@@ -46,11 +99,19 @@ epoch; the 43-concept matrix is static source evidence, not current completion/a
 
 ## Exact next action and ordered continuation
 
-0. **Done 2026-10-18:** P0 (`B + p0-inventory-20261018/`, bulk commit `7b61b54`) and P1
-   (`B + p1-sartorius-scope-20261018/`, source pin there). P2a: only a padded rectangular leg crop
-   was measured (`B + p2a-leg-domain-20261018/`); it saves little on these ten frames and is not
-   built. That does not establish that background exclusion or nonrectangular regions are
-   unhelpful (Rohan, 2026-10-18); both remain open. Continue at P2b below; items 1–2 are history.
+0. **Recorded progress, 2026-10-18:** P0 and P1 are accepted at their packets below. P2a
+   remains OPEN: only two padded-envelope constructions were evaluated on ten middle frames,
+   with no tile-level execution or production region consumer. A broad box does not dismiss
+   the structural prior. The unsupported dismissal is withdrawn. P2b increment 1 is accepted
+   (`B + p2b-bone-context-20261018/`: later native bone sections published as location priors with
+   an immutable identity; the axial cartilage band calibrated on its selected native component).
+   Next: P2b increment 2 (`axial_bone_planes`, `fibula_key_planes` receive the refined leg) and the
+   actual region/tile-and-consumer P2a packet; keep both visible. Anatomy rules in P4–P6 follow
+   FULL_BUILD_PLAN §7's process (Rohan's choice, 2026-10-18 17:15 UTC, among the lead's options:
+   Codex checks each rule against the thesis and the Fable consult reads its picture sheet;
+   disagreements go to him; «Yes, change that, Codex is the main consult interface»; record:
+   `docs/conversations/2026-10-18-build-session-corrections.md`).
+   Items 1–2 below describe the historical P0/P1 procedure, not new work to repeat.
 1. **P0:** Verify actual source/git/worker state and inventory native/laid/projected/read/refused
    evidence. Do not rerun accepted old gates without new source changes.
 2. **P1:** Read the whole corrected sartorius candidate under B +
