@@ -198,7 +198,10 @@ beside them stayed here.
   gate runs before every commit. «I assume you dropped all the telemetry tools, vulture, the CI
   gate, etc?» The gate includes Sonar and runs again on GitHub on every push (2026-10-18: «Sonar
   should be part of the CI gate for this project, and a full CI gate should also run upon push to
-  github»; `AGENTS.md`, "Running and testing").
+  github»; `AGENTS.md`, "Running and testing"). Sonar blocks only on an open bug or vulnerability; its
+  quality gate, smells, coverage and duplication are read as information, never a target to write code
+  for (2026-10-18: «Both git and local should use a sane profile of Sonar rules. Yes, agree, don't
+  over-fit to targets, only bare correctness issues should be blocking»).
 - Measure with the instruments, never a one-off script; keep a speed-up only if the answers are the
   same, run against run (`scripts/compare_receipts.py`; `AGENTS.md`, "Running and testing"). That is
   the test for an equivalent speed-up (a cache, a refactor, a compiled twin). Running a measurement
