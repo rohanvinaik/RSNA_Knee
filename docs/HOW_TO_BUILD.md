@@ -6,13 +6,17 @@ prevented that. Including fucking LISTENING to me.»
 
 His words are quoted «», verbatim from the session's record (the pre-compact snapshot of his
 messages, and the messages since). Everything else is Claude's wording of what would have prevented
-the correction. Read this whole at every session start and after every compaction, with
+the correction. Read this whole at every session start and after every compaction, in the
+grounding sequence of `docs/FULL_BUILD_PLAN.md` §0, with
 `docs/conversations/2026-10-13-the-thesis.md`, `docs/THEORY_OF_THE_CASE.md`,
 `docs/OBJECTS_AND_CONDITIONS.md` and `docs/RESOLVING_THE_PARTS.md` (how each part is resolved: the
 views, the lenses, the operations; and the provisional entries for the parts not yet resolved). The
 global rules (reading whole units, no grep, no compaction
 summary as a source, sub-agents report facts only) are in `~/.claude/CLAUDE.md` and are not repeated
-here.
+here. The dated status paragraphs this file used to carry (what was resolved when, counts, run
+epochs, each checkpoint's "next") are kept verbatim in `docs/history/BUILD_STATUS_RECORD.md`: history,
+never the current state, which is the plan's §13. The rules, corrections and obligations that sat
+beside them stayed here.
 
 ## The rules
 
@@ -45,24 +49,15 @@ here.
 - Never take the next step from a compaction summary or from your own notes. His last words in the
   record say what he asked.
 - The archives are invisible. «They're invisible unlesss I tell you to look in them».
-- Straight after a compaction, in this order, before anything else:
-  1. read the pre-compact snapshot the start-up hook names: his messages, word for word; his last
-     one is the task;
-  2. read whole the thesis conversation, the theory, the objects document, this file and
-     `docs/RESOLVING_THE_PARTS.md`; for the current collapse work, `docs/RELATIVE_POSITION_MAP.md`, its §0
-     first;
-  3. look at the proof study's pictures with the conversation in mind. The lens pictures,
-     `data/pictures/interiors/<proof uid>/series.png` and its per-series panels, are the current
-     stage's output; the named pictures, `data/pictures/assignments/<proof uid>/series.png` and its
-     per-series panels, show the parts resolved on the middle slices;
-     `data/pictures/main-slices/<proof uid>/series.png` shows the parts named on slices of their
-     own (the fibula, the ACL, the LCL and the semimembranosus tendon);
-  4. `git log --oneline -15` and `git status`: what is committed;
-  5. then do what his last message asks. When that is naming the parts, the next part is the first
-     step not yet done in the plan of `docs/ANATOMY_DEFINITION_CHECKPOINT.md`, done by the loop in
-     §7 ("Where it stands" below is the record up to 2026-10-15). Do not ask him to confirm again what
-     is recorded here («YES. I have said that MANY TIMES»), and do not re-measure finished parts on
-     other slices or studies.
+- Straight after a compaction, before anything else, follow the grounding sequence in
+  `docs/FULL_BUILD_PLAN.md` §0. It carries these steps whole: the pre-compact snapshot the start-up
+  hook names (his messages, word for word; his last one is the task); reading whole the thesis
+  conversation, the theory, the objects document, this file and `docs/RESOLVING_THE_PARTS.md`, and for
+  the current collapse work `docs/RELATIVE_POSITION_MAP.md`, its §0 first; the proof study's pictures
+  with the conversation in mind (the lens, named and main-slice pictures, with their paths); `git log
+  --oneline -15` and `git status`; then what his last message asks, the next build task being the
+  plan's §13 in its §4 order. Do not ask him to confirm again what is recorded here («YES. I have said
+  that MANY TIMES»), and do not re-measure finished parts on other slices or studies.
 
 ### 3. The thesis is simple: keep it simple
 - «This is basically the whole thing. That's it.» Recognition is pure simple math on the lenses,
@@ -127,7 +122,8 @@ here.
   2. look at the pictures of it, label a few slices by eye, and say plainly why it looks like
      itself (the PB&J explanation);
   3. write exactly that on the lenses, check it on the labelled slices, run the proof study, look,
-     and show him before the next object.
+     and show him before the next object (during P4–P6, at the end of each family wave: Rohan's
+     choice, 2026-10-18, `docs/FULL_BUILD_PLAN.md` §7).
 - All the parts first, diagnosis after: «First objects, injury diagnosis later»; «we need to
   resolve ALL the parts of the anatomy then go to diagnosis». Settle the resolved ones formally.
   What the work is now (2026-10-14): «We are JUST defining what each object is in anatomy, and how
@@ -202,7 +198,11 @@ here.
   gate runs before every commit. «I assume you dropped all the telemetry tools, vulture, the CI
   gate, etc?»
 - Measure with the instruments, never a one-off script; keep a speed-up only if the answers are the
-  same, run against run (`scripts/compare_receipts.py`; `AGENTS.md`, "Running and testing").
+  same, run against run (`scripts/compare_receipts.py`; `AGENTS.md`, "Running and testing"). That is
+  the test for an equivalent speed-up (a cache, a refactor, a compiled twin). Running a measurement
+  in a useful anatomical region instead of the whole frame is a deliberate scope change: its local
+  readings may differ near the region's edge, its scope and offsets are kept, and it is judged by its
+  native output (§4; `docs/FULL_BUILD_PLAN.md` §1).
 
 ### 6. Report what is true
 - Never say a thing works, or is done, until you have run it through the real entry point and looked
@@ -233,88 +233,17 @@ listening»:
    names, how, and where it over-reaches; add a test; run the proof through
    `scripts/run_interiors.py --draw` (the pictures are drawn only with `--draw`); look at every
    picture it reaches; run the gate; commit; rerun the labelled studies so `data/`
-   matches the code; show him the picture.
+   matches the code; show him the picture (during P4–P6, at the end of each family wave:
+   `docs/FULL_BUILD_PLAN.md` §7).
 6. The part is done: resolved at least once. Do not measure it across slices or studies and chase
    what it gets wrong; those images are the AI part, later. Go to the next part.
 
 ## Where it stands, 2026-10-14
 Check `git log` first; the run prints what each study named ("named, by series"), and the module
 note of `src/knee/objects/assignments.py` has a paragraph for each rule.
-- Resolved on the proof study (commit `1d86cfc`), on the middle slices: air, skin, femur, tibia,
-  bone marrow (the inside of each bone named), the joint, the patella, both menisci (sided by the
-  header), the articular cartilage, the PCL, the MCL, the joint's fluid (the white in the joint's
-  recesses with fat suppressed, laid onto the T1 and the T2), Hoffa's fat pad (the rest of the
-  patella's territory below the patella) and the suprapatellar fat (the rest of it above the
-  patella: the two fat pads above the patella, named together); the fibula on its main slice (the T2
-  sagittal's slice 30); the ACL on its own slice, the middle slice's neighbour on the knee's outer
-  side (named on the fat-suppressed sagittal's slice 19 and laid onto the T2's); and the LCL on its
-  own slice, the coronal slice through where it attaches on the fibula's head, 8.2 mm behind the
-  head's front edge (LaPrade 2003; named on the T1 coronal's slice 21 and laid onto the
-  fat-suppressed one). The patella, the menisci, the cartilage, the PCL, the ACL, the MCL, the
-  LCL, the joint's fluid, Hoffa's fat pad and the suprapatellar fat are each found on one sequence
-  and laid onto the other sequence's slice of the same place. The medial gastrocnemius head (commit
-  `6d19567`) is named on the fat-suppressed axial's middle slice, whose lens every run already
-  reads: the deepest region behind the femur's inner condyle, on the knee's inner side of the
-  notch, the femur and tibia carried onto the axial by place from the sagittal and coronal middle
-  slices; over the 58 labelled studies it is named on 12 axial series of 11 studies, and of the
-  other axials 46 abstain because the header names no knee. The semimembranosus tendon (commit
-  `001d47a`) is named on an axial slice of its own, the top of the tibia: the axial slice nearest
-  the femur that holds the tibia's carried places and none of the femur's (slice 11 on the proof).
-  Its direct arm ends on the back-inner top of the tibia (LaPrade 2007), and there it is the front
-  thick piece of low signal inside and behind the inner condyle's peak, at the tibia's back-inner
-  corner; followed back onto the sagittals, that piece lies on the cord just behind the joint
-  line's back end. Over the 58 labelled studies it is named on 10 axial series of 10 studies; of
-  the other axials 46 abstain because the header names no knee, 16 find no tendon at the back-inner
-  corner, 5 no inner condyle and 4 no tibia below the femur. The study's leg (its femur and tibia,
-  and the notch) is made once and carried onto both parts' slices. The patellar and quadriceps
-  tendons (commit `bd6bf6c`) are named on the T2 middle sagittal, where their band is plain: of
-  the slice's thick, uniformly dark bands, which the PCL is read from and which are now made once
-  and kept, the one joining the patella (laid on from the fat-suppressed slice) and the tibia,
-  split at the patella along the leg; then laid back onto the fat-suppressed slice, the border
-  between that slice's regions included, since with fat suppression the thinner band is the
-  border its lens draws between two regions. Over the 58 labelled studies each is named only on
-  the proof: they wait on the patella reaching the T2, which it does on 7 series (on 31 the two
-  slices disagree about it), and on 6 of those the band does not join the patella and the tibia.
-  With them the PCL reads the black margin as the margin, not every stored zero: on the proof it
-  keeps its piece and gains its zero-light holes, its foot toward the back of the tibia and a thin
-  strip of the femur's shell; over the 58 it is now named on 48 T2 sagittals, from 44, in 39
-  studies, from 36. The fat under the skin (commit `a3ce594`) is named where fat is not
-  suppressed, by its light: the places outside every part named at least three quarters of the
-  marrow's light, in the pieces reaching within 2 mm of the skin; on the proof's T1 coronal the two
-  bright bands down the knee's sides, stopping at the fascia; and laid onto the fat-suppressed slice
-  of the same place, where it is grey, as dark as muscle. For it, air and skin are now laid from
-  one sequence onto the other where a slice names none of its own, as on the proof's T1 coronal,
-  whose lens draws the air into its territories. Over the 58 labelled studies the fat is named in
-  56 (106 series by their own light, 72 laid on), air and skin are laid on 9 series, and every
-  other part keeps its counts. Muscle (commits `0b1a328` and `80f255b`) is named where fat is not
-  suppressed: the leg's places outside every part named, darker than fat, the bodies of them at
-  least a centimetre across, then outside the white its fat-suppressed, fluid-sensitive twin sees
-  as fluid, since on T1 fluid, a Baker's cyst among it, is as dark as muscle; and laid onto the
-  twin. Over the 58 labelled studies it is named in 50, on 155 series. Every one of them is
-  written in the module note as an «<object>» (§4), its descriptions checked against its code.
-- What the run puts out (2026-10-15): for any study it is given, labelled or not, a decision on
-  each of the 23 parts on every series it reads, named (and how) or abstained (and why): over the
-  58 labelled studies, 336 series and none missing a decision; the 3 studies on disk that are
-  not labelled are the test split's, the competition's public sample, and `--split test` runs
-  them as a kernel would: 15 series, none missing a decision. `--root` is where the competition's
-  files are, the kernel's mount (`KAGGLE_ROOT`) when it exists. The bone marrow (named with its
-  bone) and the synovium (not named) have no decision of their own in the output.
-- Not yet resolved, each with a provisional entry in `docs/RESOLVING_THE_PARTS.md` §6: the
-  synovium, the gastrocnemius–semimembranosus bursa (Baker's), the lateral gastrocnemius head, the
-  popliteal vessels, the patellar retinacula, the lateral complex beyond the LCL, and the other
-  hamstring tendons. Claude had written that the synovium is "not named, because the pictures do not
-  hold it"; Rohan, 2026-10-15: «It's literally a form of interstitial fluid. Interstitial. Between the
-  tibia and femur. We have the tibia, we have the femur. It's...obviously in there? That's a
-  demonstration of your failure to understand the basis of the thesis».
-- Next: (1) the dimensional collapse. Rohan, 2026-10-15: «I think that you missed the point of this
-  part of the thesis, and we need to get to fixing the implementation in another session»; and, of
-  the middle slice the run reads for most parts: «The "middle" is a fine standard first slice to
-  select. For other elements that are not obvious in that one slice, etc, that is a fine standard.
-  There are five different views (different angles and fat-bright vs fat-dark), and each has
-  multiple z-slices. That is where the thing being mined is relevant--discovery of ALL elements of
-  the anatomy at their best slices and resolution across the 5 images/3 orientations». The thesis's
-  own text on the collapse, and what the run does now, are in `docs/RESOLVING_THE_PARTS.md` §8. (2)
-  Define each part not yet resolved once, from its provisional entry. Diagnosis only when he says.
+This record's status bullets (what was resolved by 2026-10-15, the run's output then, what was not
+yet resolved, and its "Next") are kept verbatim in `docs/history/BUILD_STATUS_RECORD.md`; the current
+state is `docs/FULL_BUILD_PLAN.md` §13. What stays here is still owed or still in force.
 - Still owed: where the header names no knee, look for the fibula on both sides and let its side
   name the outer one (the second half of the plan for siding the menisci); the fibula is not yet
   laid onto the fat-suppressed sagittal's slice of the same place (Law 9); the parts named on the
@@ -345,6 +274,10 @@ note of `src/knee/objects/assignments.py` has a paragraph for each rule.
   contracts, which `contracted` reads at import, and their fields, his design's data; and a
   slice's pixel size is stated two ways, from the frame's axes in the naming and from the
   header's spacing in the stages after it, up to 1e-4 of a pixel apart.
+- Of the items still owed above, two have been shown done since: the two fat pads above the patella
+  were parted in `096f667`, and the border readings were settled on 2026-10-16 (below, "Drawing only
+  when asked"). The rest have not been re-checked against the current build and stay open until shown
+  done; `docs/FULL_BUILD_PLAN.md` §13 carries them.
 - Over-reaches stated in the module note, not chased: the cartilage takes in the notch roof's lining
   and the fluid down the femur's outer side; on the middle slice the PCL takes in the ACL's lower
   fibres, which cross in front of it, and leaves its last stretch down the tibia; the ACL takes in
@@ -462,44 +395,15 @@ away twice; «You're starting to infer»), and the global `~/.claude/CLAUDE.md` 
 
 ## Definition pass, 2026-10-15
 
-Rohan's current order supersedes "collapse next" above: first resolve every anatomical object with
+Rohan's current order supersedes "collapse next" (the "Next" of "Where it stands", now in
+`docs/history/BUILD_STATUS_RECORD.md`): first resolve every anatomical object with
 a stable, anatomically meaningful definition and a competent demonstration at least once. Then work
 through the full dimensional-collapse thesis for ideal slice selection and the complete object across
 all views. Robustness and generalization belong to his later AI work, which he has not explained yet.
 
-The anterior synovial recess and its fat-facing lining surface now have separate masks and decisions
-through the real entry point (`docs/RESOLVING_THE_PARTS.md` §9). This supersedes "synovium not named"
-in the earlier status record. The lining output localizes the cavity boundary against fat; it does
-not report membrane thickness. Its rule uses the existing fluid measurement and anatomical order,
-with no new numerical cutoff, and retains both masks without taking pixels away from existing parts.
-
-The capsule's dark outer wall at the side recesses is also demonstrated on the proof's coronal
-slice, with a separate mask and decision (`RESOLVING_THE_PARTS.md` §9).
-The bursa's fluid-filled body is demonstrated on study `…13335129881737731410081002627729200903`,
-using the semimembranosus tendon's existing slice and measurements. It has a separate mask and
-decision; its neck and wall across slices are not asserted by that mask (§9).
-
 Rohan also explicitly clarified: «Remember also, we can add lenses as needed». Add a simple,
 objective measurement when the anatomical distinction needs it; no individual lens must isolate
 the object alone. Keep that measurement shared and check its contribution on the actual pictures.
-
-The lateral gastrocnemius head is now named on the same fat-suppressed axial middle slice as the
-medial head, by the medial head's own definition with the physical inner axis negated: the
-bone-holding territory with the deepest peak on the outer side of the notch is the outer condyle,
-and the deepest non-bone territory with its peak on that side and behind the condyle's peak is the
-head (`docs/RESOLVING_THE_PARTS.md` §9). This element needed no new lens: the carried bones, the
-notch, the territories and the ordered peaks are shared by both heads in one pass, there is no new
-cutoff, and already named pixels are preserved. Its two side-specific refusals are
-`abstain_no_outer_condyle` and `abstain_no_body_behind_the_outer_condyle`; the common
-prerequisites keep their common codes. On the proof's axial slice 16 both heads are `identified`:
-the bright green fills the belly behind the outer condyle up to the fascia and the midline
-territory edge, reaches a little into the fat round the popliteal bundle, and the strip under the
-skin along the back stays with the medial head's territory. Over the 58 labelled studies it is
-named on 9 axial series of 9 studies (46 other axials abstain because the header names no knee, 8
-because fat is not suppressed, 15 find no body behind the outer condyle, 3 no outer condyle).
-This supersedes "the lateral gastrocnemius head" in the "Not
-yet resolved" list above; the test split's 3 studies keep their earlier records, without this
-decision, until `--split test` is run again.
 
 For this work Rohan explicitly expanded the Anthropic API worker's role: «Do use that Anthropic API
 connection. I authorize you to allow it full access, not consult-only». It may implement and verify
@@ -515,21 +419,6 @@ a rule for the lumens? And CAN we measure them? That is sufficient». For this d
 the demonstrated rule and measurable regions answer those two questions. Do not make exact
 boundaries, precise calipers or an expanded specification campaign another prerequisite. Check
 the implementation through the real pipeline and its pictures, then move on.
-
-The popliteal artery and vein lumens now meet that criterion on the proof's axial slice 16.
-Enclosed darkness measures the dark bodies within brighter enclosures; their place between the
-two gastrocnemius heads and behind the condyles selects the pair, ordered artery in front of vein.
-Both return `identified`, both have saved nonempty masks, and the actual output picture was
-inspected (`RESOLVING_THE_PARTS.md` §9). This supersedes the vessels' earlier unresolved status.
-The next unresolved element in §6's order is the patellar retinacula.
-
-At Rohan's next pause request, the remaining work was closed at saved preview/proposal checkpoints,
-with no further production recognition changes. The retinacula and lateral complex remain
-unimplemented; the semitendinosus and separated suprapatellar fat pads have inspected candidate
-previews and code proposals, but still need integration and real-pipeline verification. Gracilis
-and sartorius remain to be discriminated individually. The exact status, artifact paths and API
-closeout are in `docs/ANATOMY_DEFINITION_CHECKPOINT.md`; do not count those previews as completed
-objects. The verified code checkpoint remains `c1b8bdb`.
 
 ## The island check and the colours, 2026-10-16
 
@@ -550,10 +439,6 @@ aspect of the pipeline later».
   studies list more, each what its own run left unread: a part with no twin to be laid onto, or
   whose twin's places did not match, a fibula no LCL read, a bursa only the pictures read. On the
   proof's run that draws, only the squint's tiles and the closed lumens.
-- The vessel rule no longer gathers every closed lumen's places on the slice only to set aside those
-  outside the corridor: one pass finds which lie wholly in it. Over the 58 labelled studies and the
-  test split every record (each decision, silence and saved array) is the same as before; only the
-  telemetry changed.
 - The colours. Each part has its own colour and its own word in the legend, from one table
   (`OBJECT_COLOURS` in `scripts/object_assignments.py`); `tests/test_part_colours.py` keeps any two
   from sharing a word or a colour, or lying nearer than 0.2 in red, green and blue (Claude's
@@ -583,109 +468,6 @@ aspect of the pipeline later».
   the same with the borders set aside (`scripts/compare_receipts.py --borders-aside`); the proof's
   and the bursa study's middle slices, drawn, keep border readings the same as before. This settles the border readings owed in "Where it stands".
 
-## Semitendinosus definition, 2026-10-16
-
-The semitendinosus is now resolved (`ee5480b`) on the semimembranosus tendon's own axial slice:
-the separate whole dark body behind that tendon, inside the inner condyle's peak, nearest the
-tendon among the bodies satisfying those relations. Both selectors receive the same dark-body
-labels and mean physical positions, computed once, with no fallback and no second lens or
-slice search. Its separate mask and named decision are saved and drawn SILVER beside the BROWN
-semimembranosus. The proof's actual output was inspected at its own pixels; all earlier proof
-decisions and arrays are unchanged. The full gate passed with 211 tests. Details and limitations:
-`docs/RESOLVING_THE_PARTS.md` §9; picture:
-`data/pictures/definitions-20261016/semitendinosus-proof.png`. This supersedes semitendinosus's
-preview-only status above. Continue at step 2 of `docs/ANATOMY_DEFINITION_CHECKPOINT.md`.
-
-## Separate suprapatellar fat pads, 2026-10-16
-
-The quadriceps and prefemoral fat pads are now resolved (`096f667`): in the already named
-suprapatellar-fat field, the opposed light of the two physically matched sagittal acquisitions
-locates their internal seam; fat in front is the quadriceps pad, behind is the prefemoral pad.
-The rule adds no numerical cutoff, keeps ambiguous sections unresolved and does not smooth
-between them. The native masks and seam are laid onto the twin by the existing match; the
-aligned light and ratio are kept too. Both production pictures and their enlarged view were
-inspected. Earlier proof decisions and arrays are unchanged; the full gate passed with 216 tests.
-Limits and picture: `docs/RESOLVING_THE_PARTS.md` §9,
-`data/pictures/definitions-20261016/suprapatellar-pads-proof.png`. This supersedes the earlier
-preview-only status. Continue at step 3 of `docs/ANATOMY_DEFINITION_CHECKPOINT.md`.
-
-## Patellar retinacula, 2026-10-16
-
-Both are now resolved in `be52965`: the dark outer bands beside the two bright patellar recesses,
-on the one axial slice selected by the native named patella's physical centre. Both walls share
-the lens, carried bone targets and measurements. The rule combines anatomical order, the existing
-fluid reading and contact allowance, and exact acquired-signal minima outside each recess;
-separated tied minima abstain locally. There is no new signal cutoff or proof coordinate.
-The real proof run identifies both, with separate masks and decisions; the actual enlarged output
-was inspected and shown (`data/pictures/definitions-20261016/retinacula-proof.png`). Earlier proof
-outputs are unchanged. The gate passed with 229 tests; Vulture still lists 13 advisory contract
-declarations and fields. The masks locate the bands, not thickness or full course. Details:
-`docs/RESOLVING_THE_PARTS.md` §9. Continue at step 4 of the checkpoint: the lateral complex.
-
-## Popliteus tendon, 2026-10-16
-
-The popliteus is separately resolved in `8fa091d`: the largest part of the existing LCL region
-occupying the femur's lateral contour concavity, measured by its convex envelope. It reuses the
-LCL's selected non-FS coronal slice, lens and carried femur; the target is retained. Its independent
-mask is laid onto the FS twin through the shared match without altering earlier labels.
-The real proof run and both output pictures were inspected, including the enlarged SAGE mask in
-`data/pictures/definitions-20261016/popliteus-proof.png`. The full gate passed with 246 tests;
-Vulture's 13 advisory contract declarations and fields remain. The localization can retain a
-cortex rim and leaves the outer portion; full course and precision are deferred. Details and the
-recorded independent Fable reading: `docs/RESOLVING_THE_PARTS.md` §9. Next in step 4: biceps femoris,
-then iliotibial band; step 5 is still gracilis and sartorius.
-
-## Last four anatomical definitions, 2026-10-16
-
-In `4a126fc`, biceps femoris, iliotibial band, gracilis and sartorius now each have an independent
-mask and named decision through the real entry point. This completes the outstanding anatomical list in
-`ANATOMY_DEFINITION_CHECKPOINT.md`, at Rohan's criterion of a justified rule and a measurable,
-competent demonstration once. It supersedes the earlier remaining-object lists, not the recorded
-limitations. Full course, exact boundaries, generalization and diagnosis are not claimed.
-
-- ITB: the acquired-signal dip directly deep to lateral subcutaneous fat, passing femur and
-  reaching proximal tibia; existing middle non-FS coronal, carried onto the FS twin.
-- Biceps femoris: the substantial dark body below the posterior thigh muscle toward the fibular
-  head, using a lateral peripheral sagittal selected from the named head and its marrow support;
-  both acquisitions distinguish tendon from muscle and fat.
-- Gracilis: the separate thin dark body medial to the two already named posteromedial tendons,
-  anterior to semitendinosus; a native-pixel body lens on their existing axial slice.
-- Sartorius: the largest nearby grey muscle body medial and anterior to the projected gracilis
-  location target, on the existing middle FS axial. The new local-lightness lens measures seen
-  samples against their seen surround; its explicit visual baseline constants were not searched
-  or tuned. The projection is a location reference, not a tendon boundary on that other slice.
-
-The source definitions, constants, named refusals, actual observations and limits are recorded
-in `RESOLVING_THE_PARTS.md` §9. All four actual output pictures were inspected at native pixels.
-The semimembranosus group now runs once before middle-slice persistence, so gracilis is available
-to sartorius; every prior group record and upstream silence remains, and the middle save point
-is intact. Cheap prerequisites avoid a local-contrast reading on inappropriate views.
-
-The full gate passed with 357 tests, with the production import contract kept and no type or
-dependency findings. Vulture lists 12 advisory contract declarations/fields; it is not claimed
-clean. The ledger still reports retained readings with no later consumer: the squint's pending
-collapse readings, vessel components, and sartorius source points/window/separation/body statuses;
-without drawing it also lists masks used only by development pictures. Saving is not a read.
-
-Independent checks caught and fixed the API worker's initial median filter: excluded samples
-could influence neighbouring ratios before masking. Two adversarial checks now pin that excluded
-stored values cannot change any contrast reading and nonfinite samples have no light or ratio.
-The anatomical selector and its constants were unchanged; the final proof mask is 188 pixels.
-
-Nine Sonnet prototype/implementation workers completed at a recorded total of $17.4480384;
-separate Fable readings returned token usage without monetary amounts. Payloads were authorized
-by Rohan, credentials were not exported in packets, and all prompts/results/usage remain in
-`data/readings/definitions-20261016/`. Worker claims were checked by the lead against source,
-the real run and its actual pictures. Next: the dimensional collapse in §8, with Rohan's full
-object thesis; the definition pass is no longer waiting on another anatomical element.
-
-The labelled and test splits have been refreshed with that code. The comparison against the
-saved pre-change receipts preserves all 351 previous middle-slice records and 48 previous
-main-slice records, including earlier decisions, silences and array digests, with only the four
-additions and optional border readings set aside. The final canonical proof drawn afterwards
-also preserves the previous borders. Its arrays and decisions exactly match the inspected final
-alternate run. Evidence: `data/readings/definitions-20261016/remaining-production/`.
-
 ## The relative position map, 2026-10-17
 
 The current work. Read `docs/RELATIVE_POSITION_MAP.md` §0 and §8.8 first. Each object has a key plane in
@@ -703,77 +485,13 @@ measured relative positions). The lead's review of the finished joint pass (its 
 meniscus one study lost, the evidence, and a fix design that was not applied) is
 `data/readings/collapse-20261016/lead-joint-review-20261017/REVIEW.md`; the uncommitted work stands as handed off
 (`docs/BUILD_HANDOFF_2026-10-17.md` §8), with this session's development tool `scripts/key_points.py` and the
-withdrawn `src/knee/collapse/relative.py` beside it.
+withdrawn `src/knee/collapse/relative.py` beside it. (Dated, 2026-10-17: that uncommitted work was committed
+in `7b61b54`; the description of withdrawn code is superseded by `RELATIVE_POSITION_MAP.md` §8.11, and
+`relative.py` still supplies production `IdealVector`: `docs/FULL_BUILD_PLAN.md` §3 item 8.)
 
 | His words / correction | What the agent did | What prevents it |
 |---|---|---|
 | «The "key slice" is just the one slice, seperately for each of the 3 different views [...] where the anatomy is most obvious»; «Obects are resolved in 3D»; then «Fix the documentation, then build please» | Kept one largest section's centroid, forbade combining views, recorded shaft-crop drift as ordinary variation | Construct position from the three selected key planes. Test key planes → position → pair vectors → expected native slice and in-plane location. Read §8.8 and inspect pictures. The ideal is anatomical; the studies measure variation only. |
-
-
-### Connected production checkpoint, later 2026-10-17
-
-The relative map's current implementation and measured limits are `RELATIVE_POSITION_MAP.md` §8.11,
-which supersedes the withdrawn-code description above. The real entry point now consumes the map in
-patella, joint, recess and fibula search. The unused single-reference calculation and test-only helpers
-were retired. The final gate passed 723 tests; all 58 labelled studies and 336 series completed. The
-output keeps specific already-recorded refusals instead of generic placeholders where possible. The
-cohort's three-plane coverage remains limited to femur, tibia and patella; other objects' missing
-orientations remain the next build work, with no new perfection/generalization requirement. Read the
-source-pinned artifacts at that checkpoint before restating any count as current.
-
-The next completed collapse step is the fibula's missing axial key plane (`RELATIVE_POSITION_MAP.md`
-§8.12). Its existing sagittal and coronal sections point to axial slabs; the axial image's shared coarse
-bone enclosure supplies the independent plane. The main-record observation update now merges those
-readings before its single save. The actual proof has sagittal 30, coronal 22 and axial 1 jointly
-constructing its fibula position, with the three-plane picture inspected. The final gate passes 745 tests;
-no new anatomical definition or cutoff was added. Continue with the remaining objects' missing key
-orientations, not a perfection pass over the fibula. The full evidence and measured limits are at §8.12.
-
-The next completed bridge, axial joint fluid, is recorded in `RELATIVE_POSITION_MAP.md` §8.13.
-It exposes the retinacular rule's already measured side pockets on both existing native paths,
-with exact saved boolean supports, distinct refusal reasons and an immediate map handoff to later
-searches. No new image lens or cutoff is added. The actual axial and three-plane figures were
-inspected; the fluid's plane intersection is a localization reference inside the femur, never a fluid
-voxel or a boundary. The native pockets remain the anatomical evidence. The requested full plan,
-reviewed through the direct Fable API before building, is `FULL_BUILD_PLAN.md`; its family order
-and later encoding/AI/competition dependencies are explicit. Small Codex subagents are now the
-preferred workers, with the lead retaining meaning, integration and visual acceptance. Read §8.13
-and its source-matched evidence for this checkpoint rather than reusing the older counts above.
-
-The following bounded bridge is the capsule's native axial outer-wall description
-(`RELATIVE_POSITION_MAP.md` §8.14). Existing retinacular wall masks beside the recess are shared,
-with their full source addresses and original observations preserved; no new image reading is
-needed. Both pointed and original main-slice paths reach the shared map and grouped object output.
-The proof has coronal and axial capsule planes and still lacks sagittal. The source-matched
-proof/bursa comparison preserves all 1,946 earlier arrays and decision/observation prefixes.
-The remaining joint-family views are still work; a development preview is not a production result.
-
-The axial lining companion is now connected (`RELATIVE_POSITION_MAP.md` §8.15): retain the
-cavity-side fluid edge already measured in the retinacular wall loop, independently of the wall
-mask and count, and expose it through both native paths. Earlier fluid/wall/capsule outputs remain.
-This is an object description in the deterministic ground layer, as Rohan reaffirmed, before
-later AI representational work; it is not a thickness or full-course precision requirement.
-Missing support and measured-empty support stay distinct, and every pointed picture uses the
-actual addressed source frame rather than its owner artifact's middle image.
-
-The coronal lining companion is connected at `RELATIVE_POSITION_MAP.md` §8.16. Reuse the
-existing selected side recess and outer wall, retain the fluid-side edge where every wall pixel
-on that native section lies farther outboard, and preserve named unresolved sections. Both real
-coronal callers consume the same returned context, with separate support/counts for lining and
-no new image lens or slice search. The shared helper is now `cavity_lining_observations`.
-The proof selects sagittal 18/coronal15/axial21; their intersection is a localization reference
-inside the femur, not a lining pixel. Actual surface masks remain the evidence. The production
-figures were inspected, all 1,950 earlier arrays are unchanged, public test outputs match exactly,
-and the stable gate passes 785 tests. Remaining Packet A: joint axial, anterior recess
-coronal/axial, capsule sagittal. Canonical outputs and the 58-study snapshot are unchanged.
-
-The axial anterior-recess description is connected at `RELATIVE_POSITION_MAP.md` §8.17.
-It reuses the exact native fluid-pocket support on both production paths, with no new image pass.
-The shared output now always retains original definition decisions and own-slice refusals alongside
-new observations; adding evidence must not obscure earlier categorical information. Final real
-proof/bursa and public runs preserve every earlier saved array; the full gate passes 791 tests.
-Remaining Packet A: anterior recess coronal, joint axial, capsule sagittal. The complete production
-execution order and shared-value/tool contracts are `THREE_VIEW_PRODUCTION_EXECUTION.md`.
 
 
 ### Coronal anterior cavity, 2026-10-17
@@ -781,262 +499,18 @@ execution order and shared-value/tool contracts are `THREE_VIEW_PRODUCTION_EXECU
 The native coronal anterior-recess companion is accepted at RELATIVE_POSITION_MAP §8.18. It samples cheaply from the existing physical source and map guide, then resolves the native connected white body at candidate maxima. No new cutoff/lens/field is added. All earlier proof/bursa and public arrays remain; the gate passes 817 tests. The accepted40-file source snapshot is preserved separately from later capsule edits. Packet A1 is done; A2 joint axial and capsule sagittal remain. Use the exact acquired frame for every preview, with a retained generator and raw hash; an owner artifact’s middle acquired_plane alone does not identify a different selected slice.
 
 
-### Sagittal capsule, 2026-10-17
-
-RELATIVE_POSITION_MAP §8.19 records the native sagittal capsule outer-band description. Coronal wall points locate the question; native white-body selection and an acquired-signal minimum darker than adjacent fluid supply the independent anterior wall, with no new cutoff. Both actual sagittal outputs and the selected three-plane figure were inspected. Capsule 32/15/21 now jointly constrain its reference; the proof has 8 complete references / 56 complete ordered pairs. All earlier arrays and categorical information remain; the full gate passes 862 tests. The public split adds named source/sequence refusals, no native capsule claim. Packet A2 joint axial is being built; the rest of THREE_VIEW_PRODUCTION_EXECUTION remains.
-
-
-### Axial joint and typed anatomical links, 2026-10-17
-
-RELATIVE_POSITION_MAP §8.20 completes Packet A2 through the single CLI. Sagittal/coronal joint locations meet a native axial fluid body; joint 18/15/14 establishes the ninth proof reference. Actual source/support pictures were inspected, prior arrays and categorical prefixes are preserved, and parallel/profile outputs agree. The gate passes 887 tests; advisory Vulture findings remain. Object descriptions now include typed anatomical definition links, explicitly separate from measured evidence. The Packet A 58-study refresh completed (58 studies; source-pinned reports at §8.20); B–F remain, with only the typed-link portion of F connected. Continue the execution plan, not a perfection pass over the joint.
-
-
-### Native axial extensor descriptions, 2026-10-17
-
-RELATIVE_POSITION_MAP §8.21 records the accepted axial patellar/quadriceps descriptions. Physical sagittal source locations and map guidance point; native enclosed darkness and the existing 2 mm body operation supply the tissue support. Both selectors share same-slice measurements, retain exact boolean row addresses, and enter the existing family map/output path. The actual proof axial13/30 bodies were inspected and shown. All earlier proof/bursa/public evidence remains; the full gate passes 895 tests. Coronal tendon views and the remaining B–F work are still required. No new threshold, separate pipeline or perfection criterion was introduced.
-
-
-### Native coronal extensor descriptions, 2026-10-17
-
-RELATIVE_POSITION_MAP §8.22 records the accepted coronal patellar/quadriceps bodies. Actual sagittal
-and axial locations must meet the same native coronal dark body; projection/native context/persistence
-operations are shared with the axial reader. Both sequences' actual coronal4/5 bodies and empty
-patellar6 readings were inspected. Tendon key planes now complete two additional proof references
-(11 total, 110 complete ordered pairs). All prior arrays and categorical information remain; first
-profile/ordinary parallel runs match, public inputs add only named source refusals, and the whole
-gate passes 901 tests with Vulture advisories retained. Source44files were pinned before the run.
-Remaining B: native coronal/axial fat pads and sagittal/coronal retinacula, then C–F. The source-fixed
-58-study checkpoint remains Packet A; it is not a measurement of this later code.
-
-### One final middle-artifact write, 2026-10-17
-
-The middle records now stay live until all existing families finish, then each artifact is saved once.
-This lets later native descriptions reuse original main-slice results without repeating their searches
-or rewriting middle arrays. Existing main-artifact save points are unchanged. The actual CLI's profiled
-and ordinary two-worker proof/bursa outputs exactly match accepted B2: all records, observations,
-arrays, digests, physical maps, grouped objects, refusals and telemetry. The public split also matches
-exactly; every persisted array digest was recomputed. Evidence is
-`data/readings/collapse-20261017/full-build/final-persistence-bridge/`. The whole gate at its first
-source checkpoint passed 920 tests; it is not a claim about subsequent edits. No speed claim is made.
-
-At the final-persistence checkpoint, retinacular sagittal/coronal and fat-pad bridges were in flight;
-the records below supersede that status for retinacula. Fat-pad production and native-sampler
-connection remain unaccepted; standalone tests and development figures are not production acceptance.
-
-### Retinacular planes and sagittal cartilage companions, 2026-10-17
-
-The retinacula now have selected native planes in all three orientations on the proof: medial
-12/5/22 and lateral 32/12/21 (sagittal/coronal/axial), with addressed supports of 73/58/70 and
-159/82/71 pixels. The medial sagittal guided candidate at slice5 remains recorded with 11 wall pixels; the stronger
-source-profile candidate at sagittal slice12 was checked and becomes the selected plane with 73
-wall pixels. Medial coronal slice5 remains selected with 58 pixels. A source-profile maximum is a
-location reading until its native result is checked; it is not itself the key-plane decision.
-The supports describe local sections, not thickness or full course, and the lateral sagittal
-support retains its recorded adjacent capsule/course overreach.
-
-Six sagittal cartilage observations were appended from three already saved `a3_joint_plane_reading`
-rows: slices15,17,22 with femoral/tibial counts 215/259, 307/297 and 236/250. No image pass or
-array change was involved; previous candidate observations remain as an exact prefix. The tibial
-overreach remains visible in the record. Neither addition creates a precision criterion or
-changes the single three-dimensional map contract.
-
-The source-frozen audit confirms all prior proof/bursa outputs and public outputs are preserved;
-the first and ordinary parallel runs match, and the complete gate for that checkpoint passes 952
-tests. See `RELATIVE_POSITION_MAP.md` §§8.23–8.24 and the audit at
-`data/readings/collapse-20261017/full-build/retinacula-cartilage-checkpoint/`. Later live fat-pad
-work is not covered by that snapshot. The Fable API consultation for this increment is complete
-and adjudicated by the lead; its answer and comparison are retained in
-`data/readings/collapse-20261017/full-build/fable-native-geometry/`.
-
-## Native fat-pad descriptions, 2026-10-17
-
-RELATIVE_POSITION_MAP §8.25 records the accepted native coronal and axial fat-pad descriptions.
-Map locations and source points guide candidate questions; the native image supplies support.
-Hoffa, quadriceps and prefemoral supports remain separate, and the suprapatellar support is their
-same-slice quadriceps/prefemoral union. It is resolved only when both component supports are usable.
-The non-fat-suppressed comparison uses each series' own marrow calibration at candidate coordinates
-sampled on its actual planes, with its actual dimensions, thickness, bounds and margin. Its
-positive, negative, disagreement and unknown classes remain separate. Same-series white fluid is
-excluded only above its existing fluid level. A new shared physical-gradient measurement supplies
-the Q/P native candidate basins from valid neighbors at actual pixel spacing through SciPy's
-image-filtered-gradient/IFT operation and linear uint16 quantization; this adds a measurement lens,
-not an anatomical cutoff, and leaves earlier proof lenses unchanged. Hoffa uses the unique largest
-original native territory touched by its selected physical source. The coarse femoral core is a
-competing marker and exclusion where measured, not an exact boundary; the two-millimetre operation
-is coarse-block context, not fat-body opening. H/Q/P sources are selected identified sagittal-FS
-sections by physical area and converted to LPS once; the composite Q/P source is not a fourth seed.
-
-On the proof, the four selected references are Hoffa18/8/16, quadriceps18/6/27,
-prefemoral18/8/29 and suprapatellar fat18/8/27 (sagittal/coronal/axial). The lead inspected the
-actual addressed frames and supports. Visible limits remain in the record: broad/patchy Hoffa
-sections, a posterior Hoffa candidate that is marrow, neighboring tissue in quadriceps coronal6,
-limited coronal8 quadriceps/prefemoral sections, small compatible quadriceps/prefemoral portions
-on axial27 and a prefemoral strip on axial29. These are local descriptions, not full courses or
-exact boundaries; no further per-study corrections are being made.
-
-The source-pinned proof/bursa serial and parallel runs match, prior records and array digests are
-preserved, public prior outputs are preserved, and the completed gate passes 963 tests. Exact
-counts, addresses, source hashes and figures are in
-`data/readings/collapse-20261017/full-build/native-fat-pads-checkpoint/`.
-
-Packet B’s source-pinned cohort now completes: 58 maps, 336 interiors records, 43 main records, and 0 unread study inputs. Across the 2,494 study/object map entries there are 116 complete and 2,378 partial entries; these are coverage counts, not accuracy claims. The pair report contains 1,806 ordered pairs. For each reported metric, 1,534 pairs have n=0, 252 have n=1 and 20 have n≥2; sample SD is null below n=2. The declared `construction_consistent` field has zero inconsistencies, which is a position-construction check, not anatomical proof. All 80 native fat boolean support addresses validate against saved rows, slices, counts and actual frames. The corrected cohort audit counts native rows from both receipts, separates readings from resolved supports and cross-checks 5,879 native rows against the production combined object summary. At the Packet B audit, all 56 source hashes matched its source snapshot and live tree. Receipts are under `data/readings/collapse-20261017/full-build/packet-b-cohort/interiors/` and `data/readings/collapse-20261017/full-build/packet-b-cohort/main/`; pair report files `cohort-pair-variation.json` and `cohort-pair-variation.csv`, the source pin, detailed audit and summary are under `data/readings/collapse-20261017/full-build/native-fat-pads-checkpoint/`. This is Packet B’s source epoch. Packet C remains under construction; its live edits are outside this snapshot, and no C axial production result is accepted here.
-
-## Native axial femoral-cartilage description, 2026-10-18
-
-The accepted proof increment adds one native axial femoral-cartilage reading at slice14, with a
-994-pixel boolean support at row0 of `a4_axial_femoral_cartilage_support`. The reader reuses the
-existing femoral enclosure, marrow calibration, cartilage reach and sagittal/coronal source
-locations. The lead inspected and accepted the local description with adjacent cortex/tissue
-overreach retained. Prior observation/refusal prefixes and main arrays remain; six proof
-retinacular profile arrays changed with refreshed map guidance. The public run preserved old
-prefixes/maps and added four source-context arrays plus four named unresolved rows, with no
-resolved public cartilage row.
-
-The first attempt's wrong collector key produced no resolved native row; its run and source pin are
-preserved as failed history. The corrected 58-file source-fixed audit has no snapshot/live
-mismatches; later formatting-only normalization was AST-equivalent. The complete gate passes 982
-tests; Ruff, formatting/import/dependency checks and source/test typing pass, while Vulture
-advisories remain. Audit and run records are in
-`data/readings/collapse-20261017/full-build/axial-femoral-cartilage-checkpoint/`. This proof result
-does not refresh Packet B's older cohort counts. Axial tibial cartilage, sided menisci, ACL and PCL
-remain pending. Development-only native-body previews are not production results. The current
-human steering and efficiency-first record is indexed at
-`data/readings/collapse-20261017/full-build/targeted-compute-20261018/`; the Fable consultation is
-complete and its recommendations remain advisory, not an accepted optimization. Follow
-`docs/TARGETED_ANATOMICAL_COMPUTE.md` for the authoritative useful-priors criterion.
-
-
-## Native sagittal menisci, 2026-10-18
-
-RELATIVE_POSITION_MAP §8.27 records the accepted local sagittal companion. Native coronal wedges
-and map/source profiles point to useful crops; original enclosed darkness, the existing 2 mm body
-operation and whole-component source contact resolve the native sagittal tissue. The bound uses a
-full anatomical extent around an in-object source point, never assumes that point is the object
-centre. The lead inspected medial5 (588 pixels), lateral28 (200, anterior horn) and lateral29
-(553, connected body) on actual addressed DICOM frames. Both objects still lack their axial plane.
-All 3,005 earlier arrays and categorical prefixes remain; source-frozen serial/parallel receipts
-and maps match, public prior outputs remain, and the full gate passes 997 tests with Vulture
-advisories retained. Three crop readings visit 55,212 pixels total, each 16.939–20.039% of its frame;
-no whole-pipeline speedup is asserted. Producer/consumer ledger declarations in the new adapter
-still need correction during the next family edit, as its compute audit explicitly records.
-Evidence is under `full-build/targeted-compute-20261018/meniscus-local-checkpoint/` in the readings
-tree. Continue axial menisci and the remaining coherent roadmap; do not perfect these local borders.
-
-
-## Native axial menisci, 2026-10-18
-
-RELATIVE_POSITION_MAP §8.28 records both native axial meniscus descriptions. Independent coronal
-and sagittal locations guide useful crops; original local enclosure, existing 2 mm bodies and
-whole-component contact with both sources supply axial12 supports of 1403 / 1437 pixels.
-Window completeness remains a separate retained reading; unavailable background elsewhere does
-not withdraw an identified component. The lead inspected actual axial and three-plane images.
-The proof's selected medial [5, 15, 12] and lateral [29, 15, 12] planes now construct complete
-references. Five distinct heavy windows total 159,242 pixels; no runtime speedup is claimed.
-Serial/parallel outputs/maps agree and the full gate passes 1,013 tests, with Vulture advisories.
-Its one fixture typing finding is corrected in a separately pinned verification-only change;
-source/test typing and 25 focused tests pass afterward, with production source unchanged.
-
-The new anatomical guide skips a prior weak medial retinaculum sagittal5 proposal; selected
-sagittal12/73px and key planes remain identical. The generic prefix audit's failure is retained
-and adjudicated explicitly, not called exact preservation. Earlier definition decisions, main
-arrays and public prior outputs remain. The three source epochs, final evidence and limits are
-under `targeted-compute-20261018/axial-menisci-local-checkpoint-final/` in the readings tree.
-Next remains tibial axial cartilage and cruciates. The new cartilage/PCL packets are development
-evidence until their own native outputs are accepted through the same CLI.
-
-## Bounded bone execution, 2026-10-18
-
-RELATIVE_POSITION_MAP §8.31 accepts the original bone lens running inside existing shared profile
-windows before heavy measurement. Full local readings, scope, offsets and unknown places are
-retained. All20 actual DICOM crops were independently verified; one bursa-study femoral section
-gains34 pixels, with its inherited broad boundary limitation recorded. Common maps and main outputs
-remain identical, serial/parallel agree, and the corrected gate passes1019 tests. This is a first
-bounded family retrofit, not whole-pipeline efficiency closure. Later full-frame consumers remain;
-the structural source trace identifies `patella_plane` as the first map-aware fine reader whose
-in-plane guide currently acts only after its full-frame lens. The next work must move useful
-structural guidance before that computation, while preserving the existing anatomical definitions.
-
 ## Supporting-kernel equivalence, 2026-10-18
-
-The batched `physical_squint` implementation is accepted as an equivalent supporting change.
-Complete tiles are batched; partial, ragged and fallback inputs retain the original per-tile
-semantics and native-dtype outputs. The real production caller remains the existing squint stack.
-This kernel supports the coherent build but does not resolve an anatomical object or complete the
-information flow required across objects.
-
-The accepted frozen source snapshot has 67 files and no snapshot/live hash mismatches at that
-acceptance point. Its complete gate passes 1,026 tests. The labeled cohort run selected all 58
-available labeled studies. Baseline and batch receipts, maps and object entries compare equal; all
-112,104 saved-array digests across both epochs match. No speedup is claimed. The source snapshot,
-acceptance record, comparison report and full run logs are under
-`data/readings/collapse-20261017/full-build/targeted-compute-20261018/efficiency-review-20261018/squint-batch-checkpoint/`.
-This is a pinned source epoch. If live code advances, verify a fresh source pin before describing
-it as the same 67-file snapshot.
 
 Rohan's current instruction is to keep the efficiency/accuracy/efficacy connection explicit:
 anatomy-derived constraints for every object jointly reduce the plausible identity alternatives
 and narrow the native questions that need measurement. This follows Significance Weighting and
 the information-theoretic `<object>` thesis. A kernel implementation check is supporting work;
 it does not replace that structural propagation. §8.28 remains the latest accepted new-anatomy
-description; the kernel acceptance adds no patella result.
-
-## Historical scoped patella execution, 2026-10-18
-
-RELATIVE_POSITION_MAP §8.33 records the existing patella-plane lens using the shared femur/tibia
-profile window before its expensive local measurement. This changes execution scope only; the
-existing patella definition and its resolved native support masks are unchanged. Of four local
-attempts, the slice21 reading identifies the same 2,676-pixel support, while slices1, 5 and27 miss
-locally and proceed to the retained broader reads. Those misses are not object absence.
-
-The source-frozen packet has 68 files, zero live/snapshot hash mismatches and a gate of 1,036 tests.
-The lead inspected all 12 figures and independently verified the four DICOM crops and their
-geometry/availability across 1,717,665 pixels. Proof/bursa interiors add 88 arrays, change 5 and
-remove 0; prior observations, maps and main outputs are unchanged, and serial/parallel outputs
-agree. Public interiors add 132 arrays and change 2 with none removed; its observations, maps and
-main outputs are unchanged. Three local misses add work before broadening; the windows are broad
-and retain inherited tibial context. No whole-pipeline speed or accuracy claim follows. The
-complete source pin and audit are under
-`data/readings/collapse-20261017/full-build/targeted-compute-20261018/efficiency-review-20261018/patella-scope-checkpoint/`.
-
-The static [every-object matrix](../data/readings/collapse-20261017/full-build/targeted-compute-20261018/efficiency-review-20261018/every-object-structural-chain/README.md) covers 43 emitted concepts and distinguishes actual selector inputs
-from catalog relations; it is not a declaration that all anatomy is complete. Marrow remains
-interior to bone and is explicitly tracked under R5. At the time of this patella checkpoint, the
-immediate map handoff was still an artifact candidate; it has since been accepted as execution
-behavior at MAP §8.34. E02 remains partial, and other E24 semantic consumers remain pending. The
-rebased PCL API candidate uses the existing authored atlas extent, but no PCL production assignment
-is accepted until its actual native outputs are audited. Keep the handoff scoped to this execution
-change; do not make a general efficiency or accuracy claim.
-
-
-## Shared common-map handoff, 2026-10-18
-
-MAP §8.34 records the accepted execution update. Fifteen completed native families convert their rows once, offer them immediately to the
-existing common map before later dependent guide requests, and reuse the converted rows at the
-final idempotent closure. Existing
-filters and duplicate handling remain, as does original observation append/save order. This is not
-a new anatomy definition. Some guide domains broaden. The proof/bursa comparison records 27 changed
-arrays and five not produced in the new run; the prior axial-joint z11 empty reading is not
-revisited, while the z14 78-pixel support is pixel-identical. No blanket prefix/equivalence claim,
-paired runtime gain or accuracy gain is made.
-
-The source-frozen epoch pins 69 files (manifest SHA-256
-`8165914de13f19a697ef96e15d13d8b9067db7b021b58cb7db4ebc9005a2c798`; runner SHA-256
-`0bd86d213c7c92d5d2d125907396d2eef6a9175729b197eb0f9b6b4c1e9ce4ec`) and passes 1,038 gate
-tests. Runtime trace, source snapshot, runs and receipt audit are retained under
-`data/readings/collapse-20261017/full-build/targeted-compute-20261018/efficiency-review-20261018/immediate-map-handoff-production/`; acceptance and independent checks are under
-`data/readings/collapse-20261017/full-build/targeted-compute-20261018/efficiency-review-20261018/immediate-map-handoff-checkpoint/`. At this execution checkpoint §8.28 remains the latest accepted anatomy. Other E24
-semantic consumers and E02 remain partial; the 43-concept matrix is static and marrow R5 is
-pending. §8.35 below records the later accepted axial PCL demonstration.
-
+description; the kernel acceptance adds no patella result. (As of that kernel checkpoint: the PCL was
+accepted later, `RELATIVE_POSITION_MAP.md` §§8.35–8.36; the current state is `docs/FULL_BUILD_PLAN.md`
+§13.)
 
 ## Native axial PCL body, accepted once demonstrated — 2026-10-18
-
-MAP §8.35 records the accepted native axial PCL body description through the existing production
-path. The lead judged proof slice15 (295 pixels, series
-`1.2.826.0.1.3680043.8.498.67495435033389756963800730529101229430`) a competent compact
-posterior-notch body demonstration. This meets the agreed once-demonstrated criterion. It does not
-establish a complete PCL course, volume, three-plane reference, general accuracy or whole-pipeline
-efficiency.
 
 The inspected observations retain their distinct outcomes: one competent demonstration, four
 wrong identifications and three measured-empty local readings. The errors arise from source
@@ -1048,22 +522,7 @@ absence. Retain these results; the shared R5 residual is to use resolved joint/b
 physical notch relation in source eligibility/selection rather than largest prior label alone.
 No per-study patches follow.
 
-The accepted 70-file source pin, runner hash, 1,071-test gate, serial/parallel/public runs and
-independent DICOM/image checks are recorded in
-`data/readings/collapse-20261017/full-build/targeted-compute-20261018/efficiency-review-20261018/pcl-axial-checkpoint/`.
-The raw digest flags remain preserved; a separate adjudication recomputed all 162 and found zero
-project-digest failures. PCL coronal, ACL axial/coronal, tibial axial cartilage and other roadmap
-families remain pending. The current PCL evidence is local axial evidence only.
-
-
 ## Native coronal PCL body and proof three-plane reference — accepted once demonstrated, 2026-10-18
-
-MAP §8.36 records the accepted native coronal PCL body and the proof study's first accepted
-three-plane PCL reference. The lead inspected the actual candidate and selected-plane figures, and
-independently checked the DICOM frames and map propagation. Proof coronal slice22 has a 322-pixel
-compact dark body in the posterior notch. Together with sagittal18 and axial15, its physical
-intersection is LPS `[-110.95654820639552, -42.08987813891625, 23.75791539106383]`. This is one
-competent proof description and reference, not a complete course/volume or whole-build claim.
 
 The reader uses the existing generic PCL section operation. It validates addressed native sagittal
 and axial sources, uses actual half-slab profiles and current map guidance, and constructs the local
@@ -1079,30 +538,6 @@ measured-empty; public100470 slice27 is `other_source_not_in_slab` with no heavy
 is locally measured-empty. These do not establish absence. The four wrong AX identifications and
 three AX measured-empty readings from §8.35 remain in the historical evidence. R5 still needs
 general source eligibility informed by resolved joint/bone context and the physical notch relation.
-
-The accepted source, run comparisons, 11-frame/279,615-pixel independent check, five candidate
-figures and the selected three-plane figure, proof plane check, map adjudication and 1,087-test gate are retained in
-`data/readings/collapse-20261017/full-build/targeted-compute-20261018/efficiency-review-20261018/pcl-coronal-checkpoint/`.
-The 70-file pin has no live/snapshot mismatches. Proof/bursa add 100 arrays and public adds 69; no
-prior arrays are changed or removed. Prior observations and unresolved rows are exact prefixes.
-Two proof fibula main records gain PCL guidance anchors/placements, so main-receipt identity is not
-claimed. The map gains 40 complete PCL pair vectors, with 44 other pairs still partial at their
-other endpoint, 38 predictions, 20 residuals and four later retinacular guide uses. This accepted
-propagation is not a general accuracy, speed or whole-pipeline efficiency result. ACL axial/coronal,
-tibial axial cartilage and the remaining roadmap families are still ahead.
-
-
-## Complete remaining-work handoff, 2026-10-18
-
-Rohan requested a full plan from the supplied build audit. `docs/FULL_BUILD_PLAN.md` now holds
-the complete P0–P13 dependency order; NEXT_SESSION_PROMPT is its short entry card. Shared early
-domains and later native bone context precede further dependent readers; the current scoped
-sartorius candidate remains unintegrated. This documentation handoff adds no anatomical acceptance
-or production change. Preserve the accepted MAP §8.36 source epoch and every original reading.
-The plan distinguishes useful scope changes from equivalent kernel/refactor changes, observation
-metadata consumers from support-pixel consumers, and completed recognition from the later
-human-specified representation/AI/diagnostic dependencies. Earlier dated plans remain history.
-
 
 ## The leg-bound conclusion, 2026-10-18
 
@@ -1165,3 +600,40 @@ or pixel counts cannot replace it. Keep the lossy evidence, complementary contex
 uncertainty and actual consumer. Correct obvious anatomical mistakes, demonstrate reasonable
 competence, and move on. Do not demand perfect intermediate objects before combining them.
 FULL_BUILD_PLAN §1.2/P2b and NEXT_SESSION_PROMPT now carry this instruction before continuation.
+
+
+## The heading-sorted cleanup and the mis-framed packet left running, 2026-10-18
+
+Rohan asked for the post-compact setup to be cleaned up so that it holds only what is relevant and
+useful, with the build plan as its central place (`docs/conversations/2026-10-18-build-session-corrections.md`,
+17:09 and 17:13). Two corrections followed the same day.
+
+The first cleanup sorted this file by a keep-list of section headings and sent every other section to
+a history file headed "not the current state". It would have demoted that day's seed-purification
+correction, the one-3D-map construction contract, "saving is not reading", «Remember also, we can add
+lenses as needed», the vessel stopping criterion and the "Still owed" list; its own check only proved
+that the moved text survived somewhere. His words: «Pause. You're fucking this up», and then «No, you
+can continue with the cleanup. I wanted you to pause to do thus closer reading». The review he pasted
+with the first is agent text.
+
+Then a read-only fact packet for P2a, launched before a compaction and known by the lead to be framed
+with area and coverage shares and a tile rule the lead had invented, was left running while the
+cleanup went on, with a plan to label its output afterwards. His words: «Um, that's a SUPER cavelier
+way of handling a critical correctness issue?» The packet was stopped and withdrawn in writing where
+it lives (`data/readings/collapse-20261017/full-build/targeted-compute-20261018/wave1-packets-20261018/p2a-regions-WITHDRAWN-20261018/WITHDRAWN.md`).
+
+What prevents both:
+
+- Sort by what each paragraph governs, never by its heading. Only purely dated status may move; a
+  rule, correction, definition, permission, owed item or limit in force stays, inside a mixed section
+  too, and anything unclear stays. Check that every operative paragraph is still where every session
+  reads it, not only that moved text survives. (The cleanup that followed: a unit-by-unit table, a
+  Codex check of it, and a move of only the units it marked dated status; `docs/history/BUILD_STATUS_RECORD.md`
+  carries the table.)
+- An owed item is shown done with evidence, or carried as open work. It never goes into a file
+  labelled not current.
+- When a running process measures the wrong thing, a proxy standing in for the question, stop it as
+  soon as you know, withdraw its output in writing where it lives, and frame the replacement from the
+  plan. A label added after the numbers are written is how the first P2a dismissal spread.
+- Each time it was the same failure as P2a's and the seeds': an easy check standing in for the real
+  question, and the unknown case defaulting to the loss (FULL_BUILD_PLAN §§1.1–1.2).

@@ -19,6 +19,59 @@ selector marked DEFINE NATIVE RULE must be supplied by the lead from the actual 
 §7's rule-review procedure before a worker implements it. No proxy score or preferred
 intermediate output fills that semantic gap.
 
+## 0. Grounding: every session start and every compaction
+
+Rohan, 2026-10-18: «CLean up the post-compact setup process to focus only on the parts that are
+relevant and useful and won't make you fuck up like you have been. The build/handoff plan is a good
+central place, only add in anything that is addatively useful for you to ground in the project
+epistemology and working contract.» This section is that sequence. AGENTS.md, HOW_TO_BUILD §2,
+NEXT_SESSION_PROMPT and the project memory point here.
+
+**Loaded into every session by `CLAUDE.md`:** AGENTS.md, THEORY_OF_THE_CASE.md, HOW_TO_BUILD.md (the
+rules and every correction), this plan, the thesis conversation
+(`docs/conversations/2026-10-13-the-thesis.md`) and his anatomical-priors messages
+(`docs/conversations/2026-10-18-anatomical-priors-and-targeted-compute.md`).
+
+**Straight after a compaction, and at every session start, in this order, before anything else:**
+
+1. Read the pre-compact snapshot the start-up hook names: his messages, word for word; his last one
+   is the task. A compaction summary is never a source, and neither are your own notes. What his last
+   «Yes» approved is your own message just before it in the session transcript: read that exchange
+   whole. Pasted or relayed agent text keeps its author: a fact to check, never his instruction, never
+   quoted as his words (`docs/conversations/2026-10-18-build-session-corrections.md` shows how the two
+   are told apart).
+2. Read whole, where not already loaded: the thesis conversation, THEORY_OF_THE_CASE,
+   OBJECTS_AND_CONDITIONS, HOW_TO_BUILD and RESOLVING_THE_PARTS; for the current collapse work,
+   RELATIVE_POSITION_MAP, its §0 first (§8.8 and its latest accepted §8 record carry the current
+   construction); TARGETED_ANATOMICAL_COMPUTE and his complete messages in
+   `docs/conversations/2026-10-18-anatomical-priors-and-targeted-compute.md`; this plan, its §§1–1.2
+   and §§14–15 before any task; NEXT_SESSION_PROMPT. When a task needs them, the primary units this
+   plan names: `../cell_tracking/docs/pipeline_thesis/paper/what_an_object_is.md` §§4, 7, 13 and
+   `SIGNIFICANCE_WEIGHTING.md` §§4–5, 13–16.
+3. Look at the proof study's pictures with the conversation in mind: see the parts of the knee the
+   lenses already pull out («you can already see parts of it peeking out from that image»), not an
+   audit of your own code. The lens pictures, `data/pictures/interiors/<proof uid>/series.png` and its
+   per-series panels, are the current stage's output; the named pictures,
+   `data/pictures/assignments/<proof uid>/series.png` and its panels, show the parts resolved on the
+   middle slices; `data/pictures/main-slices/<proof uid>/series.png` shows the parts named on slices of
+   their own (the fibula, the ACL, the LCL and the semimembranosus tendon). The proof uid is
+   `1.2.826.0.1.3680043.8.498.10095687747295410396510538520594649149`. With them, the two figures
+   he showed as proof of the thesis, the cells and the knee (`data/pictures/thesis-2026-10-13/F14-cells.png`,
+   `data/pictures/thesis-2026-10-13/knee-series.png`; THEORY_OF_THE_CASE, canonical references).
+4. `git log --oneline -15` and `git status`; then §13 here, the current state and the next single
+   task, and that task's packet README. Verify live state (source pins) before stating anything as
+   current.
+5. Then do what his last message asks. Build work follows §4's order, each task's contract in §§14–15
+   and §15.3's acceptance record; anatomy rules follow §7's process. Do not ask him to confirm again
+   what is recorded («YES. I have said that MANY TIMES»), and do not re-measure finished parts on other
+   slices or studies.
+
+Always: the archives (`archive/`, `archive2/`) are invisible unless he says to look; read whole units,
+never text-search. Dated scheduling and status (HOW_TO_BUILD's dated sections, `docs/history/`, the
+status lines of the MAP's §8 and RESOLVING's §9 entries, earlier plans) are history and evidence for a
+part, never the next step; the definitions and limits those entries record stay in force until a later
+accepted record supersedes them.
+
 ## 1. Mechanism and non-negotiable distinctions
 
 Read the original conversation with its pictures: simple, complementary, lossy measurements
@@ -183,7 +236,9 @@ runner SHA-256 is `a2f9f22323707d8a16253844a3eb98ec14bc0e6c27ed05c49db8a5ccbbe68
 The accepted epoch's gate passed 1,087 tests. Recorded serial, parallel and public runs exited 0.
 The 70 source files were rechecked before this documentation handoff; later changes require a
 fresh pin. HEAD is `a118db8`; the accepted build includes extensive uncommitted/untracked work.
-A commit hash alone cannot reproduce it. Preserve the working tree and source snapshots.
+A commit hash alone cannot reproduce it. Preserve the working tree and source snapshots. (Dated,
+at this handoff: `7b61b54` then committed that work and later increments followed; `git log` gives
+the current state.)
 
 Accepted recorded scope:
 
@@ -267,9 +322,10 @@ of object names the architecture: order follows actual dependencies and cheap us
 
 ### P0 — start from the actual state
 
-Read the five required primary documents in AGENTS order and inspect their proof pictures.
-Then MAP §§0/8.8/8.36, TARGETED_ANATOMICAL_COMPUTE, the full anatomical-priors conversation,
-this plan and NEXT_SESSION_PROMPT. Relevant primary text:
+Ground by §0, which carries the reading this task listed: the five required primary documents
+in AGENTS order with their proof pictures; the MAP from §0 (§§0/8.8 and its latest accepted
+record); TARGETED_ANATOMICAL_COMPUTE; the full anatomical-priors conversation; this plan and
+NEXT_SESSION_PROMPT; and the primary text
 `../cell_tracking/docs/pipeline_thesis/paper/what_an_object_is.md` §§4, 7, 13 and
 `/Users/rohanvinaik/Projects/rohan-vinaik.github.io/papers/Core Documents/SIGNIFICANCE_WEIGHTING.md`.
 Read whole logical units, never text-search fragments; archives stay invisible.
@@ -286,6 +342,7 @@ Packet: B + `sartorius-scope-max-20261018/attempt-3-text-only/`.
 Read `candidate-verification.json`, `candidate-test-history.json`, complete
 `candidate/review-units/` and `candidate/focused-tests-final.log`. The isolated corrected
 candidate passed 39 focused tests and Ruff; it is **not lead-reviewed, integrated or accepted**.
+(Dated: it was reviewed, integrated and accepted later on 2026-10-18; §13.)
 Use the corrected candidate, not the original answer.md as an automatic patch.
 
 Chosen mechanism: project gracilis once; `source_window` bounds the search around the actual
@@ -743,6 +800,20 @@ no tile-level region or production region consumer was tested. The usable candid
 of the ten inspected middle frames occupy about 90–100%; the remaining cheap flood keeps a wrong
 corner. These facts do not establish that useful background exclusion is unavailable. The earlier
 claim and commit `398b856`'s dismissal are superseded by §1.1 and the corrected P2a contract.
+A read-only wave-1 fact packet for P2a, launched by the lead before a compaction, was framed with
+area and coverage shares and a tile rule the lead had invented; it was stopped and withdrawn in
+writing (`B + wave1-packets-20261018/p2a-regions-WITHDRAWN-20261018/WITHDRAWN.md`) and is not P2a
+evidence. The P2a packet specified above has not been run. The six other wave-1 packets (P3–P7
+facts and pictures) were stopped with it: each had written its README, their independent checks
+were cut off and their results not kept, and none has been reviewed or accepted by the lead; their
+checks are re-run before any of them is used.
+Open, recorded, status not re-checked against the current build: the items still owed in
+HOW_TO_BUILD's "Where it stands" (siding by the fibula where the header names no knee; the fibula
+laid onto the fat-suppressed sagittal's slice; parts carried onto the axial by place; main slices
+chosen from the squint; the squint's compiled twin; the fibula's lens read on every slice that holds
+it; a slice's pixel size stated two ways), and the sagittal-menisci record's "Producer/consumer
+ledger declarations in the new adapter still need correction during the next family edit"
+(`docs/history/BUILD_STATUS_RECORD.md`).
 **P2b increment 1 accepted** (`B + p2b-bone-context-20261018/`): later identified native bone sections
 are published once (`refine_leg`) as location priors with an immutable leg identity keying every
 `once` cache inside the leg-taking functions (AST query and output in the packet), handed to the

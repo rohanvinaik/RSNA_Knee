@@ -1,5 +1,10 @@
 # Three-view anatomical production build — execution contract
 
+**Dated note, 2026-10-18:** `docs/FULL_BUILD_PLAN.md`, Rohan's plan approved for building, is now the
+canonical remaining-work order. It supersedes the scheduling here and in COHERENT_BUILD_ROADMAP; where
+this document's contracts differ from the plan's §§14–15, the plan governs. The execution record below
+remains history; its definitions are in RESOLVING_THE_PARTS.
+
 The active continuation roadmap, bounded worker contracts and session-resume order are
 `docs/COHERENT_BUILD_ROADMAP.md`. This document retains the family contracts and execution record;
 the roadmap incorporates the subsequent foundational useful-priors steering across every family.
