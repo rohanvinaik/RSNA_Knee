@@ -42,8 +42,10 @@ def series(uid="s", fat="0", thickness=2.0):
 
 
 def test_the_identity_follows_the_places_and_nothing_else():
-    assert leg([[5.0, 5.0, 0.0]]).identity == leg([[5.0, 5.0, 0.0]]).identity
-    assert leg([[5.0, 5.0, 0.0]]).identity != leg([[6.0, 5.0, 0.0]]).identity
+    first, again = leg([[5.0, 5.0, 0.0]]), leg([[5.0, 5.0, 0.0]])
+    assert first is not again
+    assert first.identity == again.identity
+    assert first.identity != leg([[6.0, 5.0, 0.0]]).identity
 
 
 def test_a_refined_leg_is_never_handed_the_early_legs_projection():

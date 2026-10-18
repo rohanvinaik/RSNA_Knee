@@ -58,10 +58,11 @@ rules and every correction), this plan, the thesis conversation
    `1.2.826.0.1.3680043.8.498.10095687747295410396510538520594649149`. With them, the two figures
    he showed as proof of the thesis, the cells and the knee (`data/pictures/thesis-2026-10-13/F14-cells.png`,
    `data/pictures/thesis-2026-10-13/knee-series.png`; THEORY_OF_THE_CASE, canonical references).
-4. `git log --oneline -15` and `git status`; then §13 here, the current state and the next single
-   task, and that task's packet README. Verify live state (source pins) before stating anything as
-   current.
-5. Then do what his last message asks. Build work follows §4's order, each task's contract in §§14–15
+4. `git log --oneline -15` and `git status`; then §13's active-task index and the packet it names.
+   That packet alone holds detailed live state, jobs and the next single action. Verify its actual
+   source pins and job handles before stating anything as current.
+5. Read `docs/GROUNDING_AND_WORKER_GUIDE.md` whole before dispatching or integrating any worker.
+   Then do what his last message asks. Build work follows §4's order, each task's contract in §§14–15
    and §15.3's acceptance record; anatomy rules follow §7's process. Do not ask him to confirm again
    what is recorded («YES. I have said that MANY TIMES»), and do not re-measure finished parts on other
    slices or studies.
@@ -71,6 +72,11 @@ never text-search. Dated scheduling and status (HOW_TO_BUILD's dated sections, `
 status lines of the MAP's §8 and RESOLVING's §9 entries, earlier plans) are history and evidence for a
 part, never the next step; the definitions and limits those entries record stay in force until a later
 accepted record supersedes them.
+
+The worker guide required in step 5 adds launch, dependency, invalidation and integration
+procedures. Its §10 distinguishes proposed enforcement from available checks. It does not replace
+this sequence, the work order or §7's chosen anatomy-rule review. §13 names the active packet;
+all populated live state and jobs are recorded only there.
 
 ## 1. Mechanism and non-negotiable distinctions
 
@@ -213,9 +219,9 @@ all actual consumers. This is a clarification of the existing data contract, not
 engine, exhaustive accuracy campaign, perfect-boundary requirement or request for repeated
 human approval. Once the faithful description is reasonably competent, continue the build.
 
-## 2. Source checkpoint and present state
+## 2. Historical source checkpoint and accepted scope
 
-The latest accepted anatomy is RELATIVE_POSITION_MAP §§8.35–8.36: native axial/coronal PCL,
+At this historical handoff, the accepted anatomy was RELATIVE_POSITION_MAP §§8.35–8.36: native axial/coronal PCL,
 with proof SAG18/COR22/AX15 jointly constructing LPS
 `[-110.95654820639552, -42.08987813891625, 23.75791539106383]`. This is a competent local
 reference, not full course or volume. Four wrong axial identifications and three local empty
@@ -234,15 +240,14 @@ The accepted manifest is E +
 Its file SHA-256 is `11e2f799a46e31d58e1763780eb6a3dbb58d32e7f1594290e4c067767e119d12`;
 runner SHA-256 is `a2f9f22323707d8a16253844a3eb98ec14bc0e6c27ed05c49db8a5ccbbe6842d`.
 The accepted epoch's gate passed 1,087 tests. Recorded serial, parallel and public runs exited 0.
-The 70 source files were rechecked before this documentation handoff; later changes require a
-fresh pin. HEAD is `a118db8`; the accepted build includes extensive uncommitted/untracked work.
-A commit hash alone cannot reproduce it. Preserve the working tree and source snapshots. (Dated,
-at this handoff: `7b61b54` then committed that work and later increments followed; `git log` gives
-the current state.)
+The 70 source files were rechecked at that handoff. Its HEAD was `a118db8` plus extensive
+uncommitted/untracked work; `7b61b54` subsequently committed that work and later increments
+followed. That hash alone does not reproduce the historical epoch. Preserve its source snapshots;
+use §13's active packet and verify live source before making a current-state claim.
 
 Accepted recorded scope:
 
-| Group | Current contract; do not rebuild completed definitions |
+| Group | Accepted scope at this handoff; definitions and limits remain in force |
 |---|---|
 | Original anatomical definition pass | Every outstanding part in ANATOMY_DEFINITION_CHECKPOINT was demonstrated once by 2026-10-16. Full course/precision/generalization was never required. |
 | Bones and joint/anterior families | Native bone references, fibula, joint/fluid/recess/lining/capsule, extensor tendons, retinacula and fat-pad bridges have accepted records in MAP §§8.12–8.25. Their limitations remain. |
@@ -332,7 +337,8 @@ Read whole logical units, never text-search fragments; archives stay invisible.
 
 Check git state and workers, verify the accepted source manifest, and inspect the preserved
 run invocations before running anything. All three continuation helper tasks completed; no
-pending worker result needs polling. No preview is accepted production. Read every candidate
+pending worker result needed polling at that historical checkpoint. For live jobs use only the
+active packet's job table and verify the actual handles. No preview is accepted production. Read every candidate
 unit before copying it. Generate a fresh object/view inventory from receipts and maps under the
 actual source pin; separate resolved native, native reading, laid, projected, trace and refusal.
 
@@ -341,8 +347,10 @@ actual source pin; separate resolved native, native reading, laid, projected, tr
 Packet: B + `sartorius-scope-max-20261018/attempt-3-text-only/`.
 Read `candidate-verification.json`, `candidate-test-history.json`, complete
 `candidate/review-units/` and `candidate/focused-tests-final.log`. The isolated corrected
-candidate passed 39 focused tests and Ruff; it is **not lead-reviewed, integrated or accepted**.
-(Dated: it was reviewed, integrated and accepted later on 2026-10-18; §13.)
+candidate passed 39 focused tests and Ruff at that isolated development checkpoint. The subsequent
+P1 production acceptance is recorded in commit `19967cd` and B + `p1-sartorius-scope-20261018/`.
+The procedure below explains that increment's mechanism and checks; it is not an open-task
+instruction to repeat it. Use §13's active packet for the current task.
 Use the corrected candidate, not the original answer.md as an automatic patch.
 
 Chosen mechanism: project gracilis once; `source_window` bounds the search around the actual
@@ -527,7 +535,11 @@ interface». For the P4–P6 pictures he chose "Each family wave" (11:25 UTC). F
    producer and consumer mean; the anatomical fact seen in the native images, separated from any
    number; why the operation follows from that anatomy).
 2. Codex, the main consult interface (model-only, `codex-consultation.md`), checks it against the
-   thesis.
+   thesis. Every prompt carries the complete proposed rule, its governing theory/correction/contract
+   units and the actual evidence being discussed as text; file paths alone are not inputs. This
+   review route must not depend on file or image access. Record the exact rendered prompt and
+   response. An answer that could not read its required inputs counts as no review; repair the
+   payload and obtain the substantive reading before treating this step as complete.
 3. The Fable consult, the only route that takes a picture
    (`~/Projects/SquishOS/ops/agents/bin/anthropic-consult --prompt <file> --image <png> --out <md>`,
    `anthropic-consultation.md`; it spends API credits), is shown the rule's picture sheet and asked
@@ -642,8 +654,11 @@ where already applicable; no new orchestration engine or Kedro migration is need
 this plan. Static references plus actual runtime calls establish whether values are shared.
 
 Read `scripts/ci_local.sh` and its current configuration rather than copying a remembered gate.
-It runs Ruff, format, pytest, Import Linter and advisory deptry/ty/two Vulture scans. Read all
-advisories; a passing blocking gate does not clear them. Use Hypothesis for geometry/cache/lossless
+It runs, from the locked environment, Ruff, format, the tests under coverage, Import Linter, advisory
+deptry/ty/two Vulture scans and a blocking Sonar check (quality gate OK, no open bug or vulnerability:
+`scripts/sonar_local.py gate`); the same gate runs on GitHub on every push (`.github/workflows/gate.yml`;
+Rohan, 2026-10-18: «Sonar should be part of the CI gate for this project, and a full CI gate should also
+run upon push to github»). Read all advisories; a passing blocking gate does not clear them. Use Hypothesis for geometry/cache/lossless
 properties, Detective and CrossHair for suitable pure decisions/contracts, not to certify anatomy
 from test counts. CrossHair must actually report checkable contracts; silence is not proof.
 Use project-interpreter cProfile/VizTracer or another available instrument against the real entry
@@ -664,16 +679,23 @@ For every production increment:
 5. Exercise empty/malformed/nonfinite/boundary input, missing knee side/source/geometry,
    different sequence dimensions, oblique slabs, ties, map disagreement, clipped contexts and
    measured-empty versus unavailable. Check all real sibling routes and the single save point.
-6. Run the full gate after the integrated increment; inspect advisory lists. Update RESOLVING,
-   MAP and NEXT with the mechanism, accepted image, source/run evidence and exact remaining work.
-   Keep a clean checkpoint before the next packet. Do not commit/push without the requested scope.
+6. Run the full gate after the integrated increment; inspect advisory lists. Record the mechanism,
+   accepted image and source/run evidence in the dated RESOLVING/MAP acceptance record; update
+   detailed remaining work only in §13's active packet. NEXT stays a pointer card. Commit that clean
+   checkpoint with explicit paths, run the pre-push checks, push it before the next packet and read the
+   GitHub gate run on it (Rohan, 2026-10-18: «just freaking commit to git»; HOW_TO_BUILD, "Commit and
+   push, 2026-10-18").
 
 ## 10. Local Claude Max implementation route
 
 Rohan explicitly authorized the source/measurement handoff and requested the **local CLI**:
 «I am providing that approval, but more importantly I want you to use the local CLI path.»
-Use subscription-authenticated Claude Max for bounded code generation and audits as much as
-reasonable; small Codex helpers can reconstruct images, run isolated tests and check addresses.
+Use one explicit route per job: tool-enabled in-session helpers reconstruct images, trace source,
+run isolated tests and check addresses; text-only subscription-authenticated Claude Max workers
+return bounded implementation candidates; model-only Codex provides independent text review;
+Fable over the Anthropic API reads picture sheets. The Codex consultation route receives no
+implementation work and is not an evidence/test runner. Tool-enabled session helpers are a
+different capability, not a promise that a model-only consultation can open files or images.
 Lead retains meaning, rule selection, production integration and visual acceptance.
 
 A working recipe is preserved in B +
@@ -782,60 +804,51 @@ milestone before that dependency; do not label the whole competition solution co
 
 ## 13. Context-stable continuation and stop points
 
-NEXT_SESSION_PROMPT is the short entry card; this file is the complete remaining-work order;
-EFFICIENCY_RETROFIT_PLAN retains E01–E24 issue history; MAP holds dated accepted mechanisms and
-pins; RESOLVING holds anatomical definitions. Do not create another competing master plan.
-The previous full plan and next-session prompt are preserved under H.
+**Active task ID:** `BUILD-WORKFLOW-PLAN-20261018`.
+**Active packet:** [docs/work/current/README.md](work/current/README.md).
 
-At each handoff save: current source manifest and git state, accepted run roots, commands and
-exit status, inspected images, result/unknown semantics, changed outputs adjudication, ledger/
-profile/gate findings, worker attempts/status and the **next single task ID**. Update existing
-records in place while preserving dated acceptance history. A clean pause has no ambiguous
-in-flight mutation or worker completion being represented as production success.
+This section is the only active-task index. The named packet is the only populated current-state
+record: request, source basis, accepted checkpoint, next action, open work and the job table all
+live there. NEXT_SESSION_PROMPT and the guide point here; they do not copy its state. Worker
+attempt directories retain immutable inputs/results/logs and do not constitute a competing live
+queue. Update this task ID and packet pointer together when the lead changes the active task.
+A historical packet's completion never dispatches a new task by itself.
 
-**Progress, 2026-10-18:** P0 done (`B + p0-inventory-20261018/`; bulk commit `7b61b54`). P1 accepted
-(`B + p1-sartorius-scope-20261018/`): sartorius contrast bounded to the gracilis-target window, the
-188-pixel sheet unchanged. **P2a remains OPEN and required.** Its packet measured padded boxes;
-no tile-level region or production region consumer was tested. The usable candidate boxes on nine
-of the ten inspected middle frames occupy about 90–100%; the remaining cheap flood keeps a wrong
-corner. These facts do not establish that useful background exclusion is unavailable. The earlier
-claim and commit `398b856`'s dismissal are superseded by §1.1 and the corrected P2a contract.
-A read-only wave-1 fact packet for P2a, launched by the lead before a compaction, was framed with
-area and coverage shares and a tile rule the lead had invented; it was stopped and withdrawn in
-writing (`B + wave1-packets-20261018/p2a-regions-WITHDRAWN-20261018/WITHDRAWN.md`) and is not P2a
-evidence. The P2a packet specified above has not been run. The six other wave-1 packets (P3–P7
-facts and pictures) were stopped with it: each had written its README, their independent checks
-were cut off and their results not kept, and none has been reviewed or accepted by the lead; their
-checks are re-run before any of them is used.
-Open, recorded, status not re-checked against the current build: the items still owed in
-HOW_TO_BUILD's "Where it stands" (siding by the fibula where the header names no knee; the fibula
-laid onto the fat-suppressed sagittal's slice; parts carried onto the axial by place; main slices
-chosen from the squint; the squint's compiled twin; the fibula's lens read on every slice that holds
-it; a slice's pixel size stated two ways), and the sagittal-menisci record's "Producer/consumer
-ledger declarations in the new adapter still need correction during the next family edit"
-(`docs/history/BUILD_STATUS_RECORD.md`).
-**P2b increment 1 accepted** (`B + p2b-bone-context-20261018/`): later identified native bone sections
-are published once (`refine_leg`) as location priors with an immutable leg identity keying every
-`once` cache inside the leg-taking functions (AST query and output in the packet), handed to the
-native fat and axial cartilage readers; earlier readers keep the early leg. The §1.2 conflation found
-there is repaired: the axial cartilage band is calibrated on the native component its reader selects
-(Claude's analogue of the places the original cartilage rule reads, not the same construction), no
-longer on the coarse core grown from location priors (three statements, Codex's answers, images and
-comparisons in that packet). An independent check of that record found gaps, closed in the packet's
-README and `verification.md`: the Codex answers were missing; two context changes were unlisted (proof
-axial z27/z29, bursa coronal z16, drawn and inspected: no output changed); no consumer of the refined
-context reads axial slices 11 and 12 in this increment; the reader now selects before it calibrates,
-which changed its refusal order. P2b increment 2 remains: hand the refined leg to `axial_bone_planes`
-and `fibula_key_planes` (they move the map's axial zero) with their own inspection, which covers axial
-slices 11 and 12. `name_the_joint`, like the patella and recess readers, still builds the early leg
-itself (P3). Open, recorded: whether broad sections suit `coarse_section`'s cut level.
+This file remains the complete remaining-work order; EFFICIENCY_RETROFIT_PLAN retains issue
+history; MAP holds dated accepted mechanisms and source pins; RESOLVING holds anatomical
+definitions. Do not create another master plan. The former populated checkpoint and NEXT are
+preserved verbatim in `docs/history/CONTINUATION_STATE_2026-10-18.md`. They are history, not
+current instructions. In particular, superseded non-acceptance or early-cache descriptions must
+not restart completed work. Continuing corrections and contracts elsewhere in this plan remain.
 
-**Continuation:** finish and verify any in-flight P2b work without disrupting its source epoch.
-Prepare the actual region/tile-and-consumer P2a packet described above; retain it explicitly in
-NEXT_SESSION_PROMPT while other independent work proceeds. Publish shared native bone context
-before further dependent ACL/tibial-cartilage work. Continue the table through P11 without
-silently retiring P2a. P12/P13 keep their stated primary-contract/human-specification dependencies.
-No fresh thesis redesign, repeated endorsement consultation or history rewrite is requested.
+### The single handoff template
+
+Populate this template only in the active packet. The guide's grounding, job supervision and
+pause procedures use these same fields. References to full evidence may be used instead of
+copying logs or primary documents. Distinguish inherited acceptance records from new checks.
+
+```text
+TASK ID / PACKET REVISION / STATE:
+CURRENT REQUEST / AUTHORITATIVE EXCHANGES / ACTUAL AUTHORS:
+SOURCE HEAD / DIRTY UNITS / MANIFEST / INPUT IDENTITIES:
+OWNER / PERMITTED WRITES / WORKER ROUTES:
+CONTRACTS / INPUT AND OUTPUT MEANINGS / REAL CONSUMER:
+NEXT SINGLE ACTION / PROPOSED OPERATION / JUSTIFICATION:
+OPEN SEMANTIC CHOICE / PREREQUISITES / OTHER OPEN BUILD ITEMS:
+ACCEPTED CHECKPOINT / RUN ROOTS / EXACT COMMANDS / EXIT STATUS:
+INSPECTED IMAGE ADDRESSES / RESULT AND UNKNOWN SEMANTICS:
+CHANGED OUTPUT ADJUDICATION / LEDGER / PROFILE / GATE ADVISORIES:
+WORKERS: <task/attempt, route, owner, handle, dependencies, output root, verified state>
+UNREVIEWED / WITHDRAWN / STALE RESULTS:
+VERIFICATION STILL OWED / RECHECK BASIS:
+HANDOFF TIME / EVIDENCE LINKS:
+```
+
+A clean pause has no ambiguous in-flight mutation or worker completion represented as production
+acceptance. Check actual job handles and source identities before resuming; an unverified external
+job stays unverified. Preserve existing source epochs and all readings. Follow the current human
+request; consult the packet for the next build task without treating it as permission to change
+the current activity. P12/P13 retain their primary-contract/human-specification dependencies.
 
 
 ## 14. Measurement and consumer contracts

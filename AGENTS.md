@@ -80,7 +80,13 @@ the receipts from before it: copy `data/measurements/interiors/receipt.json` and
 `data/measurements/main-slices/receipt.json` aside, rerun the labelled studies, and compare each
 receipt with its copy (`.venv/bin/python scripts/compare_receipts.py <before> <after>`, with
 `--borders-aside` when only one of the two runs drew): every record's decisions and saved arrays by
-their digests, and the silences; it exits 1 when any differ. The gate is `scripts/ci_local.sh`.
+their digests, and the silences; it exits 1 when any differ. The gate is `scripts/ci_local.sh`, run
+from the locked environment (`uv sync` first). Its last step is Sonar (`scripts/sonar_local.py gate`,
+blocking: quality gate OK, no open bug or vulnerability): the kept container `rsna-knee-sonar` on port
+9001, its credentials minted once outside the repo in `~/.config/rsna-knee/sonar-local.env`, Docker
+Desktop started if it is not running. The same gate runs on GitHub on every push
+(`.github/workflows/gate.yml`). Rohan, 2026-10-18: «Sonar should be part of the CI gate for this
+project, and a full CI gate should also run upon push to github».
 
 Do not:
 - build rule machinery;

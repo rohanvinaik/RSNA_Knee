@@ -4,10 +4,27 @@
 # Copied from the previous build's gate on 2026-10-13, without its two steps that ran that build's own
 # scripts (places.py, object_graph.py) and without its vulture allowlist. The archives are invisible
 # unless Rohan says to look in them, so no step here reads them.
+#
+# The same gate runs on every push to GitHub (.github/workflows/gate.yml). Rohan, 2026-10-18: «Sonar
+# should be part of the CI gate for this project, and a full CI gate should also run upon push to
+# github». So every tool runs from the locked environment (.venv), and a missing one fails the gate
+# rather than letting its advisory step pass unread.
 set -u
 cd "$(dirname "$0")/.."
-PP="$HOME/tools/Detective:$HOME/tools/Wesker"
+# Detective's and Wesker's source checkouts on this machine, where they exist; elsewhere the locked
+# releases installed in .venv are imported.
+PP=""
+for tool in "$HOME/tools/Detective" "$HOME/tools/Wesker"; do
+    if [ -d "$tool" ]; then PP="${PP:+$PP:}$tool"; fi
+done
 fail=0
+
+for tool in ruff lint-imports deptry ty vulture; do
+    if [ ! -x ".venv/bin/$tool" ]; then
+        echo "missing .venv/bin/$tool: run uv sync"
+        fail=1
+    fi
+done
 
 echo "== ruff check (pinned)"
 .venv/bin/ruff check . || fail=1
@@ -15,21 +32,23 @@ echo "== ruff check (pinned)"
 echo "== ruff format --check (pinned, whole tree)"
 .venv/bin/ruff format --check . || fail=1
 
-echo "== pytest"
-PYTHONPATH="$PP" .venv/bin/python -m pytest || fail=1
+# Under coverage, once: its coverage.xml is what the Sonar step reads.
+echo "== pytest (under coverage)"
+PYTHONPATH="$PP" .venv/bin/python -m coverage run -m pytest || fail=1
+.venv/bin/python -m coverage xml -q -o coverage.xml || fail=1
 
 # THE LAYER CONTRACT. Blocking: production never imports the development or drawing tools, and a
 # run with no contracts configured is not a pass.
 echo "== import contract (lint-imports)"
-PYTHONPATH=src lint-imports --config pyproject.toml --no-cache || fail=1
+PYTHONPATH=src .venv/bin/lint-imports --config pyproject.toml --no-cache || fail=1
 
 # DECLARED DEPENDENCIES AGAINST REAL IMPORTS. Advisory: TOOLING.md records that its unused-package
 # findings are leads to inspect and never authority to remove a package from the founder's design.
 echo "== deptry (advisory): declared dependencies against what is imported"
-deptry . || echo "deptry: the findings above are leads, not a gate"
+.venv/bin/deptry . || echo "deptry: the findings above are leads, not a gate"
 
 echo "== ty (advisory)"
-ty check src tests || echo "ty: the findings above are leads, not a gate"
+.venv/bin/ty check src tests || echo "ty: the findings above are leads, not a gate"
 
 # ISLANDS. The founder, 2026-10-12: "I told you that there should be structural guards against
 # islands of code that compute but are never called ... they would make unused scripts that are in
@@ -43,12 +62,20 @@ ty check src tests || echo "ty: the findings above are leads, not a gate"
 # name-resolved nodes are false positives here, so a blocking run would need a whitelist and a
 # whitelist is how a guard stops being read.
 echo "== vulture (advisory) 1/2: nothing in PRODUCTION calls it -- test-only code shows here"
-vulture src scripts ||
+.venv/bin/vulture src scripts ||
     echo "vulture: a name here that is used only by a test is an island (AGENTS.md: defined, imported and tested with no production caller)"
 
 echo "== vulture (advisory) 2/2: nothing ANYWHERE calls it, tests included"
-vulture src scripts tests ||
+.venv/bin/vulture src scripts tests ||
     echo "vulture: every line here is an island whose consumer is owed, or dead code to archive"
+
+# SONAR. Blocking: the scanner ran, the server's quality gate is OK, and no bug or vulnerability is
+# open (the bar in the global verification-gates.md). Code smells, coverage and duplication print as
+# information. A deliberate construct Sonar misreads gets `# NOSONAR(<rule key>)` on its line (the only
+# form Sonar accepts: nothing may follow it) and its reason in a comment just above; a real finding is
+# fixed.
+echo "== sonar (blocking: quality gate OK, no open bug or vulnerability)"
+.venv/bin/python scripts/sonar_local.py gate || fail=1
 
 if [ "$fail" -ne 0 ]; then
     echo "GATE: FAILED"

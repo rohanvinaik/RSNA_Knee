@@ -1,0 +1,8 @@
+# The workflow's actions are pinned to commit SHAs; this keeps the pins current (SquishOS repo-hygiene.md:
+# "Dependabot ... at least the github-actions ecosystem").
+version: 2
+updates:
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: weekly
