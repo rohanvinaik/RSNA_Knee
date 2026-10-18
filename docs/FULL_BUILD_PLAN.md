@@ -575,8 +575,11 @@ profile/gate findings, worker attempts/status and the **next single task ID**. U
 records in place while preserving dated acceptance history. A clean pause has no ambiguous
 in-flight mutation or worker completion being represented as production success.
 
-**Exact next action:** P0 source/inventory check, then read and adjudicate the complete corrected
-P1 candidate; integrate it only after lead review. Dispatch factual P2 tracing/early-domain image
+**Progress, 2026-10-18:** P0 done (`B + p0-inventory-20261018/`; bulk commit `7b61b54`). P1 accepted
+(`B + p1-sartorius-scope-20261018/`): sartorius contrast bounded to the gracilis-target window, the
+188-pixel sheet unchanged.
+
+**Exact next action:** P2. Dispatch factual P2 tracing/early-domain image
 packets to subscription workers in parallel where independent. Publish shared native bone
 context before further dependent ACL/tibial-cartilage work. Continue the table through P11;
 P12/P13 keep their stated primary-contract/human-specification dependencies. No fresh thesis

@@ -1851,3 +1851,9 @@ The lead's acceptance is `pcl-coronal-checkpoint/lead-acceptance.json`. It compl
 coronal description and the proof three-plane reference; it does not finish all PCL pairs or the
 whole build. R2 still includes ACL axial/coronal and tibial axial cartilage (its sagittal/coronal
 descriptions remain accepted); R3–R6 remain in the roadmap.
+
+### 8.37 Scoped sartorius contrast — 2026-10-18
+
+FULL_BUILD_PLAN P1: the sartorius contrast runs on the gracilis-target window plus its exact surround
+halo; the map, every other record and the 188-pixel sheet are unchanged. Evidence:
+`data/readings/collapse-20261017/full-build/targeted-compute-20261018/p1-sartorius-scope-20261018/`.

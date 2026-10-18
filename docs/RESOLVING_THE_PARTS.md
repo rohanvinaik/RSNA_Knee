@@ -1294,3 +1294,11 @@ anatomical absence. The four wrong axial identifications and three axial local-e
 §8.35 remain recorded. General source eligibility using resolved joint/bone context and physical
 notch relation remains an R5 task; preserve these run outcomes as evidence, while future structural
 constraints remain available. R2 still includes ACL axial/coronal and tibial axial cartilage.
+
+## Sartorius contrast scope, 2026-10-18
+
+The sartorius definition is unchanged. Its contrast is now measured only on the window around the
+projected gracilis target (2 × its authored extent plus the 10 mm reach) and the exact surround halo
+that window needs, so every in-window value equals the whole-slice one and the rest is unmeasured.
+The proof's 188-pixel sheet keeps its digest. Evidence and the inspected frame:
+`data/readings/collapse-20261017/full-build/targeted-compute-20261018/p1-sartorius-scope-20261018/`.

@@ -3675,6 +3675,113 @@ def muscle_grey_bodies(lightness: np.ndarray) -> np.ndarray:
     return np.asarray(labels, dtype=np.int32)
 
 
+SARTORIUS_SCOPE_STATUSES = ("present", "window_clipped_to_image")
+
+
+def sartorius_scope_window(
+    scope: dict | None, shape: tuple[int, int]
+) -> tuple[int, int, int, int] | None:
+    """Return validated exclusive RC bounds, rejecting malformed values without coercion."""
+    if (
+        not isinstance(scope, dict)
+        or scope.get("status") not in SARTORIUS_SCOPE_STATUSES
+    ):
+        return None
+    if len(shape) != 2 or any(
+        isinstance(n, (bool, np.bool_))
+        or not isinstance(n, (int, np.integer))
+        or n <= 0
+        for n in shape
+    ):
+        return None
+    try:
+        raw_values = scope["window_rc_exclusive"]
+        if any(isinstance(v, (bool, np.bool_)) for v in raw_values):
+            return None
+        raw = np.asarray(raw_values)
+    except (KeyError, TypeError, ValueError):
+        return None
+    if raw.shape != (4,) or raw.dtype.kind not in "iuf" or not np.all(np.isfinite(raw)):
+        return None
+    if np.any(raw != np.floor(raw)):
+        return None
+    r0, r1, c0, c1 = (int(v) for v in raw)
+    if not (0 <= r0 < r1 <= shape[0] and 0 <= c0 < c1 <= shape[1]):
+        return None
+    return r0, r1, c0, c1
+
+
+def scoped_local_lightness(
+    plane: np.ndarray,
+    excluded: np.ndarray,
+    spacing_rc: np.ndarray,
+    window: tuple[int, int, int, int],
+    available: np.ndarray | None = None,
+    not_low: np.ndarray | None = None,
+) -> dict[str, np.ndarray]:
+    """Compute a query window with its required contrast context and retain both domains.
+
+    Context values are the complete crop actually passed to the existing contrast measurement.
+    Query outputs contain values only inside the requested window; exterior pixels are unqueried.
+    Queried pixels excluded for availability, low signal, or nonfinite input remain unavailable.
+    """
+    values = np.asarray(plane, dtype=np.float64)
+    hidden = np.asarray(excluded, dtype=bool)
+    available_mask = ~hidden if available is None else np.asarray(available, dtype=bool)
+    not_low_mask = ~hidden if not_low is None else np.asarray(not_low, dtype=bool)
+    if (
+        values.ndim != 2
+        or hidden.shape != values.shape
+        or available_mask.shape != values.shape
+        or not_low_mask.shape != values.shape
+    ):
+        raise ValueError("lightness_inputs_must_share_a_2d_shape")
+    r0, r1, c0, c1 = window
+    rows, cols = window_pixels(spacing_rc, LOCAL_CONTRAST_MM)
+    halo_r = rows // 2 + SAMPLING_PIXELS // 2
+    halo_c = cols // 2 + SAMPLING_PIXELS // 2
+    cr0, cr1 = max(0, r0 - halo_r), min(values.shape[0], r1 + halo_r)
+    cc0, cc1 = max(0, c0 - halo_c), min(values.shape[1], c1 + halo_c)
+    context_raw = values[cr0:cr1, cc0:cc1]
+    context_hidden = hidden[cr0:cr1, cc0:cc1]
+    context_available = available_mask[cr0:cr1, cc0:cc1]
+    context_not_low = not_low_mask[cr0:cr1, cc0:cc1]
+    context_finite = np.isfinite(context_raw)
+    sub = local_lightness(context_raw, context_hidden, spacing_rc)
+    inner = (slice(r0 - cr0, r1 - cr0), slice(c0 - cc0, c1 - cc0))
+    query_values = []
+    for part in sub:
+        full = np.full(values.shape, np.nan, dtype=np.float64)
+        full[r0:r1, c0:c1] = np.asarray(part)[inner]
+        query_values.append(full)
+    queried = np.zeros(values.shape, dtype=bool)
+    queried[r0:r1, c0:c1] = True
+    effective_context = (
+        context_available & context_not_low & context_finite & ~context_hidden
+    )
+    effective_query = np.zeros(values.shape, dtype=bool)
+    effective_query[r0:r1, c0:c1] = effective_context[inner]
+    return {
+        "lightness": query_values[0],
+        "smooth": query_values[1],
+        "surround": query_values[2],
+        "query_window": queried,
+        "effective_available": effective_query,
+        "context_raw": context_raw.copy(),
+        "context_excluded": context_hidden.copy(),
+        "context_available": context_available.copy(),
+        "context_not_low": context_not_low.copy(),
+        "context_finite": context_finite,
+        "context_effective_available": effective_context,
+        "context_lightness": np.asarray(sub[0]),
+        "context_smooth": np.asarray(sub[1]),
+        "context_surround": np.asarray(sub[2]),
+        "window": np.asarray([r0, r1, c0, c1], dtype=np.int32),
+        "context": np.asarray([cr0, cr1, cc0, cc1], dtype=np.int32),
+        "halo": np.asarray([halo_r, halo_c], dtype=np.int32),
+    }
+
+
 def sartorius_on_slice(
     plane: np.ndarray,
     low: np.ndarray,
@@ -3683,6 +3790,9 @@ def sartorius_on_slice(
     frame: PlaneFrame,
     knee: str,
     measures: Measures | None = None,
+    target: np.ndarray | None = None,
+    scope: dict | None = None,
+    available: np.ndarray | None = None,
 ) -> tuple[np.ndarray, dict[str, np.ndarray], str]:
     """The sartorius on a fat-suppressed axial slice (its paragraph in the module note): of the
     muscle-grey bodies (`muscle_grey_bodies` of `local_lightness`), the largest whole one on the
@@ -3691,20 +3801,39 @@ def sartorius_on_slice(
 
     `gracilis_lps` are the gracilis's places in the scanner's millimetres, from the slice it was
     named on, and `frame` is this slice's: they are projected along its normal
-    (`projected_places`) into a target, however far off its plane they lie. `low` is the lens's
-    low signal and `unseen` what has no light here (not available, or the black margin); `knee` is
-    the header's "R" or "L", which names the inner side. `measures` are the slice's shared
-    measures, when its caller keeps them: each place's position along the patient's axes and its
-    distance from the target are read from them.
+    (`projected_places`) into a target, however far off its plane they lie, unless the caller
+    already did so and hands that `target` (a boolean mask of the plane's shape) in. `low` is the
+    lens's low signal and `unseen` what has no light here (not available, or the black margin);
+    `knee` is the header's "R" or "L", which names the inner side. `measures` are the slice's
+    shared measures, when its caller keeps them.
 
-    Returns the mask, every reading actually made (arrays only, present once the rule reached
-    it: the target, its source's separation from the plane, the window, `smooth`, `surround`,
-    `lightness`, the labelled bodies with their inner and back means, sizes and status
-    (`SARTORIUS_BODY_STATUS`), the target's distance, and the eligible bodies with their reach)
-    and the code."""
+    `scope` is the caller's source window (`source_window` result around the target, sized from
+    the sartorius's authored extent plus `GRACILIS_REACH_MM`). When given, the contrast is
+    computed only over that window plus the context its interior needs
+    (`scoped_local_lightness`); everything else is unmeasured (NaN lightness, `contrast_measured`
+    False), the grey-body rule is applied unchanged within the window, and a scope that cannot be
+    read refuses with `abstain_sartorius_scope_unavailable`. Without a scope the whole plane is
+    measured as before.
+
+    Returns the full-frame mask, every reading actually made (arrays only, present once the rule
+    reached it: the target, its source's separation from the plane, the scope address, offset,
+    dimensions and context, the window, `smooth`, `surround`, `lightness`, the labelled bodies
+    with their inner and back means, sizes and status (`SARTORIUS_BODY_STATUS`), the target's
+    distance, and the eligible bodies with their reach) and the code."""
     values = np.asarray(plane, dtype=np.float64)
-    gone = np.asarray(low, dtype=bool) | np.asarray(unseen, dtype=bool)
-    if values.ndim != 2 or gone.shape != values.shape:
+    low_mask = np.asarray(low, dtype=bool)
+    unseen_mask = np.asarray(unseen, dtype=bool)
+    available_mask = (
+        np.ones(values.shape, dtype=bool)
+        if available is None
+        else np.asarray(available, dtype=bool)
+    )
+    finite_input = np.isfinite(values)
+    gone = low_mask | unseen_mask | ~available_mask | ~finite_input
+    if values.ndim != 2 or any(
+        mask.shape != values.shape
+        for mask in (gone, low_mask, unseen_mask, available_mask)
+    ):
         raise ValueError("sartorius_inputs_must_share_a_2d_shape")
     empty = np.zeros(values.shape, dtype=bool)
     readings: dict[str, np.ndarray] = {}
@@ -3717,7 +3846,12 @@ def sartorius_on_slice(
     places = np.asarray(gracilis_lps, dtype=np.float64)
     if places.size == 0:
         return refuse("abstain_no_gracilis_source")
-    target = projected_places(places, frame, values.shape)
+    if target is None:
+        target = projected_places(places, frame, values.shape)
+    else:
+        target = np.asarray(target, dtype=bool)
+        if target.shape != values.shape:
+            raise ValueError("sartorius_target_must_share_the_plane_shape")
     readings["gracilis_source_lps"] = places
     readings["gracilis_target"] = target
     readings["gracilis_source_separation_mm"] = np.asarray(
@@ -3727,8 +3861,57 @@ def sartorius_on_slice(
         return refuse("abstain_gracilis_projects_outside_the_picture")
 
     spacing_rc = np.asarray(frame.spacing_rc, dtype=np.float64)
-    lightness, smooth, surround = local_lightness(values, gone, spacing_rc)
+    window = None
+    if scope is not None:
+        window = sartorius_scope_window(scope, values.shape)
+        if window is None:
+            return refuse("abstain_sartorius_scope_unavailable")
+        readings["contrast_scope_window_rc"] = np.asarray(window, dtype=np.int32)
+        readings["contrast_scope_offset_rc"] = np.asarray(window[::2], dtype=np.int32)
+        readings["contrast_scope_shape_rc"] = np.asarray(
+            [window[1] - window[0], window[3] - window[2]], dtype=np.int32
+        )
+        readings["contrast_scope_clipped"] = np.asarray(
+            bool(scope.get("window_clipped_to_image", False))
+        )
+        if "projected_half_span_pixels_rc" in scope:
+            readings["contrast_scope_half_span_pixels_rc"] = np.asarray(
+                scope["projected_half_span_pixels_rc"], dtype=np.float64
+            )
+        if "target_bbox_rc_exclusive" in scope:
+            readings["contrast_scope_target_bbox_rc"] = np.asarray(
+                scope["target_bbox_rc_exclusive"], dtype=np.int32
+            )
+        scoped = scoped_local_lightness(
+            values, gone, spacing_rc, window, available_mask, ~low_mask
+        )
+        lightness, smooth, surround = (
+            scoped["lightness"],
+            scoped["smooth"],
+            scoped["surround"],
+        )
+        readings.update(
+            contrast_query_window=scoped["query_window"],
+            contrast_effective_available=scoped["effective_available"],
+            contrast_context_rc=scoped["context"],
+            contrast_halo_pixels_rc=scoped["halo"],
+            contrast_context_raw=scoped["context_raw"],
+            contrast_context_excluded=scoped["context_excluded"],
+            contrast_context_available=scoped["context_available"],
+            contrast_context_not_low=scoped["context_not_low"],
+            contrast_context_finite=scoped["context_finite"],
+            contrast_context_effective_available=scoped["context_effective_available"],
+            contrast_context_lightness=scoped["context_lightness"],
+            contrast_context_smooth=scoped["context_smooth"],
+            contrast_context_surround=scoped["context_surround"],
+        )
+    else:
+        lightness, smooth, surround = local_lightness(values, gone, spacing_rc)
     readings.update(
+        contrast_actual_available=available_mask,
+        contrast_not_low=~low_mask,
+        contrast_input_finite=finite_input,
+        contrast_finite=finite_input & np.isfinite(lightness),
         surround_window_pixels=np.asarray(
             window_pixels(spacing_rc, LOCAL_CONTRAST_MM), dtype=np.int32
         ),
