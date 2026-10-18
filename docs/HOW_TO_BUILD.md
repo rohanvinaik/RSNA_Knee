@@ -1102,3 +1102,10 @@ or production change. Preserve the accepted MAP §8.36 source epoch and every or
 The plan distinguishes useful scope changes from equivalent kernel/refactor changes, observation
 metadata consumers from support-pixel consumers, and completed recognition from the later
 human-specified representation/AI/diagnostic dependencies. Earlier dated plans remain history.
+
+
+## The leg-bound conclusion, 2026-10-18
+
+| His words | What Claude had done | What would have prevented it |
+|---|---|---|
+| «Pause--you fucked this up, this is EXACTLY the sort of conclusion I told you REPEATEDLY is NOT the correct epistemology for this project: My main reservation is the wording of the leg-bound conclusion. The figures show that this particular padded rectangular crop saves little on these ten frames. That supports moving on to more selective anatomical regions; it does not establish that background exclusion or nonrectangular regions are generally unhelpful.» | Measured one padded rectangle around the leg (its box plus 10 mm) on ten middle frames, then wrote "the not-leg prior cannot bound the lens usefully", used the cheap envelope's one differing frame as a reason to build nothing, and stated as fact that a tile version "has the same failure", which was never measured | A measurement describes the construction measured, on the frames measured: write exactly that. One construction that saves little is the boundary of that construction, not evidence against the principle (useful bounds, not perfect ones: Law 14); what was not tried is not ruled out (§3, §6) |

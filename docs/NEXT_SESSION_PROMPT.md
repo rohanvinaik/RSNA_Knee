@@ -47,9 +47,10 @@ epoch; the 43-concept matrix is static source evidence, not current completion/a
 ## Exact next action and ordered continuation
 
 0. **Done 2026-10-18:** P0 (`B + p0-inventory-20261018/`, bulk commit `7b61b54`) and P1
-   (`B + p1-sartorius-scope-20261018/`, source pin there). P2a measured and not built
-   (`B + p2a-leg-domain-20261018/`: a leg window would cover 90–100% of these frames). Continue at
-   P2b below; items 1–2 are history.
+   (`B + p1-sartorius-scope-20261018/`, source pin there). P2a: only a padded rectangular leg crop
+   was measured (`B + p2a-leg-domain-20261018/`); it saves little on these ten frames and is not
+   built. That does not establish that background exclusion or nonrectangular regions are
+   unhelpful (Rohan, 2026-10-18); both remain open. Continue at P2b below; items 1–2 are history.
 1. **P0:** Verify actual source/git/worker state and inventory native/laid/projected/read/refused
    evidence. Do not rerun accepted old gates without new source changes.
 2. **P1:** Read the whole corrected sartorius candidate under B +

@@ -577,9 +577,13 @@ in-flight mutation or worker completion being represented as production success.
 
 **Progress, 2026-10-18:** P0 done (`B + p0-inventory-20261018/`; bulk commit `7b61b54`). P1 accepted
 (`B + p1-sartorius-scope-20261018/`): sartorius contrast bounded to the gracilis-target window, the
-188-pixel sheet unchanged. P2a measured, not built (`B + p2a-leg-domain-20261018/`): on these
-knee-framed acquisitions a leg window would cover 90–100% of every middle frame, and the cheap
-envelope's one non-trivial result (bursa fat-suppressed coronal) is wrong.
+188-pixel sheet unchanged. P2a: one construction measured (`B + p2a-leg-domain-20261018/`): a
+padded rectangle around the leg (its box plus 10 mm) covers 90–100% of each of the ten proof/bursa
+middle frames, so that rectangular crop is not built. Rohan: «The figures show that this particular
+padded rectangular crop saves little on these ten frames. That supports moving on to more
+selective anatomical regions; it does not establish that background exclusion or nonrectangular
+regions are generally unhelpful.» Both remain open under P2a; the earlier wording that dismissed
+them is withdrawn.
 
 **Exact next action:** P2b. Dispatch factual P2 tracing/early-domain image
 packets to subscription workers in parallel where independent. Publish shared native bone
