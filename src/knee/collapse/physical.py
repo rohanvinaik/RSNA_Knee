@@ -12,8 +12,8 @@ CONTRACT = ComputeContract(
     language="NumPy",
     reads="2D original plane; physical spacing and tile mm; its finite mask when already read",
     writes="4 float64 tile maps and int64 native bounds",
-    allocation="64 bytes per output tile; per-tile finite mask, gathered values and NumPy median scratch",
-    work="per-tile finite scan/extraction, median selection and extrema reductions",
+    allocation="64 bytes per output tile; source-dtype gather batches up to 4,194,304 elements (or one larger tile); tile-count intermediates; per-tile fallback masks and median scratch",
+    work="finite scan over complete tiles; batched extrema and median reductions for full tiles; per-tile finite extraction for partial and ragged tiles",
     parallel_unit="independent plane",
     reference="physical_squint",
     proof_gate="ragged coverage/extrema/median intent tests; source unchanged",
@@ -105,6 +105,10 @@ class Squint:
     tile_shape_rc: tuple[int, int]
 
 
+_BATCH_ELEMENTS = 1 << 22
+_PLAIN_ARRAYS = (np.ndarray, np.memmap)
+
+
 @contracted
 def physical_squint(
     plane: np.ndarray,
@@ -125,21 +129,61 @@ def physical_squint(
     )
     median, minimum, maximum = (np.full(shape, np.nan) for _ in range(3))
     coverage = np.zeros(shape, dtype=np.float64)
+    rows, cols = plane.shape
+    starts_r = [r * tile[0] for r in range(shape[0])]
+    starts_c = [c * tile[1] for c in range(shape[1])]
     bounds = np.empty((*shape, 4), dtype=np.int64)
-    for r in range(shape[0]):
-        for c in range(shape[1]):
-            r0, c0 = r * tile[0], c * tile[1]
-            r1, c1 = (
-                min(r0 + tile[0], plane.shape[0]),
-                min(c0 + tile[1], plane.shape[1]),
-            )
-            block = plane[r0:r1, c0:c1]
-            values = block[finite[r0:r1, c0:c1]]
-            bounds[r, c] = r0, r1, c0, c1
-            coverage[r, c] = values.size / block.size
-            if values.size:
-                median[r, c] = np.median(values)
-                minimum[r, c], maximum[r, c] = np.min(values), np.max(values)
+    bounds[..., 0] = np.array(starts_r, dtype=np.int64)[:, None]
+    bounds[..., 1] = np.array(
+        [min(r0 + tile[0], rows) for r0 in starts_r], dtype=np.int64
+    )[:, None]
+    bounds[..., 2] = np.array(starts_c, dtype=np.int64)[None, :]
+    bounds[..., 3] = np.array(
+        [min(c0 + tile[1], cols) for c0 in starts_c], dtype=np.int64
+    )[None, :]
+    todo: list[tuple[int, int]] | None = None
+    nr, nc = rows // tile[0], cols // tile[1]
+    if (
+        type(plane) in _PLAIN_ARRAYS
+        and type(finite) in _PLAIN_ARRAYS
+        and finite.dtype == np.bool_
+        and finite.shape == plane.shape
+        and nr
+        and nc
+    ):
+        t0, t1 = tile
+        size = t0 * t1
+        span = (slice(0, nr * t0), slice(0, nc * t1))
+        grid = (nr, t0, nc, t1)
+        tiles = np.asarray(plane)[span].reshape(grid).transpose(0, 2, 1, 3)
+        counts = np.asarray(finite)[span].reshape(grid).sum(axis=(1, 3))
+        full = counts == size
+        coverage[:nr, :nc][full] = 1.0
+        grid_r, grid_c = np.nonzero(full)
+        per = max(1, _BATCH_ELEMENTS // size)
+        for s in range(0, grid_r.size, per):
+            a, b = grid_r[s : s + per], grid_c[s : s + per]
+            gathered = tiles[a, b].reshape(a.size, size)
+            minimum[a, b] = gathered.min(axis=1)
+            maximum[a, b] = gathered.max(axis=1)
+            median[a, b] = np.median(gathered, axis=1, overwrite_input=True)
+        todo = [(int(r), int(c)) for r, c in np.argwhere((counts > 0) & ~full)]
+        todo += [(r, c) for r in range(nr, shape[0]) for c in range(shape[1])]
+        todo += [(r, c) for r in range(nr) for c in range(nc, shape[1])]
+    if todo is None:
+        todo = [(r, c) for r in range(shape[0]) for c in range(shape[1])]
+    for r, c in todo:
+        r0, c0 = r * tile[0], c * tile[1]
+        r1, c1 = (
+            min(r0 + tile[0], plane.shape[0]),
+            min(c0 + tile[1], plane.shape[1]),
+        )
+        block = plane[r0:r1, c0:c1]
+        values = block[finite[r0:r1, c0:c1]]
+        coverage[r, c] = values.size / block.size
+        if values.size:
+            median[r, c] = np.median(values)
+            minimum[r, c], maximum[r, c] = np.min(values), np.max(values)
     return Squint(
         handed_on(median),
         handed_on(minimum),

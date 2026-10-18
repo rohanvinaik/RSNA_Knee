@@ -163,7 +163,7 @@ def view(fat="1", in_plane=(False, True, True), femur=True):
 
 def test_the_native_rules_own_refusals_name_why_no_series_is_skipped_silently():
     pts = np.zeros((2, 3))
-    got = lambda own: run.read_patella(cast(Any, own), None, pts, pts)
+    got = lambda own: run.read_patella(cast(Any, own), None, pts, pts, "no_reference")
     assert got(view(fat="0")) == "abstain_fat_as_bright_as_marrow"
     assert got(view(in_plane=(True, False, True))) == (
         "abstain_front_to_back_runs_through_the_plane"

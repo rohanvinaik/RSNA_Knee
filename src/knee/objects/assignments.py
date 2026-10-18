@@ -2086,6 +2086,82 @@ def unique_largest(sizes: np.ndarray) -> int | None:
     return int(winners[0]) if len(winners) == 1 else None
 
 
+def white_body_at_location(
+    white: np.ndarray | None, target: np.ndarray | None
+) -> tuple[np.ndarray, str, dict[str, np.ndarray]]:
+    """Keep the whole largest 8-connected white body that intersects its location target.
+
+    The target identifies where to ask; it is not a boundary for the body. No target or no
+    intersecting body returns an empty mask, and equal largest eligible bodies remain tied.
+    Labels, component sizes, eligible labels and the largest eligible labels are retained for
+    either result. Missing inputs are empty on the other input's shape; empty dimensions are
+    valid. Non-boolean or non-2D inputs and mismatched shapes are rejected.
+    """
+
+    def as_mask(value: np.ndarray | None, name: str) -> np.ndarray | None:
+        if value is None:
+            return None
+        mask = np.asarray(value)
+        if mask.ndim != 2 or mask.dtype != np.bool_:
+            raise ValueError(f"{name} must be a two-dimensional boolean mask")
+        return mask
+
+    white_mask = as_mask(white, "white")
+    target_mask = as_mask(target, "target")
+    if (
+        white_mask is not None
+        and target_mask is not None
+        and white_mask.shape != target_mask.shape
+    ):
+        raise ValueError("white and target masks must have the same shape")
+    shape = (
+        white_mask.shape
+        if white_mask is not None
+        else target_mask.shape
+        if target_mask is not None
+        else (0, 0)
+    )
+    if white_mask is None:
+        white_mask = np.zeros(shape, dtype=bool)
+    if target_mask is None:
+        target_mask = np.zeros(shape, dtype=bool)
+
+    if white_mask.size:
+        labels, component_count = ndi.label(
+            white_mask, structure=np.ones((3, 3), dtype=bool)
+        )
+        sizes = np.bincount(labels.ravel(), minlength=component_count + 1)[1:]
+    else:
+        labels = np.zeros(shape, dtype=np.int32)
+        sizes = np.zeros(0, dtype=np.int64)
+    eligible_ids = np.unique(labels[target_mask])
+    eligible_ids = eligible_ids[eligible_ids > 0].astype(np.int64, copy=False)
+    winner_ids = np.zeros(0, dtype=np.int64)
+    selected = np.zeros(shape, dtype=bool)
+    if not target_mask.any():
+        code = "no_target"
+    elif not eligible_ids.size:
+        code = "no_body_at_target"
+    else:
+        eligible_sizes = sizes[eligible_ids - 1]
+        largest = int(np.max(eligible_sizes))
+        winner_ids = eligible_ids[eligible_sizes == largest]
+        winner_index = unique_largest(eligible_sizes)
+        if winner_index is None:
+            code = "tied_largest_bodies"
+        else:
+            winner_id = int(eligible_ids[winner_index])
+            selected = labels == winner_id
+            code = "selected"
+    readings = {
+        "labels": labels,
+        "sizes": sizes,
+        "eligible_ids": eligible_ids,
+        "winner_ids": winner_ids,
+    }
+    return selected, code, readings
+
+
 def twin_marrow_light(twin: np.ndarray, places: np.ndarray) -> float:
     """The marrow's light in the fat-suppressed twin laid on a slice's pixels (NaN where it has no
     say) over a bone's places: the median of the places it sees, NaN when it sees none."""
@@ -2606,14 +2682,25 @@ def capsule_at_side_recesses(
     basis_lps: np.ndarray,
     spacing_rc: np.ndarray,
     measures: Measures | None = None,
-) -> np.ndarray:
-    """The dark outer wall of the side recesses on a coronal slice.
+) -> dict[str, np.ndarray]:
+    """The side recesses, their dark outer walls, and the cavity-facing fluid edge.
 
     Each recess lies outboard of its meniscus, above the joint, beside the femur.
     Of the white bodies reaching the femur through its shell (the existing SHELL_MM
     contact allowance), use the largest on each side. The capsule is low signal just
     outside that body, away from the femur, over the body's height. The same contact
     allowance locates the wall; it does not prescribe capsule thickness.
+
+    ``capsule`` is the original union of the two dark outer walls. ``lining`` is the
+    union of the per-section cavity-facing edge pixels from each selected fluid body.
+    ``negative_*`` and ``positive_*`` retain each side's selected recess, wall and
+    lining masks. ``section_axis`` is the in-plane array axis most aligned with LPS
+    superior/inferior. Each ``*_section_status`` is indexed along that axis and names
+    one of ``no_fluid``, ``no_wall``, ``ambiguous_wall`` or ``selected``. A section
+    is selected only when every same-side wall position is strictly farther outboard
+    than the outermost fluid position; its lining pixels are the fluid pixels at that
+    outermost position. These are local surface-location sections, not membrane
+    signal, thickness or a full-course description.
     """
     femur = objects == OBJECT_CODES["femur"]
     menisci = [
@@ -2621,8 +2708,28 @@ def capsule_at_side_recesses(
         for name in ("medial_meniscus", "lateral_meniscus")
     ]
     capsule = np.zeros(objects.shape, dtype=bool)
+    lining = np.zeros(objects.shape, dtype=bool)
+    outputs: dict[str, np.ndarray] = {
+        "capsule": capsule,
+        "lining": lining,
+        "negative_recess": np.zeros(objects.shape, dtype=bool),
+        "negative_wall": np.zeros(objects.shape, dtype=bool),
+        "negative_lining": np.zeros(objects.shape, dtype=bool),
+        "positive_recess": np.zeros(objects.shape, dtype=bool),
+        "positive_wall": np.zeros(objects.shape, dtype=bool),
+        "positive_lining": np.zeros(objects.shape, dtype=bool),
+        "section_axis": np.asarray(
+            int(np.argmax(np.abs(basis_lps[2, :]))), dtype=np.int8
+        ),
+    }
+    section_axis = int(outputs["section_axis"])
+    section_count = objects.shape[section_axis]
+    for side_name in ("negative", "positive"):
+        outputs[f"{side_name}_section_status"] = np.full(
+            section_count, "no_fluid", dtype="<U24"
+        )
     if not femur.any() or not all(mask.any() for mask in menisci):
-        return capsule
+        return outputs
     side = (
         positions_along(objects.shape, basis_lps, 0)
         if measures is None
@@ -2641,7 +2748,14 @@ def capsule_at_side_recesses(
         else measures.distance(femur, spacing_rc)
     ) <= SHELL_MM
     pieces, count = ndi.label(white, structure=np.ones((3, 3), dtype=bool))
-    for sign, end in ((-1, ends[0]), (1, ends[1])):
+    for side_name, sign, end in (
+        ("negative", -1, ends[0]),
+        ("positive", 1, ends[1]),
+    ):
+        recess = outputs[f"{side_name}_recess"]
+        wall = outputs[f"{side_name}_wall"]
+        side_lining = outputs[f"{side_name}_lining"]
+        status = outputs[f"{side_name}_section_status"]
         candidates = []
         for region in range(1, count + 1):
             mask = pieces == region
@@ -2653,12 +2767,47 @@ def capsule_at_side_recesses(
         if not candidates:
             continue
         _, region = max(candidates)
-        recess = pieces == region
+        np.equal(pieces, region, out=recess)
         outside = (side - np.median(side[recess])) * sign > 0
         beside = distance_from(recess, spacing_rc) <= SHELL_MM
         height = (up >= up[recess].min()) & (up <= up[recess].max())
-        capsule |= dark & outside & beside & height
-    return capsule
+        wall[:] = dark & outside & beside & height
+        capsule |= wall
+        for section in range(section_count):
+            if section_axis == 0:
+                fluid_section = recess[section, :]
+                wall_section = wall[section, :]
+                side_section = side[section, :]
+                lining_section = side_lining[section, :]
+            else:
+                fluid_section = recess[:, section]
+                wall_section = wall[:, section]
+                side_section = side[:, section]
+                lining_section = side_lining[:, section]
+            if not fluid_section.any():
+                status[section] = "no_fluid"
+                continue
+            if not wall_section.any():
+                status[section] = "no_wall"
+                continue
+            outermost_fluid = (
+                float(side_section[fluid_section].min())
+                if sign < 0
+                else float(side_section[fluid_section].max())
+            )
+            outermost_wall = (
+                float(side_section[wall_section].max())
+                if sign < 0
+                else float(side_section[wall_section].min())
+            )
+            if sign * outermost_wall <= sign * outermost_fluid:
+                status[section] = "ambiguous_wall"
+                continue
+            status[section] = "selected"
+            np.equal(side_section, outermost_fluid, out=lining_section)
+            np.logical_and(lining_section, fluid_section, out=lining_section)
+        lining |= side_lining
+    return outputs
 
 
 def capsule_code(
@@ -2699,8 +2848,10 @@ def retinacular_walls(
     interval runs from the patella target's mean position to the strongest existing femoral peak.
     On each native cross-section, the strip lies outboard of the selected white component by at
     most SHELL_MM. Its whole tied minimum signal band is named only when contiguous and darker
-    than the adjacent white component. This localizes the wall once; it does not measure its
-    thickness or full course.
+    than the adjacent white component. On those same accepted sections, `retinacula_<side>_lining`
+    retains the selected fluid component's cavity-facing outboard edge beside that wall. This
+    localizes the wall and adjacent cavity surface; it does not measure membrane signal, thickness,
+    or full course.
     """
     shape = plane.shape
     names = {
@@ -2732,6 +2883,7 @@ def retinacular_walls(
     for side in names:
         arrays[f"retinacula_{side}_component_labels"] = np.zeros(shape, dtype=np.int32)
         arrays[f"retinacula_{side}_selected_recess"] = np.zeros(shape, dtype=bool)
+        arrays[f"retinacula_{side}_lining"] = np.zeros(shape, dtype=bool)
         arrays[f"retinacula_{side}_strip"] = np.zeros(shape, dtype=bool)
         arrays[f"retinacula_{side}_minimum_band"] = np.zeros(shape, dtype=bool)
         arrays[f"retinacula_{side}_row_minimum"] = np.full(
@@ -2845,6 +2997,7 @@ def retinacular_walls(
         white_section = section(white)
         recess_section = section(recess)
         plane_section = section(plane)
+        lining_section = section(arrays[f"retinacula_{side}_lining"])
         strip_section = np.zeros(plane_section.shape, dtype=bool)
         minimum_section = np.zeros(plane_section.shape, dtype=bool)
         minimum_values = arrays[f"retinacula_{side}_row_minimum"]
@@ -2885,6 +3038,9 @@ def retinacular_walls(
             elif minimum < adjacent:
                 row_status[section_index] = 1
                 minimum_section[section_index] = tied
+                lining_section[section_index] = recess_across & (
+                    outward_section[section_index] == outboard_edge
+                )
             else:
                 row_status[section_index] = 3
 
@@ -2902,6 +3058,144 @@ def retinacular_walls(
         else:
             codes[object_name] = "abstain_no_outboard_wall_minimum"
     return arrays, codes
+
+
+def relative_outer_wall(
+    plane: np.ndarray,
+    body: np.ndarray,
+    white: np.ndarray,
+    available: np.ndarray,
+    outward_mm: np.ndarray,
+    section_axis: int,
+    width_mm: float = SHELL_MM,
+) -> dict[str, np.ndarray]:
+    """Read a local low-signal band outside a white body, section by section.
+
+    The outward body edge locates an available, nonwhite strip no farther than ``width_mm``
+    away. On each section, the exact acquired minimum is retained only when its tied pixels
+    form one contiguous run and are darker than the same-section white body median. This is a
+    local relative reading; the strip width is a location allowance, not a measured thickness.
+
+    Status is 0 when the section cannot be read, 1 for one accepted contiguous minimum, 2 for
+    separated tied minima, and 3 when the minimum is not darker than the adjacent body median.
+    Nonfinite signal or position values are excluded from readings.
+    """
+    plane_array = np.asarray(plane)
+    body_array = np.asarray(body)
+    white_array = np.asarray(white)
+    available_array = np.asarray(available)
+    outward_array = np.asarray(outward_mm)
+    arrays = (plane_array, body_array, white_array, available_array, outward_array)
+    if any(array.ndim != 2 for array in arrays):
+        raise ValueError("plane, masks, and outward_mm must all be two-dimensional")
+    if any(array.shape != plane_array.shape for array in arrays[1:]):
+        raise ValueError("plane, masks, and outward_mm must have the same shape")
+    if any(
+        array.dtype != np.dtype(bool)
+        for array in (body_array, white_array, available_array)
+    ):
+        raise ValueError("body, white, and available must be boolean masks")
+    if (
+        isinstance(section_axis, (bool, np.bool_))
+        or not isinstance(section_axis, (int, np.integer))
+        or int(section_axis) not in (0, 1)
+    ):
+        raise ValueError("section_axis must be 0 or 1")
+    if isinstance(width_mm, (bool, np.bool_)) or not isinstance(
+        width_mm, (int, float, np.integer, np.floating)
+    ):
+        raise TypeError("width_mm must be a finite nonnegative scalar")
+    width = float(width_mm)
+    if not np.isfinite(width) or width < 0.0:
+        raise ValueError("width_mm must be a finite nonnegative scalar")
+    if not np.issubdtype(plane_array.dtype, np.number) or np.issubdtype(
+        plane_array.dtype, np.complexfloating
+    ):
+        raise ValueError("plane must contain real numeric signal values")
+    if not np.issubdtype(outward_array.dtype, np.number) or np.issubdtype(
+        outward_array.dtype, np.complexfloating
+    ):
+        raise ValueError("outward_mm must contain real numeric positions")
+
+    axis = int(section_axis)
+
+    def sections(values: np.ndarray) -> np.ndarray:
+        return values if axis == 0 else values.T
+
+    signal = sections(plane_array.astype(np.float64, copy=False))
+    body_mask = sections(body_array)
+    white_mask = sections(white_array)
+    available_mask = sections(available_array)
+    outward = sections(outward_array.astype(np.float64, copy=False))
+    section_count = signal.shape[0]
+    native_shape = plane_array.shape
+    strip = np.zeros(signal.shape, dtype=bool)
+    minimum_band = np.zeros(signal.shape, dtype=bool)
+    lining_edge = np.zeros(signal.shape, dtype=bool)
+    body_outer_edge = np.full(section_count, np.nan, dtype=np.float64)
+    row_minimum = np.full(section_count, np.nan, dtype=np.float64)
+    adjacent_median = np.full(section_count, np.nan, dtype=np.float64)
+    status = np.zeros(section_count, dtype=np.int8)
+    tied_runs = np.zeros(section_count, dtype=np.int16)
+
+    for section_index in range(section_count):
+        row_body = (
+            body_mask[section_index]
+            & white_mask[section_index]
+            & available_mask[section_index]
+            & np.isfinite(signal[section_index])
+            & np.isfinite(outward[section_index])
+        )
+        if not row_body.any():
+            continue
+        edge = float(np.max(outward[section_index, row_body]))
+        body_outer_edge[section_index] = edge
+        separation = outward[section_index] - edge
+        row_strip = (
+            np.isfinite(outward[section_index])
+            & np.isfinite(signal[section_index])
+            & (separation >= 0.0)
+            & (separation <= width)
+            & available_mask[section_index]
+            & ~white_mask[section_index]
+        )
+        strip[section_index] = row_strip
+        body_reading = row_body
+        if not row_strip.any() or not body_reading.any():
+            continue
+        minimum = float(np.min(signal[section_index, row_strip]))
+        adjacent = float(np.median(signal[section_index, body_reading]))
+        tied = row_strip & (signal[section_index] == minimum)
+        tied_columns = np.flatnonzero(tied)
+        run_starts = np.r_[0, np.flatnonzero(np.diff(tied_columns) > 1) + 1]
+        run_count = len(run_starts)
+        row_minimum[section_index] = minimum
+        adjacent_median[section_index] = adjacent
+        tied_runs[section_index] = run_count
+        if run_count > 1:
+            status[section_index] = 2
+        elif minimum < adjacent:
+            status[section_index] = 1
+            minimum_band[section_index] = tied
+            lining_edge[section_index] = row_body & (outward[section_index] == edge)
+        else:
+            status[section_index] = 3
+
+    if axis == 1:
+        strip = strip.T
+        minimum_band = minimum_band.T
+        lining_edge = lining_edge.T
+    return {
+        "strip": strip.reshape(native_shape),
+        "minimum_band": minimum_band.reshape(native_shape),
+        "lining_edge": lining_edge.reshape(native_shape),
+        "body_outer_edge_mm": body_outer_edge,
+        "row_minimum": row_minimum,
+        "adjacent_median": adjacent_median,
+        "status": status,
+        "tied_runs": tied_runs,
+        "section_axis": np.asarray(axis, dtype=np.int8),
+    }
 
 
 def fat_pad_code(

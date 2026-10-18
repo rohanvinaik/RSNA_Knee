@@ -1,6 +1,7 @@
 """The integration corrections: a bone is its marrow, the joint is between identified bones, and the
 study's objects are described, grouped and kept by one output."""
 
+import copy
 from types import SimpleNamespace
 from typing import Any, cast
 
@@ -142,6 +143,28 @@ def test_the_objects_are_grouped_by_object_provenance_kind_and_property():
     assert got["tibia"]["unresolved"] == {"native": {"no_body": 1}}
 
 
+def test_declared_anatomy_catalogue_keeps_unobserved_features_explicit():
+    records = [{"observations": [row("femur", "native", "resolved", "a1_objects")]}]
+    got = describe_objects(records, ("femur", "tibia", "patella"))
+    assert set(got) == {"femur", "tibia", "patella"}
+    assert got["femur"]["native_series"] == ["s1"]
+    assert got["femur"]["unresolved"] == {}
+    for name in ("tibia", "patella"):
+        assert got[name]["observations"] == {}
+        assert got[name]["native_series"] == []
+        assert got[name]["outcomes"] == {}
+        assert got[name]["unresolved"] == {"pipeline": {"no_observation_record": 1}}
+
+
+def test_empty_study_still_accounts_for_each_declared_feature():
+    got = describe_objects([], ("femur", "tibia"))
+    assert set(got) == {"femur", "tibia"}
+    assert all(
+        v["unresolved"] == {"pipeline": {"no_observation_record": 1}}
+        for v in got.values()
+    )
+
+
 def test_the_receipt_keeps_each_studys_objects_and_replaces_only_its_own():
     first = merged_receipt(None, {}, "A", ["s"], [], {}, None, {"femur": {}})
     second = merged_receipt(first, {}, "B", ["t"], [], {}, None, {"tibia": {}})
@@ -185,3 +208,180 @@ def test_the_drivers_keep_writes_the_objects_into_the_interiors_receipt_only(tmp
     kept = json.loads((run_dir / "receipt.json").read_text())
     assert list(kept["objects"]["S"]) == ["femur"]
     assert "objects" not in json.loads((main_dir / "receipt.json").read_text())
+
+
+def test_missing_observation_uses_its_own_retained_definition_refusal_only():
+    records = [
+        {
+            "series_uid": "s",
+            "assignments": {
+                "codes": {
+                    "joint_capsule": "abstain_no_femur",
+                    "patella": "identified",
+                    "synovium": "not_named_on_this_slice",
+                    "unrelated": "abstain_not_this_object",
+                }
+            },
+        }
+    ]
+    got = describe_objects(records, ("joint_capsule", "patella", "synovium"))
+    assert got["joint_capsule"]["unresolved"] == {"native": {"abstain_no_femur": 1}}
+    assert got["joint_capsule"]["observations"] == {}
+    for name in ("patella", "synovium"):
+        assert got[name]["unresolved"] == {"pipeline": {"no_observation_record": 1}}
+
+
+def test_own_slice_silences_are_retained_without_alias_guessing_or_duplicate_counts():
+    records = [
+        {"series_uid": "s", "assignments": {"codes": {"lcl": "abstain_no_fibula"}}}
+    ]
+    got = describe_objects(
+        records,
+        ("lcl", "acl", "medial_patellar_retinaculum"),
+        {
+            "s:lcl": "abstain_no_fibula",
+            "other:lcl": "geometry_unreadable",
+            "s:medial_patellar_retinaculum": "abstain_patella_off_the_slices",
+            "unscoped": "not_an_addressed_part",
+        },
+    )
+    assert got["lcl"]["unresolved"] == {
+        "native": {"abstain_no_fibula": 1, "geometry_unreadable": 1}
+    }
+    assert got["medial_patellar_retinaculum"]["unresolved"] == {
+        "native": {"abstain_patella_off_the_slices": 1}
+    }
+    assert got["acl"]["unresolved"] == {"pipeline": {"no_observation_record": 1}}
+    assert got["lcl"]["outcomes"] == {} and got["lcl"]["native_series"] == []
+
+
+def test_existing_observation_and_structured_refusal_are_preserved():
+    records = [
+        {
+            "series_uid": "s",
+            "observations": [row("femur", "native", "resolved", "a1_objects")],
+            "observations_unresolved": [
+                {"object": "tibia", "provenance": "native", "code": "no_body"}
+            ],
+        }
+    ]
+    before = describe_objects(records, ("femur", "tibia"))
+    after = describe_objects(
+        records,
+        ("femur", "tibia"),
+        {"s:femur": "abstain_old", "s:tibia": "abstain_old"},
+    )
+    assert {
+        name: {key: value for key, value in item.items() if key != "search_refusals"}
+        for name, item in after.items()
+    } == {
+        name: {key: value for key, value in item.items() if key != "search_refusals"}
+        for name, item in before.items()
+    }
+    assert after["femur"]["search_refusals"] == [
+        {"series_uid": "s", "code": "abstain_old"}
+    ]
+    assert after["tibia"]["search_refusals"] == [
+        {"series_uid": "s", "code": "abstain_old"}
+    ]
+
+
+def test_definition_decisions_and_search_refusals_survive_observations():
+    records = [
+        {
+            "series_uid": "s1",
+            "view": ["Sagittal", "0", "0"],
+            "slice_index": 4,
+            "artifact": "s1.npz",
+            "main_slice": {"object": "femur"},
+            "assignments": {
+                "codes": {
+                    "joint_capsule": "abstain_no_femur",
+                    "patella": "not_named_on_this_slice",
+                }
+            },
+            "observations": [row("joint_capsule", "native", "reading", "a2_parts")],
+            "observations_unresolved": [
+                {
+                    "object": "joint_capsule",
+                    "provenance": "native",
+                    "code": "edge_unreadable",
+                }
+            ],
+        },
+        {
+            "series_uid": "s2",
+            "view": ["Coronal", "0", "0"],
+            "slice_index": 9,
+            "artifact": "s2.npz",
+            "main_slice": {"object": "tibia"},
+            "assignments": {
+                "codes": {
+                    "joint_capsule": "abstain_no_femur",
+                    "unrelated": "abstain_other",
+                }
+            },
+        },
+        {
+            "series_uid": "s3",
+            "assignments": {"codes": {"joint_capsule": "identified"}},
+        },
+    ]
+    silences = {
+        "s2:joint_capsule": "geometry_unreadable",
+        "s1:joint_capsule": "no_own_slice_support",
+        "s3:unrelated": "must_not_copy",
+        "unscoped": "must_not_copy",
+    }
+    original_records = copy.deepcopy(records)
+    original_silences = copy.deepcopy(silences)
+
+    got = describe_objects(records, ("joint_capsule", "patella"), silences)
+
+    assert (
+        got["joint_capsule"]["observations"]["native"]["reading"]["a2_parts"][0]["code"]
+        == "identified"
+    )
+    assert got["joint_capsule"]["unresolved"] == {"native": {"edge_unreadable": 1}}
+    assert got["joint_capsule"]["definition_decisions"] == [
+        {
+            "series_uid": "s1",
+            "view": ["Sagittal", "0", "0"],
+            "slice_index": 4,
+            "artifact": "s1.npz",
+            "main_object": "femur",
+            "code": "abstain_no_femur",
+        },
+        {
+            "series_uid": "s2",
+            "view": ["Coronal", "0", "0"],
+            "slice_index": 9,
+            "artifact": "s2.npz",
+            "main_object": "tibia",
+            "code": "abstain_no_femur",
+        },
+        {
+            "series_uid": "s3",
+            "view": None,
+            "slice_index": None,
+            "artifact": None,
+            "main_object": None,
+            "code": "identified",
+        },
+    ]
+    assert got["joint_capsule"]["search_refusals"] == [
+        {"series_uid": "s1", "code": "no_own_slice_support"},
+        {"series_uid": "s2", "code": "geometry_unreadable"},
+    ]
+    assert got["patella"]["definition_decisions"] == [
+        {
+            "series_uid": "s1",
+            "view": ["Sagittal", "0", "0"],
+            "slice_index": 4,
+            "artifact": "s1.npz",
+            "main_object": "femur",
+            "code": "not_named_on_this_slice",
+        }
+    ]
+    assert got["patella"]["search_refusals"] == []
+    assert records == original_records and silences == original_silences

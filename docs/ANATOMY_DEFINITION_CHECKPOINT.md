@@ -37,6 +37,13 @@ The proposed next-phase implementation is written in `docs/DIMENSIONAL_COLLAPSE_
 `data/readings/collapse-20261016/`. Read that plan with `RESOLVING_THE_PARTS.md` §8 before building.
 It is planning only; the collapse has not yet been implemented. The first complete case proposed
 there is fibula selection, extent and cross-view observations feeding its lateral consumers.
+**2026-10-17:** the collapse's current work is the relative position map, whose understanding is
+`docs/RELATIVE_POSITION_MAP.md` §0 (one 3D map of the whole knee, every object against every other
+object, from anatomy and physiology, never built from the studies); read it before continuing. Each
+object's map position is constrained by three independently selected key planes, one in each of the
+sagittal, coronal and axial orientations, in shared physical coordinates. The planes together establish
+position; no single-section centroid stands in for the object's 3D position, and sequences do not get
+separate anatomy maps. The 58 studies measure pair-vector range and standard deviation only.
 
 The stopping criterion is Rohan's (2026-10-15): «We're resolving the elements of knee anatomy right
 now. Exact specification and precise measurement is for the AI parts, which I have yet to specify. We

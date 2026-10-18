@@ -51,6 +51,23 @@ above, which he set before showing them:
 > It's not hard, because I've done all the hard work. The rest is basic reasoning and tinkering to make it clean. That's all it takes.
 
 ## Part II — Recognition (hand-built, pure simple math)
+- **Foundational: structural priors buy correctness and efficiency together (2026-10-18).** The
+  knee is one physical system. Muscle attaches to bone; vessels relate to muscles and bones;
+  marrow is within bone; fluid lies between its anatomical neighbours. Resolving one part narrows
+  the questions about the others. The squint, rough leg/background bounds, key slices and common
+  anatomy map establish useful conditional priors; fine native analysis refines the small region
+  they point to. These relationships govern where computation runs, not just how output is named.
+  Rohan: «This is about establishing priors, not being perfectly correct»; «make the
+  background/"bounding boxes" not perfect, but useful». This governs the entire pipeline's
+  construction, not a later optimization pass. His complete words:
+  `docs/conversations/2026-10-18-anatomical-priors-and-targeted-compute.md`; the build principle:
+  `docs/TARGETED_ANATOMICAL_COMPUTE.md`.
+  His supplied `SIGNIFICANCE_WEIGHTING.md` makes the structural amplification explicit: one
+  useful observation constrains a cluster of dependent questions, so the remaining native work
+  becomes both smaller and more discriminative. Complementary views can jointly unlock relations
+  unavailable to either alone. The lead's implementation-facing application and precise section
+  references are in `docs/EFFICIENCY_RETROFIT_PLAN.md`, "Significance weighting"; this adds no
+  new scoring or corpus-induction layer to recognition.
 - Per concept, with the objects known in advance: «there is a difference between "a single face" and "the
   concept of a face", and I claim to solve the latter»
 - The work: «Objects of significance DO "look" different. [...] You just need to be able to define WHY they
@@ -94,6 +111,22 @@ above, which he set before showing them:
     tibia and femur. We have the tibia, we have the femur. It's...obviously in there?» (Claude's
     restatement: a part is defined by what it lies between, and is in the pictures wherever its
     neighbours are.)
+13. One knee, one 3D map (2026-10-17): «The knee is a coherent object every part of the knee sits in a fixed
+    position RELATIVE to every other» · «Obects are resolved in 3D with vector distances in magnitude and
+    direction, which is what enables ONE map to then be translated to expected position across each of the
+    three views» · «I told you to base this on knee anatomy, NOT on statistics» · «We USE statistics, we don't
+    fucking base everything off it» · «A map is a guide. An expectation, a way to establish a cheap first/obvious
+    measure, and only move off it if that well-established prior is not correct». The understanding, with all
+    his words: `docs/RELATIVE_POSITION_MAP.md` §0. Each object's sagittal, coronal and axial key planes
+    jointly construct its reference position in physical space, including the bones. Never substitute one
+    section's centroid. The explicit correction and data-flow invariant are §8.8.
+14. **Useful structural priors throughout (2026-10-18).** «Efficiency is bought through logical inference
+    of the actual physical truth of objects»; «it is both how this becomes efficient AND how it becomes
+    more correct». Use already resolved anatomy and cheap lossy views to narrow both slice and spatial
+    region before expensive combinations of measurements. Rough bounds need only be useful. Perfect
+    segmentation, exact exclusion and exhaustive correctness are not prerequisites for using a prior;
+    later AI handles the remaining variation. Every family participates in the same connected operation.
+    See Part II and the verbatim conversation above.
 
 ## Part V — The Pathology Record
 The build was thrown away twice. In his words:

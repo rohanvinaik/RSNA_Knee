@@ -451,7 +451,7 @@ def test_the_head_is_measured_once_for_the_continuation_and_the_biceps_walk(
     assert first[2] == "identified" and first[3] == pytest.approx(100.0)
 
 
-def study_fixture(monkeypatch, tmp_path: Path, found_for):
+def study_fixture(monkeypatch, tmp_path: Path, found_for, setup_middle=None):
     """`measure_study` through its real wiring with the heavy stages stood in for."""
     order: list[tuple] = []
     sag = SimpleNamespace(
@@ -477,6 +477,8 @@ def study_fixture(monkeypatch, tmp_path: Path, found_for):
         assignment=SimpleNamespace(in_plane=(False, True, True)),
         stack=None,
     )
+    if setup_middle is not None:
+        setup_middle(sag)
     measured = [sag]
     monkeypatch.setattr(
         run,
@@ -545,10 +547,171 @@ def test_one_value_feeds_the_lcl_and_the_biceps_and_its_record_carries_its_obser
     assert (
         len(saved) == 1
         and saved[0]["observations"] == []
-        and saved[0]["observations_unresolved"] == []
+        and [r["code"] for r in saved[0]["observations_unresolved"]]
+        == ["no_axial_series_for_fibula_key_plane"]
         and "observations_by_provenance" in saved[0]
     )
     assert result["main_unread"].get("sg:fibula") is None
+
+
+def test_axial_scout_evidence_survives_the_real_driver_save_and_observation_merge(
+    monkeypatch, tmp_path
+):
+    found = make_found()
+    previous = Observation(
+        "fibula",
+        "native",
+        "reading",
+        "sg",
+        ("Sagittal", "0", "0"),
+        (1,),
+        "earlier_reading",
+        None,
+        0.0,
+        "a1_objects",
+        "earlier evidence",
+        "study/sg-fibula.npz",
+    )
+    run.keep_on_record(found.record, [previous], [])
+    saved_holder = []
+    original_save = run.save
+
+    def save_with_order(run_dir, study_uid, record, arrays):
+        if record is found.record:
+            saved_holder.append(record)
+            assert record["scout_before_save"]
+            assert "a4_scout_evidence" in arrays
+        return original_save(run_dir, study_uid, record, arrays)
+
+    def scout(measured, mapping, found_fibulas, carried, study_uid):
+        assert not saved_holder
+        assert len(found_fibulas) == 1 and found_fibulas[0][1] is found
+        found.record["scout_before_save"] = True
+        found.arrays["a4_scout_evidence"] = np.array([True, False])
+        run.keep_on_record(
+            found.record,
+            [
+                Observation(
+                    "fibula",
+                    "native",
+                    "reading",
+                    "ax",
+                    ("Axial", "1", "1"),
+                    (2,),
+                    "axial_reading",
+                    1,
+                    0.0,
+                    "a4_scout_evidence",
+                    "axial reading held in the native source artifact",
+                    str(run.artifact_of(study_uid, found.record)),
+                    0,
+                ),
+            ],
+            [],
+        )
+
+    monkeypatch.setattr(run, "save", save_with_order)
+    monkeypatch.setattr(run, "fibula_key_planes", scout)
+    _, _, result = study_fixture(monkeypatch, tmp_path, lambda: found)
+    assert saved_holder == [found.record]
+    assert [r["code"] for r in found.record["observations"]] == [
+        "earlier_reading",
+        "axial_reading",
+    ]
+    assert found.record["observations_by_provenance"]["native"] == 2
+    output = result["objects"]["fibula"]["observations"]["native"]["reading"]
+    assert {r["code"] for records in output.values() for r in records} == {
+        "earlier_reading",
+        "axial_reading",
+    }
+    with np.load(tmp_path / "main" / "study" / "sg-fibula.npz") as arrays:
+        assert arrays["a4_scout_evidence"].tolist() == [True, False]
+
+
+def test_middle_record_is_saved_once_after_late_family_evidence_with_matching_digests(
+    monkeypatch, tmp_path
+):
+    found = make_found()
+    earlier = Observation(
+        "joint",
+        "native",
+        "reading",
+        "sg",
+        ("Sagittal", "0", "0"),
+        (0,),
+        "earlier_middle_reading",
+        None,
+        None,
+        "a1_objects",
+        "earlier evidence retained before late families",
+        "study/sg.npz",
+    )
+    late = Observation(
+        "joint_capsule",
+        "native",
+        "reading",
+        "sg",
+        ("Coronal", "0", "0"),
+        (1,),
+        "late_family_reading",
+        None,
+        None,
+        "a4_late_family_support",
+        "late family evidence appended before the middle artifact save",
+        "study/sg.npz",
+    )
+    late_said = [([late], [])]
+    late_mask = np.zeros((6, 6), dtype=bool)
+    late_mask[2:4, 2:5] = True
+
+    def setup_middle(middle):
+        run.keep_on_record(middle.record, [earlier], [])
+
+    monkeypatch.setattr(run, "name_coronal_extensor_sections", lambda *args: late_said)
+    original_keep = run.keep_recess
+    family_events: list[str] = []
+
+    def keep_with_late_array(measured, said):
+        if said is late_said:
+            family_events.append("late_family")
+            measured[0].arrays["a4_late_family_support"] = late_mask.copy()
+        original_keep(measured, said)
+
+    monkeypatch.setattr(run, "keep_recess", keep_with_late_array)
+    original_save = run.save
+    save_events: list[tuple[str, dict, dict]] = []
+
+    def save_and_record(run_dir, study_uid, record, arrays):
+        if record is found.record:
+            save_events.append(("fibula_main", record, arrays))
+        elif record.get("series_uid") == "sg" and record.get("view"):
+            save_events.append(("middle", record, arrays))
+            assert family_events == ["late_family"]
+            assert "late_family_reading" in [
+                row["code"] for row in record["observations"]
+            ]
+            assert "a4_late_family_support" in arrays
+        return original_save(run_dir, study_uid, record, arrays)
+
+    monkeypatch.setattr(run, "save", save_and_record)
+    _, _, result = study_fixture(
+        monkeypatch, tmp_path, lambda: found, setup_middle=setup_middle
+    )
+
+    middle_writes = [event for event in save_events if event[0] == "middle"]
+    assert len(middle_writes) == 1
+    assert [event[0] for event in save_events] == ["fibula_main", "middle"]
+    saved_record = middle_writes[0][1]
+    assert [row["code"] for row in saved_record["observations"][:1]] == [
+        "earlier_middle_reading"
+    ]
+    assert saved_record["observations_by_provenance"]["native"] == 2
+    with np.load(tmp_path / "run" / "study" / "sg.npz") as persisted:
+        assert set(persisted.files) == set(saved_record["arrays"])
+        for name in persisted.files:
+            assert saved_record["arrays"][name]["digest"] == run.digest(persisted[name])
+        assert np.array_equal(persisted["a4_late_family_support"], late_mask)
+    assert result["records"][0] is saved_record
 
 
 def test_where_no_fibula_is_named_no_places_reach_the_consumers_and_the_silence_is_kept(
