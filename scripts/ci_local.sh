@@ -56,6 +56,15 @@ echo "== deptry (advisory): declared dependencies against what is imported"
 echo "== ty (advisory)"
 .venv/bin/ty check src tests || echo "ty: the findings above are leads, not a gate"
 
+# SPEED LEADS. Advisory: Ruff's performance rules (PERF) and its stable refurbishing rules (FURB; no
+# --preview, so no preview rules), agreed by Rohan on 2026-10-18 as the lead suggested: "Start them as
+# advisory, like vulture". The command-line selection replaces the configured one for this run only;
+# the archives stay excluded. The whole list prints and the step never fails the gate: a finding is a
+# lead to read where the code is hot, never a count to drive down.
+echo "== ruff PERF + stable FURB (advisory): performance and refurbishing leads"
+.venv/bin/ruff check --select PERF,FURB --exit-zero --output-format concise . ||
+    echo "ruff PERF/FURB: the run above did not complete; its findings are leads, not a gate"
+
 # ISLANDS. The founder, 2026-10-12: "I told you that there should be structural guards against
 # islands of code that compute but are never called ... they would make unused scripts that are in
 # the codebase impossible to miss."

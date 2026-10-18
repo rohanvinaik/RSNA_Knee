@@ -75,11 +75,13 @@ push).
 
 ## NEXT SINGLE ACTION / PROPOSED OPERATION / JUSTIFICATION
 
-Push this revision's commit and read its GitHub gate run (the same images and rule set must show
-there). Then the rest of his 20:06 agreement, each its own gated commit, push and GitHub run: Ruff's PERF
-and stable FURB rules as an advisory gate step; benchmarks of the hot kernels (pytest-codspeed, a
-CodSpeed job off until its GitHub app is connected, pytest-memray memory limits), all information; a
-self-hosted runner on this Mac running the real CLI on the proof and bursa studies after a push to main.
+Done: the Sonar piece (`9722caf`, pushed; GitHub gate run 39164487893 passed with the same scanner,
+server and rule set, 0 open bugs or vulnerabilities, the same 705 smells by rule) and Ruff's PERF and
+stable FURB rules as an advisory gate step (the commit after it; 7 PERF401 leads, no FURB finding). Then
+the rest of his 20:06 agreement, each its own gated commit, push and GitHub run: benchmarks of the hot
+kernels (pytest-codspeed, a CodSpeed job off until its GitHub app is connected, memory reported by
+pytest-memray), all information; a self-hosted runner on this Mac running the real CLI on the proof and
+bursa studies after a push to main.
 
 ## OPEN SEMANTIC CHOICE / PREREQUISITES / OTHER OPEN BUILD ITEMS
 
@@ -141,7 +143,7 @@ them; development ACL/tibial-cartilage/attachment previews are evidence, not sel
 
 ## VERIFICATION STILL OWED / RECHECK BASIS
 
-The GitHub gate run on this revision's commit. The workflow plan is unexecuted and W1's script is a draft
+The GitHub gate run on each tooling commit after `9722caf`. The workflow plan is unexecuted and W1's script is a draft
 for review (it parses). Before W1: the plan's §4 preconditions, including the dry-run worktree.
 Fresh-session loading of the project CLAUDE.md imports remains to be observed.
 
