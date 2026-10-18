@@ -1,11 +1,26 @@
 # Dimensional collapse for knee MRI
 
-**Status: approved plan; implementation in progress, 2026-10-16.** Prepared at Rohan's request
+**Historical plan and implementation record, 2026-10-16.** This plan records the earlier
+dimensional-collapse proposal and its implementation history; its §§1–7 are not the current build
+scope. The current work is the relative position map in `docs/RELATIVE_POSITION_MAP.md` §0. It is
+one 3D, all-pairs map of the whole knee, grounded in anatomy and physiology. Each object's position
+is constrained by three independently selected key planes, one in each anatomical orientation,
+expressed in shared physical coordinates. The planes together establish position; no single-section
+centroid does. There are no sequence-specific anatomy maps. The 58 studies measure each pair-vector's
+range and standard deviation only; they do not supply the ideal.
+
+**Historical status at the time:** approved plan; implementation in progress, 2026-10-16. Prepared at Rohan's request
 after the anatomical definition pass (`4a126fc`, checkpoint `3bede6a`), then approved: «I like it!
 Use the same "cheap sub agents and Anthropic API sub-agents" to build the thing as mechanized
 and effective/clean as possible». The steps below specify the full build; their presence here
-does not report that they are implemented. The first fibula case is undergoing integration and
-verification; later anatomical families remain to be built.
+does not report that they are implemented. The useful-view recognition build is integrated in local commit `a118db8`; the labelled-cohort
+slice-position analysis and its implementation review are in progress. The acceptance clarification
+below governs what completion means here.
+
+**Historical framing, superseded 2026-10-17:** this plan's anatomical-reference part (its last sections, "Anatomical anchors for expected search" and
+the status updates after it) is superseded by the relative position map, whose understanding is
+`docs/RELATIVE_POSITION_MAP.md` §0: one 3D map of the whole knee, every object against every other object, from
+anatomy and physiology, never built from the studies.
 
 Rohan's scope is both selection of the slice ideal for resolving each object and resolution of
 that object across all available study information. The established anatomical definitions stay
@@ -60,6 +75,7 @@ Read the complete named sections of
 | §4.3 | The composite keeps local depth and points to signal other planes missed; it does not decide identity. |
 | §5.6 | A bounded site gets local readings through depth; another local peak or residual can point to another useful observation. |
 | §6.4 | A resolved footprint can supply a depth profile, representative depth and occupied band. |
+| §7.1, §7.5, §13.1 | Profiles bundle measured places and the object's voxels through its band; the exact count carrier makes a bundle of bundles another bundle. This grounds the later volume-bearing encoding. |
 | §13.4 | Fine work runs where coarse measurements point; any coarser representation must preserve the distinctions its question needs. |
 | §14.1–14.2 | Use the target domain's laws and lenses. MRI supplies sequence-dependent tissue signal and anatomical continuity. |
 
@@ -291,7 +307,7 @@ This governs the implementation requirements above: the deliverable is a domain-
 
 Rohan: 'Do note that the "<object>" thesis lays out how volume is to be computed as a natural extension of the full encoding layer--bundling operations in HDC, specifically the idiomatic form of HDC that was created for this representation.'
 
-The source mechanism must be read before implementing volume-dependent encoding. Generic HDC mechanics or a requirement for dense geometric reconstruction must not substitute for that account. The current recognition and useful-view build remains governed by the capacity criterion above.
+The lead read the complete source §§7 and 13, following a cheap source-location pass, and verified the copied sections against the primary thesis. §7.1 makes a profile the bundle of its measured places; §7.5 explicitly bundles the object's own voxels through its depth band. §13.1 specifies separate banks of exact Sylvester–Hadamard rows, whole-number counts, exact decoding and additive/subtractive bundling: a bundle of bundles is a bundle. Positions, values and physical support remain beside the profile. That is the encoding basis for volume Rohan points to. Generic HDC mechanics or a separate dense-reconstruction prerequisite must not replace it. The knee recognition build retains its observations and source geometry; full encoding and later AI are not claimed implemented here.
 
 ## Implementation status, posterior family and lumens/bursa, 2026-10-16
 
@@ -302,6 +318,25 @@ named-unresolved observations, as do the iliotibial band and the popliteus tendo
 them (the three tendons, the lumens, the bursa's fluid) also have a cheap longitudinal ridge
 reading on the series the leg runs through (`knee.collapse.posterior`), kept with its stops as a
 pointer, not the part's course. The capacity is demonstrated once on the proof and the positive
-bursa study through `scripts/run_interiors.py`; the cohort run and statistics, the muscles'
-longitudinal descriptions and the bursa's neck and wall remain unbuilt. The record and its limits:
+bursa study through `scripts/run_interiors.py`; the cohort run is now collected for all 58 labelled studies. Its slice-position analysis is in
+progress. Full muscle continuation and the bursa's neck and wall are not claims of this capacity
+build; they are not additional acceptance prerequisites. The record and its limits:
 `docs/RESOLVING_THE_PARTS.md` §9, last section.
+
+## Anatomical anchors for expected search — requested and queued, 2026-10-16
+
+Rohan: “One other exponential speed-up--Knee anatomy is physically linked. Get the one that is cheapest to resolve with the squint system (I imagine the tibia/femur?), Get its "key slice", use that as a normalizer, get the statistical slice range and position estimation *relative* to the obvious elements, to make the hard compute, the expensive process, sanely targeted where they likely are”.
+
+He then requested an Anthropic API build and a clean pause for the lead. The dedicated Sonnet builder is queued after the current statistics/optimization writer finishes successfully. This section records requested work, not completed results.
+
+Resolve an obvious anatomical anchor cheaply from the squint and existing bone/profile products; declare its key-plane meaning, source geometry and outcome. Measure each other object's representative positions and ranges relative to that reference across the labelled cohort. Use physical coordinates and supported landmarks across acquisitions. Those measurements point where the existing anatomical rules should spend detailed compute, with broader fallback for unresolved references or neighbourhoods. The whole-stack fraction analysis alone does not answer this relative-location question.
+
+The builder must connect a supported relative position/spread to an actual search consumer, report measured work and inspect changed useful views. The recognition-capacity criterion remains unchanged; full accuracy/completeness and the later AI remain deferred. The exact HDC volume-bearing encoding remains the source mechanism recorded above.
+
+Handoff and execution state: `docs/COLLAPSE_PAUSE_POINT.md`. No canonical refresh or commit of in-flight changes has been claimed.
+
+**Framing superseded, 2026-10-17: the relative position map.** Rohan: «It's a reasoning and symbolic  approach, not statistical. [...] The knee is a coherent object every part of the knee sits in a fixed position RELATIVE to every other. [...] That's the point here. Not "bone then patella". It's to look at the key slice of the most obvious parts of the anatomy, then from there to build a relative position map for where the key slice of every other object sits.» The mechanism, as he corrected it the same day: ONE 3D map of the whole knee, every object against every other object as a 3D vector (direction and magnitude, in millimetres and as a proportion of the knee's size), the ideal from anatomy and physiology, the 58 studies giving only each pair's range and standard deviation, the bones' key slices the zero with the bones in the same web, and the map a guide where each object's key slice is looked for in every image. The understanding, with all his words: `docs/RELATIVE_POSITION_MAP.md` §0. The two status updates below record what was built under the statistical framing (one bone's key slice, cohort windows), which the map replaces as the mechanism.
+
+**Status update, anatomical reference first (2026-10-17):** the first attempt (a median of collected bone clouds and a 20 mm envelope) was not the requested mechanism and is removed. The first case of the real one is built: a cheaply selected femur/tibia key plane (strongest supported marrow body, named by the lens), its physical coordinate, the cohort's range of the patella relative to it, and the patella search reading there first, through `scripts/run_interiors.py`. Measured: patella cheap profile slices -34.5%, lens readings -39.6%, every family's cheap slices -7.2%, lens readings made +2.2% (the reference's widening), no exponential claim; limits and the other families still owed in `docs/ANCHOR_RELATIVE_SEARCH.md`.
+
+**Status update, joint family (2026-10-17):** the joint family (`read_joint`) now searches by view-gated, sided questions with stop-when-answered and selected visits; the reference-relative joint window is built and tested but no cohort range is supported (no lift over coverage), so none is wired. Measured: joint lens readings -24.4%, all lens readings -2.2%, fields -5.6%, cheap slices unchanged; details and losses in `docs/ANCHOR_RELATIVE_SEARCH.md`.

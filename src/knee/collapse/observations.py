@@ -51,6 +51,8 @@ from __future__ import annotations
 import math
 from dataclasses import asdict, dataclass
 
+from knee.collapse.anatomical_relations import relationships_for
+
 PROVENANCES = ("native", "laid", "projected")
 KINDS = ("resolved", "reading", "target")
 
@@ -162,18 +164,33 @@ REFERENCE_KEYS = (
 )
 
 
-def describe_objects(records: list[dict]) -> dict[str, dict]:
+def describe_objects(
+    records: list[dict],
+    objects: tuple[str, ...] = (),
+    silences: dict[str, str] | None = None,
+) -> dict[str, dict]:
     """The study's anatomical objects, each described by every observation the records keep of it:
     the one coherent output of the operation, grouped by object, then provenance, then kind, then
     property (`support`: the array that holds the places, which says what the places measure).
+
+    `anatomical_relations` supplies sourced, typed definition links to other entries in this
+    same object table. Their basis is anatomical definition, not a claim that this study
+    measured each attachment or enclosure; native evidence and unresolved readings stay separate.
 
     It adds no pixels and no judgement. Each entry is a reference (`REFERENCE_KEYS`: the series,
     its slices, the decision, how many places, where the places are: artifact, row, label) to
     arrays already saved. For every object it also keeps `outcomes`, how often each named code
     came, and its `unresolved` sayings by provenance and code, so a part not read, ambiguous, tied
     or unavailable is never mistaken for one found absent, and `native_series`, the series that
-    resolved it on a slice of their own. A projected target stays under `projected`/`target`: a
-    place to ask, never a boundary. Records without observations contribute nothing."""
+    resolved it on a slice of their own. `definition_decisions` retains every categorical
+    assignment record for the exact object, including named and abstaining codes, while
+    `search_refusals` retains that object's own-slice silences. These categorical records remain
+    available as new observations arrive. A projected target stays under `projected`/`target`: a
+    place to ask, never a boundary. `objects` declares the production catalogue: a feature with
+    neither an observation nor a recorded refusal keeps `no_observation_record`, never absence.
+    `silences` supplies the driver\'s existing `<series uid>:<part>` own-slice refusals; for an
+    otherwise unrepresented feature those and its retained definition abstentions supply the
+    specific reason, without creating a new image observation or changing any measurement."""
     described: dict[str, dict] = {}
 
     def entry(name: str) -> dict:
@@ -184,8 +201,13 @@ def describe_objects(records: list[dict]) -> dict[str, dict]:
                 "outcomes": {},
                 "unresolved": {},
                 "native_series": [],
+                "definition_decisions": [],
+                "search_refusals": [],
             },
         )
+
+    for name in objects:
+        entry(name)
 
     for record in records:
         for row in record.get("observations", []):
@@ -207,4 +229,51 @@ def describe_objects(records: list[dict]) -> dict[str, dict]:
                 row["provenance"], {}
             )
             by_code[row["code"]] = by_code.get(row["code"], 0) + 1
+    # Collect the retained categorical records once, shared by every object entry.
+    for record in records:
+        for name, code in record.get("assignments", {}).get("codes", {}).items():
+            if name in described and isinstance(code, str):
+                described[name]["definition_decisions"].append(
+                    {
+                        "series_uid": record.get("series_uid"),
+                        "view": record.get("view"),
+                        "slice_index": record.get("slice_index"),
+                        "artifact": record.get("artifact"),
+                        "main_object": record.get("main_slice", {}).get("object"),
+                        "code": code,
+                    }
+                )
+    for key, code in sorted((silences or {}).items()):
+        uid, separator, part = key.rpartition(":")
+        if separator and part in described:
+            described[part]["search_refusals"].append({"series_uid": uid, "code": code})
+    for name, got in described.items():
+        if got["observations"] or got["unresolved"]:
+            continue
+        # A specific refusal already retained by a definition or its own-slice search is more
+        # informative than the generic missing-observation marker. Do not reinterpret successful
+        # naming codes, generic not-named markers, or another object\'s refusal as this object\'s.
+        refused = {
+            (str(record.get("series_uid", "")), code)
+            for record in records
+            if isinstance(
+                (code := record.get("assignments", {}).get("codes", {}).get(name)), str
+            )
+            and code.startswith("abstain_")
+        }
+        for key, code in (silences or {}).items():
+            uid, separator, part = key.rpartition(":")
+            if separator and part == name:
+                refused.add((uid, code))
+        if refused:
+            counts: dict[str, int] = {}
+            for _, code in sorted(refused):
+                counts[code] = counts.get(code, 0) + 1
+            got["unresolved"] = {"native": counts}
+        else:
+            got["unresolved"] = {"pipeline": {"no_observation_record": 1}}
+    # Definitions link the same object entries without declaring that this study measured
+    # an attachment or enclosure. Actual observations and refusals remain their own evidence.
+    for name, relations in relationships_for(tuple(described)).items():
+        described[name]["anatomical_relations"] = relations
     return dict(sorted(described.items()))

@@ -6,6 +6,8 @@ from knee.objects.assignments import SHELL_MM, Peak, retinacular_walls
 
 MEDIAL = "medial_patellar_retinaculum"
 LATERAL = "lateral_patellar_retinaculum"
+MEDIAL_LINING = "retinacula_positive_inner_lining"
+LATERAL_LINING = "retinacula_negative_inner_lining"
 
 
 def _scene(column_spacing=1.0):
@@ -48,18 +50,22 @@ def _scene(column_spacing=1.0):
     )
 
 
-def _resolve(scene):
-    return retinacular_walls(*scene)
-
-
 def test_both_sides_are_found_and_sparse_targets_are_not_excluded():
     scene = _scene()
-    arrays, codes = _resolve(scene)
+    arrays, codes = retinacular_walls(*scene)
 
     medial = arrays[MEDIAL]
     lateral = arrays[LATERAL]
+    medial_lining = arrays[MEDIAL_LINING]
+    lateral_lining = arrays[LATERAL_LINING]
     assert codes[MEDIAL] == codes[LATERAL] == "identified"
     assert medial.dtype == lateral.dtype == np.bool_
+    assert medial_lining.dtype == lateral_lining.dtype == np.bool_
+    assert medial_lining.any() and lateral_lining.any()
+    assert np.all(medial_lining <= arrays["retinacula_positive_inner_selected_recess"])
+    assert np.all(lateral_lining <= arrays["retinacula_negative_inner_selected_recess"])
+    assert not np.any(medial_lining & medial)
+    assert not np.any(lateral_lining & lateral)
     assert medial[:, 22].any() and lateral[:, 18].any()
     # This patellar target pixel is also an outboard minimum; targets locate holders only.
     assert scene[4][6, 22] and medial[6, 22]
@@ -70,30 +76,33 @@ def test_absent_reference_or_white_recess_returns_named_abstention():
     scene = _scene()
     no_patella = list(scene)
     no_patella[4] = np.zeros_like(scene[4])
-    arrays, codes = _resolve(tuple(no_patella))
+    arrays, codes = retinacular_walls(*tuple(no_patella))
     assert codes[MEDIAL] == codes[LATERAL] == "abstain_no_patella_carried"
     assert not arrays[MEDIAL].any() and not arrays[LATERAL].any()
+    assert not arrays[MEDIAL_LINING].any() and not arrays[LATERAL_LINING].any()
 
     no_white = list(scene)
     no_white[1] = np.zeros_like(scene[1])
-    arrays, codes = _resolve(tuple(no_white))
+    arrays, codes = retinacular_walls(*tuple(no_white))
     assert codes[MEDIAL] == codes[LATERAL] == "abstain_no_fluid_recess_at_the_patella"
     assert not arrays[MEDIAL].any() and not arrays[LATERAL].any()
+    assert not arrays[MEDIAL_LINING].any() and not arrays[LATERAL_LINING].any()
 
 
 def test_minimum_is_taken_outboard_of_each_fluid_edge_and_must_be_darker_than_fluid():
     scene = _scene()
-    arrays, codes = _resolve(scene)
+    arrays, codes = retinacular_walls(*scene)
     assert arrays[MEDIAL][:, 22].any()
     assert arrays[LATERAL][:, 18].any()
 
     brighter_strip = list(scene)
     brighter_strip[0] = scene[0].copy()
     brighter_strip[0][6:16, (17, 18, 22, 23)] = 30.0
-    arrays, codes = _resolve(tuple(brighter_strip))
+    arrays, codes = retinacular_walls(*tuple(brighter_strip))
     assert codes[MEDIAL] == "abstain_no_outboard_wall_minimum"
     assert codes[LATERAL] == "abstain_no_outboard_wall_minimum"
     assert not arrays[MEDIAL].any() and not arrays[LATERAL].any()
+    assert not arrays[MEDIAL_LINING].any() and not arrays[LATERAL_LINING].any()
 
 
 def test_contiguous_equal_minima_form_a_band_but_separated_ties_abstain():
@@ -101,23 +110,25 @@ def test_contiguous_equal_minima_form_a_band_but_separated_ties_abstain():
     scene = list(_scene(delta))
     scene[0] = scene[0].copy()
     scene[0][6:16, 23] = 5.0
-    arrays, codes = _resolve(tuple(scene))
+    arrays, codes = retinacular_walls(*tuple(scene))
     assert codes[MEDIAL] == "identified"
     assert arrays[MEDIAL][6:16, 22:24].all()
+    assert arrays[MEDIAL_LINING][6:16, 21].all()
 
     scene = list(_scene(delta))
     scene[0] = scene[0].copy()
     scene[0][6:16, 22] = 4.0
     scene[0][6:16, 24] = 4.0
     scene[0][6:16, 23] = 5.0
-    arrays, codes = _resolve(tuple(scene))
+    arrays, codes = retinacular_walls(*tuple(scene))
     assert codes[MEDIAL] == "abstain_no_outboard_wall_minimum"
     assert not arrays[MEDIAL].any()
+    assert not arrays[MEDIAL_LINING].any()
 
 
 def test_transpose_and_inner_axis_reversal_preserve_physical_side_identity():
     scene = _scene()
-    arrays, codes = _resolve(scene)
+    arrays, codes = retinacular_walls(*scene)
     assert codes[MEDIAL] == codes[LATERAL] == "identified"
 
     transposed = list(scene)
@@ -134,14 +145,18 @@ def test_transpose_and_inner_axis_reversal_preserve_physical_side_identity():
     )
     transposed[6] = np.column_stack((scene[6][:, 1], scene[6][:, 0]))
     transposed[9] = scene[9][::-1]
-    transposed_arrays, transposed_codes = _resolve(tuple(transposed))
+    transposed_arrays, transposed_codes = retinacular_walls(*tuple(transposed))
     assert transposed_codes[MEDIAL] == transposed_codes[LATERAL] == "identified"
     assert np.array_equal(transposed_arrays[MEDIAL], arrays[MEDIAL].T)
     assert np.array_equal(transposed_arrays[LATERAL], arrays[LATERAL].T)
+    assert np.array_equal(transposed_arrays[MEDIAL_LINING], arrays[MEDIAL_LINING].T)
+    assert np.array_equal(transposed_arrays[LATERAL_LINING], arrays[LATERAL_LINING].T)
 
     reflected = list(scene)
     reflected[8] = -scene[8]
-    reflected_arrays, reflected_codes = _resolve(tuple(reflected))
+    reflected_arrays, reflected_codes = retinacular_walls(*tuple(reflected))
     assert reflected_codes[MEDIAL] == reflected_codes[LATERAL] == "identified"
     assert np.array_equal(reflected_arrays[MEDIAL], arrays[LATERAL])
     assert np.array_equal(reflected_arrays[LATERAL], arrays[MEDIAL])
+    assert np.array_equal(reflected_arrays[MEDIAL_LINING], arrays[LATERAL_LINING])
+    assert np.array_equal(reflected_arrays[LATERAL_LINING], arrays[MEDIAL_LINING])

@@ -39,10 +39,23 @@ def capsule_scene():
 def test_only_the_dark_outer_walls_of_both_side_recesses_are_selected():
     dark, white, objects, expected = capsule_scene()
     found = capsule_at_side_recesses(dark, white, objects, CORONAL, SPACING)
-    assert np.array_equal(found, expected)
-    assert not found[:, 16].any() and not found[:, 33].any()
-    assert not found[:, 22].any()
-    assert not found[6, 11] and not found[18, 37]
+    assert np.array_equal(found["capsule"], expected)
+    expected_lining = np.zeros(objects.shape, dtype=bool)
+    expected_lining[7:18, 13] = True
+    expected_lining[7:18, 36] = True
+    assert np.array_equal(found["lining"], expected_lining)
+    expected_negative_wall = np.zeros(objects.shape, dtype=bool)
+    expected_negative_wall[7:18, 11:13] = True
+    expected_positive_wall = np.zeros(objects.shape, dtype=bool)
+    expected_positive_wall[7:18, 37:39] = True
+    assert np.array_equal(found["negative_wall"], expected_negative_wall)
+    assert np.array_equal(found["positive_wall"], expected_positive_wall)
+    assert int(found["section_axis"]) == 0
+    assert np.all(found["negative_section_status"][7:18] == "selected")
+    assert np.all(found["positive_section_status"][7:18] == "selected")
+    assert not found["capsule"][:, 16].any() and not found["capsule"][:, 33].any()
+    assert not found["capsule"][:, 22].any()
+    assert not found["capsule"][6, 11] and not found["capsule"][18, 37]
 
 
 def test_each_side_uses_its_largest_eligible_white_body():
@@ -52,8 +65,38 @@ def test_each_side_uses_its_largest_eligible_white_body():
     dark[20:23, 11:13] = True
     dark[20:23, 37:39] = True
     found = capsule_at_side_recesses(dark, white, objects, CORONAL, SPACING)
-    assert np.array_equal(found, expected)
-    assert not found[20:23].any()
+    assert np.array_equal(found["capsule"], expected)
+    assert not found["capsule"][20:23].any()
+
+
+def test_one_wall_straddling_the_fluid_edge_is_ambiguous_without_losing_other_rows():
+    dark, white, objects, _ = capsule_scene()
+    dark[10, 36] = (
+        True  # wall reaches the positive-side fluid's outermost position on one row
+    )
+    found = capsule_at_side_recesses(dark, white, objects, CORONAL, SPACING)
+    assert found["positive_section_status"][10] == "ambiguous_wall"
+    assert np.all(found["positive_section_status"][7:10] == "selected")
+    assert np.all(found["positive_section_status"][11:18] == "selected")
+    assert not found["positive_lining"][10].any()
+    expected_negative_edge = np.zeros((11, 50), dtype=bool)
+    expected_negative_edge[:, 13] = True
+    assert np.array_equal(found["negative_lining"][7:18], expected_negative_edge)
+    assert np.array_equal(
+        found["capsule"], found["negative_wall"] | found["positive_wall"]
+    )
+
+
+def test_both_selected_fluid_bodies_are_retained_when_both_walls_are_absent():
+    dark, white, objects, _ = capsule_scene()
+    dark[:] = False
+    found = capsule_at_side_recesses(dark, white, objects, CORONAL, SPACING)
+    assert found["negative_recess"].sum() == 33
+    assert found["positive_recess"].sum() == 33
+    assert not found["capsule"].any()
+    assert not found["lining"].any()
+    assert np.all(found["negative_section_status"][7:18] == "no_wall")
+    assert np.all(found["positive_section_status"][7:18] == "no_wall")
 
 
 def test_larger_bodies_below_the_joint_or_far_from_the_femur_are_excluded():
@@ -66,8 +109,8 @@ def test_larger_bodies_below_the_joint_or_far_from_the_femur_are_excluded():
     white[2:24, 4:9] = True
     dark[2:24, 2:4] = True
     found = capsule_at_side_recesses(dark, white, objects, CORONAL, SPACING)
-    assert np.array_equal(found, expected)
-    assert not found[29:].any() and not found[:, :4].any()
+    assert np.array_equal(found["capsule"], expected)
+    assert not found["capsule"][29:].any() and not found["capsule"][:, :4].any()
 
 
 @pytest.mark.parametrize(
@@ -85,8 +128,22 @@ def test_missing_anatomy_or_measured_signal_returns_an_empty_mask(missing):
     else:
         objects[objects == OBJECT_CODES[missing]] = 0
     found = capsule_at_side_recesses(dark, white, objects, CORONAL, SPACING)
-    assert found.shape == objects.shape and found.dtype == np.dtype(bool)
-    assert not found.any()
+    assert found["capsule"].shape == objects.shape
+    assert found["capsule"].dtype == np.dtype(bool)
+    assert not found["capsule"].any()
+    assert not found["lining"].any()
+    if missing == "dark":
+        assert np.all(
+            np.isin(found["negative_section_status"], ["no_fluid", "no_wall"])
+        )
+        assert np.all(
+            np.isin(found["positive_section_status"], ["no_fluid", "no_wall"])
+        )
+        assert np.any(found["negative_section_status"] == "no_wall")
+        assert np.any(found["positive_section_status"] == "no_wall")
+    else:
+        assert np.all(found["negative_section_status"] == "no_fluid")
+        assert np.all(found["positive_section_status"] == "no_fluid")
 
 
 @pytest.mark.parametrize("axes", [(0,), (1,), (0, 1)])
@@ -102,7 +159,11 @@ def test_axis_reversals_preserve_the_same_patient_space_wall(axes):
         basis,
         SPACING,
     )
-    assert np.array_equal(found, np.flip(expected, axis=axes))
+    assert np.array_equal(found["capsule"], np.flip(expected, axis=axes))
+    expected_edge = np.zeros(objects.shape, dtype=bool)
+    expected_edge[7:18, 13] = True
+    expected_edge[7:18, 36] = True
+    assert np.array_equal(found["lining"], np.flip(expected_edge, axis=axes))
 
 
 def test_transposing_rows_and_columns_preserves_the_patient_space_wall():
@@ -110,7 +171,12 @@ def test_transposing_rows_and_columns_preserves_the_patient_space_wall():
     found = capsule_at_side_recesses(
         dark.T, white.T, objects.T, CORONAL[:, ::-1], SPACING[::-1]
     )
-    assert np.array_equal(found, expected.T)
+    assert np.array_equal(found["capsule"], expected.T)
+    expected_edge = np.zeros(objects.shape, dtype=bool)
+    expected_edge[7:18, 13] = True
+    expected_edge[7:18, 36] = True
+    assert int(found["section_axis"]) == 1
+    assert np.array_equal(found["lining"], expected_edge.T)
 
 
 def test_contact_allowance_is_in_millimetres_for_the_outer_wall():
@@ -121,7 +187,7 @@ def test_contact_allowance_is_in_millimetres_for_the_outer_wall():
     expected = np.zeros(objects.shape, dtype=bool)
     expected[7:18, 12] = True
     expected[7:18, 37] = True
-    assert np.array_equal(found, expected)
+    assert np.array_equal(found["capsule"], expected)
 
 
 def test_a_recess_beyond_the_physical_femur_contact_allowance_is_excluded():
@@ -129,7 +195,7 @@ def test_a_recess_beyond_the_physical_femur_contact_allowance_is_excluded():
     basis = CORONAL.copy()
     basis[:, 1] *= 2.5
     found = capsule_at_side_recesses(dark, white, objects, basis, np.array([1.0, 2.5]))
-    assert not found.any()
+    assert not found["capsule"].any()
 
 
 def test_readonly_input_arrays_are_unchanged():

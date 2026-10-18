@@ -254,3 +254,7 @@ I don't know how you can best encode this, it's a SUPER simple thesis now that I
 ---
 
 This record was saved in response to message 9.
+
+## 10. Rohan — 2026-10-18
+
+> Yes, also note how this current phase is heavy on the efficiency/accuracy/efficacy link grounded by the "significance weighting" and "what an <object> is" thesis on the information-theoretic basis of this project
