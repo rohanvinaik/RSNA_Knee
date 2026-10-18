@@ -1,5 +1,6 @@
-# Competition data and anything derived from it (Kaggle-licensed — never redistribute):
-# every directory named data/, at any depth (data/raw/, archive/data/)
+# Data stays out of git because of its size. Rohan, 2026-10-18: «Obviously, GitHub is for code, not for
+# GB's of data» (data/ held 33 GB that day: the studies, readings, measurements and pictures).
+# Every directory named data/, at any depth (data/raw/, archive/data/)
 data/
 submission/*.csv
 

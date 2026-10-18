@@ -37,6 +37,12 @@ echo "== pytest (under coverage)"
 PYTHONPATH="$PP" .venv/bin/python -m coverage run -m pytest || fail=1
 .venv/bin/python -m coverage xml -q -o coverage.xml || fail=1
 
+# THE WORKFLOWS. Blocking: zizmor (SquishOS repo-hygiene.md) on the GitHub workflows: unpinned actions,
+# broad token permissions, persisted credentials, template injection. Pinned to the version that first
+# audited them.
+echo "== zizmor (blocking): the GitHub workflows"
+uvx zizmor@1.31.1 --offline .github/workflows || fail=1
+
 # THE LAYER CONTRACT. Blocking: production never imports the development or drawing tools, and a
 # run with no contracts configured is not a pass.
 echo "== import contract (lint-imports)"
