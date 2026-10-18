@@ -1,0 +1,51 @@
+# CodSpeed on every push to main, on pull requests and by hand: the kernel benchmarks
+# (benchmarks/test_kernels.py, each costly kernel's costliest call from the production run on the proof
+# study, recorded in benchmarks/recorded/, so no competition files are needed) under CodSpeed's CPU
+# simulation and memory instruments, in one step, since CodSpeed counts a benchmark run twice as two
+# variations. CodSpeed compares each commit's figures with the last on main (the pushes to main are its
+# baseline, so their runs are never cancelled). Information, never a target or a required check: Rohan,
+# 2026-10-18, «don't over-fit to targets, only bare correctness issues should be blocking». The upload
+# authenticates by OIDC, scoped to this job; CodSpeed accepts it once the repository is enabled on
+# codspeed.io.
+name: codspeed
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: codspeed-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+jobs:
+  benchmarks:
+    name: Kernel benchmarks under CodSpeed
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    permissions:
+      contents: read # to check out the code
+      id-token: write # CodSpeed's OIDC upload of the results; this job only
+    steps:
+      - name: Check out the code
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@1c37ad07a6a961277cf70c0d37d6f313000f5884 # v10.3.0
+        with:
+          cache-dependency-glob: uv.lock
+
+      - name: Install the locked environment
+        run: uv sync --frozen
+
+      - name: The kernel benchmarks, under CodSpeed's CPU simulation and memory instruments
+        uses: CodSpeedHQ/action@c4fd08a3a159bd0cc208da1e0edf32b8c47d75e5 # v5.4.0
+        with:
+          mode: simulation,memory
+          run: .venv/bin/python -m pytest benchmarks --codspeed

@@ -655,13 +655,18 @@ this plan. Static references plus actual runtime calls establish whether values 
 
 Read `scripts/ci_local.sh` and its current configuration rather than copying a remembered gate.
 It runs, from the locked environment, Ruff, format, the tests under coverage, zizmor on the workflows,
-Import Linter, advisory deptry/ty, Ruff's PERF and stable FURB rules and two Vulture scans, and a Sonar
-check that blocks only on an open bug or
-vulnerability and prints its quality gate, smells, coverage and duplication as information
-(`scripts/sonar_local.py gate`; Rohan, 2026-10-18: «don't over-fit to targets, only bare correctness
-issues should be blocking»); the same gate runs on GitHub on every push (`.github/workflows/gate.yml`;
-Rohan, 2026-10-18: «Sonar should be part of the CI gate for this project, and a full CI gate should also
-run upon push to github»). Read all advisories; a passing blocking gate does not clear them. Use Hypothesis for geometry/cache/lossless
+Import Linter, advisory deptry/ty, Ruff's PERF and stable FURB rules, two Vulture scans and the kernel
+costs (`benchmarks/`: each costly kernel's costliest call from the production run on the proof study,
+recorded in `benchmarks/recorded/` by `benchmarks/record_calls.py` and replayed exactly without the
+study data, with memray's memory at the peak and a failure when a replay holds more than at its last
+run on this machine), and a Sonar check that blocks only on an open bug or vulnerability and prints its
+quality gate, smells, coverage and duplication as information (`scripts/sonar_local.py gate`; Rohan,
+2026-10-18: «don't over-fit to targets, only bare correctness issues should be blocking»); the same gate
+runs on GitHub on every push (`.github/workflows/gate.yml`; Rohan, 2026-10-18: «Sonar should be part of
+the CI gate for this project, and a full CI gate should also run upon push to github»), and the kernel
+benchmarks run there under CodSpeed's CPU simulation and memory instruments too
+(`.github/workflows/codspeed.yml`), compared commit to commit as information. Read all advisories; a
+passing blocking gate does not clear them. Use Hypothesis for geometry/cache/lossless
 properties, Detective and CrossHair for suitable pure decisions/contracts, not to certify anatomy
 from test counts. CrossHair must actually report checkable contracts; silence is not proof.
 Use project-interpreter cProfile/VizTracer or another available instrument against the real entry
@@ -682,7 +687,11 @@ For every production increment:
 5. Exercise empty/malformed/nonfinite/boundary input, missing knee side/source/geometry,
    different sequence dimensions, oblique slabs, ties, map disagreement, clipped contexts and
    measured-empty versus unavailable. Check all real sibling routes and the single save point.
-6. Run the full gate after the integrated increment; inspect advisory lists. Record the mechanism,
+6. Run the full gate after the integrated increment; inspect advisory lists. When the increment changes
+   a benchmarked kernel or what the production path hands it (its caller, scope or arguments), refresh
+   the kernel benchmarks' recording from the integrated source (`.venv/bin/python
+   benchmarks/record_calls.py`, one more run of the proof study), so `benchmarks/` replays the current
+   calls, and commit it with the increment. Record the mechanism,
    accepted image and source/run evidence in the dated RESOLVING/MAP acceptance record; update
    detailed remaining work only in §13's active packet. NEXT stays a pointer card. Commit that clean
    checkpoint with explicit paths, run the pre-push checks, push it before the next packet and read the

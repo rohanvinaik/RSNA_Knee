@@ -84,6 +84,25 @@ echo "== vulture (advisory) 2/2: nothing ANYWHERE calls it, tests included"
 .venv/bin/vulture src scripts tests ||
     echo "vulture: every line here is an island whose consumer is owed, or dead code to archive"
 
+# KERNEL COSTS. Advisory: each costly kernel's costliest call from the production run on the proof
+# study, recorded in benchmarks/recorded/ by benchmarks/record_calls.py (where the competition's files
+# are; refreshed when the production path changes what it hands a kernel, FULL_BUILD_PLAN §9) and
+# rebuilt exactly (benchmarks/test_kernels.py), so it needs no study data and runs on GitHub too. Rohan,
+# 2026-10-18: «We shouldn't have hardcoded values, wire in the ones we compute in the production path»;
+# «Drop the requirements for study data». It prints the commit the recording was made from, each
+# replay's duration and its memory at the peak (memray). One call per kernel, not a kernel's whole
+# cost on the study; and the kernels call one another, so their figures overlap and do not add up.
+# A replay holding more memory at its peak than at its last successful run on this machine fails the
+# step (--fail-on-increase; pytest keeps the runs in .pytest_cache/, so on GitHub, where every run
+# starts fresh, it never fires, and CodSpeed compares commits there instead). After a deliberate
+# increase, one run without the flag sets the new baseline:
+#     .venv/bin/python -m pytest benchmarks -q --memray
+# and `pytest --cache-clear` anywhere in the project clears it. Not under coverage. Information, never
+# a target: it never fails the gate.
+echo "== kernel costs (advisory): each kernel's costliest production call on the proof study, replayed"
+.venv/bin/python -m pytest benchmarks -q -rP --durations=0 --memray --most-allocations=0 --fail-on-increase ||
+    echo "kernel costs: a replay above failed or held more memory than at its last run here; information, not a gate"
+
 # SONAR. Blocking, bare correctness only: the scan and its analysis ran, the open bugs and
 # vulnerabilities were read, and none is open. Rohan, 2026-10-18: «Both git and local should use a sane
 # profile of Sonar rules. Yes, agree, don't over-fit to targets, only bare correctness issues should be

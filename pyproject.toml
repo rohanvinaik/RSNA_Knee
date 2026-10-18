@@ -88,7 +88,9 @@ known-first-party = ["knee", "object_interiors", "object_assignments", "object_b
 exclude = ["archive", "archive2"]
 
 [tool.deptry]
-extend_exclude = ["archive", "archive2"]
+# The benchmarks are development code, as the tests are (which deptry leaves out by default): their
+# pytest is the dev group's.
+extend_exclude = ["archive", "archive2", "benchmarks"]
 # The drawing scripts are the run's neighbouring scripts, not external distributions.
 known_first_party = ["knee", "object_interiors", "object_assignments", "object_bones", "object_patella", "object_joint", "object_recess"]
 
@@ -124,6 +126,8 @@ dev = [
     "matplotlib>=3.11.2",
     "numba>=0.68.0",
     "pytest>=9.1.1",
+    "pytest-codspeed>=5.0.3",
+    "pytest-memray>=1.11.0",
     "ruff==0.16.7",
     # The gate's advisory readers, pinned so the GitHub run reads with the same versions as this machine.
     "ty==0.0.86",

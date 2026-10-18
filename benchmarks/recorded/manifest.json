@@ -1,0 +1,520 @@
+{
+ "study": "1.2.826.0.1.3680043.8.498.10095687747295410396510538520594649149",
+ "commit": "667e28b3f8b82280482bba2f8c6d3144df078ac6",
+ "uncommitted": [
+  " M AGENTS.md",
+  " M docs/FULL_BUILD_PLAN.md",
+  " M docs/conversations/2026-10-18-build-session-corrections.md",
+  " M docs/work/current/README.md",
+  " M pyproject.toml",
+  " M scripts/ci_local.sh",
+  " M uv.lock",
+  "?? benchmarks/"
+ ],
+ "recorded_at": "2026-10-18T21:44:36+00:00",
+ "python": "3.14.7",
+ "numpy": "2.5.3",
+ "platform": "macOS-27.0-arm64-arm-64bit-Mach-O",
+ "kernels": {
+  "interior_regions": {
+   "calls_in_the_run": 53,
+   "kept_call": 0,
+   "kept_call_seconds": 0.060738665983080864,
+   "all_calls_seconds": 2.1113477973267436,
+   "args": {
+    "tuple": [
+     {
+      "array": "611983414d364c24665a923b2cbe1de404929ebf4d67c9a58ae3c8bd4a5d28b5",
+      "dtype": "<u2",
+      "shape": [
+       400,
+       400
+      ],
+      "strides": [
+       800,
+       2
+      ],
+      "writeable": true
+     },
+     {
+      "tuple": [
+       0.4,
+       0.4
+      ]
+     },
+     7.341796875,
+     3.0
+    ]
+   },
+   "kwargs": {
+    "dict": [
+     [
+      "available",
+      {
+       "array": "9edaf70984a576769cf6b7e2360593cb2ca16467e4b5fa36d2608c13480a3086",
+       "dtype": "|b1",
+       "shape": [
+        400,
+        400
+       ],
+       "strides": [
+        400,
+        1
+       ],
+       "writeable": false
+      }
+     ]
+    ]
+   }
+  },
+  "physical_squint": {
+   "calls_in_the_run": 164,
+   "kept_call": 51,
+   "kept_call_seconds": 0.0015779593959450722,
+   "all_calls_seconds": 0.15476075652986765,
+   "args": {
+    "tuple": [
+     {
+      "array": "e46870a84f2e89cd6056fa278557f937828aa1a86c9ef867354fc54992e13f66",
+      "dtype": "<u2",
+      "shape": [
+       384,
+       384
+      ],
+      "strides": [
+       768,
+       2
+      ],
+      "writeable": true
+     },
+     {
+      "tuple": [
+       0.390625,
+       0.390625
+      ]
+     },
+     10.0,
+     {
+      "array": "69ddbcfd4ea6e5ec9d483269a0d0c8f2619d268fb428599750eff1fa5687ddaf",
+      "dtype": "|b1",
+      "shape": [
+       384,
+       384
+      ],
+      "strides": [
+       384,
+       1
+      ],
+      "writeable": true
+     }
+    ]
+   },
+   "kwargs": {
+    "dict": []
+   }
+  },
+  "block_medians": {
+   "calls_in_the_run": 276,
+   "kept_call": 144,
+   "kept_call_seconds": 0.0020334161818027496,
+   "all_calls_seconds": 0.2750844210386276,
+   "args": {
+    "tuple": [
+     {
+      "array": "9734cac9b9dc84668919a616db2b0b8091cf4931b59af6c5bb90e4ca03020e5c",
+      "dtype": "<f8",
+      "shape": [
+       320,
+       320
+      ],
+      "strides": [
+       2560,
+       8
+      ],
+      "writeable": true
+     },
+     {
+      "array": "060c7230237227f7d67b1a2dcdc30b66952c016079d73676942b7aef1fbe669d",
+      "dtype": "|b1",
+      "shape": [
+       320,
+       320
+      ],
+      "strides": [
+       320,
+       1
+      ],
+      "writeable": true
+     },
+     {
+      "tuple": [
+       0.5,
+       0.5
+      ]
+     },
+     2.0
+    ]
+   },
+   "kwargs": {
+    "dict": []
+   }
+  },
+  "coarse_depth": {
+   "calls_in_the_run": 46,
+   "kept_call": 0,
+   "kept_call_seconds": 0.0011769169941544533,
+   "all_calls_seconds": 0.046389839611947536,
+   "args": {
+    "tuple": [
+     {
+      "array": "bdf7a3d9746f1ac9783128e872b471e1e03054faa3c0aae996c9ad2dce8cbc53",
+      "dtype": "<f8",
+      "shape": [
+       80,
+       80
+      ],
+      "strides": [
+       640,
+       8
+      ],
+      "writeable": false
+     },
+     true
+    ]
+   },
+   "kwargs": {
+    "dict": []
+   }
+  },
+  "enclosed_darkness": {
+   "calls_in_the_run": 63,
+   "kept_call": 50,
+   "kept_call_seconds": 0.02478679083287716,
+   "all_calls_seconds": 0.266206162981689,
+   "args": {
+    "tuple": [
+     {
+      "array": "270b721f4f8bc7df02923ad896c3488b0d895cafd8998130302dc1763f2926cc",
+      "dtype": "<u2",
+      "shape": [
+       384,
+       384
+      ],
+      "strides": [
+       768,
+       2
+      ],
+      "writeable": true
+     }
+    ]
+   },
+   "kwargs": {
+    "dict": []
+   }
+  },
+  "dark_bands": {
+   "calls_in_the_run": 5,
+   "kept_call": 2,
+   "kept_call_seconds": 0.20228483248502016,
+   "all_calls_seconds": 0.9863369595259428,
+   "args": {
+    "tuple": [
+     {
+      "array": "cddfb23e9b71713aea6c6a75300a91a3add8e67aed056c9a4c2f0fd851751235",
+      "dtype": "<u2",
+      "shape": [
+       400,
+       400
+      ],
+      "strides": [
+       800,
+       2
+      ],
+      "writeable": true
+     },
+     {
+      "array": "9f7ec58239368c4f13fccdd381ae2fc66ec56487fbae78ccec692d23769d036b",
+      "dtype": "|i1",
+      "shape": [
+       400,
+       400
+      ],
+      "strides": [
+       400,
+       1
+      ],
+      "writeable": true
+     },
+     {
+      "array": "3cc750e7efb2812889909d9e0f7fa1a5f9a27df05d1817352d6d6a8cf7a0564b",
+      "dtype": "<f8",
+      "shape": [
+       2
+      ],
+      "strides": [
+       8
+      ],
+      "writeable": true
+     },
+     {
+      "array": "d6f834746faa6cfdc1efc539ea3d3a5ba390291e7f4faa886d92863f085eafd4",
+      "dtype": "|b1",
+      "shape": [
+       400,
+       400
+      ],
+      "strides": [
+       400,
+       1
+      ],
+      "writeable": true
+     },
+     {
+      "dataclass": "knee.objects.assignments:Measures",
+      "fields": {
+       "key": {
+        "tuple": [
+         "1.2.826.0.1.3680043.8.498.10791858932231443712736629517371931282",
+         15
+        ]
+       },
+       "plane": {
+        "array": "cddfb23e9b71713aea6c6a75300a91a3add8e67aed056c9a4c2f0fd851751235",
+        "dtype": "<u2",
+        "shape": [
+         400,
+         400
+        ],
+        "strides": [
+         800,
+         2
+        ],
+        "writeable": true
+       },
+       "basis_lps": {
+        "array": "2c05e94a8eacd4b84dd61782fae3d4ac1760112d79908b29d9b07199cc912151",
+        "dtype": "<f8",
+        "shape": [
+         3,
+         2
+        ],
+        "strides": [
+         16,
+         8
+        ],
+        "writeable": true
+       }
+      }
+     }
+    ]
+   },
+   "kwargs": {
+    "dict": []
+   }
+  },
+  "local_lightness": {
+   "calls_in_the_run": 1,
+   "kept_call": 0,
+   "kept_call_seconds": 0.5147285824641585,
+   "all_calls_seconds": 0.5147285824641585,
+   "args": {
+    "tuple": [
+     {
+      "array": "10d701890061bc64a08a226f8323120b85329cdbd8ff71c3395182b0de689cae",
+      "dtype": "<f8",
+      "shape": [
+       245,
+       217
+      ],
+      "strides": [
+       2560,
+       8
+      ],
+      "writeable": true
+     },
+     {
+      "array": "c0c0147dfff16a3295d11ac35a087a960cde3e1293d5ce55bdd1b3fb4dc2cc44",
+      "dtype": "|b1",
+      "shape": [
+       245,
+       217
+      ],
+      "strides": [
+       320,
+       1
+      ],
+      "writeable": true
+     },
+     {
+      "array": "96d9b149188d2b54260a50d8175c61e405042c0603767bdadfe777c87e7af90f",
+      "dtype": "<f8",
+      "shape": [
+       2
+      ],
+      "strides": [
+       8
+      ],
+      "writeable": true
+     }
+    ]
+   },
+   "kwargs": {
+    "dict": []
+   }
+  },
+  "thick_parts": {
+   "calls_in_the_run": 207,
+   "kept_call": 67,
+   "kept_call_seconds": 0.06971379183232784,
+   "all_calls_seconds": 0.5613306099548936,
+   "args": {
+    "tuple": [
+     {
+      "array": "bb78f49d64827b9d97497e0cf77e4702506a99e0f2c5996a4c4eabb88fdb25d7",
+      "dtype": "|b1",
+      "shape": [
+       400,
+       400
+      ],
+      "strides": [
+       400,
+       1
+      ],
+      "writeable": true
+     },
+     {
+      "array": "3cc750e7efb2812889909d9e0f7fa1a5f9a27df05d1817352d6d6a8cf7a0564b",
+      "dtype": "<f8",
+      "shape": [
+       2
+      ],
+      "strides": [
+       8
+      ],
+      "writeable": true
+     },
+     10.0
+    ]
+   },
+   "kwargs": {
+    "dict": []
+   }
+  },
+  "background_split": {
+   "calls_in_the_run": 5,
+   "kept_call": 0,
+   "kept_call_seconds": 0.03904358297586441,
+   "all_calls_seconds": 0.1391587909311056,
+   "args": {
+    "tuple": [
+     {
+      "array": "7c4ca1d329b554cf097050dff6d4314c526dd68efb361d16d6bb8913ae26a006",
+      "dtype": "<f8",
+      "shape": [
+       5760000
+      ],
+      "strides": [
+       8
+      ],
+      "writeable": true
+     }
+    ]
+   },
+   "kwargs": {
+    "dict": []
+   }
+  }
+ },
+ "arrays": {
+  "611983414d364c24665a923b2cbe1de404929ebf4d67c9a58ae3c8bd4a5d28b5": {
+   "passed_dtype": "<u2",
+   "stored_dtype": "<u2",
+   "bytes_passed": 320000
+  },
+  "9edaf70984a576769cf6b7e2360593cb2ca16467e4b5fa36d2608c13480a3086": {
+   "passed_dtype": "|b1",
+   "stored_dtype": "|b1",
+   "bytes_passed": 160000
+  },
+  "e46870a84f2e89cd6056fa278557f937828aa1a86c9ef867354fc54992e13f66": {
+   "passed_dtype": "<u2",
+   "stored_dtype": "<u2",
+   "bytes_passed": 294912
+  },
+  "69ddbcfd4ea6e5ec9d483269a0d0c8f2619d268fb428599750eff1fa5687ddaf": {
+   "passed_dtype": "|b1",
+   "stored_dtype": "|b1",
+   "bytes_passed": 147456
+  },
+  "9734cac9b9dc84668919a616db2b0b8091cf4931b59af6c5bb90e4ca03020e5c": {
+   "passed_dtype": "<f8",
+   "stored_dtype": "<u2",
+   "bytes_passed": 819200
+  },
+  "060c7230237227f7d67b1a2dcdc30b66952c016079d73676942b7aef1fbe669d": {
+   "passed_dtype": "|b1",
+   "stored_dtype": "|b1",
+   "bytes_passed": 102400
+  },
+  "bdf7a3d9746f1ac9783128e872b471e1e03054faa3c0aae996c9ad2dce8cbc53": {
+   "passed_dtype": "<f8",
+   "stored_dtype": "<f8",
+   "bytes_passed": 51200
+  },
+  "270b721f4f8bc7df02923ad896c3488b0d895cafd8998130302dc1763f2926cc": {
+   "passed_dtype": "<u2",
+   "stored_dtype": "<u2",
+   "bytes_passed": 294912
+  },
+  "cddfb23e9b71713aea6c6a75300a91a3add8e67aed056c9a4c2f0fd851751235": {
+   "passed_dtype": "<u2",
+   "stored_dtype": "<u2",
+   "bytes_passed": 320000
+  },
+  "9f7ec58239368c4f13fccdd381ae2fc66ec56487fbae78ccec692d23769d036b": {
+   "passed_dtype": "|i1",
+   "stored_dtype": "|i1",
+   "bytes_passed": 160000
+  },
+  "3cc750e7efb2812889909d9e0f7fa1a5f9a27df05d1817352d6d6a8cf7a0564b": {
+   "passed_dtype": "<f8",
+   "stored_dtype": "<f8",
+   "bytes_passed": 16
+  },
+  "d6f834746faa6cfdc1efc539ea3d3a5ba390291e7f4faa886d92863f085eafd4": {
+   "passed_dtype": "|b1",
+   "stored_dtype": "|b1",
+   "bytes_passed": 160000
+  },
+  "2c05e94a8eacd4b84dd61782fae3d4ac1760112d79908b29d9b07199cc912151": {
+   "passed_dtype": "<f8",
+   "stored_dtype": "<f8",
+   "bytes_passed": 48
+  },
+  "10d701890061bc64a08a226f8323120b85329cdbd8ff71c3395182b0de689cae": {
+   "passed_dtype": "<f8",
+   "stored_dtype": "<u2",
+   "bytes_passed": 425320
+  },
+  "c0c0147dfff16a3295d11ac35a087a960cde3e1293d5ce55bdd1b3fb4dc2cc44": {
+   "passed_dtype": "|b1",
+   "stored_dtype": "|b1",
+   "bytes_passed": 53165
+  },
+  "96d9b149188d2b54260a50d8175c61e405042c0603767bdadfe777c87e7af90f": {
+   "passed_dtype": "<f8",
+   "stored_dtype": "<f8",
+   "bytes_passed": 16
+  },
+  "bb78f49d64827b9d97497e0cf77e4702506a99e0f2c5996a4c4eabb88fdb25d7": {
+   "passed_dtype": "|b1",
+   "stored_dtype": "|b1",
+   "bytes_passed": 160000
+  },
+  "7c4ca1d329b554cf097050dff6d4314c526dd68efb361d16d6bb8913ae26a006": {
+   "passed_dtype": "<f8",
+   "stored_dtype": "<u2",
+   "bytes_passed": 46080000
+  }
+ }
+}
