@@ -7,7 +7,8 @@ that index. Worker attempts and acceptance packets are dated evidence, not anoth
 ## TASK ID / PACKET REVISION / STATE
 
 - Task ID: `BUILD-WORKFLOW-PLAN-20261018`.
-- Packet revision: 9. Revision 8, as committed in `a9714a1`, is preserved verbatim at
+- Packet revision: 10. Revision 9, as committed in `afc6f03`, is preserved verbatim at
+  `docs/work/history/BUILD-WORKFLOW-PLAN-20261018-r9.md`; revision 8, as committed in `a9714a1`, at
   `docs/work/history/BUILD-WORKFLOW-PLAN-20261018-r8.md`; revision 7, as committed in `17a5393`, at
   `docs/work/history/BUILD-WORKFLOW-PLAN-20261018-r7.md`; revision 6, as committed in `7464de9`, at
   `docs/work/history/BUILD-WORKFLOW-PLAN-20261018-r6.md`; revision 5 at
@@ -20,8 +21,10 @@ that index. Worker attempts and acceptance packets are dated evidence, not anoth
   approve, continue setting this up», answering the lead's question, which offered approval with the
   reviews' two Fable answers as written and said that on approval the lead does the setup, runs the
   rehearsal, then W1. The plan's §1 records his answers.
-- Activity: recording the approval and the route change (the guide's §6 table and heading, FULL_BUILD_PLAN
-  §10), then the plan's §4 preconditions. No build workflow is launched yet.
+- Activity: the plan's §4 preconditions. Done: 1 (the approval and the route change, `afc6f03`), 2 (the
+  tools), 3 (the consult checks), and the script and offline mock of the rehearsal R0 (the plan's new §7a).
+  Next: the clean tree, the pin and R0's baseline manifest (4), then R0 through the runtime (6). No build
+  workflow is launched yet.
 
 ## CURRENT REQUEST / AUTHORITATIVE EXCHANGES / ACTUAL AUTHORS
 
@@ -88,13 +91,23 @@ Rohan, verbatim, all recorded in `docs/conversations/2026-10-18-build-session-co
 
 ## SOURCE HEAD / DIRTY UNITS / MANIFEST / INPUT IDENTITIES
 
-- Pushed since revision 8 was written: `a9714a1` (the plan's revision 4; this packet's revision 8). Its
+- Pushed since revision 9 was written: `afc6f03` (the approval record; this packet's revision 9). Its
   pre-push hook found the gate's stamp on that tree, the secret scan found nothing in the lines it adds to
-  4 files, and the audit named `no_known_flaws`.
-- This revision's commit follows `a9714a1`; `git log` is the record. Its production source changes: none
-  (`BUILD_WORKFLOWS.md` §1 and its header, the guide's §6, FULL_BUILD_PLAN §10, the corrections record,
-  this packet and its history copy). The recording in `benchmarks/recorded/` was made from `667e28b`'s
-  production source, unchanged since.
+  6 files, and the audit named `no_known_flaws`.
+- This revision's commit follows `afc6f03`; `git log` is the record. Its production source changes: none
+  (`BUILD_WORKFLOWS.md` §3's source basis and the new §7a, this packet and its history copy). The recording
+  in `benchmarks/recorded/` was made from `667e28b`'s production source, unchanged since.
+- The workflow tools, untracked under `data/readings/collapse-20261017/full-build/targeted-compute-20261018/workflow-tools/`
+  (SHA-256): `spans.py` `017b39c0…`, `callsites.py` `e918add8…`, `assigned_names.py` `67f247d0…` (each
+  identical to the lead's scratchpad copy read whole this session), `import_proof.py` `1c39d73c…` and
+  `write_manifest.py` `9dd18c8e…` (written for the setup). On a throwaway `git worktree` of `afc6f03`,
+  removed after: with `PYTHONPATH=<wt>/src` both `knee` and `run_interiors` import from the worktree
+  (exit 0); without it `knee` imports from the main tree through the editable install and the check fails
+  (exit 1), the case it exists for.
+- The manifest leaves out `archive/` and `archive2/` (166 and 481 tracked files: the writer's dry run
+  counted them, and hashed them without reading them; that dry run's file was deleted). The archives are
+  invisible, so no agent may read them, and a read of one is outside the frozen basis and stops its chain
+  (the plan's §3 now says so).
 
 ## OWNER / PERMITTED WRITES / WORKER ROUTES
 
@@ -130,10 +143,12 @@ gate step, with `continue-on-error`, so the gate always runs.
 
 ## NEXT SINGLE ACTION / PROPOSED OPERATION / JUSTIFICATION
 
-The preconditions of `BUILD_WORKFLOWS.md` §4, in order: the tools in `B/workflow-tools/` (2), the consult
-checks (3), a clean tree, the pin and the baseline manifest (4), the rehearsal's script and its offline
-mock (5), and the runtime rehearsal R0 (6), with what breaks fixed and the mock re-run; then W1, as his
-approval covers. Dropped at his 21:19 words: the self-hosted runner on
+The rest of `BUILD_WORKFLOWS.md` §4: a clean tree, the pin and R0's baseline manifest (4: every tracked
+file but this packet and the archives, the workflow tools, and the outside instruction file
+`~/.claude/CLAUDE.md`), then R0 through the runtime (6: its `runtime` and `stops` parts, then `cancel`, which
+the lead stops part-way and relaunches), with what breaks fixed and the mocks re-run; then W1's own pin and
+manifest, its outside entries taken from the instruction files R0's agents list, and W1, as his approval
+covers. Dropped at his 21:19 words: the self-hosted runner on
 this Mac (it existed to give a GitHub job the studies) and downloading the proof study to GitHub's runners.
 
 ## OPEN SEMANTIC CHOICE / PREREQUISITES / OTHER OPEN BUILD ITEMS
@@ -163,15 +178,19 @@ ledger declaration debt are rechecked in W2 before anything is rebuilt.
 Unchanged: P0 (`7b61b54`), P1 (`19967cd`, `p1-sartorius-scope-20261018/`), P2b increment 1 (`2b41281`,
 `p2b-bone-context-20261018/`).
 
-This task's checks since revision 8:
+This task's checks since revision 9, all kept in
+`data/readings/collapse-20261017/full-build/targeted-compute-20261018/workflow-setup-20261019/`:
 - GitHub, `a9714a1`: the gate (run 39182680126) and CodSpeed (run 39182680061) completed with every step
-  succeeding, read from their step summaries; their whole logs are kept, not yet read, in
-  `data/readings/collapse-20261017/full-build/targeted-compute-20261018/workflow-plan-r4-20261019/github-runs-a9714a1/`,
-  and the push's hook output is `push.log` in that `workflow-plan-r4-20261019/` folder (whose `README.md`
-  also records revision 4's offline mock: 34 of 34 on revision 4, 31 of 34 on revision 3).
+  succeeding, read from their step summaries (logs kept in `workflow-plan-r4-20261019/github-runs-a9714a1/`).
+  GitHub, `afc6f03`: the gate (run 39183934681) and CodSpeed (run 39183934769) completed, success, by the
+  watcher's summary (logs kept in `github-runs-afc6f03/`); the push's hook output is `push.log`.
+- The consult checks: `consult-budget.txt` (Codex's weekly window 46% used, resetting Saturday 24 October,
+  credits 0; Antigravity's weekly quotas untouched) and `anthropic-consult-check.txt` (the key readable from
+  its store, 106 characters, its value not printed).
+- The offline mocks on the plan with §7a: R0's (`r0_mock.mjs`, SHA-256 `4a79141e…`), 10 of 10 cases as
+  expected (`r0-mock.txt`); W1's, 34 of 34 with its script block unchanged (`mock-w1-with-r0.txt`).
 - This revision's final gate, `bash scripts/ci_local.sh` on exactly this revision's tree: its whole output
-  is kept as `gate.log` in `data/readings/collapse-20261017/full-build/targeted-compute-20261018/workflow-setup-20261019/`,
-  written after this record, which therefore does not carry its numbers.
+  is kept there as `gate-r0.log`, written after this record, which therefore does not carry its numbers.
 
 ## INSPECTED IMAGE ADDRESSES / RESULT AND UNKNOWN SEMANTICS
 

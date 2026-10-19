@@ -117,7 +117,9 @@ Settled by your recorded words, stated so you can correct them:
   tree, so a dirty file anywhere, code or document, would mean an agent reads something that is not
   HEAD's). The lead writes the baseline manifest: the SHA-256, by path, of every file the workflow's agents
   may read, namely every tracked file at HEAD (code, governing documents and the CLAUDE.md imports alike)
-  except the active packet; every untracked file a prompt names (the notes, packets and receipts under
+  except the active packet and the archives (`archive/` and `archive2/`, 647 tracked files: invisible, so
+  no agent may read them, and a read of one is outside the frozen basis and stops its chain); every
+  untracked file a prompt names (the notes, packets and receipts under
   `data/` that it cites, and the tools in `B/workflow-tools/`); and the instruction files outside the
   repository that reach an agent (the rehearsal names them, §4). Every prompt carries HEAD, the manifest's
   path and SHA-256 and the packet revision; the script receives the manifest's entries in `args`. Each
@@ -597,6 +599,299 @@ outcome; the run ends in one too. The offline mock runs this block, taken from t
 cases (§4, §10); it checks the control flow only. The lead reads every return and every picture before
 G1, and records the run and its outcome in the job table; nothing from W1 is integrated or cited as
 accepted until G1's own checks.
+
+## 7a. R0, the runtime rehearsal (§4, step 6), drafted in full
+
+R0 runs before W1 at W1's settings, in three parts chosen by `args.part`, each with its own fresh attempt id
+and pinned manifest; it changes nothing in production. It reuses W1's checking functions, prompt rules and
+schemas unchanged, adding to every return the instruction files the agent's context names, what it read
+before its task, and any command refused or asking a permission it could not give.
+
+- `runtime` (5 agents): a worktree agent runs the import check, the full test suite and one serial proof
+  CLI run with every path explicit, and lists what anything wrote under its worktree; a rehearsal candidate
+  makes a harmless edit that is never integrated (a comment line and a new docstring-only file), with its
+  diff and candidate manifest, and an independent verifier applies it in its own worktree; one agent tries
+  to break its schema (observed, no expected outcome); one agent is handed an upstream return naming files
+  written during the workflow and must not end STALE_INPUT.
+- `stops` (7 agents): each does the real first step, then returns with one deliberate deviation: blocked,
+  a wrong HEAD, a wrong packet revision, a hash unlike the baseline, a missing required hash, a verifier
+  violation, a verifier leaving a required check unreported. Each chain must end in the outcome §3 maps.
+- `cancel` (1 agent): a long task the lead stops part-way (TaskStop), confirms stopped, marks its attempt
+  `WITHDRAWN.md`, and relaunches with a fresh attempt id to completion.
+
+The script returns each chain's expected and actual outcome and every mismatch. The lead reads every
+return, records each agent's token use from the runtime's own records (§3's context rule), takes the
+manifest's outside entries for W1 from the instruction files the agents list, and fixes what breaks in the
+scripts and packets, re-running the mocks, before W1. Its offline mock is `r0_mock.mjs` in the setup's
+evidence folder.
+
+```js
+export const meta = {
+  name: 'rsna-r0-runtime-rehearsal',
+  description: 'R0 before W1 (BUILD_WORKFLOWS §4): rehearse worktree imports, a candidate and its verifier, schema handling, instruction files, permissions, stops and cancellation through the real runtime; no production edits',
+  phases: [
+    { title: 'Runtime', detail: 'a worktree agent, a rehearsal candidate and its verifier, a schema break, an inlined upstream return' },
+    { title: 'Stops', detail: 'agents told to return each stop case the checks must catch' },
+    { title: 'Cancel', detail: 'one long agent, stopped by the lead and relaunched' },
+  ],
+}
+
+const ROOT = '/Users/rohanvinaik/Projects/Kaggle_Killer/competitions/RSNA_Knee'
+// The manifest names a file under data/ by its path relative to ROOT; B_REL is the plan's readings root so named.
+const B_REL = 'data/readings/collapse-20261017/full-build/targeted-compute-20261018'
+const B = ROOT + '/' + B_REL
+const TOOLS_REL = B_REL + '/workflow-tools'
+const TOOLS = ROOT + '/' + TOOLS_REL
+const PIN = args && args.sourcePin
+const isHex = (n, value) => new RegExp('^[0-9a-f]{' + n + '}$').test(String(value))
+const PARTS = ['runtime', 'stops', 'cancel']
+if (!PIN || !isHex(40, PIN.head) || !PIN.manifest || !isHex(64, PIN.manifestSha256) || !PIN.entries ||
+    typeof PIN.entries !== 'object' || Object.keys(PIN.entries).length === 0 || !args.attempt || !args.packetRevision ||
+    !PARTS.includes(args.part)) {
+  throw new Error('R0 needs args = { sourcePin: { head (40 hex), manifest, manifestSha256 (64 hex), entries: { path: sha256 } }, attempt, packetRevision, part (runtime, stops or cancel) } from the lead')
+}
+const REVISION = String(args.packetRevision)
+const SONNET = { model: 'sonnet', effort: 'xhigh' }
+const PROOF = '1.2.826.0.1.3680043.8.498.10095687747295410396510538520594649149'
+const dirOf = (packet) => B + '/workflows-20261018/r0/' + packet + '/attempt-' + args.attempt
+const has = (object, key) => Object.prototype.hasOwnProperty.call(object, key)
+// The instruction files reach an agent in its instructions, not through Read, so each agent hashes them first.
+const INSTRUCTIONS = ['CLAUDE.md', 'AGENTS.md', 'docs/THEORY_OF_THE_CASE.md', 'docs/HOW_TO_BUILD.md', 'docs/FULL_BUILD_PLAN.md',
+  'docs/conversations/2026-10-13-the-thesis.md', 'docs/conversations/2026-10-18-anatomical-priors-and-targeted-compute.md']
+
+// Each agent's required inputs, built as W1 builds them (§3).
+const OUTSIDE = Object.keys(PIN.entries).filter((path) => path.startsWith('/'))
+const LOCATORS = ['spans.py', 'callsites.py', 'assigned_names.py'].map((name) => TOOLS_REL + '/' + name)
+const EVERY = [...INSTRUCTIONS, ...OUTSIDE, 'docs/GROUNDING_AND_WORKER_GUIDE.md', ...LOCATORS, 'scripts/run_interiors.py']
+const IN_WORKTREE = [...EVERY, TOOLS_REL + '/import_proof.py']
+const STAGES = ['r0-worktree', 'r0-candidate', 'r0-verify', 'r0-schema', 'r0-upstream', 'r0-stop-blocked', 'r0-stop-head',
+  'r0-stop-revision', 'r0-stop-hash', 'r0-stop-missing', 'r0-stop-violation', 'r0-stop-unreported', 'r0-cancel']
+const WORKTREE_STAGES = ['r0-worktree', 'r0-candidate', 'r0-verify']
+const REQUIRED = Object.fromEntries(STAGES.map((stage) => [stage, WORKTREE_STAGES.includes(stage) ? IN_WORKTREE : EVERY]))
+const unlisted = [...new Set(Object.values(REQUIRED).flat())].filter((path) => !has(PIN.entries, path))
+if (unlisted.length) throw new Error('R0 needs every required input in the manifest, which lacks ' + unlisted.join(', '))
+const inputsOf = (stage) => 'REQUIRED INPUTS: ' + REQUIRED[stage].join(', ') +
+  '. Hash each of them in your first step and return each in source_hashes; a return that leaves one out is incomplete.'
+
+// W1's outcomes and checks (§3, §7), unchanged.
+const OUTCOMES = ['STALE_INPUT', 'VERIFICATION_FAILED', 'INCOMPLETE', 'READY_FOR_LEAD_REVIEW']
+const ended = (status, stage, reasons) => ({ status, stage, reasons })
+
+function screened(stage, r, changed) {
+  if (!r) return ended('INCOMPLETE', stage, ['no return: the agent was skipped, died or was stopped'])
+  const notDone = r.not_done || []
+  const stale = []
+  if (r.head !== PIN.head) stale.push('head ' + r.head + ' is not the pinned ' + PIN.head)
+  if (String(r.packet_revision) !== REVISION) stale.push('packet revision ' + r.packet_revision + ' is not ' + REVISION)
+  for (const entry of r.source_hashes || []) {
+    if (changed && has(changed, entry.path)) continue
+    if (!has(PIN.entries, entry.path)) stale.push(entry.path + ' is outside the frozen basis')
+    else if (PIN.entries[entry.path] !== entry.sha256) stale.push(entry.path + ' differs from the baseline')
+  }
+  if (r.completion === 'stale_input' && stale.length === 0) stale.push(...(notDone.length ? notDone : ['the agent reported stale input']))
+  if (stale.length) return ended('STALE_INPUT', stage, stale)
+  if (r.completion !== 'complete') return ended('INCOMPLETE', stage, ['completion is ' + r.completion, ...notDone])
+  if (r.attempt_dir !== dirOf(stage)) return ended('INCOMPLETE', stage, ['attempt directory ' + r.attempt_dir + ' is not ' + dirOf(stage)])
+  const hashed = new Set((r.source_hashes || []).map((entry) => entry.path))
+  const unhashed = REQUIRED[stage].filter((path) => !hashed.has(path))
+  if (unhashed.length) return ended('INCOMPLETE', stage, unhashed.map((path) => 'required input ' + path + ' has no hash'))
+  return null
+}
+
+function factsChecked(stage, r) {
+  return screened(stage, r, null) || (r.facts.length === 0 ? ended('INCOMPLETE', stage, ['no facts returned']) : null)
+}
+
+function candidateChecked(stage, c) {
+  const early = screened(stage, c, null)
+  if (early) return early
+  const reasons = []
+  const manifest = {}
+  for (const entry of c.candidate_hashes) manifest[entry.path] = entry.sha256
+  const listed = new Set(c.files_changed)
+  if (listed.size === 0) reasons.push('files_changed is empty')
+  for (const path of listed) if (!has(manifest, path)) reasons.push(path + ' is listed as changed without a hash')
+  for (const path of Object.keys(manifest)) {
+    if (!listed.has(path)) reasons.push(path + ' has a hash but is not listed as changed')
+    else if (has(PIN.entries, path) && PIN.entries[path] === manifest[path]) reasons.push(path + ' is listed as changed but equals the baseline')
+    else if (manifest[path] === 'deleted' && !has(PIN.entries, path)) reasons.push(path + ' is listed as deleted but the baseline has no such file')
+  }
+  if (!isHex(64, c.diff_sha256)) reasons.push('diff_sha256 is not a SHA-256')
+  for (const key of ['consumer_calls', 'tests', 'runs', 'comparisons']) if (c[key].length === 0) reasons.push(key + ' is empty')
+  if (!String(c.import_proof).trim()) reasons.push('import_proof is empty')
+  return reasons.length ? ended('INCOMPLETE', stage, reasons) : null
+}
+
+function verified(stage, v, changed, need) {
+  const early = screened(stage, v, changed)
+  if (early) return early
+  const failed = []
+  if (changed) {
+    for (const entry of v.source_hashes) {
+      if (has(changed, entry.path) && changed[entry.path] !== entry.sha256) failed.push(entry.path + ' after applying is not the candidate\'s file')
+    }
+  }
+  failed.push(...v.violations, ...v.missing.map((item) => 'missing: ' + item))
+  failed.push(...v.checked.filter((item) => item.verdict === 'unsupported').map((item) => 'unsupported: ' + item.check + ': ' + item.item))
+  if (failed.length) return ended('VERIFICATION_FAILED', stage, failed)
+  const short = []
+  for (const name of need.checks) {
+    if (!v.checked.some((item) => item.check === name && item.verdict === 'supported')) short.push('required check ' + name + ' is not reported supported')
+  }
+  if (need.ownRuns && v.own_runs.length === 0) short.push('no run of its own')
+  if (changed) {
+    for (const path of Object.keys(changed)) {
+      if (!v.source_hashes.some((entry) => entry.path === path)) short.push(path + ' was not hashed after applying')
+    }
+  }
+  return short.length ? ended('INCOMPLETE', stage, short) : ended('READY_FOR_LEAD_REVIEW', stage, [])
+}
+
+// W1's shared prompt rules, unchanged, then the rehearsal's own lines.
+const COMMON = [
+  'You are a worker for the lead (Claude, the main session) of RSNA_Knee at ' + ROOT + ': a classical-AI knee-MRI recognition build, deliberately with no machine learning.',
+  "Rohan's words and docs/THEORY_OF_THE_CASE.md govern. docs/FULL_BUILD_PLAN.md is the work order and holds the contracts (§§14–15); docs/GROUNDING_AND_WORKER_GUIDE.md governs your role. You return facts or a candidate. You do not decide what Rohan means, choose an anatomical rule, a threshold, a sample meaning or a scope, or accept anything. If finishing would need such a choice, stop and return it named in not_done.",
+  "FULL_BUILD_PLAN §0's session-start grounding and the active packet (docs/work/current/README.md) are the lead's: do not perform that grounding and never read the packet. Read whole the units this prompt names and any unit you need to understand them.",
+  'SOURCE BASIS: HEAD ' + PIN.head + '; packet revision ' + REVISION + '; manifest ' + PIN.manifest + ' (SHA-256 ' + PIN.manifestSha256 + '): the SHA-256 of every input file you may read, a tracked file by its path relative to the repository root (' + ROOT + ', or your worktree\'s root, which holds the same files), a file under data/ by its path relative to ' + ROOT + ', a file outside the repository by its absolute path. Files written during this workflow are not inputs and are not in the manifest: your own, and those named by any agent\'s return inlined in this prompt (its attempt directory, notes, diff, receipts, worktree and new files). Your first step, before any other read and any edit: check that HEAD is ' + PIN.head + ' (the full 40 characters of git rev-parse HEAD), then hash with shasum -a 256, and compare with the manifest, every file under REQUIRED INPUTS at the end of this prompt: the instruction files among them reach you in your instructions rather than through Read, and the rest are the files this prompt names, the modules holding the units it names included. Hash each further input file before you read it; the study images, which the runner reads, are not hashed. On any mismatch, or an input file the manifest does not list, stop and return completion "stale_input" naming each one.',
+  'Return in source_hashes every input file you hashed, once, by its manifest path, with its SHA-256 as you read it; files written during this workflow never go in source_hashes unless your role below says so (the verifier reports its copies of the candidate\'s changed files after applying). Return head as the full 40-character SHA, packet_revision exactly as given, and attempt_dir exactly as this prompt gives it.',
+  'Read whole units only (whole functions, classes, sections, documents) with the Read tool. Locate code with python3 -I ' + TOOLS + '/spans.py <tree> <names>, ' + TOOLS + '/callsites.py <tree> <names> and ' + TOOLS + '/assigned_names.py <tree> <names>, where <tree> is the tree you work in. Never use the Grep tool, grep, rg, head, tail, sed, awk, cut, wc, jq, pipes or any text search. Do not read archive/ or archive2/.',
+  'Keep your context well under a million tokens (a compaction would lock you): read whole units, not a whole file of thousands of lines unless the file is the unit, and read a long output once. If your task would need more, stop and return completion "partial", naming what is left in not_done.',
+  'WRITES: your artifacts (notes, logs, runs, pictures, diffs) go only in your attempt directory, which must not exist before you start (if it does, stop and return completion "blocked"); code edits, where your role allows them, go only in your own worktree. Never edit the main tree, canonical outputs or another agent\'s files. Never commit, push, reset or clean. Never run scripts/ci_local.sh or scripts/sonar_local.py: the Sonar step is the lead\'s.',
+  'Report facts with the evidence path you measured or read, inferences labelled as yours, and not_done for anything not done or not measured. Never state the outcome of something you did not measure. Never treat one construction\'s failure as a verdict on a capability. Never attribute words to Rohan unless you quote a file that records them.',
+].join(' ')
+
+const WORKTREE = [
+  'You work in an isolated git worktree cut from HEAD; call its root <wt>. Run everything from <wt> with PYTHONPATH=<wt>/src and the interpreter ' + ROOT + '/.venv/bin/python.',
+  'Before any test or run, run ' + TOOLS + '/import_proof.py <wt> under that same environment and keep its output; it exits non-zero unless knee and run_interiors both import from <wt>. If it fails, stop and return completion "blocked".',
+  'The runner\'s ROOT is its own file\'s parent\'s parent, so in a worktree every default built on it points at a tree with no data: <wt> has no data/ folder. Read files under data/ by their absolute paths in ' + ROOT + ', and pass every path explicitly: --root ' + ROOT + '/data/raw, --run and --main-run inside your attempt directory, and accepted receipts by absolute path. Run the CLI with --workers 1. List in your return any path the runner wrote under <wt> by itself.',
+].join(' ')
+
+const REHEARSAL = 'This is R0, the runtime rehearsal before W1 (BUILD_WORKFLOWS §4): your role is a rehearsal that changes nothing in production, and a deliberate deviation your role names is part of it, to be done exactly as named.'
+const LISTS = 'INSTRUCTION FILES AND PERMISSIONS: in instruction_files list the path of every instruction file your context names (each "Contents of <path>" block, and any other file your instructions say was loaded for you); in read_before_task, every file you read before starting the task; in refused_commands, every command that was refused or asked for a permission you could not give, with its text (none is a finding too).'
+const prompt = (stage, role) => [COMMON, REHEARSAL, role, LISTS, inputsOf(stage)].join(' ')
+
+// W1's schemas, with the rehearsal's three lists added to every return.
+const SHA256 = { type: 'string', pattern: '^([0-9a-f]{64}|deleted)$' }
+const HASHES = { type: 'array', minItems: 1, items: { type: 'object', properties: { path: { type: 'string', minLength: 1 }, sha256: SHA256 }, required: ['path', 'sha256'] } }
+const STRINGS = { type: 'array', items: { type: 'string' } }
+const BASIS = {
+  head: { type: 'string', pattern: '^[0-9a-f]{40}$' },
+  packet_revision: { type: 'string', minLength: 1 },
+  completion: { type: 'string', enum: ['complete', 'partial', 'blocked', 'stale_input'] },
+  source_hashes: HASHES,
+  attempt_dir: { type: 'string', minLength: 1 },
+  not_done: STRINGS,
+  instruction_files: STRINGS,
+  read_before_task: STRINGS,
+  refused_commands: STRINGS,
+}
+const BASIS_KEYS = Object.keys(BASIS)
+const STATEMENTS = { type: 'array', items: { type: 'object', properties: { statement: { type: 'string', minLength: 1 }, evidence: { type: 'string', minLength: 1 } }, required: ['statement', 'evidence'] } }
+const FACTS = { type: 'object', properties: { ...BASIS, files: STRINGS, facts: STATEMENTS, inferences: STRINGS }, required: [...BASIS_KEYS, 'files', 'facts', 'inferences'] }
+const CANDIDATE = { type: 'object', properties: {
+  ...BASIS, worktree: { type: 'string', minLength: 1 }, diff_path: { type: 'string' }, diff_sha256: { type: 'string', pattern: '^[0-9a-f]{64}$' },
+  candidate_hashes: HASHES, files_changed: STRINGS, consumer_calls: STRINGS, tests: STRINGS, import_proof: { type: 'string' },
+  runs: STRINGS, comparisons: STRINGS, changed_frames: STRINGS, uncertainty: STRINGS,
+}, required: [...BASIS_KEYS, 'worktree', 'diff_path', 'diff_sha256', 'candidate_hashes', 'files_changed', 'consumer_calls', 'tests', 'import_proof', 'runs', 'comparisons', 'changed_frames', 'uncertainty'] }
+const verdictsFor = (checks) => ({ type: 'object', properties: {
+  ...BASIS,
+  checked: { type: 'array', items: { type: 'object', properties: { check: { type: 'string', enum: [...checks.map(([name]) => name), 'other'] }, item: { type: 'string', minLength: 1 }, verdict: { type: 'string', enum: ['supported', 'unsupported', 'not_checkable'] }, evidence: { type: 'string', minLength: 1 } }, required: ['check', 'item', 'verdict', 'evidence'] } },
+  own_runs: STRINGS, violations: STRINGS, missing: STRINGS,
+}, required: [...BASIS_KEYS, 'checked', 'own_runs', 'violations', 'missing'] })
+const R0_VERIFY_CHECKS = [
+  ['reconstructed_candidate', 'the diff has the candidate\'s SHA-256, applies with git apply, and both changed files match the candidate manifest'],
+  ['tests', 'after the import check, tests/test_receipt.py passes in your worktree'],
+]
+const checksOf = (checks) => 'REQUIRED CHECKS: one entry each in checked, its check field set to the name (any further check goes in as "other"): ' +
+  checks.map(([name, meaning]) => name + ', ' + meaning).join('; ') + '.'
+const namesOf = (checks) => checks.map(([name]) => name)
+const READY = 'READY_FOR_LEAD_REVIEW'
+const factsOutcome = (stage, r) => factsChecked(stage, r) || ended(READY, stage, [])
+
+async function worktreeChain() {
+  const run = dirOf('r0-worktree') + '/run'
+  const r = await agent(prompt('r0-worktree', WORKTREE + ' ROLE: rehearse a worktree agent. Attempt directory: ' + dirOf('r0-worktree') + '. After your first step and the import check, run the full test suite from <wt> (PYTHONPATH=<wt>/src ' + ROOT + '/.venv/bin/python -m pytest -q) and keep its summary; then one serial run of the real CLI on the proof study with every path explicit: PYTHONPATH=<wt>/src ' + ROOT + '/.venv/bin/python scripts/run_interiors.py --study-uid ' + PROOF + ' --root ' + ROOT + '/data/raw --workers 1 --run ' + run + '/interiors --main-run ' + run + '/main, keeping its exit status and output in your attempt directory; then list, with git -C <wt> status --porcelain --ignored, every path anything you ran wrote under <wt>. Report each as a fact with its evidence path: the import check\'s output, the test summary, the CLI\'s exit and the receipts it wrote, and the paths written under <wt> (none is a finding too).'), { ...SONNET, label: 'r0-worktree', phase: 'Runtime', schema: FACTS, isolation: 'worktree' })
+  return { ...factsOutcome('r0-worktree', r), returned: r }
+}
+
+async function candidateChain() {
+  const candidate = await agent(prompt('r0-candidate', WORKTREE + ' ROLE: rehearse an implementation candidate with a harmless edit that is never integrated. Attempt directory: ' + dirOf('r0-candidate') + '. After your first step and the import check: append the line "# R0 rehearsal edit: never integrated" at the end of tests/test_receipt.py; create tests/r0_rehearsal_marker.py holding only the docstring """R0 rehearsal marker: never integrated."""; run PYTHONPATH=<wt>/src ' + ROOT + '/.venv/bin/python -m pytest -q tests/test_receipt.py and keep its summary. Mark the new file intent-to-add (git add -N tests/r0_rehearsal_marker.py; nothing is committed), write git diff to candidate.diff in your attempt directory and record its SHA-256; after your last edit, hash both changed files into candidate_hashes and list exactly those two paths in files_changed. Fill consumer_calls with "none: a rehearsal edit with no production consumer", tests with the pytest summary, runs with "none: no CLI run in this rehearsal candidate", comparisons with "none: nothing to compare", import_proof with the import check\'s output, changed_frames with nothing, and uncertainty with anything you could not do. Report in source_hashes the files you read as they were before any edit.'), { ...SONNET, label: 'r0-candidate', phase: 'Runtime', schema: CANDIDATE, isolation: 'worktree' })
+  const c = candidateChecked('r0-candidate', candidate)
+  if (c) return { ...c, returned: candidate, verdict: null }
+  const changed = {}
+  for (const entry of candidate.candidate_hashes) changed[entry.path] = entry.sha256
+  const verdict = await agent(prompt('r0-verify', WORKTREE + ' ROLE: rehearse an independent verifier of the candidate below in your own fresh worktree. Attempt directory: ' + dirOf('r0-verify') + '. The candidate claims: ' + JSON.stringify(candidate) + ' Make the SOURCE BASIS checks first, before applying anything. Then check that ' + candidate.diff_path + ' has SHA-256 ' + candidate.diff_sha256 + ', apply it with git apply, confirm both changed files are present, and hash each: report those in source_hashes as they are after applying; they must equal the candidate manifest above. Every other file you read must still equal the baseline; report it as you read it. After the import check, run PYTHONPATH=<wt>/src ' + ROOT + '/.venv/bin/python -m pytest -q tests/test_receipt.py and put that run in own_runs. Put anything that must block in violations and anything the candidate lacks in missing. ' + checksOf(R0_VERIFY_CHECKS)), { ...SONNET, label: 'r0-verify', phase: 'Runtime', schema: verdictsFor(R0_VERIFY_CHECKS), isolation: 'worktree' })
+  return { ...verified('r0-verify', verdict, changed, { checks: namesOf(R0_VERIFY_CHECKS), ownRuns: true }), returned: candidate, verdict }
+}
+
+async function schemaChain() {
+  const r = await agent(prompt('r0-schema', 'ROLE: rehearse a return that breaks its schema. You work in the main tree and change no code. Attempt directory: ' + dirOf('r0-schema') + '. After your first step, return your structured output with head as the number 0 instead of a string and without the field not_done. If the output tool refuses that, return what it accepts, and say in not_done what it refused and how.'), { ...SONNET, label: 'r0-schema', phase: 'Runtime', schema: FACTS })
+  return { ...factsOutcome('r0-schema', r), returned: r }
+}
+
+async function upstreamChain() {
+  const upstream = {
+    attempt_dir: dirOf('r0-candidate'),
+    diff_path: dirOf('r0-candidate') + '/candidate.diff',
+    receipts: [dirOf('r0-worktree') + '/run/interiors/receipt.json', dirOf('r0-worktree') + '/run/main/receipt.json'],
+    notes: dirOf('r0-worktree') + '/notes.md',
+    new_files: ['tests/r0_rehearsal_marker.py'],
+  }
+  const r = await agent(prompt('r0-upstream', 'ROLE: rehearse an agent whose prompt inlines an upstream return. You work in the main tree and change no code. Attempt directory: ' + dirOf('r0-upstream') + '. An upstream agent of this workflow returned: ' + JSON.stringify(upstream) + ' The files it names were written during this workflow, and some may not exist yet: they are not inputs. Do your first step, then report as facts which files you treated as inputs and hashed, and which as written during the workflow, without opening the latter.'), { ...SONNET, label: 'r0-upstream', phase: 'Runtime', schema: FACTS })
+  return { ...factsOutcome('r0-upstream', r), returned: r }
+}
+
+const STOPS = [
+  { stage: 'r0-stop-blocked', verdict: false, deviation: 'return completion "blocked", with not_done ["rehearsal: told to return blocked"]' },
+  { stage: 'r0-stop-head', verdict: false, deviation: 'return head as 0000000000000000000000000000000000000000 instead of the real HEAD' },
+  { stage: 'r0-stop-revision', verdict: false, deviation: 'return packet_revision as "r0-wrong" instead of the one given' },
+  { stage: 'r0-stop-hash', verdict: false, deviation: 'in source_hashes, give scripts/run_interiors.py the SHA-256 0000000000000000000000000000000000000000000000000000000000000000 instead of the one you computed' },
+  { stage: 'r0-stop-missing', verdict: false, deviation: 'leave scripts/run_interiors.py out of source_hashes' },
+  { stage: 'r0-stop-violation', verdict: true, deviation: 'put "rehearsal: a deliberate violation" in violations' },
+  { stage: 'r0-stop-unreported', verdict: true, deviation: 'leave the required check tests out of checked' },
+]
+
+async function stopChain(s) {
+  const role = 'ROLE: rehearse a stop case. You work in the main tree and change no code. Attempt directory: ' + dirOf(s.stage) + '. Do your first step exactly as SOURCE BASIS says, then do no other work and return at once, true in every field but this one deliberate deviation: ' + s.deviation + '.' +
+    (s.verdict
+      ? ' You are in the verifier\'s role with no candidate. ' + checksOf(R0_VERIFY_CHECKS) + ' Report each as supported, with the evidence "rehearsal stop case", except as your deviation says; put "rehearsal stop case: no run" in own_runs and leave missing empty.'
+      : ' Put one fact in facts: that this is a rehearsal stop case, with your attempt directory as its evidence.')
+  const r = await agent(prompt(s.stage, role), { ...SONNET, label: s.stage, phase: 'Stops', schema: s.verdict ? verdictsFor(R0_VERIFY_CHECKS) : FACTS })
+  const outcome = s.verdict ? verified(s.stage, r, null, { checks: namesOf(R0_VERIFY_CHECKS), ownRuns: false }) : factsOutcome(s.stage, r)
+  return { ...outcome, returned: r }
+}
+
+async function cancelChain() {
+  const r = await agent(prompt('r0-cancel', 'ROLE: rehearse a long task the lead stops part-way. You work in the main tree and change no code. Attempt directory: ' + dirOf('r0-cancel') + '. After your first step, write started.txt in your attempt directory, run the full test suite from ' + ROOT + ' (' + ROOT + '/.venv/bin/python -m pytest -q) keeping its output in your attempt directory, then write finished.txt there and report the test summary as a fact.'), { ...SONNET, label: 'r0-cancel', phase: 'Cancel', schema: FACTS })
+  return { ...factsOutcome('r0-cancel', r), returned: r }
+}
+
+// Each chain's expected outcome (§3), or OBSERVE where the rehearsal records what happens.
+const EXPECTED = {
+  worktree: READY, candidate: READY, schema: 'OBSERVE', upstream: READY,
+  'r0-stop-blocked': 'INCOMPLETE', 'r0-stop-head': 'STALE_INPUT', 'r0-stop-revision': 'STALE_INPUT',
+  'r0-stop-hash': 'STALE_INPUT', 'r0-stop-missing': 'INCOMPLETE', 'r0-stop-violation': 'VERIFICATION_FAILED',
+  'r0-stop-unreported': 'INCOMPLETE', cancel: READY,
+}
+const PART_CHAINS = {
+  runtime: [['worktree', worktreeChain], ['candidate', candidateChain], ['schema', schemaChain], ['upstream', upstreamChain]],
+  stops: STOPS.map((s) => [s.stage, () => stopChain(s)]),
+  cancel: [['cancel', cancelChain]],
+}
+const chosen = PART_CHAINS[args.part]
+const results = await parallel(chosen.map(([, run]) => () => run()))
+const chains = {}
+chosen.forEach(([name], i) => {
+  const r = results[i]
+  const outcome = r && OUTCOMES.includes(r.status) ? r : ended('INCOMPLETE', name, ['the chain threw or ended without an outcome'])
+  chains[name] = { expected: EXPECTED[name], ...outcome }
+})
+const mismatches = Object.entries(chains)
+  .filter(([, c]) => c.expected !== 'OBSERVE' && c.status !== c.expected)
+  .map(([name, c]) => name + ' ended ' + c.status + ' at ' + c.stage + ', expected ' + c.expected)
+log('R0 ' + args.part + ': ' + (mismatches.length ? mismatches.join('; ') : 'every chain as expected'))
+return { part: args.part, pin: { head: PIN.head, manifestSha256: PIN.manifestSha256, packetRevision: REVISION, attempt: args.attempt }, chains, mismatches }
+```
 
 ## 8. Cost and capacity
 
