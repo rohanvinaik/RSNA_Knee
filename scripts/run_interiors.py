@@ -165,10 +165,14 @@ from knee.collapse.cartilage import (
     sagittal_cartilage_observations,
 )
 from knee.collapse.coarse_section import (
+    SECTION,
+    ScaleEstimate,
     body_extent_mm,
     coarse_depth,
     coarse_section,
+    pack_estimates,
     pack_sections,
+    scale_filtered_section,
 )
 from knee.collapse.coarse_section import (
     key_slices as coarse_key_slices,
@@ -4028,7 +4032,7 @@ def fibula_key_planes(
     measured: list[Measured],
     mapping: "MapContext",
     found_fibulas: list[tuple[Measured, FibulaFound]],
-    carried: Leg,
+    leg: Leg,
     study_uid: str,
 ) -> None:
     """Scout the fibula's axial key plane from its native sagittal and coronal sections.
@@ -4038,9 +4042,11 @@ def fibula_key_planes(
     that slice's slab meets the section's actual voxel extent (the formula of `patella_key_planes`), and
     only where a seed pixel lies in the picture is anything read: the shared 2 mm coarse enclosure
     (`coarse_axial_blocks`, `coarse_axial_depth`, the same cached readings the bones and the patella
-    use) and the whole enclosed section holding the seeds. The tibia carried onto the slice marks
-    the blocks of the other bone, so a section shared with it is refused by `coarse_section`, never cut
-    apart. The largest competent sections' slices, every tie, are offered to the map once each.
+    use) and the whole enclosed section holding the seeds. The tibia of `leg` carried onto the slice
+    marks the blocks of the other bone, so a section shared with it is refused by `coarse_section`,
+    never cut apart; the driver hands it the leg refined by the bones' later native sections
+    (`refine_leg`), a location prior, and `leg_on` keeps each leg's projection apart by its identity.
+    The largest competent sections' slices, every tie, are offered to the map once each.
 
     The first found fibula is the evidence holder: its main record is saved after this runs. Per axial
     series, under that series' full uid, it keeps every reading's status, the seed pixels and blocks, the
@@ -4190,7 +4196,7 @@ def fibula_key_planes(
                     coarse_depth(reading.median, dark)
                 ),
             )
-            tibia_seed = leg_on(carried, series, z, frame, shape, target_thickness)[1]
+            tibia_seed = leg_on(leg, series, z, frame, shape, target_thickness)[1]
             other_bone = block_holds(tibia_seed, reading)
             result = coarse_section(
                 coarse,
@@ -6831,6 +6837,23 @@ def axial_bone_planes(smap: StudyMap, own: "Measured", leg: Leg) -> dict[str, di
     """Find axial bone key planes from shared 2 mm block readings and carried location seeds.
 
     The coarse section is a physical pointer only; the existing anatomy lenses still name the bones.
+    `leg` supplies the seeds (its places carried onto each slice, `leg_on`), a location prior and never
+    native bone, and the extent that attributes a slice to one bone: the femur's lowest and the tibia's
+    highest carried place. That extent IS used as a hard cut, not as a prior: a slice wholly within the
+    other bone's extent is named (`AXIAL_OVERLAP`), not attributed, and gives that bone no section there
+    for its key plane.
+
+    Where a bone is attributed, its section is the scale-filtered coarse section ESTIMATE
+    (`scale_filtered_section`): the enclosed bodies its seeds touch whose narrowest breadth is at least
+    `BONE_MM`, holes filled, SHARED judged on the estimate's own body. It is a lossy scale filter, not
+    the cortex-enclosed section and not a proof of identity: a touched body under `BONE_MM` is left out
+    whatever it is (bone pieces too), and a curved thin strip with a broad hull, or a non-bone body of
+    bone scale the seeds touch, can remain. The estimate chooses the key plane (its area, every tie
+    kept, in `a4_axial_<bone>_section_area_mm2`) and, for the femur, sets the knee's scale (its
+    left-right extent). The unfiltered section stays beside it, exactly as `coarse_section` returns
+    it, in the `a4_axial_coarse_<bone>_*` arrays, and the estimate, the omitted bodies and every touched
+    body's block count and breadth are packed with them (`a4_axial_coarse_<bone>_estimate_*`,
+    `_omitted`, `_component_*`; `pack_estimates`).
     """
     series = own.series
     uid = series.row.series_uid
@@ -6841,10 +6864,14 @@ def axial_bone_planes(smap: StudyMap, own: "Measured", leg: Leg) -> dict[str, di
     said: dict[str, dict] = {}
     areas = {b: np.full(depth, np.nan) for b in REFERENCE_BONES}
     statuses: dict[str, dict[str, int]] = {b: {} for b in REFERENCE_BONES}
+    unfiltered_statuses: dict[str, dict[str, int]] = {b: {} for b in REFERENCE_BONES}
     readings = []
     read_frames = []
     depths = []
+    # Per slice read: the unfiltered section of each bone (the call the bone always had), and the
+    # scale-filtered estimate where the bone is attributed there (None where it is not).
     sections = {b: [] for b in REFERENCE_BONES}
+    estimates: dict[str, list[ScaleEstimate | None]] = {b: [] for b in REFERENCE_BONES}
     read_slices = []
     identity_excluded = {b: np.zeros(depth, dtype=bool) for b in REFERENCE_BONES}
     # A sparse carried line can lie in a body that is the OTHER bone's (the proof's femoral condyles at the
@@ -6883,7 +6910,8 @@ def axial_bone_planes(smap: StudyMap, own: "Measured", leg: Leg) -> dict[str, di
         for bone in REFERENCE_BONES:
             if seeds[bone].any() and not allowed[bone]:
                 identity_excluded[bone][z] = True
-                statuses[bone][AXIAL_OVERLAP] = statuses[bone].get(AXIAL_OVERLAP, 0) + 1
+                for counted in (statuses[bone], unfiltered_statuses[bone]):
+                    counted[AXIAL_OVERLAP] = counted.get(AXIAL_OVERLAP, 0) + 1
         active = {
             bone: bool(seeds[bone].any() and allowed[bone]) for bone in REFERENCE_BONES
         }
@@ -6915,54 +6943,68 @@ def axial_bone_planes(smap: StudyMap, own: "Measured", leg: Leg) -> dict[str, di
         marked = {b: block_holds(seeds[b], measured) for b in REFERENCE_BONES}
         for bone in REFERENCE_BONES:
             if not active[bone]:
-                result = coarse_section(coarse, marked[bone], block_area)
-                sections[bone].append(result)
+                sections[bone].append(coarse_section(coarse, marked[bone], block_area))
+                estimates[bone].append(None)
                 continue
             others = {
                 other: marked[other] for other in REFERENCE_BONES if other != bone
             }
-            result = coarse_section(coarse, marked[bone], block_area, others)
-            statuses[bone][result.status] = statuses[bone].get(result.status, 0) + 1
-            if result.body is not None:
-                areas[bone][z] = result.area_mm2
-            sections[bone].append(result)
+            both = scale_filtered_section(
+                coarse, marked[bone], block_area, measured.block_mm, BONE_MM, others
+            )
+            sections[bone].append(both.unfiltered)
+            estimates[bone].append(both.estimate)
+            for counted, status in (
+                (unfiltered_statuses[bone], both.unfiltered.status),
+                (statuses[bone], both.estimate.status),
+            ):
+                counted[status] = counted.get(status, 0) + 1
+            if both.estimate.status == SECTION and both.estimate.body is not None:
+                areas[bone][z] = both.estimate.area_mm2
         ledger.record("coarse_axial_bone.sections", planes=1)
     own.arrays.update(
         {
             f"a4_axial_coarse_{name}": value
-            for name, value in pack_sections(
-                read_slices, readings, depths, sections
-            ).items()
+            for name, value in {
+                **pack_sections(read_slices, readings, depths, sections),
+                **pack_estimates(readings, estimates),
+            }.items()
         }
     )
     for bone in REFERENCE_BONES:
         own.arrays[f"a4_axial_{bone}_identity_excluded"] = identity_excluded[bone]
     for bone in REFERENCE_BONES:
         keys = coarse_key_slices(areas[bone])
+        # Named for what it holds now: the scale-filtered estimate's area on the slices read where the
+        # bone is attributed (NaN elsewhere); the unfiltered areas are `a4_axial_coarse_<bone>_area_mm2`.
         own.arrays[f"a4_axial_{bone}_section_area_mm2"] = areas[bone]
         said[bone] = {
             "key_slices": list(keys),
             "statuses": statuses[bone],
+            # What `statuses` held before the estimate: the unfiltered section's, and the overlap named.
+            "unfiltered_statuses": unfiltered_statuses[bone],
+            "scale_floor_mm": BONE_MM,
             "marrow": "dark_enclosed_by_brighter"
             if dark
             else "bright_enclosed_by_darker",
-            "rule": "knee.collapse.coarse_section: whole enclosed 2 mm section holding carried location seeds; largest, ties kept",
+            "rule": "knee.collapse.coarse_section.scale_filtered_section: the scale-filtered whole 2 mm axial section estimate, the enclosed bodies the carried location seeds touch kept where their narrowest breadth is at least scale_floor_mm (a lossy scale filter, not the cortex-enclosed section and not an identity proof), holes filled; `statuses`, `key_slices` and `a4_axial_<bone>_section_area_mm2` read this estimate, `unfiltered_statuses` and `a4_axial_coarse_<bone>_*` the unfiltered section; largest estimate, ties kept",
         }
-        extents = (
-            [
-                body_extent_mm(
-                    sections[bone][read_slices.index(z)].body,
-                    readings[read_slices.index(z)],
-                    read_frames[read_slices.index(z)],
-                    (1.0, 0.0, 0.0),
-                )
-                for z in keys
-                if z in read_slices
-                and sections[bone][read_slices.index(z)].body is not None
-            ]
-            if bone == "femur"
-            else []
-        )
+        extents = []
+        if bone == "femur":
+            for z in keys:
+                if z not in read_slices:
+                    continue
+                at = read_slices.index(z)
+                estimate = estimates[bone][at]
+                if estimate is not None and estimate.body is not None:
+                    extents.append(
+                        body_extent_mm(
+                            estimate.body,
+                            readings[at],
+                            read_frames[at],
+                            (1.0, 0.0, 0.0),
+                        )
+                    )
         if bone == "femur" and keys:
             finite_extents = [
                 float(x) for x in extents if x is not None and np.isfinite(x)
@@ -6974,7 +7016,7 @@ def axial_bone_planes(smap: StudyMap, own: "Measured", leg: Leg) -> dict[str, di
                 smap.set_scale(
                     rel.KneeScale(
                         finite_extents[0],
-                        f"femur coarse axial body extent along LPS left-right; {uid} slice/support_mm2 {supports}",
+                        f"femur scale-filtered coarse axial body extent along LPS left-right (a lossy scale filter, not the cortex-enclosed section); {uid} slice/support_mm2 {supports}",
                         "measured_femur_ml_breadth",
                     )
                 )
@@ -6995,8 +7037,8 @@ def axial_bone_planes(smap: StudyMap, own: "Measured", leg: Leg) -> dict[str, di
                     own,
                     bone,
                     z,
-                    "largest whole 2 mm axial bone section enclosed by its cortex, seeded by carried support",
-                    "coarse_section",
+                    "largest scale-filtered whole 2 mm axial bone section estimate: the enclosed bodies the carried location seeds touch, kept where their narrowest breadth is at least BONE_MM (a lossy scale filter, not the cortex-enclosed section and not an identity proof)",
+                    "scale_filtered_section",
                 ),
                 float(areas[bone][z]),
                 f"axial_bone:{uid}",
@@ -7012,8 +7054,11 @@ def build_study_map(
 ) -> MapContext:
     """The study's map from what the bones' own cheap readings selected: the sagittal and coronal key planes of
     the femur and the tibia from every series without fat suppression, their axial key planes from every
-    axial series' enclosed section; the diffuse field classes named as having no single key plane. The
-    other objects enter as their families resolve them (`refine_map`)."""
+    axial series' scale-filtered section estimate (`axial_bone_planes`); the diffuse field classes named as
+    having no single key plane. The
+    other objects enter as their families resolve them (`refine_map`). `leg` is the leg the axial
+    sections are seeded from: the driver hands it the leg refined by the bones' later native sections
+    (`refine_leg`)."""
     ideal, span, diffuse = ideal_parts
     knee = next(
         (
@@ -23577,15 +23622,19 @@ def measure_study(
         reference = "legacy_single_bone_reference_not_used_by_the_physical_map"
         # The femur and the tibia through the stacks, pointed planes only, kept in the middle records.
         name_the_bones(measured, partners, carried, study_uid)
-        # The bones' later native sections, published once (`refine_leg`) for the coarse readers that
-        # follow; the readers before the bones keep the early leg.
+        # The bones' later native sections, published once (`refine_leg`) as location priors for the
+        # coarse readers that follow: the bones' own axial key planes (inside the map below), the
+        # native fat and cartilage contexts and the fibula's axial key plane. The readers before the
+        # bones keep the early leg, since no refined leg exists for them, and so does every other
+        # reader after them (the patella, joint, recess, posterior and retinacula readers).
         refined = refine_leg(carried, measured)
         # THE STUDY MAP, before any other family searches: the bones' selected planes (sagittal and
-        # coronal from their own cheap profiles, axial from the enclosed section) make each bone's
-        # position; every object has a record, every ordered pair a vector or a named unresolved
-        # end; the anatomical reference's ideal gives each complete anchor's expectation of every
-        # other object, which the families below read where to look first (and fall back from).
-        mapping = build_study_map(measured, carried, anatomical_reference())
+        # coronal from their own cheap profiles, axial from the scale-filtered section estimate of
+        # the enclosed bodies, seeded by the refined leg's places) make each bone's position; every
+        # object has a record, every ordered pair a vector or a named unresolved end; the
+        # anatomical reference's ideal gives each complete anchor's expectation of every other
+        # object, which the families below read where to look first (and fall back from).
+        mapping = build_study_map(measured, refined, anatomical_reference())
         # The patella through the stacks, searched first where the reference says it lies, with
         # the extensor tendons and the fat pads on the planes it names, kept beside the bones'
         # records and observations.
@@ -23790,9 +23839,10 @@ def measure_study(
         # is handed to the LCL and the biceps femoris tendon: the first series, in the study's
         # order, to name it where its front edge can be read.
         # The axial image supplies its own key plane. Native fibula sections only point
-        # where to read; the shared coarse bone enclosure decides the supported section.
+        # where to read; the shared coarse bone enclosure decides the supported section, and the
+        # refined leg's tibia marks the blocks it must not be attributed to.
         # Its evidence lives in a fibula main record, still unsaved at this point.
-        fibula_key_planes(measured, mapping, found_fibulas, carried, study_uid)
+        fibula_key_planes(measured, mapping, found_fibulas, refined, study_uid)
         shared_fibulas: list[FibulaFound] = []
         for own, fibula in found_fibulas:
             partner = partner_of(

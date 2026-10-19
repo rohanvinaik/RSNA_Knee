@@ -1,5 +1,23 @@
 # The 2026-10-18 build session: Rohan's words, corrections and process choices
 
+## 2026-10-19 continuation: useful priors and lead ownership
+
+The following are Rohan's direct messages in the Codex chat, retained verbatim without assigning
+unrecorded clock times:
+
+> Please remind the lead that P2a only needs a useful prior, not an exact skin boundary. Don't let it get stuck chasing perfection—keep the full build moving according to the thesis. That is exactly the sort of nonsense that made me have to completely wipe the project twice already. Anthropic's models LOVE to get obsessed over some stupid metric and chase perfectionism in DIRECT violation of the thesis--how this is meant to be a *definition*, and the classical AI parts are for correctness/accuracy
+
+> What about you? Why don't you just build it with cheap sub-agents? You'd do a better job, just use Claude Max over the API where you can use it for mechanical stuff
+
+> Yeah, how about you just take over, plow through the full thing. Congrats, you've been promoted to the new "lead"
+
+> Do you still need to focus on the prior lead? Or can you let it go?
+
+> It finished its work
+
+Codex's interpretation, not a further quote from Rohan: main-tree ownership has transferred; collect
+the existing verifier's return and continue the approved build without supervising the prior lead.
+
 Rohan's messages in the Claude Code session of 2026-10-18 (session `94b415e1…`), verbatim and in order,
 from the session's own record: the pre-compact snapshot of his prompts and, after the second compaction,
 the messages as received. Recorded so that every quotation of him in `docs/FULL_BUILD_PLAN.md`,

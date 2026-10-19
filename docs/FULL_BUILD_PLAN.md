@@ -441,6 +441,11 @@ A smaller visited area alone is not a runtime speed claim.
 
 ### P2a — shared rough leg/domain producer — OPEN, required
 
+Rohan's correction during the overnight build: a useful prior is sufficient, not an exact skin
+boundary. Do not turn this required efficiency step into a perfect-envelope prerequisite or stall
+the full build on a mask-quality target. Demonstrate useful exclusion through the actual consumer,
+retain uncertainty, and continue. This applies throughout the pipeline, not only to P2a.
+
 The existing `p2a-leg-domain-20261018/` experiment tested only a 10 mm-padded bounding rectangle
 around two candidate envelopes. It did not implement or evaluate tile-level execution, measure
 work over an irregular leg region, or exercise such a region through a production consumer.

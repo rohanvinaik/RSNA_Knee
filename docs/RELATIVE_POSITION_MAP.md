@@ -1880,3 +1880,18 @@ tests. No consumer of the refined context reads axial slices 11 or 12 in this in
 axial key planes and `fibula_key_planes` still receive the early leg (increment 2, with its own
 inspection, which covers those slices). Evidence:
 `data/readings/collapse-20261017/full-build/targeted-compute-20261018/p2b-bone-context-20261018/`.
+
+### 8.39 Refined bone context reaches axial and fibula scouts — 2026-10-19
+
+B0 wires `refine_leg`'s later native locations into `build_study_map`'s axial bone scout and
+`fibula_key_planes`. Carried locations remain priors. The axial scout retains its original coarse
+section beside a scale-filtered estimate: touched bodies with minimum convex breadth at least the
+existing `BONE_MM`, with omitted bodies and their measurements retained. The estimate supplies
+key-plane areas/statuses and is explicitly labelled `scale_filtered_section`; it is neither an exact
+cortex-enclosed bone nor native marrow. Proof and bursa native overview sheets show useful bone
+pointers, partial condyles and remaining contaminants together. No intermediate pixel/area target
+adjudicates them. B0's scale still uses the key-plane breadth; the reviewed D2 follow-up separates
+that pointer from the full attributed estimate's physical left-right span. Current implementation
+state, verification, changed outputs and the six acceptance statements live in the active packet's
+linked `p2b-bone-context-20261018/b0-integration/codex-checkpoint/README.md`; gate completion is
+established by its actual log, not this mechanism record. P3's early-context readers remain later work.

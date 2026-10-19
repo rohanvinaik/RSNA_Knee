@@ -1,5 +1,16 @@
 # How RSNA_Knee is built: every correction, and what would have prevented it
 
+## Useful priors, not perfect intermediate boundaries — 2026-10-19
+
+Rohan: «Please remind the lead that P2a only needs a useful prior, not an exact skin boundary.
+Don't let it get stuck chasing perfection—keep the full build moving according to the thesis.»
+The remedy is an actual useful computational scope with unknown tissue retained, consumed before
+expensive work. It is not another skin-accuracy metric or a demand that every prior be exact before
+anatomical relations can combine them. His earlier words also apply: «This is about establishing
+priors, not being perfectly correct». This instruction governs the whole build and every worker;
+the active task packet records the current increment. Original exchange retained in the build-session
+corrections record under the 2026-10-19 continuation.
+
 Written 2026-10-14 at Rohan's request: «Figure out how to persist this understanding. How to build it
 not like an insane person, ALL of the times I've had to correct you, the things that would have
 prevented that. Including fucking LISTENING to me.»

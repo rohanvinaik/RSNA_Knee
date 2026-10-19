@@ -1318,3 +1318,15 @@ selection (`no_positive_enclosure_touched_by_core`), where the runner used to re
 core's light (`native_marrow_level_unavailable`); that name now means no usable light over the selected
 component. The proof's axial z14 support is 996 px, the same condyle's ring. Evidence:
 `data/readings/collapse-20261017/full-build/targeted-compute-20261018/p2b-bone-context-20261018/`.
+
+## Axial bone scout estimate and refined locations, 2026-10-19
+
+Later identified native bone sections now supply location priors to the axial bone and fibula
+key-plane scouts. Their physical locations do not become exact projected bone or marrow. The axial
+scout keeps its unfiltered coarse section and a separate estimate of touched bodies at the existing
+bone scale (`BONE_MM`, minimum convex breadth), retaining omitted bodies and named unknowns.
+Estimate area points to key planes with exact ties kept; the native anatomy definitions still name
+the bones. Native proof/bursa sheets demonstrate useful coarse pointers with visible omissions and
+contamination; exact cortex recovery is not required for that use. The estimate's provenance is
+`scale_filtered_section`. The independent physical-span scale follow-up is distinct from selecting
+the largest-area plane. See MAP §8.39 and its linked acceptance record for the evidence and limits.
