@@ -1342,3 +1342,21 @@ native marrow identification. Its numerical relation is unchanged. Inspected nat
 bands remain beside the patellofemoral fluid pockets. MAP §8.41 and the B1 acceptance record retain
 the exact addresses/checks. Shared native calibration and anatomical patella/cavity scopes remain
 P3 work; this handoff is not a claim that bone rediscovery has been eliminated.
+
+
+## Native axial MCL local band — 2026-10-19
+
+A validated native coronal MCL locates the medial joint-level axial question. In a bounded native
+crop, strict-positive enclosed darkness gives whole four-connected bodies. The 2 mm source-contact
+allowance supplies correspondence, not ligament thickness. Independently native bone support on
+that same acquisition/slice can exclude a conflicting whole component; unknown, projected or
+coarse context stays neutral. The uniquely largest remaining contacted body supplies the local
+native description. No PCL thickness opening or grey cutoff is used. Ties and partial/empty/missing
+readings stay named; unavailable pixels away from the selected body's boundary do not erase it.
+
+The proof's acquired AX12/13/14 overlays were inspected: a competent medial band with posterior
+capsular overreach retained explicitly. This is not full ligament/layer/insertion recovery. Native
+SAG remains open. One shared profile/window/persistence path serves PCL and MCL, with their tissue
+selectors distinct; all original observations and measurements remain. The common map receives the
+native AX plane before later queries. Accepted construction/evidence: RELATIVE_POSITION_MAP §8.44;
+exact-tree checkpoint status: FULL_BUILD_PLAN §13's active packet.

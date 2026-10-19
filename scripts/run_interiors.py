@@ -190,7 +190,11 @@ from knee.collapse.joint import (
     joint_reach,
     levels,
 )
-from knee.collapse.local_native import enclosed_body_at_sources, source_window
+from knee.collapse.local_native import (
+    enclosed_body_at_sources,
+    enclosed_components_at_source,
+    source_window,
+)
 from knee.collapse.menisci import meniscus_local_body
 from knee.collapse.native_sampling import sample_native_points
 from knee.collapse.noise import background_split, finite_values
@@ -280,6 +284,7 @@ from knee.objects.assignments import (
     acl_on_slice,
     anterior_synovial_recess,
     assign_plane,
+    axial_mcl_components,
     band_joining,
     between_along_the_leg,
     bursa_code,
@@ -7744,6 +7749,7 @@ def offer_native_family(
         "axial_menisci_said",
         "axial_pcl_said",
         "coronal_pcl_said",
+        "axial_mcl_said",
     ):
         reads(family, ("observations",), "map_rows")
     product = f"{family}.map_rows"
@@ -18370,13 +18376,27 @@ def native_meniscus_sources(
     *,
     orientation: str = "coronal",
     pending: list[tuple[list[Observation], list[Unresolved]]] | None = None,
+    names: tuple[str, ...] = ("medial_meniscus", "lateral_meniscus"),
+    object_codes: dict[str, int] | None = None,
+    required_sequence: tuple[str, str] | None = ("1", "1"),
+    required_fluid_sensitive: str | None = "1",
+    required_fat_suppression: str | None = "1",
+    sources_product: str | None = None,
+    record_key: str | None = None,
+    strict_native_address: bool = False,
 ) -> dict[str, dict[str, Any]]:
     """Keep native source sections, validate their saved addresses, and rank by area."""
     if orientation not in ("coronal", "sagittal"):
         raise ValueError("unsupported_meniscus_source_orientation")
-    labels = {
+    default_labels = {
         "medial_meniscus": OBJECT_CODES["medial_meniscus"],
         "lateral_meniscus": OBJECT_CODES["lateral_meniscus"],
+    }
+    labels = {
+        name: int(
+            (object_codes or default_labels).get(name, default_labels.get(name, -1))
+        )
+        for name in names
     }
     pending_by_owner = {}
     if orientation == "sagittal":
@@ -18385,18 +18405,24 @@ def native_meniscus_sources(
         for own, (rows, _) in zip(measured, pending, strict=True):
             pending_by_owner[id(own)] = rows
     collected = {name: [] for name in labels}
+    invalid_sources: dict[str, list[dict[str, Any]]] = {name: [] for name in labels}
     for own in measured:
         record = own.record
         view = tuple(record.get("view", ()))
         if (
             len(view) != 3
             or view[0].casefold() != orientation
-            or view[1:] != ("1", "1")
+            or (required_sequence is not None and view[1:] != required_sequence)
         ):
             continue
         if (
-            getattr(own.series.row, "fluid_sensitive", None) != "1"
-            or getattr(own.series.row, "fat_suppression", None) != "1"
+            required_fluid_sensitive is not None
+            and getattr(own.series.row, "fluid_sensitive", None)
+            != required_fluid_sensitive
+        ) or (
+            required_fat_suppression is not None
+            and getattr(own.series.row, "fat_suppression", None)
+            != required_fat_suppression
         ):
             continue
         uid = str(record.get("series_uid", ""))
@@ -18431,15 +18457,38 @@ def native_meniscus_sources(
             if name not in labels:
                 continue
             label = labels[name]
-            slices = tuple(fields.get("slices") or ())
-            if len(slices) != 1 or isinstance(slices[0], bool):
+            slice_address = fields.get("slices")
+            if strict_native_address and not isinstance(slice_address, (list, tuple)):
+                invalid_sources[name].append({"status": "invalid_slice_address"})
+                continue
+            slices = tuple(slice_address or ())
+            if len(slices) != 1 or isinstance(slices[0], (bool, np.bool_)):
+                continue
+            if strict_native_address and not isinstance(slices[0], (int, np.integer)):
+                if (
+                    fields.get("provenance") == "native"
+                    and fields.get("kind") == "resolved"
+                    and fields.get("code") == "identified"
+                ):
+                    invalid_sources[name].append({"status": "invalid_slice_address"})
                 continue
             z = int(slices[0])
             expected_support = (
                 "a1_objects" if orientation == "coronal" else f"a4_{name}_z{z}_support"
             )
-            if not (
-                fields.get("provenance") == "native"
+            valid_observation = (
+                (
+                    not strict_native_address
+                    or getattr(own.series.row, "series_uid", None) == uid
+                )
+                and (
+                    not strict_native_address
+                    or (
+                        isinstance(fields.get("label"), (int, np.integer))
+                        and not isinstance(fields.get("label"), (bool, np.bool_))
+                    )
+                )
+                and fields.get("provenance") == "native"
                 and fields.get("kind") == "resolved"
                 and fields.get("code") == "identified"
                 and fields.get("series_uid") == uid
@@ -18452,7 +18501,17 @@ def native_meniscus_sources(
                     if orientation == "coronal"
                     else fields.get("label") is None
                 )
-            ):
+            )
+            if not valid_observation:
+                if (
+                    strict_native_address
+                    and fields.get("provenance") == "native"
+                    and fields.get("kind") == "resolved"
+                    and fields.get("code") == "identified"
+                ):
+                    invalid_sources[name].append(
+                        {"slice": z, "status": "invalid_native_address"}
+                    )
                 continue
             volume = own.series.volume
             if volume is None or not 0 <= z < len(volume):
@@ -18465,10 +18524,18 @@ def native_meniscus_sources(
                     or objects.ndim != 2
                     or objects.dtype.kind not in "iu"
                     or objects.shape != np.shape(volume[z])
-                    or isinstance(middle, bool)
+                    or isinstance(middle, (bool, np.bool_))
                     or middle is None
+                    or (
+                        strict_native_address
+                        and not isinstance(middle, (int, np.integer))
+                    )
                     or z != int(middle)
                 ):
+                    if strict_native_address:
+                        invalid_sources[name].append(
+                            {"slice": z, "status": "invalid_native_support"}
+                        )
                     continue
                 support = objects == label
             else:
@@ -18487,7 +18554,21 @@ def native_meniscus_sources(
                     continue
             points_rc = np.argwhere(support).astype(np.float64)
             count = len(points_rc)
-            if count == 0 or fields.get("count") != count:
+            if (
+                count == 0
+                or fields.get("count") != count
+                or (
+                    strict_native_address
+                    and (
+                        isinstance(fields.get("count"), (bool, np.bool_))
+                        or not isinstance(fields.get("count"), (int, np.integer))
+                    )
+                )
+            ):
+                if strict_native_address:
+                    invalid_sources[name].append(
+                        {"slice": z, "status": "invalid_native_count"}
+                    )
                 continue
             frame = plane_frame(own.series, z)
             if isinstance(frame, str):
@@ -18528,13 +18609,13 @@ def native_meniscus_sources(
             }
             collected[name].append((own, points_lps, metadata))
 
-    product = (
+    product = sources_product or (
         "native_meniscus_sources"
         if orientation == "coronal"
         else "native_sagittal_meniscus_sources"
     )
     array_tag = "" if orientation == "coronal" else "sagittal_"
-    record_key = (
+    record_key = record_key or (
         "a4_meniscus_sources"
         if orientation == "coronal"
         else "a4_sagittal_meniscus_sources"
@@ -18573,6 +18654,8 @@ def native_meniscus_sources(
             if len(winners) == 1
             else "tied"
             if winners
+            else "invalid_source_context"
+            if invalid_sources[name]
             else "unavailable",
             "selected": None
             if len(winners) != 1
@@ -18585,6 +18668,7 @@ def native_meniscus_sources(
             "point_count": sum(len(entry[1]) for entry in entries),
             "largest_physical_area_mm2": largest,
             "product": product,
+            "invalid_sources": invalid_sources[name],
         }
     return result
 
@@ -18791,6 +18875,199 @@ def native_meniscus_profiles(
             ),
         )
     return profiles
+
+
+def native_axial_bone_supports(
+    own: Measured,
+    study_uid: str,
+    z: int,
+    window_rc: tuple[int, int, int, int],
+) -> dict[str, dict[str, Any]]:
+    """Crop only exact native, resolved bone observations on this acquisition and slice."""
+    record, series = own.record, own.series
+    view = tuple(record.get("view", ()))
+    uid = record.get("series_uid")
+    actual_uid = getattr(getattr(series, "row", None), "series_uid", None)
+    artifact = str(artifact_of(study_uid, record))
+    volume = series.volume
+    if (
+        len(view) != 3
+        or view[0].casefold() != "axial"
+        or not isinstance(uid, str)
+        or not isinstance(actual_uid, str)
+        or uid != actual_uid
+        or not isinstance(volume, np.ndarray)
+        or volume.ndim != 3
+        or type(z) is not int
+        or not 0 <= z < len(volume)
+    ):
+        return {
+            bone: {"status": "unknown_invalid_acquisition_or_slice"}
+            for bone in ("femur", "tibia")
+        }
+    rows = record.get("observations", ())
+    if not isinstance(rows, (list, tuple)):
+        rows = ()
+    bounds = tuple(window_rc)
+    if (
+        len(bounds) != 4
+        or any(type(value) is not int for value in bounds)
+        or not (0 <= bounds[0] < bounds[1] <= np.shape(volume[z])[0])
+        or not (0 <= bounds[2] < bounds[3] <= np.shape(volume[z])[1])
+    ):
+        return {
+            bone: {"status": "unknown_invalid_scope_window"}
+            for bone in ("femur", "tibia")
+        }
+
+    def row_fields(row: Any) -> dict[str, Any]:
+        if isinstance(row, dict):
+            return row
+        return {
+            key: getattr(row, key, None)
+            for key in (
+                "object",
+                "provenance",
+                "kind",
+                "series_uid",
+                "view",
+                "slices",
+                "code",
+                "count",
+                "support",
+                "artifact",
+                "row",
+                "label",
+            )
+        }
+
+    result: dict[str, dict[str, Any]] = {}
+    for bone in ("femur", "tibia"):
+        candidates = []
+        malformed = []
+        expected_label = OBJECT_CODES[bone]
+        for row in rows:
+            fields = row_fields(row)
+            if not (
+                fields.get("object") == bone
+                and fields.get("provenance") == "native"
+                and fields.get("kind") == "resolved"
+                and fields.get("code") == "identified"
+            ):
+                continue
+            slices = fields.get("slices")
+            if not isinstance(slices, (list, tuple)) or len(slices) != 1:
+                malformed.append("invalid_slice_address")
+                continue
+            address = slices[0]
+            if isinstance(address, (bool, np.bool_)) or not isinstance(
+                address, (int, np.integer)
+            ):
+                malformed.append("invalid_slice_type")
+                continue
+            if int(address) != z:
+                continue
+            if (
+                fields.get("series_uid") != uid
+                or tuple(fields.get("view") or ()) != view
+                or fields.get("artifact") != artifact
+            ):
+                malformed.append("acquisition_address_mismatch")
+                continue
+            support_name = fields.get("support")
+            support: np.ndarray | None = None
+            address_metadata: dict[str, Any] = {
+                "series_uid": uid,
+                "view": list(view),
+                "slice": z,
+                "support": support_name,
+                "artifact": artifact,
+                "provenance": "native",
+                "kind": "resolved",
+                "code": "identified",
+            }
+            count = fields.get("count")
+            if isinstance(count, (bool, np.bool_)) or not isinstance(
+                count, (int, np.integer)
+            ):
+                malformed.append("invalid_support_count_type")
+                continue
+            if support_name == "a1_objects":
+                middle = record.get("slice_index")
+                objects = own.arrays.get("a1_objects")
+                if (
+                    isinstance(middle, (bool, np.bool_))
+                    or not isinstance(middle, (int, np.integer))
+                    or int(middle) != z
+                    or fields.get("row") is not None
+                    or isinstance(fields.get("label"), (bool, np.bool_))
+                    or not isinstance(fields.get("label"), (int, np.integer))
+                    or int(fields.get("label")) != expected_label
+                    or not isinstance(objects, np.ndarray)
+                    or objects.ndim != 2
+                    or objects.dtype.kind not in "iu"
+                    or objects.shape != np.shape(volume[z])
+                ):
+                    malformed.append("invalid_middle_native_support")
+                    continue
+                support = objects == expected_label
+                address_metadata["label"] = expected_label
+            elif support_name == f"a3_{bone}_plane_region":
+                row_index = fields.get("row")
+                regions = own.arrays.get(support_name)
+                slices_array = own.arrays.get(f"a3_{bone}_plane_slices")
+                if (
+                    isinstance(row_index, (bool, np.bool_))
+                    or not isinstance(row_index, (int, np.integer))
+                    or fields.get("label") is not None
+                    or not isinstance(regions, np.ndarray)
+                    or regions.ndim != 3
+                    or regions.dtype.kind != "b"
+                    or regions.shape[1:] != np.shape(volume[z])
+                    or not isinstance(slices_array, np.ndarray)
+                    or slices_array.ndim != 1
+                    or slices_array.dtype.kind not in "iu"
+                    or not 0 <= int(row_index) < len(regions)
+                    or len(slices_array) != len(regions)
+                    or int(slices_array[int(row_index)]) != z
+                ):
+                    malformed.append("invalid_pointed_native_support")
+                    continue
+                support = regions[int(row_index)]
+                address_metadata["row"] = int(row_index)
+            else:
+                malformed.append("unsupported_native_support_address")
+                continue
+            actual_count = int(np.count_nonzero(support))
+            if actual_count == 0 or int(count) != actual_count:
+                malformed.append("native_support_count_mismatch")
+                continue
+            candidates.append((support, address_metadata, actual_count))
+
+        if candidates:
+            r0, r1, c0, c1 = bounds
+            combined = np.zeros(np.shape(volume[z]), dtype=bool)
+            for support, _metadata, _count in candidates:
+                combined |= support
+            metadata = [item[1] for item in candidates]
+            result[bone] = {
+                "status": "resolved_native_support",
+                "mask": combined[r0:r1, c0:c1],
+                "metadata": {
+                    "addresses": metadata,
+                    "count": int(np.count_nonzero(combined)),
+                    "window_rc": list(bounds),
+                    "malformed_reasons": list(malformed),
+                },
+            }
+        elif malformed:
+            result[bone] = {
+                "status": "unknown_invalid_native_support_context",
+                "reasons": list(malformed),
+            }
+        else:
+            result[bone] = {"status": "unknown_native_support_unavailable"}
+    return result
 
 
 def name_native_menisci(
@@ -23818,7 +24095,7 @@ def _peak_slices(values: np.ndarray) -> list[int]:
     return [int(z) for z in np.flatnonzero(finite & (values == np.max(values[finite])))]
 
 
-def name_native_pcl_sections(
+def name_native_ligament_sections(
     measured: list[Measured],
     sources: dict[str, dict[str, Any]],
     study_uid: str,
@@ -23826,20 +24103,31 @@ def name_native_pcl_sections(
     *,
     orientation: str = "axial",
     other_sources: dict[str, dict[str, Any]] | None = None,
+    ligament: str = "pcl",
 ) -> list[tuple[list[Observation], list[Unresolved]]]:
-    """Measure local PCL sections from native source half-slab profiles.
+    """Measure local native ligament sections from source half-slab profiles.
 
-    Axial remains the original one-source path. Coronal candidates must reach both the selected
-    sagittal and selected axial source locations through the same local component measurement.
+    PCL retains its original axial and coronal paths. The axial MCL shares this profile, candidate,
+    window and persistence path, with its own positive-enclosure measurement and selector.
     """
-    if orientation not in ("axial", "coronal"):
-        raise ValueError("unsupported_pcl_target_orientation")
-    name = "pcl"
-    source = sources["pcl"]
-    other_source = (other_sources or {}).get("pcl", {})
-    product = "axial_pcl_said" if orientation == "axial" else "coronal_pcl_said"
+    if ligament not in ("pcl", "mcl") or orientation not in ("axial", "coronal"):
+        raise ValueError("unsupported_native_ligament_target")
+    if ligament == "mcl" and orientation != "axial":
+        raise ValueError("unsupported_mcl_target_orientation")
+    name = ligament
+    source = sources[name]
+    other_source = (other_sources or {}).get(name, {})
+    product = (
+        "axial_mcl_said"
+        if name == "mcl"
+        else "axial_pcl_said"
+        if orientation == "axial"
+        else "coronal_pcl_said"
+    )
     candidate_field = (
-        "a4_axial_native_pcl_candidates"
+        "a4_axial_native_mcl_candidates"
+        if name == "mcl"
+        else "a4_axial_native_pcl_candidates"
         if orientation == "axial"
         else "a4_coronal_native_pcl_candidates"
     )
@@ -23864,6 +24152,8 @@ def name_native_pcl_sections(
                 if source.get("status") == "tied"
                 else "source_context_conflict"
                 if source.get("status") == "source_context_conflict"
+                else "source_invalid_native_address"
+                if source.get("status") == "invalid_source_context"
                 else "source_unavailable"
             )
             missing.append(Unresolved(name, "native", uid, view, code))
@@ -23885,18 +24175,26 @@ def name_native_pcl_sections(
             continue
 
         if orientation == "axial":
+            profile_product = (
+                "native_axial_mcl_profiles"
+                if name == "mcl"
+                else "native_axial_pcl_profiles"
+            )
+            source_product = (
+                "native_coronal_mcl_sources" if name == "mcl" else "native_pcl_sources"
+            )
             profiles = native_meniscus_profiles(
                 own,
                 sources,
                 mapping,
                 orientation="axial",
                 names=(name,),
-                profile_product="native_axial_pcl_profiles",
-                sources_product="native_pcl_sources",
+                profile_product=profile_product,
+                sources_product=source_product,
             )
             profile = (profiles or {}).get(name, {})
             other_profile = None
-            primary_product = "native_axial_pcl_profiles"
+            primary_product = profile_product
             secondary_product = None
         else:
             profiles = native_meniscus_profiles(
@@ -23947,7 +24245,11 @@ def name_native_pcl_sections(
         )
         reads(primary_product, primary_reads, product)
         if secondary_product is None:
-            reads("native_pcl_sources", ("metadata",), product)
+            reads(
+                "native_coronal_mcl_sources" if name == "mcl" else "native_pcl_sources",
+                ("metadata",),
+                product,
+            )
         else:
             reads("native_pcl_sources", ("metadata",), product)
             reads("native_axial_pcl_sources", ("metadata",), product)
@@ -23979,12 +24281,16 @@ def name_native_pcl_sections(
             )
         order = list(dict.fromkeys(guided + peaks))
         profile_field = (
-            "a4_axial_pcl_profile"
+            "a4_axial_mcl_profile"
+            if name == "mcl"
+            else "a4_axial_pcl_profile"
             if orientation == "axial"
             else "a4_coronal_pcl_profile"
         )
         refusal_field = (
-            "a4_axial_pcl_profile_refusals"
+            "a4_axial_mcl_profile_refusals"
+            if name == "mcl"
+            else "a4_axial_pcl_profile_refusals"
             if orientation == "axial"
             else "a4_coronal_pcl_profile_refusals"
         )
@@ -24126,6 +24432,14 @@ def name_native_pcl_sections(
                 codes.append(code)
                 continue
 
+            bone_supports = (
+                native_axial_bone_supports(
+                    own, study_uid, int(z), tuple(window["window_rc_exclusive"])
+                )
+                if name == "mcl"
+                else None
+            )
+
             def select(
                 raw=raw,
                 available=available,
@@ -24133,9 +24447,14 @@ def name_native_pcl_sections(
                 other_target=other_target,
                 frame=frame,
                 orientation=orientation,
+                bone_supports=bone_supports,
             ):
                 ledger.record(
-                    "native_pcl.window_pixels", pixels=int(raw.size), frames=1
+                    "native_mcl.window_pixels"
+                    if name == "mcl"
+                    else "native_pcl.window_pixels",
+                    pixels=int(raw.size),
+                    frames=1,
                 )
                 if orientation == "coronal":
                     return enclosed_body_at_sources(
@@ -24146,6 +24465,18 @@ def name_native_pcl_sections(
                         thickness_mm=LIGAMENT_THICK_MM,
                         other_target=other_target,
                     )
+                if name == "mcl":
+                    measured_components = enclosed_components_at_source(
+                        raw,
+                        available,
+                        target,
+                        frame,
+                    )
+                    selected_components = axial_mcl_components(
+                        measured_components,
+                        bone_supports,
+                    )
+                    return {**measured_components, **selected_components}
                 return enclosed_body_at_sources(
                     raw,
                     available,
@@ -24155,7 +24486,9 @@ def name_native_pcl_sections(
                 )
 
             cache_name = (
-                "native_pcl_local_body"
+                "native_axial_mcl_components"
+                if name == "mcl"
+                else "native_pcl_local_body"
                 if orientation == "axial"
                 else "native_pcl_coronal_local_body"
             )
@@ -24169,11 +24502,42 @@ def name_native_pcl_sections(
                 float(SHELL_MM),
                 tuple(float(value) for value in frame.spacing_rc),
             )
+            if name == "mcl":
+                cache_key += (
+                    digest(raw),
+                    digest(available),
+                    digest(target),
+                    json.dumps(meta, sort_keys=True, default=str),
+                    tuple(float(value) for value in frame.origin_lps),
+                    tuple(
+                        float(value) for value in np.asarray(frame.basis_lps).ravel()
+                    ),
+                    float(SHELL_MM),
+                    tuple(
+                        (
+                            bone,
+                            context.get("status"),
+                            digest(context["mask"])
+                            if isinstance(context.get("mask"), np.ndarray)
+                            else None,
+                            json.dumps(
+                                {
+                                    key: value
+                                    for key, value in context.items()
+                                    if key != "mask"
+                                },
+                                sort_keys=True,
+                                default=str,
+                            ),
+                        )
+                        for bone, context in sorted((bone_supports or {}).items())
+                    ),
+                )
             result = once(cache_name, cache_key, select)
             code = str(result.get("status", "selector_status_missing"))
-            selection = result.get("selection_status")
+            selection = result.get("selection_status", result.get("status"))
             codes.append(code)
-            prefix = f"a4_{orientation}_pcl_z{int(z)}"
+            prefix = f"a4_{orientation}_{name}_z{int(z)}"
             own.arrays[f"{prefix}_raw_crop"] = raw
             own.arrays[f"{prefix}_available_crop"] = available
             own.arrays[f"{prefix}_target_crop"] = target
@@ -24182,6 +24546,11 @@ def name_native_pcl_sections(
             for key, value in result.items():
                 if isinstance(value, np.ndarray):
                     own.arrays[f"{prefix}_{key}"] = value
+            if name == "mcl":
+                candidate["description_limitations"] = [
+                    "local_medial_joint_band_not_full_ligament",
+                    "posteromedial_capsule_may_be_included",
+                ]
             candidate.update(
                 status=code,
                 selection_status=selection,
@@ -24205,8 +24574,11 @@ def name_native_pcl_sections(
                 own.arrays[f"{support}_slices"] = np.asarray([z], dtype=np.int32)
             if (
                 code in {"identified", "partial_reading"}
-                and selection == "identified"
                 and selected.any()
+                and (
+                    (name == "mcl" and code == "identified")
+                    or (name == "pcl" and selection == "identified")
+                )
             ):
                 here.append(
                     observe(
@@ -24220,10 +24592,14 @@ def name_native_pcl_sections(
                         0.0,
                         support,
                         "identified local PCL body reaches both native source regions"
-                        if orientation == "coronal"
+                        if name == "pcl" and orientation == "coronal"
                         else "identified body on available samples in the bounded native window; "
                         "window completeness is retained separately in the crop measurements; "
-                        "a local cross-section, not the full course",
+                        "a local cross-section, not the full course"
+                        if name == "pcl"
+                        else "the uniquely largest contacted positive-enclosure body after whole-component "
+                        "exclusion only for intersecting resolved native femur or tibia support; its "
+                        "coronal source is a location target, not this body's boundary",
                         artifact,
                     )
                 )
@@ -24269,13 +24645,34 @@ def name_native_pcl_sections(
         handed(product, ("observations", "unresolved"))
         if orientation == "axial" and any(
             any(
-                key.startswith("a4_axial_pcl_z") and key.endswith("_support")
+                key.startswith(f"a4_axial_{name}_z") and key.endswith("_support")
                 for key in own.arrays
             )
             for own in measured
         ):
             handed(product, ("support",))
     return aligned
+
+
+def name_native_pcl_sections(
+    measured: list[Measured],
+    sources: dict[str, dict[str, Any]],
+    study_uid: str,
+    mapping: MapContext | None,
+    *,
+    orientation: str = "axial",
+    other_sources: dict[str, dict[str, Any]] | None = None,
+) -> list[tuple[list[Observation], list[Unresolved]]]:
+    """Compatibility entry used by existing PCL production callers."""
+    return name_native_ligament_sections(
+        measured,
+        sources,
+        study_uid,
+        mapping,
+        orientation=orientation,
+        other_sources=other_sources,
+        ligament="pcl",
+    )
 
 
 def measure_study(
@@ -24427,6 +24824,25 @@ def measure_study(
         # beside the bones' and the patella's records.
         name_the_joint(measured, partners, refined, study_uid, reference, mapping)
         pcl_sources = native_pcl_sources(measured, study_uid)
+        mcl_sources = native_meniscus_sources(
+            measured,
+            study_uid,
+            orientation="coronal",
+            names=("mcl",),
+            object_codes={"mcl": OBJECT_CODES["mcl"]},
+            sources_product="native_coronal_mcl_sources",
+            record_key="a4_native_coronal_mcl_sources",
+            strict_native_address=True,
+        )
+        axial_mcl_said = name_native_ligament_sections(
+            measured,
+            mcl_sources,
+            study_uid,
+            mapping,
+            orientation="axial",
+            ligament="mcl",
+        )
+        offer_completed_family("axial_mcl_said", axial_mcl_said)
         cartilage_companions = [
             (
                 sagittal_cartilage_observations(
@@ -24689,6 +25105,9 @@ def measure_study(
         # The recess family's observations follow every earlier family's, then the retinacula's own
         # slice, which stays an observation beside the recess family's planes.
         keep_recess(measured, recess_said)
+        if any(rows or gaps for rows, gaps in axial_mcl_said):
+            reads("axial_mcl_said", ("observations", "unresolved"), "keep_recess")
+        keep_recess(measured, axial_mcl_said)
         keep_recess(measured, recess_fluid_said)
         existing_boundary_said = recess_existing(
             measured, existing.get("patellar_retinacula", []), study_uid

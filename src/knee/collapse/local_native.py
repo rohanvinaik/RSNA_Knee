@@ -134,6 +134,175 @@ def source_window(
     }
 
 
+def enclosed_components_at_source(
+    raw: np.ndarray,
+    available: np.ndarray,
+    target: np.ndarray,
+    frame: PlaneFrame,
+) -> dict[str, Any]:
+    """Measure positive enclosed-dark components and their native target distances.
+
+    This keeps the existing enclosed-darkness measurement and reports every FOUR-connected
+    positive component. It does not open, select, or assign anatomy to any component.
+    """
+    arrays: dict[str, Any] = {
+        "availability_input": None,
+        "target_input": None,
+        "effective_availability": None,
+        "depth_input": None,
+        "enclosed_depth": None,
+        "positive_enclosure": None,
+        "labels": None,
+        "distance_to_target_mm": None,
+        "contacted_component_mask": None,
+        "unavailable_boundary": None,
+    }
+    stats: dict[str, Any] = {
+        "neutral_minimum": None,
+        "available_pixels": None,
+        "unavailable_pixels": None,
+        "target_pixels": None,
+        "available_target_pixels": None,
+        "positive_enclosure_pixels": None,
+        "component_count": None,
+        "contacted_component_count": None,
+        "contacted_component_ids": [],
+        "contacted_component_sizes_pixels": [],
+        "components": [],
+        "crop_edge_pixels": None,
+        "partial_reading": None,
+        "enclosure_status": "unmeasured",
+    }
+
+    def outcome(status: str, **values: Any) -> dict[str, Any]:
+        return {"status": status, **arrays, **stats, **values}
+
+    if not isinstance(raw, np.ndarray) or raw.ndim != 2:
+        return outcome("malformed_raw_shape")
+    if raw.dtype.kind not in "iuf":
+        return outcome("malformed_raw_dtype")
+    if raw.size == 0:
+        return outcome("empty_raw")
+    if not isinstance(available, np.ndarray) or available.shape != raw.shape:
+        return outcome("malformed_availability_shape")
+    if available.dtype.kind != "b":
+        return outcome("malformed_availability_dtype")
+    if not isinstance(target, np.ndarray) or target.shape != raw.shape:
+        return outcome("malformed_target_shape")
+    if target.dtype.kind != "b":
+        return outcome("malformed_target_dtype")
+    if not isinstance(frame, PlaneFrame):
+        return outcome("invalid_frame")
+    try:
+        spacing = np.asarray(frame.spacing_rc, dtype=np.float64)
+    except (TypeError, ValueError):
+        return outcome("invalid_spacing")
+    if spacing.shape != (2,) or not np.isfinite(spacing).all() or np.any(spacing <= 0):
+        return outcome("invalid_spacing")
+
+    arrays["availability_input"] = available
+    arrays["target_input"] = target
+    effective = available & np.isfinite(raw)
+    target_pixels = int(target.sum())
+    available_pixels = int(effective.sum())
+    available_target = target & effective
+    available_target_pixels = int(available_target.sum())
+    partial = not bool(effective.all())
+    arrays["effective_availability"] = effective
+    stats.update(
+        available_pixels=available_pixels,
+        unavailable_pixels=int(raw.size - available_pixels),
+        target_pixels=target_pixels,
+        available_target_pixels=available_target_pixels,
+        partial_reading=partial,
+    )
+    if target_pixels == 0:
+        return outcome("target_missing")
+    if available_pixels == 0:
+        return outcome("no_available_pixels")
+    if available_target_pixels == 0:
+        return outcome("target_unavailable")
+
+    neutral = float(np.min(raw[effective]))
+    depth_input = np.where(effective, raw, neutral).astype(np.float64)
+    enclosed_depth = np.asarray(
+        assignments.enclosed_darkness(depth_input), dtype=np.float64
+    )
+    positive = (enclosed_depth > 0.0) & effective
+    labels, component_count = ndi.label(positive, structure=assignments.FOUR_NEIGHBOURS)
+    distance_to_target = ndi.distance_transform_edt(~available_target, sampling=spacing)
+    component_ids = np.arange(1, int(component_count) + 1, dtype=np.int32)
+    component_sizes = np.bincount(labels.ravel(), minlength=int(component_count) + 1)
+    crop_edge = np.zeros(raw.shape, dtype=bool)
+    crop_edge[[0, -1], :] = True
+    crop_edge[:, [0, -1]] = True
+    unknown_boundary = (
+        ndi.binary_dilation(~effective, structure=assignments.FOUR_NEIGHBOURS)
+        & effective
+    )
+    if len(component_ids):
+        minimum_distances = np.asarray(
+            ndi.minimum(distance_to_target, labels, index=component_ids),
+            dtype=np.float64,
+        )
+        edge_counts = np.asarray(
+            ndi.sum(crop_edge, labels, index=component_ids), dtype=np.int64
+        )
+        unknown_boundary_counts = np.asarray(
+            ndi.sum(unknown_boundary, labels, index=component_ids), dtype=np.int64
+        )
+    else:
+        minimum_distances = np.empty(0, dtype=np.float64)
+        edge_counts = np.empty(0, dtype=np.int64)
+        unknown_boundary_counts = np.empty(0, dtype=np.int64)
+    contacted_components = minimum_distances <= assignments.SHELL_MM
+    contacted_ids = component_ids[contacted_components].astype(int).tolist()
+    rows = [
+        {
+            "label": int(label),
+            "pixels": int(component_sizes[label]),
+            "minimum_target_distance_mm": float(minimum_distance),
+            "within_existing_contact_shell": bool(contacted),
+            "crop_edge_pixels": int(edge_pixels),
+            "touches_crop_edge": bool(edge_pixels),
+            "unknown_boundary_pixels": int(unknown_pixels),
+            "touches_unavailable_boundary": bool(unknown_pixels),
+        }
+        for label, minimum_distance, edge_pixels, unknown_pixels, contacted in zip(
+            component_ids,
+            minimum_distances,
+            edge_counts,
+            unknown_boundary_counts,
+            contacted_components,
+            strict=True,
+        )
+    ]
+    contacted_mask = np.isin(labels, contacted_ids)
+    arrays.update(
+        depth_input=depth_input,
+        enclosed_depth=enclosed_depth,
+        positive_enclosure=positive,
+        labels=labels.astype(np.int32, copy=False),
+        distance_to_target_mm=distance_to_target,
+        contacted_component_mask=contacted_mask,
+        unavailable_boundary=unknown_boundary,
+    )
+    stats.update(
+        neutral_minimum=neutral,
+        positive_enclosure_pixels=int(positive.sum()),
+        component_count=int(component_count),
+        contacted_component_count=len(contacted_ids),
+        contacted_component_ids=contacted_ids,
+        contacted_component_sizes_pixels=[
+            int(component_sizes[label]) for label in contacted_ids
+        ],
+        components=rows,
+        crop_edge_pixels=int(crop_edge.sum()),
+        enclosure_status="empty" if component_count == 0 else "present",
+    )
+    return outcome("partial_reading" if partial else "complete")
+
+
 def enclosed_body_at_sources(
     raw: np.ndarray,
     available: np.ndarray,

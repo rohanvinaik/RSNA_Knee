@@ -275,6 +275,18 @@ categories of the twelve it relates to (docs/OBJECTS_AND_CONDITIONS.md §6):
      joint's middle, joining the femur and the tibia: the largest such piece reaching within
      `SHELL_MM` of both (`ligament_on_the_inner_side`)
      (abstain_no_low_signal_joins_the_bones_on_the_inner_side).
+  AX native cross-sections provide a separate reading on the axial acquisition. The coronal
+  native, resolved MCL support is projected only as a location target into its half-slab; every
+  positive four-connected enclosed-dark component within `SHELL_MM` is retained with its physical
+  distance, size and crop-edge status. A whole contacted component is excluded only where an
+  independently resolved native femur or tibia support on that same acquisition and slice
+  intersects it; unknown bone context stays neutral. Of the remaining contacted components the
+  uniquely largest is the body. No opening, signal cutoff, clipping against bone, or claim of a
+  full course is made. A selected body with a wholly observed boundary is identified even if another part of the
+  crop is unavailable; cut or unavailable-boundary bodies remain readings. Ties and known bone
+  conflicts are named. Posteromedial capsule may be included in this local band; its posterior
+  overreach is retained without a full-course or insertion claim. This is an axial localization
+  with the coronal support as a place to ask, not a second coronal rule.
   It relates to the MCL category, «medial collateral ligament injury». Seen also on the proof: it
   is named only where it crosses the joint line, about 12 mm of it; its stretches down the tibia
   and up the femur are not reached; and the femur's region, which takes in the fluid of the inner
@@ -866,7 +878,7 @@ conditions directly.
 import warnings
 from collections.abc import Callable, Hashable, Sequence
 from dataclasses import dataclass
-from typing import TypeVar
+from typing import Any, TypeVar
 
 import numpy as np
 from scipy import ndimage as ndi
@@ -1625,6 +1637,178 @@ def mcl_code(sides_in_plane: bool, medial_meniscus: bool, found: bool) -> str:
     if not found:
         return "abstain_no_low_signal_joins_the_bones_on_the_inner_side"
     return "identified"
+
+
+def axial_mcl_components(
+    measurement: dict[str, Any],
+    bone_supports: dict[str, dict[str, Any]] | None = None,
+) -> dict[str, Any]:
+    """Select the largest contacted positive-enclosure component without assigning unknown bone.
+
+    The measurement is produced by ``enclosed_components_at_source``. A supplied femur or tibia
+    mask is usable only when its caller has validated the native acquisition and slice address;
+    missing or malformed context is retained as unknown and never excludes a component.
+    """
+    measured_status = measurement.get("status")
+    if measured_status not in {"complete", "partial_reading"}:
+        return {
+            "status": "measurement_" + str(measured_status or "status_missing"),
+            "selected": None,
+            "measurement_status": measured_status,
+        }
+    labels = measurement.get("labels")
+    if (
+        not isinstance(labels, np.ndarray)
+        or labels.ndim != 2
+        or labels.dtype.kind not in "iu"
+        or np.any(labels < 0)
+    ):
+        return {"status": "malformed_component_measurement", "selected": None}
+    distance = measurement.get("distance_to_target_mm")
+    if not isinstance(distance, np.ndarray) or distance.shape != labels.shape:
+        return {"status": "malformed_component_measurement", "selected": None}
+    rows = measurement.get("components")
+    if not isinstance(rows, list):
+        return {"status": "malformed_component_measurement", "selected": None}
+    positive_ids = np.unique(labels[labels > 0]).astype(int).tolist()
+    if positive_ids != list(range(1, len(positive_ids) + 1)):
+        return {"status": "malformed_component_measurement", "selected": None}
+    component_sizes = np.bincount(
+        labels.ravel(), minlength=int(labels.max(initial=0)) + 1
+    )
+    try:
+        row_ids = [row["label"] for row in rows]
+        if (
+            any(type(value) is not int for value in row_ids)
+            or sorted(row_ids) != positive_ids
+        ):
+            return {"status": "malformed_component_measurement", "selected": None}
+        for row in rows:
+            pixels = row.get("pixels")
+            label = row["label"]
+            if (
+                type(pixels) is not int
+                or pixels <= 0
+                or pixels != int(component_sizes[label])
+            ):
+                return {"status": "malformed_component_measurement", "selected": None}
+    except (TypeError, KeyError):
+        return {"status": "malformed_component_measurement", "selected": None}
+
+    conflicts = np.zeros(labels.shape, dtype=bool)
+    context_rows: dict[str, dict[str, Any]] = {}
+    max_label = int(labels.max(initial=0))
+    intersections: dict[str, np.ndarray] = {}
+    for bone in ("femur", "tibia"):
+        context = (bone_supports or {}).get(bone)
+        if not isinstance(context, dict):
+            context_rows[bone] = {"status": "unknown_native_support_unavailable"}
+            continue
+        mask = context.get("mask")
+        status = context.get("status")
+        if (
+            status != "resolved_native_support"
+            or not isinstance(mask, np.ndarray)
+            or mask.shape != labels.shape
+            or mask.dtype.kind != "b"
+        ):
+            context_rows[bone] = {
+                "status": (
+                    "unknown_malformed_native_support"
+                    if status == "resolved_native_support"
+                    else str(status or "unknown_native_support_unavailable")
+                ),
+                "reason": "mask_shape_or_dtype_mismatch"
+                if status == "resolved_native_support"
+                else None,
+                "metadata": context.get("metadata"),
+                "reasons": context.get("reasons", ()),
+            }
+            continue
+        conflicts |= mask
+        intersections[bone] = np.bincount(labels[mask].ravel(), minlength=max_label + 1)
+        context_rows[bone] = {
+            "status": status,
+            "metadata": context.get("metadata"),
+        }
+
+    component_rows = []
+    eligible: list[tuple[int, int]] = []
+    contacted = []
+    for row in rows:
+        component_id = row["label"]
+        bone_overlaps = {
+            bone: int(counts[component_id]) for bone, counts in intersections.items()
+        }
+        overlap = sum(bone_overlaps.values())
+        within = bool(row.get("within_existing_contact_shell"))
+        component_row = {
+            **row,
+            "known_bone_intersection_pixels": overlap,
+            "bone_intersection_pixels": bone_overlaps,
+            "excluded_by_resolved_bone": bool(overlap),
+        }
+        component_rows.append(component_row)
+        if within:
+            contacted.append(component_id)
+            if not overlap:
+                eligible.append((component_id, int(row["pixels"])))
+
+    result: dict[str, Any] = {
+        "measurement_status": measured_status,
+        "scope_partial": bool(measurement.get("partial_reading")),
+        "components": component_rows,
+        "bone_context": context_rows,
+        "known_bone_conflict_mask": conflicts,
+        "contacted_component_ids": contacted,
+        "eligible_component_ids": [row[0] for row in eligible],
+        "selected": np.zeros(labels.shape, dtype=bool),
+        "selected_component_id": None,
+        "selected_pixels": 0,
+        "selected_touches_crop_edge": False,
+        "selected_touches_unavailable_boundary": False,
+    }
+    if not component_rows:
+        result["status"] = "measured_empty"
+        return result
+    if not contacted:
+        result["status"] = (
+            "contact_unknown_partial_source"
+            if measurement.get("available_target_pixels")
+            != measurement.get("target_pixels")
+            else "no_contacted_component"
+        )
+        return result
+    if not eligible:
+        result["status"] = "candidate_merged_with_resolved_bone"
+        return result
+    largest = max(pixels for _, pixels in eligible)
+    winners = [(label, pixels) for label, pixels in eligible if pixels == largest]
+    if len(winners) != 1:
+        result["status"] = "tied_largest_nonconflicting_components"
+        result["largest_component_ids"] = [label for label, _ in winners]
+        result["largest_component_pixels"] = largest
+        return result
+
+    label, pixels = winners[0]
+    selected = labels == label
+    edge = np.zeros(labels.shape, dtype=bool)
+    edge[[0, -1], :] = True
+    edge[:, [0, -1]] = True
+    touches_edge = bool(np.any(selected & edge))
+    selected_row = next(row for row in rows if row["label"] == label)
+    touches_unknown = bool(selected_row.get("touches_unavailable_boundary"))
+    result.update(
+        selected=selected,
+        selected_component_id=label,
+        selected_pixels=pixels,
+        selected_touches_crop_edge=touches_edge,
+        selected_touches_unavailable_boundary=touches_unknown,
+    )
+    result["status"] = (
+        "partial_reading" if touches_edge or touches_unknown else "identified"
+    )
+    return result
 
 
 def ligament_on_the_inner_side(

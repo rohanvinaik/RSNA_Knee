@@ -1948,3 +1948,36 @@ The shared image/support bundle is lazy and reused only for immutable measured i
 White-as-fluid measures brightness against combined-bone reference light. With a validated supplied reference, its former local femur/tibia prerequisite is no longer needed to obtain that calibration. The spatial rule for an anterior recess still requires native femur and patella; white pixels alone do not name fluid or a recess. Patella's own companion-fluid gate is unchanged in this increment, so a tibia outside that target domain can leave that companion reading unavailable. The distinction must not be hidden by an empty mask or an accuracy score.
 
 The six-statement contract, native inspections, exact source pins and actual verification live in `data/readings/collapse-20261017/full-build/targeted-compute-20261018/b2-native-context-20261019/`. Further native context reuse/targeting remains P3 work; P4's physical source relation and later families remain separate obligations.
+
+
+### 8.44 Native axial MCL local medial band — 2026-10-19
+
+The existing native coronal MCL supplies a physical location question. Its source address, native
+provenance, count and acquisition are validated; laid/projected rows never become independent
+sources. Actual half-slab profiles plus the common map point to native AX planes. The authored
+extent bounds the expensive reading before execution. The shared ligament adapter retains PCL's
+existing body operation; the MCL instead reads strict-positive enclosed darkness, four-connected
+components and physical source contact, with no PCL 3 mm opening or new grey cutoff.
+
+Rohan resolved the independent readers' disagreement: «Use known native-bone conflicts; unknown
+stays neutral». A whole contacted component intersecting independently native, identified bone
+support on the same acquisition and slice is ineligible. All source addresses, invalid-context
+reasons and rejected components remain. Projected/coarse/unattributed context is not a definitive
+bone mask. Unknown context is explicit and neutral. The uniquely largest remaining contacted
+body is kept whole; ties, empty measurements, partial source, cut body and missing inputs remain
+named. Partial availability elsewhere in the crop does not negate an observed body.
+
+Root inspected the real integrated CLI's acquired/native overlays at proof AX12/13/14. They follow
+the medial dark band outside the condyle; the posterior continuation can include posteromedial
+capsule and is an explicit retained limitation. Counts228/410/307 are observations, not constants
+or targets. This is local MCL competence, not the full course, layers or insertion. Native SAG is
+still open. The common map receives the AX constraint before later searches; COR and AX do not
+establish a completed three-plane MCL reference. Original projected/laid/read/refused rows remain.
+
+The actual main CLI was checked serial/parallel on proof/bursa and on the public test example;
+serial/parallel receipts match exactly and B2 PCL arrays/metadata are unchanged. The root also ran
+the two-study `--draw` route and inspected all native AX results. Each of three native crops has
+23,800 pixels, measured once, with batched component reductions; no full-pipeline speedup is inferred.
+Evidence: B + `b3-mcl-20261019/axial-rule-review/`, `verification/integrated/` and
+`integrated/lead-acceptance.json`. Final benchmark/gate/commit state is in the active packet and
+computed gate evidence; this anatomical record does not replace it.

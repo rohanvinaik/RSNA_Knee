@@ -135,6 +135,302 @@ def test_sources_require_native_coronal_label_count_and_address(monkeypatch):
         assert "a4_medial_meniscus_source_lps" not in rejected.arrays
 
 
+def test_mcl_sources_require_exact_native_address_and_keep_invalid_context_named(
+    monkeypatch,
+):
+    _quiet(monkeypatch)
+    monkeypatch.setattr(run, "artifact_of", lambda *_args: "native-artifact")
+    monkeypatch.setattr(run, "plane_frame", _frame)
+    own = _own(pixels=np.zeros((16, 16), dtype=np.uint8))
+    own.arrays["a1_objects"][2, 3] = run.OBJECT_CODES["mcl"]
+    own.record["observations"] = [_row(own, object_name="mcl")]
+    options = {
+        "orientation": "coronal",
+        "names": ("mcl",),
+        "object_codes": {"mcl": run.OBJECT_CODES["mcl"]},
+        "sources_product": "native_coronal_mcl_sources",
+        "record_key": "a4_native_coronal_mcl_sources",
+        "strict_native_address": True,
+    }
+
+    accepted = run.native_meniscus_sources([own], "study", **options)["mcl"]
+
+    assert accepted["status"] == "selected"
+    assert accepted["selected"]["metadata"]["support"] == "a1_objects"
+    fractional = _own(pixels=np.zeros((16, 16), dtype=np.uint8))
+    fractional.arrays["a1_objects"][2, 3] = run.OBJECT_CODES["mcl"]
+    fractional.record["observations"] = [
+        {**_row(fractional, object_name="mcl"), "slices": (1.0,)}
+    ]
+    rejected = run.native_meniscus_sources([fractional], "study", **options)["mcl"]
+    assert rejected["status"] == "invalid_source_context"
+    assert rejected["invalid_sources"] == [{"status": "invalid_slice_address"}]
+    laid = _own(pixels=np.zeros((16, 16), dtype=np.uint8))
+    laid.record["observations"] = [
+        {**_row(laid, object_name="mcl"), "provenance": "laid"}
+    ]
+    laid_source = run.native_meniscus_sources([laid], "study", **options)["mcl"]
+    assert laid_source["status"] == "unavailable"
+
+
+@pytest.mark.parametrize(
+    "defect", ["actual_acquisition", "float_label", "scalar_slice"]
+)
+def test_mcl_source_checks_the_actual_acquisition_and_typed_address(
+    monkeypatch, defect
+):
+    _quiet(monkeypatch)
+    monkeypatch.setattr(run, "artifact_of", lambda *_args: "native-artifact")
+    monkeypatch.setattr(run, "plane_frame", _frame)
+    own = _own(pixels=np.zeros((16, 16), dtype=np.uint8))
+    own.arrays["a1_objects"][2, 3] = run.OBJECT_CODES["mcl"]
+    row = _row(own, object_name="mcl")
+    own.record["observations"] = [row]
+    if defect == "actual_acquisition":
+        own.record["series_uid"] = "tampered"
+        row["series_uid"] = "tampered"
+    elif defect == "float_label":
+        row["label"] = float(run.OBJECT_CODES["mcl"])
+    else:
+        row["slices"] = 1
+    result = run.native_meniscus_sources(
+        [own],
+        "study",
+        names=("mcl",),
+        object_codes={"mcl": run.OBJECT_CODES["mcl"]},
+        sources_product="native_coronal_mcl_sources",
+        strict_native_address=True,
+    )["mcl"]
+    assert result["status"] == "invalid_source_context"
+    assert result["selected"] is None
+
+
+def test_native_bone_supports_require_same_series_slice_and_exact_array_address(
+    monkeypatch,
+):
+    _quiet(monkeypatch)
+    monkeypatch.setattr(run, "artifact_of", lambda *_args: "native-artifact")
+    own = _own(view=("Axial", "1", "1"), z=1)
+    own.arrays["a1_objects"][2, 3] = run.OBJECT_CODES["femur"]
+    own.record["observations"] = [
+        {
+            **_row(own, object_name="femur"),
+            "count": 1,
+            "artifact": "native-artifact",
+        }
+    ]
+    a1 = run.native_axial_bone_supports(own, "study", 1, (1, 5, 1, 5))
+    assert a1["femur"]["status"] == "resolved_native_support"
+    assert a1["femur"]["mask"].sum() == 1
+    assert a1["femur"]["metadata"]["addresses"][0]["slice"] == 1
+    assert a1["tibia"]["status"] == "unknown_native_support_unavailable"
+
+    own.record["observations"] = [
+        {
+            "object": "tibia",
+            "provenance": "native",
+            "kind": "resolved",
+            "code": "identified",
+            "series_uid": own.record["series_uid"],
+            "view": tuple(own.record["view"]),
+            "slices": (2,),
+            "support": "a3_tibia_plane_region",
+            "row": 0,
+            "label": None,
+            "count": 2,
+            "artifact": "native-artifact",
+        }
+    ]
+    regions = np.zeros((1, 16, 16), dtype=bool)
+    regions[0, 3, 3:5] = True
+    own.arrays["a3_tibia_plane_region"] = regions
+    own.arrays["a3_tibia_plane_slices"] = np.asarray([2], dtype=np.int32)
+    a3 = run.native_axial_bone_supports(own, "study", 2, (1, 5, 1, 5))
+    assert a3["tibia"]["status"] == "resolved_native_support"
+    assert a3["tibia"]["mask"].sum() == 2
+    own.record["observations"][0]["row"] = 0.0
+    malformed = run.native_axial_bone_supports(own, "study", 2, (1, 5, 1, 5))
+    assert malformed["tibia"]["status"] == "unknown_invalid_native_support_context"
+
+
+def test_native_bone_supports_or_independent_addresses_and_retain_malformed_rows(
+    monkeypatch,
+):
+    _quiet(monkeypatch)
+    monkeypatch.setattr(run, "artifact_of", lambda *_args: "native-artifact")
+    own = _own(view=("Axial", "1", "1"), z=1)
+    own.arrays["a1_objects"][2, 3] = run.OBJECT_CODES["femur"]
+    valid_a1 = {
+        **_row(own, object_name="femur"),
+        "count": 1,
+        "artifact": "native-artifact",
+    }
+    malformed = {**valid_a1, "slices": (1.5,)}
+    own.record["observations"] = [valid_a1, malformed]
+    own.arrays["a3_femur_plane_region"] = np.zeros((1, 16, 16), dtype=bool)
+    own.arrays["a3_femur_plane_region"][0, 3, 4] = True
+    own.arrays["a3_femur_plane_slices"] = np.asarray([1], dtype=np.int32)
+    own.record["observations"].append(
+        {
+            **valid_a1,
+            "support": "a3_femur_plane_region",
+            "row": 0,
+            "label": None,
+        }
+    )
+    combined = run.native_axial_bone_supports(own, "study", 1, (1, 5, 1, 5))
+    assert combined["femur"]["status"] == "resolved_native_support"
+    assert combined["femur"]["mask"].sum() == 2
+    metadata = combined["femur"]["metadata"]
+    assert [address["support"] for address in metadata["addresses"]] == [
+        "a1_objects",
+        "a3_femur_plane_region",
+    ]
+    assert metadata["malformed_reasons"] == ["invalid_slice_type"]
+
+
+def test_native_bone_supports_validate_actual_series_uid_and_strict_label(
+    monkeypatch,
+):
+    _quiet(monkeypatch)
+    monkeypatch.setattr(run, "artifact_of", lambda *_args: "native-artifact")
+    own = _own(view=("Axial", "1", "1"), z=1)
+    own.arrays["a1_objects"][2, 3] = run.OBJECT_CODES["femur"]
+    row = {
+        **_row(own, object_name="femur"),
+        "count": 1,
+        "artifact": "native-artifact",
+    }
+    own.record["observations"] = [row]
+    own.record["series_uid"] = "tampered-record-uid"
+    mismatched = run.native_axial_bone_supports(own, "study", 1, (1, 5, 1, 5))
+    assert mismatched["femur"]["status"] == "unknown_invalid_acquisition_or_slice"
+
+    own.record["series_uid"] = own.series.row.series_uid
+    row["series_uid"] = own.series.row.series_uid
+    row["label"] = float(run.OBJECT_CODES["femur"])
+    invalid_label = run.native_axial_bone_supports(own, "study", 1, (1, 5, 1, 5))
+    assert invalid_label["femur"]["status"] == "unknown_invalid_native_support_context"
+
+
+@pytest.mark.parametrize(
+    ("bone_overlap", "expected_status", "expected_observation_kind"),
+    [
+        (False, "identified", "resolved"),
+        (True, "candidate_merged_with_resolved_bone", None),
+    ],
+)
+def test_shared_ligament_adapter_runs_axial_mcl_measurement_and_conflict_branch(
+    monkeypatch, bone_overlap, expected_status, expected_observation_kind
+):
+    _quiet(monkeypatch)
+    own = _own(view=("Axial", "1", "1"), volume=np.ones((4, 16, 16)))
+    own.record["series_uid"] = f"axial-mcl-{bone_overlap}"
+    source = {
+        "status": "selected",
+        "selected": {
+            "points_lps": np.asarray([[0.0, 0.0, 0.0]]),
+            "metadata": {"series_uid": "coronal-mcl", "slice": 5},
+        },
+    }
+    profile = {
+        "status": "measured",
+        "counts": np.asarray([0.0, 0.0, 2.0, 0.0]),
+        "unique_counts": np.asarray([0.0, 0.0, 2.0, 0.0]),
+        "map_counts": np.zeros(4),
+        "statuses": np.asarray([0, 0, 4, 0], dtype=np.int8),
+        "per_slice": {
+            2: {
+                "unique_rc": np.asarray([[4.0, 4.0], [4.0, 5.0]]),
+                "sample_rc": np.asarray([[4.0, 4.0], [4.0, 5.0]]),
+                "in_map": np.zeros(2, dtype=bool),
+            }
+        },
+        "guide": None,
+        "product": "native_axial_mcl_profiles",
+        "source_product": "native_coronal_mcl_sources",
+    }
+    monkeypatch.setattr(
+        run, "native_meniscus_profiles", lambda *_a, **_k: {"mcl": profile}
+    )
+    monkeypatch.setattr(run, "plane_frame", _frame)
+    monkeypatch.setattr(
+        run, "finite_of", lambda _series: np.ones((4, 16, 16), dtype=bool)
+    )
+    monkeypatch.setattr(run, "margin_of", lambda *_args: np.zeros((16, 16), dtype=bool))
+    monkeypatch.setattr(
+        run.anatomy_map, "target_span_mm", lambda *_args: (4.0, 4.0, 4.0)
+    )
+    monkeypatch.setattr(run, "_peak_slices", lambda _values: [2])
+    monkeypatch.setattr(run, "once", lambda _name, _key, make: make())
+
+    def bone_supports(_own, _study, _z, window):
+        r0, r1, c0, c1 = window
+        mask = np.zeros((r1 - r0, c1 - c0), dtype=bool)
+        if bone_overlap:
+            mask[3, 3] = True
+        return {
+            "femur": {
+                "status": "resolved_native_support",
+                "mask": mask,
+                "metadata": {"support": "a3_femur_plane_region", "slice": 2},
+            },
+            "tibia": {"status": "unknown_native_support_unavailable"},
+        }
+
+    monkeypatch.setattr(run, "native_axial_bone_supports", bone_supports)
+    calls = []
+
+    def components(raw, available, target, frame):
+        calls.append((raw.shape, target.copy()))
+        labels = np.zeros(raw.shape, dtype=np.int32)
+        labels[3, 3:5] = 1
+        return {
+            "status": "complete",
+            "partial_reading": False,
+            "labels": labels,
+            "distance_to_target_mm": np.zeros(raw.shape),
+            "target_pixels": int(target.sum()),
+            "available_target_pixels": int(target.sum()),
+            "components": [
+                {
+                    "label": 1,
+                    "pixels": 2,
+                    "minimum_target_distance_mm": 0.0,
+                    "within_existing_contact_shell": True,
+                    "crop_edge_pixels": 0,
+                    "touches_crop_edge": False,
+                    "touches_unavailable_boundary": False,
+                }
+            ],
+            "positive_enclosure": labels.astype(bool),
+            "enclosed_depth": labels.astype(float),
+        }
+
+    monkeypatch.setattr(run, "enclosed_components_at_source", components)
+    monkeypatch.setattr(run, "artifact_of", lambda *_args: "axial-artifact")
+
+    rows = run.name_native_ligament_sections(
+        [own], {"mcl": source}, "study", None, orientation="axial", ligament="mcl"
+    )
+
+    assert len(calls) == 1
+    if expected_observation_kind:
+        assert rows[0][0][0].kind == expected_observation_kind
+        assert rows[0][0][0].code == "identified"
+    else:
+        assert not rows[0][0]
+    candidate = own.record["a4_axial_native_mcl_candidates"][0]
+    assert candidate["status"] == expected_status
+    assert "a4_axial_mcl_z2_raw_crop" in own.arrays
+    assert "a4_axial_mcl_z2_positive_enclosure" in own.arrays
+    if not expected_observation_kind:
+        assert any(
+            reason.code == "local_body_unavailable:candidate_merged_with_resolved_bone"
+            for reason in rows[0][1]
+        )
+
+
 def test_non_fs_sagittal_target_skips_profile_volume_and_local_reader(monkeypatch):
     _quiet(monkeypatch)
 
