@@ -19,7 +19,9 @@ How to read it:
   (`HOW_TO_BUILD.md`, "The leg-bound conclusion").
 - Words of his quoted from that other session on 2026-10-19, not in this record either: «Can you work on how
   we can make this part of the full build plan/workflow that we can launch?» (`FULL_BUILD_PLAN.md` §16, as
-  the Codex session recorded them).
+  the Codex session recorded them); and «a well-built productionized version of the "what an <object> is"
+  thesis, like a competent performance engineer would produce, with logical consolidation of compute with
+  and across studies» (`FULL_BUILD_PLAN.md` §1.3, likewise).
 
 ## Morning review
 
@@ -525,3 +527,26 @@ I made some additions, should be cleanly integratable:
 > **Validation:** 85 documentation checks, 34 W1 mock cases and 10 R0 mock cases passed. Existing rehearsal code was preserved.
 >
 > Before launch, the lead must include the remaining full-plan edit in its checkpoint, freeze a fresh manifest, and complete the real R0 rehearsal. No production workers launched by me.
+
+**01:54**, answering the lead's report on the GitHub runs, whose last lines were (lead text): "Nothing has
+been launched. The rehearsal still waits for two things: The other session's 01:50 edits: I need to bring
+in its new edits to both plans and freeze the file list again. Your go: once those edits are in, tell me to
+launch."
+Done, my changes were part of a compute efficiency pass:
+
+> **A report, pasted (not his words; the message does not name its author. The edits it reports are the
+> Codex session's, which `FULL_BUILD_PLAN.md` §1.3 calls "this Codex session's implementation of that
+> request"):**
+> Done. This now governs the entire build in [FULL_BUILD_PLAN.md](/Users/rohanvinaik/Projects/Kaggle_Killer/competitions/RSNA_Knee/docs/FULL_BUILD_PLAN.md), with execution mapped into [BUILD_WORKFLOWS.md](/Users/rohanvinaik/Projects/Kaggle_Killer/competitions/RSNA_Knee/docs/work/current/BUILD_WORKFLOWS.md).
+>
+> The contracts require:
+>
+> - Anatomy and cheap context to narrow expensive work **before it runs**.
+> - Shared measurements and explicit ownership, reuse and invalidation.
+> - Consolidation across studies while preserving each study’s observations.
+> - JIT/Rust/C++ for meaningful residual work, checked against reference implementations.
+> - Whole-pipeline verification covering startup, memory, storage and multi-study execution.
+>
+> I consulted Fable through your **local Claude Max subscription** and recorded which recommendations were accepted or rejected against your thesis.
+>
+> All **44 existing workflow mock cases passed**, along with document-preservation and whitespace checks. The build lead must integrate these edits and refresh its source manifest before launch.

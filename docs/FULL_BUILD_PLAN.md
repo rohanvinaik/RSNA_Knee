@@ -219,6 +219,69 @@ all actual consumers. This is a clarification of the existing data contract, not
 engine, exhaustive accuracy campaign, perfect-boundary requirement or request for repeated
 human approval. Once the faithful description is reasonably competent, continue the build.
 
+### 1.3 Governing production principle: structure buys correctness and efficiency together
+
+Rohan's specification for the whole build: «a well-built productionized version of the "what an
+<object> is" thesis, like a competent performance engineer would produce, with logical consolidation
+of compute with and across studies». The following engineering contracts are this Codex session's
+implementation of that request in the existing plan, grounded in the cited primary sections; the
+Fable consultation is a second reading, not new authority. This governs P0–P13 and every family packet,
+not only P10 or §16's measured kernel leads. The thesis's §§4.5–4.6, 5.1, 7.3–7.5 and 13.3–13.7 supply the mechanism:
+cheap context makes a smaller question; readings are made once and handed on; expensive work follows
+the remaining uncertainty; exact retained information supports later questions without repeating it.
+Its cell-specific temporal invariances and numerical savings are not MRI assumptions.
+
+**Build the anatomical information flow before accelerating its arithmetic.** The leg domain bounds
+where a knee question is useful; bones constrain marrow, joint spaces and attachments; resolved
+muscles and bones constrain tendons and vascular courses. These are useful priors with provenance,
+not perfect masks or additional observations. Each family consumes what is already known before
+choosing its native slices, query region and necessary surrounding context. The cheap squint and
+physical map locate the question; its complementary native readings resolve it. An expensive full
+frame followed by a mask has not implemented this reduction. Where a prerequisite genuinely needs a
+broader read, name it and retain that read for its other consumers. Unknown exterior remains unknown;
+no useful dark tissue is classified as exterior merely because its signal is dark.
+
+**One operation, many consumers.** Keep measurement, anatomical decision and orchestration separate.
+A named value has a producer, dependency identity, scope, owner, lifetime, retained address and actual
+readers. Two families needing the same value receive it, rather than each making a private copy of the
+analysis. Distinct acquisition, context, halo or calibration can require different readings; sharing
+must preserve that distinction. A saved array with no decision consumer is retained evidence, not
+proof that the recognition graph uses its information. Derived map/context consequences guide the
+next measurement; their repeated reuse is not independent corroboration.
+
+**Consolidate at the lifetime where the fact is true.** Across studies share authored anatomical laws
+and relation templates, approved descriptive search priors, executable definitions, compiled code and
+preparation whose inputs are actually invariant. Within a study share its decoded sources, cheap
+readings, geometry, map, scoped contexts and already-resolved object information with all eligible readers. Each patient's native
+observations, calibration and placements retain their own identity; unrelated studies are not adjacent
+frames of the thesis's cell movie. Equal slice numbers, dimensions or object names do not establish
+reuse. A cross-study search prior remains an expectation guiding a new native question, not an
+observed placement in that knee. Neither a ban on all cross-study sharing nor a cache of one patient's
+answer for the next is this contract. §16.6 specifies the actual reuse and invalidation account.
+
+**Compile the bounded work that remains.** Consolidate producers, narrow queries and avoid redundant
+materialization first. Use the production trace and allocation evidence to decide where JIT, Rust or
+C++ can fuse loops, reuse scratch and reduce language crossings. NumPy/SciPy calls may already run
+native code; changing the wrapper's language is not itself a saving. Preserve a plain reference twin,
+measurement semantics, precision and named decisions. No fastmath, silent quantization, approximate
+replacement or dropped reading follows from an efficiency request. The later MRI representation is
+still P12's human-specified work; the thesis's exact bundling explains the intended reuse, not permission
+to invent its layout now.
+
+**The unit of success is the whole production operation.** Account for fresh-process startup and JIT,
+decoding, recognition, retained state, serialization and cohort execution through the one CLI. Amortize
+input-independent setup across studies in bounded workers; do not retain an ever-growing patient cache.
+Keep all information reconstructible under the existing retention contract while managing residency.
+Actual compute, memory and output limits constrain scheduling and storage, never anatomical identity.
+Use the existing gate, real callers, ledger and full-run instruments (§§9, 16); kernel replays alone do
+not establish whole-run efficiency. Large savings are the intended consequence of this construction;
+no unmeasured speed-up factor or preferred benchmark number is its acceptance criterion.
+
+Every packet applies this principle using §16.7's short work account and its existing M/F contract.
+This is ordinary construction of the approved pipeline, not a new framework, tuning objective,
+repeated approval gate, or an optimization phase postponed until all anatomical families are built.
+
+
 ## 2. Historical source checkpoint and accepted scope
 
 At this historical handoff, the accepted anatomy was RELATIVE_POSITION_MAP §§8.35–8.36: native axial/coronal PCL,
@@ -1080,7 +1143,9 @@ implemented proxy pretending to be the specified anatomical operation.
 Rohan's request after the full-run probe: «Can you work on how we can make this part of the full
 build plan/workflow that we can launch?» This section turns that evidence into bounded work inside
 the existing plan. It adds no recognition objective, numerical budget, new pipeline or profiling
-framework. The sequence is still anatomical constraints before residual kernel work (§1).
+framework. The sequence is still anatomical constraints before residual kernel work (§1). The governing
+production contract is §1.3; §§16.6–16.8 apply it throughout P0–P13, within studies and across the
+cohort, rather than confining efficiency to the measured kernel leads below.
 
 ### 16.1 Evidence and what it does not establish
 
@@ -1191,3 +1256,124 @@ serialization and residual kernels separately. If an item is open, say so; a sma
 or green CodSpeed run is not whole-operation completion. There is no new minimum speed-up, RSS
 ceiling, mask-purity target or all-studies perfection requirement. Later MRI encoding and diagnostic
 specification gaps remain P12/P13's and do not block competent recognition.
+
+### 16.6 Reuse, ownership and lifetime within and across studies
+
+Apply §1.3 before implementing a family as well as during EP0–EP4. Record the following in the
+existing packet/producer contract, using the existing source-owned graph and ledger rather than
+introducing a universal cache manager:
+
+| Lifetime | What can be consolidated | Identity and consumer obligation |
+|---|---|---|
+| Installed code / process | Authored definitions, anatomical relations and approved descriptive search priors; compiled kernels; immutable tables and preparations independent of the current image. | Pin definition/layout/backend versions and real preparation inputs. A code cache is not an observation cache. Report compile/load/setup separately from warm use. |
+| Cohort / worker | Input discovery/indexing and invariant setup used by multiple studies; immutable shared backing where the runtime supports it. | Carry the actual input manifest and configuration; share only the invariant portion. Each worker's private copy, IPC/pickling and thread pools count in the cohort account. Do not reload/rebuild the same invariant setup inside each family or study without a reason. |
+| Study / acquisition | Decoded source ownership, squint readings, observed anchors, physical map and calibration/context whose dependencies belong here. | Preserve patient/study/series identity and source revision, sequence/geometry and dependencies. Fat-bright and fat-dark native readings remain distinct even though one physical knee map relates them. No patient-derived value is silently reused for another patient. |
+| Native plane / query / context | Frame transforms, measurements, scoped representations and reusable scratch. | Name the source plane, full physical basis, query/context/halo, offsets, calibration, producer/encoding versions (and layout/carrier versions when applicable), and dependency mutation state relevant to this value. Reuse the actual same computation, not a superficially matching object label or array shape. Scratch is private to its proven concurrency/lifetime boundary. |
+| Persisted record | Every retained reading, decision, provenance and array address; lossless common backing or exact digest reuse where warranted. | Reconstruction preserves dtype, shape, values, scope, unknowns and source identity. Shared storage does not erase separate provenance. Existing readers and receipts consume it; saved information need not stay resident in every worker. |
+
+A reuse key covers the dependencies that can change that value, not an indiscriminate hash of the whole
+project on every call. Establish identities at source/producer boundaries and hand them on. Where an
+array may mutate, freeze ownership or version/invalidate it; object identity or a frozen container is
+insufficient. Include backend/environment where it affects the reference contract. Reuse between two
+inputs is legitimate only if the computation's actual dependencies are invariant or demonstrably
+identical; never infer this from similar anatomy. Count constructions/reuses/invalidations and name
+why a broader/new reading was needed. Record releases/drops with their causes and retained addresses,
+distinguishing invalidation, completed lifetime and scratch disposal from loss of information. Reusing
+a consequence does not create another independent vote.
+
+Retention and residency are different. Persist and verify the required information, then release
+study-scoped working references at a safe completed-study boundary, after all current consumers have
+finished and the complete kept record is verified reconstructible by its existing readers and digests.
+If a later reader needs the value, pass its retained address or retain its live owner as appropriate.
+Never evict its only copy, leave dangling views, or hide repeated decoding/analysis behind a small RSS number. A reusable worker
+must start its next study with new study-scoped mutable state; an exception must not leave stale
+state eligible. Readers of a common buffer must not mutate it behind another reader's identity.
+Existing-format EP3b remains bounded as written. If measured cohort output requires a different
+container, placement or lifetime contract, return that specific gap for the lead's concrete resolution;
+no default discard, silent format change or retention switch is authorized.
+
+### 16.7 The short work account required of every construction packet
+
+Extend the existing §9 Contract and Verification fields; do not maintain a second task list. For each
+family, retrofit and performance candidate, the lead supplies the anatomical meaning and the worker
+returns facts against it:
+
+1. **Known information and next question.** What prior/anchor/object is already available, what physical
+   relation narrows this question, and which real consumer uses it before costly work? Explain broader
+   bootstrap or fallback work and distinguish expected position from native evidence.
+2. **Actual work domain.** Identify the cheap discovery step, selected native plane(s), irregular/tiled
+   query where used, necessary context/halo and unavailable exterior. Count actual expensive reads and
+   queried/context pixels or tiles under the existing ledger's meanings. An envelope area alone does
+   not measure the irregular region; overlapping regions and nested times are not additive totals.
+3. **Shared value and lifetime.** Identify its producer and all readers, the preparation it replaces,
+   reuse/invalidation basis from §16.6, source ownership and retained output. Explain any remaining
+   duplicate computation or independent read that is necessary rather than calling it optimized.
+4. **Residual execution.** State what still pays after structural reduction. Name existing native code,
+   Python coordination, allocations and data movement separately. Name encodings read/written,
+   allocation/retention and the safe parallel unit in the existing callable/packet contract. Only material
+   remaining work gets a compiled/fused candidate; no per-object interpreter/native boundary or whole-volume temporary is
+   introduced merely to wrap a small operation. If allocation evidence warrants private scratch, test
+   its empty, boundary and concurrent uses against the reference twin.
+5. **Whole-operation consequence.** Trace changed calls, reuse and downstream work through the real CLI.
+   An equivalent implementation uses exact receipt/array checks; changed anatomical scope uses §7's
+   native review and complete change account. Link existing matching-source checkpoint measurements;
+   workers do not wait for the lead's later full profile or duplicate a profiler suite per family.
+
+These are explanations with code/run evidence, not numerical optimization targets or demands for
+perfect scope. EP0 includes this account across the graph, identifying same-value preparations both
+within and between studies. The lead resolves a semantic gap before asking a mechanical worker to
+implement it; a poor construction does not retire its useful capability (§1.1).
+
+### 16.8 Native execution and cohort verification
+
+Use the existing EP packets and production entry point; no parallel runner or new orchestration
+framework. EP1–EP3 establish useful scopes, ownership and sharing; EP4 tackles remaining kernels.
+P12 uses the same production principles once its MRI representation is specified.
+
+- Keep a simple reference twin and pin actual inputs before changing arithmetic or storage. Test
+  strict order/precision, nonfinite/unavailable handling, empty and clipped scopes, ties and offsets.
+  Rust/C++/JIT candidates preserve outputs and named decisions; changed floating reductions are not
+  silently treated as equivalent. A fused kernel's reference is the plain composition of the prior
+  references, not a replacement tailored to its output. Exact agreement is checked within each frozen
+  supported environment; no cross-platform floating bitwise identity is asserted. Record relevant
+  BLAS/OpenMP/Numba thread settings with the environment. Count conversion, copying and dispatch costs
+  as part of the call. Compile/fuse at a useful batch/context boundary when warranted, rather than crossing the language
+  boundary for each pixel. Keep development/profiling dependencies out of the production import path.
+- Reuse long-lived worker initialization where useful, with source/version-correct compiled caches
+  and immutable setup. Verify first process start, available warm-cache start and subsequent studies;
+  cold compilation is a separate reported condition; compare warm with warm and cold with cold. Use
+  the existing bounded worker route, not a new daemon or service. Offline production cannot depend on
+  downloading a compiler, model or package mid-run. Maintain the existing supported reference route where needed.
+- The lead measures the actual serial and parallel cohort routes after integration. Choose worker
+  count and native-thread counts together from measured per-study residency and the execution host's
+  CPU/memory limits; do not multiply process pools by unconstrained native threads. Bound in-flight
+  studies, results and serialization queues. Include decode, transfer/IPC, hashing, compression and
+  output costs, and retain the existing single receipt/output ownership unless explicitly repaired.
+- Reuse the existing labelled/public/proof runs for a small multi-study account where possible.
+  Verify different dimensions, sequence/geometry/calibration dependencies, identical slice indices in
+  unrelated acquisitions, and repeat processing in one worker. Enumerate mutable module/lazy state
+  and check A then B, B then A and B alone for two existing studies where warm reuse is changed;
+  compare their individual receipts, ignoring only existing non-semantic telemetry. Include an existing
+  missing/failed-input case where available to check cleanup; do not create a new anatomical accuracy campaign. Confirm
+  study-scoped state resets, invariant preparation is reused, and serial/parallel answers agree.
+  A rising process high-water RSS alone is not retained growth: inspect live ownership/allocations
+  over completed studies before diagnosing a leak. Count shared backing once per ownership account.
+- Capture final ordinary elapsed time, peak residency, persisted bytes and actual work/reuse counts
+  with source/environment/input identities. Diagnostic runs remain separate (§16.3). Compare the same
+  cohort and settings; isolated kernel gains do not imply proportional competition gains. Account for
+  startup once, per-study work across inputs and shared setup at its actual lifetime. Record remaining
+  broad work, recomputation and storage-contract gaps explicitly; do not invent linear scaling or a
+  hardware-independent speed-up from one proof study.
+
+The existing required check whole_operation_account includes the five statements in §16.7.
+For packets changing cross-study lifecycle/sharing, add reuse_lifetime_isolation; for compiled/native
+implementation changes, add reference_twin and native_execution_boundary. These names appear in the
+prompt, schema and script's required-check list when applicable. The lead's final cohort account is
+part of §16.5, not a prerequisite that cycles back into a pre-integration worker check. Unmeasurable
+claims remain unmeasured; worker outcomes and the correctness gate stay as already specified.
+
+Grounding and second-reader record for §§1.3, 16.6–16.8: B +
+production-thesis-contract-20261019T014732Z/ holds the user request, own reading written before the
+consultation, inlined whole thesis/plan units, the local Claude Max CLI's Fable response and the
+Codex adjudication. The source of the engineering contracts remains the user's request and thesis.
+That dated evidence is not a second current-state record or a production performance measurement.

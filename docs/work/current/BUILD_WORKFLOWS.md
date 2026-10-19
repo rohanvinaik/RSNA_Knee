@@ -16,7 +16,9 @@ rehearsal, then W1; §1 records his answers. The plan itself is committed and pu
 to git»). After the approval he had the Codex session add §11, with the W8a/W8b split in §5, and
 FULL_BUILD_PLAN §16, and sent them at 01:34: «I made some additions, should be cleanly integratable»; the
 lead integrated them unchanged but for this sentence, §11's first line and §8's import size, recomputed
-after §16.
+after §16. Its compute-efficiency pass followed (FULL_BUILD_PLAN §1.3 and §§16.6–16.8; this plan's §3
+efficiency bullet and the end of §11), sent at 01:54: «Done, my changes were part of a compute efficiency
+pass»; the lead integrated it unchanged.
 
 This is an execution design for `docs/FULL_BUILD_PLAN.md`, not another master plan. The order is the
 plan's §4: P2b → P2a → P3 → P4 → P5 → P6, with P7 and P9 items folded in as each family is touched and
@@ -227,9 +229,11 @@ Settled by your recorded words, stated so you can correct them:
   diagnostic only. The lead commits exactly that tree and pushes; the pre-push hook finds the gate's stamp,
   runs the secret scan and the advisory lockfile audit, and its whole output is read; then the GitHub gate
   run on the pushed commit, whose results go into the next revision (plan §9, step 6).
-- **Whole-operation efficiency:** FULL_BUILD_PLAN §16 supplies EP0–EP4 and the measurement contract.
-  These travel inside the existing P7/P9/P10 packets and their required-input/check lists; this plan's
-  §11 maps them to workers. They change no anatomical selector and introduce no numerical target.
+- **Whole-operation efficiency:** FULL_BUILD_PLAN §1.3 governs the whole build: anatomical
+  information flow reduces work and strengthens recognition together. Every construction packet
+  carries §16.7's work account and §16.6's applicable sharing/lifetime contract; §16.8 governs native
+  execution and cohort checks. EP0–EP4 remain bounded work inside the existing P7/P9/P10 packets;
+  this plan's §11 maps the obligations to workers. No numerical target replaces anatomical meaning.
 
 
 ## 4. Preconditions (after approval, before W1)
@@ -913,20 +917,21 @@ return { part: args.part, pin: { head: PIN.head, manifestSha256: PIN.manifestSha
 
 ## 8. Cost and capacity
 
-- About 90–105 agents over W1–W12 (including W8a/W8b) at Sonnet xhigh, each loading the project CLAUDE.md (about 252 KB of
-  imports, recomputed after FULL_BUILD_PLAN §16: AGENTS, THEORY, HOW_TO_BUILD, the plan and two conversations) plus its packet: the dominant
+- About 90–105 agents over W1–W12 (including W8a/W8b) at Sonnet xhigh, each loading the project CLAUDE.md (about 269 KB of
+  imports, recomputed after FULL_BUILD_PLAN §§1.3 and 16.6–16.8: AGENTS, THEORY, HOW_TO_BUILD, the plan and two conversations) plus its packet: the dominant
   fixed cost per agent.
 - Codex: one consultation per decision batch (P2a; P3 scopes; the P4, P5 and P6 rules; P7 scopes; P12)
   with complete inlined payloads of about 150–300 KB, from the model-only home; `consult-budget` before and
   after each; the broker closed after each.
-- Fable: one reading per rule, about 31 for P4–P6, plus about a dozen scope sheets if §1.2 is approved;
+- Fable: one reading per rule, about 31 for P4–P6, plus about a dozen scope sheets (§1, his second decision, given at 01:01);
   usage recorded per call (API credits, not shown by `consult-budget`).
 - Real-CLI runs: proof/bursa serial at every gate and in parallel by the lead, the public split at every
   gate; the labelled cohort at family-wave ends and P11.
 - The gate's Sonar step adds about three minutes per gate on this machine (the scanner image runs under
   emulation here); each push also runs the whole gate on a GitHub runner, and each push to main the
   kernel benchmarks under CodSpeed (`.github/workflows/codspeed.yml`).
-- The runtime rehearsal (§4): about eight agents at W1's settings, each loading the project instructions.
+- The runtime rehearsal (§4, §7a): fourteen agents at W1's settings in three runs (5, 7, and 1 plus its
+  relaunch), each loading the project instructions.
   The offline mock costs no agent.
 
 ## 9. Risks this plan guards against
@@ -1066,3 +1071,35 @@ GitHub/CodSpeed recorded replays stay data-free; a new synthetic smoke is not a 
 measuring this production operation. This adds no human approval loop, timing/RSS target, tuning
 campaign or permission to abandon useful priors. Live jobs and the next action remain solely in
 the active packet; full-run profiles are immutable dated evidence, not another task queue.
+
+The governing requirement is FULL_BUILD_PLAN §1.3 for the entire sequence, including later P12/P13
+once specified. The user explicitly asked for consolidation within and across studies. Apply it at
+each dependency gate, using §§16.6–16.8 rather than adding a new workflow or deferring it to W9:
+
+- **W1–W2:** preserve competent early context and its readers; EP0 locates duplicate producers,
+  invariant preparation, actual cross-study setup and study-owned state. The lead includes the
+  short work account in subsequent packets. Existing W1/R0 script bodies and their required checks
+  stay as written; the new applicable checks enter new packets when those scripts are prepared.
+- **W3–W7:** every family names the already-known anatomy, actual native question/context, shared
+  producer/readers and retained output before implementing expensive reads (§16.7). Use meaningful
+  irregular regions where warranted; an envelope or a full frame masked afterward is not that work.
+  Equivalent sharing and deliberate anatomical scope changes keep their different review contracts.
+- **W8a–W8b:** apply §16.6 to geometry, source representations, digests and existing-format persistence.
+  Consolidate invariant preparation at process/cohort lifetime while keeping patient-specific
+  observations distinct. Preserve reconstructible evidence while managing live buffers. Return
+  storage-format/placement gaps concretely rather than drop information to meet a memory figure.
+- **W9:** use the structurally reduced operation's profile to select compiled/fused or workspace
+  candidates. Include strict reference twins and language-crossing/copy costs; using Rust/C++/JIT is
+  a means of implementing the bounded operation, not a reason to change its measurements.
+- **W10–W12:** the lead's completion evidence covers cold/warm setup, serial and actual parallel
+  multi-study execution, invariant reuse, study-state isolation, retained information and output
+  costs. Use existing cohort runs and checkpoints; add no per-family profiler campaign or tuning.
+  P12's future representation consumes retained ground-layer values under the same ownership rules;
+  it does not license inventing the unprovided MRI encoding now.
+
+New affected worker prompts, schemas and required-check lists incorporate whole_operation_account
+as §16.7 defines it, reuse_lifetime_isolation when sharing/lifecycle crosses study boundaries, and
+reference_twin plus native_execution_boundary for compiled/native changes. Keep §16.4's other
+applicable checks. The pre-integration worker account links applicable baseline evidence and its own
+CLI work; the lead's later cohort measurement remains a post-integration obligation. The original
+four outcomes, single integrator, source pins and final-gate ordering are unchanged.
