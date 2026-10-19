@@ -1,6 +1,6 @@
 # Build workflows: carrying out FULL_BUILD_PLAN P2b–P12 (the lead's plan for Rohan's review)
 
-Revision 4, 2026-10-19, written by the lead (Claude) at Rohan's request: «plan out workflows that will
+Revision 5, 2026-10-19 (revision 4 is the one he approved), written by the lead (Claude) at Rohan's request: «plan out workflows that will
 complete the specified build of the full project as articulated thus far (Sonnet xhigh effort for the
 agents). Come to me with your full plan when you've designed it, consult codex on the plan». Revision 1
 went to Codex; its reading (`codex-answer.md`) and the lead's adjudication (`lead-adjudication.md`) are in
@@ -23,6 +23,12 @@ the rehersal»); what it showed and what changed after it are in §10. Then, at 
 (quoted in FULL_BUILD_PLAN §16.9; not in this session's record), the Codex session made the competition
 limits explicit: §5's W8b and W10 rows, §6's efficiency bullet, the end of §11, and FULL_BUILD_PLAN §16.9.
 Its reports reached the lead relayed with no words of his own; the lead integrated the edits unchanged.
+Revision 5, written after W1 returned, installs the operating approach the Codex session gave him and he
+accepted, «Work with the lead to do this please» (his words as the Codex session relays them, not in this
+session's record): anatomy is the unit of progress; settled wiring is delegated with the lead's validated facts
+instead of a fresh fact agent; independent pieces are built together; one independent verification phase and one
+full gate per batch, dependency checks kept; a verifier sorts what it finds by owner; returns are short and
+evidence-addressed. §3, §5 and §7 carry it; §10 records what W1 showed and what changed.
 
 This is an execution design for `docs/FULL_BUILD_PLAN.md`, not another master plan. The order is the
 plan's §4: P2b → P2a → P3 → P4 → P5 → P6, with P7 and P9 items folded in as each family is touched and
@@ -65,6 +71,10 @@ Settled by your recorded words, stated so you can correct them:
 
 - Choosing every rule and scope: the ~31 P4–P6 native rules (drafted from the native pictures with plan
   §1.2's three statements), P2a's region rule, P3's corridor and cavity scopes, each P7 consumer's scope.
+- The facts for settled wiring (revision 5): the lead reads the whole units and writes each fact with its
+  evidence path, tied to the pin and to the hashes of the files it rests on, into the packet the candidate's
+  prompt inlines (§3); a fact agent is launched only for facts the lead has not validated, or for evidence to
+  be produced (pictures, sheets).
 - The plan §7 consultations: Codex (model-only; every prompt carries the complete rule, the governing
   theory, correction and contract units and the evidence as text; a reply that could not read its inputs
   is no review) and Fable (each rule's actual picture sheet). Disagreements go to Rohan.
@@ -78,7 +88,7 @@ Settled by your recorded words, stated so you can correct them:
   pushes, and the GitHub gate run on each pushed commit.
 - The job table (§3), each script's offline mock and the runtime rehearsal (§4).
 - Running the sequence. Launching a workflow runs only that workflow's agents (W1 launches seven); the
-  lead carries the sequence from W1 to W12 itself, gate by gate: integrate, inspect, checkpoint and push,
+  lead carries the sequence from W1 to W12 itself, batch by batch (§5): integrate, inspect, checkpoint and push,
   prepare the next packets, launch the next workflow. After a compaction it grounds again
   (FULL_BUILD_PLAN §0) and continues from the active packet. On this machine a compaction locks the session
   that compacted, the lead's included. The post-compact hook's own message when it refused this session's
@@ -104,7 +114,8 @@ Settled by your recorded words, stated so you can correct them:
 ## 3. Rules every workflow follows
 
 - **Agents:** every `agent()` call passes `model: 'sonnet', effort: 'xhigh'` (Rohan's setting), verifiers
-  included. Each workflow stays under ten agents; workflows run in sequence with a lead gate between them.
+  included. Each workflow stays under ten agents; workflows run in the batches of §5, each batch ending at one
+  lead gate.
 - **Context:** each agent stays under a million tokens, so it never compacts and is never locked by the
   post-compact hook. Rohan, 2026-10-19: «Note the post-compact hook means that each sub-agent in the
   workflow should stay under a million tokens, which should be entirely doable». Packets are sized for
@@ -117,6 +128,13 @@ Settled by your recorded words, stated so you can correct them:
   reviewed, and verification. No agent chooses a rule, a threshold, a sample meaning or a scope, and none
   accepts. A wiring packet that finds it would have to choose one stops and returns it named (guide §5,
   STOP).
+- **Facts for settled wiring (revision 5):** where the lead has read the whole units and validated the facts a
+  wiring candidate needs, it gives them in the script's args (`leadFacts`) instead of launching a fact agent
+  to re-derive them. They are tied to the frozen basis as a worker's return is: the pin's HEAD, packet revision
+  and manifest digest, the SHA-256 of every file they rest on, and each fact's evidence path naming one of those
+  files. The script checks them before anything launches on them: a mismatch is STALE_INPUT, missing provenance
+  INCOMPLETE (§7's `leadFactsChecked`). A fact agent stays the route for facts the lead has not validated and for
+  evidence to be produced.
 - **Packets:** every prompt is built from the guide's §5 template (TASK, ROLE, AUTHORITY, INTENT,
   CONTRACTS, MEANINGS, OPERATION, CONSUMER, SCOPE, PRESERVE, FORBIDDEN SUBSTITUTIONS, SOURCE BASIS,
   DEPENDENCIES, VERIFICATION, RETURN, STOP). A packet that changes how an identity, slice, spatial region,
@@ -132,10 +150,18 @@ Settled by your recorded words, stated so you can correct them:
   `B/workflows-20261018/<workflow>/<packet>/attempt-<id>/` (B = the plan's readings root), which must not
   exist beforehand; code edits only in the agent's own worktree (implementation and verification roles).
   Never the main tree, canonical outputs or another agent's files; no commit, push, reset or clean.
-- **Source basis:** before each workflow the main tree is clean: no modified tracked file and no untracked
-  file outside the ignored paths (worktrees are cut from HEAD and agents in the main tree read the main
-  tree, so a dirty file anywhere, code or document, would mean an agent reads something that is not
-  HEAD's). The lead writes the baseline manifest: the SHA-256, by path, of every file the workflow's agents
+- **Source basis:** before each build workflow the main tree is clean: no modified tracked file and no
+  untracked file outside the ignored paths (worktrees are cut from HEAD and agents in the main tree read the
+  main tree, so a dirty file anywhere, code or document, would mean an agent reads something that is not
+  HEAD's). A batch's verification workflow (§5) is the one exception, and its basis is the batch's frozen
+  integration: the immutable base (the HEAD and baseline manifest the batch was built on), the combined diff
+  (the integrated, uncommitted change as `git diff`, new files marked intent-to-add, with its SHA-256) and the
+  complete after-integration manifest (every file the diff changes, adds or deletes, as it is after
+  integration, a deleted file as `deleted`). Each verifier starts in its own worktree cut from the base,
+  applies the exact combined diff, proves its own imports, and checks every changed file against the
+  after-integration manifest and every unchanged input against the base: the candidate route below, applied to
+  the whole batch. While it runs, the integrated tree is frozen (the lead edits no file in it) and no agent
+  works in or reads the main checkout, so nothing reads an unpinned change. The lead writes the baseline manifest: the SHA-256, by path, of every file the workflow's agents
   may read, namely every tracked file at HEAD (code, governing documents and the CLAUDE.md imports alike)
   except the active packet and the archives (`archive/` and `archive2/`, 647 tracked files: invisible, so
   no agent may read them, and a read of one is outside the frozen basis and stops its chain); every
@@ -179,8 +205,9 @@ Settled by your recorded words, stated so you can correct them:
   the candidate's.
 - **Returns and outcomes:** schema-checked JSON carrying head, packet revision, a completion state
   (`complete`, `partial`, `blocked`, `stale_input`) and the SHA-256 of every file read or changed, with
-  facts and their evidence paths, inferences labelled, and not_done. A schema checks shape, not
-  sufficiency, and the lead reads every return. The script itself checks every returned hash: a file the
+  facts and their evidence paths, inferences labelled, and not_done. Entries are short, each one sentence with
+  its evidence path; long logs, notes and tables stay in the agent's attempt directory, where the lead reads
+  them when needed (revision 5). A schema checks shape, not sufficiency, and the lead reads every return. The script itself checks every returned hash: a file the
   candidate changed must equal the candidate's own hash; any other file must equal the baseline; a path in
   neither is outside the frozen basis. Each chain ends in exactly one named outcome, decided in this order
   (a chain that threw is INCOMPLETE). For every return:
@@ -197,11 +224,24 @@ Settled by your recorded words, stated so you can correct them:
      INCOMPLETE; otherwise the next agent launches.
 
   For a verifier return:
-  5. a file after applying unlike the candidate manifest, a violation, a missing item or an unsupported
-     check → VERIFICATION_FAILED (fix or reissue the candidate);
+  5. a file after applying unlike the candidate manifest, a violation, a defect or an unsupported check
+     → VERIFICATION_FAILED (fix or reissue the candidate);
   6. a required check, by its name, not reported supported (absent, or only not_checkable), no run of
-     its own where one is required, or a changed file it did not hash after applying → INCOMPLETE;
+     its own where one is required, a changed file it did not hash after applying, or a carried obligation
+     without its owner → INCOMPLETE;
   7. otherwise READY_FOR_LEAD_REVIEW.
+
+  A verifier sorts what it finds by owner (revision 5; W1's verifier put all of it in one `missing` list,
+  and its chain failed on items that were not the candidate's): `violations` and `defects` (what the
+  candidate's own task requires and it lacks or gets wrong) block; `inherited` (behaviour left as the baseline
+  had it, with the baseline's evidence), `later_work` (an obligation the plan gives a later packet, owned by
+  that packet) and `lead_duties` (acceptance work the plan gives the lead: frames, the recording, the
+  acceptance record, parallel runs, the gate, owned by the lead's checkpoint) are carried in the chain's
+  outcome to the lead's gate and decide nothing themselves. Inherited is no waiver: an inherited behaviour
+  that breaks a required check or the contract now, or that the change's new wiring activates or makes
+  consequential, is a defect and blocks; a required check is reported in `checked`, never moved into
+  `later_work` or `lead_duties`; an item the verifier cannot place is a defect. The lead re-reads every
+  carried item at the gate, since a verifier's sorting is a claim.
 
   The run's outcome is the first, in the order STALE_INPUT, VERIFICATION_FAILED, INCOMPLETE,
   READY_FOR_LEAD_REVIEW, that any chain has. Each verifier's required checks have stable names, the same
@@ -228,9 +268,16 @@ Settled by your recorded words, stated so you can correct them:
   revision) and relaunch with a fresh attempt id. Every prompt carries HEAD, the manifest's digest and the
   packet revision, and a dependent prompt inlines its inputs, so a changed source, contract or upstream
   result changes the prompt: a resume cannot serve a stale cached result.
-- **Single writer:** the lead integrates one candidate at a time; a later candidate is rebased onto the
-  integrated tree and re-verified before it is integrated.
-- **Acceptance (plan §9, §15.3):** the lead integrates, runs the real CLI into new output roots,
+- **Single writer:** the lead integrates one candidate at a time, with the per-increment checks (Acceptance,
+  below); a later candidate is rebased onto the integrated tree and those checks rerun on it. Independent
+  verification is the batch's one shared phase once the whole batch is integrated (Source basis; §5), not a
+  prerequisite of each candidate.
+- **Acceptance (plan §9, §15.3), per increment and per batch (revision 5):** at integration each increment
+  gets the cheap checks: its diff read whole against its contract, ruff, ty, its focused tests and the full
+  suite, the real CLI on the proof and bursa studies, every changed native frame inspected, receipts compared.
+  The batch then gets one independent verification workflow on its integrated, uncommitted diff (one verifier
+  per increment contract, in parallel, each applying that diff in its own worktree, checked by §7's `verified`)
+  and one gate, as follows. The lead integrates, runs the real CLI into new output roots,
   reconstructs every new native support from its address and inspects the actual DICOM frame, and
   compares receipts (equivalent refactors must match; intended scope or semantic changes get a full
   changed-output account). Then everything the checkpoint commits is written before the final gate: the
@@ -261,7 +308,8 @@ Settled by your recorded words, stated so you can correct them:
    required inputs (the script refuses to start otherwise), and record its path, SHA-256 and HEAD in the
    active packet; open the job table.
 5. The offline mock of the workflow's script: the mock takes the script's code block from this document
-   itself and runs it with every agent's return mocked, case by case (`w1_mock.mjs`, §10). It checks the
+   itself and runs it with every agent's return mocked, case by case (`w1_mock.mjs`; revision 5's core,
+   `core_mock_r5.mjs`, §10). It checks the
    control flow only: which agents launch, and which outcome each chain and the run end in. Every later
    workflow's script gets its own mock before its launch.
 6. The runtime rehearsal R0: a short workflow at W1's settings (Sonnet, xhigh), through the actual workflow
@@ -295,6 +343,35 @@ Settled by your recorded words, stated so you can correct them:
    the lock decision.
 
 ## 5. The sequence
+
+**Batches (revision 5).** Rohan, relayed at about 05:13 on 2026-10-19 while W1 ran: «maybe we can have a single
+verification step after a wide-build path, rather than verification gates after EVERY workflow?»; the operating
+approach he accepted after W1 returned says the same. The workflows below therefore run in batches. A batch is:
+(1) a build step, its candidates and evidence packets launched together, each candidate in its own worktree and
+returned without a verifier of its own; (2) the lead's integration of each candidate, with the per-increment
+checks of §3 (Acceptance); (3) one verification workflow on the integrated, uncommitted batch, one verifier per
+increment contract, in parallel; (4) one gate: CLI epochs (proof/bursa serial and parallel, public, the cohort
+where a family wave ends), frames, receipts, the recording, the records, the final gate, commit, push, the
+GitHub run. A failed increment is backed out of the uncommitted tree or fixed; the others go on. The boundaries
+stay: a change to bone or map context, source eligibility, a shared reader or interface, or storage semantics is
+integrated and its native frames inspected before anything is built or verified on it. The semantic and picture
+reviews (Codex, Fable), the lead's image acceptance, his pictures at each family wave, source pins and named
+outcomes are unchanged. The batches, in order:
+- **B0 = G1:** P2b increment 2 (W1's candidate, its wiring kept), integrated with the consumer-side identity
+  repair its inspection calls for, once reviewed (it moves the axial anchors and can move the map's scale), while
+  P2a's consumer and region rule go through Codex and Fable.
+- **B1:** P2a's implementation; W2's evidence refresh and owed-item inventory on top of it where its consumer
+  feeds every later reader.
+- **B2:** W3 (P3), the patella and joint first, the recess on the integrated change.
+- **B3:** W4 (P4), source eligibility before the ACL, tibial axial cartilage and the lineage beside them; P4
+  pictures.
+- **B4:** W5a then W5b (P5), shared readers first where two rules name one; P5 pictures.
+- **B5:** W6a and W6b (P6), split only where one object's rule reads another P6 object's new native view; P6
+  pictures.
+- **B6:** W7 with W8a (P7, P8, P9 closure); the cohort.
+- Then W8b (storage, its own boundary), W9, W10, W11 and W12, in order.
+
+A row's last column lists that row's share of its batch's gate.
 
 | Workflow | Plan task | Contracts (in → out) | Agents (all Sonnet, xhigh) | Ends at the lead gate |
 |---|---|---|---|---|
@@ -364,12 +441,20 @@ packet contracts are there rather than copied into a second queue.
   ordinary RSS, live allocations, allocation traffic and compression distinct (FULL_BUILD_PLAN §16).
 
 
-## 7. W1, drafted in full (for review; not run)
+## 7. The script core (revision 5), on W1's chains
+
+W1 ran as `B/workflow-setup-20261019/w1-pin-36c1c15/w1-script.js` (SHA-256 `20ca35ec…`), which keeps it byte for
+byte, as revision 13's commit (`36c1c15`) keeps this section as it then stood. The block below is W1's script with
+revision 5's changes (§3, §10): the lead's validated facts may stand in for a fact agent (`leadFacts`), a
+verifier sorts what it finds by owner (`defects`, `inherited`, `later_work`, `lead_duties`), and returns are
+short entries with evidence paths. It is mocked and never launched. Every batch script from B1 on copies its
+shared part (constants, checks, schemas, prompt rules) verbatim, adds its own chains, and gets its own mock
+before launch (§4, step 5).
 
 ```js
 export const meta = {
-  name: 'rsna-w1-p2b-inc2-and-p2a-facts',
-  description: 'P2b increment 2 wiring candidate with an independent check, and P2a fact packets; no production edits',
+  name: 'rsna-core-r5-on-w1-chains',
+  description: 'The revision-5 script core (lead facts for settled wiring; verifier items by owner) on W1 chains: mocked, never launched',
   phases: [
     { title: 'Facts', detail: 'P2b consumer trace; P2a consumer trace and cheap-data picture packet' },
     { title: 'Candidate', detail: 'P2b increment 2 in an isolated worktree' },
@@ -428,7 +513,8 @@ const inputsOf = (stage) => 'REQUIRED INPUTS: ' + REQUIRED[stage].join(', ') +
 // chain has (§3). Their remedies differ: re-pin and reissue; fix or reissue the candidate; diagnose and
 // reissue. READY_FOR_LEAD_REVIEW is not acceptance: only the lead's gate accepts.
 const OUTCOMES = ['STALE_INPUT', 'VERIFICATION_FAILED', 'INCOMPLETE', 'READY_FOR_LEAD_REVIEW']
-const ended = (status, stage, reasons) => ({ status, stage, reasons })
+// A verifier's outcome also carries the items it sorted to other owners, for the lead's gate (§3, revision 5).
+const ended = (status, stage, reasons, carried) => (carried ? { status, stage, reasons, carried } : { status, stage, reasons })
 
 // §3, steps 1-3, for every return: present; HEAD, packet revision and every hash as pinned (a file the
 // candidate changed is the verifier's to compare with the candidate's own hash; any other must equal the
@@ -460,6 +546,38 @@ function factsChecked(stage, r) {
   return screened(stage, r, null) || (r.facts.length === 0 ? ended('INCOMPLETE', stage, ['no facts returned']) : null)
 }
 
+// Facts for settled wiring (§3, revision 5): the lead's validated facts, given in args.leadFacts[chain], stand in
+// for a fact agent, tied to the frozen basis as a worker's return is. They carry the pin's HEAD, packet revision
+// and manifest digest, the SHA-256 of every file they rest on (source_hashes), and at least one fact, each with
+// its statement and an evidence path ("<file>" or "<file>:<unit>") naming one of those files. A HEAD, revision,
+// manifest or hash unlike the pin, or a file outside the frozen basis, is STALE_INPUT; no fact, no hashes, or a
+// fact whose evidence names no hashed file is INCOMPLETE; both before any agent depends on them. The outcome, or
+// null when they pass.
+function leadFactsChecked(stage, f) {
+  const stale = []
+  if (f.head !== PIN.head) stale.push('lead facts head ' + f.head + ' is not the pinned ' + PIN.head)
+  if (String(f.packet_revision) !== REVISION) stale.push('lead facts packet revision ' + f.packet_revision + ' is not ' + REVISION)
+  if (f.manifest_sha256 !== PIN.manifestSha256) stale.push('lead facts manifest ' + f.manifest_sha256 + ' is not the pinned ' + PIN.manifestSha256)
+  const hashed = {}
+  for (const entry of Array.isArray(f.source_hashes) ? f.source_hashes : []) {
+    hashed[entry.path] = entry.sha256
+    if (!has(PIN.entries, entry.path)) stale.push(entry.path + ' is outside the frozen basis')
+    else if (PIN.entries[entry.path] !== entry.sha256) stale.push(entry.path + ' differs from the baseline')
+  }
+  if (stale.length) return ended('STALE_INPUT', stage, stale)
+  const facts = Array.isArray(f.facts) ? f.facts : []
+  const reasons = []
+  if (facts.length === 0) reasons.push('the lead facts hold no fact')
+  if (Object.keys(hashed).length === 0) reasons.push('the lead facts carry no source hashes')
+  for (const x of facts) {
+    const statement = String((x && x.statement) || '').trim()
+    const evidence = String((x && x.evidence) || '').trim()
+    if (!statement || !evidence) reasons.push('a lead fact lacks its statement or evidence')
+    else if (!has(hashed, evidence.split(':')[0])) reasons.push('the evidence ' + evidence + ' names no file the lead facts hashed')
+  }
+  return reasons.length ? ended('INCOMPLETE', stage, reasons) : null
+}
+
 // §3, step 4, for the candidate: its manifest names exactly the files it changed, each really changed, and
 // its return carries what the verifier and the lead need.
 function candidateChecked(stage, c) {
@@ -484,20 +602,27 @@ function candidateChecked(stage, c) {
 
 // §3, steps 5-7, for a verifier: what it found failing, then whether each required check, by its name, is
 // reported supported, then ready. A not_checkable item neither fails nor counts as supported; an extra check
-// (named "other") satisfies no required one, though an unsupported one still fails.
+// (named "other") satisfies no required one, though an unsupported one still fails. Revision 5: only what
+// blocks fails (a file unlike the candidate's, a violation, a defect, an unsupported check); the items sorted to
+// other owners (inherited, later_work, lead_duties) are carried to the lead's gate and decide no outcome.
 function verified(stage, v, changed, need) {
   const early = screened(stage, v, changed)
   if (early) return early
+  const carried = { inherited: v.inherited, later_work: v.later_work, lead_duties: v.lead_duties }
   const failed = []
   if (changed) {
     for (const entry of v.source_hashes) {
       if (has(changed, entry.path) && changed[entry.path] !== entry.sha256) failed.push(entry.path + ' after applying is not the candidate\'s file')
     }
   }
-  failed.push(...v.violations, ...v.missing.map((item) => 'missing: ' + item))
+  failed.push(...v.violations, ...v.defects.map((d) => 'defect: ' + d.item))
   failed.push(...v.checked.filter((item) => item.verdict === 'unsupported').map((item) => 'unsupported: ' + item.check + ': ' + item.item))
-  if (failed.length) return ended('VERIFICATION_FAILED', stage, failed)
+  if (failed.length) return ended('VERIFICATION_FAILED', stage, failed, carried)
   const short = []
+  // A carried obligation goes to a named owner (the plan's packet or the lead's checkpoint), or it is not carried.
+  for (const x of [...v.later_work, ...v.lead_duties]) {
+    if (!String((x && x.owner) || '').trim()) short.push('carried item without its owner: ' + (x && x.item))
+  }
   for (const name of need.checks) {
     if (!v.checked.some((item) => item.check === name && item.verdict === 'supported')) short.push('required check ' + name + ' is not reported supported')
   }
@@ -507,11 +632,12 @@ function verified(stage, v, changed, need) {
       if (!v.source_hashes.some((entry) => entry.path === path)) short.push(path + ' was not hashed after applying')
     }
   }
-  return short.length ? ended('INCOMPLETE', stage, short) : ended('READY_FOR_LEAD_REVIEW', stage, [])
+  return short.length ? ended('INCOMPLETE', stage, short, carried) : ended('READY_FOR_LEAD_REVIEW', stage, [], carried)
 }
 
 const COMMON = [
   'You are a worker for the lead (Claude, the main session) of RSNA_Knee at ' + ROOT + ': a classical-AI knee-MRI recognition build, deliberately with no machine learning.',
+  'RETURNS ARE SHORT: each entry one short sentence with its evidence path; long logs, notes and tables go in your attempt directory, not in the return.',
   "Rohan's words and docs/THEORY_OF_THE_CASE.md govern. docs/FULL_BUILD_PLAN.md is the work order and holds the contracts (§§14–15); docs/GROUNDING_AND_WORKER_GUIDE.md governs your role. You return facts or a candidate. You do not decide what Rohan means, choose an anatomical rule, a threshold, a sample meaning or a scope, or accept anything. If finishing would need such a choice, stop and return it named in not_done.",
   "FULL_BUILD_PLAN §0's session-start grounding and the active packet (docs/work/current/README.md) are the lead's: do not perform that grounding and never read the packet. Read whole the units this prompt names and any unit you need to understand them.",
   'SOURCE BASIS: HEAD ' + PIN.head + '; packet revision ' + REVISION + '; manifest ' + PIN.manifest + ' (SHA-256 ' + PIN.manifestSha256 + '): the SHA-256 of every input file you may read, a tracked file by its path relative to the repository root (' + ROOT + ', or your worktree\'s root, which holds the same files), a file under data/ by its path relative to ' + ROOT + ', a file outside the repository by its absolute path. Files written during this workflow are not inputs and are not in the manifest: your own, and those named by any agent\'s return inlined in this prompt (its attempt directory, notes, diff, receipts, worktree and new files). Your first step, before any other read and any edit: check that HEAD is ' + PIN.head + ' (the full 40 characters of git rev-parse HEAD), then hash with shasum -a 256, and compare with the manifest, every file under REQUIRED INPUTS at the end of this prompt: the instruction files among them reach you in your instructions rather than through Read, and the rest are the files this prompt names, the modules holding the units it names included. Hash each further input file before you read it; the study images, which the runner reads, are not hashed. On any mismatch, or an input file the manifest does not list, stop and return completion "stale_input" naming each one.',
@@ -552,12 +678,16 @@ const CANDIDATE = { type: 'object', properties: {
   runs: STRINGS, comparisons: STRINGS, changed_frames: STRINGS, uncertainty: STRINGS,
 }, required: [...BASIS_KEYS, 'worktree', 'diff_path', 'diff_sha256', 'candidate_hashes', 'files_changed', 'consumer_calls', 'tests', 'import_proof', 'runs', 'comparisons', 'changed_frames', 'uncertainty'] }
 
-// A verifier's schema names its required checks; any further check is "other".
+// A verifier's schema names its required checks; any further check is "other". Revision 5: what it finds is
+// sorted by owner, each item with its evidence (§3).
+const ITEMS = { type: 'array', items: { type: 'object', properties: { item: { type: 'string', minLength: 1 }, evidence: { type: 'string', minLength: 1 } }, required: ['item', 'evidence'] } }
+const ASSIGNED = { type: 'array', items: { type: 'object', properties: { item: { type: 'string', minLength: 1 }, evidence: { type: 'string', minLength: 1 }, owner: { type: 'string', minLength: 1 } }, required: ['item', 'evidence', 'owner'] } }
 const verdictsFor = (checks) => ({ type: 'object', properties: {
   ...BASIS,
   checked: { type: 'array', items: { type: 'object', properties: { check: { type: 'string', enum: [...checks.map(([name]) => name), 'other'] }, item: { type: 'string', minLength: 1 }, verdict: { type: 'string', enum: ['supported', 'unsupported', 'not_checkable'] }, evidence: { type: 'string', minLength: 1 } }, required: ['check', 'item', 'verdict', 'evidence'] } },
-  own_runs: STRINGS, violations: STRINGS, missing: STRINGS,
-}, required: [...BASIS_KEYS, 'checked', 'own_runs', 'violations', 'missing'] })
+  own_runs: STRINGS, violations: STRINGS, defects: ITEMS, inherited: ITEMS, later_work: ASSIGNED, lead_duties: ASSIGNED,
+}, required: [...BASIS_KEYS, 'checked', 'own_runs', 'violations', 'defects', 'inherited', 'later_work', 'lead_duties'] })
+const OWNED = 'Sort what you find by its owner, one short entry each with its evidence path: violations, what breaks the packet\'s FORBIDDEN SUBSTITUTIONS or contract (blocks); defects, what this candidate\'s own task requires and it lacks or gets wrong (blocks); inherited, behaviour the candidate leaves as the baseline had it, with the baseline\'s file and unit or record as evidence (carried to the lead; does not block); later_work, an obligation the plan gives a later packet, with the plan\'s place and that packet as owner (carried); lead_duties, acceptance work the plan gives the lead, such as frames to inspect, the benchmark recording, the acceptance record, parallel runs or the gate, with the lead\'s checkpoint as owner (carried). Inherited is no waiver: an inherited behaviour that breaks one of this packet\'s required checks or its contract now, or that this change\'s new wiring activates or makes consequential, is a defect and blocks; a required check is reported in checked, never moved into later_work or lead_duties. An item you cannot place goes in defects.'
 
 // Each verifier's required checks, by stable name, with what each must establish (§3, step 6).
 const P2B_CHECKS = [
@@ -598,15 +728,24 @@ const P2B_PACKET = [
 ].join(' ')
 
 async function p2bChain() {
-  const trace = await agent(COMMON + ' ' + P2B_PACKET + ' ROLE: facts. You work in the main tree and change no code. Attempt directory: ' + dirOf('p2b-trace') + '. Read whole axial_bone_planes, fibula_key_planes, build_study_map, refine_leg, leg_on, native_femur_coarse_context, measure_study and every caller of the first three; report the call order, which leg each receives now, every cache key that would see the leg, and every reader that must keep the early leg. ' + inputsOf('p2b-trace'), { ...SONNET, label: 'p2b-trace', phase: 'Facts', schema: FACTS })
-  const t = factsChecked('p2b-trace', trace)
-  if (t) return { ...t, trace, candidate: null, verdict: null }
-  const candidate = await agent(COMMON + ' ' + WORKTREE + ' ' + P2B_PACKET + ' ROLE: implement the settled wiring. Attempt directory: ' + dirOf('p2b-candidate') + '. The trace: ' + JSON.stringify(trace) + ' Make the change in your worktree; add focused tests (context identity reaches both consumers; early-leg readers unchanged; a changed context misses, an identical context reuses); after the import check run them and the full test suite; run the real CLI on the proof (' + PROOF + ') and bursa (' + BURSA + ') studies into your attempt directory, and compare each receipt with the accepted repair epoch\'s (' + ACCEPTED + '/interiors/receipt.json and ' + ACCEPTED + '/main/receipt.json) using scripts/compare_receipts.py. Report in source_hashes the files you read as they were before any edit. Mark new files intent-to-add (git add -N <file>; nothing is committed), write git diff to candidate.diff in your attempt directory and record its SHA-256; after your last edit, hash every file you changed, added or deleted into candidate_hashes (a deleted file as "deleted": the candidate manifest) and list exactly those paths in files_changed. Name the two consumer calls; list every changed record and the axial frames (series, slice) whose anchors moved. ' + inputsOf('p2b-candidate'), { ...SONNET, label: 'p2b-candidate', phase: 'Candidate', schema: CANDIDATE, isolation: 'worktree' })
+  // Settled wiring (§3, revision 5): the lead's validated facts, when args.leadFacts.p2b gives them, stand in for
+  // the trace agent; otherwise the trace agent gathers them, as W1's did.
+  const lead = args.leadFacts && args.leadFacts.p2b
+  let trace = lead
+  if (lead) {
+    const l = leadFactsChecked('p2b-lead-facts', lead)
+    if (l) return { ...l, trace: lead, candidate: null, verdict: null }
+  } else {
+    trace = await agent(COMMON + ' ' + P2B_PACKET + ' ROLE: facts. You work in the main tree and change no code. Attempt directory: ' + dirOf('p2b-trace') + '. Read whole axial_bone_planes, fibula_key_planes, build_study_map, refine_leg, leg_on, native_femur_coarse_context, measure_study and every caller of the first three; report the call order, which leg each receives now, every cache key that would see the leg, and every reader that must keep the early leg. ' + inputsOf('p2b-trace'), { ...SONNET, label: 'p2b-trace', phase: 'Facts', schema: FACTS })
+    const t = factsChecked('p2b-trace', trace)
+    if (t) return { ...t, trace, candidate: null, verdict: null }
+  }
+  const candidate = await agent(COMMON + ' ' + WORKTREE + ' ' + P2B_PACKET + ' ROLE: implement the settled wiring. Attempt directory: ' + dirOf('p2b-candidate') + '. The facts (the lead\'s validated facts, or the trace\'s return): ' + JSON.stringify(trace) + ' Make the change in your worktree; add focused tests (context identity reaches both consumers; early-leg readers unchanged; a changed context misses, an identical context reuses); after the import check run them and the full test suite; run the real CLI on the proof (' + PROOF + ') and bursa (' + BURSA + ') studies into your attempt directory, and compare each receipt with the accepted repair epoch\'s (' + ACCEPTED + '/interiors/receipt.json and ' + ACCEPTED + '/main/receipt.json) using scripts/compare_receipts.py. Report in source_hashes the files you read as they were before any edit. Mark new files intent-to-add (git add -N <file>; nothing is committed), write git diff to candidate.diff in your attempt directory and record its SHA-256; after your last edit, hash every file you changed, added or deleted into candidate_hashes (a deleted file as "deleted": the candidate manifest) and list exactly those paths in files_changed. Name the two consumer calls; list every changed record and the axial frames (series, slice) whose anchors moved. ' + inputsOf('p2b-candidate'), { ...SONNET, label: 'p2b-candidate', phase: 'Candidate', schema: CANDIDATE, isolation: 'worktree' })
   const c = candidateChecked('p2b-candidate', candidate)
   if (c) return { ...c, trace, candidate, verdict: null }
   const changed = {}
   for (const entry of candidate.candidate_hashes) changed[entry.path] = entry.sha256
-  const verdict = await agent(COMMON + ' ' + WORKTREE + ' ' + P2B_PACKET + ' ROLE: independent verifier. Attempt directory: ' + dirOf('p2b-verify') + '. The candidate claims: ' + JSON.stringify(candidate) + ' In your own fresh worktree, make the SOURCE BASIS checks first, before applying anything. Then check that ' + candidate.diff_path + ' has SHA-256 ' + candidate.diff_sha256 + ', apply it with git apply, confirm every changed and new file is present and every deleted one absent, and hash each: report those in source_hashes as they are after applying (a deleted file as "deleted"); they must equal the candidate manifest above. Every other file you read must still equal the baseline; report it as you read it. Read every changed unit whole and check it against §14.4 and the forbidden substitutions; after the import check run its tests and the full test suite; re-check every caller and sibling route of the changed functions; then make your own real-CLI runs on the proof and bursa studies into your attempt directory and compare your receipts with the accepted repair epoch\'s and with the candidate\'s (scripts/compare_receipts.py). Put each check in checked (supported, unsupported or not_checkable, with its evidence), anything that must block in violations, and anything the candidate lacks in missing. List the frames the lead must inspect. Give no anatomical verdict. ' + checksOf(P2B_CHECKS) + ' ' + inputsOf('p2b-verify'), { ...SONNET, label: 'p2b-verify', phase: 'Verify', schema: verdictsFor(P2B_CHECKS), isolation: 'worktree' })
+  const verdict = await agent(COMMON + ' ' + WORKTREE + ' ' + P2B_PACKET + ' ROLE: independent verifier. Attempt directory: ' + dirOf('p2b-verify') + '. The candidate claims: ' + JSON.stringify(candidate) + ' In your own fresh worktree, make the SOURCE BASIS checks first, before applying anything. Then check that ' + candidate.diff_path + ' has SHA-256 ' + candidate.diff_sha256 + ', apply it with git apply, confirm every changed and new file is present and every deleted one absent, and hash each: report those in source_hashes as they are after applying (a deleted file as "deleted"); they must equal the candidate manifest above. Every other file you read must still equal the baseline; report it as you read it. Read every changed unit whole and check it against §14.4 and the forbidden substitutions; after the import check run its tests and the full test suite; re-check every caller and sibling route of the changed functions; then make your own real-CLI runs on the proof and bursa studies into your attempt directory and compare your receipts with the accepted repair epoch\'s and with the candidate\'s (scripts/compare_receipts.py). Put each check in checked (supported, unsupported or not_checkable, with its evidence). ' + OWNED + ' List the frames the lead must inspect under lead_duties. Give no anatomical verdict. ' + checksOf(P2B_CHECKS) + ' ' + inputsOf('p2b-verify'), { ...SONNET, label: 'p2b-verify', phase: 'Verify', schema: verdictsFor(P2B_CHECKS), isolation: 'worktree' })
   return { ...verified('p2b-verify', verdict, changed, { checks: namesOf(P2B_CHECKS), ownRuns: true }), trace, candidate, verdict }
 }
 
@@ -620,7 +759,7 @@ async function p2aConsumers() {
   const facts = await agent(COMMON + ' ' + P2A_FRAME + ' ROLE: facts. You work in the main tree and change no code. Attempt directory: ' + dirOf('p2a-consumers') + '. For each expensive per-slice operation that runs on the middle slices or native frames before any anatomical scope exists (start from lens_of/interior_regions, dark_bands in src/knee/objects/assignments.py, the reader whose callers are assign_plane, twin_reading and joint_plane (src/knee/objects/interiors.py has another function of that name), thick_parts and muscle opening, local_lightness, whole-frame enclosed_darkness, block_medians), read whole the operation and every caller, and report: what it reads, when it runs in measure_study, what scope it receives now, which values are already computed before it (finite and margin maps, background split, squint tiles and their bounds, availability), and what decision consumes its output. ' + inputsOf('p2a-consumers'), { ...SONNET, label: 'p2a-consumers', phase: 'Facts', schema: FACTS })
   const f = factsChecked('p2a-consumers', facts)
   if (f) return { ...f, facts, verdict: null }
-  const verdict = await agent(COMMON + ' ' + P2A_FRAME + ' ROLE: independent verifier. You work in the main tree and change no code. Attempt directory: ' + dirOf('p2a-consumers-verify') + '. The packet returned: ' + JSON.stringify(facts) + ' Make each required check below from the whole units and the evidence the packet cites, each as an entry in checked (supported, unsupported or not_checkable, with its evidence); list in violations every statement that breaks the forbidden substitutions or presents inference as measurement, and in missing what the packet lacks. ' + checksOf(P2A_CONSUMER_CHECKS) + ' ' + inputsOf('p2a-consumers-verify'), { ...SONNET, label: 'p2a-consumers-verify', phase: 'Verify', schema: verdictsFor(P2A_CONSUMER_CHECKS) })
+  const verdict = await agent(COMMON + ' ' + P2A_FRAME + ' ROLE: independent verifier. You work in the main tree and change no code. Attempt directory: ' + dirOf('p2a-consumers-verify') + '. The packet returned: ' + JSON.stringify(facts) + ' Make each required check below from the whole units and the evidence the packet cites, each as an entry in checked (supported, unsupported or not_checkable, with its evidence); list in violations every statement that breaks the forbidden substitutions or presents inference as measurement. ' + OWNED + ' ' + checksOf(P2A_CONSUMER_CHECKS) + ' ' + inputsOf('p2a-consumers-verify'), { ...SONNET, label: 'p2a-consumers-verify', phase: 'Verify', schema: verdictsFor(P2A_CONSUMER_CHECKS) })
   return { ...verified('p2a-consumers-verify', verdict, null, { checks: namesOf(P2A_CONSUMER_CHECKS), ownRuns: false }), facts, verdict }
 }
 
@@ -628,7 +767,7 @@ async function p2aPictures() {
   const facts = await agent(COMMON + ' ' + P2A_FRAME + ' ROLE: prepare evidence. You work in the main tree and change no code. Attempt directory: ' + dirOf('p2a-pictures') + '. Write your drawing script as a file in your attempt directory (never inline code). It adds the absolute path ' + ROOT + '/scripts to sys.path, imports run_interiors as run, opens the corpus with run.opened(Path("' + ROOT + '/data/raw")), reads each study with run.read_study(corpus, uid), and takes each series\' slice the run reads first (read selected_slice and the Series class whole before using them). For the proof and bursa studies, draw each such raw acquired frame and, beside it, the cheap readings that exist before the lens exactly as the runner computes them (the finite map, the margin, the background split as a two-level map, and the squint\'s tile bounds with each tile\'s median, minimum, maximum and coverage as numbers), with no derived region. Record every series, slice, DICOM path and frame geometry in a manifest. Report what each picture shows, and not_done for anything you could not draw. ' + inputsOf('p2a-pictures'), { ...SONNET, label: 'p2a-pictures', phase: 'Facts', schema: FACTS })
   const f = factsChecked('p2a-pictures', facts)
   if (f) return { ...f, facts, verdict: null }
-  const verdict = await agent(COMMON + ' ' + P2A_FRAME + ' ROLE: independent verifier. You work in the main tree and change no code. Attempt directory: ' + dirOf('p2a-pictures-verify') + '. The packet returned: ' + JSON.stringify(facts) + ' Open each picture, check its manifest against the actual frames (geometry, slice, orientation, nothing transposed), re-derive the drawn cheap readings on one proof frame and one bursa frame with your own script file (your runs in own_runs), and list in violations every violation of the forbidden substitutions and in missing what the packet lacks. ' + checksOf(P2A_PICTURE_CHECKS) + ' ' + inputsOf('p2a-pictures-verify'), { ...SONNET, label: 'p2a-pictures-verify', phase: 'Verify', schema: verdictsFor(P2A_PICTURE_CHECKS) })
+  const verdict = await agent(COMMON + ' ' + P2A_FRAME + ' ROLE: independent verifier. You work in the main tree and change no code. Attempt directory: ' + dirOf('p2a-pictures-verify') + '. The packet returned: ' + JSON.stringify(facts) + ' Open each picture, check its manifest against the actual frames (geometry, slice, orientation, nothing transposed), re-derive the drawn cheap readings on one proof frame and one bursa frame with your own script file (your runs in own_runs), and list in violations every violation of the forbidden substitutions. ' + OWNED + ' ' + checksOf(P2A_PICTURE_CHECKS) + ' ' + inputsOf('p2a-pictures-verify'), { ...SONNET, label: 'p2a-pictures-verify', phase: 'Verify', schema: verdictsFor(P2A_PICTURE_CHECKS) })
   return { ...verified('p2a-pictures-verify', verdict, null, { checks: namesOf(P2A_PICTURE_CHECKS), ownRuns: true }), facts, verdict }
 }
 
@@ -640,15 +779,15 @@ CHAINS.forEach((name, i) => {
   chains[name] = r && OUTCOMES.includes(r.status) ? r : ended('INCOMPLETE', name, ['the chain threw or ended without an outcome'])
 })
 const outcome = OUTCOMES.find((status) => CHAINS.some((name) => chains[name].status === status))
-log('W1 ' + outcome + ': ' + CHAINS.map((name) => name + ' ' + chains[name].status + ' at ' + chains[name].stage).join('; '))
+log('core r5 on W1 chains ' + outcome + ': ' + CHAINS.map((name) => name + ' ' + chains[name].status + ' at ' + chains[name].stage).join('; '))
 return { outcome, pin: { head: PIN.head, manifestSha256: PIN.manifestSha256, packetRevision: REVISION, attempt: args.attempt }, chains }
 ```
 
-Seven agents at most. Each chain stops at the first return that fails §3's checks and ends in one named
-outcome; the run ends in one too. The offline mock runs this block, taken from this document, through 34
-cases (§4, §10); it checks the control flow only. The lead reads every return and every picture before
-G1, and records the run and its outcome in the job table; nothing from W1 is integrated or cited as
-accepted until G1's own checks.
+Seven agents at most (six when the lead's facts stand in for the trace). Each chain stops at the first return
+that fails §3's checks and ends in one named outcome; the run ends in one too, and a verifier's outcome carries
+the items it sorted to other owners. The offline mock (`core_mock_r5.mjs`, §10) runs this block, taken from this
+document, through W1's cases and revision 5's; it checks the control flow only. W1 itself ran as pinned, and
+its returns were read whole by the lead at G1 (the active packet).
 
 ## 7a. R0, the runtime rehearsal (§4, step 6), drafted in full
 
@@ -1083,6 +1222,30 @@ its `cancel` part ended unlike the mock. What it showed, and what changed:
 R0's own block (§7a) stays as it ran. W1's block changed only in `WORKTREE`, and its mock was re-run on the
 new block.
 
+Revision 5 follows W1 (run `wf_55d67a89-472`, launched about 04:41Z on 2026-10-19, returned about 06:33Z,
+VERIFICATION_FAILED; 7 agents, 4.36M tokens, 109 minutes; every return read whole by the lead at G1, the
+active packet holding the details) and the operating approach Rohan accepted after it («Work with the lead to
+do this please», relayed). What W1 showed, and what changed:
+
+| W1 showed | Change |
+|---|---|
+| The P2b verifier supported all eight named checks with no violation, yet its chain failed on five `missing` items of four owners: one candidate defect (a docstring's wording), one inherited ledger gap (no `reads('leg', …)`, as at the baseline), two lead duties (the benchmark refresh; the acceptance record and frames) and one later obligation (the readers left on the early leg, P3 and after). The P2a chains failed on wording-level claims | A verifier sorts by owner (§3): violations and defects block; inherited items, later work and lead duties are carried to the lead's gate with their owners. Inherited is no waiver: what breaks a required check or the contract now, or what new wiring activates, is a defect. A required check is never moved into a carried list (the Codex session's review of this revision's diff added these two clarifications and the owner field) |
+| The P2b trace agent spent about 25 minutes re-deriving facts the lead had validated (the call order; which leg each consumer receives) | The lead's validated facts, tied to the pin and to their sources' hashes, stand in for a fact agent for settled wiring (§3; §7's `leadFacts`, checked by `leadFactsChecked`) |
+| From the runtime's own records (`agent_timing.py`): no phase barrier; the fact agents about 25 minutes of wall time each, almost all of it model time (about 150k output tokens at about 100 a second), their tool calls about 22 s | The critical path is the agents' writing: returns are short and evidence-addressed (§3); one verification phase per batch instead of a verifier chain per candidate (§5). Effort stays xhigh: no controlled comparison exists |
+| Each workflow ended at its own full gate | Batches (§5), each with one verification workflow and one gate, the dependency boundaries kept |
+
+The core (§7) is W1's script with these changes; W1 as it ran is its pinned file. Its mock,
+`core_mock_r5.mjs` in `B/workflow-plan-r5-20261019/`, takes §7's block from this document and runs W1's 34 cases
+(the verifier's "missing item" case is now a defect) and 18 of revision 5's: carried items alone do not fail;
+W1's actual P2b mix fails on its one defect alone; an inherited behaviour breaking a required check still fails;
+a required check moved into lead duties, or a carried item without an owner, is INCOMPLETE; an item the
+verifier cannot place blocks; and the lead's facts stand in for the trace, with a wrong HEAD, revision, manifest
+or source hash STALE_INPUT, and no facts, no source hashes, or evidence naming an unhashed file INCOMPLETE. On
+this revision's block all 52 end as mapped (`mock-r5.txt`); on revision 4's block (`20ca35ec…`, W1 as it ran)
+21 do, the new cases failing as they should (`mock-r5-cases-on-r4.txt`). R0's mock on this revision: 10 of 10,
+its block `77c6be5d…` unchanged (`mock-r0-r5.txt`). No anatomical mechanism, contract or rule changed, so no Codex
+consultation was needed; the Codex session reviewed the diff as it was written, at Rohan's request.
+
 
 ## 11. Whole-operation efficiency in the launched sequence
 
@@ -1116,8 +1279,8 @@ this documentation edit, and the in-progress R0 rehearsal remains the next setup
 Before each implementation launch, include the concrete §16 row, its relevant whole M/F contracts,
 its consumer units and the named required checks from §16.4 in the packet, schema and script.
 Missing required evidence ends INCOMPLETE; mismatched source ends STALE_INPUT under §3. Run each
-new script's mock before dispatch as §4 already requires. The existing W1/R0 scripts' checks and outcomes
-are unchanged (W1's `WORKTREE` lines carry R0's findings, §10). Prepare these bounded scripts at their dependency gate rather than freeze W8 code
+new script's mock before dispatch as §4 already requires. W1 ran as pinned and R0's block stays as it ran;
+§7 now holds revision 5's core, which each new script copies (§10). Prepare these bounded scripts at their dependency gate rather than freeze W8 code
 against the pre-W1 tree. Worktrees use the project interpreter, their own imports and output roots.
 
 The lead freezes the matching-source whole-run account, refreshes applicable saved kernel calls,
@@ -1133,9 +1296,8 @@ each dependency gate, using §§16.6–16.8 rather than adding a new workflow or
 
 - **W1–W2:** preserve competent early context and its readers; EP0 locates duplicate producers,
   invariant preparation, actual cross-study setup and study-owned state. The lead includes the
-  short work account in subsequent packets. Existing W1/R0 script bodies and their required checks
-  stay as written, but for W1's `WORKTREE` lines from R0's findings (§10); the new applicable checks enter
-  new packets when those scripts are prepared.
+  short work account in subsequent packets. W1 ran as pinned and R0's block stays as written; the new
+  applicable checks enter new packets when those scripts are prepared on revision 5's core (§7).
 - **W3–W7:** every family names the already-known anatomy, actual native question/context, shared
   producer/readers and retained output before implementing expensive reads (§16.7). Use meaningful
   irregular regions where warranted; an envelope or a full frame masked afterward is not that work.
@@ -1174,4 +1336,5 @@ existing reconstruction checks. Applicable W10 packets require competition_compu
 competition_storage_envelope, offline_production_route and downstream_headroom_account. The lead
 owns final integrated evidence, so no pre-integration worker waits for a future post-integration
 profile. Use the existing named outcomes for failures, unavailable checks and stale inputs; no green
-unit-test/CodSpeed result waives these requirements. These new checks do not alter the current W1/R0 scripts.
+unit-test/CodSpeed result waives these requirements. These checks enter the W8b and W10 scripts when they are
+prepared on §7's core.
