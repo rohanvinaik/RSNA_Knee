@@ -18,7 +18,11 @@ FULL_BUILD_PLAN §16, and sent them at 01:34: «I made some additions, should be
 lead integrated them unchanged but for this sentence, §11's first line and §8's import size, recomputed
 after §16. Its compute-efficiency pass followed (FULL_BUILD_PLAN §1.3 and §§16.6–16.8; this plan's §3
 efficiency bullet and the end of §11), sent at 01:54: «Done, my changes were part of a compute efficiency
-pass»; the lead integrated it unchanged.
+pass»; the lead integrated it unchanged. R0, the runtime rehearsal, ran on his word at 02:04 («Yup, launch
+the rehersal»); what it showed and what changed after it are in §10. Then, at his request in its own chat
+(quoted in FULL_BUILD_PLAN §16.9; not in this session's record), the Codex session made the competition
+limits explicit: §5's W8b and W10 rows, §6's efficiency bullet, the end of §11, and FULL_BUILD_PLAN §16.9.
+Its reports reached the lead relayed with no words of his own; the lead integrated the edits unchanged.
 
 This is an execution design for `docs/FULL_BUILD_PLAN.md`, not another master plan. The order is the
 plan's §4: P2b → P2a → P3 → P4 → P5 → P6, with P7 and P9 items folded in as each family is touched and
@@ -81,8 +85,19 @@ Settled by your recorded words, stated so you can correct them:
   commands (the hook's text, not Rohan's words): "This session is locked after a compaction: it may read and
   report, and change nothing. [...] The lock lifts when he sends his next message, whatever it says." So the
   lead stops at its first compaction after
-  Rohan leaves and waits for his next message; what the lock does to a workflow already running has not
-  been observed. The agents' own bound is §3's.
+  Rohan leaves and waits for his next message. R0 observed what the lock does to a workflow already
+  running. The lock is kept per session and workflow agents run under the lead's session, so after the lead
+  compacted (03:01:57Z on 2026-10-19) the relaunched `cancel` worker, its tests already passed, had its
+  return refused twice (the return tool is not on the lock's list of reading tools), and its chain ended
+  INCOMPLETE (§10). Inferred from the hook's code, not observed: a running agent's edits and writing
+  commands would be refused the same way until his next message. Whether the lock should spare workflow
+  agents launched before the compaction is his decision, a change to the SquishOS hook (the active packet
+  holds it). His answer is one of two. Either the hook changes, and one more `cancel` run through the real
+  runtime proves the change before W1; or the build launches under the hook as it stands. Under the hook as
+  it stands: the lead does no other work while a workflow runs, so it cannot compact while agents are in
+  flight; a message reaching the lead mid-run starts a turn and adds to its context, so none should be sent
+  then; and the run stops at the lead's first compaction between workflows, until his next message. A bare
+  launch word means the second. The agents' own bound is §3's.
 - Stop points: family-wave picture sheets to Rohan; any disagreement between Codex, Fable and the lead;
   a step the P12 contract leaves unspecified; P13.
 
@@ -269,6 +284,15 @@ Settled by your recorded words, stated so you can correct them:
      agent transcripts), recorded; every one under a million (§3).
 
    What breaks is fixed in the scripts and packets, and the mock re-run, before W1.
+7. Before a run left going while Rohan is away (overnight), at his request relayed by the Codex session on
+   2026-10-19: the Mac stays on power with its lid open, and idle system sleep is stopped for the lead's
+   lifetime with `caffeinate -i -w <pid>`, where `<pid>` is the live process of the lead's own session,
+   found by walking up from the lead's shell with `ps` and checked by its command line, never guessed.
+   It starts as a tracked background job; `pmset -g assertions` must then list caffeinate's idle-sleep
+   assertion for it. The display may still sleep. The active packet records caffeinate's process ID, the ID
+   it waits on and when it started. It ends by itself when the lead's process ends; the lead stops it at the
+   run's end if the session goes on. This is an operational prerequisite of its own, apart from the pin and
+   the lock decision.
 
 ## 5. The sequence
 
@@ -284,14 +308,14 @@ Settled by your recorded words, stated so you can correct them:
 | **W6b** | P6 posterior/medial, part 2 | F22, F23 SAG/COR | 6: three adapters (semimembranosus + semitendinosus sharing their dark-body readings; gracilis; sartorius) + three verifiers | G6b: integrate; CLI; inspect; gate; commit; push. **P6 family-wave sheets to Rohan** |
 | **W7** | P7 remaining older consumers | Each expensive caller → an explicit consumed scope or a recorded reason it needs broader work | ≤8: candidates grouped by consumer (fat-pad candidate reads; own-slice ACL/LCL/biceps/retinacula; joint/tendon planes; native axial territory; posterior lumen/corridor; muscle opening; the three `dark_bands` callers) + verifiers, split into two workflows if needed | G7: per consumer, the scope chosen by the lead (semantic check + Codex [+ Fable]); integrate; changed-output account; CLI; inspect; gate; commit; push |
 | **W8a** (W8 closure) | P8 + P9 closure; EP2 | Catalogue; marrow address (F04); residual lineage; shared profiles/merges/geometry under the same semantics | ≤8: catalogue facts; marrow wiring; residual lineage; shared profiles/merges/geometry; grouped independent verifiers | G8a: integrate one candidate at a time; equivalent refactors reproduce receipts exactly; marrow is an adjudicated new output; gate; commit; push |
-| **W8b** | P9 persistence; EP3a then EP3b | Exact digest stream, retained arrays and existing NPZ/receipt/readers | ≤4 per batch: digest candidate + independent verifier; then persistence candidate + independent verifier on the integrated digest source; never competing writer edits | G8b: every array/address/digest retained; matching-source whole-run cost account including compression and allocation traffic; gate; commit; push |
+| **W8b** | P9 persistence; EP3a then EP3b; competition storage closure (§16.9) | Exact digest stream, retained arrays, real storage/receipt readers and actual saved/scratch quotas | ≤4 per batch: digest candidate + independent verifier; then lossless storage candidate + independent verifier on the integrated digest source; never competing writer edits | G8b: implement and verify storage fit at the declared workload scale, including write peaks and retention/reconstruction; resolve known overflow rather than defer it; matching-source compression/allocation account; gate; commit; push |
 | **W9** | P10 hot kernels; EP4 | Reprofile after W7/W8; exact reference twins for residual material work | ≤5 per batch: one shared real-CLI profile fact packet, up to two bounded kernel candidates and their independent verifiers; repeat bounded batches only for unresolved material kernels | G9: keep equivalent answers; source-pinned paired whole-operation observations; local-lightness workspace checked when still material; gate; commit; push |
-| **W10** | P11 verification | The frozen operation's outputs → per object and orientation: identified / abstained / wrong, uninspected explicit; the owed-item inventory closed (each item shown done with evidence, or carried open); every ordered pair vector resolved or a named partial endpoint; whole-operation cost and fallback accounting (visited pixels and windows, requests, misses and handoffs, fallback work, retained bytes, time and memory) | ≤8: auditors by family reading receipts and addressed images; a completeness critic (the catalogue against every requested concept and view); a source/receipt/address auditor | G10: the lead runs serial, parallel, public and the labelled cohort and the gate; accepts; writes the recognition-completion record; commits; pushes; reports to Rohan |
+| **W10** | P11 verification | The frozen operation's outputs → per object and orientation: identified / abstained / wrong, uninspected explicit; the owed-item inventory closed (each item shown done with evidence, or carried open); every ordered pair vector resolved or a named partial endpoint; whole-operation cost and fallback accounting (visited pixels and windows, requests, misses and handoffs, fallback work, retained bytes, time and memory) | ≤8: auditors by family reading receipts and addressed images; a completeness critic (the catalogue against every requested concept and view); a source/receipt/address auditor | G10: the lead runs serial, parallel, public and the labelled cohort; verifies the integrated offline compute/storage envelope and downstream headroom under FULL_BUILD_PLAN §16.9, separating target measurements from hidden-scale projections; required overflow/missing capacity checks prevent acceptance; gate; recognition-completion record; commit; push; report |
 | **W11** | P12 preparation + P13 preparation | `what_an_object_is.md` §§7, 13 and the retained measurements → what the primary text settles for the MRI place/depth/bank/support layout and what it leaves open; the typed object interface and the twelve documented condition relationships | 3: thesis-section facts; retained-measurement inventory; object-interface and condition-relationship inventory | G11: the lead writes the contract and records the interface and relationships; Codex; a step the text leaves unspecified goes to Rohan |
 | **W12** | P12 implementation | What the contract settles → the exact encoding, written from retained measurements | ≤4: candidates with tests of exact bundle, decode and subtraction, order invariance, layout compatibility, silent banks and physical support ownership; verifiers | G12: integrate; gate; commit; push. P13 waits for Rohan's specification; packaging and submission are later requested actions |
 
-Between gates the lead prepares the next workflow's packets while verifiers run, never racing two
-implementations of the same unit. Every candidate touches the 23k-line runner, so family logic goes in
+Between gates the lead prepares the next workflow's packets, never racing two implementations of the same
+unit; while the post-compact lock is unchanged, it does so only when no workflow is running (§2). Every candidate touches the 23k-line runner, so family logic goes in
 modules with thin call-site wiring, and the lead integrates sequentially.
 
 EP0 is part of W2's existing P7 runtime/profile fact packet; EP1 follows the lead-reviewed scopes
@@ -334,7 +358,9 @@ packet contracts are there rather than copied into a second queue.
   blanket suppression and no rule disabled to turn the gate green.
 - **Every workflow:** the guide's §10 failure cases are checked against each draft prompt before launch.
 - **Efficiency packets:** no dropping evidence, precision reduction, retention flag, approximate median,
-  new archive format, shared mutable workspace or timing-based anatomical selector. Keep startup,
+  shared mutable workspace or timing-based anatomical selector. W8b may make the capacity-required,
+  versioned lossless storage repair under §16.9 with all readers verified; no unrelated format or
+  retention redesign. Keep startup,
   ordinary RSS, live allocations, allocation traffic and compression distinct (FULL_BUILD_PLAN §16).
 
 
@@ -500,6 +526,8 @@ const WORKTREE = [
   'You work in an isolated git worktree cut from HEAD; call its root <wt>. Run everything from <wt> with PYTHONPATH=<wt>/src and the interpreter ' + ROOT + '/.venv/bin/python.',
   'Before any test or run, run ' + TOOLS + '/import_proof.py <wt> under that same environment and keep its output; it exits non-zero unless knee and run_interiors both import from <wt>. If it fails, stop and return completion "blocked".',
   'The runner\'s ROOT is its own file\'s parent\'s parent, so in a worktree every default built on it points at a tree with no data: <wt> has no data/ folder. Read files under data/ by their absolute paths in ' + ROOT + ', and pass every path explicitly: --root ' + ROOT + '/data/raw, --run and --main-run inside your attempt directory, and accepted receipts by absolute path. Run the CLI with --workers 1. List in your return any path the runner wrote under <wt> by itself.',
+  'Your attempt directory is in the main tree, outside <wt>, and the isolation refuses the Write and Edit tools there (they are for files inside <wt>). Check that it is absent with test -e, create it with mkdir -p, and write each file in it with one plain Bash command and one redirect into it (a command\'s output with > and 2>&1, or printf for a note).',
+  'The isolation also refuses a compound command it cannot verify stays inside <wt>, such as git apply joined with grouped redirects. Run each git command plainly and on its own from <wt>: git apply --check <diff>, then git apply <diff> alone (it prints nothing when it succeeds), then git status --porcelain to see what it changed. In <wt> the suite\'s one real-data test skips, because <wt> has no data/raw: that skip is expected, and your CLI runs with --root ' + ROOT + '/data/raw are the real-data check.',
 ].join(' ')
 
 const SHA256 = { type: 'string', pattern: '^([0-9a-f]{64}|deleted)$' }
@@ -645,7 +673,9 @@ The script returns each chain's expected and actual outcome and every mismatch. 
 return, records each agent's token use from the runtime's own records (§3's context rule), takes the
 manifest's outside entries for W1 from the instruction files the agents list, and fixes what breaks in the
 scripts and packets, re-running the mocks, before W1. Its offline mock is `r0_mock.mjs` in the setup's
-evidence folder.
+evidence folder. The block below is kept as it ran at `d175f04` (SHA-256 `77c6be5d…`, the block the mock ran
+and R0 launched); W1's `WORKTREE` has since gained R0's findings (§10), so this block's comment calling its
+prompt rules W1's unchanged ones dates from that run.
 
 ```js
 export const meta = {
@@ -917,9 +947,10 @@ return { part: args.part, pin: { head: PIN.head, manifestSha256: PIN.manifestSha
 
 ## 8. Cost and capacity
 
-- About 90–105 agents over W1–W12 (including W8a/W8b) at Sonnet xhigh, each loading the project CLAUDE.md (about 269 KB of
-  imports, recomputed after FULL_BUILD_PLAN §§1.3 and 16.6–16.8: AGENTS, THEORY, HOW_TO_BUILD, the plan and two conversations) plus its packet: the dominant
-  fixed cost per agent.
+- About 90–105 agents over W1–W12 (including W8a/W8b) at Sonnet xhigh, each loading the project CLAUDE.md (about 281 KB of
+  imports, recomputed after FULL_BUILD_PLAN §16.9 and AGENTS.md's competition reminder: AGENTS, THEORY, HOW_TO_BUILD, the plan and two conversations) plus its packet: the dominant
+  fixed cost per agent. R0's agents reached 179,764 to 333,101 tokens of context by the runtime's own
+  counts, every one under §3's bound.
 - Codex: one consultation per decision batch (P2a; P3 scopes; the P4, P5 and P6 rules; P7 scopes; P12)
   with complete inlined payloads of about 150–300 KB, from the model-only home; `consult-budget` before and
   after each; the broker closed after each.
@@ -969,8 +1000,10 @@ return { part: args.part, pin: { head: PIN.head, manifestSha256: PIN.manifestSha
   are named in its prompt and in the script, which checks every one; the mock covers it).
 - A verifier passing on any one check (its required checks are named, and each must be reported
   supported; the mock covers it).
-- An agent compacting mid-task and being locked (each stays under a million tokens, §3; the rehearsal
-  measures it). The lead's own compaction stops it until Rohan's next message (§2).
+- An agent compacting mid-task and being locked (each stays under a million tokens, §3; R0's agents
+  reached 180k–333k). The lead's own compaction stops the lead until Rohan's next message and, as R0
+  showed, refuses a running agent's return the same way (§2); whether the lock spares running agents is
+  his decision.
 
 ## 10. The reviews and what changed
 
@@ -1031,6 +1064,25 @@ unspecified details and P13 not blocking it. Rohan's note at 00:35, that each su
 million tokens, is §3's context rule. No anatomical mechanism, contract or rule changed, so there was no new
 Codex consultation.
 
+R0, the runtime rehearsal (§4, §7a), ran from 02:12 on 2026-10-19 on Rohan's word at 02:04 («Yup, launch
+the rehersal»), pinned to `d175f04` (manifest `d0159626…`, packet revision 12). The lead read every return
+whole; the records are in the active packet and under `B/workflows-20261018/r0/`. It is not a clean pass:
+its `cancel` part ended unlike the mock. What it showed, and what changed:
+
+| R0 found | Change |
+|---|---|
+| `stops`: all seven chains ended as §3 maps them (blocked and the missing hash INCOMPLETE; wrong HEAD, revision and hash STALE_INPUT; the violation VERIFICATION_FAILED; the unreported check INCOMPLETE) | None |
+| `runtime`: in a worktree the import proof passed, the suite passed (1,133, with 1 skipped), and the serial proof CLI with explicit paths exited 0 and wrote only into its attempt folder; the candidate's diff applied in the verifier's worktree, its hashes and tests reproduced; the output tool refused the malformed return and the agent returned a valid one; files named in an inlined upstream return were not treated as inputs | None |
+| A worktree agent's Write and Edit refuse paths outside its worktree, its attempt folder included; Bash redirects into the folder work | W1's `WORKTREE` (§7): check the folder is absent with `test -e`, create it with `mkdir -p`, write each file with one plain command and one redirect |
+| The isolation refused a compound command around `git apply` that it could not verify; the same steps as plain separate commands ran, and a plain `git apply` prints nothing | W1's `WORKTREE`: git as plain separate commands, `git apply --check`, then `git apply`, then `git status --porcelain` |
+| In a worktree the suite's one real-data test skips (it looks for `data/raw` under the worktree) | W1's `WORKTREE` says the skip is expected and the CLI runs are the real-data check |
+| Each agent listed nine instruction files, the two outside CLAUDE.md files, the project CLAUDE.md and its six imports, all by main-checkout paths; no memory file | §3's single-writer rule already covers the main-checkout paths. W1's manifest takes its outside entries from that list. The project memory files the Codex session named stay out: no agent receives them, and W1's script makes every outside entry a required input of every agent |
+| The runtime removed the worktree whose agent changed nothing and kept the two with edits (`wf_002535d0-928-2` and `-5`) | Recorded; their removal is brought to Rohan |
+| `cancel`: the stop worked (attempt 1, `WITHDRAWN.md`); the relaunch ran its suite (1,134 passed) but the post-compact lock refused its return twice after the lead compacted, and its chain ended INCOMPLETE against the expected READY_FOR_LEAD_REVIEW | No script change can fix it (§2); the lock decision is Rohan's, and W1 waits for it |
+
+R0's own block (§7a) stays as it ran. W1's block changed only in `WORKTREE`, and its mock was re-run on the
+new block.
+
 
 ## 11. Whole-operation efficiency in the launched sequence
 
@@ -1048,27 +1100,30 @@ this documentation edit, and the in-progress R0 rehearsal remains the next setup
    Source-owned slice/volume or float-cache storage is examined here; useful reuse stays intact.
    Pure storage changes get exact-output checks, while changed scope follows the anatomy review.
 3. W8a folds EP2 into the existing geometry sharing candidate. W8b owns EP3a's exact digest stream,
-   then EP3b's existing-format persistence. They have separate candidates and verifiers; the second
+   then EP3b's lossless storage closure under §16.9, preferring existing-format compatibility. They
+   have separate candidates and verifiers; the second
    uses the first's accepted source. Ownership of receipt.py/save/readers is explicit, one writer
-   at a time, with reference checks before every edit. No container/retention redesign is smuggled in.
+   at a time, with reference checks before every edit. Any capacity-required lossless layout/placement
+   repair is explicit, versioned where needed and verified through all readers; retention is preserved.
 4. W9 receives one refreshed whole-operation fact packet after those structural changes, then EP4
    and any other still-material kernel. Local-lightness scratch is a measured lead, not a command
    to rewrite a kernel no longer costing meaningful work. Candidates retain their reference twins.
 5. The lead shares whole-run captures at the W7, W8b and W9 checkpoints as §16.3 specifies; these
    complement the existing CLI runs and replace duplicate profiler requests. W10 closes the final
-   source's ordinary serial/parallel account and records each packet's evidence-backed disposition.
+   source's integrated offline resource envelope under §16.9, rechecks storage, accounts for later-stage
+   headroom and records each packet's evidence-backed disposition. This is required before G10 closes.
 
 Before each implementation launch, include the concrete §16 row, its relevant whole M/F contracts,
 its consumer units and the named required checks from §16.4 in the packet, schema and script.
 Missing required evidence ends INCOMPLETE; mismatched source ends STALE_INPUT under §3. Run each
-new script's mock before dispatch as §4 already requires. The existing W1/R0 scripts and outcomes
-are unchanged. Prepare these bounded scripts at their dependency gate rather than freeze W8 code
+new script's mock before dispatch as §4 already requires. The existing W1/R0 scripts' checks and outcomes
+are unchanged (W1's `WORKTREE` lines carry R0's findings, §10). Prepare these bounded scripts at their dependency gate rather than freeze W8 code
 against the pre-W1 tree. Worktrees use the project interpreter, their own imports and output roots.
 
 The lead freezes the matching-source whole-run account, refreshes applicable saved kernel calls,
 writes the acceptance record and active packet, then runs the final gate last (§3). Existing
 GitHub/CodSpeed recorded replays stay data-free; a new synthetic smoke is not a substitute for
-measuring this production operation. This adds no human approval loop, timing/RSS target, tuning
+measuring this production operation. This adds no human approval loop, arbitrary timing/RSS target, tuning
 campaign or permission to abandon useful priors. Live jobs and the next action remain solely in
 the active packet; full-run profiles are immutable dated evidence, not another task queue.
 
@@ -1079,15 +1134,17 @@ each dependency gate, using §§16.6–16.8 rather than adding a new workflow or
 - **W1–W2:** preserve competent early context and its readers; EP0 locates duplicate producers,
   invariant preparation, actual cross-study setup and study-owned state. The lead includes the
   short work account in subsequent packets. Existing W1/R0 script bodies and their required checks
-  stay as written; the new applicable checks enter new packets when those scripts are prepared.
+  stay as written, but for W1's `WORKTREE` lines from R0's findings (§10); the new applicable checks enter
+  new packets when those scripts are prepared.
 - **W3–W7:** every family names the already-known anatomy, actual native question/context, shared
   producer/readers and retained output before implementing expensive reads (§16.7). Use meaningful
   irregular regions where warranted; an envelope or a full frame masked afterward is not that work.
   Equivalent sharing and deliberate anatomical scope changes keep their different review contracts.
-- **W8a–W8b:** apply §16.6 to geometry, source representations, digests and existing-format persistence.
+- **W8a–W8b:** apply §16.6 to geometry, source representations, digests and lossless persistence.
   Consolidate invariant preparation at process/cohort lifetime while keeping patient-specific
   observations distinct. Preserve reconstructible evidence while managing live buffers. Return
-  storage-format/placement gaps concretely rather than drop information to meet a memory figure.
+  storage-format/placement gaps concretely and resolve them under §16.9 before W8b closes, preserving
+  retained information. Merely documenting a known quota overflow does not complete the stage.
 - **W9:** use the structurally reduced operation's profile to select compiled/fused or workspace
   candidates. Include strict reference twins and language-crossing/copy costs; using Rust/C++/JIT is
   a means of implementing the bounded operation, not a reason to change its measurements.
@@ -1103,3 +1160,18 @@ reference_twin plus native_execution_boundary for compiled/native changes. Keep 
 applicable checks. The pre-integration worker account links applicable baseline evidence and its own
 CLI work; the lead's later cohort measurement remains a post-integration obligation. The original
 four outcomes, single integrator, source pins and final-gate ordering are unchanged.
+
+**Binding competition exit checks:** FULL_BUILD_PLAN §16.9 is the single detailed contract for the
+nine-hour offline notebook and the selected CPU/RAM/saved-output/scratch envelope. W8b implements
+and verifies storage closure, including write peaks, all readers and retained lifetimes. W10 verifies
+the integrated startup-to-output recognition account on the selected resource-limited route, actual
+parallel memory/queues, workload-scale capacity and headroom for later supplied stages. Target-scale
+projections remain labelled; inaccessible hidden data is not a new prerequisite, and one local proof
+run is not target-scale verification. Later P12/P13 work triggers a fresh full-notebook check.
+
+Applicable W8b prompts/schemas/scripts require competition_storage_envelope in addition to the
+existing reconstruction checks. Applicable W10 packets require competition_compute_envelope,
+competition_storage_envelope, offline_production_route and downstream_headroom_account. The lead
+owns final integrated evidence, so no pre-integration worker waits for a future post-integration
+profile. Use the existing named outcomes for failures, unavailable checks and stale inputs; no green
+unit-test/CodSpeed result waives these requirements. These new checks do not alter the current W1/R0 scripts.

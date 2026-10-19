@@ -64,6 +64,14 @@ computed once and handed to every consumer; nothing is computed and thrown away,
 ledger, vulture and the gate stay on, and the pipeline is checked through its real entry point
 (`scripts/run_interiors.py`). Details: `docs/HOW_TO_BUILD.md` §5.
 
+**Competition capacity is a build requirement.** Apply `docs/FULL_BUILD_PLAN.md` §1.3 and
+§§16.6–16.9 throughout: anatomy narrows work, shared producers avoid repetition, and compiled kernels
+handle the useful residual. **W8b must resolve storage; W10 must verify the integrated offline compute
+envelope and capacity left for later stages.** The nine-hour notebook cap and actual CPU/RAM/output/
+scratch limits are deployment requirements, never anatomical tuning targets. Preserve retained
+information and distinguish measured workload from hidden-scale projections. §16.9 owns the current
+source-backed limits, checks and acceptance contract; the project `README.md` gives the short reminder.
+
 **Running and testing.** The one path is `.venv/bin/python scripts/run_interiors.py`: `--study-uid
 <uid> …` for given studies, `--labeled` for every labelled study on disk, `--split test` for the
 studies a Kaggle kernel is given; `--root` is where the competition's files are (the kernel's mount

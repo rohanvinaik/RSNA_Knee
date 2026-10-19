@@ -277,6 +277,9 @@ Use the existing gate, real callers, ledger and full-run instruments (§§9, 16)
 not establish whole-run efficiency. Large savings are the intended consequence of this construction;
 no unmeasured speed-up factor or preferred benchmark number is its acceptance criterion.
 
+Actual competition limits are production requirements throughout the build; §16.9 makes W8b storage
+closure and W10 verification of the complete compute envelope mandatory. They do not define anatomy.
+
 Every packet applies this principle using §16.7's short work account and its existing M/F contract.
 This is ordinary construction of the approved pipeline, not a new framework, tuning objective,
 repeated approval gate, or an optimization phase postponed until all anatomical families are built.
@@ -676,7 +679,9 @@ slot; a per-study refusal is always emitted when its prerequisites are unavailab
   uncalled code only after reference and contract checks.
 - Separate persistence cost from recognition. Reuse already computed digests and avoid repeated
   materialization/serialization; any codec/storage improvement must be lossless, reconstructible
-  and checked across consumers. No array dropping or hidden retention policy change.
+  and checked across consumers. No array dropping or hidden retention policy change. W8b must resolve
+  actual competition storage capacity under §16.9 before closing; a known overflow is not an advisory
+  that can be left to packaging. Lossless layout/placement changes update all real readers and addresses.
 
 ### P10 — remaining hot kernels
 
@@ -860,7 +865,11 @@ complete pair count or many worker tokens cannot replace native-image acceptance
 
 The efficiency completion record is §16.5: compare equivalent outputs, account for the whole
 operation and its retained evidence, and report ordinary RSS separately from tracked allocations.
-A kernel replay alone does not complete this part of P11.
+A kernel replay alone does not complete this part of P11. W10 also satisfies §16.9: integrated offline
+recognition under the selected CPU/RAM/storage limits, complete startup-to-output costs, measured
+workload and explicitly projected hidden-scale capacity, W8b storage closure rechecked, and recorded
+headroom for later supplied stages. A known overflow or required missing capacity check prevents
+completion; a green correctness gate does not waive these deployment requirements.
 
 
 ## 12. P12–P13: representation and eventual competition completion
@@ -891,7 +900,9 @@ new diagnosis heuristic.
 Then package the same no-draw runtime for Kaggle, with runtime-only dependencies, fixed references
 and the provided mount. Match the actual sample/gold schema for one study's twelve probabilities;
 never serialize internal observation rows as a substitute. Verify public inputs, empty/missing
-inputs and the real competition budget using the current official contract at that stage.
+inputs and recheck the real competition budget using the current official contract at that stage.
+W8b storage closure and W10 compute-envelope verification already happen under §16.9; adding the
+actual P12/P13 work triggers a new whole-notebook check, not the first capacity assessment.
 Submission/publication is a later requested action. Recognition capacity is a concrete completed
 milestone before that dependency; do not label the whole competition solution complete early.
 
@@ -1142,7 +1153,7 @@ implemented proxy pretending to be the specified anatomical operation.
 
 Rohan's request after the full-run probe: «Can you work on how we can make this part of the full
 build plan/workflow that we can launch?» This section turns that evidence into bounded work inside
-the existing plan. It adds no recognition objective, numerical budget, new pipeline or profiling
+the existing plan. It adds no recognition objective, arbitrary numerical target, new pipeline or profiling
 framework. The sequence is still anatomical constraints before residual kernel work (§1). The governing
 production contract is §1.3; §§16.6–16.8 apply it throughout P0–P13, within studies and across the
 cohort, rather than confining efficiency to the measured kernel leads below.
@@ -1175,7 +1186,7 @@ equivalent candidate, never choose the anatomy from a memory/timing leaderboard.
 | EP1 — anatomy scopes and source-owned representations | P2/P3 and P7; W3–W7 | The lead's anatomical regions precede heavy native reads. Include seen_native, its real fibula/head/biceps readers, and any whole-frame float/context materialization those readers demand. Trace decoded Slice.pixels and Series.volume to all callers before considering common backing storage. | Useful context, halos, unknown exterior and all retained readings survive. Share identical contexts; distinct queries remain distinct. Keep broad bootstrap work where a named prerequisite requires it. A storage-only change is equivalent; a scope change gets the anatomical change account. Do not remove a useful cache, cast dtype, drop arrays or gate retention to make RSS smaller. |
 | EP2 — frame transforms made once | P9; W8a's existing geometry work | PlaneFrame.to_native currently constructs the basis pseudoinverse at every call. Establish the full frame/basis identity and mutation rules; reuse that exact transform across callers when those rules allow it. Projection results still consume their own source points. | Check every caller/sibling conversion, oblique/anisotropic geometry and invalid input. A frozen dataclass does not by itself make its ndarray fields immutable. Never key by a slice index alone or reuse a stale inverse. If a different numerical operation changes answers, it is not this equivalent task. |
 | EP3a — digest without repeated byte copies | P9; W8b | The existing digest defines SHA-256 over dtype, shape and C-order array bytes. Feed exactly that stream incrementally and reuse a digest only at an established immutable producer. Consumers are save/receipt verification and the existing source/cache identities. | Preserve every existing digest, dtype/shape distinction, byte order, signed zero and NaN bytes. Exercise contiguous, strided, empty and scalar arrays. A non-contiguous array may still need materialization. Keep mutation invalidation explicit; never memoize by object id alone. |
-| EP3b — lossless persistence with its real readers | P9; W8b after EP3a is integrated | Trace save and all NPZ/receipt/address readers. Reduce repeated serialization/compression setup only within their established format and reconstruction contract. Keep this separate from recognition time and report the storage/time tradeoff. | Every named array, diagnostic reading, key, dtype, shape, address and digest remains reconstructible. Archive compressed bytes need not be identical; decoded arrays and receipt semantics must be. No new storage format, retention switch or asynchronous writer is authorized by this packet. Return a concrete contract gap if one is needed. |
+| EP3b — lossless persistence with its real readers | P9; W8b after EP3a is integrated | Trace save and all NPZ/receipt/address readers. Reduce repeated serialization/compression setup within the reconstruction contract, preferring the established format and applying §16.9 when capacity requires a versioned lossless repair. Keep this separate from recognition time and report the storage/time tradeoff. | Every named array, diagnostic reading, key, dtype, shape, address and digest remains reconstructible. Archive compressed bytes need not be identical; decoded arrays and receipt semantics must be. Section 16.9 now requires W8b to resolve actual capacity, allowing the minimum lossless versioned layout/placement repair with all readers/addresses updated if the existing format is insufficient. No retention switch, dropped reading or unrequested asynchronous writer is authorized. A known overflow cannot be closed as an advisory. |
 | EP4 — local-lightness scratch and other residual kernels | P10; W9 | Reprofile after EP1–EP3. If local_lightness remains material, replace per-pixel allocation/partition scratch with scoped reusable workspace under the same median operation. Existing scoped_local_lightness and its anatomical consumer receive the same outputs. Other residual kernels use their own bounded packets. | Keep a reference twin before editing. Same float64 values, finite/unavailable handling, even/odd medians, borders, context/halo and all three output arrays; no fastmath or selector changes. Workspace is per call/worker or has proved safe lifetime, never shared mutable scratch across concurrent calls. A kernel disappearing after structural work needs no speculative rewrite. |
 
 The row is accounted for by an integrated verified implementation, or by a specific measured/code-
@@ -1235,7 +1246,7 @@ checkpoint duty; a worker does not invent them or run Sonar. A scoped change rep
 equivalent_outputs check with anatomical_change_account and keeps §7's rule/image process.
 A required check that cannot be made stays not_checkable and the chain stays INCOMPLETE. EP4 adds
 reference_twin and concurrent_workspace; EP2 adds geometry_and_mutation; EP3a adds exact_digest_stream;
-EP3b adds reconstruct_all_arrays. These are contents of the existing workflow contract, not a
+EP3b adds reconstruct_all_arrays and competition_storage_envelope (§16.9). These are contents of the existing workflow contract, not a
 second outcome engine.
 
 Keep a fixed set of recorded arguments to compare equivalent kernel implementations. A production
@@ -1245,7 +1256,8 @@ the difference as the same-call regression. A change to call frequency/targeting
 an isolated replay unchanged: the ledger and whole run establish that benefit. GitHub keeps the
 existing data-free recorded replays, not an invented tiny-study replacement for this evidence.
 All recordings, profile records, acceptance records and active-packet updates precede the final
-gate on exactly the tree committed (§9). The gate stays the existing one; numbers stay advisory.
+gate on exactly the tree committed (§9). The correctness gate stays the existing one; profiler and
+benchmark figures stay advisory. Actual deployment limits and §16.9 stage acceptance are mandatory.
 
 ### 16.5 Completion at P11
 
@@ -1253,8 +1265,9 @@ The recognition-completion record links the frozen-source ordinary and diagnosti
 serial/parallel results, same-output or anatomical change account, and EP0–EP4 dispositions with
 real consumers. Explain useful prior propagation and remaining broad work, retained representations,
 serialization and residual kernels separately. If an item is open, say so; a smaller kernel number
-or green CodSpeed run is not whole-operation completion. There is no new minimum speed-up, RSS
-ceiling, mask-purity target or all-studies perfection requirement. Later MRI encoding and diagnostic
+or green CodSpeed run is not whole-operation completion. There is no invented minimum speed-up, RSS
+ceiling, mask-purity target or all-studies perfection requirement; the actual deployment envelope
+in §16.9 is mandatory and includes W8b storage and W10 integrated capacity/headroom verification. Later MRI encoding and diagnostic
 specification gaps remain P12/P13's and do not block competent recognition.
 
 ### 16.6 Reuse, ownership and lifetime within and across studies
@@ -1288,9 +1301,10 @@ If a later reader needs the value, pass its retained address or retain its live 
 Never evict its only copy, leave dangling views, or hide repeated decoding/analysis behind a small RSS number. A reusable worker
 must start its next study with new study-scoped mutable state; an exception must not leave stale
 state eligible. Readers of a common buffer must not mutate it behind another reader's identity.
-Existing-format EP3b remains bounded as written. If measured cohort output requires a different
-container, placement or lifetime contract, return that specific gap for the lead's concrete resolution;
-no default discard, silent format change or retention switch is authorized.
+EP3b now closes storage under §16.9. If measured cohort output requires a different container or
+placement, the lead settles the minimum versioned lossless repair and all consumers before building;
+no known overflow is deferred beyond W8b. Required retention lifetimes are preserved: no default
+discard, silent durability change or retention switch is authorized.
 
 ### 16.7 The short work account required of every construction packet
 
@@ -1377,3 +1391,104 @@ production-thesis-contract-20261019T014732Z/ holds the user request, own reading
 consultation, inlined whole thesis/plan units, the local Claude Max CLI's Fable response and the
 Codex adjudication. The source of the engineering contracts remains the user's request and thesis.
 That dated evidence is not a second current-state record or a production performance measurement.
+
+### 16.9 Competition resource envelope: W8b storage closure and W10 verification
+
+Rohan explicitly requested: «Make those competition constraints explicit in the build plan and
+workflow—W8b must resolve storage, W10 must verify the full compute envelope.» This is a production
+requirement throughout construction, not a numerical objective for anatomical definitions. Useful
+priors, measurement fidelity and native competence still follow §§1, 7 and 14–15. The existing ban on
+arbitrary timing/RSS targets does not waive actual execution limits.
+
+#### Source-backed deployment constraints
+
+Verified 2026-10-19 UTC against the official competition Code Requirements, Dataset Description and
+Efficiency Prize Evaluation pages, and Kaggle's notebook Technical Specifications. Save/recheck the
+current source and actual selected environment at W8b/W10 and final packaging; the competition's
+nine-hour limit overrides the general notebook documentation's longer editing-session allowance.
+
+| Constraint | Published envelope / production obligation |
+|---|---|
+| Notebook elapsed time | CPU and GPU submissions: at most 9 hours (32,400 seconds). Account for the whole offline notebook: environment preparation, imports/JIT, discovery, decoding, recognition, later supplied stages, serialization and final output. A kernel-only timing is insufficient. |
+| CPU route | 4 CPU cores, advertised 30 GB RAM. Submission CPUs are Intel Skylake under the current notebook documentation. Record actual CPU, available memory, process/thread settings and image; local Apple timings are not target-hardware measurements. |
+| GPU route, if deliberately selected | The documented P100 and dual-T4 notebook routes have 4 CPU cores and advertised 29 GB host RAM, plus their GPU resources. GPU use is permitted, not required. Account for host and device memory separately; selecting a GPU does not remove the notebook elapsed-time limit. |
+| Saved output | Advertised 20 GB in /kaggle/working for all saved files combined, not per study or per output family. Include retained arrays, receipts, logs, packages/compiled caches placed there, temporary write peaks and eventual submission.csv. |
+| Scratch | Additional space outside /kaggle/working is session-local. Measure the actual available quota and peak use; it is neither unlimited nor durable. Do not silently turn required retained evidence into disposable scratch. |
+| Network / executable environment | Internet disabled. Bundle runtime dependencies and target-compatible compiled artifacts, or compile from already available dependencies offline. No runtime consult, download or development/profiling dependency is part of recognition. |
+| Workload | Host describes about 1,300 hidden test studies, not an exact constant. The supplied example is a small replacement set. Enumerate the studies actually mounted at runtime; use the host estimate only in labelled capacity planning. Sequence counts, dimensions and transfer syntax vary, with a long slice-count tail. |
+| Final output / later stage | One submission.csv with the competition's study identifier and twelve probabilities, after the human-specified diagnostic mechanism exists. Efficient recognition is a prior milestone, not a substitute for that output or its inference specification. |
+
+Sources: [competition overview/code requirements and efficiency evaluation](https://www.kaggle.com/competitions/rsna-knee-abnormality-detection/overview),
+[data description](https://www.kaggle.com/competitions/rsna-knee-abnormality-detection/data),
+[notebook technical specifications](https://www.kaggle.com/docs/notebooks).
+The efficiency prize uses both predictive performance and RuntimeSeconds / 32,400; runtime savings
+alone establish neither eligibility nor a winning score. This does not introduce AUC as a ground-layer
+anatomical acceptance target. GB is the platform's advertised unit: record actual byte quotas and
+measurements rather than silently treating GB as GiB.
+
+#### W8b must resolve storage before its gate can close
+
+EP3b includes the minimum concrete lossless storage/layout/placement repair needed to meet this
+envelope, through the existing production entry point and every real writer/reader. Prefer compatible
+existing-format changes. If a format/address schema must change, version it, update every consumer and
+verify reconstruction; do not leave a known storage overflow merely as an advisory or defer it to P13.
+No retention switch, dropped readings, changed precision or unrequested asynchronous writer follows.
+
+- Inventory ownership and on-disk sizes for both output families, receipts, retained evidence and
+  supporting runtime files. Distinguish physical bytes from logical reconstructed arrays and shared
+  backing. Measure live write/replace peaks and concurrent writers, not only the final archive size.
+- Use the current source's available cohort, with per-study variation, to demonstrate the solution
+  and plan storage for the host-described scale. The old proof probe saved 28,877,034 bytes; repeating
+  that size over an illustrative 1,300 studies is about 37.5 GB. This is a dated extrapolation exposing
+  the issue, not the current cohort's measured size or a new bytes-per-study target.
+- Specify durable output versus session-local working storage, their actual mounts/quotas, lifetimes
+  and all downstream readers. Reduce duplication/materialization and use lossless representation or
+  placement consistent with retained-information contracts. Scratch may hold genuine transient work;
+  moving required durable evidence there and losing it when the notebook ends is not a solution.
+- Reconstruct all retained arrays and decisions through the actual readers/addresses and compare
+  values/dtypes/shapes/digests as appropriate. Verify same output in serial/parallel operation, bounded
+  pending results and temporary-file peaks, and named behavior for unavailable or exhausted storage.
+- The W8b acceptance record supplies the implemented solution, source/configuration, measured bytes
+  and peaks, workload-scale account, retained-information proof and remaining uncertainty. A known
+  quota overflow fails acceptance; an unmeasured/unresolved capacity claim stays INCOMPLETE under the
+  existing workflow outcomes. W8b cannot close by saying that a future storage task will resolve it.
+
+#### W10 must verify the full recognition compute envelope before its gate can close
+
+Run the integrated no-draw production operation with its actual storage solution, on the selected
+Kaggle route or a documented offline Linux environment reproducing its CPU/RAM/storage restrictions.
+Use target-compatible native/JIT artifacts; a macOS binary/cache or an isolated benchmark does not
+verify the submission environment. Record any difference from real submission hardware explicitly.
+
+- Measure fresh-process startup including relevant compilation/cache preparation, decode, recognition,
+  retained state, IPC, hashing/compression/write time and final receipt output. Include the parent and
+  all workers in memory accounting; record peak host/device memory separately where relevant. Verify
+  actual worker/native-thread limits, bounded queues and completed-study state isolation (§16.8).
+- Exercise serial/parallel, proof/bursa, public input and the available labelled cohort using explicit
+  run roots and source/environment pins. Include available larger series, dimensions and supported
+  transfer syntaxes. Compare reference/candidate and serial/parallel receipts; inspect intended
+  anatomical changes under §7. Reuse these runs for capacity evidence rather than profiling per object.
+- Report the measured workload/counts, input range, elapsed time, RAM and disk peaks separately from
+  the planned hidden-workload capacity account. Use the host's approximate study count and measured
+  variation/overheads to account for target-scale runtime/storage; state assumptions, uncertainty and
+  remaining headroom. A public-example run or one local proof study is not a full-scale validation.
+  Inaccessible hidden data is not required at W10: label projections as projections, never as measured
+  hidden-test performance. Do not call unavailable target-environment evidence a supported check.
+- Compare the complete recognition capacity account with 32,400 seconds and actual RAM/disk limits.
+  Record remaining time/memory/storage for the not-yet-specified encoding/diagnosis and final output.
+  Do not assign those stages zero cost or consume the full allowance and call the future notebook fit
+  established. A reserve is justified by the current work account and uncertainty, not an invented
+  fixed percentage; unspecified later costs remain explicit and are measured when supplied.
+- Recheck W8b's storage closure on W10's completed source and actual concurrency. Known overflow,
+  stale source, missing consumers or unresolved required capacity evidence cannot pass by a green
+  test suite/CodSpeed replay. Use the existing VERIFICATION_FAILED / INCOMPLETE / STALE_INPUT meanings;
+  no second outcome engine or new generic performance framework is introduced.
+
+Applicable W8b worker prompts, return schemas and required-check lists add
+competition_storage_envelope alongside reconstruct_all_arrays. Applicable W10 packets add
+competition_compute_envelope, competition_storage_envelope, offline_production_route and
+downstream_headroom_account. Their reports carry the evidence above, with measured/projected/unknown
+clearly separated. Worker-local checks do not await a future lead profile: the lead owns final
+integrated target-environment and workload-scale verification. P11 recognition completion includes
+this account; P12/P13 must recheck it after their actual work is added. Final notebook execution and
+submission schema verification remain P13, not permission to postpone recognition-stage capacity work.

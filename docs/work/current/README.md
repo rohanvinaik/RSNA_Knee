@@ -7,7 +7,8 @@ that index. Worker attempts and acceptance packets are dated evidence, not anoth
 ## TASK ID / PACKET REVISION / STATE
 
 - Task ID: `BUILD-WORKFLOW-PLAN-20261018`.
-- Packet revision: 12. Revision 11, as committed in `cb7b0f8`, is preserved verbatim at
+- Packet revision: 13. Revision 12, as committed in `d175f04`, is preserved verbatim at
+  `docs/work/history/BUILD-WORKFLOW-PLAN-20261018-r12.md`; revision 11, as committed in `cb7b0f8`, at
   `docs/work/history/BUILD-WORKFLOW-PLAN-20261018-r11.md`; revision 10, as committed in `0eb1509`, at
   `docs/work/history/BUILD-WORKFLOW-PLAN-20261018-r10.md`; revision 9, as committed in `afc6f03`, at
   `docs/work/history/BUILD-WORKFLOW-PLAN-20261018-r9.md`; revision 8, as committed in `a9714a1`, at
@@ -19,17 +20,21 @@ that index. Worker attempts and acceptance packets are dated evidence, not anoth
   `docs/work/history/BUILD-WORKFLOW-PLAN-20261018-r3.md`, revision 2 at
   `docs/work/history/BUILD-WORKFLOW-PLAN-20261018-r2.md`; revision 1 (task `GROUNDING-DOC-FIX-20261018`,
   written by the Codex session) at `docs/work/history/GROUNDING-DOC-FIX-20261018.md`.
-- State: `SETTING_UP`, held before the first launch. Rohan approved `BUILD_WORKFLOWS.md` revision 4 at
+- State: `SETTING_UP`, held before W1. Rohan approved `BUILD_WORKFLOWS.md` revision 4 at
   01:01 on 2026-10-19: «Good. I approve, continue setting this up». At 01:25 he answered the lead's report
   after the ninth compaction's lock: «Good. Proceed, but hold off before launching the workflow». At 01:34
   he sent the additions the Codex session had written into the two plans: «I made some additions, should
   be cleanly integratable:». At 01:54, after its second pass: «Done, my changes were part of a compute
-  efficiency pass:».
+  efficiency pass:». At 02:04 he gave the rehearsal's word: «Yup, launch the rehersal». Since the tenth
+  compaction (03:01:57) every message has been relayed agent text with no words of his own, but for his own
+  line at 03:32 introducing a side agent's note.
 - Activity: the plan's §4 preconditions. Done: 1 (the approval and the route change, `afc6f03`), 2 (the
-  tools), 3 (the consult checks), 5 (the offline mocks of W1 and R0, re-run on the plan as this revision
-  commits it), R0's script (§7a, in `0eb1509`), his 01:34 additions (`cb7b0f8`) and the efficiency pass
-  (this revision's commit). Step 4 was done once at `cb7b0f8` and went stale (below); it is redone after
-  this revision's commit. Next: that pin; then R0 (6), and W1 after it, on his word.
+  tools), 3 (the consult checks), 4 at `d175f04` for R0 (below), 5 (the offline mocks, re-run on the plan
+  as this revision commits it), R0's script (§7a, `0eb1509`), his 01:34 additions (`cb7b0f8`), the
+  efficiency pass (`d175f04`), and R0 itself (6), whose `cancel` part ended unlike the mock (below). This
+  revision's commit integrates the Codex session's competition limits and the lead's R0-driven changes.
+  Next: W1's pin; then W1 waits for his launch word and his decision on the post-compact lock, with the
+  overnight sleep prevention (`BUILD_WORKFLOWS.md` §4, step 7) set up at launch.
 
 ## CURRENT REQUEST / AUTHORITATIVE EXCHANGES / ACTUAL AUTHORS
 
@@ -109,10 +114,35 @@ Rohan, verbatim, all recorded in `docs/conversations/2026-10-18-build-session-co
   instruction. The lead read the edits and the adjudication whole and re-ran both mocks (below). His
   message says the other session's pass is finished; it does not give the launch word, which the lead
   asks for after the pin.
+- 02:04: «Yup, launch the rehersal», answering the lead's report on `d175f04`, whose last line was (lead
+  text) "Say go and I'll launch the rehearsal." The lead's reading: R0's three runs, and nothing after them.
+- 02:52 and 03:00, then after the tenth compaction 03:09 and 03:12, and mid-turn 03:19, 03:22, 03:24, 03:27
+  and 03:28: messages with no words of his own, each the Codex session's agent text (all in the record).
+  In order: its request, made at his request in the Codex chat, to add the competition limits to both plans,
+  the README, AGENTS.md and the project memory once R0 had ended; its draft's place; its request for a safe
+  point; its report that its edits were done; its check that the two sessions agree (they do on the four
+  points it named; on the memory files, by its own conditional, below); its clarification of W8b's storage
+  scope (below); a request, which it says is his, for one final read-only review before he launches; that
+  review's result (no thesis, efficiency or competition-contract defect found; launch readiness pending this
+  revision's gate, commit and pin, and his lock decision); and a relay of his request to add sleep
+  prevention to the overnight launch (`BUILD_WORKFLOWS.md` §4, step 7). None is his instruction itself;
+  each is a fact to check, and the lead checked them (below).
+- 03:32, mid-turn: «Here is a note offered by a side agent:», with a side agent's note (agent text) that the
+  keep-every-reading rule also covers the scored Kaggle run (OPEN, below). And, with no words of his own,
+  the Codex session's status request quoting his question “Good. Check in with the lead—are the final gate,
+  source pins, compaction issue and caffeinate all sorted so I can launch the full build and go to sleep?”
+  (his words as Codex gives them, not in this session's record). The lead answered NOT READY for the full
+  overnight sequence: the final gate not yet run, W1's pin not written, the lock unchanged (nothing
+  authorized, applied or tested), caffeinate only planned; W1 alone possible after the gate and pin on his
+  word, stopping at the lead's first compaction, with the lead doing no other work while a workflow runs.
 - His words to the Codex session that its sections quote are not in this session's record: §16's «Can you
-  work on how we can make this part of the full build plan/workflow that we can launch?» and §1.3's «a
+  work on how we can make this part of the full build plan/workflow that we can launch?»; §1.3's «a
   well-built productionized version of the "what an <object> is" thesis, like a competent performance
-  engineer would produce, with logical consolidation of compute with and across studies».
+  engineer would produce, with logical consolidation of compute with and across studies»; §16.9's «Make
+  those competition constraints explicit in the build plan and workflow—W8b must resolve storage, W10 must
+  verify the full compute envelope.», which Codex's `COORDINATION.md` records whole with his note there,
+  «Note that the lead is just about to compact, so it might require some re-grounding»; and, in the 03:28
+  relay, «Can you tell the lead?».
 - His process choices of 2026-10-18 stand: Claude as the lead and single writer (11:25); pictures at the
   end of each family wave (11:25); the §7 rule review by Codex plus the Fable consult (17:15). His other
   words of the day, in order, are in the record.
@@ -131,16 +161,36 @@ Rohan, verbatim, all recorded in `docs/conversations/2026-10-18-build-session-co
   manifest lists; an agent hashing either would have stopped as stale input. Those files are kept as
   evidence beside the before-R0 snapshots of that moment (`worktrees-before-r0.txt`, only the main
   worktree; `status-ignored-before-r0.txt`, no untracked file).
-- This revision's commit follows `cb7b0f8`; `git log` is the record. Its production source changes: none.
-  It holds the efficiency pass as the Codex session wrote it: FULL_BUILD_PLAN §1.3 (the governing
-  production principle), a pointer to it at §16's start, §§16.6–16.8 (reuse and lifetime within and
-  across studies; the short work account of every construction packet; native execution and cohort
-  checks) and the pointer to its evidence; in `BUILD_WORKFLOWS.md` the rewritten §3 efficiency bullet and
-  the end of §11. Besides it: the lead's lines in `BUILD_WORKFLOWS.md` (the opening paragraph's provenance
-  sentence, extended; §8's import size, recomputed; §8's Fable line, whose scope-sheet decision he gave at
-  01:01; §8's rehearsal line, fourteen agents as §7a has them), the corrections record's 01:54 entry and
-  the §1.3 quote, this packet and its history copy. The recording in `benchmarks/recorded/` was made from
-  `667e28b`'s production source, unchanged since.
+- R0's pin, used for all three R0 runs and now history (written after `d175f04` was gated and pushed):
+  `data/readings/collapse-20261017/full-build/targeted-compute-20261018/workflow-setup-20261019/r0-pin-d175f04/manifest-r0.json`,
+  SHA-256 `d01596262dd5cd03e45a85b7890737c19d88dfc0baee0d35103771d5ce381080`, HEAD
+  `d175f04c8223d391bf988e93a281164c7173fc3f`: 215 entries (209 tracked files, the 4 tools, the 2 outside
+  files). `check_r0_manifest.py` finds all 15 of R0's required inputs, no archive file, this packet left out
+  and `tests/test_receipt.py` listed. Launch arguments, packet revision 12, in the same folder:
+  `args-r0-runtime-1.json` (`9fd298ee…`), `args-r0-stops-1.json` (`f618e67b…`), `args-r0-cancel-1.json`
+  (`f6fa3e52…`). Before R0, in the same folder: `worktrees-before-r0.txt` (only the main worktree, at
+  `d175f04`) and `status-ignored-before-r0.txt` (no untracked file). The pin holds only while no other
+  writer touches a listed file.
+- This revision's commit follows `d175f04`; `git log` is the record. Its production source changes: none.
+  It holds the Codex session's competition-limit edits as written, each file's hash equal to Codex's own
+  record (`written-files.json`) when the lead checked it at 03:20: FULL_BUILD_PLAN §16.9 and its references
+  in §1.3, P9, §11, §12 and §16; `BUILD_WORKFLOWS.md` §5's W8b and W10 rows, §6's efficiency bullet and the
+  end of §11; `AGENTS.md`'s resident reminder; the new root `README.md`. Besides them, the lead's lines in
+  `BUILD_WORKFLOWS.md`: W1's `WORKTREE` (R0's findings; the block is now `20ca35ec…`); the opening
+  paragraph's provenance; §2's lock observation; §4's step 7 (sleep prevention, at his relayed request);
+  §7a's note that R0's block stays as it ran; §8's import size (about 281 KB) and R0's token counts; §9's
+  lock bullet; §10's R0 entry; and §11's three lines that said the W1/R0 scripts stay unchanged. Also the
+  corrections record's entries from 02:04, this packet and its revision-12 history copy. The recording in
+  `benchmarks/recorded/` was made from `667e28b`'s production source, unchanged since.
+- W1's pin is written after this revision's commit is pushed, on its tree (next action). Its outside
+  entries are the two outside CLAUDE.md files every R0 agent that returned listed. The two project memory
+  files the Codex session named (`feedback_rsna_knee_competition_envelope.md` and `MEMORY.md`, under
+  `~/.claude/projects/<this project>/memory/`) stay out: R0 measured that no agent receives them (each
+  listed nine instruction files, none a memory file); W1's script makes every outside entry a required
+  input of all seven agents; and `MEMORY.md` is an index any session may write, so pinning it would stop
+  every chain at the first memory write. The Codex session agreed at 03:22 (agent text): do not pin memory
+  the measured worker context excludes, and reassess if that changes. If a later rehearsal shows memory
+  reaching an agent, W1's script changes, not a manifest line.
 - The workflow tools, untracked under `data/readings/collapse-20261017/full-build/targeted-compute-20261018/workflow-tools/`
   (SHA-256): `spans.py` `017b39c0…`, `callsites.py` `e918add8…`, `assigned_names.py` `67f247d0…` (each
   identical to the lead's scratchpad copy read whole this session), `import_proof.py` `1c39d73c…` and
@@ -158,7 +208,8 @@ Rohan, verbatim, all recorded in `docs/conversations/2026-10-18-build-session-co
   was given, and workflow agents are given the same CLAUDE.md files, so an agent meeting it outside the
   manifest would stop as stale input, and every stop case of R0 would end STALE_INPUT for that reason
   alone (the advisor's point, checked against the session's own list). R0 still lists whatever else
-  reaches its agents.
+  reaches its agents. R0 confirmed the list: each of its 12 agents that returned listed exactly those nine
+  instruction files (the other two, the stopped and the lock-refused `cancel` workers, returned nothing).
 - `.claude/worktrees/` is ignored through `.git/info/exclude` (its line 11), so a worktree the runtime left
   there would not show in `git status`; the worktree list after R0 is what shows it.
 
@@ -167,9 +218,49 @@ Rohan, verbatim, all recorded in `docs/conversations/2026-10-18-build-session-co
 Owner: the lead (Claude, this session), per Rohan's 11:25 choice. Worker routes: the guide's §6. Since his
 approval at 01:01, bounded implementation runs as `BUILD_WORKFLOWS.md`'s workflow agents, each in an
 isolated worktree (`afc6f03` changed the guide's route row and plan §10). The Codex session wrote the plan
-additions of `cb7b0f8` and of this revision's commit at his request; the lead integrated them. While R0 and
+additions of `cb7b0f8`, `d175f04` and this revision's commit at his request; the lead integrated them. While R0 and
 W1 run, the frozen basis needs one writer in this checkout: the lead asked at 01:51 that the other session
 write nothing here during them, and his 01:54 «Done» says its pass is finished.
+
+Coordination with the Codex session, 2026-10-19 at 02:52Z (its message, pasted by Rohan with no words of
+his own: agent text, which says he authorized the request in the Codex chat). It will add explicit
+competition constraints to the build plan and the workflow plan (W8b must resolve storage; W10 must verify
+the full compute envelope) and enduring reminders in the project README and the memory and agent context
+files; it holds writes to manifest-listed inputs while R0 runs and prepares its changes in /tmp. The agreed
+boundary:
+- **Safe point:** reached once R0's last run (`cancel`, attempt `r0-cancel-2`) has finished and the lead has
+  recorded it here with the after-R0 snapshots (`git worktree list`, `git status --porcelain --ignored`); the
+  lead marks it on the BOUNDARY line below and says so in chat.
+- **From the safe point until the Codex session reports its edits done:** the lead launches nothing, commits
+  nothing and writes no tracked file but this packet; the lead's other writes stay under
+  `.../workflow-setup-20261019/` and `.../workflows-20261018/r0/` in the readings tree.
+- **Ownership:** the Codex session owns the files it edits for this change. This packet,
+  `docs/work/current/README.md`, is not "the project README" and stays the lead's alone.
+- **After:** the lead's R0-driven fix to `BUILD_WORKFLOWS.md` (W1's worktree prompt: write the attempt folder
+  with Bash redirects, since Write and Edit refuse paths outside the worktree; run git as plain separate
+  commands) waits until those edits are done. Then the lead reads the edits whole, integrates them with that
+  fix (mocks, gate, commit, push), re-pins and rewrites the launch arguments, and brings W1's launch to
+  Rohan. These requests are not permission to launch W1.
+
+Codex update, at 03:00Z (pasted by Rohan with no words of his own: agent text). Its complete draft is
+outside the frozen tree at `/tmp/rsna-competition-envelope/`; its `COORDINATION.md` holds Rohan's request
+from the Codex chat and his note there that the lead was about to compact. The draft passes the 34 W1 and 10
+R0 mock cases with the runtime bodies unchanged (its claim, to be checked at integration). Planned repository
+writes: `docs/FULL_BUILD_PLAN.md`, `docs/work/current/BUILD_WORKFLOWS.md`, `AGENTS.md` and a new root
+`README.md`. `CLAUDE.md` is unchanged. After the boundary, one typed feedback memory and its `MEMORY.md`
+pointer, outside the repository. It leaves this packet alone.
+
+BOUNDARY: reached, by a substitute record. R0's last run (`cancel`, attempt `r0-cancel-2`) ended at 03:05:54
+(the journal: `failed`). The lead, locked after the tenth compaction (03:01:57) and unable to write this
+packet, said in chat at 03:08:54 that all three R0 runs had ended and that it would launch nothing and edit no
+shared document until Codex reported done; at 03:12:00 it accepted Codex's own record in place of this
+packet's. That record is `competition-envelope-20261019T030950Z/` in the readings tree: `safe-boundary.json`
+(the lead's 03:08:54 words), `worktrees-before-edit.txt` (the main checkout and the two R0 worktrees
+`wf_002535d0-928-2` and `-5`, all at `d175f04`) and `status-before-edit.txt` (only this packet modified).
+Codex's writes are timed 03:09:52 (`written-files.json`), after the lead's 03:08:54 statement, which its
+record cites, and before the lead's 03:12:00 confirmation; the lead wrote nothing in between. Codex reported
+done at 03:12:10. The lead held launches and writes until then, checked the six files' hashes against
+Codex's record at 03:20, and integrated them in this revision's commit. This packet stayed the lead's alone.
 
 ## CONTRACTS / INPUT AND OUTPUT MEANINGS / REAL CONSUMER
 
@@ -216,19 +307,28 @@ scripts and their required checks are unchanged (`BUILD_WORKFLOWS.md` §11). The
 own reading before the Fable consultation, the consultation and its adjudication, is B +
 production-thesis-contract-20261019T014732Z/.
 
+The competition limits (FULL_BUILD_PLAN §16.9, the Codex session's edit at his request): W8b must implement
+and verify lossless storage within the actual saved-output (20 GB in `/kaggle/working`) and scratch limits
+before it closes; W10 must verify the integrated offline recognition run under the notebook's limits (9
+hours, internet off, 4 CPU cores and about 30 GB of RAM on the CPU route), keep measured available-cohort
+results apart from projected hidden-scale capacity, and record the headroom left for the later stages. They
+are deployment limits, never anatomical tuning targets. The two sessions agree (03:19–03:22, agent text on
+Codex's side) that reversible storage encoding, lossless compression included, is inside W8b's scope; that
+any change to the retained information itself (a dropped reading, changed precision) goes to Rohan; and that
+a W8b with no verified lossless fit ends INCOMPLETE (VERIFICATION_FAILED for a known overflow), as §16.9
+says. `BUILD_WORKFLOWS.md` §11 makes each later wave's script carry its named checks in its prompt, schema
+and script before it is dispatched; that obligation stands at every gate.
+
 ## NEXT SINGLE ACTION / PROPOSED OPERATION / JUSTIFICATION
 
-Once this revision's commit is gated and pushed: the clean tree, the pin and R0's baseline manifest again
-(`BUILD_WORKFLOWS.md` §4, step 4: every tracked file but this packet and the archives; the four workflow
-tools R0's prompts name; and the two outside instruction files above), written with its launch arguments
-into a folder of its own named by the new HEAD, so the stale first pin stays as it is; checked with
-`check_r0_manifest.py`; recorded here with the job table; and `git worktree list` with the main tree's
-`git status --porcelain --ignored`, recorded before R0 and again after it. Then R0 (step 6) waits for his
-word (01:25: «hold off before launching the workflow»). On it: R0's `runtime` and `stops` parts, then
-`cancel`, which the lead stops part-way and relaunches; what breaks fixed and the mocks re-run; then W1's
-own pin and manifest, its outside entries taken from the instruction files R0's agents list, and W1.
-Dropped at his 21:19 words: the self-hosted runner on this Mac (it existed to give a GitHub job the
-studies) and downloading the proof study to GitHub's runners.
+After this revision's commit and push: W1's pin on that tree (`write_manifest.py`, its outside entries the
+two outside CLAUDE.md files, W1's untracked inputs as extras), a check that it holds every input W1's script
+requires (W1's own preamble run offline against the real arguments), W1's launch arguments, and W1's mock
+on the committed block. Then W1 waits for his launch word, with his answer on the post-compact lock (OPEN,
+below: change the hook, or launch under it; a bare launch word means the second). At launch, before W1: every manifest
+entry checked against disk again, and the overnight sleep prevention set up and recorded here
+(`BUILD_WORKFLOWS.md` §4, step 7). Dropped at his 21:19 words: the self-hosted runner on this Mac (it
+existed to give a GitHub job the studies) and downloading the proof study to GitHub's runners.
 
 ## OPEN SEMANTIC CHOICE / PREREQUISITES / OTHER OPEN BUILD ITEMS
 
@@ -238,9 +338,40 @@ scope decision. Before that, his «Agree with you suggestions» (20:06) answered
 recommendation and tooling suggestions, his 21:19 words the study-data question, his 23:31, 23:37 and 00:25
 messages asked for and gave feedback on the plan, and his 00:35 note set the sub-agents' context bound.
 
-A fact for running the build while he is away (plan §2): a compaction locks the session that compacted,
-the lead's included, until his next message, so an unattended run stops at the lead's first compaction
-after he leaves.
+**The post-compact lock and running workers: his decision, before W1.** A compaction locks the session that
+compacted, the lead's included, until his next message, so an unattended run stops at the lead's first
+compaction after he leaves. R0 showed the lock also refuses the returns of workflow agents already running,
+because they run under the lead's session: the relaunched `cancel` worker's return was refused twice and its
+chain ended INCOMPLETE (`BUILD_WORKFLOWS.md` §§2 and 10; `OUTCOME.md` in its attempt folder). Inferred from
+the hook's code, not observed: their edits and writing commands would be refused too. As the hook stands, a
+compaction of the lead during W1 ends every chain in flight. The lead's recommendation: let the lock bind
+the session that compacted and spare the workflow agents it launched before compacting, since they run from
+frozen, hashed packets, not from the summary, and a locked lead still cannot launch anything new. Before
+proposing a rule, the lead checks what in a workflow agent's hook call tells it apart from the lead's; any
+change is to his SquishOS hook and needs his word, and one more `cancel` run through the real runtime would
+prove it. His answer is one of two (`BUILD_WORKFLOWS.md` §2): change the hook, proven by that `cancel` run
+before W1; or launch under the hook as it stands. Under the hook as it stands the lead does no other work
+while a workflow runs; no one messages the lead while a workflow runs (a message starts a turn and adds to
+its context); and the run stops at the lead's first compaction between workflows, until his next message.
+A bare launch word means the second.
+
+**Overnight sleep prevention (his request, relayed at 03:28).** At an authorized overnight launch: the Mac on
+power with its lid open; `caffeinate -i -w <the lead's live process ID>`, found and checked, never guessed;
+the idle-sleep assertion confirmed with `pmset -g assertions`; its process ID, target and start recorded here;
+stopped at the run's end if the session goes on (`BUILD_WORKFLOWS.md` §4, step 7). Not started before a launch.
+
+**What the scored Kaggle run keeps: his decision, before W8b is built.** A side agent's note he relayed at
+about 03:31 (agent text): the rule to keep every computed reading also covers the scored run, whose saved
+files no one ever sees, and which may exceed the 20 GB saved-output limit; §16.9's dated extrapolation (the
+proof study's 28,877,034 bytes over about 1,300 hidden studies, about 37.5 GB) supports it. Whether the
+scored run must keep every reading, or only what the later stages and `submission.csv` need, is his («*I*
+decide what gets compressed»; «we always keep information we compute»). Lossless storage work stays inside
+W8b's scope either way. It does not block W1.
+
+**The two worktrees R0 left** (`.claude/worktrees/wf_002535d0-928-2` and `-5`, ignored, each at `d175f04`
+holding the rehearsal's never-integrated test edit, whose diff is kept in its attempt folder): their removal
+(`git worktree remove`) is his to approve. The gate's blocking steps do not reach them (ruff's file list
+holds no path under them; the others read fixed paths); deptry, advisory, scans the folder.
 
 The stored recording is the lead's reconciliation of his 20:50 and 21:19 words: production-computed
 inputs, no study data needed at check time. It commits 7.29 MiB of arrays derived from the proof study,
@@ -258,7 +389,24 @@ sagittal-meniscus adapter's ledger declaration debt are rechecked in W2 before a
 Unchanged: P0 (`7b61b54`), P1 (`19967cd`, `p1-sartorius-scope-20261018/`), P2b increment 1 (`2b41281`,
 `p2b-bone-context-20261018/`).
 
-This task's checks since revision 11, all kept in
+This task's checks since revision 12, under the readings root
+`data/readings/collapse-20261017/full-build/targeted-compute-20261018/` (B):
+- R0, pinned to `d175f04` (manifest `d0159626…`, packet revision 12), launched on his 02:04 word, every
+  return read whole: `runtime` and `stops` every chain as expected; `cancel` attempt 1 stopped and
+  withdrawn, attempt 2 INCOMPLETE against the expected READY_FOR_LEAD_REVIEW (the job table below;
+  `BUILD_WORKFLOWS.md` §10). Records under `B/workflows-20261018/r0/` and in the runs' journals.
+- The Codex session's six written files hashed at 03:20 against its `written-files.json`: all equal.
+- The offline mocks on the plan as this revision commits it, kept in `B/workflow-setup-20261019/`: W1's
+  (`w1_mock.mjs`), 34 of 34 as expected, block `20ca35ec…` (`mock-w1-r13b.txt`); R0's (`r0_mock.mjs`), 10
+  of 10, block `77c6be5d…` unchanged (`mock-r0-r13b.txt`).
+- The gate's reach: ruff's file list holds no path under `.claude/worktrees/`; pytest, coverage, zizmor, the
+  import contract, ty, vulture and Sonar read fixed paths; deptry (advisory) scans the folder, and its
+  output is read in the gate log.
+- This revision's final gate, `bash scripts/ci_local.sh` on exactly this revision's tree: its whole output
+  is kept as `B/workflow-setup-20261019/gate-r13.log`, written after this record, which therefore does not
+  carry its numbers.
+
+Earlier checks, kept in
 `data/readings/collapse-20261017/full-build/targeted-compute-20261018/workflow-setup-20261019/`:
 - Revision 11's final gate (`gate-r11.log`), read whole: it passed and stamped tree `7b56553`, which is
   `cb7b0f8`'s tree. Its push (`push-r11.log`), read whole.
@@ -268,12 +416,16 @@ This task's checks since revision 11, all kept in
   `github-runs-cb7b0f8/`).
 - The efficiency pass, read whole by the lead: its plan diff (`efficiency-pass-edits.patch`), and its
   evidence folder's adjudication and README.
-- The offline mocks on the plan as this revision commits it (`BUILD_WORKFLOWS.md` SHA-256 `7e80189d…`),
+- Revision 12's offline mocks, on the plan as it committed it (`BUILD_WORKFLOWS.md` SHA-256 `7e80189d…`),
   run by the lead: W1's (`w1_mock.mjs`), 34 of 34 cases as expected, script block `b53dbc9a…` as before
   (`mock-w1-efficiency.txt`); R0's (`r0_mock.mjs`), 10 of 10, script block `77c6be5d…` as before
   (`mock-r0-efficiency.txt`).
-- This revision's final gate, `bash scripts/ci_local.sh` on exactly this revision's tree: its whole output
-  is kept there as `gate-r12.log`, written after this record, which therefore does not carry its numbers.
+- Revision 12's final gate, `bash scripts/ci_local.sh` on exactly its tree: its whole output is kept there as
+  `gate-r12.log`.
+  (After `d175f04`: it passed and stamped `8db02be`, the tree committed as `d175f04`; its push,
+  `push-r12.log`, found the stamp, the secret scan nothing in 5 files, the audit `no_known_flaws`; GitHub, `d175f04`:
+  the gate (run 39188104236) and CodSpeed (run 39188104245) completed, success, by the watcher's summary
+  (logs kept in `github-runs-d175f04/`).)
 
 ## INSPECTED IMAGE ADDRESSES / RESULT AND UNKNOWN SEMANTICS
 
@@ -290,11 +442,13 @@ revision 6 records them
 | Task/attempt | Route | Owner | Handle | Dependencies | Output root | Verified state |
 |---|---|---|---|---|---|---|
 | BUILD-WORKFLOW-PLAN-20261018 | This session | Lead | Current chat | Revision 4, approved 01:01; launches held at his 01:25 word | `docs/work/current/BUILD_WORKFLOWS.md` | SETTING_UP |
-| R0 `runtime`, attempt `r0-runtime-1` | Workflow runtime, §7a script; 5 Sonnet xhigh agents, 3 in their own worktrees | Lead | Not launched | The pin after this revision's commit (to be written); packet revision 12 | `B/workflows-20261018/r0/<agent>/attempt-r0-runtime-1/` | PREPARING (held: his 01:25 word) |
-| R0 `stops`, attempt `r0-stops-1` | Workflow runtime, §7a script; 7 Sonnet xhigh agents in the main tree, changing no code | Lead | Not launched | As above | `B/workflows-20261018/r0/<agent>/attempt-r0-stops-1/` | PREPARING (held) |
-| R0 `cancel`, attempt `r0-cancel-1`, relaunched as `r0-cancel-2` | Workflow runtime, §7a script; 1 Sonnet xhigh agent, stopped part-way by the lead (TaskStop), then relaunched | Lead | Not launched | As above | `B/workflows-20261018/r0/r0-cancel/attempt-r0-cancel-1/` | PREPARING (held) |
+| R0 `runtime`, attempt `r0-runtime-1` | Workflow runtime, §7a script; 5 Sonnet xhigh agents, 3 in their own worktrees | Lead | Run `wf_002535d0-928`, task `wy7s4kpc3`, launched about 02:12Z on his word («Yup, launch the rehersal»), from `r0-pin-d175f04/r0-script.js` (SHA-256 `77c6be5d…`, the mocked block) | Manifest `d0159626…` at `d175f04`; packet revision 12; `r0-pin-d175f04/args-r0-runtime-1.json` | `B/workflows-20261018/r0/<agent>/attempt-r0-runtime-1/` | RETURNED, read whole by the lead: every chain as expected, no mismatch. Worktree: READY (import proof from the worktree; 1,133 passed and 1 skipped, the real-data test, which cannot see `data/` from a worktree; the serial proof CLI exits 0 in about 18 s, writing only its attempt folder; nothing but ignored caches under the worktree). Candidate and verifier: READY (diff digest, `git apply`, both files' hashes and 5 tests reproduced). Schema: the output tool refused the malformed return, and the agent returned a valid one. Upstream: READY. 5 of 5 agents done; tokens per agent 224,072 to 333,101 (1,286,551 in all), 7 to 15 minutes each. Findings for W1: a worktree agent's Write and Edit refuse paths outside its worktree, its attempt folder included, and Bash redirects work; the isolation refuses compound Bash it cannot verify, plain separate commands run; worktrees are cut at `.claude/worktrees/wf_<run>-<n>/`, ignored; worktree agents' instruction files load from the main checkout's paths |
+| R0 `stops`, attempt `r0-stops-1` | Workflow runtime, §7a script; 7 Sonnet xhigh agents in the main tree, changing no code | Lead | Run `wf_445d4ae3-b19`, task `wwrnw3izp`, launched with the `runtime` run, same script | As above; `args-r0-stops-1.json` | `B/workflows-20261018/r0/<agent>/attempt-r0-stops-1/` | RETURNED, read whole by the lead: every chain as §3 maps it, no mismatch (blocked INCOMPLETE; wrong HEAD, revision and hash STALE_INPUT; missing hash INCOMPLETE; violation VERIFICATION_FAILED; unreported check INCOMPLETE). 7 of 7 agents done, none errored; tokens per agent 179,764 to 202,582 (1,308,381 in all), 3 to 5.4 minutes each. Every agent lists the same nine instruction files (`~/.claude/CLAUDE.md`, `Kaggle_Killer/CLAUDE.md`, the project `CLAUDE.md` and its six imports) and no refused command |
+| R0 `cancel`, attempt `r0-cancel-1`, relaunched as `r0-cancel-2` | Workflow runtime, §7a script; 1 Sonnet xhigh agent, stopped part-way by the lead (TaskStop), then relaunched | Lead | Attempt 1: run `wf_a3dcc697-97f`, task `wsgrz0bhh`, launched 02:38:58Z; its agent wrote `started.txt` at 02:43:19Z, a background waiter saw it, and the lead stopped the run with TaskStop straight after. Attempt 2: run `wf_2b5e2129-419`, task `w8g4xgg9w`, launched about 02:46Z | As above; `args-r0-cancel-1.json`, and the same pin with attempt `r0-cancel-2` | `B/workflows-20261018/r0/r0-cancel/attempt-r0-cancel-1/`, `.../attempt-r0-cancel-2/` | Attempt 1 WITHDRAWN (`WITHDRAWN.md` where it sits): confirmed stopped, its folder holding only `started.txt`, its journal no result, nothing changed a minute after the stop. Attempt 2 INCOMPLETE (its journal: `failed`): its suite passed (1,134) and its inputs held, but the post-compact lock refused its return twice after the lead compacted at 03:01:57 (`OUTCOME.md` where it sits); 321,810 tokens, 17 tool uses, 17.4 minutes. The run's mismatch stands |
 | Efficiency pass: FULL_BUILD_PLAN §1.3 and §§16.6–16.8; BUILD_WORKFLOWS §3 bullet and §11's end | The Codex session, at Rohan's request, with a Fable reading through the local Claude Max CLI | The Codex session | Not attributed | The two plans as `cb7b0f8` holds them | The two plans; evidence `production-thesis-contract-20261019T014732Z/` | INTEGRATED (read whole by the lead; both mocks re-run; this revision's commit) |
 | Plan additions: FULL_BUILD_PLAN §16, BUILD_WORKFLOWS §11 and W8a/W8b | The Codex session, at Rohan's request | The Codex session | Not attributed | Its probe of `afc6f03`; the two plans as they stood at 01:30 | The two plans; evidence `full-run-efficiency-20261019T011718Z/` | INTEGRATED (`cb7b0f8`) |
+| Competition limits: FULL_BUILD_PLAN §16.9 and its references; BUILD_WORKFLOWS' W8b and W10 rows, §6 and §11's end; `AGENTS.md`; the root `README.md`; a project feedback memory and its index line | The Codex session, at Rohan's request in its chat | The Codex session | Not attributed | The lead's safe point (03:08:54); the plans as `d175f04` holds them | The four repository files and the two memory files; evidence `competition-envelope-20261019T030950Z/` | INTEGRATED (the six hashes checked against its record; read whole; this revision's commit) |
+| Final read-only review of the integrated workflow, reported at 03:27 | The Codex session, which says Rohan asked for it | The Codex session | Not attributed | This revision's plan before its gate | Its report, pasted at 03:27 (in the record) | ADJUDICATED: no defect found; its W1 block hash equals the lead's mock; launch readiness pending this revision's gate, commit and pin, and his lock decision |
 | Codex review of the plan | Model-only Codex consultation (a reader) | Lead | Thread `01a15060-6026-73a2-b841-13cd65b5b0b8`; broker PIDs 46746/46754 stopped and confirmed gone | Revision 1 as inlined in its prompt | `workflow-plan-review-20261018/` | ADJUDICATED (`lead-adjudication.md`) |
 | Review of revision 2, pasted at 23:37 | Not attributed: pasted by Rohan; the message does not name its author | Not attributed | Not attributed | Revision 2 | `workflow-plan-r3-20261018/relayed-review.md` | ADJUDICATED (`BUILD_WORKFLOWS.md` §10) |
 | Review of revision 3, pasted at 00:25 | Not attributed: pasted by Rohan; the message does not name its author | Not attributed | Not attributed | Revision 3 | `workflow-plan-r4-20261019/relayed-review.md` | ADJUDICATED (`BUILD_WORKFLOWS.md` §10) |
@@ -302,7 +456,8 @@ revision 6 records them
 | GROUNDING-DOC-FIX-20261018 | The Codex session | The Codex session | Not attributed | Revision 1 | `grounding-doc-fixes-20261018/` | DOCUMENTATION_COMPLETE |
 | External/earlier workers | Not attributed | Unknown | Not attributed | Unknown | Earlier packet locations only | UNVERIFIED_EXTERNAL |
 
-No workflow has been launched: R0, then W1, wait for his word (01:25).
+R0's three runs were launched on his word (02:04: «Yup, launch the rehersal»). W1 is not launched; it waits
+for his launch word and his decision on the post-compact lock.
 
 ## UNREVIEWED / WITHDRAWN / STALE RESULTS
 
@@ -310,21 +465,31 @@ The withdrawn wave-1 P2a packet (`wave1-packets-20261018/p2a-regions-WITHDRAWN-2
 rank or dismiss P2a; the six other wave-1 packets remain unaccepted until W2 re-checks or regenerates
 them; development ACL/tibial-cartilage/attachment previews are evidence, not selectors. The unpushed
 `00b8192` was replaced by `0eb1509`; nothing refers to it. The first R0 pin at `cb7b0f8` and its launch
-arguments are stale (above) and were never used.
+arguments are stale (above) and were never used. R0's pin at `d175f04` and its arguments were used for R0 and
+are history, not W1's pin. Attempt `r0-cancel-2`'s `finished.txt` line saying no command was refused
+predates the refusals (`OUTCOME.md` beside it). The two leftover R0 worktrees hold only the rehearsal's
+never-integrated edit.
 
 ## VERIFICATION STILL OWED / RECHECK BASIS
 
 The GitHub gate and CodSpeed runs on this revision's commit, read after its push and recorded in the next
-revision. The audit has not yet met a reported flaw on GitHub, so how the run page shows a step that exits
-1 under `continue-on-error` is unobserved. The workflow plan is unexecuted: W1's and R0's scripts pass
-their offline mocks, which check control flow only; schema enforcement, worktree isolation and imports,
-permissions, cancellation, which instruction files reach an agent, where the runtime puts worktrees, and
-each agent's token use wait for the runtime rehearsal (its §4), held at his word. Fresh-session loading of
-the project CLAUDE.md imports remains to be observed.
+revision. W1's pin and its check, after the push. His decision on the post-compact lock and, if the hook
+changes, one more `cancel` run through the real runtime. The overnight sleep prevention, set up and checked at
+launch. The audit has not yet met a reported flaw on GitHub, so how the run page shows a step that exits 1
+under `continue-on-error` is unobserved. W1 is unexecuted: its script passes its offline mock, which checks
+control flow only, and R0 exercised the runtime it uses (schemas, worktrees, imports, permissions, the stop
+cases, cancellation, instruction files, token use) except a clean relaunch return, which the lock refused.
+The later waves' scripts (W2–W12) are written at their gates, each carrying its named checks in prompt,
+schema and script and mocked before dispatch (`BUILD_WORKFLOWS.md` §11). Mocks and a green gate do not make
+the unattended sequence ready.
 
 ## HANDOFF TIME / EVIDENCE LINKS
 
-Prepared 2026-10-19T02:02Z. Evidence: this revision's gate log, the integration diffs, the mocks and the
+Prepared 2026-10-19T03:35Z. Evidence for this revision: R0's attempt folders under
+`.../targeted-compute-20261018/workflows-20261018/r0/` and the runs' journals (`wf_445d4ae3-b19`,
+`wf_002535d0-928`, `wf_a3dcc697-97f`, `wf_2b5e2129-419` in this session's workflow records); the Codex
+session's evidence under `.../targeted-compute-20261018/competition-envelope-20261019T030950Z/`; this
+revision's mocks and gate log in the setup folder below. Earlier evidence: this revision's gate log, the integration diffs, the mocks and the
 setup's records under
 `data/readings/collapse-20261017/full-build/targeted-compute-20261018/workflow-setup-20261019/`; the Codex
 session's evidence under `.../targeted-compute-20261018/production-thesis-contract-20261019T014732Z/` and

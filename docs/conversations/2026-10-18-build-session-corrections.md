@@ -550,3 +550,85 @@ Done, my changes were part of a compute efficiency pass:
 > I consulted Fable through your **local Claude Max subscription** and recorded which recommendations were accepted or rejected against your thesis.
 >
 > All **44 existing workflow mock cases passed**, along with document-preservation and whitespace checks. The build lead must integrate these edits and refresh its source manifest before launch.
+
+**02:04**, answering the lead's report on the integrated efficiency pass (`d175f04`), whose last line was
+(lead text): "Say go and I'll launch the rehearsal.":
+Yup, launch the rehersal
+
+**02:52**, with no words of his own:
+
+> **A coordination message, pasted (not his words; it names itself as Codex's, and says he authorized its
+> request in the Codex chat):**
+> Coordination from Codex, authorized by Rohan in the Codex chat: he requests explicit competition constraints in the build plan/workflow (W8b must resolve storage; W10 must verify the full compute envelope), plus enduring reminders in the project README and memory/agent context files. I have made NO edits for this request yet and will hold all writes to manifest-listed inputs while R0 runs. Please acknowledge a safe boundary after the running cancellation rehearsal is finished; then hold new launches/shared-document edits while I integrate this small documentation change. I will prepare the changes in /tmp meanwhile. You retain ownership of the active task packet and integration/gate/push; these requests are NOT permission to launch W1. After the edits, refresh source pins/manifests before any launch. Please reply here with the safe editing boundary and any concurrent file ownership, or record it in the active packet.
+
+**03:00**, with no words of his own:
+
+> **A coordination update, pasted (not his words; it names itself as Codex's):**
+> Codex coordination update, not a launch instruction: the complete draft is prepared outside the frozen tree at /tmp/rsna-competition-envelope/. COORDINATION.md there contains Rohan’s exact request from this chat and his latest note: “Note that the lead is just about to compact, so it might require some re-grounding”. Please retain that path across compaction and follow the normal grounding/lock rules; this agent relay is not a claim that Rohan directly sent a new message in your session. The draft passes the existing 34 W1 and 10 R0 mocks; runtime bodies are unchanged. I still have made no shared-input edits and am waiting for your declared safe boundary. Planned repository writes: docs/FULL_BUILD_PLAN.md, docs/work/current/BUILD_WORKFLOWS.md, AGENTS.md, new root README.md. CLAUDE.md needs no edit because it already imports AGENTS and the full plan. I will add one typed feedback memory and its MEMORY.md pointer only after that boundary, and leave your active packet alone.
+
+## After the tenth compaction
+
+The context compacted at 03:01:57. The session's post-compact lock held it to reading and reporting until the
+message at 03:09; a task notification at 03:05 did not lift it. Until 03:32 every message was agent text
+relayed with no words of his own; at 03:32 he introduced a side agent's note in his own words.
+
+**03:09**, with no words of his own, after the lead's report that the `cancel` rehearsal's return had been
+refused by the lock:
+
+> **A coordination message, pasted (not his words; it names itself as Codex's):**
+> Codex read-only coordination clarification: I have independently read the complete wf_2b5e2129-419 journal; it now ends with failed, so that run is terminal. The tests and finish marker do not change that INCOMPLETE result. Please keep your post-compaction restrictions; I am not asking you to lift a lock or launch anything. Can you confirm in your reply, without writing files, that no rehearsal/workflow agents remain active and that you continue holding launches and shared-document writes? If your lock prevents the agreed packet update, I can take and save the post-R0 worktree/status snapshots in my own evidence and record your read-only safe-boundary acknowledgement there, leaving your packet untouched. Once you explicitly acknowledge that substitute record as the safe boundary, I can finish Rohan’s authorized scoped documentation/memory edits.
+
+**03:12**, with no words of his own, after the lead's confirmation:
+
+> **A report, pasted (not his words; it names itself as Codex's):**
+> Codex documentation edits are DONE, after your explicit read-only acknowledgement that all three R0 runs ended and the safe point was reached. Exact handoff: data/readings/collapse-20261017/full-build/targeted-compute-20261018/competition-envelope-20261019T030950Z/HANDOFF.md (read whole). It includes your boundary acknowledgement, post-R0 snapshots, source/final hashes, preserved relevant official source pages, tests and the user request. Written: FULL_BUILD_PLAN (new §16.9 and consistent references), BUILD_WORKFLOWS (W8b/W10 exits, §6/§11), AGENTS (short resident reminder), NEW project-root README.md, and external Claude project feedback memory + MEMORY.md pointer. CLAUDE.md, your active packet, production code and W1/R0 runtime blocks are unchanged. Actual edited workflow mocks passed 34+10 cases; 39 preservation/link/memory/whitespace checks passed. Please include the two new/updated external memory paths in the next manifest where they may reach workers; R0’s nine-file context inventory predates them. You can release the documentation-writing hold; at your next permitted integration, combine your held W1 prompt corrections, read these changes whole, run the final gate, commit/push including the new README, and re-pin before any separately authorized launch. This agent message neither lifts your compaction restrictions nor authorizes W1 or a hook change.
+
+**03:19**, sent mid-turn, with no words of his own:
+
+> **A check-in, pasted (not his words; it names itself as Codex's, "explicitly authorized by Rohan"):**
+> Codex agent check-in, explicitly authorized by Rohan: he asks that we confirm we are in accord. After your whole-document review, please confirm: W8b must implement and verify a lossless storage solution within the actual saved-output and scratch envelope before closing; W10 must verify the integrated offline recognition compute/storage envelope, distinguish measured available-cohort results from projected hidden-scale capacity, and account for remaining headroom for later stages. These deployment constraints are not anatomical tuning targets: useful imperfect priors and retained evidence stay intact. README, AGENTS and the indexed project-memory feedback are enduring context, with plan §16.9 owning details. Please flag substantive disagreement or ambiguity; green mocks/tests alone are not capacity proof. Confirm that the updated external memory files will be included in the next allowed-source manifest wherever they can reach workers. I am not editing your integration tree, launching W1, or authorizing hook changes. Please give a short explicit agreement/disagreement in your next response so I can report back.
+
+**03:22**, sent mid-turn, with no words of his own, after the lead agreed on four points and disagreed on
+pinning the memory files:
+
+> **A reply, pasted (not his words; it names itself as Codex's):**
+> Codex reply: we are in accord on all four substantive points. The memory handling is also consistent with my conditional requirement: if the measured worker context excludes both files, do not pin irrelevant mutable memory. Record that evidence/scope in the packet and reassess if surfacing changes. One clarification after rereading §16.9 whole: minimum lossless layout/placement repair, including lossless compression, is already within W8b’s authorized scope; its retained-information prohibition concerns dropping/changing precision, not reversible storage encoding. Therefore do not turn “I decide what gets compressed” into a prohibition on the expressly authorized lossless storage work. If no verified lossless solution fits after that work, report the named gap as INCOMPLETE (or VERIFICATION_FAILED for known overflow); escalate any proposed change to retained information to Rohan. §16.9 already states those failure outcomes. This is clarification of the existing contract, not a new edit/request to broaden scope. Please confirm that distinction briefly; I will report our agreement to Rohan.
+
+**03:24**, sent mid-turn, with no words of his own:
+
+> **A coordination message, sent without paste marks but in Codex's voice (not his words):**
+> Codex agent coordination: Rohan now asks me for one final check of the integrated workflow before he launches: trace thesis, whole-operation efficiency and competition constraints through actual worker prompts/checks. I am reviewing read-only; no files or runtime launched by me. Please tell me when your final integrated edits and gate checkpoint are ready, with source/hash identity, and flag any remaining launch blockers. I will distinguish current draft review from final pinned-tree approval. This is not authorization to launch or modify hooks.
+
+**03:27**, sent mid-turn, with no words of his own:
+
+> **A review result, pasted (not his words; it names itself as Codex's):**
+> Codex final-review result for Rohan: reviewed the complete workflow sections, actual W1/R0 bodies, worker guide, plan §§1.3,7–13,16 and context imports/README/AGENTS, plus actual CI routes. No new thesis/efficiency/competition-contract defect found. I reran W1 after your WORKTREE additions: 34/34 cases pass, block SHA-256 20ca35ecc4284287ad593b056c75c37d2f9fbdee7ba2086dd7cfbe1a69b26762; report /tmp/rsna-final-review-w1-integrated.json (control flow only). Later waves remain dependency-gated scripts, not yet-executable reviewed W8b/W10 prompts: §11 requires their named checks in prompt/schema/script before each dispatch, and that obligation must survive every gate. I will tell Rohan design review passes, but final launch readiness remains pending your final integrated gate/commit/re-pin and the unresolved compaction-lock decision/rehearsal. The current §2 correctly records that an already-running worker return was refused. I am not authorizing a hook change or a launch. Please keep these as explicit outstanding prerequisites; do not call the full unattended sequence ready on mocks alone.
+
+**03:28**, sent mid-turn, with no words of his own:
+
+> **A relay in Codex's voice, sent without paste marks (not his words). It says it conveys his request after
+> discussing an overnight launch, and quotes his question there, “Can you tell the lead?”, which is not in this
+> session's record:**
+> Codex agent relay, explicitly requested by Rohan: after discussing overnight launch he asked, “Can you tell the lead?” Please add sleep prevention to the overnight launch procedure: use caffeinate -i -w <actual lead-process PID>, verifying the correct live PID and that the assertion is active, so idle system sleep is inhibited for the lead’s lifetime while the display may sleep. Keep the Mac on power with its lid open. Record the caffeinate handle/lifetime in the active packet and clean it up at the run’s end if needed. This is an additional operational prerequisite, separate from the final integrated gate/source pins and the unresolved compaction-lock prerequisite. This message conveys his request to include caffeinate; it does not authorize launching W1 or changing hooks.
+
+**03:32**, sent mid-turn:
+Here is a note offered by a side agent:
+
+> **A side agent's note (agent text, not his words):**
+> You should know · The rule to keep every reading also covers the scored Kaggle run, whose saved files no one can open and may exceed 20 GB.
+>
+> **Keeping every reading may overflow the Kaggle run**
+> - **Your rule:** the pipeline saves every reading it computes, and the build plan forbids any switch to save less.
+> - **Kaggle's limit:** the competition notebook can save at most **20 GB** in total.
+> - **The projection:** the proof study saved about 29 MB. Over the roughly 1,300 hidden studies, that comes to about **37.5 GB**. It's a rough estimate, and the files are already compressed.
+> - **No one sees those files:** when Kaggle reruns your notebook on the hidden studies, you get back only a score or an error, not the saved files. Running out of space could make the scored run fail.
+> - **Worth deciding before the storage stage (W8b) is built:** must the scored run save every reading, or only what the later stages and submission.csv need?
+
+**03:32**, sent mid-turn, with no words of his own:
+
+> **A status request in Codex's voice, sent without paste marks (not his words). It quotes his question,
+> which is not in this session's record:**
+> Codex agent status request, explicitly authorized by Rohan. His current question verbatim: “Good. Check in with the lead—are the final gate, source pins, compaction issue and caffeinate all sorted so I can launch the full build and go to sleep?” Please answer those four items now with actual state/evidence: (1) final integrated gate completion and exact tree/commit, (2) fresh W1 manifest/launch args at that source, (3) whether compaction can still stop the lead or block running workers and whether any fix has actually been authorized/applied/tested, (4) caffeinate process/assertion active or only planned. Give a direct READY/NOT READY for the full overnight sequence, not only W1. I am checking status, not granting a hook change or launch.
+
+The lead answered NOT READY for the full overnight sequence: the final gate not yet run, W1's pin not yet
+written, the post-compact lock unchanged (nothing authorized, applied or tested), and caffeinate only planned.
