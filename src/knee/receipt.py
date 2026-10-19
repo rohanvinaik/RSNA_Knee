@@ -12,13 +12,45 @@ from hashlib import sha256
 
 import numpy as np
 
+_CHUNK = 1 << 24  # bytes handed to the hash (or copied) at a time
+
+
+def _feed(hasher, a: np.ndarray) -> None:
+    """Feed C-order bytes in chunks, with at most one oversized element copied at a time."""
+    nbytes = a.size * a.itemsize
+    if nbytes <= _CHUNK or a.ndim == 0:
+        hasher.update(a.tobytes())
+        return
+    n = a.shape[0]
+    step = max(1, _CHUNK // (nbytes // n))
+    if step > 1 or a.ndim == 1:
+        for i in range(0, n, step):
+            hasher.update(a[i : i + step].tobytes())
+    else:  # one row alone exceeds the bound: descend into it
+        for i in range(n):
+            _feed(hasher, a[i])
+
 
 def digest(array: np.ndarray) -> str:
     """A saved array's digest: its dtype, shape and bytes. The one statement of it: the run notes
-    each saved array's on its record, and every renderer checks the array it loads against it."""
-    return sha256(
-        array.dtype.str.encode() + str(array.shape).encode() + array.tobytes()
-    ).hexdigest()
+    each saved array's on its record, and every renderer checks the array it loads against it.
+
+    Equal to sha256(dtype.str + str(shape) + C-order bytes), but the bytes are fed in bounded
+    chunks rather than materialized whole."""
+    hasher = sha256()
+    hasher.update(array.dtype.str.encode())
+    hasher.update(str(array.shape).encode())
+    if array.size and array.itemsize and array.flags.c_contiguous:
+        try:
+            flat = array.reshape(-1).view(np.uint8)  # a view: no copy
+        except (TypeError, ValueError):  # e.g. object dtype: use the generic path
+            flat = None
+        if flat is not None:
+            for i in range(0, flat.size, _CHUNK):
+                hasher.update(flat[i : i + _CHUNK])
+            return hasher.hexdigest()
+    _feed(hasher, array)
+    return hasher.hexdigest()
 
 
 def merged_receipt(

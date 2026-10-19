@@ -7744,14 +7744,8 @@ def offer_native_family(
     """Convert a completed family's observations once and offer its named map rows."""
     if not any(rows for rows, _ in said):
         return f"{family}.map_rows", [], 0
-    if family in (
-        "sagittal_menisci_said",
-        "axial_menisci_said",
-        "axial_pcl_said",
-        "coronal_pcl_said",
-        "axial_mcl_said",
-    ):
-        reads(family, ("observations",), "map_rows")
+    # Observation metadata is read for the family actually offered; support remains an address.
+    reads(family, ("observations",), "map_rows")
     product = f"{family}.map_rows"
     rows = [
         {"observations": observation_rows(observations)}

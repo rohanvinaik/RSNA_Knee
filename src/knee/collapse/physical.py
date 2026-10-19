@@ -6,6 +6,7 @@ from math import ceil
 import numpy as np
 
 from knee.compute.contracts import ComputeContract, contracted, handed_on
+from knee.telemetry.once import once
 
 CONTRACT = ComputeContract(
     kind="measurement",
@@ -34,6 +35,14 @@ def numeric_plane(plane: np.ndarray) -> None:
         or plane.dtype.kind not in "iuf"
     ):
         raise ValueError("invalid_plane")
+
+
+def _basis_inverse(basis_lps: np.ndarray) -> np.ndarray:
+    """The pseudoinverse of a frame's basis, made once per study for the exact basis contents and
+    representation (dtype, shape, bytes); never keyed by frame identity."""
+    basis = np.asarray(basis_lps)
+    key = (basis.dtype.str, basis.shape, np.ascontiguousarray(basis).tobytes())
+    return once("frame_inverse", key, lambda: handed_on(np.linalg.pinv(basis)))
 
 
 @dataclass(frozen=True, slots=True)
@@ -80,7 +89,8 @@ class PlaneFrame:
         points = np.asarray(points_lps, dtype=np.float64)
         if points.ndim != 2 or points.shape[1] != 3 or not np.all(np.isfinite(points)):
             raise ValueError("invalid_patient_points")
-        return handed_on((points - self.origin_lps) @ np.linalg.pinv(self.basis_lps).T)
+        inverse = _basis_inverse(self.basis_lps)
+        return handed_on((points - self.origin_lps) @ inverse.T)
 
     def normal(self) -> np.ndarray:
         """The plane's unit normal (3,), the rows' direction crossed with the columns': the one
