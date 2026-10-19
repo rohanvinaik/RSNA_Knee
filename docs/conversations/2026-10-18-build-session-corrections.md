@@ -440,3 +440,37 @@ Feedback on the workflow
 > - **Yes to reviewing new picture-dependent scope decisions.** Share a review across callers implementing the same scope decision rather than paying repeatedly for identical reasoning.
 >
 > The workflow order and division of responsibility look appropriate. These corrections make the execution enforce more of what the prose already requires. I changed no files and launched no real workers.
+
+## After the eighth compaction
+
+The session's post-compact lock held it to reading and reporting until this message.
+
+**2026-10-19, 00:25**, answering the lead's report on revision 3 of the workflow plan (`17a5393`, then unpushed):
+Feedback:
+
+> **A review, pasted (not his words; the message does not name its author):**
+> **The plan is faithful to the thesis and substantially ready. I found two small execution checks to tighten before the unattended build.** No architectural rewrite is needed.
+>
+> The sequence preserves the right mechanism: anatomy and cheap readings establish useful priors; expensive measurements run within those constraints; complementary lenses resolve objects; retained results feed the same coherent production operation.
+>
+> I reran the offline mock: **31/31 cases pass.** Two additional omission tests exposed gaps:
+>
+> 1. **Required input hashes can be omitted.** [`screened()`](/Users/rohanvinaik/Projects/Kaggle_Killer/competitions/RSNA_Knee/docs/work/current/BUILD_WORKFLOWS.md:326) validates supplied hashes but doesn’t require all mandatory instruction and task-input hashes. A trace returning only the runner’s hash still launches implementation. Require those specific inputs explicitly—not every file in the repository.
+>
+> 2. **Verifier completeness is counted rather than identified.** [`verified()`](/Users/rohanvinaik/Projects/Kaggle_Killer/competitions/RSNA_Knee/docs/work/current/BUILD_WORKFLOWS.md:373) permits P2b to qualify with one unrelated “supported” check. Give its required checks stable names and require each: reconstructed candidate, production callers, context reuse/invalidation, preserved early readers, tests, both study runs and receipt comparisons.
+>
+> Neither bypasses the lead’s acceptance review. Both weaken the automatic screening meant to protect that review.
+>
+> Before leaving it running:
+>
+> - Fix those omissions and add the two negative cases.
+> - Complete the already-planned **real runtime rehearsal**. The mock cannot establish isolation, permissions, imports or cancellation.
+> - Record the two outstanding Fable policies. My recommendation remains one diagnosed technical retry, plus picture reviews for scope decisions.
+> - Keep the **lead running through the entire sequence**. Launching W1 alone launches seven workers; it does not execute W2–W12 automatically. The lead must integrate, inspect, checkpoint, re-ground after compaction and continue.
+>
+> Your requested finish line is already well defined in [P11](/Users/rohanvinaik/Projects/Kaggle_Killer/competitions/RSNA_Knee/docs/FULL_BUILD_PLAN.md:750): all requested anatomical concepts and orientations accounted for, competent general rules demonstrated, coherent map and outputs, and measured whole-pipeline compute. Unspecified P12 encoding details should not block that recognition milestone; P13 remains dependent on your later specification.
+>
+> **After those bounded repairs and rehearsal, I would proceed.** The plan supports sustained execution while you’re away, although a genuine rule disagreement can still require your input. I changed no project files and launched nothing.
+
+**00:35**, sent mid-turn:
+Note the post-compact hook means that each sub-agent in the workflow should stay under a million tokens, which should be entirely doable

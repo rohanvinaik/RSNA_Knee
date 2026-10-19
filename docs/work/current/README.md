@@ -7,18 +7,18 @@ that index. Worker attempts and acceptance packets are dated evidence, not anoth
 ## TASK ID / PACKET REVISION / STATE
 
 - Task ID: `BUILD-WORKFLOW-PLAN-20261018`.
-- Packet revision: 7. Revision 6, as committed in `7464de9`, is preserved verbatim at
+- Packet revision: 8. Revision 7, as committed in `17a5393`, is preserved verbatim at
+  `docs/work/history/BUILD-WORKFLOW-PLAN-20261018-r7.md`; revision 6, as committed in `7464de9`, at
   `docs/work/history/BUILD-WORKFLOW-PLAN-20261018-r6.md`; revision 5 at
   `docs/work/history/BUILD-WORKFLOW-PLAN-20261018-r5.md`, revision 4 at
   `docs/work/history/BUILD-WORKFLOW-PLAN-20261018-r4.md`, revision 3 at
   `docs/work/history/BUILD-WORKFLOW-PLAN-20261018-r3.md`, revision 2 at
   `docs/work/history/BUILD-WORKFLOW-PLAN-20261018-r2.md`; revision 1 (task `GROUNDING-DOC-FIX-20261018`,
   written by the Codex session) at `docs/work/history/GROUNDING-DOC-FIX-20261018.md`.
-- State: `PLAN_FOR_REVIEW`. The workflow plan is `BUILD_WORKFLOWS.md` revision 3, which answers the review
-  Rohan pasted at 23:37 under his words «Feedback on the workflow». It waits for his approval and for his
-  answers to its two Fable decisions.
-- Activity: revision 3 of the plan, FULL_BUILD_PLAN §9 step 6 (the recording and the records written
-  before the final gate), and this packet. No build workflow is launched by this task.
+- State: `PLAN_FOR_REVIEW`. The workflow plan is `BUILD_WORKFLOWS.md` revision 4, which answers the review
+  Rohan pasted at 00:25 under his word «Feedback:» and records his 00:35 note on the sub-agents' context.
+  It waits for his approval and for his answers to its two Fable decisions.
+- Activity: revision 4 of the plan and this packet. No build workflow is launched by this task.
 
 ## CURRENT REQUEST / AUTHORITATIVE EXCHANGES / ACTUAL AUTHORS
 
@@ -70,21 +70,24 @@ Rohan, verbatim, all recorded in `docs/conversations/2026-10-18-build-session-co
   the message does not name (in the record, and verbatim in
   `data/readings/collapse-20261017/full-build/targeted-compute-20261018/workflow-plan-r3-20261018/relayed-review.md`).
   It recommends answers to the plan's two Fable decisions; they are his only when he gives them.
+- 2026-10-19, 00:25, after the eighth compaction's lock: «Feedback:», followed by a pasted review of
+  revision 3: agent text whose author the message does not name (in the record, and verbatim in
+  `data/readings/collapse-20261017/full-build/targeted-compute-20261018/workflow-plan-r4-20261019/relayed-review.md`).
+  It recommends the same answers to the two Fable decisions; they are his only when he gives them.
+- 00:35, mid-turn: «Note the post-compact hook means that each sub-agent in the workflow should stay under
+  a million tokens, which should be entirely doable».
 - His process choices of 2026-10-18 stand: Claude as the lead and single writer (11:25); pictures at the
   end of each family wave (11:25); the §7 rule review by Codex plus the Fable consult (17:15). His other
   words of the day, in order, are in the record.
 
 ## SOURCE HEAD / DIRTY UNITS / MANIFEST / INPUT IDENTITIES
 
-- Pushed since revision 6 was written: `7464de9` (the pre-push hook and the advisory lockfile audit; this
-  packet's revision 6) and `6ddcb55` (the hook's secret scan reads the lines a merge writes itself). The
-  first push of the hook was refused by its own secret scan over a line of `scripts/push_checks.py`, which
-  then got detect-secrets' own reviewed mark; the next was rejected because `5a45e7d` was on GitHub first,
-  and the commit was rebased onto it before it was ever pushed.
-- This revision's commit follows `6ddcb55`; `git log` is the record. Its production source changes: none
-  (`BUILD_WORKFLOWS.md`, FULL_BUILD_PLAN §9 step 6, the corrections record, this packet and its history
-  copy). The recording in `benchmarks/recorded/` was made from `667e28b`'s production source, unchanged
-  since.
+- Pushed since revision 7 was written: `17a5393` (the plan's revision 3; this packet's revision 7). Its
+  pre-push hook found the gate's stamp on that tree, the secret scan found nothing in the lines it adds to
+  5 files, and the audit named `no_known_flaws`.
+- This revision's commit follows `17a5393`; `git log` is the record. Its production source changes: none
+  (`BUILD_WORKFLOWS.md`, the corrections record, this packet and its history copy). The recording in
+  `benchmarks/recorded/` was made from `667e28b`'s production source, unchanged since.
 
 ## OWNER / PERMITTED WRITES / WORKER ROUTES
 
@@ -95,12 +98,16 @@ workflow agents in isolated worktrees (his 18:46 words).
 ## CONTRACTS / INPUT AND OUTPUT MEANINGS / REAL CONSUMER
 
 `BUILD_WORKFLOWS.md` executes FULL_BUILD_PLAN §4's order and §§14–15's contracts; it changes no M/F
-contract. Revision 3 adds execution rules (its §3): a baseline manifest of every file the agents may read
+contract. Revision 3 added execution rules (its §3): a baseline manifest of every file the agents may read
 (every tracked file but this packet, the untracked files the prompts name, and the instruction files that
 reach an agent); the instruction files hashed first; the candidate manifest; the script's own check of
 every returned HEAD, packet revision and hash; one named outcome per chain and per run
 (READY_FOR_LEAD_REVIEW, VERIFICATION_FAILED, INCOMPLETE, STALE_INPUT); the recording, the records and this
-packet written before the final gate, which runs last on exactly the tree committed.
+packet written before the final gate, which runs last on exactly the tree committed. Revision 4 adds: each
+agent's named required inputs, in its prompt and in the script, which refuses to start when the manifest
+lacks one and ends a chain INCOMPLETE on a return that leaves one out; each verifier's named required
+checks, each to be reported supported; each agent under a million tokens of context (Rohan's 00:35 note);
+and the lead carrying the sequence itself through W12 (its §2).
 
 The gate ends with a Sonar step that blocks only on a failed scan or analysis, unread open issues, or an
 open bug or vulnerability; its quality gate, smells, coverage and duplication print as information. Its
@@ -116,7 +123,7 @@ gate step, with `continue-on-error`, so the gate always runs.
 
 ## NEXT SINGLE ACTION / PROPOSED OPERATION / JUSTIFICATION
 
-Rohan's approval of `BUILD_WORKFLOWS.md` revision 3 and his answers to its two Fable decisions. On
+Rohan's approval of `BUILD_WORKFLOWS.md` revision 4 and his answers to its two Fable decisions. On
 approval: the preconditions of its §4 (the tools, the clean tree, the pin and the baseline manifest, the
 offline mock, the runtime rehearsal R0), then W1. Dropped at his 21:19 words: the self-hosted runner on
 this Mac (it existed to give a GitHub job the studies) and downloading the proof study to GitHub's runners.
@@ -124,11 +131,16 @@ this Mac (it existed to give a GitHub job the studies) and downloading the proof
 ## OPEN SEMANTIC CHOICE / PREREQUISITES / OTHER OPEN BUILD ITEMS
 
 His two decisions (`BUILD_WORKFLOWS.md` §1): a failed billed Fable call (retry or collect); Fable readings
-for the P2a, P3 and P7 scope sheets. The review he pasted recommends one retry after a diagnosed technical
+for the P2a, P3 and P7 scope sheets. Both reviews he pasted recommend one retry after a diagnosed technical
 failure, and yes to the scope readings with one reading per scope decision (agent text, not his answers).
 His «Agree with you suggestions» (20:06) answered the lead's 20:03 Sonar recommendation and tooling
-suggestions, his 21:19 words the study-data question, and his 23:31 and 23:37 messages asked for and gave
-feedback on the plan; none of them is the plan's approval.
+suggestions, his 21:19 words the study-data question, and his 23:31, 23:37 and 00:25 messages asked for and
+gave feedback on the plan, and his 00:35 note set the sub-agents' context bound; none of them is the plan's
+approval.
+
+A fact for running the build while he is away (plan §2): a compaction locks the session that compacted,
+the lead's included, until his next message, so an unattended run stops at the lead's first compaction
+after he leaves.
 
 The stored recording is the lead's reconciliation of his 20:50 and 21:19 words: production-computed
 inputs, no study data needed at check time. It commits 7.29 MiB of arrays derived from the proof study,
@@ -145,19 +157,18 @@ ledger declaration debt are rechecked in W2 before anything is rebuilt.
 Unchanged: P0 (`7b61b54`), P1 (`19967cd`, `p1-sartorius-scope-20261018/`), P2b increment 1 (`2b41281`,
 `p2b-bone-context-20261018/`).
 
-This task's checks since revision 6:
-- GitHub, `7464de9`: the gate (run 39174700883) and CodSpeed (run 39174700969) succeeded. GitHub,
-  `6ddcb55`: the gate (run 39175922558: the advisory audit printed `no_known_flaws`, then the gate step
-  passed) and CodSpeed (run 39175922539: the 9 replays under each instrument, upload accepted). Summaries
-  and whole logs, with each push's hook output, are in
-  `data/readings/collapse-20261017/full-build/targeted-compute-20261018/push-gate-hook-20261018/`
-  (its `README.md` lists each with its command).
-- The offline mock of W1 (`w1_mock.mjs`, in
-  `data/readings/collapse-20261017/full-build/targeted-compute-20261018/workflow-plan-r3-20261018/`, whose
-  `README.md` lists every command, exit and digest): on revision 2 it reproduces the review's findings (a
-  wrong HEAD or revision still launches the candidate; the run names no outcome); on revision 3 every case
-  comes out as expected; revision 3's cases fail on revision 2, so they discriminate. It checks the
-  script's control flow only.
+This task's checks since revision 7:
+- GitHub, `17a5393`: the gate (run 39181004300: the advisory audit printed `no_known_flaws`; the gate step
+  passed, with 1,133 tests passed and 1 skipped for want of the competition files, and Sonar's open bugs
+  and vulnerabilities at 0) and CodSpeed (run 39181004338: the 9 replays under CPU simulation and under
+  memory, "Performance data uploaded"). Summaries and whole logs are in
+  `data/readings/collapse-20261017/full-build/targeted-compute-20261018/workflow-plan-r3-20261018/github-runs-17a5393/`;
+  the push's hook output is `push.log` in that same `workflow-plan-r3-20261018/` folder.
+- The offline mock of W1 revision 4 (`w1_mock.mjs`, in
+  `data/readings/collapse-20261017/full-build/targeted-compute-20261018/workflow-plan-r4-20261019/`, whose
+  `README.md` lists every command, exit and digest): on revision 4 all 34 cases come out as expected; the
+  same cases on revision 3 fail at exactly the review's two omission cases and the manifest that lacks a
+  required input. It checks the script's control flow only.
 - This revision's final gate, `bash scripts/ci_local.sh` on exactly this revision's tree: its whole output
   is kept in that folder as `gate.log`, written after this record, which therefore does not carry its
   numbers.
@@ -176,9 +187,10 @@ revision 6 records them
 
 | Task/attempt | Route | Owner | Handle | Dependencies | Output root | Verified state |
 |---|---|---|---|---|---|---|
-| BUILD-WORKFLOW-PLAN-20261018 | This session | Lead | Current chat | Revision 3's sources | `docs/work/current/BUILD_WORKFLOWS.md` | PLAN_FOR_REVIEW |
+| BUILD-WORKFLOW-PLAN-20261018 | This session | Lead | Current chat | Revision 4's sources | `docs/work/current/BUILD_WORKFLOWS.md` | PLAN_FOR_REVIEW |
 | Codex review of the plan | Model-only Codex consultation (a reader) | Lead | Thread `01a15060-6026-73a2-b841-13cd65b5b0b8`; broker PIDs 46746/46754 stopped and confirmed gone | Revision 1 as inlined in its prompt | `workflow-plan-review-20261018/` | ADJUDICATED (`lead-adjudication.md`) |
 | Review of revision 2, pasted at 23:37 | Not attributed: pasted by Rohan; the message does not name its author | Not attributed | Not attributed | Revision 2 | `workflow-plan-r3-20261018/relayed-review.md` | ADJUDICATED (`BUILD_WORKFLOWS.md` §10) |
+| Review of revision 3, pasted at 00:25 | Not attributed: pasted by Rohan; the message does not name its author | Not attributed | Not attributed | Revision 3 | `workflow-plan-r4-20261019/relayed-review.md` | ADJUDICATED (`BUILD_WORKFLOWS.md` §10) |
 | Research: current CI performance tooling | In-session research helper (Haiku), facts only | Lead | Background agent (finished) | None | Its return, read by the lead and reported at 20:03 | RETURNED, REPORTED |
 | GROUNDING-DOC-FIX-20261018 | The Codex session | The Codex session | Not attributed | Revision 1 | `grounding-doc-fixes-20261018/` | DOCUMENTATION_COMPLETE |
 | External/earlier workers | Not attributed | Unknown | Not attributed | Unknown | Earlier packet locations only | UNVERIFIED_EXTERNAL |
@@ -197,14 +209,15 @@ The GitHub gate run and the CodSpeed run on this revision's commit, read after t
 next revision. The audit has not yet met a reported flaw on GitHub, so how the run page shows a step that
 exits 1 under `continue-on-error` is unobserved. The workflow plan is unexecuted: W1's script passes its
 offline mock, which checks control flow only; schema enforcement, worktree isolation and imports,
-permissions, cancellation, and which instruction files reach an agent wait for the runtime rehearsal (its
-§4, after approval). Fresh-session loading of the project CLAUDE.md imports remains to be observed.
+permissions, cancellation, which instruction files reach an agent, and each agent's token use wait for the
+runtime rehearsal (its §4, after approval). Fresh-session loading of the project CLAUDE.md imports remains to be observed.
 
 ## HANDOFF TIME / EVIDENCE LINKS
 
-Prepared 2026-10-19T00:02Z. Evidence: the review, the mock, its reports and this revision's gate log under
-`data/readings/collapse-20261017/full-build/targeted-compute-20261018/workflow-plan-r3-20261018/`; the push
-gate's checks and GitHub runs under `.../targeted-compute-20261018/push-gate-hook-20261018/`;
+Prepared 2026-10-19T00:45Z. Evidence: the review, the mock, its reports and this revision's gate log under
+`data/readings/collapse-20261017/full-build/targeted-compute-20261018/workflow-plan-r4-20261019/`; revision
+3's review, mock, gate log, push and GitHub runs under `.../targeted-compute-20261018/workflow-plan-r3-20261018/`;
+the push gate's checks and earlier GitHub runs under `.../targeted-compute-20261018/push-gate-hook-20261018/`;
 `docs/work/current/BUILD_WORKFLOWS.md`; the Codex prompt, answer and adjudication under
 `.../targeted-compute-20261018/workflow-plan-review-20261018/`; the recording's manifest,
 `benchmarks/recorded/manifest.json`, and its evidence under
