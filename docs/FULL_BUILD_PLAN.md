@@ -554,6 +554,9 @@ answer, and the picture packet the rule rests on. Each reader is one voice, neve
 
 ## 8. P7–P10: finish the whole-operation structural retrofit
 
+The whole-operation efficiency packets in §16 make this work concrete from the full-run probe.
+They refine P7/P9/P10 and their verification, preserving this order and the anatomical contracts.
+
 ### P7 — apply domains to all older consumers
 
 Trace every expensive operation in the no-draw runtime. In addition to P1–P3, cover fat-pad
@@ -791,6 +794,11 @@ Recognition completion requires:
 Report identified / abstained / wrong **per object and orientation**, with uninspected cases
 explicit. Coverage and position-construction checks are not clinical accuracy. A green gate,
 complete pair count or many worker tokens cannot replace native-image acceptance.
+
+The efficiency completion record is §16.5: compare equivalent outputs, account for the whole
+operation and its retained evidence, and report ordinary RSS separately from tracked allocations.
+A kernel replay alone does not complete this part of P11.
+
 
 ## 12. P12–P13: representation and eventual competition completion
 
@@ -1065,3 +1073,121 @@ Calibration shifts, pixel counts, box area, source counts, profile maxima, test 
 remain reported observations. They cannot replace any of those six statements, become acceptance
 targets, or silently redefine the task. An explicit unresolved selector is better than a mechanically
 implemented proxy pretending to be the specified anatomical operation.
+
+
+## 16. Full-operation efficiency: measured leads carried into P7–P11
+
+Rohan's request after the full-run probe: «Can you work on how we can make this part of the full
+build plan/workflow that we can launch?» This section turns that evidence into bounded work inside
+the existing plan. It adds no recognition objective, numerical budget, new pipeline or profiling
+framework. The sequence is still anatomical constraints before residual kernel work (§1).
+
+### 16.1 Evidence and what it does not establish
+
+The dated probe is B + full-run-efficiency-20261019T011718Z/ (B is §2's readings root).
+Read its README.md, SUMMARY.json, source-before.json, source-after.json and commands.json as a
+complete evidence packet. Detailed allocation and CPU reports are there too. Its production source
+pin was afc6f032a4a0d95a5e0492ba961ee018c4b65ddc; profiled source hashes were unchanged across runs.
+The proof study, no drawing and one worker, covered the currently implemented operation. Ordinary,
+Memray and cProfile receipts matched. The packet is evidence of that source, not today's cost, a
+leak diagnosis, an anatomical acceptance record or a multi-worker memory bound.
+
+The measured leads are native-light float64 copies retained in the shared store; decoded slices
+beside a stacked volume; compression and digest copies; repeated frame inverse construction; and
+per-pixel scratch allocation in local lightness. Counts and timings locate work; they neither
+prove every allocation redundant nor prescribe deleting a reading. Useful sharing can increase
+residency while preventing recomputation. Trace consumers, source ownership and lifetime together.
+
+### 16.2 The bounded packets and their production consumers
+
+Each row uses M21, plus the anatomical contracts its reader already serves. The lead settles any
+scope/meaning decision with §§1.1–1.2 and §7 before workers implement it. Workers return facts or an
+equivalent candidate, never choose the anatomy from a memory/timing leaderboard.
+
+| Packet | Existing task / workflow | Operation, inputs and actual consumer | Required evidence / boundary |
+|---|---|---|---|
+| EP0 — freeze whole-operation evidence | W2's existing P7 facts; P7/P9/P10 checkpoints | Read the probe, verify its source hashes against the relevant current modules, and trace every measured producer to its real readers. The lead uses the account to prepare EP1–EP4 packets. Reuse the probe when its inputs/source are applicable; otherwise make a fresh source-pinned baseline. | Name input loading, recognition, shared-store residency, hashing, compression and receipt output separately. Do not call an old source's numbers current or add nested cumulative costs. |
+| EP1 — anatomy scopes and source-owned representations | P2/P3 and P7; W3–W7 | The lead's anatomical regions precede heavy native reads. Include seen_native, its real fibula/head/biceps readers, and any whole-frame float/context materialization those readers demand. Trace decoded Slice.pixels and Series.volume to all callers before considering common backing storage. | Useful context, halos, unknown exterior and all retained readings survive. Share identical contexts; distinct queries remain distinct. Keep broad bootstrap work where a named prerequisite requires it. A storage-only change is equivalent; a scope change gets the anatomical change account. Do not remove a useful cache, cast dtype, drop arrays or gate retention to make RSS smaller. |
+| EP2 — frame transforms made once | P9; W8a's existing geometry work | PlaneFrame.to_native currently constructs the basis pseudoinverse at every call. Establish the full frame/basis identity and mutation rules; reuse that exact transform across callers when those rules allow it. Projection results still consume their own source points. | Check every caller/sibling conversion, oblique/anisotropic geometry and invalid input. A frozen dataclass does not by itself make its ndarray fields immutable. Never key by a slice index alone or reuse a stale inverse. If a different numerical operation changes answers, it is not this equivalent task. |
+| EP3a — digest without repeated byte copies | P9; W8b | The existing digest defines SHA-256 over dtype, shape and C-order array bytes. Feed exactly that stream incrementally and reuse a digest only at an established immutable producer. Consumers are save/receipt verification and the existing source/cache identities. | Preserve every existing digest, dtype/shape distinction, byte order, signed zero and NaN bytes. Exercise contiguous, strided, empty and scalar arrays. A non-contiguous array may still need materialization. Keep mutation invalidation explicit; never memoize by object id alone. |
+| EP3b — lossless persistence with its real readers | P9; W8b after EP3a is integrated | Trace save and all NPZ/receipt/address readers. Reduce repeated serialization/compression setup only within their established format and reconstruction contract. Keep this separate from recognition time and report the storage/time tradeoff. | Every named array, diagnostic reading, key, dtype, shape, address and digest remains reconstructible. Archive compressed bytes need not be identical; decoded arrays and receipt semantics must be. No new storage format, retention switch or asynchronous writer is authorized by this packet. Return a concrete contract gap if one is needed. |
+| EP4 — local-lightness scratch and other residual kernels | P10; W9 | Reprofile after EP1–EP3. If local_lightness remains material, replace per-pixel allocation/partition scratch with scoped reusable workspace under the same median operation. Existing scoped_local_lightness and its anatomical consumer receive the same outputs. Other residual kernels use their own bounded packets. | Keep a reference twin before editing. Same float64 values, finite/unavailable handling, even/odd medians, borders, context/halo and all three output arrays; no fastmath or selector changes. Workspace is per call/worker or has proved safe lifetime, never shared mutable scratch across concurrent calls. A kernel disappearing after structural work needs no speculative rewrite. |
+
+The row is accounted for by an integrated verified implementation, or by a specific measured/code-
+grounded reason the existing operation is already shared or still required. An open item stays
+open. Rejecting one candidate retires that candidate, not the useful-domain capability or anatomical
+information handoff. P2a remains required under §1.1. These dispositions do not replace workflow
+outcomes or the six statements in §15.3.
+
+### 16.3 One repeatable whole-run measurement contract
+
+Use installed instruments through the project interpreter, not a bespoke profiler or production
+import. Invoke scripts/run_interiors.py with explicit input and fresh run/main-run destinations,
+one worker first, drawing off. The probe's commands.json gives the successful local command shape.
+The lead owns these runs; candidates and verifiers retain their own output roots as usual.
+
+- Freeze source hashes, environment/backend, input identity, exact argv, exit status and complete
+  logs. A changed HEAD caused only by documents is not proof that production changed; inspect the
+  relevant source hashes. Unplanned source changes require a fresh pin; an intentionally changed
+  candidate is compared with its preserved pre-change baseline, not mistaken for stale input.
+- Keep an ordinary run for elapsed/user/system time and OS peak RSS; cProfile and Memray are
+  separate diagnostic runs. Use macOS time -l here, an equivalent OS instrument on another host.
+  If OS statistics are refused, record unavailable and use the normal permission route; do not
+  call the pipeline failed solely because the timing wrapper could not report them.
+- Record RSS, tracked live-allocation peak, cumulative allocated bytes and allocation count as
+  different quantities. Name tracking settings and missing native symbols. Startup, imports and
+  JIT loading are included in a fresh-process run; measure cold compilation separately if needed.
+  Nested kernel costs and overlapping cache/array views are not additive ownership totals.
+- Read per-event ledger counts, not cross-stage totals as if every count meant the same thing.
+  Report cheap/expensive slice reads, actual context/query work, cache creations/reuses, broader
+  fallback and retained/persisted bytes. An enclosing box is not a measured irregular domain.
+- Compare ordinary and diagnostic receipts using compare_receipts.py for both output families.
+  For an equivalent candidate compare baseline and candidate too, preserving its source epochs.
+  For a scoped/semantic change use §9's complete change account and inspected native images.
+- Before claiming a speed-up, run ordinary baseline/candidate measurements sequentially under
+  matched input, worker, draw and backend conditions, repeat in alternating order when scheduling
+  noise obscures the result, and keep all observations. If still unclear, report the benefit as
+  undetermined. RSS variation or a larger cumulative allocation total alone proves no leak.
+
+Full diagnostic captures are shared checkpoint evidence, not repeated by every object worker:
+reuse this probe where applicable; refresh after the W7 structural scope work, after W8b's
+representation/persistence work and after W9's kept residual changes. W10 uses those records
+when its frozen source matches, measuring the final ordinary serial and actual parallel paths.
+Reuse existing proof/bursa/public/cohort runs for ordinary observations where the settings match;
+no per-object cohort profiling or duplicate diagnostic suite is added. The run is still one CLI.
+
+### 16.4 Worker verification and benchmark continuity
+
+In addition to their task-specific checks, EP workers/verifiers use these stable check names in
+their prompt, return schema and script's required-check list (never a count of arbitrary checks):
+source_basis, production_consumers, scope_and_context, retained_information, equivalent_outputs,
+real_cli_runs, measurement_semantics, whole_operation_account. The source-basis check follows the
+existing required-file manifests. A worker's whole_operation_account checks baseline applicability,
+its own real-CLI counts/cost observations and affected downstream work; it links the matching-source
+lead checkpoint where one exists. It does not require a post-integration profile that the lead
+cannot make until this candidate is verified. Full shared Memray/cProfile captures remain the lead's
+checkpoint duty; a worker does not invent them or run Sonar. A scoped change replaces the
+equivalent_outputs check with anatomical_change_account and keeps §7's rule/image process.
+A required check that cannot be made stays not_checkable and the chain stays INCOMPLETE. EP4 adds
+reference_twin and concurrent_workspace; EP2 adds geometry_and_mutation; EP3a adds exact_digest_stream;
+EP3b adds reconstruct_all_arrays. These are contents of the existing workflow contract, not a
+second outcome engine.
+
+Keep a fixed set of recorded arguments to compare equivalent kernel implementations. A production
+scope/argument change can justify refreshing benchmarks/recorded, but that changes the benchmark
+question; label it explicitly and keep the prior recording as evidence rather than interpreting
+the difference as the same-call regression. A change to call frequency/targeting/sharing may leave
+an isolated replay unchanged: the ledger and whole run establish that benefit. GitHub keeps the
+existing data-free recorded replays, not an invented tiny-study replacement for this evidence.
+All recordings, profile records, acceptance records and active-packet updates precede the final
+gate on exactly the tree committed (§9). The gate stays the existing one; numbers stay advisory.
+
+### 16.5 Completion at P11
+
+The recognition-completion record links the frozen-source ordinary and diagnostic evidence,
+serial/parallel results, same-output or anatomical change account, and EP0–EP4 dispositions with
+real consumers. Explain useful prior propagation and remaining broad work, retained representations,
+serialization and residual kernels separately. If an item is open, say so; a smaller kernel number
+or green CodSpeed run is not whole-operation completion. There is no new minimum speed-up, RSS
+ceiling, mask-purity target or all-studies perfection requirement. Later MRI encoding and diagnostic
+specification gaps remain P12/P13's and do not block competent recognition.

@@ -17,6 +17,9 @@ How to read it:
   edits were made through another model, and are not in this record: «Please edit the build/handoff plan
   document to try and prevent such idiocy on the part of the other agent in the future»
   (`HOW_TO_BUILD.md`, "The leg-bound conclusion").
+- Words of his quoted from that other session on 2026-10-19, not in this record either: «Can you work on how
+  we can make this part of the full build plan/workflow that we can launch?» (`FULL_BUILD_PLAN.md` §16, as
+  the Codex session recorded them).
 
 ## Morning review
 
@@ -484,3 +487,41 @@ Good. I approve, continue setting this up
 > - one shared Fable reading per scope decision.
 >
 > On "yes" I do the setup steps, run the rehearsal, then W1.
+
+## After the ninth compaction
+
+The session's post-compact lock held it to reading and reporting until this message.
+
+**01:25**, answering the lead's report after the lock:
+Good. Proceed, but hold off before launching the workflow
+
+> **The lead's report it answers (lead text), its last lines:**
+> **Not done yet:**
+> 1. Commit and push the setup changes the gate passed. I'll check with git which files those are once the lock lifts.
+> 2. Write the rehearsal's frozen list of input files, pinned to that commit.
+> 3. Run the rehearsal on the real workflow runtime: the normal run, the cases that must stop, and a cancel followed by a fresh relaunch.
+> 4. Then launch W1.
+>
+> Shall I carry on with those four, in that order?
+
+**01:34**, sent mid-turn:
+I made some additions, should be cleanly integratable:
+
+> **A report, pasted (not his words; the message does not name its author. The edits it reports are the
+> Codex session's, whose paragraph in the active packet calls them "Rohan's later request in the Codex
+> session"):**
+> Integrated into the [full build plan §16](/Users/rohanvinaik/Projects/Kaggle_Killer/competitions/RSNA_Knee/docs/FULL_BUILD_PLAN.md:1078) and [workflow §11](/Users/rohanvinaik/Projects/Kaggle_Killer/competitions/RSNA_Knee/docs/work/current/BUILD_WORKFLOWS.md:1027).
+>
+> The sequence now includes:
+>
+> 1. **W3–W7:** anatomy-driven scopes and shared representations.
+> 2. **W8a:** shared geometry calculations.
+> 3. **W8b:** exact digests and lossless persistence, with separate implementation and verification.
+> 4. **W9:** reprofile, then improve remaining costly kernels—including local-lightness scratch allocation where still relevant.
+> 5. **W10:** verify full-operation time, memory, sharing and retained outputs.
+>
+> Each packet names its consumers, invariants and required checks. Equivalent changes preserve outputs exactly; anatomical scope changes require their own image-grounded account. Memory and timing remain observations, never anatomical objectives.
+>
+> **Validation:** 85 documentation checks, 34 W1 mock cases and 10 R0 mock cases passed. Existing rehearsal code was preserved.
+>
+> Before launch, the lead must include the remaining full-plan edit in its checkpoint, freeze a fresh manifest, and complete the real R0 rehearsal. No production workers launched by me.

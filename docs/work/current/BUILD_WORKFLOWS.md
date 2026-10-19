@@ -13,7 +13,10 @@ text; what each found and what changed are in §10. He approved revision 4 at 01
 I approve, continue setting this up», answering the lead's question, which offered approval with the
 reviews' two Fable answers as written and said that on approval the lead does the setup, runs the
 rehearsal, then W1; §1 records his answers. The plan itself is committed and pushed («just freaking commit
-to git»).
+to git»). After the approval he had the Codex session add §11, with the W8a/W8b split in §5, and
+FULL_BUILD_PLAN §16, and sent them at 01:34: «I made some additions, should be cleanly integratable»; the
+lead integrated them unchanged but for this sentence, §11's first line and §8's import size, recomputed
+after §16.
 
 This is an execution design for `docs/FULL_BUILD_PLAN.md`, not another master plan. The order is the
 plan's §4: P2b → P2a → P3 → P4 → P5 → P6, with P7 and P9 items folded in as each family is touched and
@@ -224,6 +227,10 @@ Settled by your recorded words, stated so you can correct them:
   diagnostic only. The lead commits exactly that tree and pushes; the pre-push hook finds the gate's stamp,
   runs the secret scan and the advisory lockfile audit, and its whole output is read; then the GitHub gate
   run on the pushed commit, whose results go into the next revision (plan §9, step 6).
+- **Whole-operation efficiency:** FULL_BUILD_PLAN §16 supplies EP0–EP4 and the measurement contract.
+  These travel inside the existing P7/P9/P10 packets and their required-input/check lists; this plan's
+  §11 maps them to workers. They change no anatomical selector and introduce no numerical target.
+
 
 ## 4. Preconditions (after approval, before W1)
 
@@ -272,8 +279,9 @@ Settled by your recorded words, stated so you can correct them:
 | **W6a** | P6 posterior/medial, part 1 | F21, F24, F25 SAG/COR | 6: three object adapters + three verifiers | G6a: integrate; CLI; inspect; gate; commit; push. Draft the F22/F23 rules (semimembranosus, semitendinosus, gracilis, sartorius); Codex + Fable |
 | **W6b** | P6 posterior/medial, part 2 | F22, F23 SAG/COR | 6: three adapters (semimembranosus + semitendinosus sharing their dark-body readings; gracilis; sartorius) + three verifiers | G6b: integrate; CLI; inspect; gate; commit; push. **P6 family-wave sheets to Rohan** |
 | **W7** | P7 remaining older consumers | Each expensive caller → an explicit consumed scope or a recorded reason it needs broader work | ≤8: candidates grouped by consumer (fat-pad candidate reads; own-slice ACL/LCL/biceps/retinacula; joint/tendon planes; native axial territory; posterior lumen/corridor; muscle opening; the three `dark_bands` callers) + verifiers, split into two workflows if needed | G7: per consumer, the scope chosen by the lead (semantic check + Codex [+ Fable]); integrate; changed-output account; CLI; inspect; gate; commit; push |
-| **W8** | P8 + P9 closure | Catalogue from production definitions; marrow's output address (F04); residual lineage; shared profile/merge/geometry where semantics match; digests once; persistence | 8: catalogue facts; marrow wiring; residual lineage; shared profiles/merges; digests/persistence; three verifiers | G8: equivalent refactors reproduce receipts exactly; the marrow address is an adjudicated new output; gate; commit; push |
-| **W9** | P10 hot kernels | Reprofiled residual work → equivalent kernels | ≤6: one real-CLI profile; two or three kernel candidates with reference twins and equality tests; verifiers | G9: a kernel is kept only if its outputs are identical; paired whole-operation timing; gate; commit; push |
+| **W8a** (W8 closure) | P8 + P9 closure; EP2 | Catalogue; marrow address (F04); residual lineage; shared profiles/merges/geometry under the same semantics | ≤8: catalogue facts; marrow wiring; residual lineage; shared profiles/merges/geometry; grouped independent verifiers | G8a: integrate one candidate at a time; equivalent refactors reproduce receipts exactly; marrow is an adjudicated new output; gate; commit; push |
+| **W8b** | P9 persistence; EP3a then EP3b | Exact digest stream, retained arrays and existing NPZ/receipt/readers | ≤4 per batch: digest candidate + independent verifier; then persistence candidate + independent verifier on the integrated digest source; never competing writer edits | G8b: every array/address/digest retained; matching-source whole-run cost account including compression and allocation traffic; gate; commit; push |
+| **W9** | P10 hot kernels; EP4 | Reprofile after W7/W8; exact reference twins for residual material work | ≤5 per batch: one shared real-CLI profile fact packet, up to two bounded kernel candidates and their independent verifiers; repeat bounded batches only for unresolved material kernels | G9: keep equivalent answers; source-pinned paired whole-operation observations; local-lightness workspace checked when still material; gate; commit; push |
 | **W10** | P11 verification | The frozen operation's outputs → per object and orientation: identified / abstained / wrong, uninspected explicit; the owed-item inventory closed (each item shown done with evidence, or carried open); every ordered pair vector resolved or a named partial endpoint; whole-operation cost and fallback accounting (visited pixels and windows, requests, misses and handoffs, fallback work, retained bytes, time and memory) | ≤8: auditors by family reading receipts and addressed images; a completeness critic (the catalogue against every requested concept and view); a source/receipt/address auditor | G10: the lead runs serial, parallel, public and the labelled cohort and the gate; accepts; writes the recognition-completion record; commits; pushes; reports to Rohan |
 | **W11** | P12 preparation + P13 preparation | `what_an_object_is.md` §§7, 13 and the retained measurements → what the primary text settles for the MRI place/depth/bank/support layout and what it leaves open; the typed object interface and the twelve documented condition relationships | 3: thesis-section facts; retained-measurement inventory; object-interface and condition-relationship inventory | G11: the lead writes the contract and records the interface and relationships; Codex; a step the text leaves unspecified goes to Rohan |
 | **W12** | P12 implementation | What the contract settles → the exact encoding, written from retained measurements | ≤4: candidates with tests of exact bundle, decode and subtraction, order invariance, layout compatibility, silent banks and physical support ownership; verifiers | G12: integrate; gate; commit; push. P13 waits for Rohan's specification; packaging and submission are later requested actions |
@@ -281,6 +289,12 @@ Settled by your recorded words, stated so you can correct them:
 Between gates the lead prepares the next workflow's packets while verifiers run, never racing two
 implementations of the same unit. Every candidate touches the 23k-line runner, so family logic goes in
 modules with thin call-site wiring, and the lead integrates sequentially.
+
+EP0 is part of W2's existing P7 runtime/profile fact packet; EP1 follows the lead-reviewed scopes
+through W3–W7. W8 is split into W8a/W8b so storage work does not overload catalogue/lineage closure.
+W10's recognition-completion record includes FULL_BUILD_PLAN §16.5; the complete measurement and
+packet contracts are there rather than copied into a second queue.
+
 
 ## 6. Per-workflow FORBIDDEN SUBSTITUTIONS (in each packet)
 
@@ -315,6 +329,10 @@ modules with thin call-site wiring, and the lead integrates sequentially.
   line (nothing may follow it) and its reason in a comment just above; a real finding is fixed. No
   blanket suppression and no rule disabled to turn the gate green.
 - **Every workflow:** the guide's §10 failure cases are checked against each draft prompt before launch.
+- **Efficiency packets:** no dropping evidence, precision reduction, retention flag, approximate median,
+  new archive format, shared mutable workspace or timing-based anatomical selector. Keep startup,
+  ordinary RSS, live allocations, allocation traffic and compression distinct (FULL_BUILD_PLAN §16).
+
 
 ## 7. W1, drafted in full (for review; not run)
 
@@ -895,8 +913,8 @@ return { part: args.part, pin: { head: PIN.head, manifestSha256: PIN.manifestSha
 
 ## 8. Cost and capacity
 
-- About 90–100 agents over W1–W12 at Sonnet xhigh, each loading the project CLAUDE.md (about 231 KB of
-  imports: AGENTS, THEORY, HOW_TO_BUILD, the plan and two conversations) plus its packet: the dominant
+- About 90–105 agents over W1–W12 (including W8a/W8b) at Sonnet xhigh, each loading the project CLAUDE.md (about 252 KB of
+  imports, recomputed after FULL_BUILD_PLAN §16: AGENTS, THEORY, HOW_TO_BUILD, the plan and two conversations) plus its packet: the dominant
   fixed cost per agent.
 - Codex: one consultation per decision batch (P2a; P3 scopes; the P4, P5 and P6 rules; P7 scopes; P12)
   with complete inlined payloads of about 150–300 KB, from the model-only home; `consult-budget` before and
@@ -1007,3 +1025,44 @@ compaction locks the lead until his next message; and P11 stays the finish line 
 unspecified details and P13 not blocking it. Rohan's note at 00:35, that each sub-agent should stay under a
 million tokens, is §3's context rule. No anatomical mechanism, contract or rule changed, so there was no new
 Codex consultation.
+
+
+## 11. Whole-operation efficiency in the launched sequence
+
+Rohan asked the Codex session, which wrote this section, to incorporate the full-run profiling into the
+launchable build. The
+implementation/measurement authority is FULL_BUILD_PLAN §16, extending the existing P7/P9/P10 work;
+§1's recorded approval and Fable decisions stand. No implementation or new workflow is launched by
+this documentation edit, and the in-progress R0 rehearsal remains the next setup operation.
+
+1. W2's P7 fact worker reads the complete probe packet named in §16.1, checks its production source
+   fingerprints and maps its producers to consumers. The lead uses EP0 to prepare later packets;
+   the old numbers do not become the current runtime by being copied into them.
+2. W3–W7 implement EP1 as part of their actual anatomical scope work. Each packet names what is
+   already known, why it narrows this reader and which query/context values are passed before work.
+   Source-owned slice/volume or float-cache storage is examined here; useful reuse stays intact.
+   Pure storage changes get exact-output checks, while changed scope follows the anatomy review.
+3. W8a folds EP2 into the existing geometry sharing candidate. W8b owns EP3a's exact digest stream,
+   then EP3b's existing-format persistence. They have separate candidates and verifiers; the second
+   uses the first's accepted source. Ownership of receipt.py/save/readers is explicit, one writer
+   at a time, with reference checks before every edit. No container/retention redesign is smuggled in.
+4. W9 receives one refreshed whole-operation fact packet after those structural changes, then EP4
+   and any other still-material kernel. Local-lightness scratch is a measured lead, not a command
+   to rewrite a kernel no longer costing meaningful work. Candidates retain their reference twins.
+5. The lead shares whole-run captures at the W7, W8b and W9 checkpoints as §16.3 specifies; these
+   complement the existing CLI runs and replace duplicate profiler requests. W10 closes the final
+   source's ordinary serial/parallel account and records each packet's evidence-backed disposition.
+
+Before each implementation launch, include the concrete §16 row, its relevant whole M/F contracts,
+its consumer units and the named required checks from §16.4 in the packet, schema and script.
+Missing required evidence ends INCOMPLETE; mismatched source ends STALE_INPUT under §3. Run each
+new script's mock before dispatch as §4 already requires. The existing W1/R0 scripts and outcomes
+are unchanged. Prepare these bounded scripts at their dependency gate rather than freeze W8 code
+against the pre-W1 tree. Worktrees use the project interpreter, their own imports and output roots.
+
+The lead freezes the matching-source whole-run account, refreshes applicable saved kernel calls,
+writes the acceptance record and active packet, then runs the final gate last (§3). Existing
+GitHub/CodSpeed recorded replays stay data-free; a new synthetic smoke is not a substitute for
+measuring this production operation. This adds no human approval loop, timing/RSS target, tuning
+campaign or permission to abandon useful priors. Live jobs and the next action remain solely in
+the active packet; full-run profiles are immutable dated evidence, not another task queue.
