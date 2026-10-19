@@ -474,3 +474,13 @@ Feedback:
 
 **00:35**, sent mid-turn:
 Note the post-compact hook means that each sub-agent in the workflow should stay under a million tokens, which should be entirely doable
+
+**01:01**, answering the question at the end of the lead's report on revision 4 (`a9714a1`):
+Good. I approve, continue setting this up
+
+> **The lead's question it answers (lead text):**
+> **Question:** reply "yes" to approve revision 4 with the review's two Fable answers as written, or tell me yours. Those answers are:
+> - one retry, made only after the technical failure is diagnosed;
+> - one shared Fable reading per scope decision.
+>
+> On "yes" I do the setup steps, run the rehearsal, then W1.

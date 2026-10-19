@@ -7,7 +7,8 @@ that index. Worker attempts and acceptance packets are dated evidence, not anoth
 ## TASK ID / PACKET REVISION / STATE
 
 - Task ID: `BUILD-WORKFLOW-PLAN-20261018`.
-- Packet revision: 8. Revision 7, as committed in `17a5393`, is preserved verbatim at
+- Packet revision: 9. Revision 8, as committed in `a9714a1`, is preserved verbatim at
+  `docs/work/history/BUILD-WORKFLOW-PLAN-20261018-r8.md`; revision 7, as committed in `17a5393`, at
   `docs/work/history/BUILD-WORKFLOW-PLAN-20261018-r7.md`; revision 6, as committed in `7464de9`, at
   `docs/work/history/BUILD-WORKFLOW-PLAN-20261018-r6.md`; revision 5 at
   `docs/work/history/BUILD-WORKFLOW-PLAN-20261018-r5.md`, revision 4 at
@@ -15,10 +16,12 @@ that index. Worker attempts and acceptance packets are dated evidence, not anoth
   `docs/work/history/BUILD-WORKFLOW-PLAN-20261018-r3.md`, revision 2 at
   `docs/work/history/BUILD-WORKFLOW-PLAN-20261018-r2.md`; revision 1 (task `GROUNDING-DOC-FIX-20261018`,
   written by the Codex session) at `docs/work/history/GROUNDING-DOC-FIX-20261018.md`.
-- State: `PLAN_FOR_REVIEW`. The workflow plan is `BUILD_WORKFLOWS.md` revision 4, which answers the review
-  Rohan pasted at 00:25 under his word «Feedback:» and records his 00:35 note on the sub-agents' context.
-  It waits for his approval and for his answers to its two Fable decisions.
-- Activity: revision 4 of the plan and this packet. No build workflow is launched by this task.
+- State: `SETTING_UP`. Rohan approved `BUILD_WORKFLOWS.md` revision 4 at 01:01 on 2026-10-19: «Good. I
+  approve, continue setting this up», answering the lead's question, which offered approval with the
+  reviews' two Fable answers as written and said that on approval the lead does the setup, runs the
+  rehearsal, then W1. The plan's §1 records his answers.
+- Activity: recording the approval and the route change (the guide's §6 table and heading, FULL_BUILD_PLAN
+  §10), then the plan's §4 preconditions. No build workflow is launched yet.
 
 ## CURRENT REQUEST / AUTHORITATIVE EXCHANGES / ACTUAL AUTHORS
 
@@ -76,18 +79,22 @@ Rohan, verbatim, all recorded in `docs/conversations/2026-10-18-build-session-co
   It recommends the same answers to the two Fable decisions; they are his only when he gives them.
 - 00:35, mid-turn: «Note the post-compact hook means that each sub-agent in the workflow should stay under
   a million tokens, which should be entirely doable».
+- 01:01: «Good. I approve, continue setting this up», answering the lead's question (lead text, in the
+  record): "reply "yes" to approve revision 4 with the review's two Fable answers as written, or tell me
+  yours", followed by the two answers and "On "yes" I do the setup steps, run the rehearsal, then W1."
 - His process choices of 2026-10-18 stand: Claude as the lead and single writer (11:25); pictures at the
   end of each family wave (11:25); the §7 rule review by Codex plus the Fable consult (17:15). His other
   words of the day, in order, are in the record.
 
 ## SOURCE HEAD / DIRTY UNITS / MANIFEST / INPUT IDENTITIES
 
-- Pushed since revision 7 was written: `17a5393` (the plan's revision 3; this packet's revision 7). Its
+- Pushed since revision 8 was written: `a9714a1` (the plan's revision 4; this packet's revision 8). Its
   pre-push hook found the gate's stamp on that tree, the secret scan found nothing in the lines it adds to
-  5 files, and the audit named `no_known_flaws`.
-- This revision's commit follows `17a5393`; `git log` is the record. Its production source changes: none
-  (`BUILD_WORKFLOWS.md`, the corrections record, this packet and its history copy). The recording in
-  `benchmarks/recorded/` was made from `667e28b`'s production source, unchanged since.
+  4 files, and the audit named `no_known_flaws`.
+- This revision's commit follows `a9714a1`; `git log` is the record. Its production source changes: none
+  (`BUILD_WORKFLOWS.md` §1 and its header, the guide's §6, FULL_BUILD_PLAN §10, the corrections record,
+  this packet and its history copy). The recording in `benchmarks/recorded/` was made from `667e28b`'s
+  production source, unchanged since.
 
 ## OWNER / PERMITTED WRITES / WORKER ROUTES
 
@@ -123,20 +130,19 @@ gate step, with `continue-on-error`, so the gate always runs.
 
 ## NEXT SINGLE ACTION / PROPOSED OPERATION / JUSTIFICATION
 
-Rohan's approval of `BUILD_WORKFLOWS.md` revision 4 and his answers to its two Fable decisions. On
-approval: the preconditions of its §4 (the tools, the clean tree, the pin and the baseline manifest, the
-offline mock, the runtime rehearsal R0), then W1. Dropped at his 21:19 words: the self-hosted runner on
+The preconditions of `BUILD_WORKFLOWS.md` §4, in order: the tools in `B/workflow-tools/` (2), the consult
+checks (3), a clean tree, the pin and the baseline manifest (4), the rehearsal's script and its offline
+mock (5), and the runtime rehearsal R0 (6), with what breaks fixed and the mock re-run; then W1, as his
+approval covers. Dropped at his 21:19 words: the self-hosted runner on
 this Mac (it existed to give a GitHub job the studies) and downloading the proof study to GitHub's runners.
 
 ## OPEN SEMANTIC CHOICE / PREREQUISITES / OTHER OPEN BUILD ITEMS
 
-His two decisions (`BUILD_WORKFLOWS.md` §1): a failed billed Fable call (retry or collect); Fable readings
-for the P2a, P3 and P7 scope sheets. Both reviews he pasted recommend one retry after a diagnosed technical
-failure, and yes to the scope readings with one reading per scope decision (agent text, not his answers).
-His «Agree with you suggestions» (20:06) answered the lead's 20:03 Sonar recommendation and tooling
-suggestions, his 21:19 words the study-data question, and his 23:31, 23:37 and 00:25 messages asked for and
-gave feedback on the plan, and his 00:35 note set the sub-agents' context bound; none of them is the plan's
-approval.
+His two decisions (`BUILD_WORKFLOWS.md` §1) are given, at 01:01: one retry after a diagnosed technical
+failure of a billed Fable call; yes to Fable readings of the P2a, P3 and P7 scope sheets, one reading per
+scope decision. Before that, his «Agree with you suggestions» (20:06) answered the lead's 20:03 Sonar
+recommendation and tooling suggestions, his 21:19 words the study-data question, his 23:31, 23:37 and 00:25
+messages asked for and gave feedback on the plan, and his 00:35 note set the sub-agents' context bound.
 
 A fact for running the build while he is away (plan §2): a compaction locks the session that compacted,
 the lead's included, until his next message, so an unattended run stops at the lead's first compaction
@@ -157,21 +163,15 @@ ledger declaration debt are rechecked in W2 before anything is rebuilt.
 Unchanged: P0 (`7b61b54`), P1 (`19967cd`, `p1-sartorius-scope-20261018/`), P2b increment 1 (`2b41281`,
 `p2b-bone-context-20261018/`).
 
-This task's checks since revision 7:
-- GitHub, `17a5393`: the gate (run 39181004300: the advisory audit printed `no_known_flaws`; the gate step
-  passed, with 1,133 tests passed and 1 skipped for want of the competition files, and Sonar's open bugs
-  and vulnerabilities at 0) and CodSpeed (run 39181004338: the 9 replays under CPU simulation and under
-  memory, "Performance data uploaded"). Summaries and whole logs are in
-  `data/readings/collapse-20261017/full-build/targeted-compute-20261018/workflow-plan-r3-20261018/github-runs-17a5393/`;
-  the push's hook output is `push.log` in that same `workflow-plan-r3-20261018/` folder.
-- The offline mock of W1 revision 4 (`w1_mock.mjs`, in
-  `data/readings/collapse-20261017/full-build/targeted-compute-20261018/workflow-plan-r4-20261019/`, whose
-  `README.md` lists every command, exit and digest): on revision 4 all 34 cases come out as expected; the
-  same cases on revision 3 fail at exactly the review's two omission cases and the manifest that lacks a
-  required input. It checks the script's control flow only.
+This task's checks since revision 8:
+- GitHub, `a9714a1`: the gate (run 39182680126) and CodSpeed (run 39182680061) completed with every step
+  succeeding, read from their step summaries; their whole logs are kept, not yet read, in
+  `data/readings/collapse-20261017/full-build/targeted-compute-20261018/workflow-plan-r4-20261019/github-runs-a9714a1/`,
+  and the push's hook output is `push.log` in that `workflow-plan-r4-20261019/` folder (whose `README.md`
+  also records revision 4's offline mock: 34 of 34 on revision 4, 31 of 34 on revision 3).
 - This revision's final gate, `bash scripts/ci_local.sh` on exactly this revision's tree: its whole output
-  is kept in that folder as `gate.log`, written after this record, which therefore does not carry its
-  numbers.
+  is kept as `gate.log` in `data/readings/collapse-20261017/full-build/targeted-compute-20261018/workflow-setup-20261019/`,
+  written after this record, which therefore does not carry its numbers.
 
 ## INSPECTED IMAGE ADDRESSES / RESULT AND UNKNOWN SEMANTICS
 
@@ -187,7 +187,7 @@ revision 6 records them
 
 | Task/attempt | Route | Owner | Handle | Dependencies | Output root | Verified state |
 |---|---|---|---|---|---|---|
-| BUILD-WORKFLOW-PLAN-20261018 | This session | Lead | Current chat | Revision 4's sources | `docs/work/current/BUILD_WORKFLOWS.md` | PLAN_FOR_REVIEW |
+| BUILD-WORKFLOW-PLAN-20261018 | This session | Lead | Current chat | Revision 4, approved 01:01 | `docs/work/current/BUILD_WORKFLOWS.md` | SETTING_UP |
 | Codex review of the plan | Model-only Codex consultation (a reader) | Lead | Thread `01a15060-6026-73a2-b841-13cd65b5b0b8`; broker PIDs 46746/46754 stopped and confirmed gone | Revision 1 as inlined in its prompt | `workflow-plan-review-20261018/` | ADJUDICATED (`lead-adjudication.md`) |
 | Review of revision 2, pasted at 23:37 | Not attributed: pasted by Rohan; the message does not name its author | Not attributed | Not attributed | Revision 2 | `workflow-plan-r3-20261018/relayed-review.md` | ADJUDICATED (`BUILD_WORKFLOWS.md` §10) |
 | Review of revision 3, pasted at 00:25 | Not attributed: pasted by Rohan; the message does not name its author | Not attributed | Not attributed | Revision 3 | `workflow-plan-r4-20261019/relayed-review.md` | ADJUDICATED (`BUILD_WORKFLOWS.md` §10) |
@@ -210,13 +210,14 @@ next revision. The audit has not yet met a reported flaw on GitHub, so how the r
 exits 1 under `continue-on-error` is unobserved. The workflow plan is unexecuted: W1's script passes its
 offline mock, which checks control flow only; schema enforcement, worktree isolation and imports,
 permissions, cancellation, which instruction files reach an agent, and each agent's token use wait for the
-runtime rehearsal (its §4, after approval). Fresh-session loading of the project CLAUDE.md imports remains to be observed.
+runtime rehearsal (its §4), which comes next. Fresh-session loading of the project CLAUDE.md imports remains to be observed.
 
 ## HANDOFF TIME / EVIDENCE LINKS
 
-Prepared 2026-10-19T00:45Z. Evidence: the review, the mock, its reports and this revision's gate log under
-`data/readings/collapse-20261017/full-build/targeted-compute-20261018/workflow-plan-r4-20261019/`; revision
-3's review, mock, gate log, push and GitHub runs under `.../targeted-compute-20261018/workflow-plan-r3-20261018/`;
+Prepared 2026-10-19T01:10Z. Evidence: this revision's gate log and the setup's records under
+`data/readings/collapse-20261017/full-build/targeted-compute-20261018/workflow-setup-20261019/`; revision
+4's review, mock, gate log, push and GitHub runs under `.../targeted-compute-20261018/workflow-plan-r4-20261019/`;
+revision 3's review, mock, gate log, push and GitHub runs under `.../targeted-compute-20261018/workflow-plan-r3-20261018/`;
 the push gate's checks and earlier GitHub runs under `.../targeted-compute-20261018/push-gate-hook-20261018/`;
 `docs/work/current/BUILD_WORKFLOWS.md`; the Codex prompt, answer and adjudication under
 `.../targeted-compute-20261018/workflow-plan-review-20261018/`; the recording's manifest,

@@ -201,7 +201,11 @@ new paths. Missing prerequisites are returned by name; source arrays remain inta
 
 ## 6. Launch through the appropriate economical route
 
-### Text-only Claude Max worker: the recorded default for bounded code
+### Text-only Claude Max worker: the earlier default for bounded code
+
+Since Rohan approved `docs/work/current/BUILD_WORKFLOWS.md` (2026-10-19, 01:01: «Good. I approve, continue
+setting this up»), bounded implementation runs as that plan's workflow agents (the table below). This
+route stays recorded and usable for a text-only candidate.
 
 Read the whole working launcher, invocation and system prompt under:
 
@@ -264,7 +268,7 @@ The job-to-route mapping is explicit:
 | Job | Route | Inputs actually available |
 |---|---|---|
 | Evidence, source tracing, image reconstruction, tests and address verification | Tool-enabled in-session helpers with bounded ownership | Only the files, tools and images actually accessible to that helper; record its source basis. |
-| Bounded implementation | Text-only subscription-authenticated Claude Max worker | Complete prompt text; no implicit files, images, CLAUDE.md or hooks. |
+| Bounded implementation | Workflow agents (Sonnet, xhigh effort), each in an isolated git worktree, under `docs/work/current/BUILD_WORKFLOWS.md` (Rohan, 18:46: «plan out workflows that will complete the specified build of the full project as articulated thus far (Sonnet xhigh effort for the agents)»; approved 2026-10-19, 01:01) | The instructions the runtime loads into each agent (the rehearsal records which) and the files its prompt names, each hashed against the baseline manifest; code edits only in its own worktree. The text-only Claude Max route above stays usable for a text-only candidate. |
 | Independent thesis/contract review | Model-only Codex consultation | Complete rendered text payload; do not rely on file or image tools or assign implementation/test execution. |
 | Independent picture reading | Fable over the Anthropic API under plan §7 | Governing prompt text plus actual attached picture sheet, with metadata retained. |
 

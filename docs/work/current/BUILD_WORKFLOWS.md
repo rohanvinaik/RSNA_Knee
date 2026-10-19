@@ -9,8 +9,11 @@ revision 1 as it stood when the answer came (`BUILD_WORKFLOWS-at-codex-answer.md
 Rohan at 22:05 and is in git at `6ddcb55`. Revision 3, at `17a5393`, answered the review he pasted at
 23:37 under his words «Feedback on the workflow»; revision 4 answers the review he pasted at 00:25 under
 his word «Feedback:», and records his note at 00:35 on the sub-agents' context (§3). Both reviews are agent
-text; what each found and what changed are in §10. Nothing here is launched until he approves; the plan
-itself is committed and pushed («just freaking commit to git»).
+text; what each found and what changed are in §10. He approved revision 4 at 01:01 on 2026-10-19: «Good.
+I approve, continue setting this up», answering the lead's question, which offered approval with the
+reviews' two Fable answers as written and said that on approval the lead does the setup, runs the
+rehearsal, then W1; §1 records his answers. The plan itself is committed and pushed («just freaking commit
+to git»).
 
 This is an execution design for `docs/FULL_BUILD_PLAN.md`, not another master plan. The order is the
 plan's §4: P2b → P2a → P3 → P4 → P5 → P6, with P7 and P9 items folded in as each family is touched and
@@ -19,30 +22,29 @@ Rohan. Each workflow names its P-task, the §§14–15 contracts it consumes and
 and the lead gate it ends at. Beyond the plan: the launch preconditions (§4), the re-check of the six
 stopped wave-1 packets (W2), and an owed-item inventory begun in W2 and closed in W10.
 
-## 1. Decisions for Rohan
+## 1. Rohan's decisions
 
 Two, both about the Fable consult (the only second reader that can see a picture; it spends API credits).
-The reviews he pasted at 23:37 and 00:25 recommend the same answer to each; an answer is his only when he
-gives it.
+The reviews he pasted at 23:37 and 00:25 recommended the same answer to each, and he gave those answers at
+01:01 on 2026-10-19 by approving revision 4 with them as written (the lead's question, lead text: "reply
+"yes" to approve revision 4 with the review's two Fable answers as written, or tell me yours").
 
-1. **A failed billed Fable call.** The consultation reference says it is not retried without your
-   decision. Pre-authorise one retry per rule, or have such failures collected for you at the end of the
-   family wave? The reviews recommend one retry, made only after the technical failure is diagnosed:
-   while a required reading has failed, its rule is held and independent work goes on, and a
-   disagreement is never a reason to retry.
+1. **A failed billed Fable call.** The consultation reference says it is not retried without his
+   decision. His answer: one retry per rule, made only after the technical failure is diagnosed; while a
+   required reading has failed, its rule is held and independent work goes on, and a disagreement is
+   never a reason to retry.
 2. **Fable for the scope sheets.** Plan §7 covers the ~31 P4–P6 anatomy rules: one reading per rule (a
    call may carry an object's views together only if its answer reads each rule separately). P2a's region
    rule, P3's corridor and cavity scopes and P7's consumer scopes are picture-grounded too, and Codex
-   cannot see pictures. Add one Fable reading per scope sheet, about a dozen more? The reviews recommend
-   yes, one reading shared by every caller that implements the same scope decision rather than one per
-   caller.
+   cannot see pictures. His answer: yes, one Fable reading per scope decision, shared by every caller that
+   implements the same scope decision rather than one per caller.
 
 Settled by your recorded words, stated so you can correct them:
 
 - **Workflow agents implement.** Your 18:46 instruction (workflows, Sonnet at xhigh) makes workflow
-  agents the implementers, each in an isolated worktree, with the lead the single integrator. On your
+  agents the implementers, each in an isolated worktree, with the lead the single integrator. On his
   approval of this plan, the guide's route row "Bounded implementation → text-only Claude Max" and plan
-  §10's matching sentence change to say so.
+  §10's matching sentence changed to say so.
 - **Pacing.** You see each family wave's pictures together at its end (11:25), and plan §7 builds a rule
   both readers agree with without waiting. So the next family does not wait for your look; anything you
   flag stops the affected work through §3's invalidation.

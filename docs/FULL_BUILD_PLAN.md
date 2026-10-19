@@ -711,9 +711,11 @@ For every production increment:
 Rohan explicitly authorized the source/measurement handoff and requested the **local CLI**:
 «I am providing that approval, but more importantly I want you to use the local CLI path.»
 Use one explicit route per job: tool-enabled in-session helpers reconstruct images, trace source,
-run isolated tests and check addresses; text-only subscription-authenticated Claude Max workers
-return bounded implementation candidates; model-only Codex provides independent text review;
-Fable over the Anthropic API reads picture sheets. The Codex consultation route receives no
+run isolated tests and check addresses; workflow agents (Sonnet, xhigh effort), each in an isolated
+git worktree, return bounded implementation candidates under `docs/work/current/BUILD_WORKFLOWS.md`
+(Rohan, 2026-10-19: «Good. I approve, continue setting this up»), and the text-only
+subscription-authenticated Claude Max route below stays recorded for a text-only candidate;
+model-only Codex provides independent text review; Fable over the Anthropic API reads picture sheets. The Codex consultation route receives no
 implementation work and is not an evidence/test runner. Tool-enabled session helpers are a
 different capability, not a promise that a model-only consultation can open files or images.
 Lead retains meaning, rule selection, production integration and visual acceptance.
