@@ -410,3 +410,33 @@ lead's mistakes, and recommended:
 > And: The other option is to keep it blocking, with a file in the repo listing each flaw you've looked at and accepted, and why. A push could then get through without `--no-verify`.
 
 Agree with your fixes, implement them so we have a working gate/CI action
+
+## After the seventh compaction
+
+**23:31**, answering the lead's report on the push gate (`6ddcb55` and its GitHub runs):
+Good enough, this is sufficient. I'd like you to look over the workflow plan you wrote up and get instantiated in that task, then I'll provide the feedback
+
+**23:37**
+Feedback on the workflow
+
+> **A review, pasted (not his words; the message does not name its author):**
+> **The plan is substantially sound and faithful to the thesis.** It keeps anatomical decisions with the lead, gives workers bounded implementation tasks, preserves uncertainty, and connects acceptance to actual production output and pictures.
+>
+> I would fix four execution details before launch:
+>
+> 1. **Validate returned source identities mechanically.** W1 checks `completion` and nonempty fields, but does not compare returned HEAD, packet revision or hashes against the expected inputs. I ran an offline mock: a trace returning the **wrong HEAD and revision still launched implementation**. Those mismatches should stop that chain. [W1 code](/Users/rohanvinaik/Projects/Kaggle_Killer/competitions/RSNA_Knee/docs/work/current/BUILD_WORKFLOWS.md:204)
+>
+> 2. **Return an explicit verification outcome.** The same mock returned blocking verifier findings, but the workflow returned them without an overall failed/blocked state. The written lead gate remains a safeguard; the orchestration should additionally distinguish `READY_FOR_LEAD_REVIEW`, `VERIFICATION_FAILED`, and `INCOMPLETE`. “Worker finished” must remain separate from “candidate verified.”
+>
+> 3. **Distinguish baseline hashes from candidate hashes.** Check the untouched checkout against the baseline first. After applying the candidate, check changed units against a candidate manifest and unchanged dependencies against the baseline. Otherwise the instruction to compare “every unit you read” against HEAD can classify intentional edits as stale. Include governing documents in the frozen source basis, not just `scripts/`, `src/` and `tests/`.
+>
+> 4. **Refresh benchmark recordings before the final gate.** The current sequence says gate, refresh recording, commit. The gate does not itself refresh recordings. Record the integrated production calls first, then run the final checks against exactly what will be committed. [Gate](/Users/rohanvinaik/Projects/Kaggle_Killer/competitions/RSNA_Knee/scripts/ci_local.sh)
+>
+> The launch rehearsal should exercise the **actual workflow runtime**, including blocked returns, mismatched identities, cancellation and worktree imports—not only a manually created worktree.
+>
+> For the two Fable decisions, I recommend:
+>
+> - **One retry after diagnosing a technical failure.** A failed required review holds the affected rule; independent work can continue. Disagreement is not grounds for retrying.
+> - **Yes to reviewing new picture-dependent scope decisions.** Share a review across callers implementing the same scope decision rather than paying repeatedly for identical reasoning.
+>
+> The workflow order and division of responsibility look appropriate. These corrections make the execution enforce more of what the prose already requires. I changed no files and launched no real workers.

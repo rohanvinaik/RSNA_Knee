@@ -1,15 +1,14 @@
 # Build workflows: carrying out FULL_BUILD_PLAN P2b–P12 (the lead's plan for Rohan's review)
 
-Revision 2, 2026-10-18, written by the lead (Claude) at Rohan's request: «plan out workflows that will
+Revision 3, 2026-10-18, written by the lead (Claude) at Rohan's request: «plan out workflows that will
 complete the specified build of the full project as articulated thus far (Sonnet xhigh effort for the
 agents). Come to me with your full plan when you've designed it, consult codex on the plan». Revision 1
 went to Codex; its reading (`codex-answer.md`) and the lead's adjudication (`lead-adjudication.md`) are in
 `data/readings/collapse-20261017/full-build/targeted-compute-20261018/workflow-plan-review-20261018/`, with
-revision 1 as it stood when the answer came (`BUILD_WORKFLOWS-at-codex-answer.md`). Nothing here is
+revision 1 as it stood when the answer came (`BUILD_WORKFLOWS-at-codex-answer.md`). Revision 2 went to
+Rohan at 22:05 and is in git at `6ddcb55`. Revision 3 answers the review he pasted at 23:37 under his words
+«Feedback on the workflow» (agent text; what it found and what changed are in §10). Nothing here is
 launched until he approves; the plan itself is committed and pushed («just freaking commit to git»).
-Since revision 2 the lead has added one step to every gate (§2, §3), after the kernel benchmarks moved
-to recorded production calls at Rohan's 21:19 words (FULL_BUILD_PLAN §9, step 6), and noted the CodSpeed
-run each push now starts (§8).
 
 This is an execution design for `docs/FULL_BUILD_PLAN.md`, not another master plan. The order is the
 plan's §4: P2b → P2a → P3 → P4 → P5 → P6, with P7 and P9 items folded in as each family is touched and
@@ -20,15 +19,20 @@ stopped wave-1 packets (W2), and an owed-item inventory begun in W2 and closed i
 
 ## 1. Decisions for Rohan
 
-Two, both about the Fable consult (the only second reader that can see a picture; it spends API credits):
+Two, both about the Fable consult (the only second reader that can see a picture; it spends API credits).
+The review he pasted at 23:37 recommends an answer to each; an answer is his only when he gives it.
 
 1. **A failed billed Fable call.** The consultation reference says it is not retried without your
    decision. Pre-authorise one retry per rule, or have such failures collected for you at the end of the
-   family wave?
+   family wave? The review recommends one retry, made only after the technical failure is diagnosed:
+   while a required reading has failed, its rule is held and independent work goes on, and a
+   disagreement is never a reason to retry.
 2. **Fable for the scope sheets.** Plan §7 covers the ~31 P4–P6 anatomy rules: one reading per rule (a
    call may carry an object's views together only if its answer reads each rule separately). P2a's region
    rule, P3's corridor and cavity scopes and P7's consumer scopes are picture-grounded too, and Codex
-   cannot see pictures. Add one Fable reading per scope sheet, about a dozen more?
+   cannot see pictures. Add one Fable reading per scope sheet, about a dozen more? The review recommends
+   yes, one reading shared by every caller that implements the same scope decision rather than one per
+   caller.
 
 Settled by your recorded words, stated so you can correct them:
 
@@ -52,12 +56,13 @@ Settled by your recorded words, stated so you can correct them:
   is no review) and Fable (each rule's actual picture sheet). Disagreements go to Rohan.
 - Image acceptance: every changed native frame and source support, reconstructed from its address.
 - Integration into `scripts/run_interiors.py` and the shared modules, one increment at a time; the real
-  CLI runs (proof/bursa serial and parallel, public, the cohort where due); the full gate with its Sonar
-  step and advisory lists; the kernel benchmarks' recording, refreshed from the integrated source when an
-  increment changes a benchmarked kernel or what production hands it (plan §9, step 6; a worktree has no
-  data, so the recorder stops there); §15.3's six statements; MAP/RESOLVING acceptance records; the
-  active packet; commits, pushes, and the GitHub gate run on each pushed commit.
-- The job table (§3).
+  CLI runs (proof/bursa serial and parallel, public, the cohort where due); the kernel benchmarks'
+  recording, refreshed from the integrated source before the final gate when an increment changes a
+  benchmarked kernel or what production hands it (plan §9, step 6; a worktree has no data, so the
+  recorder stops there); §15.3's six statements; MAP/RESOLVING acceptance records; the active packet; the
+  final gate, with its Sonar step and advisory lists, on exactly the tree being committed; commits,
+  pushes, and the GitHub gate run on each pushed commit.
+- The job table (§3), each script's offline mock and the runtime rehearsal (§4).
 - Stop points: family-wave picture sheets to Rohan; any disagreement between Codex, Fable and the lead;
   a step the P12 contract leaves unspecified; P13.
 
@@ -84,16 +89,30 @@ Settled by your recorded words, stated so you can correct them:
   `B/workflows-20261018/<workflow>/<packet>/attempt-<id>/` (B = the plan's readings root), which must not
   exist beforehand; code edits only in the agent's own worktree (implementation and verification roles).
   Never the main tree, canonical outputs or another agent's files; no commit, push, reset or clean.
-- **Source basis:** before each workflow the main tree has no modified or untracked files under
-  `scripts/`, `src/` or `tests/` (worktrees are cut from HEAD, so a dirty main tree would mean candidates
-  test different code). The lead writes a manifest of each unit's SHA-256 at HEAD. Every prompt carries
-  HEAD, the manifest's SHA-256 and the packet revision; every agent checks HEAD and each unit it reads
-  against them and stops as `stale_input` on any mismatch.
+- **Source basis:** before each workflow the main tree is clean: no modified tracked file and no untracked
+  file outside the ignored paths (worktrees are cut from HEAD and agents in the main tree read the main
+  tree, so a dirty file anywhere, code or document, would mean an agent reads something that is not
+  HEAD's). The lead writes the baseline manifest: the SHA-256, by path, of every file the workflow's agents
+  may read, namely every tracked file at HEAD (code, governing documents and the CLAUDE.md imports alike)
+  except the active packet; every untracked file a prompt names (the notes, packets and receipts under
+  `data/` that it cites, and the tools in `B/workflow-tools/`); and the instruction files outside the
+  repository that reach an agent (the rehearsal names them, §4). Every prompt carries HEAD, the manifest's
+  path and SHA-256 and the packet revision; the script receives the manifest's entries in `args`. An
+  agent's first step, before any other read and any edit, is to check HEAD and to hash the instruction
+  files, which reach it in its instructions rather than through Read (the repository's `CLAUDE.md`, its six
+  imports and the outside files the manifest lists), and every input file its prompt names; it hashes
+  each further input file before reading it, and stops as `stale_input` on any mismatch or on an input
+  the manifest lacks. Files written during the workflow (the agent's own, and those named in an upstream
+  return inlined in its prompt: attempt directories, notes, a diff, receipts, new files) are not inputs:
+  they are not in the manifest and go in no `source_hashes`, except the verifier's copies of the
+  candidate's changed files after applying. While a workflow runs, the lead edits no file the manifest
+  lists.
 - **Worktree agents:** `isolation: 'worktree'`. Run from the worktree root with `PYTHONPATH=<worktree>/src`
   and the main tree's `.venv/bin/python`, after `B/workflow-tools/import_proof.py <worktree>`, which exits
   non-zero unless `knee` and `run_interiors` both import from the worktree (the editable install otherwise
   imports the main tree's `src`). The runner's ROOT is its own file's parent's parent, so in a worktree
-  every default built on it points at a tree with no data: every path is passed explicitly (`--root
+  every default built on it points at a tree with no data: a worktree has no `data/`, so files under it
+  are read by their absolute paths in the main tree, and every path is passed explicitly (`--root
   <main>/data/raw`, `--run` and `--main-run` inside the attempt directory, accepted receipts by absolute
   path). Candidate CLI runs are serial (`--workers 1`). Agents run the tests and the gate's static checks,
   never its Sonar step: one server holds one project history, and analysing a candidate's tree there would
@@ -101,19 +120,56 @@ Settled by your recorded words, stated so you can correct them:
   integrated. Parallel CLI runs and the full gate are the
   lead's, in the main tree, after integration.
 - **Candidates:** new files marked intent-to-add (`git add -N`, nothing committed), then `git diff` into
-  `candidate.diff` with its SHA-256. The verifier applies it in its own fresh worktree, checks the digest
-  and that every changed and new file is present, re-runs the tests, and makes its own real-CLI runs into
-  its own attempt directory, comparing its receipts with the accepted epoch's and with the candidate's.
-- **Returns:** schema-checked JSON carrying head, packet revision, a completion state (`complete`,
-  `partial`, `blocked`, `stale_input`) and the SHA-256 of every unit read or changed, with facts and their
-  evidence paths, inferences labelled, and not_done. A schema checks shape, not sufficiency: the lead reads
-  every return. A dependent agent launches only when its input returned `complete` with content;
-  otherwise that chain stops and returns to the lead. Area, coverage, pixel and timing figures are
-  observations, never acceptance criteria.
+  `candidate.diff` with its SHA-256. The candidate reports the files it read as they were before any edit
+  (`source_hashes`, against the baseline) and every file it changed, added or deleted as it is after its
+  last edit (`candidate_hashes`, a deleted file as `deleted`: the candidate manifest); `files_changed` lists
+  exactly those paths. The verifier, in its own fresh worktree, checks HEAD and the baseline before
+  applying anything; then it checks the diff's digest, applies it, confirms every changed and new file is
+  present and every deleted one absent, and hashes each: those hashes must equal the candidate manifest,
+  and every unchanged file it reads must still equal the baseline. It re-runs the tests and makes its own
+  real-CLI runs into its own attempt directory, comparing its receipts with the accepted epoch's and with
+  the candidate's.
+- **Returns and outcomes:** schema-checked JSON carrying head, packet revision, a completion state
+  (`complete`, `partial`, `blocked`, `stale_input`) and the SHA-256 of every file read or changed, with
+  facts and their evidence paths, inferences labelled, and not_done. A schema checks shape, not
+  sufficiency, and the lead reads every return. The script itself checks every returned hash: a file the
+  candidate changed must equal the candidate's own hash; any other file must equal the baseline; a path in
+  neither is outside the frozen basis. Each chain ends in exactly one named outcome, decided in this order
+  (a chain that threw is INCOMPLETE). For every return:
+  1. no return (the agent was skipped, died or was stopped) → INCOMPLETE;
+  2. a HEAD, packet revision or baseline hash unlike the pin, a path outside the frozen basis, or the
+     agent's own `stale_input` → STALE_INPUT (re-pin and reissue);
+  3. a completion other than `complete`, or an attempt directory other than its own → INCOMPLETE
+     (diagnose and reissue).
+
+  For a fact or candidate return:
+  4. required content empty or inconsistent (no facts; a changed file without its hash, a hash for an
+     unlisted file, a file listed as changed but equal to the baseline or deleted though the baseline
+     lacks it; a malformed diff digest; no consumer call, test, run, comparison or import proof) →
+     INCOMPLETE; otherwise the next agent launches.
+
+  For a verifier return:
+  5. a file after applying unlike the candidate manifest, a violation, a missing item or an unsupported
+     check → VERIFICATION_FAILED (fix or reissue the candidate);
+  6. fewer supported checks than its packet requires, no run of its own where one is required, or a
+     changed file it did not hash after applying → INCOMPLETE;
+  7. otherwise READY_FOR_LEAD_REVIEW.
+
+  The run's outcome is the first, in the order STALE_INPUT, VERIFICATION_FAILED, INCOMPLETE,
+  READY_FOR_LEAD_REVIEW, that any chain has. A not_checkable item neither fails nor counts as supported.
+  The fields not named here (the files read, inferences, frames, uncertainty) decide no outcome; the lead
+  reads them. READY_FOR_LEAD_REVIEW is not acceptance, and a finished worker is not a verified candidate: only the
+  lead's gate accepts. The review named three outcomes; STALE_INPUT is the lead's split from INCOMPLETE,
+  because re-pinning is a different remedy from diagnosing a stopped agent. Area, coverage, pixel and
+  timing figures are observations, never acceptance criteria.
 - **Job table:** the lead records each workflow run (its run ID, task ID, packet revision, dependencies,
-  output roots and state: `PREPARING`, `RUNNING`, `RETURNED_UNREVIEWED`, `VERIFIED`, `ACCEPTED`,
-  `NEEDS_RULE`, `STALE_INPUT`, `WITHDRAWN`, `FAILED`) in the active packet's single job table at launch, at
-  each gate and on any stop. The scripts write nothing to it.
+  output roots, the script's outcome and state: `PREPARING`, `RUNNING`, `RETURNED_UNREVIEWED`, `VERIFIED`,
+  `ACCEPTED`, `NEEDS_RULE`, `STALE_INPUT`, `WITHDRAWN`, `FAILED`) in the active packet's single job table at
+  launch, at each gate and on any stop. The scripts write nothing to it. The active packet is the one
+  tracked file the lead writes while a workflow runs, and no agent reads it: FULL_BUILD_PLAN §0's
+  session-start grounding and the packet are the lead's, and every prompt says so. Rohan's words that
+  arrive while a workflow runs go into the packet first; the corrections record takes them at the next
+  gate, and a premise they change is invalidated at once (below).
 - **Invalidation (guide §7):** when a premise, contract or source a workflow depends on changes: stop it
   (TaskStop) and confirm it stopped; mark affected outputs ineligible where they sit (`WITHDRAWN.md` or
   `STALE_INPUT.md`); invalidate the reviews and tests derived from them; correct the packet (a new
@@ -123,26 +179,49 @@ Settled by your recorded words, stated so you can correct them:
 - **Single writer:** the lead integrates one candidate at a time; a later candidate is rebased onto the
   integrated tree and re-verified before it is integrated.
 - **Acceptance (plan §9, §15.3):** the lead integrates, runs the real CLI into new output roots,
-  reconstructs every new native support from its address and inspects the actual DICOM frame, compares
-  receipts (equivalent refactors must match; intended scope or semantic changes get a full changed-output
-  account), runs the full gate (`scripts/ci_local.sh`, Sonar included) and reads its advisories,
-  refreshes the kernel benchmarks' recording when the increment changes what production hands a
-  benchmarked kernel (plan §9, step 6), writes the six statements, records MAP/RESOLVING acceptance,
-  updates the active packet, commits, runs the
-  pre-push checks (the lockfile audit, zizmor, a secret scan of the commits being pushed), pushes, and
-  reads the GitHub gate run on the pushed commit.
+  reconstructs every new native support from its address and inspects the actual DICOM frame, and
+  compares receipts (equivalent refactors must match; intended scope or semantic changes get a full
+  changed-output account). Then everything the checkpoint commits is written before the final gate: the
+  kernel benchmarks' recording, refreshed from the integrated source when the increment changes what
+  production hands a benchmarked kernel (the gate replays the stored recording and never refreshes it, and
+  the first gate after a refresh compares a different call, so its memory figure is information, not a
+  regression); the six statements; the MAP/RESOLVING acceptance record; and the active packet, which
+  points to the final gate's log under `data/` instead of carrying its numbers. The final gate
+  (`scripts/ci_local.sh`, Sonar included) runs last, on exactly that tree; the lead reads its whole output
+  and advisories, and nothing tracked changes after it. An earlier gate run during integration is
+  diagnostic only. The lead commits exactly that tree and pushes; the pre-push hook finds the gate's stamp,
+  runs the secret scan and the advisory lockfile audit, and its whole output is read; then the GitHub gate
+  run on the pushed commit, whose results go into the next revision (plan §9, step 6).
 
 ## 4. Preconditions (after approval, before W1)
 
-1. Rohan's two decisions (§1); the route change in the guide and plan §10.
-2. Copy `spans.py`, `callsites.py` and `assigned_names.py` and write `import_proof.py` in
-   `B/workflow-tools/`; create `B/workflows-20261018/`.
+1. Rohan's approval and his two decisions (§1); the route change in the guide and plan §10.
+2. Copy `spans.py`, `callsites.py` and `assigned_names.py`, and write `import_proof.py` and the manifest
+   writer, in `B/workflow-tools/`; create `B/workflows-20261018/`.
 3. `consult-budget`; `anthropic-consult --check` (key readable; value never printed).
-4. A clean tree under `scripts/`, `src/` and `tests/`; pin HEAD and the unit manifest; record them in the
-   active packet; open the job table.
-5. A dry run: one throwaway worktree, `import_proof.py`, the test suite and one proof CLI run with the
-   planned environment and explicit paths. Record what breaks (anything the runner derives from its own
-   location) and fix the packet text before launch.
+4. A clean tree (§3, source basis); pin HEAD; write the baseline manifest and record its path, SHA-256 and
+   HEAD in the active packet; open the job table.
+5. The offline mock of the workflow's script: the mock takes the script's code block from this document
+   itself and runs it with every agent's return mocked, case by case (`w1_mock.mjs`, §10). It checks the
+   control flow only: which agents launch, and which outcome each chain and the run end in. Every later
+   workflow's script gets its own mock before its launch.
+6. The runtime rehearsal R0: a short workflow at W1's settings (Sonnet, xhigh), through the actual workflow
+   runtime, before W1:
+   - **worktree imports:** a worktree agent runs `import_proof.py`, the test suite and one serial proof CLI
+     run with explicit paths, and reports any path the runner wrote under its worktree;
+   - **stops:** agents told to return a blocked completion, a wrong HEAD, a wrong packet revision, a hash
+     unlike the baseline and a verifier violation, each checked to end its chain with the outcome the mock
+     gives; and an agent given an upstream return that names files written during the workflow
+     (attempt directories, a diff, receipts, new files), checked not to end its chain STALE_INPUT;
+   - **schemas:** one return that breaks its schema, to see what the runtime does with it;
+   - **instructions:** each agent lists the instruction files its context names, path by path, and what it
+     read before its task; the manifest's outside entries come from that list;
+   - **permissions:** every command an agent runs (hashing, the worktree, `git diff` and `git apply`, the
+     tests, the CLI) completes without a prompt it cannot answer;
+   - **cancellation:** the lead stops the rehearsal while an agent runs (TaskStop), confirms that it
+     stopped and that nothing from the stopped attempt is used, and relaunches with a fresh attempt id.
+
+   What breaks is fixed in the scripts and packets, and the mock re-run, before W1.
 
 ## 5. The sequence
 
@@ -218,20 +297,109 @@ const ROOT = '/Users/rohanvinaik/Projects/Kaggle_Killer/competitions/RSNA_Knee'
 const B = ROOT + '/data/readings/collapse-20261017/full-build/targeted-compute-20261018'
 const TOOLS = B + '/workflow-tools'
 const PIN = args && args.sourcePin
-if (!PIN || !PIN.head || !PIN.manifest || !PIN.manifestSha256 || !args.attempt || !args.packetRevision) {
-  throw new Error('W1 needs args = { sourcePin: { head, manifest, manifestSha256 }, attempt, packetRevision } from the lead')
+const isHex = (n, value) => new RegExp('^[0-9a-f]{' + n + '}$').test(String(value))
+if (!PIN || !isHex(40, PIN.head) || !PIN.manifest || !isHex(64, PIN.manifestSha256) || !PIN.entries ||
+    typeof PIN.entries !== 'object' || Object.keys(PIN.entries).length === 0 || !args.attempt || !args.packetRevision) {
+  throw new Error('W1 needs args = { sourcePin: { head (40 hex), manifest, manifestSha256 (64 hex), entries: { path: sha256 } }, attempt, packetRevision } from the lead')
 }
+const REVISION = String(args.packetRevision)
 const SONNET = { model: 'sonnet', effort: 'xhigh' }
 const PROOF = '1.2.826.0.1.3680043.8.498.10095687747295410396510538520594649149'
 const BURSA = '1.2.826.0.1.3680043.8.498.13335129881737731410081002627729200903'
 const ACCEPTED = B + '/p2b-bone-context-20261018/repair/proof-bursa'
 const dirOf = (packet) => B + '/workflows-20261018/w1/' + packet + '/attempt-' + args.attempt
-const complete = (r, key) => Boolean(r) && r.completion === 'complete' && Array.isArray(r[key]) && r[key].length > 0
+const has = (object, key) => Object.prototype.hasOwnProperty.call(object, key)
+// The instruction files reach an agent in its instructions, not through Read, so each agent hashes them first.
+const INSTRUCTIONS = ['CLAUDE.md', 'AGENTS.md', 'docs/THEORY_OF_THE_CASE.md', 'docs/HOW_TO_BUILD.md', 'docs/FULL_BUILD_PLAN.md',
+  'docs/conversations/2026-10-13-the-thesis.md', 'docs/conversations/2026-10-18-anatomical-priors-and-targeted-compute.md']
+
+// Each chain ends in exactly one named outcome, and the run in the first of these, in this order, that any
+// chain has (§3). Their remedies differ: re-pin and reissue; fix or reissue the candidate; diagnose and
+// reissue. READY_FOR_LEAD_REVIEW is not acceptance: only the lead's gate accepts.
+const OUTCOMES = ['STALE_INPUT', 'VERIFICATION_FAILED', 'INCOMPLETE', 'READY_FOR_LEAD_REVIEW']
+const ended = (status, stage, reasons) => ({ status, stage, reasons })
+
+// §3, steps 1-3, for every return: present; HEAD, packet revision and every hash as pinned (a file the
+// candidate changed is the verifier's to compare with the candidate's own hash; any other must equal the
+// baseline; a path in neither is outside the frozen basis); complete, in its own attempt directory. The
+// outcome, or null when it passes.
+function screened(stage, r, changed) {
+  if (!r) return ended('INCOMPLETE', stage, ['no return: the agent was skipped, died or was stopped'])
+  const notDone = r.not_done || []
+  const stale = []
+  if (r.head !== PIN.head) stale.push('head ' + r.head + ' is not the pinned ' + PIN.head)
+  if (String(r.packet_revision) !== REVISION) stale.push('packet revision ' + r.packet_revision + ' is not ' + REVISION)
+  for (const entry of r.source_hashes || []) {
+    if (changed && has(changed, entry.path)) continue
+    if (!has(PIN.entries, entry.path)) stale.push(entry.path + ' is outside the frozen basis')
+    else if (PIN.entries[entry.path] !== entry.sha256) stale.push(entry.path + ' differs from the baseline')
+  }
+  if (r.completion === 'stale_input' && stale.length === 0) stale.push(...(notDone.length ? notDone : ['the agent reported stale input']))
+  if (stale.length) return ended('STALE_INPUT', stage, stale)
+  if (r.completion !== 'complete') return ended('INCOMPLETE', stage, ['completion is ' + r.completion, ...notDone])
+  if (r.attempt_dir !== dirOf(stage)) return ended('INCOMPLETE', stage, ['attempt directory ' + r.attempt_dir + ' is not ' + dirOf(stage)])
+  return null
+}
+
+// §3, step 4, for a fact return.
+function factsChecked(stage, r) {
+  return screened(stage, r, null) || (r.facts.length === 0 ? ended('INCOMPLETE', stage, ['no facts returned']) : null)
+}
+
+// §3, step 4, for the candidate: its manifest names exactly the files it changed, each really changed, and
+// its return carries what the verifier and the lead need.
+function candidateChecked(stage, c) {
+  const early = screened(stage, c, null)
+  if (early) return early
+  const reasons = []
+  const manifest = {}
+  for (const entry of c.candidate_hashes) manifest[entry.path] = entry.sha256
+  const listed = new Set(c.files_changed)
+  if (listed.size === 0) reasons.push('files_changed is empty')
+  for (const path of listed) if (!has(manifest, path)) reasons.push(path + ' is listed as changed without a hash')
+  for (const path of Object.keys(manifest)) {
+    if (!listed.has(path)) reasons.push(path + ' has a hash but is not listed as changed')
+    else if (has(PIN.entries, path) && PIN.entries[path] === manifest[path]) reasons.push(path + ' is listed as changed but equals the baseline')
+    else if (manifest[path] === 'deleted' && !has(PIN.entries, path)) reasons.push(path + ' is listed as deleted but the baseline has no such file')
+  }
+  if (!isHex(64, c.diff_sha256)) reasons.push('diff_sha256 is not a SHA-256')
+  for (const key of ['consumer_calls', 'tests', 'runs', 'comparisons']) if (c[key].length === 0) reasons.push(key + ' is empty')
+  if (!String(c.import_proof).trim()) reasons.push('import_proof is empty')
+  return reasons.length ? ended('INCOMPLETE', stage, reasons) : null
+}
+
+// §3, steps 5-7, for a verifier: what it found failing, then whether it checked enough, then ready. A
+// not_checkable item neither fails nor counts as supported.
+function verified(stage, v, changed, need) {
+  const early = screened(stage, v, changed)
+  if (early) return early
+  const failed = []
+  if (changed) {
+    for (const entry of v.source_hashes) {
+      if (has(changed, entry.path) && changed[entry.path] !== entry.sha256) failed.push(entry.path + ' after applying is not the candidate\'s file')
+    }
+  }
+  failed.push(...v.violations, ...v.missing.map((item) => 'missing: ' + item))
+  failed.push(...v.checked.filter((item) => item.verdict === 'unsupported').map((item) => 'unsupported: ' + item.item))
+  if (failed.length) return ended('VERIFICATION_FAILED', stage, failed)
+  const short = []
+  const supported = v.checked.filter((item) => item.verdict === 'supported').length
+  if (supported < need.supported) short.push(supported + ' supported checks; ' + need.supported + ' required')
+  if (need.ownRuns && v.own_runs.length === 0) short.push('no run of its own')
+  if (changed) {
+    for (const path of Object.keys(changed)) {
+      if (!v.source_hashes.some((entry) => entry.path === path)) short.push(path + ' was not hashed after applying')
+    }
+  }
+  return short.length ? ended('INCOMPLETE', stage, short) : ended('READY_FOR_LEAD_REVIEW', stage, [])
+}
 
 const COMMON = [
   'You are a worker for the lead (Claude, the main session) of RSNA_Knee at ' + ROOT + ': a classical-AI knee-MRI recognition build, deliberately with no machine learning.',
   "Rohan's words and docs/THEORY_OF_THE_CASE.md govern. docs/FULL_BUILD_PLAN.md is the work order and holds the contracts (§§14–15); docs/GROUNDING_AND_WORKER_GUIDE.md governs your role. You return facts or a candidate. You do not decide what Rohan means, choose an anatomical rule, a threshold, a sample meaning or a scope, or accept anything. If finishing would need such a choice, stop and return it named in not_done.",
-  'SOURCE BASIS: HEAD ' + PIN.head + '; unit manifest ' + PIN.manifest + ' (SHA-256 ' + PIN.manifestSha256 + '); packet revision ' + args.packetRevision + '. First check HEAD and the hash of every unit you read against the manifest; on any mismatch stop and return completion "stale_input" naming each one.',
+  "FULL_BUILD_PLAN §0's session-start grounding and the active packet (docs/work/current/README.md) are the lead's: do not perform that grounding and never read the packet. Read whole the units this prompt names and any unit you need to understand them.",
+  'SOURCE BASIS: HEAD ' + PIN.head + '; packet revision ' + REVISION + '; manifest ' + PIN.manifest + ' (SHA-256 ' + PIN.manifestSha256 + '): the SHA-256 of every input file you may read, a tracked file by its path relative to the repository root (' + ROOT + ', or your worktree\'s root, which holds the same files), a file under data/ by its path relative to ' + ROOT + ', a file outside the repository by its absolute path. Files written during this workflow are not inputs and are not in the manifest: your own, and those named by any agent\'s return inlined in this prompt (its attempt directory, notes, diff, receipts, worktree and new files). Your first step, before any other read and any edit: check that HEAD is ' + PIN.head + ' (the full 40 characters of git rev-parse HEAD), then hash with shasum -a 256, and compare with the manifest, the instruction files, which reach you in your instructions rather than through Read (' + INSTRUCTIONS.join(', ') + ', and every file the manifest lists by an absolute path), and every input file this prompt names (the documents, notes, receipts and tools it cites). Hash each further input file before you read it; the study images, which the runner reads, are not hashed. On any mismatch, or an input file the manifest does not list, stop and return completion "stale_input" naming each one.',
+  'Return in source_hashes every input file you hashed, once, by its manifest path, with its SHA-256 as you read it; files written during this workflow never go in source_hashes unless your role below says so (the verifier reports its copies of the candidate\'s changed files after applying). Return head as the full 40-character SHA, packet_revision exactly as given, and attempt_dir exactly as this prompt gives it.',
   'Read whole units only (whole functions, classes, sections, documents) with the Read tool. Locate code with python3 -I ' + TOOLS + '/spans.py <tree> <names>, ' + TOOLS + '/callsites.py <tree> <names> and ' + TOOLS + '/assigned_names.py <tree> <names>, where <tree> is the tree you work in. Never use the Grep tool, grep, rg, head, tail, sed, awk, cut, wc, jq, pipes or any text search. Do not read archive/ or archive2/.',
   'WRITES: your artifacts (notes, logs, runs, pictures, diffs) go only in your attempt directory, which must not exist before you start (if it does, stop and return completion "blocked"); code edits, where your role allows them, go only in your own worktree. Never edit the main tree, canonical outputs or another agent\'s files. Never commit, push, reset or clean. Never run scripts/ci_local.sh or scripts/sonar_local.py: the Sonar step is the lead\'s.',
   'Report facts with the evidence path you measured or read, inferences labelled as yours, and not_done for anything not done or not measured. Never state the outcome of something you did not measure. Never treat one construction\'s failure as a verdict on a capability. Never attribute words to Rohan unless you quote a file that records them.',
@@ -240,12 +408,13 @@ const COMMON = [
 const WORKTREE = [
   'You work in an isolated git worktree cut from HEAD; call its root <wt>. Run everything from <wt> with PYTHONPATH=<wt>/src and the interpreter ' + ROOT + '/.venv/bin/python.',
   'Before any test or run, run ' + TOOLS + '/import_proof.py <wt> under that same environment and keep its output; it exits non-zero unless knee and run_interiors both import from <wt>. If it fails, stop and return completion "blocked".',
-  'The runner\'s ROOT is its own file\'s parent\'s parent, so in a worktree every default built on it points at a tree with no data. Pass every path explicitly: --root ' + ROOT + '/data/raw, --run and --main-run inside your attempt directory, and accepted receipts by absolute path. Run the CLI with --workers 1. List in your return any path the runner wrote under <wt> by itself.',
+  'The runner\'s ROOT is its own file\'s parent\'s parent, so in a worktree every default built on it points at a tree with no data: <wt> has no data/ folder. Read files under data/ by their absolute paths in ' + ROOT + ', and pass every path explicitly: --root ' + ROOT + '/data/raw, --run and --main-run inside your attempt directory, and accepted receipts by absolute path. Run the CLI with --workers 1. List in your return any path the runner wrote under <wt> by itself.',
 ].join(' ')
 
-const HASHES = { type: 'array', minItems: 1, items: { type: 'object', properties: { path: { type: 'string', minLength: 1 }, sha256: { type: 'string', minLength: 64, maxLength: 64 } }, required: ['path', 'sha256'] } }
+const SHA256 = { type: 'string', pattern: '^([0-9a-f]{64}|deleted)$' }
+const HASHES = { type: 'array', minItems: 1, items: { type: 'object', properties: { path: { type: 'string', minLength: 1 }, sha256: SHA256 }, required: ['path', 'sha256'] } }
 const BASIS = {
-  head: { type: 'string', minLength: 7 },
+  head: { type: 'string', pattern: '^[0-9a-f]{40}$' },
   packet_revision: { type: 'string', minLength: 1 },
   completion: { type: 'string', enum: ['complete', 'partial', 'blocked', 'stale_input'] },
   source_hashes: HASHES,
@@ -259,10 +428,10 @@ const STATEMENTS = { type: 'array', items: { type: 'object', properties: { state
 const FACTS = { type: 'object', properties: { ...BASIS, files: STRINGS, facts: STATEMENTS, inferences: STRINGS }, required: [...BASIS_KEYS, 'files', 'facts', 'inferences'] }
 
 const CANDIDATE = { type: 'object', properties: {
-  ...BASIS, worktree: { type: 'string', minLength: 1 }, diff_path: { type: 'string' }, diff_sha256: { type: 'string' },
-  files_changed: STRINGS, consumer_calls: STRINGS, tests: STRINGS, import_proof: { type: 'string' },
+  ...BASIS, worktree: { type: 'string', minLength: 1 }, diff_path: { type: 'string' }, diff_sha256: { type: 'string', pattern: '^[0-9a-f]{64}$' },
+  candidate_hashes: HASHES, files_changed: STRINGS, consumer_calls: STRINGS, tests: STRINGS, import_proof: { type: 'string' },
   runs: STRINGS, comparisons: STRINGS, changed_frames: STRINGS, uncertainty: STRINGS,
-}, required: [...BASIS_KEYS, 'worktree', 'diff_path', 'diff_sha256', 'files_changed', 'consumer_calls', 'tests', 'import_proof', 'runs', 'comparisons', 'changed_frames', 'uncertainty'] }
+}, required: [...BASIS_KEYS, 'worktree', 'diff_path', 'diff_sha256', 'candidate_hashes', 'files_changed', 'consumer_calls', 'tests', 'import_proof', 'runs', 'comparisons', 'changed_frames', 'uncertainty'] }
 
 const VERDICTS = { type: 'object', properties: {
   ...BASIS,
@@ -271,19 +440,23 @@ const VERDICTS = { type: 'object', properties: {
 }, required: [...BASIS_KEYS, 'checked', 'own_runs', 'violations', 'missing'] }
 
 const P2B_PACKET = [
-  'TASK: FULL_BUILD_PLAN P2b increment 2 (settled wiring; guide §5 example). Read whole: plan §1.2, §14.4, the P2b section, and the packet ' + B + '/p2b-bone-context-20261018/README.md and verification.md.',
+  'TASK: FULL_BUILD_PLAN P2b increment 2 (settled wiring; guide §5 example). Read whole: plan §1.2, §14.4, the P2b section, and the packet notes ' + B + '/p2b-bone-context-20261018/README.md and ' + B + '/p2b-bone-context-20261018/verification.md.',
   'INTENT: offer the refined leg (refine_leg, already published once after name_the_bones) to the two remaining consumers that run after it, axial_bone_planes (inside build_study_map) and fibula_key_planes, at the right time, keeping the early leg wherever an earlier reader needs it.',
   'CONTRACTS: M07 → M08 → M09/M20. CONSUMER: the bones\' and fibula\'s axial key planes, which set the common map\'s axial zero.',
   'FORBIDDEN SUBSTITUTIONS: no erosion or filtering of source sections; nothing aimed at AX14\'s calibration or any core size; no repeated whole-study convergence loop; no recognition-rule edits; no change beyond these consumers\' arguments, order and cache keys.',
 ].join(' ')
 
 async function p2bChain() {
-  const trace = await agent(COMMON + ' ' + P2B_PACKET + ' ROLE: facts. Attempt directory: ' + dirOf('p2b-trace') + '. Read whole axial_bone_planes, fibula_key_planes, build_study_map, refine_leg, leg_on, native_femur_coarse_context, measure_study and every caller of the first three; report the call order, which leg each receives now, every cache key that would see the leg, and every reader that must keep the early leg.', { ...SONNET, label: 'p2b-trace', phase: 'Facts', schema: FACTS })
-  if (!complete(trace, 'facts')) return { trace, candidate: null, verdict: null, stopped: 'trace not complete: the lead decides the reissue' }
-  const candidate = await agent(COMMON + ' ' + WORKTREE + ' ' + P2B_PACKET + ' ROLE: implement the settled wiring. Attempt directory: ' + dirOf('p2b-candidate') + '. The trace: ' + JSON.stringify(trace) + ' Make the change in your worktree; add focused tests (context identity reaches both consumers; early-leg readers unchanged; a changed context misses, an identical context reuses); after the import check run them and the full test suite; run the real CLI on the proof (' + PROOF + ') and bursa (' + BURSA + ') studies into your attempt directory, and compare each receipt (interiors and main) with the accepted repair epoch\'s under ' + ACCEPTED + ' using scripts/compare_receipts.py. Mark new files intent-to-add (git add -N <file>; nothing is committed), write git diff to candidate.diff in your attempt directory, and record its SHA-256. Name the two consumer calls; list every changed record and the axial frames (series, slice) whose anchors moved.', { ...SONNET, label: 'p2b-candidate', phase: 'Candidate', schema: CANDIDATE, isolation: 'worktree' })
-  if (!complete(candidate, 'files_changed') || candidate.consumer_calls.length === 0 || candidate.diff_sha256.length !== 64) return { trace, candidate, verdict: null, stopped: 'candidate not complete: the lead decides the reissue' }
-  const verdict = await agent(COMMON + ' ' + WORKTREE + ' ' + P2B_PACKET + ' ROLE: independent verifier. Attempt directory: ' + dirOf('p2b-verify') + '. The candidate claims: ' + JSON.stringify(candidate) + ' In your own fresh worktree: check that ' + candidate.diff_path + ' has SHA-256 ' + candidate.diff_sha256 + ', apply it with git apply, and confirm every changed and new file is present; read every changed unit whole and check it against §14.4 and the forbidden substitutions; after the import check run its tests and the full test suite; re-check every caller and sibling route of the changed functions; then make your own real-CLI runs on the proof and bursa studies into your attempt directory and compare your receipts with the accepted repair epoch\'s and with the candidate\'s (scripts/compare_receipts.py). List the frames the lead must inspect. Give no anatomical verdict.', { ...SONNET, label: 'p2b-verify', phase: 'Verify', schema: VERDICTS, isolation: 'worktree' })
-  return { trace, candidate, verdict }
+  const trace = await agent(COMMON + ' ' + P2B_PACKET + ' ROLE: facts. You work in the main tree and change no code. Attempt directory: ' + dirOf('p2b-trace') + '. Read whole axial_bone_planes, fibula_key_planes, build_study_map, refine_leg, leg_on, native_femur_coarse_context, measure_study and every caller of the first three; report the call order, which leg each receives now, every cache key that would see the leg, and every reader that must keep the early leg.', { ...SONNET, label: 'p2b-trace', phase: 'Facts', schema: FACTS })
+  const t = factsChecked('p2b-trace', trace)
+  if (t) return { ...t, trace, candidate: null, verdict: null }
+  const candidate = await agent(COMMON + ' ' + WORKTREE + ' ' + P2B_PACKET + ' ROLE: implement the settled wiring. Attempt directory: ' + dirOf('p2b-candidate') + '. The trace: ' + JSON.stringify(trace) + ' Make the change in your worktree; add focused tests (context identity reaches both consumers; early-leg readers unchanged; a changed context misses, an identical context reuses); after the import check run them and the full test suite; run the real CLI on the proof (' + PROOF + ') and bursa (' + BURSA + ') studies into your attempt directory, and compare each receipt with the accepted repair epoch\'s (' + ACCEPTED + '/interiors/receipt.json and ' + ACCEPTED + '/main/receipt.json) using scripts/compare_receipts.py. Report in source_hashes the files you read as they were before any edit. Mark new files intent-to-add (git add -N <file>; nothing is committed), write git diff to candidate.diff in your attempt directory and record its SHA-256; after your last edit, hash every file you changed, added or deleted into candidate_hashes (a deleted file as "deleted": the candidate manifest) and list exactly those paths in files_changed. Name the two consumer calls; list every changed record and the axial frames (series, slice) whose anchors moved.', { ...SONNET, label: 'p2b-candidate', phase: 'Candidate', schema: CANDIDATE, isolation: 'worktree' })
+  const c = candidateChecked('p2b-candidate', candidate)
+  if (c) return { ...c, trace, candidate, verdict: null }
+  const changed = {}
+  for (const entry of candidate.candidate_hashes) changed[entry.path] = entry.sha256
+  const verdict = await agent(COMMON + ' ' + WORKTREE + ' ' + P2B_PACKET + ' ROLE: independent verifier. Attempt directory: ' + dirOf('p2b-verify') + '. The candidate claims: ' + JSON.stringify(candidate) + ' In your own fresh worktree, make the SOURCE BASIS checks first, before applying anything. Then check that ' + candidate.diff_path + ' has SHA-256 ' + candidate.diff_sha256 + ', apply it with git apply, confirm every changed and new file is present and every deleted one absent, and hash each: report those in source_hashes as they are after applying (a deleted file as "deleted"); they must equal the candidate manifest above. Every other file you read must still equal the baseline; report it as you read it. Read every changed unit whole and check it against §14.4 and the forbidden substitutions; after the import check run its tests and the full test suite; re-check every caller and sibling route of the changed functions; then make your own real-CLI runs on the proof and bursa studies into your attempt directory and compare your receipts with the accepted repair epoch\'s and with the candidate\'s (scripts/compare_receipts.py). Put each check in checked (supported, unsupported or not_checkable, with its evidence), anything that must block in violations, and anything the candidate lacks in missing. List the frames the lead must inspect. Give no anatomical verdict.', { ...SONNET, label: 'p2b-verify', phase: 'Verify', schema: VERDICTS, isolation: 'worktree' })
+  return { ...verified('p2b-verify', verdict, changed, { supported: 1, ownRuns: true }), trace, candidate, verdict }
 }
 
 const P2A_FRAME = [
@@ -294,24 +467,36 @@ const P2A_FRAME = [
 
 async function p2aConsumers() {
   const facts = await agent(COMMON + ' ' + P2A_FRAME + ' ROLE: facts. You work in the main tree and change no code. Attempt directory: ' + dirOf('p2a-consumers') + '. For each expensive per-slice operation that runs on the middle slices or native frames before any anatomical scope exists (start from lens_of/interior_regions, dark_bands, thick_parts and muscle opening, local_lightness, whole-frame enclosed_darkness, block_medians), read whole the operation and every caller, and report: what it reads, when it runs in measure_study, what scope it receives now, which values are already computed before it (finite and margin maps, background split, squint tiles and their bounds, availability), and what decision consumes its output.', { ...SONNET, label: 'p2a-consumers', phase: 'Facts', schema: FACTS })
-  if (!complete(facts, 'facts')) return { facts, verdict: null, stopped: 'facts not complete: the lead decides the reissue' }
-  const verdict = await agent(COMMON + ' ' + P2A_FRAME + ' ROLE: independent verifier. You work in the main tree and change no code. Attempt directory: ' + dirOf('p2a-consumers-verify') + '. The packet returned: ' + JSON.stringify(facts) + ' Re-derive at least eight of its facts from the whole units and evidence it cites, and list every statement that breaks the forbidden substitutions, presents inference as measurement, or is missing.', { ...SONNET, label: 'p2a-consumers-verify', phase: 'Verify', schema: VERDICTS })
-  return { facts, verdict }
+  const f = factsChecked('p2a-consumers', facts)
+  if (f) return { ...f, facts, verdict: null }
+  const verdict = await agent(COMMON + ' ' + P2A_FRAME + ' ROLE: independent verifier. You work in the main tree and change no code. Attempt directory: ' + dirOf('p2a-consumers-verify') + '. The packet returned: ' + JSON.stringify(facts) + ' Re-derive at least eight of its facts from the whole units and evidence it cites, each as an entry in checked (supported, unsupported or not_checkable, with its evidence); list in violations every statement that breaks the forbidden substitutions or presents inference as measurement, and in missing what the packet lacks.', { ...SONNET, label: 'p2a-consumers-verify', phase: 'Verify', schema: VERDICTS })
+  return { ...verified('p2a-consumers-verify', verdict, null, { supported: 8, ownRuns: false }), facts, verdict }
 }
 
 async function p2aPictures() {
   const facts = await agent(COMMON + ' ' + P2A_FRAME + ' ROLE: prepare evidence. You work in the main tree and change no code. Attempt directory: ' + dirOf('p2a-pictures') + '. Write your drawing script as a file in your attempt directory (never inline code). It adds the absolute path ' + ROOT + '/scripts to sys.path, imports run_interiors as run, opens the corpus with run.opened(Path("' + ROOT + '/data/raw")), reads each study with run.read_study(corpus, uid), and takes each series\' slice the run reads first (read selected_slice and the Series class whole before using them). For the proof and bursa studies, draw each such raw acquired frame and, beside it, the cheap readings that exist before the lens exactly as the runner computes them (the finite map, the margin, the background split as a two-level map, and the squint\'s tile bounds with each tile\'s median, minimum, maximum and coverage as numbers), with no derived region. Record every series, slice, DICOM path and frame geometry in a manifest. Report what each picture shows, and not_done for anything you could not draw.', { ...SONNET, label: 'p2a-pictures', phase: 'Facts', schema: FACTS })
-  if (!complete(facts, 'facts')) return { facts, verdict: null, stopped: 'pictures not complete: the lead decides the reissue' }
-  const verdict = await agent(COMMON + ' ' + P2A_FRAME + ' ROLE: independent verifier. You work in the main tree and change no code. Attempt directory: ' + dirOf('p2a-pictures-verify') + '. The packet returned: ' + JSON.stringify(facts) + ' Open each picture, check its manifest against the actual frames (geometry, slice, orientation, nothing transposed), re-derive the drawn cheap readings for at least two frames with your own script file, and list every violation of the forbidden substitutions.', { ...SONNET, label: 'p2a-pictures-verify', phase: 'Verify', schema: VERDICTS })
-  return { facts, verdict }
+  const f = factsChecked('p2a-pictures', facts)
+  if (f) return { ...f, facts, verdict: null }
+  const verdict = await agent(COMMON + ' ' + P2A_FRAME + ' ROLE: independent verifier. You work in the main tree and change no code. Attempt directory: ' + dirOf('p2a-pictures-verify') + '. The packet returned: ' + JSON.stringify(facts) + ' Open each picture, check its manifest against the actual frames (geometry, slice, orientation, nothing transposed), re-derive the drawn cheap readings for at least two frames with your own script file (each one an entry in checked, your runs in own_runs), and list in violations every violation of the forbidden substitutions and in missing what the packet lacks.', { ...SONNET, label: 'p2a-pictures-verify', phase: 'Verify', schema: VERDICTS })
+  return { ...verified('p2a-pictures-verify', verdict, null, { supported: 2, ownRuns: true }), facts, verdict }
 }
 
+const CHAINS = ['p2b', 'p2aConsumers', 'p2aPictures']
 const results = await parallel([() => p2bChain(), () => p2aConsumers(), () => p2aPictures()])
-return { p2b: results[0], p2aConsumers: results[1], p2aPictures: results[2] }
+const chains = {}
+CHAINS.forEach((name, i) => {
+  const r = results[i]
+  chains[name] = r && OUTCOMES.includes(r.status) ? r : ended('INCOMPLETE', name, ['the chain threw or ended without an outcome'])
+})
+const outcome = OUTCOMES.find((status) => CHAINS.some((name) => chains[name].status === status))
+log('W1 ' + outcome + ': ' + CHAINS.map((name) => name + ' ' + chains[name].status + ' at ' + chains[name].stage).join('; '))
+return { outcome, pin: { head: PIN.head, manifestSha256: PIN.manifestSha256, packetRevision: REVISION, attempt: args.attempt }, chains }
 ```
 
-Seven agents at most; a chain stops early when its input is not complete. The lead reads every return and
-every picture before G1, and records the run in the job table; nothing from W1 is integrated or cited as
+Seven agents at most. Each chain stops at the first return that fails §3's checks and ends in one named
+outcome; the run ends in one too. The offline mock runs this block, taken from this document, through 31
+cases (§4, §10); it checks the control flow only. The lead reads every return and every picture before
+G1, and records the run and its outcome in the job table; nothing from W1 is integrated or cited as
 accepted until G1's own checks.
 
 ## 8. Cost and capacity
@@ -329,6 +514,8 @@ accepted until G1's own checks.
 - The gate's Sonar step adds about three minutes per gate on this machine (the scanner image runs under
   emulation here); each push also runs the whole gate on a GitHub runner, and each push to main the
   kernel benchmarks under CodSpeed (`.github/workflows/codspeed.yml`).
+- The runtime rehearsal (§4): about eight agents at W1's settings, each loading the project instructions.
+  The offline mock costs no agent.
 
 ## 9. Risks this plan guards against
 
@@ -349,13 +536,50 @@ accepted until G1's own checks.
   the Sonar step).
 - An unenforced reading law (stated in every prompt; the hook wiring is a SquishOS repair for Rohan to
   decide separately).
+- A returned HEAD, revision or hash unlike the pin while the chain goes on (the script compares them and
+  ends that chain as STALE_INPUT; the mock covers each case).
+- A finished worker read as a verified candidate (one named outcome per chain and per run;
+  READY_FOR_LEAD_REVIEW is not acceptance).
+- A verifier reading the candidate's own edits as stale (the baseline is checked before applying, the
+  candidate manifest after).
+- Governing documents, CLAUDE.md imports or named data inputs changing under an unchanged prompt (all in
+  the manifest and hashed first; no edit to a listed file while a workflow runs).
+- A recording committed without the gate having replayed it (it is refreshed before the final gate, and
+  nothing tracked changes after that gate).
+- What the mock cannot show: schema enforcement, isolation, imports, permissions and cancellation (the
+  runtime rehearsal, §4).
 
-## 10. Codex's reading and what changed
+## 10. The reviews and what changed
 
 Codex (GPT-6.1 Sol, model-only, read-only) read revision 1 with the canonical documents inlined and
 found "the overall sequence is faithful, but the draft needs corrections before launch", chiefly W1's
 execution guarantees, incomplete rule-review scheduling and P12's reduced scope. The lead adopted every
 correction, each recorded with its reading in `lead-adjudication.md`. Three W1 findings were already fixed
 in the file after the prompt was assembled, and Codex never saw those fixes. No mechanism, contract or
-anatomical rule changed in this revision, so there was no second consultation; Codex itself said the
+anatomical rule changed in revision 2, so there was no second consultation; Codex itself said the
 mechanical repairs are the lead's.
+
+Revision 3 answers the review Rohan pasted at 23:37 under his words «Feedback on the workflow». The
+message does not name the review's author; it is agent text, kept verbatim with the lead's checks in
+`data/readings/collapse-20261017/full-build/targeted-compute-20261018/workflow-plan-r3-20261018/`. It
+found the plan "substantially sound and faithful to the thesis" and four execution details to fix before
+launch. The lead checked each against the file before changing anything:
+
+| The review's finding | What the lead found | Change |
+|---|---|---|
+| Returned identities are never compared with the expected inputs; in its offline mock a trace with the wrong HEAD and revision still launched the candidate | W1's `complete()` read only `completion` and one nonempty field; the lead's own mock of revision 2 launches the candidate after a wrong HEAD and after a wrong revision | The script compares every return's HEAD, packet revision and hashes with the pin (`args.sourcePin.entries`); a mismatch ends the chain as STALE_INPUT before anything depends on it |
+| No explicit outcome: blocking verifier findings came back without a failed or blocked state | Each chain returned `{trace, candidate, verdict}` and nothing more; the mock of revision 2 shows the run naming no outcome | One named outcome per chain and one for the run, with the full mapping in §3: the review's three, and STALE_INPUT, the lead's split |
+| Baseline and candidate hashes are not told apart, and the governing documents are outside the frozen basis | The shared prompt told every agent to check "every unit you read" against HEAD, which a verifier holding the applied candidate would fail on the candidate's own edits; the clean-tree rule covered `scripts/`, `src/` and `tests/` only | A manifest of every file agents may read, the CLAUDE.md imports and governing documents included; the instruction files hashed first; the candidate manifest; the verifier checks the baseline before applying and the candidate manifest after; the script classifies every returned hash |
+| The recording is refreshed after the gate, which never refreshes it | `scripts/ci_local.sh` replays the stored recording and never records; both this plan's §3 and FULL_BUILD_PLAN §9 step 6, the lead's own wording, put the refresh after the gate | The recording, the records and the packet are written first; the final gate runs last on exactly the tree being committed, and nothing tracked changes after it; FULL_BUILD_PLAN §9 step 6 now says the same |
+| The launch rehearsal should exercise the actual workflow runtime | Precondition 5 was a dry run in a hand-made worktree | Each script's offline mock (control flow only) and the runtime rehearsal R0 (§4) |
+
+Added when the lead checked revision 3 with its advisor: the untracked inputs the prompts name and the
+instruction files that reach an agent are in the manifest; files written during the workflow (an agent's
+own, and those named in an upstream return inlined in its prompt) are not inputs, so they neither stop an
+agent nor go in its hashes, and an agent returns its attempt directory exactly as given, which the script
+checks; the active packet is the one tracked file the
+lead writes while a workflow runs, no agent reads it, and Rohan's words that arrive mid-workflow go there
+first; the first gate after a recording refresh reads its memory figure as information. The review's
+recommendations on the two Fable decisions are in §1, for Rohan to answer. No anatomical mechanism,
+contract or rule changed: these are execution repairs, which Codex's earlier reading leaves to the lead,
+so there was no new Codex consultation.

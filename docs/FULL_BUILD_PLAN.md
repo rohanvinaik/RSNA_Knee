@@ -687,18 +687,24 @@ For every production increment:
 5. Exercise empty/malformed/nonfinite/boundary input, missing knee side/source/geometry,
    different sequence dimensions, oblique slabs, ties, map disagreement, clipped contexts and
    measured-empty versus unavailable. Check all real sibling routes and the single save point.
-6. Run the full gate after the integrated increment; inspect advisory lists. When the increment changes
-   a benchmarked kernel or what the production path hands it (its caller, scope or arguments), refresh
-   the kernel benchmarks' recording from the integrated source (`.venv/bin/python
-   benchmarks/record_calls.py`, one more run of the proof study), so `benchmarks/` replays the current
-   calls, and commit it with the increment. Record the mechanism,
-   accepted image and source/run evidence in the dated RESOLVING/MAP acceptance record; update
-   detailed remaining work only in §13's active packet. NEXT stays a pointer card. Commit that clean
-   checkpoint with explicit paths and push it before the next packet: git runs the pre-push hook
-   (`scripts/push_checks.py`: the gate unless it passed on that tree, the secret scan, and the advisory
-   lockfile audit); read its whole output, then the GitHub gate run on the commit (Rohan, 2026-10-18:
-   «just freaking commit to git»; «Set it as an automatic hook»; HOW_TO_BUILD, "Commit and push,
-   2026-10-18").
+6. Write everything the checkpoint commits before its final gate, and change nothing tracked after it.
+   When the increment changes a benchmarked kernel or what the production path hands it (its caller,
+   scope or arguments), refresh the kernel benchmarks' recording from the integrated source first
+   (`.venv/bin/python benchmarks/record_calls.py`, one more run of the proof study), so `benchmarks/`
+   replays the current calls: the gate replays the stored recording and never refreshes it, so a
+   recording refreshed after the gate would be committed without being replayed. The first gate after a
+   refresh compares a different call, so its advisory memory figure is information, not a regression.
+   Record the mechanism, accepted image and source/run evidence in the dated RESOLVING/MAP acceptance
+   record; update detailed remaining work only in §13's active packet, which points to the final gate's
+   log under `data/` instead of carrying its numbers. NEXT stays a pointer card. Then run the full gate
+   on exactly that tree and read its whole output and advisory lists; an earlier gate run during
+   integration is diagnostic only. Commit exactly that tree with explicit paths: the gate stamps the tree
+   it passed on, and after a later edit, or with a file left out of the commit, the pre-push hook runs the
+   gate again on a clean checkout or refuses a checkout that is not clean. Push the checkpoint before the
+   next packet: git runs the pre-push hook (`scripts/push_checks.py`: the gate unless it passed on that
+   tree, the secret scan, and the advisory lockfile audit); read its whole output, then the GitHub gate
+   run on the commit, whose results go into the next revision (Rohan, 2026-10-18: «just freaking commit
+   to git»; «Set it as an automatic hook»; HOW_TO_BUILD, "Commit and push, 2026-10-18").
 
 ## 10. Local Claude Max implementation route
 
