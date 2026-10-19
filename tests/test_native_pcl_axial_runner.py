@@ -119,6 +119,214 @@ def test_equal_area_stays_tied_and_none_is_unavailable(monkeypatch):
     assert run.native_pcl_sources([], "study")["pcl"]["status"] == "unavailable"
 
 
+def _bone_context(
+    *, femur=(), tibia=(), femur_outcome="identified", tibia_outcome="identified"
+):
+    return {
+        "femur": {
+            "outcome": femur_outcome,
+            "extent": {"sections_without_a_body_in_the_region": list(femur)},
+        },
+        "tibia": {
+            "outcome": tibia_outcome,
+            "extent": {"sections_without_a_body_in_the_region": list(tibia)},
+        },
+    }
+
+
+@pytest.mark.parametrize("bone", ["femur", "tibia"])
+def test_explicit_source_slice_conflict_withholds_only_that_sagittal_source(
+    monkeypatch, bone
+):
+    own = _own("context-conflict")
+    own.record["bones"] = _bone_context(
+        femur=(1,) if bone == "femur" else (),
+        tibia=(1,) if bone == "tibia" else (),
+    )
+    source_mask = own.arrays["a1_objects"].copy()
+    source_observations = list(own.record["observations"])
+    monkeypatch.setattr(
+        run,
+        "plane_frame",
+        lambda *_a: (_ for _ in ()).throw(
+            AssertionError("conflicting source must be withheld before geometry")
+        ),
+    )
+
+    result = run.native_pcl_sources([own], "study")["pcl"]
+
+    assert result["status"] == "source_context_conflict"
+    assert result["selected"] is None and result["entries"] == []
+    admission = own.record["a4_pcl_source_admissions"][0]
+    assert admission["status"] == "withheld_source_context_conflict"
+    assert admission["conflicting_bones"] == [bone]
+    assert admission["conflict_reason"] == (
+        "explicit_no_body_in_named_bone_region_at_source_slice"
+    )
+    assert admission["slice"] == 1
+    assert admission["support"] == "a1_objects"
+    assert admission["count"] == 4 and admission["label"] == LABEL
+    assert np.array_equal(own.arrays["a1_objects"], source_mask)
+    assert own.record["observations"] == source_observations
+    assert "a4_pcl_source_lps" not in own.arrays
+
+
+@pytest.mark.parametrize("source_slice", [1.5, "1", True, None])
+def test_sagittal_source_requires_integer_slice_address(monkeypatch, source_slice):
+    own = _own(f"malformed-source-address-{source_slice}")
+    own.record["slice_index"] = source_slice
+    monkeypatch.setattr(
+        run,
+        "plane_frame",
+        lambda *_args: (_ for _ in ()).throw(
+            AssertionError("malformed source address reached geometry")
+        ),
+    )
+
+    result = run.native_pcl_sources([own], "study")["pcl"]
+
+    assert result["status"] == "unavailable"
+    assert result["entries"] == []
+    assert "a4_pcl_source_admissions" not in own.record
+    assert "a4_pcl_source_lps" not in own.arrays
+
+
+def test_sagittal_source_accepts_numpy_integer_slice_address(monkeypatch):
+    own = _own("numpy-integer-source-address")
+    own.record["slice_index"] = np.int64(1)
+    monkeypatch.setattr(
+        run, "plane_frame", _sag_frames({"numpy-integer-source-address": 1.0})
+    )
+
+    result = run.native_pcl_sources([own], "study")["pcl"]
+
+    assert result["status"] == "selected"
+    assert result["selected"]["metadata"]["slice"] == 1
+
+
+def test_unknown_or_malformed_bone_context_does_not_veto_source(monkeypatch):
+    own = _own("unknown-context")
+    own.record["bones"] = {
+        "femur": {"outcome": "unresolved", "extent": {}},
+        "tibia": {
+            "outcome": "identified",
+            "extent": {"sections_without_a_body_in_the_region": [True, "1"]},
+        },
+    }
+    monkeypatch.setattr(run, "plane_frame", _sag_frames({"unknown-context": 1.0}))
+
+    result = run.native_pcl_sources([own], "study")["pcl"]
+
+    assert result["status"] == "selected"
+    admission = own.record["a4_pcl_source_admissions"][0]
+    assert admission["status"] == "source_not_withheld_by_context_guard"
+    assert admission["role"] == "limited_conflict_guard_not_full_anatomical_eligibility"
+    assert admission["conflicting_bones"] == []
+    assert admission["bone_context"]["femur"]["status"] == "unknown_context"
+    assert admission["bone_context"]["tibia"]["status"] == "unknown_context"
+    assert admission["bone_context"]["tibia"]["malformed_entry_types"] == [
+        "bool",
+        "str",
+    ]
+
+
+@pytest.mark.parametrize(
+    "bones",
+    [
+        None,
+        [],
+        {"femur": None},
+        {"femur": {"extent": {"sections_without_a_body_in_the_region": "1"}}},
+    ],
+)
+def test_missing_or_malformed_context_is_unknown_and_keeps_source(monkeypatch, bones):
+    own = _own("missing-context")
+    own.record["bones"] = bones
+    monkeypatch.setattr(run, "plane_frame", _sag_frames({"missing-context": 1.0}))
+
+    result = run.native_pcl_sources([own], "study")["pcl"]
+
+    assert result["status"] == "selected"
+    admission = own.record["a4_pcl_source_admissions"][0]
+    assert admission["conflicting_bones"] == []
+    assert all(
+        item["status"] == "unknown_context"
+        for item in admission["bone_context"].values()
+    )
+
+
+def test_larger_conflicting_source_does_not_displace_smaller_valid_source(monkeypatch):
+    conflict, valid = _own("large-conflict", count=4), _own("small-valid", count=3)
+    conflict.record["bones"] = _bone_context(femur=(1,))
+    valid.record["bones"] = _bone_context()
+    monkeypatch.setattr(
+        run, "plane_frame", _sag_frames({"large-conflict": 3.0, "small-valid": 1.0})
+    )
+
+    result = run.native_pcl_sources([conflict, valid], "study")["pcl"]
+
+    assert result["status"] == "selected"
+    assert result["selected"]["owner"] is valid
+    assert len(result["entries"]) == 1
+    assert result["context_conflicts"][0]["series_uid"] == "large-conflict"
+    assert conflict.record["a4_pcl_source_admissions"][0]["status"] == (
+        "withheld_source_context_conflict"
+    )
+    assert valid.record["a4_pcl_source_admissions"][0]["status"] == (
+        "source_not_withheld_by_context_guard"
+    )
+
+
+def test_conflict_is_named_only_when_every_context_admitted_candidate_conflicts(
+    monkeypatch,
+):
+    conflict, no_frame = _own("conflict", count=4), _own("no-frame", count=3)
+    conflict.record["bones"] = _bone_context(femur=(1,))
+    no_frame.record["bones"] = _bone_context()
+
+    def frame(series, z):
+        if series.row.series_uid == "no-frame":
+            return "unreadable_geometry"
+        return _sag_frames({"conflict": 1.0})(series, z)
+
+    monkeypatch.setattr(run, "plane_frame", frame)
+    result = run.native_pcl_sources([conflict, no_frame], "study")["pcl"]
+
+    assert result["entries"] == []
+    assert result["status"] == "unavailable"
+
+
+def test_valid_sources_still_tie_after_context_admission(monkeypatch):
+    a, b = _own("context-tie-a", count=3), _own("context-tie-b", count=3)
+    a.record["bones"] = _bone_context()
+    b.record["bones"] = _bone_context()
+    monkeypatch.setattr(
+        run, "plane_frame", _sag_frames({"context-tie-a": 2.0, "context-tie-b": 2.0})
+    )
+    result = run.native_pcl_sources([a, b], "study")["pcl"]
+    assert result["status"] == "tied"
+    assert result["selected"] is None and len(result["entries"]) == 2
+
+
+def test_source_context_conflict_refuses_axial_before_profile_or_crop(monkeypatch):
+    sagittal = _own("parent-conflict")
+    sagittal.record["bones"] = _bone_context(tibia=(1,))
+    monkeypatch.setattr(run, "plane_frame", _sag_frames({"parent-conflict": 1.0}))
+    sources = run.native_pcl_sources([sagittal], "study")
+    assert sources["pcl"]["status"] == "source_context_conflict"
+
+    def no_profile(*_args, **_kwargs):
+        raise AssertionError("profiles/crops must not run after named source refusal")
+
+    monkeypatch.setattr(run, "native_meniscus_profiles", no_profile)
+    axial = _own("axial-refused", AX)
+    here, missing = run.name_native_pcl_sections(
+        [axial], sources, "study", None, orientation="axial"
+    )[0]
+    assert here == []
+    assert [row.code for row in missing] == ["source_context_conflict"]
+
+
 @pytest.mark.parametrize(
     "change",
     [

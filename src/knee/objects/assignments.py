@@ -2554,19 +2554,42 @@ def fluid_code(fluid_bright: bool, bones_named: bool, found: bool) -> str:
 
 
 def white_as_fluid(
-    plane: np.ndarray, objects: np.ndarray, measures: Measures | None = None
+    plane: np.ndarray,
+    objects: np.ndarray,
+    measures: Measures | None = None,
+    reference_light: float | None = None,
 ) -> np.ndarray | None:
     """On a fat-suppressed, fluid-sensitive slice, the places white as fluid: more than
     `FLUID_BRIGHTER` times as bright as the bones' marrow, the femur's and the tibia's together.
-    None where the slice names no femur and tibia, or their light is none. `measures` are the
+    None where the slice names no femur and tibia and no usable reference is supplied, or their
+    light is none. `measures` are the
     slice's shared measures, when its caller keeps them: the bones' marrow light is read from
-    them."""
-    femur = objects == OBJECT_CODES["femur"]
-    tibia = objects == OBJECT_CODES["tibia"]
-    if not (femur.any() and tibia.any()):
-        return None
-    bones = femur | tibia
-    light = marrow_light(plane, bones) if measures is None else measures.light(bones)
+    them.
+
+    `reference_light` is an optional scalar the CALLER has already validated (same series, middle
+    frame and support). When it is a finite positive number it replaces the per-point
+    measurement of the threshold reference and removes the local-bone prerequisite for this
+    measurement. Absent or unusable (non-finite, non-positive, boolean, not a number) falls back
+    to the per-point calibration exactly as before, which requires both local names."""
+    light: float | None = None
+    if reference_light is not None and not isinstance(
+        reference_light, (bool, np.bool_)
+    ):
+        try:
+            given = float(reference_light)
+        except (TypeError, ValueError):
+            given = float("nan")
+        if np.isfinite(given) and given > 0:
+            light = given
+    if light is None:
+        femur = objects == OBJECT_CODES["femur"]
+        tibia = objects == OBJECT_CODES["tibia"]
+        if not (femur.any() and tibia.any()):
+            return None
+        bones = femur | tibia
+        light = (
+            marrow_light(plane, bones) if measures is None else measures.light(bones)
+        )
     if light <= 0:
         return None
     return plane > FLUID_BRIGHTER * light

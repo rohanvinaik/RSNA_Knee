@@ -5281,7 +5281,8 @@ class PatellaPlane:
     A bounded reading scatters into the full shape: outside its `window_rc` the plane is
     unavailable (labels 0, available False), not air. `window_rc` is None for a whole-frame
     reading; `scope_code`/`scope_reason` say how the scope was chosen, or why it was broadened;
-    `attempts` keep every bounded reading made, including one that missed."""
+    `attempts` keep every bounded reading made, including one that missed. `reference` is what
+    this plane made of the series' native middle-plane reference (None where none was asked)."""
 
     slice: int
     middle: bool
@@ -5300,6 +5301,7 @@ class PatellaPlane:
     scope_code: str = "full_frame_unscoped"
     scope_reason: str = ""
     attempts: tuple[PatellaAttempt, ...] = ()
+    reference: "ReferenceUse | None" = None
 
 
 @dataclass(frozen=True)
@@ -5318,6 +5320,351 @@ class PatellaNaming:
     held: int | None
 
 
+REFERENCE_SUPPORT_ADDRESS = "a1_objects"
+
+
+@dataclass(frozen=True)
+class NativeMiddleReference:
+    """The marrow light already measured on ONE series' acquired native middle plane, with the
+    identity it was measured under: the `source_series_uid`, the native `middle_z`, the middle
+    plane's `frame_key` (origin, basis, spacing) and the `acquisition_key` (basis, spacing: what a
+    pointed plane of the same acquisition shares), the digest of the acquired plane, the support
+    address (`a1_objects`) and object `support_codes`, and for each scalar the digest of the
+    support mask it was measured over (None where that scalar is not carried). Masks are not
+    copied. `femur_light` is `Measures.light` over the femur; `bones_light` over femur + tibia."""
+
+    source_series_uid: str
+    middle_z: int
+    frame_key: Any
+    acquisition_key: Any
+    plane_digest: Any
+    support_address: str
+    support_codes: tuple[int, ...]
+    femur_light: float | None
+    femur_support_digest: Any
+    bones_light: float | None
+    bones_support_digest: Any
+
+
+@dataclass(frozen=True, slots=True)
+class NativeMiddleBundle:
+    """The native middle support identity, computed once per measured context.
+
+    The owner and source arrays stay referenced so the once-key remains attached to the exact
+    context for the lifetime of its study. The arrays are not copied.
+    """
+
+    cache_key: tuple[int, int, int, int, str, int]
+    source_series_uid: str
+    middle_z: int
+    frame_key: Any
+    acquisition_key: Any
+    plane_digest: Any
+    support_address: str
+    femur_support_digest: Any
+    bones_support_digest: Any
+    femur_state: str | None
+    bones_state: str | None
+    cacheable: bool
+    context_owner: Any = dc_field(repr=False, compare=False)
+    objects_ref: np.ndarray | None = dc_field(repr=False, compare=False)
+    plane_ref: np.ndarray | None = dc_field(repr=False, compare=False)
+
+
+@dataclass(frozen=True)
+class ReferenceUse:
+    """What a pointed consumer made of a supplied reference: a named `state` ("usable" or why
+    not), the `role` asked ("femur" or "bones"), the validated `light` (None unless usable) and
+    the `reference` it was validated against, kept for provenance."""
+
+    state: str
+    role: str
+    light: float | None
+    reference: NativeMiddleReference | None = None
+
+
+def frame_identity(frame: PlaneFrame, with_origin: bool) -> Any:
+    parts = [np.ravel(frame.basis_lps), np.ravel(np.asarray(frame.spacing_rc))]
+    if with_origin:
+        parts.insert(0, np.ravel(frame.origin_lps))
+    return digest(np.concatenate([np.asarray(p, dtype=np.float64) for p in parts]))
+
+
+def usable_light(value: Any) -> float | None:
+    """A finite positive number, else None (booleans and non-numbers are not lights)."""
+    if value is None or isinstance(value, (bool, np.bool_)):
+        return None
+    try:
+        got = float(value)
+    except (TypeError, ValueError):
+        return None
+    return got if np.isfinite(got) and got > 0 else None
+
+
+def reference_support_digests(
+    objects: Any, plane: Any
+) -> tuple[str | None, Any, str | None, Any]:
+    """Read femur and combined-bone supports in one pass over the native naming."""
+    if (
+        not isinstance(objects, np.ndarray)
+        or objects.ndim != 2
+        or not np.issubdtype(objects.dtype, np.integer)
+        or np.shape(plane) != objects.shape
+    ):
+        return "support_malformed", None, "support_malformed", None
+    femur = objects == int(OBJECT_CODES["femur"])
+    tibia = objects == int(OBJECT_CODES["tibia"])
+    if not femur.any():
+        return "support_empty", None, "support_empty", None
+    femur_digest = digest(femur)
+    if not tibia.any():
+        return None, femur_digest, "support_empty", None
+    return None, femur_digest, None, digest(femur | tibia)
+
+
+def native_middle_bundle(own: Any) -> NativeMiddleBundle:
+    """Keep one native-middle image/support identity per exact measured context.
+
+    The cache key includes the measured owner and both source arrays, not just the series UID.
+    The bundle retains those objects for the study scope; it makes no copies of image or masks.
+    """
+    objects = own.arrays.get("a1_objects")
+    plane = own.arrays.get("acquired_plane")
+    uid = str(own.series.row.series_uid)
+    middle_z = int(own.record["slice_index"])
+    frame = own.frame
+    key = (id(own), id(objects), id(plane), id(frame), uid, middle_z)
+
+    frame_arrays = (
+        (frame.origin_lps, frame.basis_lps) if isinstance(frame, PlaneFrame) else ()
+    )
+    cacheable = (
+        isinstance(objects, np.ndarray)
+        and not objects.flags.writeable
+        and isinstance(plane, np.ndarray)
+        and not plane.flags.writeable
+        and all(not array.flags.writeable for array in frame_arrays)
+    )
+
+    def make() -> NativeMiddleBundle:
+        femur_state, femur_digest, bones_state, bones_digest = (
+            reference_support_digests(objects, plane)
+        )
+        frame_ok = isinstance(frame, PlaneFrame)
+        plane_ok = isinstance(plane, np.ndarray) and plane.ndim == 2
+        return NativeMiddleBundle(
+            key,
+            uid,
+            middle_z,
+            frame_identity(frame, True) if frame_ok else None,
+            frame_identity(frame, False) if frame_ok else None,
+            digest(plane) if plane_ok else None,
+            REFERENCE_SUPPORT_ADDRESS,
+            femur_digest,
+            bones_digest,
+            femur_state,
+            bones_state,
+            cacheable,
+            own,
+            objects if isinstance(objects, np.ndarray) else None,
+            plane if isinstance(plane, np.ndarray) else None,
+        )
+
+    if not cacheable:
+        return make()
+    return once("native_middle_bundle", key, make)
+
+
+def native_middle_reference(
+    own: Any, femur_light: float | None, bones_light: float | None = None
+) -> NativeMiddleReference | str:
+    """The reference product from the lights `read_patella` / `read_recess` ALREADY measured on
+    this series' native middle plane (nothing is measured again, no mask is copied). Created only
+    where real native masks exist in `a1_objects`: the femur's (and, when `bones_light` is given,
+    the tibia's too). Otherwise a named state: `support_malformed`, `support_empty` or
+    `light_unavailable`."""
+    bundle = native_middle_bundle(own)
+    if bundle.femur_state is not None:
+        return bundle.femur_state
+    if bones_light is not None and bundle.bones_state is not None:
+        return bundle.bones_state
+    f_light = usable_light(femur_light)
+    b_light = usable_light(bones_light) if bones_light is not None else None
+    if f_light is None and b_light is None:
+        return "light_unavailable"
+
+    def make() -> NativeMiddleReference:
+        codes = (
+            (int(OBJECT_CODES["femur"]), int(OBJECT_CODES["tibia"]))
+            if bones_light is not None
+            else (int(OBJECT_CODES["femur"]),)
+        )
+        return NativeMiddleReference(
+            bundle.source_series_uid,
+            bundle.middle_z,
+            bundle.frame_key,
+            bundle.acquisition_key,
+            bundle.plane_digest,
+            bundle.support_address,
+            codes,
+            f_light,
+            bundle.femur_support_digest if f_light is not None else None,
+            b_light,
+            bundle.bones_support_digest if b_light is not None else None,
+        )
+
+    if not bundle.cacheable:
+        return make()
+    return once("native_middle_reference", (bundle.cache_key, f_light, b_light), make)
+
+
+def reference_use(
+    reference: NativeMiddleReference | str | None,
+    own: Any,
+    frame: PlaneFrame,
+    role: str,
+) -> ReferenceUse:
+    """The caller's validation of a reference for a pointed plane `frame` of `own`'s series. The
+    scalar is released only when: the same series, the same native middle slice, the same middle
+    frame, the same acquisition geometry as the pointed plane, the same support address, the same
+    acquired plane, and the same support digest
+    all hold. Immutable measured inputs share their support bundle and base validation within the
+    study; writable standalone inputs are checked afresh. Everything else is a named state with no
+    light; absent, unavailable and incompatible are distinct states, and none is an error."""
+
+    def named(state: str) -> ReferenceUse:
+        held = reference if isinstance(reference, NativeMiddleReference) else None
+        return ReferenceUse(state, role, None, held)
+
+    if reference is None:
+        return named("not_supplied")
+    if isinstance(reference, str):
+        return named(f"unavailable_{reference}")
+    if not isinstance(reference, NativeMiddleReference):
+        return named("wrong_type")
+    if role not in ("femur", "bones"):
+        return named("unknown_role")
+    light = reference.femur_light if role == "femur" else reference.bones_light
+    held_digest = (
+        reference.femur_support_digest
+        if role == "femur"
+        else reference.bones_support_digest
+    )
+    if usable_light(light) is None or held_digest is None:
+        return named("role_not_in_reference")
+    if reference.source_series_uid != own.series.row.series_uid:
+        return named("series_mismatch")
+    if reference.middle_z != own.record.get("slice_index"):
+        return named("middle_slice_mismatch")
+    if reference.support_address != REFERENCE_SUPPORT_ADDRESS:
+        return named("support_address_mismatch")
+    bundle = native_middle_bundle(own)
+    if bundle.frame_key != reference.frame_key:
+        return named("middle_frame_mismatch")
+    if frame_identity(frame, False) != reference.acquisition_key:
+        return named("acquisition_mismatch")
+
+    def validate() -> str:
+        support_state = bundle.femur_state if role == "femur" else bundle.bones_state
+        if support_state is not None:
+            return support_state
+        if bundle.plane_ref is None or bundle.objects_ref is None:
+            return "support_malformed"
+        if bundle.plane_digest != reference.plane_digest:
+            return "plane_mismatch"
+        actual_digest = (
+            bundle.femur_support_digest
+            if role == "femur"
+            else bundle.bones_support_digest
+        )
+        if actual_digest != held_digest:
+            return "support_mismatch"
+        return "usable"
+
+    if bundle.cacheable:
+        state = once(
+            "native_middle_reference.validation",
+            (
+                bundle.cache_key,
+                role,
+                reference.source_series_uid,
+                reference.middle_z,
+                reference.support_address,
+                reference.frame_key,
+                reference.acquisition_key,
+                reference.plane_digest,
+                light,
+                held_digest,
+            ),
+            validate,
+        )
+    else:
+        state = validate()
+    if state != "usable":
+        return named(state)
+    return ReferenceUse("usable", role, float(cast(float, light)), reference)
+
+
+def reference_record(reference: NativeMiddleReference | str | None) -> dict:
+    """Plain data for the record: the product's identity (validated again per pointed plane), or
+    the named state of its absence."""
+    if reference is None:
+        return {"state": "not_supplied"}
+    if isinstance(reference, str):
+        return {"state": f"unavailable_{reference}"}
+    return {
+        "state": "available",
+        "source_series_uid": reference.source_series_uid,
+        "native_middle_slice": reference.middle_z,
+        "support_address": reference.support_address,
+        "support_codes": [int(c) for c in reference.support_codes],
+        "frame_key": reference.frame_key,
+        "acquisition_key": reference.acquisition_key,
+        "acquired_plane_digest": reference.plane_digest,
+        "femur_light": None
+        if reference.femur_light is None
+        else finite_or_none(reference.femur_light),
+        "femur_support_digest": reference.femur_support_digest,
+        "bones_light": None
+        if reference.bones_light is None
+        else finite_or_none(reference.bones_light),
+        "bones_support_digest": reference.bones_support_digest,
+        "role": "middle_plane_reference_prior_not_native_marrow_at_another_z",
+    }
+
+
+def use_record(use: ReferenceUse | None) -> dict | None:
+    if use is None:
+        return None
+    ref = use.reference
+    return {
+        "state": use.state,
+        "role": use.role,
+        "light": None if use.light is None else finite_or_none(use.light),
+        "source_series_uid": None if ref is None else ref.source_series_uid,
+        "native_middle_slice": None if ref is None else ref.middle_z,
+        "support_address": None if ref is None else ref.support_address,
+        "support_codes": None if ref is None else [int(c) for c in ref.support_codes],
+    }
+
+
+def recess_profile_window(profile: Any, z: int) -> tuple[int, int, int, int] | None:
+    """The recess profile's own window on slice z when it was read there and is a valid
+    non-empty set of whole-number bounds; else None. No centre or window is invented."""
+    rows = np.asarray(getattr(profile, "window_rc", ()))
+    if rows.ndim != 2 or not 0 <= z < len(rows):
+        return None
+    status = profile.status.get(FLUID) if hasattr(profile, "status") else None
+    if status is not None and z < len(status) and status[z] == JOINT_NOT_READ:
+        return None
+    bounds = integer_bounds(rows[z])
+    if bounds is None or min(bounds) < 0:
+        return None
+    if bounds[1] <= bounds[0] or bounds[3] <= bounds[2]:
+        return None
+    return bounds
+
+
 def patella_named(
     series: Series,
     plane: np.ndarray,
@@ -5331,9 +5678,12 @@ def patella_named(
     tibia_foot: np.ndarray,
     boxes: list[tuple[float, float, float, float]] | None,
     body: np.ndarray | None,
+    reference_light: float | None = None,
 ) -> PatellaNaming:
     """The patella's established rule and the fat beside it on one domain, exactly as
-    `patella_plane` always read them; every array is in the domain's own coordinates."""
+    `patella_plane` always read them; every array is in the domain's own coordinates.
+    `reference_light`, when the caller validated one, is the femur's native middle-plane marrow
+    light and replaces measuring it again here; the femur is still named locally and must be."""
     shape = plane.shape
     femur = name_territory(labels, available, femur_foot, tibia_foot)
     tibia = name_territory(labels, available, tibia_foot, femur_foot)
@@ -5354,7 +5704,13 @@ def patella_named(
         )
         objects[joint] = OBJECT_CODES["joint"]
     # the patella: the deepest peak in front of the femur, the piece as bright as its marrow
-    light = float(measures.light(femur_places)) if femur_places.any() else None
+    light = (
+        None
+        if not femur_places.any()
+        else float(reference_light)
+        if reference_light is not None
+        else float(measures.light(femur_places))
+    )
 
     def attempt(peaks):
         found = (
@@ -5454,6 +5810,7 @@ def patella_plane(
     in_plane: Sequence[tuple[float, float, float, float]] | None = None,
     *,
     profile_window: Any = None,
+    reference: NativeMiddleReference | str | None = None,
 ) -> PatellaPlane:
     """The patella's established rule, and the fat beside it, on ONE pointed plane of a
     fat-suppressed series: the lens and its field, the femur and the tibia named by the carried
@@ -5465,11 +5822,18 @@ def patella_plane(
 
     The question is asked locally first: the original lens and field are measured only inside the
     scope (`patella_scope`: the profile's window on this plane `profile_window`, the map's boxes
-    and the bones' footprints), a useful prior and not a boundary. Where no profile window or map
-    box gives a domain, or the union is the whole frame, the whole frame is read as before, with
-    the reason named. Where the local reading does not name the patella, it is kept whole
-    (`attempts`) and the whole frame is read, named as a broadening: a miss of the prior, not an
-    absence."""
+    and, unless a compatible reference is supplied, the bones' footprints), a useful prior and not
+    a boundary. Where no profile window or map box gives a domain, or the union is the whole
+    frame, the whole frame is read as before, with the reason named. Where the local reading does
+    not name the patella, it is kept whole (`attempts`) and the whole frame is read, named as a
+    broadening: a miss of the prior, not an absence.
+
+    `reference` is the series' native middle-plane reference (`native_middle_reference`). It is
+    validated here against this series (`reference_use`, recorded as `PatellaPlane.reference`).
+    Only a compatible one supplies the femur's marrow light and lets the scope stand on the
+    profile/map domain without the footprint envelopes added to measure that light; absent,
+    unavailable or incompatible, the per-point calibration and the old scope apply. Local bone
+    naming and geometry are still required either way."""
     series, record = own.series, own.record
     uid = series.row.series_uid
     frame = plane_frame(series, z)
@@ -5498,7 +5862,24 @@ def patella_plane(
             body = None
     femur_foot = bone_footprint(series, z, frame, shape, femur_lps, keys[0])
     tibia_foot = bone_footprint(series, z, frame, shape, tibia_lps, keys[1])
-    scope = patella_scope(shape, profile_window, boxes, (femur_foot, tibia_foot))
+    use = reference_use(reference, own, frame, "femur")
+    reference_light = use.light
+    footprints = (femur_foot, tibia_foot) if reference_light is None else ()
+    scope = patella_scope(shape, profile_window, boxes, footprints)
+    if reference_light is not None:
+        ledger.record("patella.native_reference", planes=1)
+        scope = PatellaScope(
+            scope.window_rc,
+            scope.code,
+            ",".join(
+                part
+                for part in (
+                    scope.reason,
+                    "native_middle_reference_replaces_footprint_calibration",
+                )
+                if part
+            ),
+        )
 
     def whole(
         code: str, reason: str, attempts: tuple[PatellaAttempt, ...]
@@ -5521,6 +5902,7 @@ def patella_plane(
             tibia_foot,
             boxes,
             body,
+            reference_light,
         )
         handed("patella_plane", ("objects",))
         return PatellaPlane(
@@ -5541,6 +5923,7 @@ def patella_plane(
             code,
             reason,
             attempts,
+            use,
         )
 
     window = scope.window_rc
@@ -5571,6 +5954,7 @@ def patella_plane(
         tibia_foot[crop],
         None if boxes is None else [(r - r0, c - c0, hr, hc) for r, c, hr, hc in boxes],
         None if body is None else body[crop],
+        reference_light,
     )
     peak = (
         None
@@ -5656,6 +6040,7 @@ def patella_plane(
         scope.code,
         scope.reason,
         (attempt,),
+        use,
     )
 
 
@@ -8031,7 +8416,11 @@ def read_patella(
     stack's normal; the patella is ONE bone, so every named plane is one more section of it. Or why
     the series cannot be read: a string code, an unknown and never an absence. The patella is
     named by its light, so only a fat-suppressed series that runs front to back in the plane and
-    names the femur on its middle slice is profiled (the existing `patella_code`'s own refusals)."""
+    names the femur on its middle slice is profiled (the existing `patella_code`'s own refusals).
+
+    The femur's marrow light measured here on the native middle plane is also made into the series'
+    native middle-plane reference (`native_middle_reference`), recorded, and handed to every
+    pointed plane request (`patella_plane`), which validates it itself."""
     series, record = own.series, own.record
     uid = series.row.series_uid
     index = record["slice_index"]
@@ -8057,6 +8446,7 @@ def read_patella(
     light = float(
         measures_of(uid, index, own.arrays["acquired_plane"], own.frame).light(mask)
     )
+    native_ref = native_middle_reference(own, light)
     shape = np.shape(own.arrays["acquired_plane"])
     keys = (digest(femur_lps), digest(tibia_lps))
     # Where to look first: the expected neighbourhood of the study's reference (`patella_neighbourhood`),
@@ -8114,6 +8504,7 @@ def read_patella(
             "patella",
             in_plane_boxes(z),
             profile_window=windows[z] if 0 <= z < len(windows) else None,
+            reference=native_ref,
         )
         if mapping is not None and got.in_plane != "unguided_in_plane":
             mapping.smap.note_use("patella", uid, got.in_plane, slice=z, code=got.code)
@@ -8360,6 +8751,7 @@ def read_patella(
                 )
             ),
             "position_mm": finite_or_none(offsets[p.slice]) if sound else None,
+            "native_reference_use": use_record(p.reference),
             "scope": {
                 "code": p.scope_code,
                 "reason": p.scope_reason,
@@ -8421,6 +8813,7 @@ def read_patella(
         "pointer_representatives": [[int(z) for z in peaks] for peaks in maxima],
         "confirmed_slices": [int(z) for z in confirm],
         "pointed_planes": pointed_rows,
+        "native_reference": reference_record(native_ref),
         "extent": extent,
         "unknown_slices": unknown,
         "ambiguities": ambiguities,
@@ -11589,7 +11982,8 @@ class RecessPlane:
     lining, the fluid, the capsule, the retinacula's recess, strip and wall), small readings `values`
     (the wall's per-section minima, the interval), the naming `objects` and the lens's `labels` and
     `available` where this stage read them itself (None where the earlier family's are kept), and
-    what pointed here (`asked`)."""
+    what pointed here (`asked`). `reference` is what this plane made of the series' native
+    middle-plane reference (None where none was asked)."""
 
     slice: int
     middle: bool
@@ -11604,6 +11998,7 @@ class RecessPlane:
     labels: np.ndarray | None
     available: np.ndarray | None
     asked: tuple[str, ...]
+    reference: "ReferenceUse | None" = None
 
 
 def recess_blank(
@@ -11627,13 +12022,21 @@ def recess_anterior_plane(
     keys: tuple[str, str],
     patella_rows: dict[int, int],
     asked: tuple[str, ...],
+    reference: NativeMiddleReference | str | None = None,
+    profile_window: Any = None,
 ) -> RecessPlane:
     """The anterior recess, its lining and the joint's fluid on ONE pointed sagittal plane of a
     fat-suppressed fluid-sensitive series, by the existing rules: the plane's naming is the patella
     family's own row where it read this plane (`a3_patella_plane_objects`, its lens handed on), else
     `patella_plane` makes it here (the lens made once, counted for this stage); the white is
     `white_as_fluid`, the recess and its fat-facing lining `anterior_synovial_recess`, the fluid the
-    plane's own `joint_fluid`. Nothing here is a new definition."""
+    plane's own `joint_fluid`. Nothing here is a new definition.
+
+    `reference` is the series' native middle-plane reference; it is validated here for the bones
+    (`reference_use`) and, only if compatible, supplies the white's threshold light. The fallback
+    `patella_plane` receives the same reference and the recess profile's own window on this slice
+    (`profile_window`, None when none is valid; no centre is invented). Saved patella rows are
+    reused exactly as before."""
     series = own.series
     uid = series.row.series_uid
     frame = plane_frame(series, z)
@@ -11647,17 +12050,28 @@ def recess_anterior_plane(
         objects = np.asarray(own.arrays["a3_patella_plane_objects"][row])
         source = RECESS_SOURCES[0]
     else:
-        got = patella_plane(own, z, leg.femur_lps, leg.tibia_lps, keys, None, "recess")
+        got = patella_plane(
+            own,
+            z,
+            leg.femur_lps,
+            leg.tibia_lps,
+            keys,
+            None,
+            "recess",
+            profile_window=profile_window,
+            reference=reference,
+        )
         if got.objects is None:
             return recess_blank(z, "anterior", UNREADABLE_GEOMETRY, asked)
         objects, labels, available = got.objects, got.labels, got.available
         source = RECESS_SOURCES[2]
     measures = measures_of(uid, z, plane, frame)
+    use = reference_use(reference, own, frame, "bones")
     femur = objects == OBJECT_CODES["femur"]
     tibia = objects == OBJECT_CODES["tibia"]
     has_patella = bool((objects == OBJECT_CODES["patella"]).any())
     none = np.zeros(plane.shape, dtype=bool)
-    white = white_as_fluid(plane, objects, measures)
+    white = white_as_fluid(plane, objects, measures, use.light)
     recess = lining = none
     if has_patella and femur.any() and white is not None:
         recess, lining = anterior_synovial_recess(
@@ -11696,6 +12110,7 @@ def recess_anterior_plane(
         labels,
         available,
         asked,
+        use,
     )
 
 
@@ -11705,12 +12120,14 @@ def recess_side_plane(
     objects: np.ndarray,
     row: int,
     asked: tuple[str, ...],
+    reference: NativeMiddleReference | str | None = None,
 ) -> RecessPlane:
     """The side recesses' capsule and the joint's fluid on ONE pointed coronal plane of a
     fat-suppressed fluid-sensitive series the joint family already read (`objects`, its naming, the
-    lens handed on): the white is `white_as_fluid`, the wall `capsule_at_side_recesses` (the largest
-    recess outboard of each meniscus, the dark wall outside it) and the fluid
-    `fluid_in_the_recesses`, by the existing rules."""
+    lens handed on): the white is `white_as_fluid` (its threshold light is the validated native
+    middle-plane bones reference when compatible, else the per-point calibration), the wall
+    `capsule_at_side_recesses` (the largest recess outboard of each meniscus, the dark wall outside
+    it) and the fluid `fluid_in_the_recesses`, by the existing rules."""
     series, record = own.series, own.record
     uid = series.row.series_uid
     frame = plane_frame(series, z)
@@ -11725,6 +12142,7 @@ def recess_side_plane(
     reads("field", ("leg",), "recess")
     reads("joint_plane", ("objects",), "recess")
     measures = measures_of(uid, z, plane, frame)
+    use = reference_use(reference, own, frame, "bones")
     spacing = np.asarray(frame.spacing_rc)
     femur = objects == OBJECT_CODES["femur"]
     tibia = objects == OBJECT_CODES["tibia"]
@@ -11733,7 +12151,7 @@ def recess_side_plane(
         for name in ("medial_meniscus", "lateral_meniscus")
     )
     none = np.zeros(plane.shape, dtype=bool)
-    white = white_as_fluid(plane, objects, measures)
+    white = white_as_fluid(plane, objects, measures, use.light)
     capsule = fluid = none
     boundary: dict[str, np.ndarray] = {}
     if white is not None and femur.any() and menisci:
@@ -11785,6 +12203,7 @@ def recess_side_plane(
         None,
         None,
         asked,
+        use,
     )
 
 
@@ -12376,6 +12795,12 @@ def read_recess(
     remaining slices are profiled once and all pointed runs are read. Without a usable map, the
     whole-depth profile and its existing pointed-plane semantics apply directly. `feed` remains an
     additional axial plane selected by the patella family's extent-based centre.
+
+    For the anterior and side kinds the femur and combined-bone lights already measured on the native
+    middle plane are made into the series' native middle-plane reference (`native_middle_reference`)
+    and handed to the pointed planes, which validate it themselves; the anterior fallback also gets
+    the recess profile's own valid window on that slice. The retinacula's projected calibration and
+    axial consumer are unchanged and receive no reference.
     """
     series, record = own.series, own.record
     uid = series.row.series_uid
@@ -12446,6 +12871,13 @@ def read_recess(
             int(OBJECT_CODES["femur"]),
             int(OBJECT_CODES["tibia"]),
         ]
+    # the native middle-plane reference from the lights ALREADY measured above (anterior / side
+    # only; the retinacula's projected calibration is not a native-mask reference)
+    native_ref = (
+        None
+        if kind == "retinacula"
+        else native_middle_reference(own, femur_light, bones_light)
+    )
     depth = len(series.volume)
     why = np.zeros(depth, dtype=np.int8)
     got = recess_corridor(own, kind, leg, patella_centre, why)
@@ -12524,12 +12956,23 @@ def read_recess(
         if z == bootstrap:
             return recess_blank(z, kind, "bootstrap", asked, True), None
         if kind == "anterior":
-            got_plane = recess_anterior_plane(own, z, leg, keys, patella_rows, asked)
+            got_plane = recess_anterior_plane(
+                own,
+                z,
+                leg,
+                keys,
+                patella_rows,
+                asked,
+                native_ref,
+                recess_profile_window(profile, z),
+            )
         elif kind == "side":
             stack = own.arrays["a3_joint_plane_objects"]
             row = side_rows.get(z, -1)
             got_plane = (
-                recess_side_plane(own, z, np.asarray(stack[row]), row, asked)
+                recess_side_plane(
+                    own, z, np.asarray(stack[row]), row, asked, native_ref
+                )
                 if row >= 0
                 else recess_blank(z, kind, "no_earlier_family_read_it", asked)
             )
@@ -12670,6 +13113,7 @@ def read_recess(
                 for name in (*parts, "white")
                 if name in p.masks and np.count_nonzero(p.masks[name])
             },
+            "native_reference_use": use_record(p.reference),
         }
         if not p.middle:
             twin = twin_of[id(p)]
@@ -12740,6 +13184,7 @@ def read_recess(
             "location_context_identity": leg.identity or leg_identity(leg),
             "location_support_digest": digest(calibration_support),
         },
+        "native_reference": reference_record(native_ref),
         "ambiguities": ambiguities,
         "status_codes": dict(FIBULA_POINTER_STATUS),
         "search": {
@@ -23016,6 +23461,83 @@ def named_parts(records: list[dict], main_records: list[dict]) -> dict[str, int]
 _PCL_LOCAL = {"partial_reading", "tied_largest_components", "measured_empty"}
 
 
+def _pcl_source_context_admission(
+    record: dict[str, Any], artifact: str, z: int, support: np.ndarray
+) -> dict[str, Any]:
+    """Retain explicit bone-body conflicts at a sagittal PCL source address.
+
+    This limited guard withholds only exact integer slice addresses in an existing no-body
+    list. Missing or malformed context stays unknown and does not withhold the source.
+    """
+    bones = record.get("bones")
+    context: dict[str, Any] = {}
+    conflicts: list[str] = []
+    for bone in ("femur", "tibia"):
+        bone_record = bones.get(bone) if isinstance(bones, dict) else None
+        extent = bone_record.get("extent") if isinstance(bone_record, dict) else None
+        no_body = (
+            extent.get("sections_without_a_body_in_the_region")
+            if isinstance(extent, dict)
+            else None
+        )
+        context_address = f"bones.{bone}.extent.sections_without_a_body_in_the_region"
+        record_outcome = (
+            bone_record.get("outcome") if isinstance(bone_record, dict) else None
+        )
+        if not isinstance(no_body, list):
+            context[bone] = {
+                "status": "unknown_context",
+                "record_outcome": record_outcome,
+                "context_address": context_address,
+                "context_field_type": type(no_body).__name__,
+            }
+            continue
+        conflicts_at_source = any(
+            type(value) is int and value == z for value in no_body
+        )
+        malformed_entry_types = [
+            type(value).__name__ for value in no_body if type(value) is not int
+        ]
+        status = (
+            "explicit_source_slice_conflict"
+            if conflicts_at_source
+            else "unknown_context"
+            if malformed_entry_types
+            else "no_explicit_source_slice_conflict"
+        )
+        context[bone] = {
+            "status": status,
+            "record_outcome": record_outcome,
+            "context_address": context_address,
+            "source_slice_is_member": conflicts_at_source,
+            "malformed_entry_types": malformed_entry_types,
+        }
+        if conflicts_at_source:
+            conflicts.append(bone)
+    return {
+        "role": "limited_conflict_guard_not_full_anatomical_eligibility",
+        "series_uid": record.get("series_uid"),
+        "artifact": artifact,
+        "view": list(record.get("view", ())),
+        "slice": z,
+        "support": "a1_objects",
+        "label": OBJECT_CODES["pcl"],
+        "count": int(support.sum()),
+        "status": (
+            "withheld_source_context_conflict"
+            if conflicts
+            else "source_not_withheld_by_context_guard"
+        ),
+        "conflict_reason": (
+            "explicit_no_body_in_named_bone_region_at_source_slice"
+            if conflicts
+            else None
+        ),
+        "conflicting_bones": conflicts,
+        "bone_context": context,
+    }
+
+
 def native_pcl_sources(
     measured: list[Measured],
     study_uid: str,
@@ -23053,6 +23575,8 @@ def native_pcl_sources(
         "native_axial_pcl_sources" if orientation == "axial" else "native_pcl_sources"
     )
     entries: list[tuple[Measured, np.ndarray, dict[str, Any]]] = []
+    context_conflicts: list[dict[str, Any]] = []
+    context_unwithheld_candidates = 0
     aligned = (
         zip(measured, axial_pending, strict=True)
         if orientation == "axial"
@@ -23084,7 +23608,9 @@ def native_pcl_sources(
                 continue
             support = objects == label
             z_value = record.get("slice_index")
-            if isinstance(z_value, bool) or z_value is None:
+            if isinstance(z_value, (bool, np.bool_)) or not isinstance(
+                z_value, (int, np.integer)
+            ):
                 continue
             z = int(z_value)
             support_name = "a1_objects"
@@ -23193,6 +23719,12 @@ def native_pcl_sources(
                     )
                 if not saved:
                     continue
+                admission = _pcl_source_context_admission(record, artifact, z, support)
+                record.setdefault("a4_pcl_source_admissions", []).append(admission)
+                if admission["conflicting_bones"]:
+                    context_conflicts.append(admission)
+                    continue
+                context_unwithheld_candidates += 1
             elif fields_for_support is None:
                 continue
             else:
@@ -23251,13 +23783,18 @@ def native_pcl_sources(
     areas = [float(entry[2]["physical_area_mm2"]) for entry in entries]
     largest: float | None = max(areas, default=None)
     winners = [entry for entry in entries if entry[2]["physical_area_mm2"] == largest]
+    status = (
+        "selected"
+        if len(winners) == 1
+        else "tied"
+        if winners
+        else "source_context_conflict"
+        if context_conflicts and context_unwithheld_candidates == 0
+        else "unavailable"
+    )
     return {
         "pcl": {
-            "status": "selected"
-            if len(winners) == 1
-            else "tied"
-            if winners
-            else "unavailable",
+            "status": status,
             "selected": None
             if len(winners) != 1
             else {
@@ -23268,6 +23805,7 @@ def native_pcl_sources(
             "entries": [entry[2] for entry in entries],
             "point_count": sum(len(entry[1]) for entry in entries),
             "largest_physical_area_mm2": largest,
+            "context_conflicts": context_conflicts,
             "product": product,
         }
     }
@@ -23324,6 +23862,8 @@ def name_native_pcl_sections(
             code = (
                 "source_tied"
                 if source.get("status") == "tied"
+                else "source_context_conflict"
+                if source.get("status") == "source_context_conflict"
                 else "source_unavailable"
             )
             missing.append(Unresolved(name, "native", uid, view, code))
@@ -23861,6 +24401,10 @@ def measure_study(
         # The patella through the stacks, searched first where the reference says it lies, with
         # the extensor tendons and the fat pads on the planes it names, kept beside the bones'
         # records and observations.
+        for own in measured:
+            # All middle a1_objects writers precede this boundary; the native reference readers
+            # share this pipeline-owned snapshot through their study lifetime.
+            own.arrays["a1_objects"].setflags(write=False)
         name_the_patella(measured, partners, refined, study_uid, reference, mapping)
         patella_key_planes(measured, mapping, study_uid)
         refine_map(mapping, measured)

@@ -234,7 +234,9 @@ def patella_search(monkeypatch, area, named, reference, knee="R"):
         )
 
     def fake_plane(_own, z, *rest, **kwargs):
-        assert set(kwargs) == {"profile_window"}
+        assert set(kwargs) == {"profile_window", "reference"}
+        assert isinstance(kwargs["reference"], run.NativeMiddleReference)
+        assert kwargs["reference"].source_series_uid == own.series.row.series_uid
         asked.append(z)
         objects = np.zeros(shape, np.int8)
         code = "abstain_no_peak_in_front_of_the_femur"

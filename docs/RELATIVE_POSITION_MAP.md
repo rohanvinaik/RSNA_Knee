@@ -1930,3 +1930,21 @@ it does not purify seeds, alter its numerical relation or establish a new marrow
 Proof/bursa production runs and the inspected native retinacular bands are linked in the B1 record
 above. P3 remains open for shared same-acquisition native calibration and narrower patella/cavity
 questions before heavy reading; wiring refined locations alone does not complete that work.
+
+
+### 8.42 Explicit native-source context conflict (P4 increment)
+
+A source observation and its physical area are different from permission to use it for another anatomical question. The sagittal PCL collector now checks the existing same-slice fine-body conflict before generating LPS points or choosing by area. An exact source slice listed in either named bone's `sections_without_a_body_in_the_region` withholds that source from this collector; unknown or malformed context does not. The saved original observation and support remain. The native axial/coronal reader consumes `source_context_conflict` before making dependent profiles/crops. Metadata explicitly calls this a limited conflict guard, never full anatomical eligibility. No same-plane coarse-bone prerequisite was added.
+
+Proof and bursa production verification, source/array identities and the six-statement contract are in `data/readings/collapse-20261017/full-build/targeted-compute-20261018/b2-native-context-20261019/`. This is not the complete physical notch/attachment source rule: that P4 obligation remains. Existing positive extent inclusion alone is not independent identity evidence. The correction connects the actual semantic conflict to the consumer that would otherwise spend compute propagating it.
+
+
+### 8.43 Native calibration sharing is different from local anatomical geometry (P3 increment)
+
+The patella and anterior/side recess readers publish the light they already measured on their own acquisition's middle plane, with image/support/source/frame identities. Pointed consumers validate and reuse that scalar; it is a reference prior, not marrow identity at another slice. A compatible reference removes the need to enlarge the target lens to a whole bone's footprint solely to recalibrate. The existing profile/map domain supplies the local question; missing/incompatible references retain the old native calibration/scope path, and local misses retain the existing broadening.
+
+The shared image/support bundle is lazy and reused only for immutable measured inputs. The pipeline freezes its settled middle a1_objects at the phase boundary after its last bootstrap writer and map build, before patella reading. Standalone writable inputs are rechecked rather than memoized by object identity. This avoids repeated full-frame hashing without trusting mutable content. No original lens, Measures or name_territory definition was changed.
+
+White-as-fluid measures brightness against combined-bone reference light. With a validated supplied reference, its former local femur/tibia prerequisite is no longer needed to obtain that calibration. The spatial rule for an anterior recess still requires native femur and patella; white pixels alone do not name fluid or a recess. Patella's own companion-fluid gate is unchanged in this increment, so a tibia outside that target domain can leave that companion reading unavailable. The distinction must not be hidden by an empty mask or an accuracy score.
+
+The six-statement contract, native inspections, exact source pins and actual verification live in `data/readings/collapse-20261017/full-build/targeted-compute-20261018/b2-native-context-20261019/`. Further native context reuse/targeting remains P3 work; P4's physical source relation and later families remain separate obligations.

@@ -541,13 +541,25 @@ def test_real_entry_point_builds_the_map_and_the_patella_reads_it(
     anterior_map = full["objects"]["anterior_synovial_recess"]
     anterior_planes = anterior_map["key_planes"]
     assert anterior_planes["sagittal"]["outcome"] == "selected"
-    assert anterior_planes["sagittal"]["slice"] == 18
-    assert anterior_planes["sagittal"]["series_uid"] == (
-        "1.2.826.0.1.3680043.8.498.37372672584387115708078590109474719429"
-    )
     assert anterior_planes["axial"]["outcome"] == "selected"
     assert anterior_planes["coronal"]["outcome"] == "selected"
-    assert anterior_planes["coronal"]["slice"] == 7
+    # Scope/source changes may move key planes. Every selected plane must still
+    # come from a native resolved observation, not a projected expectation.
+    native_anterior = [
+        row
+        for record in [*result["records"], *result["main_records"]]
+        for row in record.get("observations", [])
+        if row["object"] == "anterior_synovial_recess"
+        and row["provenance"] == "native"
+        and row["kind"] == "resolved"
+    ]
+    for orientation, plane in anterior_planes.items():
+        assert any(
+            row["series_uid"] == plane["series_uid"]
+            and tuple(row["slices"]) == (plane["slice"],)
+            and row["view"][0].casefold() == orientation
+            for row in native_anterior
+        )
     assert anterior_map["status"] == "complete"
     assert np.isfinite(np.asarray(anterior_map["point_lps"], dtype=float)).all()
     native_coronal_anterior = [
@@ -562,7 +574,8 @@ def test_real_entry_point_builds_the_map_and_the_patella_reads_it(
     assert len(native_coronal_anterior) == 1
     row = native_coronal_anterior[0]
     assert row["support"] == "a4_coronal_anterior_recess" and row["label"] is None
-    assert tuple(row["slices"]) == (7,) and row["row"] == 0
+    assert tuple(row["slices"]) == (anterior_planes["coronal"]["slice"],)
+    assert row["row"] == 0
     with np.load(tmp_path / "run" / row["artifact"], allow_pickle=False) as saved:
         native_mask = saved[row["support"]][row["row"]]
         location = saved["a4_coronal_anterior_target"][row["row"]]
