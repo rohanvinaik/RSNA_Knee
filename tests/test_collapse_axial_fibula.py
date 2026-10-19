@@ -37,7 +37,7 @@ def axial(monkeypatch, frames, finite=True, thick=3.0, labels=LABELS):
     """An axial series over `frames`, its header and lens stood in for; returns it and the lens calls."""
     calls = []
 
-    def lens(plane, *_, available):
+    def lens(plane, *_, available, scope=None):
         calls.append(1)
         zeros = np.zeros(plane.shape)
         return InteriorRegions(
@@ -54,6 +54,14 @@ def axial(monkeypatch, frames, finite=True, thick=3.0, labels=LABELS):
         run, "finite_of", lambda series: np.full((len(frames), *SHAPE), finite)
     )
     monkeypatch.setattr(run, "interior_regions", lens)
+    monkeypatch.setattr(
+        run,
+        "lens_scopes_of",
+        lambda series, _split: tuple(
+            run.full_frame_scope(series.volume[z].shape, reason="test fixture")
+            for z in range(len(series.volume))
+        ),
+    )
     series = SimpleNamespace(
         row=SimpleNamespace(series_uid="ax"),
         volume=[np.ones(SHAPE) for _ in frames],

@@ -351,15 +351,17 @@ def key_slices(area_mm2: np.ndarray) -> tuple[int, ...]:
     return tuple(int(z) for z in np.flatnonzero(held & (values == top)))
 
 
-def body_extent_mm(
+def body_axis_bounds_mm(
     body: np.ndarray,
     reading: BlockReading,
     frame: PlaneFrame,
     axis_lps: Sequence[float],
-) -> float | None:
-    """The physical extent of a section along a patient axis (millimetres): its blocks' corners, projected
-    through the slice's own frame onto the unit `axis_lps`. This is the breadth of the section itself, never its
-    centre. None where the section holds no block or the axis cannot be one."""
+) -> tuple[float, float] | None:
+    """Minimum and maximum patient-axis coordinates of every supported block corner.
+
+    Transform each section through its actual frame before combining bounds across views. None where the body
+    holds no block or the axis cannot be one.
+    """
     marks = np.asarray(body, dtype=bool)
     axis = np.asarray(axis_lps, dtype=np.float64)
     if (
@@ -383,7 +385,7 @@ def body_extent_mm(
         ]
     )
     along = frame.to_patient(corners) @ axis
-    return float(along.max() - along.min())
+    return float(along.min()), float(along.max())
 
 
 def pack_sections(

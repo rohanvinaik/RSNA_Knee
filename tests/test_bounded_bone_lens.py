@@ -28,6 +28,14 @@ def _quiet(monkeypatch):
     monkeypatch.setattr(run, "reads", lambda *_args, **_kwargs: None)
     monkeypatch.setattr(run, "handed", lambda *_args, **_kwargs: None)
     monkeypatch.setattr(run, "plane_frame", lambda *_args: _plane_frame())
+    monkeypatch.setattr(
+        run,
+        "lens_scopes_of",
+        lambda series, _split: tuple(
+            run.full_frame_scope(series.volume[z].shape, reason="test fixture")
+            for z in range(len(series.volume))
+        ),
+    )
 
 
 def _own():
@@ -106,7 +114,7 @@ def test_both_bones_share_one_crop_scatter_for_naming_and_keep_local_arrays(
     monkeypatch.setattr(run, "finite_of", lambda _series: available)
     crop_shapes = []
 
-    def interior_reader(raw, spacing, split, prominence, *, available):
+    def interior_reader(raw, spacing, split, prominence, *, available, scope=None):
         crop_shapes.append(raw.shape)
         assert spacing == (1.0, 2.0) and split == 1.0
         assert prominence == run.PROMINENCE_MM
@@ -196,7 +204,7 @@ def test_missing_profile_window_uses_an_explicit_full_frame_lens(monkeypatch):
     monkeypatch.setattr(run, "finite_of", lambda _series: available)
     seen_shapes = []
 
-    def interior_reader(raw, spacing, split, prominence, *, available):
+    def interior_reader(raw, spacing, split, prominence, *, available, scope=None):
         seen_shapes.append(raw.shape)
         return InteriorRegions(
             "measured",

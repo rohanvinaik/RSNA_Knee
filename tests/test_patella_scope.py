@@ -45,7 +45,7 @@ def rig(monkeypatch):
     asked: list[int] = []
     feet = _feet()
 
-    def lens(raw, spacing, split, prominence, *, available):
+    def lens(raw, spacing, split, prominence, *, available, scope=None):
         seen["lens"].append(raw.shape)
         mask = raw > 50
         labels, _ = ndi.label(mask)
@@ -78,6 +78,14 @@ def rig(monkeypatch):
     monkeypatch.setattr(run, "finite_of", lambda s: asked.append(1) or finite)
     monkeypatch.setattr(run, "bone_footprint", lambda s, z, f, shape, p, key: feet[key])
     monkeypatch.setattr(run, "interior_regions", lens)
+    monkeypatch.setattr(
+        run,
+        "lens_scopes_of",
+        lambda series, _split: tuple(
+            run.full_frame_scope(series.volume[z].shape, reason="test fixture")
+            for z in range(len(series.volume))
+        ),
+    )
     monkeypatch.setattr(run, "read_field", field)
     monkeypatch.setattr(run, "margin", margin)
     row = SimpleNamespace(series_uid="scope", fluid_sensitive="0", fat_suppression="1")

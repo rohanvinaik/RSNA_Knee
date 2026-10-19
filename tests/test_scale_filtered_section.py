@@ -4,8 +4,8 @@
 blocks' corners); `scale_filtered_section` returns the unfiltered section exactly as `coarse_section` does, and
 beside it the estimate: the touched bodies whose narrowest breadth is at least a floor, a lossy scale filter and
 neither the cortex-enclosed section nor an identity proof. `axial_bone_planes` reads the estimate for the key
-plane, the statuses and the femur's left-right scale, keeps the unfiltered arrays as they were, and packs the
-estimate beside them.
+plane and statuses, keeps the unfiltered arrays as they were, and derives the femur's scale from all attributed
+section corners in patient space while retaining key-plane and widest-single-section breadth readings beside it.
 
 The oracles are independent of the code under test: scipy's hull with the height over each edge, a sweep over
 many projection angles, and a frozen copy of `coarse_section` as it was before the estimate existed.
@@ -37,6 +37,7 @@ from knee.collapse.coarse_section import (
     CoarseSection,
     ScaleEstimate,
     TouchedComponent,
+    body_axis_bounds_mm,
     coarse_section,
     narrowest_breadth_mm,
     pack_estimates,
@@ -680,13 +681,15 @@ def read_axial(
     femur: list[tuple[tuple[int, int], ...]],
     tibia: list[tuple[tuple[int, int], ...]] | None = None,
     femur_low: float | None = None,
+    frames: list[PlaneFrame] | None = None,
+    smap: StudyMap | None = None,
 ):
     """`axial_bone_planes` through its real code on a stack of planes whose coarse depth grids are the given ones
     (the enclosure reading is not what is under test: the consumer is). The seeds are the blocks named per slice;
     a carried femur at `femur_low` (z, millimetres) makes a tibia slice above it an overlap."""
     count = len(depths)
     tibia = tibia if tibia is not None else [()] * count
-    frames = [
+    frames = frames or [
         PlaneFrame(np.array([0.0, 0.0, 10.0 * z]), BASIS, (1.0, 1.0))
         for z in range(count)
     ]
@@ -716,7 +719,7 @@ def read_axial(
         np.zeros((0, 3)) if femur_low is None else np.array([[0.0, 0.0, femur_low]])
     )
     leg = SimpleNamespace(femur_lps=places, tibia_lps=np.zeros((0, 3)))
-    smap = StudyMap(knee="R")
+    smap = smap if smap is not None else StudyMap(knee="R")
     said = run.axial_bone_planes(smap, cast(run.Measured, own), cast(run.Leg, leg))
     return smap, own, said
 
@@ -748,6 +751,7 @@ def test_the_axial_key_plane_and_the_knees_scale_read_the_estimate_not_the_thin_
     )
     assert said["femur"]["key_slices"] == [1]
     assert smap.selected("femur", "axial").slice == 1
+    assert smap.selected("femur", "axial").provenance == "scale_filtered_section"
     # and the knee's scale is the estimate's left-right extent there (20 mm), not the strip's (38 mm)
     assert smap.scale.mm == pytest.approx(20.0)
     assert smap.scale.code == "measured_femur_ml_breadth"
@@ -755,7 +759,6 @@ def test_the_axial_key_plane_and_the_knees_scale_read_the_estimate_not_the_thin_
     # the provenance names the estimate and no longer claims the cortex-enclosed section
     reason = smap.selected("femur", "axial").reason
     assert "scale-filtered" in reason and "enclosed by its cortex" not in reason
-    assert smap.selected("femur", "axial").provenance == "scale_filtered_section"
     assert "scale-filtered" in said["femur"]["rule"]
     assert "enclosed by its cortex" not in said["femur"]["rule"]
     assert said["femur"]["scale_floor_mm"] == run.BONE_MM
@@ -778,11 +781,131 @@ def test_the_knees_scale_is_the_estimates_breadth_where_the_strip_lies_on_the_ke
     )
     assert said["femur"]["key_slices"] == [0]
     assert smap.scale.mm == pytest.approx(20.0)
-    assert "0:400mm2" in smap.scale.source
+    assert "patient LPS left-right" in smap.scale.source
     assert smap.selected("femur", "axial").slice == 0
     # the unfiltered section of that slice is the wider one, kept beside it
     assert own.arrays["a4_axial_coarse_femur_area_mm2"].tolist() == [448.0, 360.0]
     assert own.arrays["a4_axial_femur_section_area_mm2"].tolist() == [400.0, 360.0]
+
+
+def test_scale_is_patient_axis_span_across_attributed_sections_not_key_plane_breadth(
+    monkeypatch,
+):
+    first = PlaneFrame(np.zeros(3), BASIS, (1.0, 1.0))
+    second = PlaneFrame(np.array([10.0, 0.0, 10.0]), BASIS, (1.0, 1.0))
+    smap, own, said = read_axial(
+        monkeypatch,
+        "d2-multisection-span",
+        [grid_depth(BODY_BOX), grid_depth((4, 14, 4, 16))],
+        femur=[((8, 8),), ((8, 8),)],
+        frames=[first, second],
+    )
+    assert said["femur"]["key_slices"] == [1]
+    assert said["femur"]["key_plane_breadths_mm"] == [{"slice": 1, "breadth_mm": 24.0}]
+    assert said["femur"]["widest_single_section_breadth_mm"] == pytest.approx(24.0)
+    assert said["femur"]["widest_single_section_slices"] == [1]
+    assert said["femur"]["scale_bounds_lps_mm"] == pytest.approx([7.5, 41.5])
+    assert smap.scale.mm == pytest.approx(34.0)
+    np.testing.assert_allclose(
+        own.arrays["a4_axial_femur_section_breadth_mm"], [20.0, 24.0]
+    )
+    np.testing.assert_allclose(
+        own.arrays["a4_axial_femur_key_plane_breadth_mm"],
+        [np.nan, 24.0],
+        equal_nan=True,
+    )
+
+
+def test_equal_area_key_planes_remain_tied_when_their_breadths_differ(monkeypatch):
+    smap, own, said = read_axial(
+        monkeypatch,
+        "d2-tied-key-planes",
+        [grid_depth((4, 14, 4, 16)), grid_depth((4, 16, 4, 14))],
+        femur=[((8, 8),), ((8, 8),)],
+    )
+    assert said["femur"]["key_slices"] == [0, 1]
+    assert smap.selected("femur", "axial").outcome == run.rel.TIED
+    assert said["femur"]["key_plane_breadths_mm"] == [
+        {"slice": 0, "breadth_mm": 24.0},
+        {"slice": 1, "breadth_mm": 20.0},
+    ]
+    assert smap.scale.mm == pytest.approx(24.0)
+    assert smap.scale.code == "measured_femur_ml_breadth"
+    assert "lossy scale-filtered estimate" in smap.scale.source
+    assert "not a cortex boundary or identity proof" in smap.scale.source
+    assert own.arrays["a4_axial_femur_key_plane_breadth_mm"].tolist() == [24.0, 20.0]
+
+
+def test_section_axis_bounds_transform_all_anisotropic_oblique_block_corners():
+    frame = PlaneFrame(
+        np.array([3.0, -4.0, 9.0]),
+        np.array([[0.0, 2.0 / np.sqrt(2.0)], [3.0, 0.0], [0.0, 2.0 / np.sqrt(2.0)]]),
+        (3.0, 2.0),
+    )
+    reading = BlockReading(np.ones((2, 2)), (2, 3), (6.0, 6.0), (4, 8, 10, 16))
+    body = np.array([[True, False], [False, True]])
+    bounds = body_axis_bounds_mm(body, reading, frame, (1.0, 0.0, 0.0))
+    # The oblique column axis contributes cos(45°) of the two adjacent 6 mm blocks.
+    assert bounds == pytest.approx(
+        (3.0 + 9.5 * np.sqrt(2.0), 3.0 + 15.5 * np.sqrt(2.0))
+    )
+    assert bounds is not None
+    assert bounds[1] - bounds[0] == pytest.approx(6.0 * np.sqrt(2.0))
+
+
+def test_no_attributed_femur_section_keeps_scale_unknown_and_support_uninvented(
+    monkeypatch,
+):
+    smap, own, said = read_axial(
+        monkeypatch,
+        "d2-no-attributed-support",
+        [grid_depth(BODY_BOX)],
+        femur=[()],
+    )
+    assert said["femur"]["key_slices"] == []
+    assert said["femur"]["attributed_section_slices"] == []
+    assert said["femur"]["scale_span_mm"] is None
+    assert said["femur"]["key_plane_breadths_mm"] == []
+    assert said["femur"]["widest_single_section_breadth_mm"] is None
+    assert smap.scale.mm is None and smap.scale.code == "unknown"
+    np.testing.assert_allclose(
+        own.arrays["a4_axial_femur_scale_bounds_lps_mm"],
+        [np.nan, np.nan],
+        equal_nan=True,
+    )
+
+
+def test_unattributed_acquisition_preserves_an_existing_study_scale(monkeypatch):
+    smap, _, supported = read_axial(
+        monkeypatch,
+        "d2-supported-before-unattributed",
+        [grid_depth(BODY_BOX)],
+        femur=[((8, 8),)],
+    )
+    measured_scale = smap.scale
+    assert measured_scale.mm is not None
+
+    _, own, unsupported = read_axial(
+        monkeypatch,
+        "d2-unattributed-after-supported",
+        [grid_depth(BODY_BOX)],
+        femur=[()],
+        smap=smap,
+    )
+
+    assert supported["femur"]["scale_span_mm"] == pytest.approx(measured_scale.mm)
+    assert unsupported["femur"]["scale_span_mm"] is None
+    assert unsupported["femur"]["scale_bounds_lps_mm"] is None
+    assert unsupported["femur"]["attributed_section_slices"] == []
+    assert unsupported["femur"]["key_plane_breadths_mm"] == []
+    assert smap.scale == measured_scale
+    assert "d2-supported-before-unattributed" in smap.scale.source
+    assert "d2-unattributed-after-supported" not in smap.scale.source
+    np.testing.assert_allclose(
+        own.arrays["a4_axial_femur_scale_bounds_lps_mm"],
+        [np.nan, np.nan],
+        equal_nan=True,
+    )
 
 
 def test_the_unfiltered_arrays_keep_their_meaning_and_the_estimate_is_packed_beside_them(

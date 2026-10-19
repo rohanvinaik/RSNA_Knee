@@ -1330,3 +1330,15 @@ the bones. Native proof/bursa sheets demonstrate useful coarse pointers with vis
 contamination; exact cortex recovery is not required for that use. The estimate's provenance is
 `scale_filtered_section`. The independent physical-span scale follow-up is distinct from selecting
 the largest-area plane. See MAP §8.39 and its linked acceptance record for the evidence and limits.
+
+## Anterior readers receive refined locations, 2026-10-19
+
+The existing patella, joint, recess and retinacular readers now receive the later native bones'
+published locations. These remain location priors; native tissue readings still answer each local
+question. The recess profile retains its reference sample provenance explicitly: native named
+middle-slice masks where used, or the retinacular profile's existing projected-location/availability
+intersection saved as `a3_recess_reference_light_support`. The latter is a reference prior, not a
+native marrow identification. Its numerical relation is unchanged. Inspected native retinacular
+bands remain beside the patellofemoral fluid pockets. MAP §8.41 and the B1 acceptance record retain
+the exact addresses/checks. Shared native calibration and anatomical patella/cavity scopes remain
+P3 work; this handoff is not a claim that bone rediscovery has been eliminated.

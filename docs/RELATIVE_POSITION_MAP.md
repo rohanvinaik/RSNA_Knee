@@ -1895,3 +1895,38 @@ that pointer from the full attributed estimate's physical left-right span. Curre
 state, verification, changed outputs and the six acceptance statements live in the active packet's
 linked `p2b-bone-context-20261018/b0-integration/codex-checkpoint/README.md`; gate completion is
 established by its actual log, not this mechanism record. P3's early-context readers remain later work.
+### 8.40 Shared lens work scopes and physical-span scale — 2026-10-19
+
+B1's first P2a increment reuses the series' one squint to keep per-slice eligible tiles and a native
+work window before the above-split interior lens computes. Unknown/partial tiles and enclosed low
+islands remain eligible; unavailable or malformed scope inputs use a named full-frame fallback.
+Both drawn and undrawn paths share the scoped core and retain full-frame addresses. This prior is
+lens-specific, not an air/skin identity or a universal exclusion for dark anatomy. Inspected native
+proof/bursa frames and real draw/no-draw/parallel checks retain the same territory readings.
+Measured visited windows cover 99.67% of full-frame work on these studies despite an 86.18% eligible
+tile share: no substantial speedup is claimed, and broader anatomical targeting remains required.
+
+The scale is now the global patient LPS left-right span of all attributed axial femur estimate block
+corners. Largest-area key planes, their breadths, widest-single-section breadth and global span are
+separate retained readings. Missing support in a later acquisition cannot erase a prior measured
+scale. The three independent key planes still define the reference; no single-section centre or
+volume substitutes for them. The six-statement contracts, exact geometry/native checks and remaining
+limits are in `data/readings/collapse-20261017/full-build/targeted-compute-20261018/b1-codex-integration-20261019/README.md`.
+
+### 8.41 Refined locations reach the later anterior readers — 2026-10-19
+
+P3 increment 1 passes the already published refined bone locations into patella, joint, recess and
+retinacular searches. Readers that precede native bone publication retain their bootstrap context;
+the posterior index retains its separate early-context contract. Existing projection/footprint caches
+key the actual support identity, so different context is not reused as an earlier reading.
+
+The recess profile now records exactly which acquired values supply its reference light. Native
+middle-slice bone masks address `a1_objects` and its bone codes. The retinacular profile's existing
+sampling over projected femur locations is explicitly a reference prior, not native marrow identity:
+its intersection with native availability is retained as `a3_recess_reference_light_support`, with
+the actual context identity and sample digest. This records the existing measurement faithfully;
+it does not purify seeds, alter its numerical relation or establish a new marrow definition.
+
+Proof/bursa production runs and the inspected native retinacular bands are linked in the B1 record
+above. P3 remains open for shared same-acquisition native calibration and narrower patella/cavity
+questions before heavy reading; wiring refined locations alone does not complete that work.

@@ -1,7 +1,8 @@
-"""P2b increment 2: the leg refined by the bones' later native sections (`refine_leg`) reaches the two
-consumers that run after it, the bones' own axial key planes (`axial_bone_planes`, inside
-`build_study_map`) and the fibula's axial key plane (`fibula_key_planes`); every reader before the
-bones, and every other reader after them, keeps the early leg.
+"""P2b/P3 context handoff: the refined leg reaches every later consumer whose question uses it.
+The study map's axial key planes (`axial_bone_planes`, inside `build_study_map`), the fibula's
+axial key plane (`fibula_key_planes`), and the P3 patella, joint, recess and retinacula consumers
+receive the refined leg. Readers before the bones and the separate posterior index keep the early
+leg.
 
 `leg_on` keys a leg's projection onto a slice by the leg's identity, so a refined leg is never handed
 the early leg's projection, one leg's projection is made once and handed to every consumer that asks,
@@ -197,6 +198,44 @@ def test_a_refined_leg_gets_its_own_projection_and_an_equal_leg_reuses_it():
         assert tally(led, "coarse_axial_depth.made") == 2
         assert tally(led, "coarse_axial_blocks.handed_on") == 2
         assert tally(led, "coarse_axial_depth.handed_on") == 2
+
+
+def test_patella_and_joint_bone_footprints_reuse_only_matching_carried_places():
+    target = axial_target("p3-footprints")
+    frame = target.series.frames[0]
+    early_places = np.asarray([[30.0, 30.0, 0.0]])
+    refined_places = np.asarray([[30.0, 30.0, 0.0], [31.0, 31.0, 0.0]])
+    with run.recording() as led, run.computing():
+        early = run.bone_footprint(
+            target.series,
+            0,
+            frame,
+            (64, 64),
+            early_places,
+            run.digest(early_places),
+        )
+        early_again = run.bone_footprint(
+            target.series,
+            0,
+            frame,
+            (64, 64),
+            early_places,
+            run.digest(early_places),
+        )
+        refined = run.bone_footprint(
+            target.series,
+            0,
+            frame,
+            (64, 64),
+            refined_places,
+            run.digest(refined_places),
+        )
+
+        assert early_again is early
+        assert int(early.sum()) == 1
+        assert int(refined.sum()) == 2
+        assert tally(led, "bone_footprint.made") == 2
+        assert tally(led, "bone_footprint.handed_on") == 1
 
 
 def test_the_map_hands_its_leg_to_every_axial_series(monkeypatch):
@@ -424,20 +463,29 @@ def driven(monkeypatch, tmp_path: Path) -> tuple[run.Leg, run.Leg, dict[str, lis
     return early, refined, seen
 
 
-def test_the_driver_hands_the_refined_leg_to_the_four_readers_that_follow_it(
+def test_the_driver_hands_the_refined_leg_to_every_later_leg_consumer(
     monkeypatch, tmp_path
 ):
     early, refined, seen = driven(monkeypatch, tmp_path)
     assert early is not refined and early.identity != refined.identity
     # `refine_leg` is given the early leg the bones were named from
     assert len(seen["refine"]) == 1 and seen["refine"][0] is early
-    # the bones' own axial key planes (the map) and the fibula's, and the native fat and cartilage contexts
-    for name in ("map", "fibula", "fat", "cartilage"):
+    # The map/fibula/fat/cartilage paths already used refined; P3 now does too.
+    for name in (
+        "map",
+        "fibula",
+        "fat",
+        "cartilage",
+        "patella",
+        "joint",
+        "recess",
+        "retinacula",
+    ):
         assert len(seen[name]) >= 1, name
         assert all(leg is refined for leg in seen[name]), name
 
 
-def test_the_readers_before_the_bones_and_every_other_reader_keep_the_early_leg(
+def test_earlier_readers_and_the_posterior_index_keep_the_early_leg(
     monkeypatch, tmp_path
 ):
     early, _, seen = driven(monkeypatch, tmp_path)
@@ -445,11 +493,7 @@ def test_the_readers_before_the_bones_and_every_other_reader_keep_the_early_leg(
         "back",
         "semimembranosus",
         "bones",
-        "patella",
-        "joint",
-        "recess",
         "posterior",
-        "retinacula",
     ):
         assert len(seen[name]) >= 1, name
         assert all(leg is early for leg in seen[name]), name

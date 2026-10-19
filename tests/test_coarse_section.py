@@ -15,7 +15,7 @@ from knee.collapse.coarse_section import (
     SECTION,
     SEEDS_UNSEEN,
     SHARED,
-    body_extent_mm,
+    body_axis_bounds_mm,
     coarse_depth,
     coarse_section,
     key_slices,
@@ -103,7 +103,8 @@ def test_key_plane_ties_and_mediolateral_extent_use_physical_block_corners():
     reading = BlockReading(np.ones((3, 4)), (1, 1), (2.0, 2.0), (0, 3, 0, 4))
     body = np.zeros((3, 4), dtype=bool)
     body[0:3, 1:3] = True
-    assert body_extent_mm(body, reading, frame, (1.0, 0.0, 0.0)) == 2.0
+    bounds = body_axis_bounds_mm(body, reading, frame, (1.0, 0.0, 0.0))
+    assert bounds is not None and bounds[1] - bounds[0] == 2.0
 
 
 def test_malformed_grid_inputs_are_refused_by_name():

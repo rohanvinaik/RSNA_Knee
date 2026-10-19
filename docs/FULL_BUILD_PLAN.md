@@ -516,6 +516,10 @@ in isolation. No repeated whole-study recognition/fixed-point loop.
 
 ### P3 — pass known bones into patella/recess questions
 
+Increment 1's location handoff and explicit recess reference-sample provenance are recorded in
+MAP §8.41 and its B1 evidence record. The work below still includes native calibration sharing
+and bounded patella/cavity execution; passing refined locations alone does not complete P3.
+
 Read `patella_plane`, `patella_scope`, `recess_anterior_plane`, `lens_of` and their real callers.
 Currently the patella reader includes both bones' footprints and names them again to obtain
 context/calibration. The recess calls the patella reader with no bounded window. Replace

@@ -167,7 +167,7 @@ from knee.collapse.cartilage import (
 from knee.collapse.coarse_section import (
     SECTION,
     ScaleEstimate,
-    body_extent_mm,
+    body_axis_bounds_mm,
     coarse_depth,
     coarse_section,
     pack_estimates,
@@ -363,7 +363,10 @@ from knee.objects.interiors import (
     TRACE_CODES,
     InteriorReading,
     InteriorRegions,
+    LensScope,
+    full_frame_scope,
     interior_regions,
+    lens_scope,
     read_interiors,
 )
 from knee.receipt import digest, merged_receipt
@@ -575,6 +578,97 @@ class Measured:
     frame: PlaneFrame
 
 
+LENS_SCOPE_METHOD = "4_connected_exterior_low_plus_one_tile_halo"
+
+
+def squint_of(series: Series) -> SquintStack:
+    """The series' one shared squint, made inside and retained for the study lifetime."""
+    uid = series.row.series_uid
+
+    def make() -> SquintStack:
+        reads("series", ("volume", "geometry", "row", "stack"), "squint_stack")
+        stack = read_squint_stack(
+            series,
+            SQUINT_TILE_MM,
+            lambda z: frame_reading(series, z),
+            finite_of(series),
+        )
+        handed("squint_stack", field_names(stack))
+        return stack
+
+    return once("squint_stack", (uid, SQUINT_TILE_MM), make)
+
+
+def lens_scopes_of(series: Series, split: float) -> tuple[LensScope, ...]:
+    """The retained per-slice prior from the same squint every lens request shares."""
+    uid = series.row.series_uid
+    volume = series.volume
+    if volume is None or np.ndim(volume) != 3:
+        return ()
+    stack = squint_of(series)
+    split_key = float(split) if np.isfinite(split) else repr(float(split))
+    key = (
+        uid,
+        split_key,
+        id(stack.maximum),
+        id(stack.coverage),
+        id(stack.bounds_rc),
+        tuple(np.shape(volume)),
+    )
+
+    def make() -> tuple[LensScope, ...]:
+        assert volume is not None  # the outer producer requires a stacked 3-D volume
+        reads("squint_stack", ("maximum", "coverage", "bounds_rc"), "lens_scope")
+        depth = len(volume)
+        if stack.code != "present":
+            reason = stack.why or stack.code
+            scopes = tuple(
+                full_frame_scope(np.shape(volume[z]), reason=reason)
+                for z in range(depth)
+            )
+        elif (
+            stack.maximum.ndim != 3
+            or stack.coverage.shape != stack.maximum.shape
+            or stack.maximum.shape[0] != depth
+        ):
+            scopes = tuple(
+                full_frame_scope(
+                    np.shape(volume[z]),
+                    reason="squint tile arrays do not match the series depth",
+                )
+                for z in range(depth)
+            )
+        else:
+            scopes = []
+            for z in range(depth):
+                shape = np.shape(volume[z])
+                try:
+                    scopes.append(
+                        lens_scope(
+                            stack.maximum[z],
+                            stack.coverage[z],
+                            stack.bounds_rc,
+                            split,
+                            shape,
+                        )
+                    )
+                except ValueError as error:
+                    scopes.append(
+                        full_frame_scope(
+                            shape,
+                            reason=f"invalid squint scope inputs: {error}",
+                            tile_shape=np.shape(stack.maximum[z]),
+                        )
+                    )
+        handed(
+            "lens_scope",
+            ("in_scope_tiles", "window_rc", "in_scope_tile_count", "code", "reason"),
+        )
+        return tuple(scopes)
+
+    return once("lens_scopes", key, make)
+
+
 def measure(series: Series, drawn: bool) -> Measured | str:
     """One series' readings: its background split and its squint, each read once over the whole
     series, and the interiors and named objects at its middle slice; or why no plane was read.
@@ -601,11 +695,8 @@ def measure(series: Series, drawn: bool) -> Measured | str:
     # The squint, made once for the series and kept with it for any stage to consult; it records
     # its own reading of the series and its counted work on the ledger. It reads every slice's
     # frame, made once for the squint and every stage after it.
-    reads("series", ("volume", "geometry", "row", "stack"), "squint_stack")
-    stack = read_squint_stack(
-        series, SQUINT_TILE_MM, lambda z: frame_reading(series, z), finite
-    )
-    handed("squint_stack", field_names(stack))
+    stack = squint_of(series)
+    scopes = lens_scopes_of(series, split)
     # The header's own word for which knee this is ("R", "L", or blank); it sides the menisci.
     reads("series", ("slices",), "naming")
     knee = str(getattr(series.slices[index].header, "Laterality", "") or "").strip()
@@ -620,6 +711,36 @@ def measure(series: Series, drawn: bool) -> Measured | str:
     }
     for name in SQUINT_ARRAYS:
         arrays[f"squint_{name}"] = np.asarray(getattr(stack, name))
+    record["lens_scope"] = {
+        "method": LENS_SCOPE_METHOD,
+        "codes": [scope.code for scope in scopes],
+        "reasons": [scope.reason for scope in scopes],
+    }
+    if scopes:
+        tile_shape = scopes[0].in_scope_tiles.shape
+        if any(scope.in_scope_tiles.shape != tile_shape for scope in scopes):
+            raise RuntimeError("lens_scope_tile_grid_changed_within_series")
+        arrays["lens_scope_in_scope_tiles"] = np.stack(
+            [scope.in_scope_tiles for scope in scopes]
+        )
+        arrays["lens_scope_window_rc"] = np.asarray(
+            [scope.window_rc for scope in scopes], dtype=np.int32
+        )
+        arrays["lens_scope_in_scope_tile_count"] = np.asarray(
+            [scope.in_scope_tile_count for scope in scopes], dtype=np.int32
+        )
+        arrays["lens_scope_codes"] = np.asarray(
+            [scope.code for scope in scopes], dtype="U64"
+        )
+        arrays["lens_scope_reasons"] = np.asarray(
+            [scope.reason or "" for scope in scopes], dtype="U256"
+        )
+    else:
+        arrays["lens_scope_in_scope_tiles"] = np.empty((0, 0, 0), dtype=bool)
+        arrays["lens_scope_window_rc"] = np.empty((0, 4), dtype=np.int32)
+        arrays["lens_scope_in_scope_tile_count"] = np.empty(0, dtype=np.int32)
+        arrays["lens_scope_codes"] = np.empty(0, dtype="U64")
+        arrays["lens_scope_reasons"] = np.empty(0, dtype="U256")
     return Measured(series, record, arrays, stack, assignment, frame)
 
 
@@ -647,6 +768,28 @@ def lens_of(
     def read() -> tuple[np.ndarray, InteriorRegions, dict]:
         reads("series", ("volume", "row", "slices"), "interiors")
         reads("background", ("split",), "interiors")
+        scopes = lens_scopes_of(series, split)
+        if not 0 <= index < len(scopes):
+            scope = full_frame_scope(
+                plane.shape, reason=f"slice {index} has no cached squint scope"
+            )
+        else:
+            scope = scopes[index]
+        # The shared core checks the tile mask/count and uses this native window before EDT/morphology.
+        reads(
+            "lens_scope",
+            ("in_scope_tiles", "window_rc", "in_scope_tile_count"),
+            "interiors",
+        )
+        r0, r1, c0, c1 = scope.window_rc
+        window_pixels = max(0, r1 - r0) * max(0, c1 - c0)
+        ledger.record(
+            "lens_scope.work",
+            window_pixels=window_pixels,
+            full_frame_pixels=int(np.asarray(plane).size),
+            in_scope_tiles=scope.in_scope_tile_count,
+            tile_count=int(scope.in_scope_tiles.size),
+        )
         reading: InteriorRegions
         if borders:
             axes = frame.basis_lps / frame.spacing_rc
@@ -659,6 +802,7 @@ def lens_of(
                 BACKEND,
                 metric_rc=axes.T @ axes,
                 available=finite_of(series)[index],
+                scope=scope,
             )
         else:
             reading = interior_regions(
@@ -667,6 +811,7 @@ def lens_of(
                 split,
                 PROMINENCE_MM,
                 available=finite_of(series)[index],
+                scope=scope,
             )
         handed("interiors", field_names(reading))
         ledger.record(
@@ -677,6 +822,12 @@ def lens_of(
         interiors: dict[str, Any] = {
             "code": reading.code,
             "territories": int(reading.labels.max(initial=0)),
+            "scope_method": LENS_SCOPE_METHOD,
+            "scope_code": scope.code,
+            "scope_reason": scope.reason,
+            "scope_window_rc": list(scope.window_rc),
+            "scope_in_scope_tile_count": scope.in_scope_tile_count,
+            "scope_tile_count": int(scope.in_scope_tiles.size),
         }
         # what the border readings found, where they were read
         if isinstance(reading, InteriorReading):
@@ -4295,7 +4446,7 @@ def fibula_key_planes(
                     "fibula",
                     z,
                     "largest whole enclosed 2 mm section holding native sagittal/coronal fibula location seeds",
-                    "coarse_section",
+                    "scale_filtered_section",
                 ),
                 float(areas[z]),
                 f"fibula_scout:{uid}",
@@ -6849,11 +7000,14 @@ def axial_bone_planes(smap: StudyMap, own: "Measured", leg: Leg) -> dict[str, di
     the cortex-enclosed section and not a proof of identity: a touched body under `BONE_MM` is left out
     whatever it is (bone pieces too), and a curved thin strip with a broad hull, or a non-bone body of
     bone scale the seeds touch, can remain. The estimate chooses the key plane (its area, every tie
-    kept, in `a4_axial_<bone>_section_area_mm2`) and, for the femur, sets the knee's scale (its
-    left-right extent). The unfiltered section stays beside it, exactly as `coarse_section` returns
-    it, in the `a4_axial_coarse_<bone>_*` arrays, and the estimate, the omitted bodies and every touched
-    body's block count and breadth are packed with them (`a4_axial_coarse_<bone>_estimate_*`,
-    `_omitted`, `_component_*`; `pack_estimates`).
+    kept, in `a4_axial_<bone>_section_area_mm2`). For the femur, the knee's scale is the global
+    patient LPS left-right span of every block corner from every attributed SECTION estimate across
+    the axial series; this is explicitly the lossy scale-filtered estimate, not a cortex boundary or
+    identity proof. The area-selected key-plane breadths and widest single-section breadth remain
+    separate readings beside that union span. The unfiltered section stays beside the estimate,
+    exactly as `coarse_section` returns it, in the `a4_axial_coarse_<bone>_*` arrays, and the estimate,
+    omitted bodies and every touched body's block count and breadth are packed with them
+    (`a4_axial_coarse_<bone>_estimate_*`, `_omitted`, `_component_*`; `pack_estimates`).
     """
     series = own.series
     uid = series.row.series_uid
@@ -6989,45 +7143,83 @@ def axial_bone_planes(smap: StudyMap, own: "Measured", leg: Leg) -> dict[str, di
             else "bright_enclosed_by_darker",
             "rule": "knee.collapse.coarse_section.scale_filtered_section: the scale-filtered whole 2 mm axial section estimate, the enclosed bodies the carried location seeds touch kept where their narrowest breadth is at least scale_floor_mm (a lossy scale filter, not the cortex-enclosed section and not an identity proof), holes filled; `statuses`, `key_slices` and `a4_axial_<bone>_section_area_mm2` read this estimate, `unfiltered_statuses` and `a4_axial_coarse_<bone>_*` the unfiltered section; largest estimate, ties kept",
         }
-        extents = []
         if bone == "femur":
-            for z in keys:
-                if z not in read_slices:
-                    continue
-                at = read_slices.index(z)
+            section_breadths = np.full(depth, np.nan, dtype=np.float64)
+            key_breadths = np.full(depth, np.nan, dtype=np.float64)
+            bounds_by_slice: dict[int, tuple[float, float]] = {}
+            for at, z in enumerate(read_slices):
                 estimate = estimates[bone][at]
-                if estimate is not None and estimate.body is not None:
-                    extents.append(
-                        body_extent_mm(
-                            estimate.body,
-                            readings[at],
-                            read_frames[at],
-                            (1.0, 0.0, 0.0),
-                        )
-                    )
-        if bone == "femur" and keys:
-            finite_extents = [
-                float(x) for x in extents if x is not None and np.isfinite(x)
-            ]
-            if len(finite_extents) == len(keys) and all(
-                x == finite_extents[0] for x in finite_extents
-            ):
-                supports = ",".join(f"{z}:{areas[bone][z]:.6g}mm2" for z in keys)
+                if (
+                    estimate is None
+                    or estimate.status != SECTION
+                    or estimate.body is None
+                ):
+                    continue
+                bounds = body_axis_bounds_mm(
+                    estimate.body, readings[at], read_frames[at], (1.0, 0.0, 0.0)
+                )
+                if bounds is None:
+                    continue
+                bounds_by_slice[z] = bounds
+                section_breadths[z] = bounds[1] - bounds[0]
+            for z in keys:
+                if z in bounds_by_slice:
+                    key_breadths[z] = section_breadths[z]
+            attributed = sorted(bounds_by_slice)
+            if attributed:
+                low = min(bounds_by_slice[z][0] for z in attributed)
+                high = max(bounds_by_slice[z][1] for z in attributed)
+                scale_mm = high - low
+                widest = float(np.nanmax(section_breadths))
+                widest_slices = [z for z in attributed if section_breadths[z] == widest]
+                key_readings = [
+                    {"slice": z, "breadth_mm": float(key_breadths[z])}
+                    for z in keys
+                    if np.isfinite(key_breadths[z])
+                ]
                 smap.set_scale(
                     rel.KneeScale(
-                        finite_extents[0],
-                        f"femur scale-filtered coarse axial body extent along LPS left-right (a lossy scale filter, not the cortex-enclosed section); {uid} slice/support_mm2 {supports}",
+                        scale_mm,
+                        "global span of every attributed femur lossy scale-filtered estimate's block corners (not a cortex boundary or identity proof), projected on patient LPS left-right; "
+                        f"{uid} bounds_mm [{low:.6g}, {high:.6g}] slices {attributed}",
                         "measured_femur_ml_breadth",
                     )
                 )
-            else:
-                smap.set_scale(
-                    rel.KneeScale(
-                        None,
-                        "femur breadth unavailable or tied key planes disagree",
-                        "unknown",
-                    )
+                said[bone]["scale_span_mm"] = float(scale_mm)
+                said[bone]["scale_bounds_lps_mm"] = [float(low), float(high)]
+                said[bone]["attributed_section_slices"] = attributed
+                said[bone]["key_plane_breadths_mm"] = key_readings
+                said[bone]["widest_single_section_breadth_mm"] = widest
+                said[bone]["widest_single_section_slices"] = widest_slices
+                own.arrays["a4_axial_femur_scale_bounds_lps_mm"] = np.asarray(
+                    [low, high], dtype=np.float64
                 )
+                own.arrays["a4_axial_femur_widest_section_breadth_mm"] = np.asarray(
+                    [widest], dtype=np.float64
+                )
+            else:
+                if smap.scale.mm is None:
+                    smap.set_scale(
+                        rel.KneeScale(
+                            None,
+                            "no attributed femur scale-filtered axial section support",
+                            "unknown",
+                        )
+                    )
+                said[bone]["scale_span_mm"] = None
+                said[bone]["scale_bounds_lps_mm"] = None
+                said[bone]["attributed_section_slices"] = []
+                said[bone]["key_plane_breadths_mm"] = []
+                said[bone]["widest_single_section_breadth_mm"] = None
+                said[bone]["widest_single_section_slices"] = []
+                own.arrays["a4_axial_femur_scale_bounds_lps_mm"] = np.full(
+                    2, np.nan, dtype=np.float64
+                )
+                own.arrays["a4_axial_femur_widest_section_breadth_mm"] = np.full(
+                    1, np.nan, dtype=np.float64
+                )
+            own.arrays["a4_axial_femur_section_breadth_mm"] = section_breadths
+            own.arrays["a4_axial_femur_key_plane_breadth_mm"] = key_breadths
         for z in keys:
             if z not in read_slices:
                 continue
@@ -12224,10 +12416,17 @@ def read_recess(
             leg, series, index, own.frame, femur_mask.shape, thick_here[index]
         )
         anchored = femur_on & own.arrays["b1_available"]
+        anchored.flags.writeable = False
         femur_light = (
             float(measures.light(anchored)) if anchored.any() else float("nan")
         )
         bones_light = femur_light
+        calibration_method = "acquired_light_over_projected_bone_locations"
+        femur_support_address = "a3_recess_reference_light_support"
+        bones_support_address = "a3_recess_reference_light_support"
+        femur_support_codes = None
+        bones_support_codes = None
+        calibration_support = anchored
     else:
         assigned = record["assignments"]
         if (
@@ -12236,8 +12435,17 @@ def read_recess(
             or not (femur_mask.any() and tibia_mask.any())
         ):
             return "bones_not_named_on_the_middle_slice"
+        calibration_support = femur_mask | tibia_mask
         femur_light = float(measures.light(femur_mask))
-        bones_light = float(measures.light(femur_mask | tibia_mask))
+        bones_light = float(measures.light(calibration_support))
+        calibration_method = "acquired_light_over_native_named_middle_bone_masks"
+        femur_support_address = "a1_objects"
+        bones_support_address = "a1_objects"
+        femur_support_codes = [int(OBJECT_CODES["femur"])]
+        bones_support_codes = [
+            int(OBJECT_CODES["femur"]),
+            int(OBJECT_CODES["tibia"]),
+        ]
     depth = len(series.volume)
     why = np.zeros(depth, dtype=np.int8)
     got = recess_corridor(own, kind, leg, patella_centre, why)
@@ -12518,6 +12726,20 @@ def read_recess(
         "confirmed_slices": [int(z) for z in confirm],
         "unknown_slices": [int(z) for z in np.flatnonzero(status == JOINT_UNREADABLE)],
         "pointed_planes": pointed_rows,
+        "profile_calibration": {
+            "method": calibration_method,
+            "source_series_uid": uid,
+            "native_middle_slice": int(index),
+            "femur_support_address": femur_support_address,
+            "femur_support_codes": femur_support_codes,
+            "bones_support_address": bones_support_address,
+            "bones_support_codes": bones_support_codes,
+            "femur_light": finite_or_none(femur_light),
+            "bones_light": finite_or_none(bones_light),
+            "role": "fluid_profile_reference_prior_not_native_marrow_identity",
+            "location_context_identity": leg.identity or leg_identity(leg),
+            "location_support_digest": digest(calibration_support),
+        },
         "ambiguities": ambiguities,
         "status_codes": dict(FIBULA_POINTER_STATUS),
         "search": {
@@ -12540,6 +12762,8 @@ def read_recess(
     arrays = recess_arrays(
         own, kind, profile, planes, pointed, runs, origins, offsets, sound, thick, why
     )
+    if kind == "retinacula":
+        arrays["a3_recess_reference_light_support"] = anchored
     handed("recess", ("pointed", "planes", "twins"))
     return RecessRead(
         kind, profile, tuple(planes), tuple(twins), outcome, record_part, arrays
@@ -23622,11 +23846,10 @@ def measure_study(
         reference = "legacy_single_bone_reference_not_used_by_the_physical_map"
         # The femur and the tibia through the stacks, pointed planes only, kept in the middle records.
         name_the_bones(measured, partners, carried, study_uid)
-        # The bones' later native sections, published once (`refine_leg`) as location priors for the
-        # coarse readers that follow: the bones' own axial key planes (inside the map below), the
-        # native fat and cartilage contexts and the fibula's axial key plane. The readers before the
-        # bones keep the early leg, since no refined leg exists for them, and so does every other
-        # reader after them (the patella, joint, recess, posterior and retinacula readers).
+        # The bones' later native sections, published once (`refine_leg`) as location priors for
+        # subsequent questions. Readers before the bones keep the early leg; the map, patella,
+        # joint, recess, fat/cartilage, fibula and retinacula receive the refined leg. The posterior
+        # index retains its separate early-leg contract.
         refined = refine_leg(carried, measured)
         # THE STUDY MAP, before any other family searches: the bones' selected planes (sagittal and
         # coronal from their own cheap profiles, axial from the scale-filtered section estimate of
@@ -23638,7 +23861,7 @@ def measure_study(
         # The patella through the stacks, searched first where the reference says it lies, with
         # the extensor tendons and the fat pads on the planes it names, kept beside the bones'
         # records and observations.
-        name_the_patella(measured, partners, carried, study_uid, reference, mapping)
+        name_the_patella(measured, partners, refined, study_uid, reference, mapping)
         patella_key_planes(measured, mapping, study_uid)
         refine_map(mapping, measured)
 
@@ -23658,7 +23881,7 @@ def measure_study(
         # stacks, from the bones' carried places, searched for each question the view admits
         # (where the reference's measured range points first, where one is supported), kept
         # beside the bones' and the patella's records.
-        name_the_joint(measured, partners, leg, study_uid, reference, mapping)
+        name_the_joint(measured, partners, refined, study_uid, reference, mapping)
         pcl_sources = native_pcl_sources(measured, study_uid)
         cartilage_companions = [
             (
@@ -23681,7 +23904,7 @@ def measure_study(
         # The recesses, their lining and fluid, the side recesses' capsule and the retinacula through
         # the stacks, from the compartments those families located, kept beside their records.
         recess_said = name_the_recess(
-            measured, partners, leg, patella_centre, study_uid, mapping
+            measured, partners, refined, patella_centre, study_uid, mapping
         )
         offer_completed_family("recess_said", recess_said)
         native_fat_sources = native_fat_pad_sources(measured, study_uid)
@@ -23879,7 +24102,7 @@ def measure_study(
             (
                 "patellar_retinacula",
                 lambda own: retinacula_slice(
-                    own, leg, retinacula_centre(measured, patella_centre)
+                    own, refined, retinacula_centre(measured, patella_centre)
                 ),
                 None,
             ),
