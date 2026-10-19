@@ -164,6 +164,146 @@ REFERENCE_KEYS = (
 )
 
 
+MARROW_SCOPE_NOTE = (
+    "associated native calibration/profile references only; no independent "
+    "full-resolution marrow segmentation or volume"
+)
+
+MARROW_MEANING = (
+    "median acquired light over the named whole-bone support "
+    "(native middle a1_objects == OBJECT_CODES[bone]); not a marrow-only reference"
+)
+
+MARROW_NATIVE = "native_calibration_and_profile_reading"
+
+MARROW_UNRESOLVED = "native_reader_unresolved"
+
+MARROW_UNAVAILABLE = "native_marrow_measurement_unavailable"
+
+NOT_RETAINED = "not_retained_in_receipt"
+
+
+def _array_reference(record: dict, name: str) -> dict | None:
+    """A saved array's receipt reference: the digest is all the record retains."""
+    saved = record.get("arrays", {}).get(name)
+    artifact = record.get("artifact")
+    if (
+        not isinstance(artifact, str)
+        or not artifact
+        or not isinstance(saved, dict)
+        or not isinstance(saved.get("digest"), str)
+    ):
+        return None
+    return {
+        "artifact": record.get("artifact"),
+        "name": name,
+        "digest": saved["digest"],
+        "dtype_shape": NOT_RETAINED,
+    }
+
+
+def _valid_calibration(value: object) -> bool:
+    return (
+        isinstance(value, (int, float))
+        and not isinstance(value, bool)
+        and math.isfinite(value)
+        and value > 0
+    )
+
+
+def _marrow_series(record: dict, bone: str) -> dict | None:
+    """One series' associated marrow reading of one bone, from its saved record only."""
+    from knee.objects.assignments import OBJECT_CODES
+
+    bones = record.get("bones")
+    if not isinstance(bones, dict):
+        return None
+    codes = bones.get("codes")
+    code = codes.get(bone) if isinstance(codes, dict) else None
+    read = bones.get(bone)
+    basis_ok = isinstance(read, dict)
+    if isinstance(read, dict) and code is None:
+        code = read.get("outcome")
+    light = read.get("marrow_light") if isinstance(read, dict) else None
+    prefixes = (f"a3_{bone}_profile_", f"a3_{bone}_fine_")
+    profile = [
+        ref
+        for name in sorted(record.get("arrays", {}))
+        if name.startswith(prefixes)
+        and (ref := _array_reference(record, name)) is not None
+    ]
+    calibration_ref = _array_reference(record, f"a3_{bone}_reference_light")
+    objects_ref = _array_reference(record, "a1_objects")
+    ready = (
+        basis_ok
+        and code != "unreadable"
+        and _valid_calibration(light)
+        and calibration_ref is not None
+        and objects_ref is not None
+        and bool(profile)
+    )
+    availability = (
+        MARROW_NATIVE
+        if ready
+        else MARROW_UNRESOLVED
+        if code == "unreadable" or (basis_ok and not _valid_calibration(light))
+        else MARROW_UNAVAILABLE
+    )
+    return {
+        "study_uid": record.get("study_uid"),
+        "series_uid": record.get("series_uid"),
+        "view": record.get("view"),
+        "slice_index": record.get("slice_index"),
+        "artifact": record.get("artifact"),
+        "reader_outcome": code,
+        "basis_refusal_code": code if not basis_ok and isinstance(code, str) else None,
+        "availability": availability,
+        "calibration": {
+            "marrow_light": light,
+            "reference": calibration_ref,
+            "support": {
+                "reference": objects_ref if basis_ok else None,
+                "label": OBJECT_CODES[bone] if basis_ok else None,
+                "slice_index": record.get("slice_index"),
+                "meaning": MARROW_MEANING,
+            },
+        },
+        "profile_references": profile,
+    }
+
+
+def _marrow_field(name: str, records: list[dict]) -> dict | None:
+    """The associated marrow reading of one bone entry, or None for a non-bone object."""
+    series: list[dict] = []
+    if name in ("femur", "tibia"):
+        series = [s for r in records if (s := _marrow_series(r, name)) is not None]
+        native = any(s["availability"] == MARROW_NATIVE for s in series)
+        availability = (
+            MARROW_NATIVE
+            if native
+            else MARROW_UNRESOLVED
+            if any(s["availability"] == MARROW_UNRESOLVED for s in series)
+            else MARROW_UNAVAILABLE
+        )
+        meaning = MARROW_MEANING
+    elif name in ("patella", "fibula"):
+        availability, meaning = MARROW_UNAVAILABLE, None
+    else:
+        return None
+    return {
+        "kind": "reading",
+        "availability": availability,
+        "measurement": meaning,
+        "scope_note": MARROW_SCOPE_NOTE,
+        "unavailability_reason": (
+            "not_linked_by_current_native_marrow_reader"
+            if name in ("patella", "fibula")
+            else None
+        ),
+        "series": series,
+    }
+
+
 def describe_objects(
     records: list[dict],
     objects: tuple[str, ...] = (),
@@ -276,4 +416,8 @@ def describe_objects(
     # an attachment or enclosure. Actual observations and refusals remain their own evidence.
     for name, relations in relationships_for(tuple(described)).items():
         described[name]["anatomical_relations"] = relations
+    for name, got in described.items():
+        field = _marrow_field(name, records)
+        if field is not None:
+            got["associated_fields"] = {"marrow": field}
     return dict(sorted(described.items()))

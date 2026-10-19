@@ -129,12 +129,13 @@ kernel is given; `--root` for where the competition's files are (where a kernel 
 import argparse
 import json
 import os
-from collections.abc import Callable, Collection, Iterable, Sequence
-from concurrent.futures import ProcessPoolExecutor
+from collections import deque
+from collections.abc import Callable, Collection, Iterable, Iterator, Sequence
+from concurrent.futures import Future, ProcessPoolExecutor
+from contextlib import closing
 from dataclasses import asdict, dataclass, fields, replace
 from dataclasses import field as dc_field
 from functools import cache
-from itertools import repeat
 from pathlib import Path
 from types import SimpleNamespace
 from typing import Any, cast
@@ -25426,6 +25427,43 @@ def report(result: dict, args: argparse.Namespace) -> None:
             print(f"  {picture}", flush=True)
 
 
+def bounded_results(
+    submit: Callable[[Any], Future],
+    jobs: Iterable[Any],
+    limit: int,
+) -> Iterator[Any]:
+    """Yield input-ordered results, keeping at most `limit` submitted studies.
+
+    The result being reported counts with queued/running futures. Drop its future before
+    yielding, then clear the result before refilling. Cancel pending work on failure/close.
+    """
+    if limit < 1:
+        raise ValueError("limit must be at least 1")
+    source = iter(jobs)
+    pending: deque[Future] = deque()
+    result: Any = None
+    try:
+        while True:
+            while len(pending) < limit:
+                try:
+                    job = next(source)
+                except StopIteration:
+                    break
+                pending.append(submit(job))
+            if not pending:
+                return
+            future = pending.popleft()
+            result = future.result()
+            del future
+            yield result
+            result = None
+    finally:
+        result = None
+        for future in pending:
+            future.cancel()
+        pending.clear()
+
+
 def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
     which = parser.add_mutually_exclusive_group(required=True)
@@ -25486,17 +25524,16 @@ def main() -> None:
             report(measure_study(corpus, uid, args.run, args.main_run, args.draw), args)
         return
     with ProcessPoolExecutor(max_workers=workers) as pool:
-        results = pool.map(
-            measure_study_at,
-            repeat(args.root),
-            uids,
-            repeat(args.run),
-            repeat(args.main_run),
-            repeat(args.draw),
-        )
-        # In the order asked; this process alone writes the receipts.
-        for result in results:
-            report(result, args)
+        jobs = ((args.root, uid, args.run, args.main_run, args.draw) for uid in uids)
+
+        def submit(job: tuple) -> Future:
+            return pool.submit(measure_study_at, *job)
+
+        # Input order and one receipt writer; the reported result counts within the bound.
+        with closing(bounded_results(submit, jobs, workers)) as results:
+            for result in results:
+                report(result, args)
+                del result
 
 
 if __name__ == "__main__":

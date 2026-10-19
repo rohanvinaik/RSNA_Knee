@@ -5,8 +5,9 @@ lossy measurements describe knee structures; anatomical relations combine those 
 objects and one physical knee map. Cheap squint views and known neighbours narrow expensive native
 questions. Each useful value is computed once at its valid scope and shared with its consumers.
 
-The current build establishes anatomical recognition before the later, human-specified inference and
-diagnosis layers. Read [the original conversation](docs/conversations/2026-10-13-the-thesis.md) and
+The current build establishes anatomical recognition and reports each object's identity with its
+addressed pixel supports. These object pixel bundles are the starting input for the later,
+human-specified diagnostic verdict: damage or abnormal states of the identified anatomy. Read [the original conversation](docs/conversations/2026-10-13-the-thesis.md) and
 [the theory](docs/THEORY_OF_THE_CASE.md) before proposing changes. Follow
 [FULL_BUILD_PLAN §0](docs/FULL_BUILD_PLAN.md#0-grounding-every-session-start-and-every-compaction)
 for the complete grounding sequence. The plan's §13 points to the sole current task packet.
@@ -16,6 +17,11 @@ for the complete grounding sequence. The plan's §13 points to the sole current 
 Efficiency and correctness are built together: use anatomical priors and selected native views before
 heavy computation, share source-owned measurements, and compile/fuse meaningful residual work with
 reference checks. Useful priors need not be perfect. Performance figures never define anatomy.
+
+Finish each study's configured output, then release its decoded images, derived arrays and caches.
+Parallel execution bounds submitted and waiting results with the active worker count; completed
+studies' working data do not accumulate across the cohort. Retained pixel supports remain addressable
+for downstream consumers. The final diagnostic layer will run before that study's completed boundary.
 
 [The binding competition envelope is FULL_BUILD_PLAN §16.9](docs/FULL_BUILD_PLAN.md#169-competition-resource-envelope-w8b-storage-closure-and-w10-verification):
 

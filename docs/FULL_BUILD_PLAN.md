@@ -906,6 +906,18 @@ and the twelve anatomical condition relationships already documented. Implement 
 mechanism when given; do not fill the gap with a model, weighted score, generic classifier or
 new diagnosis heuristic.
 
+Rohan clarified on 2026-10-19 that the endpoint is a verdict/diagnosis, and that the current
+stand-in may report pixel bundles for each object's identity. The complete direct exchange is
+`docs/conversations/2026-10-19-completed-study-lifetime.md`. Finish recognition by publishing each
+object's identity and actual addressed pixel supports, preserving native readings, uncertainty and
+unavailable states. This stand-in is the current per-study output boundary; diagnosis replaces it
+when he supplies that layer. It does not require inventing the MRI-specific HDC layout, diagnostic
+rules or competition probabilities. Release completed-study working data after the configured
+output consumer has finished (§16.6). His following clarification makes the handoff natural:
+diagnoses concern unnatural or damaged states of these identified objects. Their pixel bundles
+are therefore the direct starting input for the later diagnostic layer, alongside their retained
+identity, geometry and anatomical relations. Recognition need not be repeated to begin diagnosis.
+
 Then package the same no-draw runtime for Kaggle, with runtime-only dependencies, fixed references
 and the provided mount. Match the actual sample/gold schema for one study's twelve probabilities;
 never serialize internal observation rows as a substitute. Verify public inputs, empty/missing
@@ -1310,6 +1322,21 @@ If a later reader needs the value, pass its retained address or retain its live 
 Never evict its only copy, leave dangling views, or hide repeated decoding/analysis behind a small RSS number. A reusable worker
 must start its next study with new study-scoped mutable state; an exception must not leave stale
 state eligible. Readers of a common buffer must not mutate it behind another reader's identity.
+Rohan explicitly reaffirmed the competition lifetime on 2026-10-19: finish a study completely,
+record the needed result, and release that completed study before starting another; parallel
+processing keeps only the bounded set of active studies. His complete words are in
+`docs/conversations/2026-10-19-completed-study-lifetime.md`. Apply this to the complete configured
+per-study operation: currently report each object's identity and pixel bundle, as his next message
+specifies; later include encoding/diagnosis once specified. Do not retain completed
+image volumes or caches for the whole cohort. The existing parent remains the sole output writer;
+completed results awaiting it and submitted work are bounded along with active studies. Preserve
+input-order receipt semantics, failure cleanup and the reusable invariant worker setup. A worker
+count alone does not bound an eager all-cohort future/result queue. Verify actual ownership and
+release after the last consumer on serial and reusable-worker paths; a high-water RSS value alone
+neither proves retention nor proves release. Persisted records may be addressed without keeping
+their decoded working arrays live. Required durable output and the separate storage quota still
+follow the retention contract and §16.9.
+
 EP3b now closes storage under §16.9. If measured cohort output requires a different container or
 placement, the lead settles the minimum versioned lossless repair and all consumers before building;
 no known overflow is deferred beyond W8b. Required retention lifetimes are preserved: no default
