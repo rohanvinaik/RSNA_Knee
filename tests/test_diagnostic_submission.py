@@ -12,11 +12,36 @@ from knee.diagnosis.submission import (
 )
 from knee.study.tables import LABELS
 
-TEMPLATE = Path(__file__).parents[1] / "data/raw/sample_submission.csv"
+OFFICIAL_TEMPLATE_COLUMNS = (
+    "StudyInstanceUID",
+    "ACL",
+    "MCL",
+    "Medial Meniscus",
+    "Lateral Meniscus",
+    "Medial OA",
+    "Lateral OA",
+    "PF OA",
+    "Effusion",
+    "Synovitis",
+    "Baker's",
+    "Contusion",
+    "Fracture",
+)
 
 
-def _template_uids() -> list[str]:
-    with TEMPLATE.open(newline="", encoding="utf-8") as stream:
+@pytest.fixture(scope="module")
+def template(tmp_path_factory) -> Path:
+    path = tmp_path_factory.mktemp("submission-template") / "sample_submission.csv"
+    with path.open("w", newline="", encoding="utf-8") as stream:
+        writer = csv.writer(stream)
+        writer.writerow(OFFICIAL_TEMPLATE_COLUMNS)
+        for uid in ("study-a", "study-b", "study-c"):
+            writer.writerow((uid, *("0" for _ in OFFICIAL_TEMPLATE_COLUMNS[1:])))
+    return path
+
+
+def _template_uids(template: Path) -> list[str]:
+    with template.open(newline="", encoding="utf-8") as stream:
         reader = csv.reader(stream)
         header = next(reader)
         assert tuple(header) == SUBMISSION_COLUMNS
@@ -27,8 +52,10 @@ def _row(value: float | Decimal = 0.5) -> dict[str, int | float | Decimal]:
     return {label: value for label in LABELS}
 
 
-def test_write_submission_uses_template_order_and_explicit_probabilities(tmp_path):
-    uids = _template_uids()
+def test_write_submission_uses_template_order_and_explicit_probabilities(
+    tmp_path, template
+):
+    uids = _template_uids(template)
     rows = [
         (uid, _row(Decimal(index) / Decimal(2)))
         for index, uid in reversed(list(enumerate(uids)))
@@ -36,7 +63,7 @@ def test_write_submission_uses_template_order_and_explicit_probabilities(tmp_pat
     output = tmp_path / "submission.csv"
 
     receipt = write_submission(
-        TEMPLATE,
+        template,
         output,
         rows,
         source_provenance={
@@ -67,18 +94,18 @@ def test_write_submission_uses_template_order_and_explicit_probabilities(tmp_pat
     assert receipt["study_count"] == len(uids)
     assert receipt["source_provenance"]["source_path"] == "/evidence/rows.json"
     assert (
-        validate_submission(TEMPLATE, output)["submission_sha256"]
+        validate_submission(template, output)["submission_sha256"]
         == receipt["submission_sha256"]
     )
 
 
-def test_two_supplied_signs_are_written_as_supplied_without_mapping(tmp_path):
-    uids = _template_uids()
+def test_two_supplied_signs_are_written_as_supplied_without_mapping(tmp_path, template):
+    uids = _template_uids(template)
     output = tmp_path / "submission.csv"
     rows = [(uid, _row(0.25 if index == 0 else 0.75)) for index, uid in enumerate(uids)]
 
     write_submission(
-        TEMPLATE,
+        template,
         output,
         rows,
         source_provenance={"decision": "values supplied by caller"},
@@ -104,13 +131,13 @@ def test_two_supplied_signs_are_written_as_supplied_without_mapping(tmp_path):
         ),
     ],
 )
-def test_writer_requires_exact_unique_study_coverage(tmp_path, rows, code):
+def test_writer_requires_exact_unique_study_coverage(tmp_path, template, rows, code):
     output = tmp_path / "submission.csv"
     with pytest.raises(SubmissionError) as caught:
         write_submission(
-            TEMPLATE,
+            template,
             output,
-            rows(_template_uids()),
+            rows(_template_uids(template)),
             source_provenance={"kind": "test"},
         )
     assert caught.value.code == code
@@ -131,13 +158,13 @@ def test_writer_requires_exact_unique_study_coverage(tmp_path, rows, code):
     ],
 )
 def test_writer_rejects_invalid_probability_values_and_conditions(
-    tmp_path, values, code
+    tmp_path, template, values, code
 ):
     output = tmp_path / "submission.csv"
-    rows = [(uid, values) for uid in _template_uids()]
+    rows = [(uid, values) for uid in _template_uids(template)]
     with pytest.raises(SubmissionError) as caught:
         write_submission(
-            TEMPLATE,
+            template,
             output,
             rows,
             source_provenance={"kind": "test"},
@@ -146,15 +173,15 @@ def test_writer_rejects_invalid_probability_values_and_conditions(
     assert not output.exists()
 
 
-def test_invalid_input_does_not_replace_existing_output(tmp_path):
+def test_invalid_input_does_not_replace_existing_output(tmp_path, template):
     output = tmp_path / "submission.csv"
     output.write_text("previous contents\n", encoding="utf-8")
-    rows = [(uid, _row()) for uid in _template_uids()]
+    rows = [(uid, _row()) for uid in _template_uids(template)]
     rows[-1] = (rows[-1][0], {**rows[-1][1], "ACL": float("nan")})
 
     with pytest.raises(SubmissionError, match="probability_nonfinite"):
         write_submission(
-            TEMPLATE,
+            template,
             output,
             rows,
             source_provenance={"kind": "test"},
@@ -163,8 +190,8 @@ def test_invalid_input_does_not_replace_existing_output(tmp_path):
     assert output.read_text(encoding="utf-8") == "previous contents\n"
 
 
-def test_validator_rejects_uid_order_and_malformed_csv(tmp_path):
-    uids = _template_uids()
+def test_validator_rejects_uid_order_and_malformed_csv(tmp_path, template):
+    uids = _template_uids(template)
     reordered = tmp_path / "reordered.csv"
     with reordered.open("w", newline="", encoding="utf-8") as stream:
         writer = csv.writer(stream)
@@ -172,13 +199,13 @@ def test_validator_rejects_uid_order_and_malformed_csv(tmp_path):
         for uid in reversed(uids):
             writer.writerow((uid, *(["0.5"] * len(LABELS))))
     with pytest.raises(SubmissionError) as caught:
-        validate_submission(TEMPLATE, reordered)
+        validate_submission(template, reordered)
     assert caught.value.code == "submission_study_uid_order_mismatch"
 
     malformed = tmp_path / "malformed.csv"
     malformed.write_text("StudyInstanceUID,wrong\n", encoding="utf-8")
     with pytest.raises(SubmissionError) as caught:
-        validate_submission(TEMPLATE, malformed)
+        validate_submission(template, malformed)
     assert caught.value.code == "submission_columns_invalid"
 
 
@@ -213,17 +240,17 @@ def test_validator_rejects_uid_order_and_malformed_csv(tmp_path):
     ],
 )
 def test_validator_names_missing_extra_duplicate_rows_and_conditions(
-    tmp_path, uids_to_write, row_width, expected_code
+    tmp_path, template, uids_to_write, row_width, expected_code
 ):
     output = tmp_path / "candidate.csv"
     with output.open("w", newline="", encoding="utf-8") as stream:
         writer = csv.writer(stream)
         writer.writerow(SUBMISSION_COLUMNS)
-        for uid in uids_to_write(_template_uids()):
+        for uid in uids_to_write(_template_uids(template)):
             writer.writerow([uid, *(["0.5"] * (row_width - 1))])
 
     with pytest.raises(SubmissionError) as caught:
-        validate_submission(TEMPLATE, output)
+        validate_submission(template, output)
     assert caught.value.code == expected_code
 
 
@@ -238,26 +265,26 @@ def test_validator_names_missing_extra_duplicate_rows_and_conditions(
     ],
 )
 def test_validator_rejects_invalid_candidate_probabilities(
-    tmp_path, value, expected_code
+    tmp_path, template, value, expected_code
 ):
     output = tmp_path / "candidate.csv"
     with output.open("w", newline="", encoding="utf-8") as stream:
         writer = csv.writer(stream)
         writer.writerow(SUBMISSION_COLUMNS)
-        for uid in _template_uids():
+        for uid in _template_uids(template):
             writer.writerow((uid, value, *(["0.5"] * (len(LABELS) - 1))))
     with pytest.raises(SubmissionError) as caught:
-        validate_submission(TEMPLATE, output)
+        validate_submission(template, output)
     assert caught.value.code == expected_code
 
 
-def test_writer_rejects_unsafe_provenance_and_template_target(tmp_path):
-    uids = _template_uids()
+def test_writer_rejects_unsafe_provenance_and_template_target(tmp_path, template):
+    uids = _template_uids(template)
     rows = [(uid, _row()) for uid in uids]
     with pytest.raises(SubmissionError) as caught:
         write_submission(
-            TEMPLATE,
-            TEMPLATE,
+            template,
+            template,
             rows,
             source_provenance={"not-finite": float("nan")},
         )
@@ -265,7 +292,7 @@ def test_writer_rejects_unsafe_provenance_and_template_target(tmp_path):
 
     with pytest.raises(SubmissionError) as caught:
         write_submission(
-            TEMPLATE,
+            template,
             tmp_path / "submission.csv",
             rows,
             source_provenance={"not-finite": float("nan")},
@@ -273,35 +300,35 @@ def test_writer_rejects_unsafe_provenance_and_template_target(tmp_path):
     assert caught.value.code == "source_provenance_not_json_safe"
 
 
-def test_template_must_have_unique_nonempty_study_rows(tmp_path):
+def test_template_must_have_unique_nonempty_study_rows(tmp_path, template):
     empty = tmp_path / "empty-template.csv"
     empty.write_text(",".join(SUBMISSION_COLUMNS) + "\n", encoding="utf-8")
     with pytest.raises(SubmissionError) as caught:
-        validate_submission(empty, TEMPLATE)
+        validate_submission(empty, template)
     assert caught.value.code == "template_has_no_studies"
 
     duplicate = tmp_path / "duplicate-template.csv"
-    uid = _template_uids()[0]
+    uid = _template_uids(template)[0]
     with duplicate.open("w", newline="", encoding="utf-8") as stream:
         writer = csv.writer(stream)
         writer.writerow(SUBMISSION_COLUMNS)
         writer.writerow((uid, *(["0.5"] * len(LABELS))))
         writer.writerow((uid, *(["0.5"] * len(LABELS))))
     with pytest.raises(SubmissionError) as caught:
-        validate_submission(duplicate, TEMPLATE)
+        validate_submission(duplicate, template)
     assert caught.value.code == "template_study_uid_duplicate"
 
 
-def test_zero_and_one_are_valid_probabilities(tmp_path):
-    uids = _template_uids()
+def test_zero_and_one_are_valid_probabilities(tmp_path, template):
+    uids = _template_uids(template)
     output = tmp_path / "boundaries.csv"
     rows = [(uid, _row(index % 2)) for index, uid in enumerate(uids)]
 
     write_submission(
-        TEMPLATE,
+        template,
         output,
         rows,
         source_provenance={"kind": "boundary-test"},
     )
 
-    assert validate_submission(TEMPLATE, output)["study_count"] == len(uids)
+    assert validate_submission(template, output)["study_count"] == len(uids)

@@ -85,6 +85,12 @@ with locked production dependencies and provide source-pinned, constrained Linux
 The CI gate, ledger, Vulture, recorded-kernel benchmarks and CodSpeed complement native-image and
 whole-run acceptance. Their passing does not establish complete anatomical coverage or resource fit.
 
+The public [hosted SonarCloud project](https://sonarcloud.io/project/overview?id=rohanvinaik_RSNA_Knee)
+uses the supplied [SonarQube workflow](.github/workflows/build.yml), the `SONAR_TOKEN` repository secret
+and the `sonar-project.properties` production scope. Cloud automatic analysis is off to avoid duplicate
+analysis. The pinned local/Actions gate remains; see [setup and verification](docs/SONARCLOUD.md).
+Its visibility follows the author's explicit public-release decision; the complete production scope remains included.
+
 The same command optionally encodes retained object readings with
 `--encode-objects --encoding-run <new-encoding-dir>`, or an explicit
 `--encoding-spec <declaration.json> --encoding-run <new-encoding-dir>`. The declaration
