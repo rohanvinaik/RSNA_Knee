@@ -54,8 +54,10 @@ from pathlib import Path
 
 import numpy as np
 
+from knee.array_archive import open_arrays
 from knee.collapse import relative as rel
 from knee.collapse.physical import PlaneFrame
+from knee.json_store import load_json
 from knee.study.corpus import KAGGLE_ROOT, LOCAL_ROOT, open_corpus, read_study
 
 ROOT = Path(__file__).resolve().parent.parent
@@ -198,8 +200,8 @@ def sections_of(
     geometry: dict[str, dict] = {}
     frames: dict[str, dict] = {}
     receipts = [
-        (run, json.loads((run / "receipt.json").read_text())),
-        (main_run, json.loads((main_run / "receipt.json").read_text())),
+        (run, load_json(run / "receipt.json")),
+        (main_run, load_json(main_run / "receipt.json")),
     ]
     middle_records = {r["series_uid"]: r for r in receipts[0][1]["records"]}
     wanted = sorted({r["study_uid"] for _, rec in receipts for r in rec["records"]})
@@ -278,7 +280,7 @@ def sections_of(
                         rows.append(row)
                         continue
                     if path not in cache:
-                        with np.load(path) as z:
+                        with open_arrays(path, allow_pickle=False) as z:
                             cache[path] = {k: z[k] for k in z.files}
                     arrays = cache[path]
                     if o["support"] not in arrays:
@@ -328,7 +330,7 @@ def sections_of(
 
 
 def load_key_planes(path: Path) -> dict:
-    data = json.loads(path.read_text())
+    data = load_json(path)
     if data.get("schema") != KEY_PLANES_SCHEMA:
         raise SystemExit(f"{path}: schema is not {KEY_PLANES_SCHEMA}")
     return data["studies"]
@@ -708,7 +710,7 @@ def section_mask(row: dict, run: Path, main_run: Path) -> np.ndarray | None:
     )
     if path is None:
         return None
-    with np.load(path) as z:
+    with open_arrays(path, allow_pickle=False) as z:
         a = z[row["support"]]
     if row["row"] is not None:
         a = a[int(row["row"])]

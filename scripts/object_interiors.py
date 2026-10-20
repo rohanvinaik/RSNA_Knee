@@ -9,6 +9,8 @@ import matplotlib.pyplot as plt
 import numpy as np
 from matplotlib.collections import LineCollection
 
+from knee.array_archive import open_arrays
+from knee.json_store import load_json, resolve_json_path
 from knee.receipt import digest
 
 # The three stage pictures, each two of a slice's six panels.
@@ -99,8 +101,8 @@ def draw(run: Path, study_uid: str, out: Path) -> dict:
     renderer's argument spelling. `main()` is a thin wrapper over it, so the hand-typed command
     and the joined run draw the same thing from the same code.
     """
-    receipt_path = run / "receipt.json"
-    receipt = json.loads(receipt_path.read_text())
+    receipt_path = resolve_json_path(run / "receipt.json")
+    receipt = load_json(receipt_path)
     records = [
         r
         for r in receipt["records"]
@@ -135,7 +137,7 @@ def draw(run: Path, study_uid: str, out: Path) -> dict:
     panels = []
     for row, record in enumerate(records):
         artifact = run / record["artifact"]
-        with np.load(artifact, allow_pickle=False) as saved:
+        with open_arrays(artifact, allow_pickle=False) as saved:
             arrays = dict(saved)
         for name, descriptor in record["arrays"].items():
             if digest(arrays[name]) != descriptor["digest"]:

@@ -88,17 +88,18 @@ def test_a_tube_is_said_natively_projected_and_followed_along_the_leg():
     assert [(r["object"], r["count"], r["label"]) for r in native] == [
         ("popliteal_artery", 9, None)  # a boolean mask: no label selects in it
     ]
-    assert native[0]["artifact"] == "S/ax.npz" and native[0]["off_plane_mm"] == 0.0
+    assert native[0]["artifact"] == "S/ax.npz.xz" and native[0]["off_plane_mm"] == 0.0
     (target,) = rows_of(sag, ("projected", "target"))
     assert target["code"] == "on_the_slice" and target["slices"] == (4,)
     assert (
-        target["support"] == "a2_popliteal_artery" and target["artifact"] == "S/ax.npz"
+        target["support"] == "a2_popliteal_artery"
+        and target["artifact"] == "S/ax.npz.xz"
     )
     (tube,) = rows_of(sag, ("native", "reading"))
     assert tube["code"] == "tube_followed" and tube["slices"] == (4,)
     assert tube["count"] == 60 and tube["row"] == 0
     assert (
-        tube["artifact"] == "S/ax.npz"
+        tube["artifact"] == "S/ax.npz.xz"
     )  # the places are kept in the cross-section's record
     arrays = ax.arrays
     offsets = arrays["a3_posterior_trace_popliteal_artery_offsets"]
@@ -194,7 +195,7 @@ def test_fluid_is_followed_as_bright_only_where_it_is_bright():
             assert [r["code"] for r in got] == [expected] and got[0]["count"] == 60
         # the main record's artifact is named for its part
         (native,) = [r for r in mine["observations"] if r["kind"] == "resolved"]
-        assert native["artifact"] == "S/ax-semimembranosus.npz"
+        assert native["artifact"] == "S/ax-semimembranosus.npz.xz"
 
 
 def test_a_place_beyond_the_scan_is_unknown_for_the_continuation():

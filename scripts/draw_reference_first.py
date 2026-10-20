@@ -13,7 +13,6 @@ tendons were read."""
 from __future__ import annotations
 
 import argparse
-import json
 from pathlib import Path
 
 import matplotlib
@@ -22,6 +21,8 @@ matplotlib.use("Agg")
 import matplotlib.pyplot as plt
 import numpy as np
 
+from knee.array_archive import open_arrays
+from knee.json_store import load_json
 from knee.objects.assignments import OBJECT_CODES
 from knee.study.corpus import (
     KAGGLE_ROOT,
@@ -66,11 +67,26 @@ def main() -> None:
         default=KAGGLE_ROOT if KAGGLE_ROOT.is_dir() else ROOT / LOCAL_ROOT,
     )
     args = parser.parse_args()
-    receipt = json.loads((args.run / "receipt.json").read_text())
+    receipt = load_json(args.run / "receipt.json")
     records = [r for r in receipt["records"] if r["study_uid"] == args.study_uid]
     study = read_study(open_corpus(args.root), args.study_uid)
     series = {s.row.series_uid: s for s in study.series}
-    arrays = {r["series_uid"]: np.load(args.run / r["artifact"]) for r in records}
+    arrays = {}
+    try:
+        for record in records:
+            previous = arrays.pop(record["series_uid"], None)
+            if previous is not None:
+                previous.close()
+            arrays[record["series_uid"]] = open_arrays(
+                args.run / record["artifact"], allow_pickle=False
+            )
+        _draw_reference(args, records, series, arrays)
+    finally:
+        for archive in arrays.values():
+            archive.close()
+
+
+def _draw_reference(args, records, series, arrays) -> None:
     args.out.mkdir(parents=True, exist_ok=True)
     for record in records:
         ref = record.get("reference") or {}

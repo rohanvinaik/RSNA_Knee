@@ -48,6 +48,10 @@ rules and every correction), this plan, the thesis conversation
    and §§14–15 before any task; NEXT_SESSION_PROMPT. When a task needs them, the primary units this
    plan names: `../cell_tracking/docs/pipeline_thesis/paper/what_an_object_is.md` §§4, 7, 13 and
    `SIGNIFICANCE_WEIGHTING.md` §§4–5, 13–16.
+   For P12, also read the complete author clarification in
+   `docs/conversations/2026-10-19-structural-information-and-exact-hdc.md` and the
+   interface contract `docs/HDC_ENCODING.md`. His later clarification governs the knee-specific
+   healthy reference; do not substitute the cell experiment's provisional terciles.
 3. Look at the proof study's pictures with the conversation in mind: see the parts of the knee the
    lenses already pull out («you can already see parts of it peeking out from that image»), not an
    audit of your own code. The lens pictures, `data/pictures/interiors/<proof uid>/series.png` and its
@@ -119,8 +123,11 @@ A relation in a catalogue without a decision consumer has not implemented that m
 
 The information-theoretic grounding is What an <Object> Is §§4, 7, 13 and
 SIGNIFICANCE_WEIGHTING §§4–5, 13–16. One useful fact constrains a cluster of dependent questions;
-complementary views can unlock constraints neither supplies alone. Derived consequences make
-held information usable; they do not create fresh evidence. No other-domain scaling constants,
+complementary views can unlock constraints neither supplies alone. Preserve the structural
+channel itself: Rohan's later Monty Hall clarification explains why a bounded relational
+derivation can add conditional information to a local representation that omitted that channel.
+Do not replace that mechanism with a blanket statement that derivation adds no information.
+Reusing a consequence is still not another independent acquisition or observation. No other-domain scaling constants,
 new significance-score engine or corpus-induction system is imported into this ground layer.
 
 ### 1.1 Required epistemology: a failed construction does not retire the capability
@@ -271,7 +278,7 @@ to invent its layout now.
 **The unit of success is the whole production operation.** Account for fresh-process startup and JIT,
 decoding, recognition, retained state, serialization and cohort execution through the one CLI. Amortize
 input-independent setup across studies in bounded workers; do not retain an ever-growing patient cache.
-Keep all information reconstructible under the existing retention contract while managing residency.
+Keep complete required object information reconstructible under the retention contract in §16.6 while managing residency and intermediate-file lifetimes.
 Actual compute, memory and output limits constrain scheduling and storage, never anatomical identity.
 Use the existing gate, real callers, ledger and full-run instruments (§§9, 16); kernel replays alone do
 not establish whole-run efficiency. Large savings are the intended consequence of this construction;
@@ -279,6 +286,27 @@ no unmeasured speed-up factor or preferred benchmark number is its acceptance cr
 
 Actual competition limits are production requirements throughout the build; §16.9 makes W8b storage
 closure and W10 verification of the complete compute envelope mandatory. They do not define anatomy.
+
+**Optimize for the consumer of the representation and the actual competition operation.** Rohan
+reaffirmed this on 2026-10-20 (the exact words follow the retention exchange in
+`docs/conversations/2026-10-20-competition-object-retention.md`). The intended operation reads a study,
+resolves anatomical objects, writes each object's unified view/lens/direction/scale representation,
+hands it to the later human-specified AI and produces the competition's twelve diagnostic
+probabilities. At the current pre-AI milestone, retain complete object pixel/HDC bundles as requested.
+Judge storage choices by complete encode/access/inference/output cost and the useful retained
+information, including the later consumer's access patterns, rather than compressed bytes alone.
+
+The thesis §§7.1/7.4–7.6 and 13.1–13.7 give the existing engineering mechanism: encode readings
+already computed, keep values beside their digits, use exact sparse counts where they are the
+carrier's equivalent form, and pay only for a question's relevant spoken banks. Reuse compatible
+per-object bundles and invariant preparation; retain cross-view/source/refinement provenance and
+explicit silence. Avoid requiring the next stage to repeat recognition, recompute a bundle already
+held, materialize dense pixel vectors for a count-only operation, or write/read H5 merely to hand
+live data between stages. H5 remains a durable handoff and offline teaching product. Preserve a
+clear in-memory consumer boundary where exact arrays/composed profiles are alive; its AI mechanism
+and query/teaching policy are not to be invented. Cell-movie temporal assumptions and precision
+rungs are not automatically MRI rules. W10 includes actual configured encoding/write/readback work
+and reports the future consumer cost as unspecified until supplied, never zero.
 
 Every packet applies this principle using §16.7's short work account and its existing M/F contract.
 This is ordinary construction of the approved pipeline, not a new framework, tuning objective,
@@ -367,6 +395,73 @@ independently verified here. No global settings change or environment repair is 
 The following task order supersedes postponing all structural propagation until old R5. Apply
 useful targeting throughout; do not wait for a perfect background stage before building anatomy.
 Each task ends at a small, source-pinned, real-CLI checkpoint. One lead owns production integration.
+
+**Parallel construction is a foundational build requirement, not an optional optimization.**
+Rohan, 2026-10-19: «If I had 5-10 engineers, each of them would obviously have something useful
+they could work on independently. This should be equally applicable to AI coding agents».
+His complete correction is `docs/conversations/2026-10-19-parallel-construction.md`.
+The lead must organize this designed pipeline as a team would build it:
+
+- Decompose the actual dependency graph into independent implementation packets. Native families
+  with settled rules, shared-context wiring, persistence/readers, runtime packaging and invariant
+  tests can be written concurrently against the existing substrate. Never make a single ordered
+  list of object names the code-writing schedule.
+- Keep available workers doing useful implementation when such work exists. Delegating only
+  searches, repeated audits or verification while the lead writes everything serially does not
+  satisfy this requirement. The lead retains meaning, anatomical decisions, visual acceptance
+  and integration; it does not need to type every mechanically determined implementation.
+- Use inexpensive in-session helpers and the **local Claude Max terminal CLI**, under the existing
+  authorization and §10 route. A client’s in-session concurrency limit is not a reason to leave
+  independent CLI work unlaunched. Do not use browser automation to operate the subscription.
+  Keep actual process handles, input pins, full returns and measured usage in the active packet;
+  a prepared prompt or a completed old call is not a running worker.
+- Give each worker the chosen mechanism and whole governing/source units, exact inputs/outputs,
+  allowed files or named functions, consumer and checks. Work in isolated copies/worktrees.
+  Shared-file work may proceed in disjoint named units and be merged by the sole integrator;
+  it need not wait merely because both units live in the large runner. Never overwrite an
+  intervening accepted change. Reject genuinely stale inputs or explicitly rebase and verify.
+- Distinguish **code-writing dependencies from integration dependencies**. A frozen production
+  cohort or final gate freezes that checked tree, not independent candidate construction.
+  A worker with a ready candidate can proceed to its next independent approved packet while
+  the lead integrates. Wait only for a concrete unavailable prerequisite, necessary native
+  decision, ownership conflict, external capacity or explicit resource constraint.
+- Integrate ready packets continuously at controlled boundaries, then verify one coherent wave
+  through the real entry point and required gate. Do not run a whole cohort/gate after every
+  private worker or tentative object rule. Preserve focused worker checks, changed-native image
+  review, source/retention contracts and the final exact-tree gate; parallelism waives none.
+- Bound simultaneous **local compute** by actual CPU/RAM ownership; remote CLI inference and
+  private code writing are different from several full-volume production runs. Share tooling,
+  avoid MCP/server fleets and orphaned children, and clean up idle build services. Resource
+  control must not become an excuse for serializing low-footprint code writing.
+- Preserve the fixed finish line: useful general anatomical definitions and addressed pixel
+  bundles, not perfect intermediate masks. Completion is the integrated working operation,
+  not tokens spent or worker counts. Record a factual critical path and remaining work in §13’s
+  sole active packet, with ETA assumptions and uncertainty; do not promise a deadline from
+  uninspected scope. A missed ETA requires changing execution, not merely issuing another one.
+
+**Pre-AI completion-wave binding, reaffirmed by Rohan 2026-10-20.** Execute this approved plan as
+parallel implementation lanes: (a) native measurement/address adapters; (b) sourced healthy and
+relational-bank bindings; (c) unified full/sparse/cheap object composition and physical support/depth
+ownership; (d) lossless persistence through every reader; (e) bounded study lifetime and offline/native
+runtime; (f) independent contract/entry-point verification. These are responsibilities, not a claim
+that each is currently running or accepted. The active packet alone records live assignments.
+Use the native session helpers and actual Claude Max subscription terminal CLI for independent
+mechanical construction. Root retains meaning, direct positive/negative intent tests, native-image
+acceptance and sole integration. Drive Detective's printed procedure on suitable pure decisions;
+characterization never substitutes for intended meaning. Keep unknown/equivalence/refusal outcomes
+honest. Integrate continuously at real dependency boundaries; freeze one coherent batch for coordinated
+independent verification and its full CLI/gate checkpoint while unrelated private construction continues.
+The finish line includes every required source family, sourced applicable references/structural banks,
+one exact object representation across views/lenses/scales, reconstructible support ownership, W8b
+storage and W10 resource verification. Original readings and named uncertainty remain. The later AI
+and diagnostic mechanism is still the author's explicit dependency; no worker fills it in. This binds
+§§9,12,14–16 to the existing completion workflow and creates neither another master plan nor a second
+current-state record. Stop faithful, competent anatomical construction without a perfection campaign.
+
+Before leaving a worker idle or making work serial, the lead must be able to name the genuine
+blocking dependency and show why another approved independent implementation packet cannot use
+that capacity. Rohan’s urgency and later-AI dependency make this a delivery obligation throughout
+the remaining build, including after compaction.
 
 | ID | Work | Prerequisite | Retrofit/old packet correspondence |
 |---|---|---|---|
@@ -781,7 +876,7 @@ For every production increment:
    integration is diagnostic only. Commit exactly that tree with explicit paths: the gate stamps the tree
    it passed on, and after a later edit, or with a file left out of the commit, the pre-push hook runs the
    gate again on a clean checkout or refuses a checkout that is not clean. Push the checkpoint before the
-   next packet: git runs the pre-push hook (`scripts/push_checks.py`: the gate unless it passed on that
+   next production integration wave; independent private implementation continues meanwhile (§4). Git runs the pre-push hook (`scripts/push_checks.py`: the gate unless it passed on that
    tree, the secret scan, and the advisory lockfile audit); read its whole output, then the GitHub gate
    run on the commit, whose results go into the next revision (Rohan, 2026-10-18: «just freaking commit
    to git»; «Set it as an automatic hook»; HOW_TO_BUILD, "Commit and push, 2026-10-18").
@@ -882,6 +977,17 @@ completion; a green correctness gate does not waive these deployment requirement
 
 
 ## 12. P12–P13: representation and eventual competition completion
+
+The author's exact-HDC and structural-information clarification is preserved verbatim in
+`docs/conversations/2026-10-19-structural-information-and-exact-hdc.md`. Read it before P12:
+the bounded relational anatomy constitutes the objects, and representing that structure removes
+proxy inference/uncertainty/compute. Efficiency is inherent, not an optional optimization after
+the representation is built. Healthy anatomical zero and the intended healthy profile have the
+same reference here; missing/unread information is distinct. The MRI adapter, reference-source
+contract and parallel construction order are in `docs/HDC_ENCODING.md`, subordinate to this plan.
+Rohan authorized sourcing missing healthy-profile facts from open medical reference texts. That
+does not authorize replacing their quantities with scan percentiles or invented raw-intensity
+limits. The current task packet owns implementation status; the interface note is not a queue.
 
 P12 follows the author's exact idiom, not textbook approximate HDC. What an <Object> Is §7 and
 §13 specify independent banks, seeded exact Sylvester–Hadamard rows, whole-number row counts,
@@ -1326,10 +1432,18 @@ Rohan explicitly reaffirmed the competition lifetime on 2026-10-19: finish a stu
 record the needed result, and release that completed study before starting another; parallel
 processing keeps only the bounded set of active studies. His complete words are in
 `docs/conversations/2026-10-19-completed-study-lifetime.md`. Apply this to the complete configured
-per-study operation: currently report each object's identity and pixel bundle, as his next message
-specifies; later include encoding/diagnosis once specified. Do not retain completed
-image volumes or caches for the whole cohort. The existing parent remains the sole output writer;
-completed results awaiting it and submitted work are bounded along with active studies. Preserve
+per-study operation: currently report each object's identity and pixel/HDC bundle; later include
+the human-specified AI/diagnostic consumer before study completion. Do not retain completed
+image volumes or caches for the whole cohort. The parent owns the aggregate receipt and final
+cleanup after publication. Unique per-study recognition/encoding products may be written by their
+bounded study worker: those are synchronous stages of the same study, not an additional asynchronous
+writer queue. In competition mode, encoding and public-reader verification belong inside that worker
+so independent studies use available cores through the complete operation. Prepare invariant encoding
+configuration once per worker; return compact metadata and verified identities, with no image/count
+array payload sent through IPC. The parent validates the return's study/configuration/product identity,
+stages its compact receipt and then releases consumed intermediate files. Do not re-encode or repeat
+the complete readback in the parent. Serial and development behavior retain their existing contracts.
+Completed results awaiting the parent and submitted work are bounded along with active studies. Preserve
 input-order receipt semantics, failure cleanup and the reusable invariant worker setup. A worker
 count alone does not bound an eager all-cohort future/result queue. Verify actual ownership and
 release after the last consumer on serial and reusable-worker paths; a high-water RSS value alone
@@ -1339,8 +1453,15 @@ follow the retention contract and §16.9.
 
 EP3b now closes storage under §16.9. If measured cohort output requires a different container or
 placement, the lead settles the minimum versioned lossless repair and all consumers before building;
-no known overflow is deferred beyond W8b. Required retention lifetimes are preserved: no default
-discard, silent durability change or retention switch is authorized.
+no known overflow is deferred beyond W8b. Rohan explicitly changed competition retention on
+2026-10-20: «Retain complete object outputs; release consumed intermediate files». The exact exchange
+is in `docs/conversations/2026-10-20-competition-object-retention.md`. Competition mode retains complete
+object pixel/HDC bundles, measured values and necessary provenance in independently readable final
+products. Active support/value links resolve there; original source paths remain historical provenance.
+After the final consumer and verified publication/readback, release only that run's owned intermediate
+files. A missing dependency, publication failure or failed verification prevents cleanup. Development
+retains diagnostic intermediates. This supersedes blanket permanent-intermediate retention for
+competition mode; it authorizes neither precision loss, incomplete final objects nor deletion of old runs.
 
 ### 16.7 The short work account required of every construction packet
 
@@ -1468,7 +1589,10 @@ EP3b includes the minimum concrete lossless storage/layout/placement repair need
 envelope, through the existing production entry point and every real writer/reader. Prefer compatible
 existing-format changes. If a format/address schema must change, version it, update every consumer and
 verify reconstruction; do not leave a known storage overflow merely as an advisory or defer it to P13.
-No retention switch, dropped readings, changed precision or unrequested asynchronous writer follows.
+The explicit 2026-10-20 competition retention decision in §16.6 applies: retain complete object
+outputs and necessary measured information/provenance, and release consumed intermediates after
+verified publication. No additional dropped object information, precision change or unrequested
+asynchronous writer follows.
 
 - Inventory ownership and on-disk sizes for both output families, receipts, retained evidence and
   supporting runtime files. Distinguish physical bytes from logical reconstructed arrays and shared
@@ -1480,7 +1604,9 @@ No retention switch, dropped readings, changed precision or unrequested asynchro
 - Specify durable output versus session-local working storage, their actual mounts/quotas, lifetimes
   and all downstream readers. Reduce duplication/materialization and use lossless representation or
   placement consistent with retained-information contracts. Scratch may hold genuine transient work;
-  moving required durable evidence there and losing it when the notebook ends is not a solution.
+  moving required final object evidence there and losing it when the notebook ends is not a solution.
+  Consumed intermediate lens files are genuine transient work under the explicit retention decision.
+  Verify final object support/value addresses remain readable after those intermediates are removed.
 - Reconstruct all retained arrays and decisions through the actual readers/addresses and compare
   values/dtypes/shapes/digests as appropriate. Verify same output in serial/parallel operation, bounded
   pending results and temporary-file peaks, and named behavior for unavailable or exhausted storage.
@@ -1515,6 +1641,10 @@ verify the submission environment. Record any difference from real submission ha
   Do not assign those stages zero cost or consume the full allowance and call the future notebook fit
   established. A reserve is justified by the current work account and uncertainty, not an invented
   fixed percentage; unspecified later costs remain explicit and are measured when supplied.
+- Exercise the explicit competition-output lifecycle as well as the development route: fresh owned
+  output roots, complete per-study final products verified before cleanup, compact object receipts,
+  no active references to deleted intermediates, and no cleanup on publication failure. Include final
+  product bytes, intermediate/write peaks and bounded concurrent-study scratch in the account.
 - Recheck W8b's storage closure on W10's completed source and actual concurrency. Known overflow,
   stale source, missing consumers or unresolved required capacity evidence cannot pass by a green
   test suite/CodSpeed replay. Use the existing VERIFICATION_FAILED / INCOMPLETE / STALE_INPUT meanings;

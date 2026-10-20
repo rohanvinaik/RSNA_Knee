@@ -12,9 +12,10 @@ files on disk). Git hands the hook each ref being pushed, with its local and rem
   pushed; any other is refused, since the gate checks the working tree;
 - scans every line the pushed commits add, file by file under each file's own name, for secrets
   (detect-secrets); a merge adds the lines it writes itself, in none of its parents (`commit_additions`).
-  The only findings it accepts are the kernel-benchmark recording's own digests and its
-  commit in `benchmarks/recorded/manifest.json`, matched exactly, since detect-secrets reads any long hex
-  string as a possible secret. A line carrying `# pragma: allowlist secret`, detect-secrets' own mark for a
+  It recognizes the kernel-benchmark recording's own digests/commit and Detective's typed
+  16-hex function digests, only at their respective manifest paths and matched exactly against that
+  commit's fields. This recognizes digest data, never a certificate's completeness. Other findings
+  remain unexplained. A line carrying `# pragma: allowlist secret`, detect-secrets' own mark for a
   finding reviewed as no secret, is not a finding: that is how a false finding is answered, never
   `--no-verify`;
 - audits the lockfile with all extras and groups (pip-audit), once per push, and names its result
@@ -50,6 +51,7 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[1]
 ZERO = "0" * 40
 RECORDING = "benchmarks/recorded/manifest.json"
+CERTIFICATES = "tests/detective/certificates.json"
 HEX = "Hex High Entropy String"
 # Pinned, as the gate pins zizmor, so every push is checked with the same versions. detect-secrets reads the
 # next line's name as a secret keyword; the pragma on it is detect-secrets' own mark for a finding reviewed as
@@ -109,11 +111,16 @@ def ref_check(
 def finding_verdict(
     path: str, kind: str, hashed: str, recording: frozenset[str]
 ) -> str:
-    """A secret-scan finding, as a named code: "recording_digest" when it is one of the kernel-benchmark
-    recording's own digests or its commit (detect-secrets keeps each finding as the SHA-1 of the string),
-    otherwise "unexplained", which refuses the push."""
-    if path == RECORDING and kind == HEX and hashed in recording:
-        return "recording_digest"
+    """Recognize only exact typed digest fields at their own manifest path.
+
+    The recognized set is derived from the same commit and file. All other
+    findings remain unexplained; a function digest does not certify its standing.
+    """
+    if kind == HEX and hashed in recording:
+        if path == RECORDING:
+            return "recording_digest"
+        if path == CERTIFICATES:
+            return "function_digest"
     return "unexplained"
 
 
@@ -140,6 +147,26 @@ def recording_hashes(sha: str) -> frozenset[str]:
     return frozenset(
         hashlib.sha1(text.encode(), usedforsecurity=False).hexdigest()
         for text in strings
+    )
+
+
+def certificate_hashes(sha: str) -> frozenset[str]:
+    """Recognize Detective's 16-lowercase-hex function_digest fields only."""
+    certificates = json.loads(git("show", f"{sha}:{CERTIFICATES}"))
+    if not isinstance(certificates, dict):
+        raise Unchecked("Detective certificate document is not an object")
+    strings = []
+    for record in certificates.values():
+        value = record.get("function_digest") if isinstance(record, dict) else None
+        if (
+            isinstance(value, str)
+            and len(value) == 16
+            and all(character in "0123456789abcdef" for character in value)
+        ):
+            strings.append(value)
+    return frozenset(
+        hashlib.sha1(value.encode(), usedforsecurity=False).hexdigest()
+        for value in strings
     )
 
 
@@ -181,8 +208,7 @@ def commit_additions(sha: str) -> dict[str, list[str]]:
 
 
 def scan(commits: list[str]) -> list[str]:
-    """The secret scan of the lines `commits` add, each file's under its own name. Accepted findings are
-    printed; the rest are returned, each named by commit, file, line and kind."""
+    """Scan added lines, recognizing exact recorded digest fields per file."""
     if not commits:
         return []
     with tempfile.TemporaryDirectory() as folder:
@@ -204,25 +230,29 @@ def scan(commits: list[str]) -> list[str]:
     )
     refusals: list[str] = []
     accepted = 0
-    hashes: dict[str, frozenset[str]] = {}
+    hashes: dict[tuple[str, str], frozenset[str]] = {}
     for name, findings in sorted(results.items()):
         sha, _, path = name.removeprefix("./").partition("/")
-        if path == RECORDING and sha not in hashes:
-            hashes[sha] = recording_hashes(sha)
+        key = (sha, path)
+        if key not in hashes:
+            if path == RECORDING:
+                hashes[key] = recording_hashes(sha)
+            elif path == CERTIFICATES:
+                hashes[key] = certificate_hashes(sha)
         for finding in findings:
             verdict = finding_verdict(
                 path,
                 finding["type"],
                 finding["hashed_secret"],
-                hashes.get(sha, frozenset()),
+                hashes.get(key, frozenset()),
             )
             where = f"{sha[:7]} {path}, added line {finding['line_number']}: {finding['type']}"
-            if verdict == "recording_digest":
+            if verdict in ("recording_digest", "function_digest"):
                 accepted += 1
             else:
                 refusals.append(f"a possible secret in {where}")
     print(
-        f"secret scan: {accepted} findings are the kernel-benchmark recording's own digests or commit;"
+        f"secret scan: {accepted} findings are exact recorded kernel or function digests;"
         f" {len(refusals)} are not"
     )
     return refusals

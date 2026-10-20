@@ -1,49 +1,80 @@
 {
  "study": "1.2.826.0.1.3680043.8.498.10095687747295410396510538520594649149",
- "commit": "902f7b73dda4e64185a2405f54c8601d2def9bbc",
+ "commit": "ac141a1ae599585bee7958d2a3983d9dd049f793",
  "uncommitted": [
+  " M README.md",
+  " M docs/HOW_TO_BUILD.md",
+  " M docs/RELATIVE_POSITION_MAP.md",
+  " M docs/RESOLVING_THE_PARTS.md",
   " M docs/work/current/README.md",
+  " M scripts/draw_reference_first.py",
+  " M scripts/joint_reference_offsets.py",
+  " M scripts/key_points.py",
+  " M scripts/object_assignments.py",
+  " M scripts/object_bones.py",
+  " M scripts/object_interiors.py",
+  " M scripts/object_joint.py",
+  " M scripts/object_patella.py",
+  " M scripts/object_recess.py",
+  " M scripts/reference_offsets.py",
   " M scripts/run_interiors.py",
-  " M src/knee/collapse/physical.py",
-  " M src/knee/receipt.py",
-  " M tests/test_receipt.py",
-  "?? docs/work/history/BUILD-WORKFLOW-PLAN-20261018-r20.md",
-  "?? docs/work/history/BUILD-WORKFLOW-PLAN-20261018-r21.md",
-  "?? tests/test_frame_inverse_cache.py",
-  "?? tests/test_observation_lineage.py"
+  " M scripts/slice_positions.py",
+  " M src/knee/collapse/local_native.py",
+  " M tests/test_axial_joint_fluid.py",
+  " M tests/test_collapse_corrections.py",
+  " M tests/test_collapse_fibula.py",
+  " M tests/test_posterior_driver.py",
+  " M tests/test_sartorius_driver.py",
+  " M tests/test_study_map.py",
+  "?? docs/conversations/2026-10-19-scoped-identification.md",
+  "?? docs/work/history/BUILD-WORKFLOW-PLAN-20261018-r28.md",
+  "?? docs/work/history/BUILD-WORKFLOW-PLAN-20261018-r29.md",
+  "?? docs/work/history/BUILD-WORKFLOW-PLAN-20261018-r30.md",
+  "?? docs/work/history/BUILD-WORKFLOW-PLAN-20261018-r31.md",
+  "?? docs/work/history/BUILD-WORKFLOW-PLAN-20261018-r32.md",
+  "?? docs/work/history/BUILD-WORKFLOW-PLAN-20261018-r33.md",
+  "?? src/knee/array_archive.py",
+  "?? tests/test_array_archive.py",
+  "?? tests/test_attachment_native_readings.py",
+  "?? tests/test_b10_tibial_cartilage_adapter.py",
+  "?? tests/test_b10_tibial_cartilage_reading.py",
+  "?? tests/test_f25_bursa_native_reading.py",
+  "?? tests/test_gastrocnemius_scoped_reading.py",
+  "?? tests/test_posterior_native_readings.py",
+  "?? tests/test_saved_run_reader_adapters.py"
  ],
- "recorded_at": "2026-10-19T18:39:44+00:00",
+ "recorded_at": "2026-10-19T21:29:57+00:00",
  "python": "3.14.7",
  "numpy": "2.5.3",
  "platform": "macOS-27.0-arm64-arm-64bit-Mach-O",
  "kernels": {
   "interior_regions": {
-   "calls_in_the_run": 57,
-   "kept_call": 17,
-   "kept_call_seconds": 0.08824825007468462,
-   "all_calls_seconds": 2.624676919542253,
+   "calls_in_the_run": 66,
+   "kept_call": 65,
+   "kept_call_seconds": 0.3617702089250088,
+   "all_calls_seconds": 3.173579875379801,
    "args": {
     "tuple": [
      {
-      "array": "cddfb23e9b71713aea6c6a75300a91a3add8e67aed056c9a4c2f0fd851751235",
+      "array": "18fe079fba2b4e08de0a38772ecd5eee50abc6af34f11c116cd9ca1438d64692",
       "dtype": "<u2",
       "shape": [
-       400,
-       400
+       320,
+       320
       ],
       "strides": [
-       800,
+       640,
        2
       ],
       "writeable": true
      },
      {
       "tuple": [
-       0.4,
-       0.4
+       0.5,
+       0.5
       ]
      },
-     7.341796875,
+     5.38671875,
      3.0
     ]
    },
@@ -52,14 +83,14 @@
      [
       "available",
       {
-       "array": "9edaf70984a576769cf6b7e2360593cb2ca16467e4b5fa36d2608c13480a3086",
+       "array": "46c184473200d7c735af6b35c47669c5c1e50a55a726a9203bf2eec799b8fb57",
        "dtype": "|b1",
        "shape": [
-        400,
-        400
+        320,
+        320
        ],
        "strides": [
-        400,
+        320,
         1
        ],
        "writeable": true
@@ -86,9 +117,9 @@
         "window_rc": {
          "tuple": [
           0,
-          400,
+          320,
           0,
-          400
+          320
          ]
         },
         "in_scope_tile_count": 256,
@@ -102,13 +133,13 @@
   },
   "physical_squint": {
    "calls_in_the_run": 164,
-   "kept_call": 49,
-   "kept_call_seconds": 0.001974250189960003,
-   "all_calls_seconds": 0.1647951351478696,
+   "kept_call": 53,
+   "kept_call_seconds": 0.004000667482614517,
+   "all_calls_seconds": 0.18268279172480106,
    "args": {
     "tuple": [
      {
-      "array": "c924af1aede39065fba915cfa586df9fbd801d91e19d51f22becd3997887a6b5",
+      "array": "3afb0ad53af49512ca91a3c9ef783fd7176d52a06191b9bd1b75a4700c98fe53",
       "dtype": "<u2",
       "shape": [
        384,
@@ -148,44 +179,52 @@
   },
   "block_medians": {
    "calls_in_the_run": 275,
-   "kept_call": 190,
-   "kept_call_seconds": 0.0036042071878910065,
-   "all_calls_seconds": 0.3737583449110389,
+   "kept_call": 247,
+   "kept_call_seconds": 0.0057923756539821625,
+   "all_calls_seconds": 0.44359367713332176,
    "args": {
     "tuple": [
      {
-      "array": "1c1661642d3e3a7e7d5abd2da19bd08b0f5209fd0a31ff8ebc3f15eccc1bcacd",
+      "array": "76a57ac530a901de6ed74403036f10761d865fa06cbd5a78248b24cee454fe4d",
       "dtype": "<f8",
       "shape": [
-       384,
-       384
+       400,
+       400
       ],
       "strides": [
-       3072,
+       3200,
        8
       ],
-      "writeable": true
+      "writeable": false
      },
      {
-      "array": "bd802df8501c4d6315d72bc36c64314e06c9d159b920bafd350e98251a7fdcd0",
+      "array": "7a34f1c27e01c7f7872ffc8df9e8861cbcfac2a3e841c941eb089294640c575b",
       "dtype": "|b1",
       "shape": [
-       384,
-       384
+       400,
+       400
       ],
       "strides": [
-       384,
+       400,
        1
       ],
-      "writeable": true
+      "writeable": false
      },
      {
       "tuple": [
-       0.390625,
-       0.390625
+       0.4,
+       0.4
       ]
      },
-     2.0
+     2.0,
+     {
+      "tuple": [
+       200,
+       400,
+       125,
+       400
+      ]
+     }
     ]
    },
    "kwargs": {
@@ -194,13 +233,13 @@
   },
   "coarse_depth": {
    "calls_in_the_run": 45,
-   "kept_call": 41,
-   "kept_call_seconds": 0.0020751245319843292,
-   "all_calls_seconds": 0.056633079424500465,
+   "kept_call": 7,
+   "kept_call_seconds": 0.0023777075111865997,
+   "all_calls_seconds": 0.06353716365993023,
    "args": {
     "tuple": [
      {
-      "array": "94d7a32983cea957d5bb98f2fa2bda729f36c5a1f50695581ef6156b97b1eead",
+      "array": "426d254e2ed1a900346065aa33fef926b0683a1b83d3ac1507e31a017f8e87e5",
       "dtype": "<f8",
       "shape": [
        80,
@@ -220,10 +259,10 @@
    }
   },
   "enclosed_darkness": {
-   "calls_in_the_run": 65,
+   "calls_in_the_run": 96,
    "kept_call": 52,
-   "kept_call_seconds": 0.0283567076548934,
-   "all_calls_seconds": 0.32035616412758827,
+   "kept_call_seconds": 0.03624541778117418,
+   "all_calls_seconds": 0.4158402057364583,
    "args": {
     "tuple": [
      {
@@ -248,8 +287,8 @@
   "dark_bands": {
    "calls_in_the_run": 6,
    "kept_call": 3,
-   "kept_call_seconds": 0.21273037511855364,
-   "all_calls_seconds": 1.2437385842204094,
+   "kept_call_seconds": 0.2321035834029317,
+   "all_calls_seconds": 1.3272737907245755,
    "args": {
     "tuple": [
      {
@@ -348,8 +387,8 @@
   "local_lightness": {
    "calls_in_the_run": 1,
    "kept_call": 0,
-   "kept_call_seconds": 0.5415485426783562,
-   "all_calls_seconds": 0.5415485426783562,
+   "kept_call_seconds": 0.5896119996905327,
+   "all_calls_seconds": 0.5896119996905327,
    "args": {
     "tuple": [
      {
@@ -397,13 +436,13 @@
   },
   "thick_parts": {
    "calls_in_the_run": 250,
-   "kept_call": 69,
-   "kept_call_seconds": 0.07429916691035032,
-   "all_calls_seconds": 0.7171404678374529,
+   "kept_call": 68,
+   "kept_call_seconds": 0.07691395934671164,
+   "all_calls_seconds": 0.7332253307104111,
    "args": {
     "tuple": [
      {
-      "array": "5168aff16a1092e317cc03791a0493c89ac0856810512cda09a4e17b90b836a8",
+      "array": "bb78f49d64827b9d97497e0cf77e4702506a99e0f2c5996a4c4eabb88fdb25d7",
       "dtype": "|b1",
       "shape": [
        400,
@@ -436,8 +475,8 @@
   "background_split": {
    "calls_in_the_run": 5,
    "kept_call": 0,
-   "kept_call_seconds": 0.07298633269965649,
-   "all_calls_seconds": 0.2511257091537118,
+   "kept_call_seconds": 0.07932387571781874,
+   "all_calls_seconds": 0.2833173358812928,
    "args": {
     "tuple": [
      {
@@ -459,22 +498,22 @@
   }
  },
  "arrays": {
-  "cddfb23e9b71713aea6c6a75300a91a3add8e67aed056c9a4c2f0fd851751235": {
+  "18fe079fba2b4e08de0a38772ecd5eee50abc6af34f11c116cd9ca1438d64692": {
    "passed_dtype": "<u2",
    "stored_dtype": "<u2",
-   "bytes_passed": 320000
+   "bytes_passed": 204800
   },
-  "9edaf70984a576769cf6b7e2360593cb2ca16467e4b5fa36d2608c13480a3086": {
+  "46c184473200d7c735af6b35c47669c5c1e50a55a726a9203bf2eec799b8fb57": {
    "passed_dtype": "|b1",
    "stored_dtype": "|b1",
-   "bytes_passed": 160000
+   "bytes_passed": 102400
   },
   "5c0ea8e542852239b657d8ad66cecf441e6b61d8363d43464d976c603e11bbf9": {
    "passed_dtype": "|b1",
    "stored_dtype": "|b1",
    "bytes_passed": 256
   },
-  "c924af1aede39065fba915cfa586df9fbd801d91e19d51f22becd3997887a6b5": {
+  "3afb0ad53af49512ca91a3c9ef783fd7176d52a06191b9bd1b75a4700c98fe53": {
    "passed_dtype": "<u2",
    "stored_dtype": "<u2",
    "bytes_passed": 294912
@@ -484,17 +523,17 @@
    "stored_dtype": "|b1",
    "bytes_passed": 147456
   },
-  "1c1661642d3e3a7e7d5abd2da19bd08b0f5209fd0a31ff8ebc3f15eccc1bcacd": {
+  "76a57ac530a901de6ed74403036f10761d865fa06cbd5a78248b24cee454fe4d": {
    "passed_dtype": "<f8",
    "stored_dtype": "<u2",
-   "bytes_passed": 1179648
+   "bytes_passed": 1280000
   },
-  "bd802df8501c4d6315d72bc36c64314e06c9d159b920bafd350e98251a7fdcd0": {
+  "7a34f1c27e01c7f7872ffc8df9e8861cbcfac2a3e841c941eb089294640c575b": {
    "passed_dtype": "|b1",
    "stored_dtype": "|b1",
-   "bytes_passed": 147456
+   "bytes_passed": 160000
   },
-  "94d7a32983cea957d5bb98f2fa2bda729f36c5a1f50695581ef6156b97b1eead": {
+  "426d254e2ed1a900346065aa33fef926b0683a1b83d3ac1507e31a017f8e87e5": {
    "passed_dtype": "<f8",
    "stored_dtype": "<f8",
    "bytes_passed": 51200
@@ -503,6 +542,11 @@
    "passed_dtype": "<u2",
    "stored_dtype": "<u2",
    "bytes_passed": 294912
+  },
+  "cddfb23e9b71713aea6c6a75300a91a3add8e67aed056c9a4c2f0fd851751235": {
+   "passed_dtype": "<u2",
+   "stored_dtype": "<u2",
+   "bytes_passed": 320000
   },
   "02820157368569d046727521d420bf2f5db49b9aa25199b6dd3111ca804c161e": {
    "passed_dtype": "|i1",
@@ -539,7 +583,7 @@
    "stored_dtype": "<f8",
    "bytes_passed": 16
   },
-  "5168aff16a1092e317cc03791a0493c89ac0856810512cda09a4e17b90b836a8": {
+  "bb78f49d64827b9d97497e0cf77e4702506a99e0f2c5996a4c4eabb88fdb25d7": {
    "passed_dtype": "|b1",
    "stored_dtype": "|b1",
    "bytes_passed": 160000

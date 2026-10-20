@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from collections import Counter
 from collections.abc import Callable
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 from pathlib import Path
 
 import numpy as np
@@ -139,7 +139,13 @@ def read_series(directory: Path, row: SeriesRow) -> Series:
             np.stack(present["spacing"]),
         )
         slices = [slices[i] for i in order]
-    volume = np.stack([s.pixels for s in slices]) if codes == ("stackable",) else None
+    volume = None
+    if codes == ("stackable",):
+        volume = np.stack([s.pixels for s in slices])
+        volume.setflags(write=False)
+        slices = [
+            replace(slice_, pixels=volume[index]) for index, slice_ in enumerate(slices)
+        ]
     return Series(
         row=row,
         slices=tuple(slices),

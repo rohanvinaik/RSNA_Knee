@@ -25,6 +25,7 @@ CORD[50:56, 18:21] = True
 class Series:
     row: SimpleNamespace
     slices: tuple = (None,)
+    volume: np.ndarray | None = None
 
 
 def axial_plane():

@@ -104,10 +104,10 @@ def drive(run_interiors, monkeypatch, tmp_path, uids, workers, failing_uid=None)
     def stub_measure(root, uid, run_dir, main_run, drawn):
         return Result(uid)
 
-    def stub_report(result, args):
+    def stub_report(result, args, receipt_batches):
         pool = FakePool.instances[0]
         pool.max_owned = max(pool.max_owned, pool.owned())
-        reported.append((result.uid, len(pool.submitted)))
+        reported.append((result.uid, len(pool.submitted), receipt_batches))
         if result.uid == failing_uid:
             raise RuntimeError("report failed")
 
@@ -141,18 +141,22 @@ def test_main_keeps_at_most_workers_studies_and_reports_in_order(
     uids = [f"s{i}" for i in range(7)]
     workers = 3
     reported, pool = drive(run_interiors, monkeypatch, tmp_path, uids, workers)
-    assert [uid for uid, _ in reported] == uids
+    assert [uid for uid, _, _ in reported] == uids
+    assert all(owner is reported[0][2] for _, _, owner in reported)
+    assert reported[0][2] is not None
     assert pool.submitted == uids
     assert pool.max_workers == workers
     assert pool.max_owned <= workers
     # While a report runs, nothing beyond the window has been pulled or submitted.
-    for k, (_, submitted) in enumerate(reported):
+    for k, (_, submitted, _) in enumerate(reported):
         assert submitted == min(len(uids), workers + k)
 
 
 def test_main_with_fewer_studies_than_workers(run_interiors, monkeypatch, tmp_path):
     reported, pool = drive(run_interiors, monkeypatch, tmp_path, ["a", "b"], 8)
-    assert [uid for uid, _ in reported] == ["a", "b"]
+    assert [uid for uid, _, _ in reported] == ["a", "b"]
+    assert all(owner is reported[0][2] for _, _, owner in reported)
+    assert reported[0][2] is not None
     assert pool.max_workers == 2
     assert pool.max_owned <= 2
 
@@ -262,3 +266,49 @@ def test_consumer_exception_closes_and_cancels(run_interiors):
             raise KeyError(result)
     gc.collect()
     assert [f.index for f in made if f.cancelled] == [1]
+
+
+def test_completed_study_working_state_is_released_before_next_submit(run_interiors):
+    class WorkingArray:
+        def __init__(self, uid):
+            self.payload = bytearray(uid.encode("utf-8") * 32)
+
+    class WorkingState:
+        def __init__(self, uid):
+            self.uid = uid
+            self.arrays = WorkingArray(uid)
+            self.encoding_cache = {"verified_arrays": [self.arrays]}
+
+    class CompletedFuture:
+        def __init__(self, uid):
+            self.uid = uid
+            self.value = None
+
+        def result(self):
+            self.value = WorkingState(self.uid)
+            return self.value
+
+        def cancel(self):
+            return True
+
+    prior_states = []
+    published = []
+
+    def submit(uid):
+        gc.collect()
+        if prior_states:
+            assert prior_states[-1]() is None
+        return CompletedFuture(uid)
+
+    results = run_interiors.bounded_results(submit, (f"study-{i}" for i in range(4)), 1)
+    for state in results:
+        # Model the existing encoder's source read and the writer's durable summary;
+        # only the compact result outlives this iteration.
+        published.append((state.uid, bytes(state.arrays.payload)))
+        prior_states.append(weakref.ref(state))
+        prior_states.append(weakref.ref(state.encoding_cache["verified_arrays"][0]))
+        state = None
+
+    gc.collect()
+    assert [uid for uid, _payload in published] == [f"study-{i}" for i in range(4)]
+    assert all(reference() is None for reference in prior_states)

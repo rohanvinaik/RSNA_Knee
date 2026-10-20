@@ -13,9 +13,11 @@ from typing import cast
 import numpy as np
 import pytest
 
+from knee.array_archive import open_arrays
 from knee.collapse import relative as rel
 from knee.collapse.physical import PlaneFrame
 from knee.collapse.study_map import OBJECTS, StudyMap
+from knee.json_store import load_json
 from scripts import run_interiors as run
 
 SAG = (0, 1, 0, 0, 0, -1)  # normal along x
@@ -57,7 +59,7 @@ def stack(orientation, origins):
 def test_every_object_has_a_record_and_every_ordered_pair_is_represented():
     m = StudyMap()
     record = m.record()
-    assert len(OBJECTS) == 43 and "unassigned" not in OBJECTS
+    assert len(OBJECTS) == 45 and "unassigned" not in OBJECTS
     assert set(record["objects"]) == set(OBJECTS)
     assert all(row["status"] == "partial" for row in record["objects"].values())
     assert record["counts"]["ordered_pairs"] == len(OBJECTS) * (len(OBJECTS) - 1)
@@ -450,7 +452,7 @@ def test_real_entry_point_builds_the_map_and_the_patella_reads_it(
     assert set(counts["uses"]) >= {"guided_hit"} or any(
         k.startswith("guided_miss") for k in counts["uses"]
     )
-    full = json.loads((tmp_path / "run" / PROOF / "study_map.json").read_text())
+    full = load_json(tmp_path / "run" / PROOF / "study_map.json.xz")
     assert not any("centroid" in key for key in json.dumps(full).split('"'))
     assert full["objects"]["femur"]["key_planes"]["axial"]["outcome"] == "selected"
     # every ordered pair is a complete vector or a named unresolved end
@@ -526,7 +528,7 @@ def test_real_entry_point_builds_the_map_and_the_patella_reads_it(
             for root in (tmp_path / "run", tmp_path / "main")
             if (root / artifact).is_file()
         )
-        with np.load(artifact_path, allow_pickle=False) as saved:
+        with open_arrays(artifact_path, allow_pickle=False) as saved:
             support = saved[fluid_row["support"]]
             assert support.dtype == np.bool_
             if fluid_row["row"] is None:
@@ -576,7 +578,7 @@ def test_real_entry_point_builds_the_map_and_the_patella_reads_it(
     assert row["support"] == "a4_coronal_anterior_recess" and row["label"] is None
     assert tuple(row["slices"]) == (anterior_planes["coronal"]["slice"],)
     assert row["row"] == 0
-    with np.load(tmp_path / "run" / row["artifact"], allow_pickle=False) as saved:
+    with open_arrays(tmp_path / "run" / row["artifact"], allow_pickle=False) as saved:
         native_mask = saved[row["support"]][row["row"]]
         location = saved["a4_coronal_anterior_target"][row["row"]]
         white = saved["a4_coronal_anterior_white"][row["row"]]
@@ -619,7 +621,9 @@ def test_real_entry_point_builds_the_map_and_the_patella_reads_it(
     for wall in sagittal_walls:
         assert wall["support"] == "a4_sagittal_capsule_outer_wall"
         assert wall["label"] is None and wall["row"] is not None
-        with np.load(tmp_path / "run" / wall["artifact"], allow_pickle=False) as saved:
+        with open_arrays(
+            tmp_path / "run" / wall["artifact"], allow_pickle=False
+        ) as saved:
             slot = wall["row"]
             native_wall = saved[wall["support"]][slot]
             body = saved["a4_sagittal_capsule_body"][slot]
@@ -671,7 +675,7 @@ def test_real_entry_point_builds_the_map_and_the_patella_reads_it(
         artifact_path = next(
             root / artifact for root in roots if (root / artifact).is_file()
         )
-        with np.load(artifact_path, allow_pickle=False) as saved:
+        with open_arrays(artifact_path, allow_pickle=False) as saved:
             support = saved[row["support"]]
             if pointed:
                 assert support.dtype == np.bool_ and support.ndim == 3
@@ -720,7 +724,7 @@ def test_real_entry_point_builds_the_map_and_the_patella_reads_it(
         ) == (count, support_name, source_row, label, (21,), ("Axial", "1", "1"))
         assert row["artifact"] == (
             f"{PROOF}/"
-            "1.2.826.0.1.3680043.8.498.67495435033389756963800730529101229430.npz"
+            "1.2.826.0.1.3680043.8.498.67495435033389756963800730529101229430.npz.xz"
         )
 
     synovium_object = full["objects"]["synovium"]
@@ -779,7 +783,7 @@ def test_real_entry_point_builds_the_map_and_the_patella_reads_it(
         artifact_path = next(
             root / artifact for root in roots if (root / artifact).is_file()
         )
-        with np.load(artifact_path, allow_pickle=False) as saved:
+        with open_arrays(artifact_path, allow_pickle=False) as saved:
 
             def read_boolean_support(name, row_index):
                 values = saved[name]
@@ -856,7 +860,7 @@ def test_real_entry_point_builds_the_map_and_the_patella_reads_it(
     ].index(lining_row)
     artifact = Path(lining_row["artifact"])
     coronal_artifact = tmp_path / "run" / artifact
-    with np.load(coronal_artifact, allow_pickle=False) as saved:
+    with open_arrays(coronal_artifact, allow_pickle=False) as saved:
         old_lining = saved["a2_synovium"]
         new_lining = saved["a4_coronal_lining"]
         capsule_mask = saved["a2_joint_capsule"]

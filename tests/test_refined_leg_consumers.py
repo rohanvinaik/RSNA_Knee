@@ -239,16 +239,16 @@ def test_patella_and_joint_bone_footprints_reuse_only_matching_carried_places():
 
 
 def test_the_map_hands_its_leg_to_every_axial_series(monkeypatch):
-    seen: list[tuple[Any, Any]] = []
+    seen: list[tuple[Any, Any, str | None]] = []
     monkeypatch.setattr(
         run,
         "axial_bone_planes",
-        lambda smap, own, leg: seen.append((own, leg)) or {},
+        lambda smap, own, leg, study_uid: seen.append((own, leg, study_uid)) or {},
     )
     first, second = axial_target("first"), axial_target("second")
-    run.build_study_map([first, second], REFINED, (None, None, set()))
+    run.build_study_map([first, second], REFINED, (None, None, set()), "study")
     assert len(seen) == 2 and seen[0][0] is first and seen[1][0] is second
-    assert all(leg is REFINED for _, leg in seen)
+    assert all(leg is REFINED and uid == "study" for _, leg, uid in seen)
 
 
 def test_the_fibula_scout_refuses_what_the_refined_tibia_shares():

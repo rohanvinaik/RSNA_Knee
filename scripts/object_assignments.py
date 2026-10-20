@@ -13,6 +13,8 @@ from pathlib import Path
 import matplotlib.pyplot as plt
 import numpy as np
 
+from knee.array_archive import open_arrays
+from knee.json_store import load_json, resolve_json_path
 from knee.objects.assignments import OBJECT_CODES
 from knee.receipt import digest
 
@@ -292,8 +294,8 @@ def draw_stages(axes, arrays, record):
 
 def draw(run: Path, study_uid: str, out: Path) -> dict:
     """Draw the named objects of one study from the saved run and return the manifest."""
-    receipt_path = run / "receipt.json"
-    receipt = json.loads(receipt_path.read_text())
+    receipt_path = resolve_json_path(run / "receipt.json")
+    receipt = load_json(receipt_path)
     records = [
         r
         for r in receipt["records"]
@@ -312,7 +314,7 @@ def draw(run: Path, study_uid: str, out: Path) -> dict:
     panels = []
     for row, record in enumerate(records):
         artifact = run / record["artifact"]
-        with np.load(artifact, allow_pickle=False) as saved:
+        with open_arrays(artifact, allow_pickle=False) as saved:
             arrays = dict(saved)
         for name, descriptor in record["arrays"].items():
             if digest(arrays[name]) != descriptor["digest"]:

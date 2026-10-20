@@ -9,13 +9,14 @@ the saved arrays and the receipt; the planes' own pixels are read from the serie
 only the middle slice's.
 """
 
-import json
 from collections.abc import Callable
 from pathlib import Path
 
 import matplotlib.pyplot as plt
 import numpy as np
 
+from knee.array_archive import open_arrays
+from knee.json_store import load_json
 from knee.objects.assignments import OBJECT_CODES
 
 PANEL_INCH = 4.5
@@ -32,20 +33,20 @@ def draw(
     run_dir: Path, study_uid: str, out: Path, volume_of: Callable[[str], np.ndarray]
 ) -> list[Path]:
     """One picture per profiled bone of every series of the study; returns their paths."""
-    receipt = json.loads((run_dir / "receipt.json").read_text())
+    receipt = load_json(run_dir / "receipt.json")
     records = [
         r for r in _records(receipt) if r.get("study_uid") == study_uid and "bones" in r
     ]
     out.mkdir(parents=True, exist_ok=True)
     drawn: list[Path] = []
     for record in records:
-        arrays = np.load(run_dir / record["artifact"])
-        volume = volume_of(record["series_uid"])
-        for bone in ("femur", "tibia"):
-            part = record["bones"].get(bone)
-            if part is None:
-                continue
-            drawn.append(_picture(record, part, bone, arrays, volume, out))
+        with open_arrays(run_dir / record["artifact"], allow_pickle=False) as arrays:
+            volume = volume_of(record["series_uid"])
+            for bone in ("femur", "tibia"):
+                part = record["bones"].get(bone)
+                if part is None:
+                    continue
+                drawn.append(_picture(record, part, bone, arrays, volume, out))
     return drawn
 
 

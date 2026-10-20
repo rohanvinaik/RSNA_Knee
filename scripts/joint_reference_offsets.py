@@ -31,11 +31,13 @@ from pathlib import Path
 
 import numpy as np
 
+from knee.array_archive import open_arrays
 from knee.collapse.profile import positive_runs, run_maxima
 from knee.collapse.reference import (
     offset_direction,
     reference_position,
 )
+from knee.json_store import load_json
 from scripts.reference_offsets import describe, live_reference, normal_of, places
 
 JOINT_OBJECTS = (
@@ -77,7 +79,7 @@ def main() -> None:
     args = parser.parse_args()
     receipts = {}
     for name, path in (("obs", args.run), ("ref", args.reference_run)):
-        records = json.loads((path / "receipt.json").read_text())["records"]
+        records = load_json(path / "receipt.json")["records"]
         by_study: dict[str, list[dict]] = {}
         for record in records:
             by_study.setdefault(record["study_uid"], []).append(record)
@@ -88,11 +90,21 @@ def main() -> None:
         def load(record: dict):
             key = (which, record["artifact"])
             if key not in cache:
-                cache[key] = np.load(receipts[which][0] / record["artifact"])
+                cache[key] = open_arrays(
+                    receipts[which][0] / record["artifact"], allow_pickle=False
+                )
             return cache[key]
 
         return load
 
+    try:
+        _joint_offsets(args, receipts, saved_in)
+    finally:
+        for archive in cache.values():
+            archive.close()
+
+
+def _joint_offsets(args, receipts, saved_in) -> None:
     rows: list[dict] = []
     seen_series = 0
     for study, records in sorted(receipts["obs"][1].items()):

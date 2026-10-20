@@ -9,6 +9,7 @@ from __future__ import annotations
 import argparse
 import csv
 import json
+import lzma
 import math
 from pathlib import Path
 from typing import Any
@@ -17,6 +18,7 @@ import numpy as np
 
 from knee.collapse import relative as rel
 from knee.collapse.anatomy_map import MAP_OBJECTS
+from knee.json_store import load_json, resolve_json_path
 
 
 def unwrap_record(value: Any) -> dict[str, Any] | None:
@@ -178,8 +180,7 @@ def _measure_pair(
 
 
 def analyze(run_dir: Path, study_uids: list[str] | None = None) -> dict[str, Any]:
-    receipt_path = run_dir / "receipt.json"
-    receipt = json.loads(receipt_path.read_text())
+    receipt = load_json(run_dir / "receipt.json")
     records = receipt.get("records", []) if isinstance(receipt, dict) else []
     available = sorted(
         {
@@ -197,7 +198,7 @@ def analyze(run_dir: Path, study_uids: list[str] | None = None) -> dict[str, Any
         if origin != target
     }
     for uid in selected:
-        path = run_dir / uid / "study_map.json"
+        path = resolve_json_path(run_dir / uid / "study_map.json")
         study: dict[str, Any] = {
             "study_uid": uid,
             "path": str(path),
@@ -208,8 +209,8 @@ def analyze(run_dir: Path, study_uids: list[str] | None = None) -> dict[str, Any
         positions: dict[str, rel.Position] = {}
         record = None
         try:
-            record = unwrap_record(json.loads(path.read_text()))
-        except (OSError, json.JSONDecodeError):
+            record = unwrap_record(load_json(path))
+        except (OSError, ValueError, EOFError, lzma.LZMAError):
             pass
         if record is None:
             study["reason"] = "study_map_missing_or_invalid"

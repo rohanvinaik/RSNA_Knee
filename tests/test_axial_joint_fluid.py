@@ -217,7 +217,7 @@ def test_main_record_union_is_two_dimensional_and_has_no_row():
     assert obs.row is None and obs.label is None and obs.slices == (1,)
     assert obs.support == UNITS
     assert obs.artifact == str(run.artifact_of(PROOF, record))
-    assert obs.artifact.endswith("-patellar_retinaculum.npz")
+    assert obs.artifact.endswith("-patellar_retinaculum.npz.xz")
     assert np.array_equal(
         arrays["a2_retinacula_positive_inner_selected_recess"], medial
     )

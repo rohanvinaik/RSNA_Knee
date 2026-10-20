@@ -1360,3 +1360,18 @@ SAG remains open. One shared profile/window/persistence path serves PCL and MCL,
 selectors distinct; all original observations and measurements remain. The common map receives the
 native AX plane before later queries. Accepted construction/evidence: RELATIVE_POSITION_MAP §8.44;
 exact-tree checkpoint status: FULL_BUILD_PLAN §13's active packet.
+
+
+## Complementary native readings retain scoped identity — 2026-10-19
+
+Rohan's scope correction is `conversations/2026-10-19-scoped-identification.md`. The combined
+rule can identify an object through its existing native identity, physical anatomical relation
+and an additional native reading without requiring the latter to reconstruct its whole boundary.
+Marker-sized support is not an invalidity criterion. Overreach in a native reading stays visible;
+accuracy/completeness are not substituted for this stage's rule validity.
+
+The head gradient, shared posterior enclosure and bursa fluid constructions are recorded in
+RELATIVE_POSITION_MAP §8.45. Their outputs keep the actual local pixels, measurements, scope and
+unknowns alongside the source identity. Independent full-body/key-plane claims require their
+own evidence; no such claim is made merely by attaching a native reading. The existing competent
+AX identities and the previously accepted three-plane families remain intact.

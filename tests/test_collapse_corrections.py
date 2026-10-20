@@ -25,6 +25,7 @@ from typing import Any, cast
 import numpy as np
 import pytest
 
+from knee.array_archive import open_arrays
 from knee.collapse.observations import Observation, Unresolved, unresolved_rows
 from knee.collapse.physical import PlaneFrame, physical_squint
 from knee.collapse.profile import (
@@ -1050,8 +1051,8 @@ def test_every_pointed_plane_keeps_its_readings_and_the_rule_decides_what_is_ext
     (tmp_path / "study").mkdir()
     saved = run.save(tmp_path, "study", found.record, found.arrays)
     json.dumps(saved, default=run.plain)
-    assert saved["artifact"] == "study/sg-fibula.npz"
-    with np.load(tmp_path / saved["artifact"]) as stored:
+    assert saved["artifact"] == "study/sg-fibula.npz.xz"
+    with open_arrays(tmp_path / saved["artifact"]) as stored:
         assert stored["a3_fibula_other_plane_labels"].shape == (2, *SHAPE)
 
 

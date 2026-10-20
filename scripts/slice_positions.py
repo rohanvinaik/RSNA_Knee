@@ -30,6 +30,9 @@ from pathlib import Path
 
 import numpy as np
 
+from knee.array_archive import open_arrays
+from knee.json_store import load_json
+
 AXES = ("x_toward_patient_left", "y_toward_posterior", "z_toward_head")
 PLANE_AXIS = {"Sagittal": 0, "Coronal": 1, "Axial": 2}
 # general context the middle slice names: no slice is claimed best for these
@@ -76,10 +79,11 @@ def geometry(npz_path: Path) -> dict:
     """`stack_geometry` of a saved record's tile centres, or why the file gives none."""
     if not npz_path.exists():
         return {"reason": "artifact_missing"}
-    saved = np.load(npz_path)
-    if "squint_centres_lps" not in saved.files:
-        return {"reason": "no_squint_centres"}
-    return stack_geometry(saved["squint_centres_lps"])
+    with open_arrays(npz_path, allow_pickle=False) as saved:
+        if "squint_centres_lps" not in saved.files:
+            return {"reason": "no_squint_centres"}
+        centres = saved["squint_centres_lps"]
+    return stack_geometry(centres)
 
 
 def side_position(
@@ -198,8 +202,8 @@ def main() -> None:
     parser.add_argument("--root", type=Path, default=root / "data/raw")
     args = parser.parse_args()
     labelled = list(labeled_uids(open_corpus(args.root).tables))
-    inter = json.loads((args.run / "receipt.json").read_text())
-    main_r = json.loads((args.main_run / "receipt.json").read_text())
+    inter = load_json(args.run / "receipt.json")
+    main_r = load_json(args.main_run / "receipt.json")
     series_rec = {rec["series_uid"]: rec for rec in inter["records"]}
     geo: dict[str, dict] = {}
     for uid, rec in series_rec.items():
@@ -218,10 +222,10 @@ def main() -> None:
     ):
         for rec in records:
             if "a3_posterior_context_up_mm" in (rec.get("arrays") or {}):
-                z = np.load(base / rec["artifact"])
-                context.setdefault(
-                    rec["study_uid"], z["a3_posterior_context_up_mm"].tolist()
-                )
+                with open_arrays(base / rec["artifact"], allow_pickle=False) as z:
+                    context.setdefault(
+                        rec["study_uid"], z["a3_posterior_context_up_mm"].tolist()
+                    )
     rows: list[dict] = []
     for study, objects in inter["objects"].items():
         for name, entry in objects.items():
@@ -242,9 +246,11 @@ def main() -> None:
                                 and study in context
                             ):
                                 top, low = context[study]
-                                centres = np.load(
-                                    args.run / series_rec[o["series_uid"]]["artifact"]
-                                )["squint_centres_lps"]
+                                with open_arrays(
+                                    args.run / series_rec[o["series_uid"]]["artifact"],
+                                    allow_pickle=False,
+                                ) as saved:
+                                    centres = saved["squint_centres_lps"]
                                 z_low = float(
                                     np.nanmean(
                                         centres[..., 2].reshape(centres.shape[0], -1),

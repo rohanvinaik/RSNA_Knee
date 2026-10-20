@@ -1981,3 +1981,88 @@ the two-study `--draw` route and inspected all native AX results. Each of three 
 Evidence: B + `b3-mcl-20261019/axial-rule-review/`, `verification/integrated/` and
 `integrated/lead-acceptance.json`. Final benchmark/gate/commit state is in the active packet and
 computed gate evidence; this anatomical record does not replace it.
+
+
+### 8.45 Scoped native head, tendon/vessel and bursa readings — 2026-10-19
+
+The existing anatomical identity and a complementary native measurement are separate parts of
+the same description. Rohan's correction is recorded verbatim in
+`conversations/2026-10-19-scoped-identification.md`: accuracy and completeness are later AI work;
+a useful marker-sized support does not invalidate its combined anatomical rule.
+
+The head adapter validates the native AX identity and its physical source. Cheap half-slab
+profiles choose candidate SAG/COR frames, retaining ties. Source transverse extent plus one
+squint tile and the acquired distal field bound the native work before lens/gradient computation.
+Both heads share a frame context. Known native bone conflicts refuse; unknown bone stays neutral.
+The actual source-linked gradient support, cropped context, offsets and statuses are retained.
+Native overreach remains visible and is not called a complete muscle boundary.
+
+The posterior adapter reuses the native source identities of semimembranosus, semitendinosus,
+gracilis and the two popliteal lumens. Each acquisition uses its own native frames and slab
+thickness. Source extent plus one squint tile bounds candidate questions. Overlapping queries
+share one enclosed-darkness reconstruction and FOUR-connected component context; each object
+retains all its contacted components, distances and uncertainties. No largest-body winner or
+new intensity threshold is introduced. The one-target measurement API has the same results.
+
+The bursa adapter follows its existing native AX identity into FS/fluid-sensitive SAG/COR
+questions. It reuses the same acquisition's already recorded bone-light reference, reads native
+white-fluid components within the source/guide scope, and retains ties and missing-reference
+results. The demonstrated SAG fluid support is local, not a complete pocket, neck or volume.
+
+These contributions are `native/reading` observations with exact saved boolean supports, counts,
+rows/slices, artifact addresses and scope. They join the existing common object descriptions
+through `keep_recess` before the sole middle-record save. They do not silently become independent
+resolved key planes or replace the three-plane map construction. Finished source-pinned runs,
+checks and the lead's actual image reading are indexed by the current task packet; this section
+records the construction and its limits, not a second current-state account.
+
+
+## 8.46 Shared attachment and axial tibial-cartilage readings — 2026-10-19
+
+This is the lead's implementation account of the already specified complementary-reading
+construction, not an assertion of new independent complete bodies or three-plane references.
+Rohan's scoped-validity correction in `conversations/2026-10-19-scoped-identification.md`
+continues to govern. Source identity, projected location and native measurement retain their
+separate roles.
+
+**Question.** Extend the useful descriptions of existing native identities into the remaining
+acquired orientations without requiring a complete isolated mask from one lossy lens. For the
+attachment family, existing native anatomical rules establish MCL, LCL, ITB, popliteus, biceps,
+ACL and sartorius identity; physical source profiles locate the complementary question. A dark
+component is an enclosure reading, not a uniform-darkness definition of ACL or sartorius.
+For tibial cartilage, the existing coronal native plateau description locates an axial
+brightness reading; brightness alone can also include fluid.
+
+**Reads and produces.** The shared source collector checks actual native/resolved Observation
+addresses against the owner's acquisition, view, slice, support, label, count and artifact.
+Laid/projected/read-only rows do not become independent source identity. Missing pre-save artifact
+fields are allowed; present mismatches refuse by name. Actual source pixels and acquisition slab
+geometry produce cheap profiles, retaining all maxima/ties. Their physical extent plus the
+existing squint tile supplies context before native enclosure, labeling or source distances.
+Overlapping target windows across the five posterior and seven attachment families share one
+context measurement in the late pass; member targets and all-contact unions remain separate.
+All components, ambiguity, unavailable exterior and scope are retained. No selected label,
+proof slice, new thickness threshold or minimum support is fitted to a study.
+
+The axial tibial-cartilage reading reuses the existing same-acquisition native selected-enclosure
+light already used by femoral cartilage. Its source plane and sample support remain addressed
+separately from the queried axial plane. The existing cartilage-relative brightness relation and
+four-connected components are measured in a source-bounded crop; every contacted component is
+retained, without choosing a largest winner. One source-distance transform is shared across
+references. Malformed calibration packing remains a named unknown. Multiple distinct valid
+references remain distinct; their values are neither averaged nor optimized.
+
+**Consumed by.** `measure_study` calls one late shared enclosure pass after the native attachment
+sources exist. `native_tibial_cartilage_readings` passes validated cartilage sources to the axial
+reader after existing calibration is available. `keep_recess` appends both products before the
+middle artifact's sole write; `describe_objects` returns their addressed pixel bundles beside
+source identities. Existing map filtering accepts independent native/resolved rows only; these
+native/reading products do not silently supply independent key planes.
+
+**Validity and verification.** The physical/anatomical source identifies where to ask; the native
+lens reports its own property there, with its known ambiguity. The lead's accepted scoped posterior
+pictures and prior attachment/cartilage source pictures establish that meaning. Final combined
+production/address/image checks and their source pins are recorded in the active packet named by
+FULL_BUILD_PLAN §13 and `b9b10-integrated-20261019/` in the readings tree. Unit counts and a successful
+CLI are wiring evidence, not independent anatomical competence. Until the new panels are inspected,
+this construction record alone does not assert accepted new native extent or general accuracy.

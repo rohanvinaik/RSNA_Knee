@@ -10,13 +10,14 @@ here: every outline is read from the saved arrays and the receipt; the planes' o
 the series, since a run keeps only the middle slice's.
 """
 
-import json
 from collections.abc import Callable
 from pathlib import Path
 
 import matplotlib.pyplot as plt
 import numpy as np
 
+from knee.array_archive import open_arrays
+from knee.json_store import load_json
 from knee.objects.assignments import OBJECT_CODES
 
 PANEL_INCH = 3.6
@@ -63,15 +64,15 @@ def draw(
     run_dir: Path, study_uid: str, out: Path, volume_of: Callable[[str], np.ndarray]
 ) -> list[Path]:
     """One picture per series of the study that read the recess family."""
-    receipt = json.loads((run_dir / "receipt.json").read_text())
+    receipt = load_json(run_dir / "receipt.json")
     out.mkdir(parents=True, exist_ok=True)
     drawn: list[Path] = []
     for record in _records(receipt):
         part = record.get("recess", {})
         if record.get("study_uid") != study_uid or "pointed_planes" not in part:
             continue
-        arrays = np.load(run_dir / record["artifact"])
-        drawn.append(_picture(record, part, arrays, volume_of, out))
+        with open_arrays(run_dir / record["artifact"], allow_pickle=False) as arrays:
+            drawn.append(_picture(record, part, arrays, volume_of, out))
     return drawn
 
 

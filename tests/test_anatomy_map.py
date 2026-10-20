@@ -25,6 +25,8 @@ def test_reference_covers_every_named_object_without_fabricating_field_locations
         "skin",
         "muscle",
         "subcutaneous_fat",
+        "patellar_cartilage",
+        "trochlear_cartilage",
     }
     assert ideal_vector("air", "femur") is None
     assert ideal_vector("femur", "air") is None

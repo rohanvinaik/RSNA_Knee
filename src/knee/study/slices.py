@@ -7,6 +7,7 @@ from pathlib import Path
 
 import numpy as np
 import pydicom
+from pydicom.pixels import pixel_array
 
 
 @dataclass(frozen=True, slots=True)
@@ -25,6 +26,6 @@ class Slice:
 
 def read_slice(path: Path) -> Slice:
     header = pydicom.dcmread(path)
-    pixels = header.pixel_array
+    pixels = pixel_array(header)
     del header.PixelData
     return Slice(path=path, header=header, pixels=pixels)

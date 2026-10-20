@@ -57,6 +57,50 @@ PROVENANCES = ("native", "laid", "projected")
 KINDS = ("resolved", "reading", "target")
 
 
+def address_frame_status(frame: dict) -> str:
+    """Return the named validity of a retained observation address frame."""
+    if not isinstance(frame, dict):
+        return "frame_invalid"
+    origin, basis = frame.get("origin_lps"), frame.get("basis_lps")
+    if (
+        not isinstance(origin, (list, tuple))
+        or len(origin) != 3
+        or not isinstance(basis, (list, tuple))
+        or len(basis) != 3
+        or any(not isinstance(row, (list, tuple)) or len(row) != 2 for row in basis)
+    ):
+        return "frame_invalid"
+    values = (*origin, *(component for row in basis for component in row))
+    if any(
+        isinstance(value, bool) or not isinstance(value, (int, float))
+        for value in values
+    ):
+        return "frame_invalid"
+    try:
+        numeric = tuple(float(value) for value in values)
+    except OverflowError:
+        return "frame_invalid"
+    if not all(math.isfinite(value) for value in numeric):
+        return "frame_invalid"
+    a = [float(row[0]) for row in basis]
+    b = [float(row[1]) for row in basis]
+    scale_a, scale_b = max(map(abs, a)), max(map(abs, b))
+    # Only an exactly zero basis vector is invalid; tiny nonzero scales remain valid.
+    if scale_a == 0.0 or scale_b == 0.0:  # NOSONAR(S1244)
+        return "frame_invalid"
+    a = [value / scale_a for value in a]
+    b = [value / scale_b for value in b]
+    cross = (
+        a[1] * b[2] - a[2] * b[1],
+        a[2] * b[0] - a[0] * b[2],
+        a[0] * b[1] - a[1] * b[0],
+    )
+    # Reject exact collinearity, not a tolerance-defined small but nonzero plane.
+    if not any(value != 0.0 for value in cross):  # NOSONAR(S1244)
+        return "frame_invalid"
+    return "frame_valid"
+
+
 @dataclass(frozen=True, slots=True)
 class Observation:
     """One view's saying of one object: `object` the part's name; `provenance` and `kind` as above;
@@ -83,6 +127,7 @@ class Observation:
     artifact: str | None = None
     row: int | None = None
     label: int | None = None
+    address_frame: dict[str, object] | None = None
 
     def __post_init__(self) -> None:
         if self.provenance not in PROVENANCES:
@@ -108,6 +153,29 @@ class Observation:
             raise ValueError("a_row_is_in_an_artifact")
         if self.label is not None and self.artifact is None:
             raise ValueError("a_label_selects_in_an_artifact")
+        if self.address_frame is not None:
+            origin = self.address_frame.get("origin_lps")
+            basis = self.address_frame.get("basis_lps")
+            if (
+                not isinstance(origin, (list, tuple))
+                or len(origin) != 3
+                or not isinstance(basis, (list, tuple))
+                or len(basis) != 3
+                or any(
+                    not isinstance(row, (list, tuple)) or len(row) != 2 for row in basis
+                )
+                or any(
+                    isinstance(value, bool)
+                    or not isinstance(value, (int, float))
+                    or not math.isfinite(value)
+                    for value in (*origin, *(value for row in basis for value in row))
+                )
+            ):
+                raise ValueError(
+                    "observation_address_frame_is_finite_lps_origin_and_3x2_basis"
+                )
+            if len(self.slices) != 1:
+                raise ValueError("one_address_frame_names_one_native_slice")
 
 
 @dataclass(frozen=True, slots=True)
@@ -134,7 +202,11 @@ class Unresolved:
 
 def rows(observations: list[Observation]) -> list[dict]:
     """The observations as plain records for a receipt, each tuple a list."""
-    return [asdict(observation) for observation in observations]
+    result = [asdict(observation) for observation in observations]
+    for row in result:
+        if row.get("address_frame") is None:
+            row.pop("address_frame")
+    return result
 
 
 def unresolved_rows(unresolved: list[Unresolved]) -> list[dict]:
@@ -354,9 +426,12 @@ def describe_objects(
             got = entry(row["object"])
             by_kind = got["observations"].setdefault(row["provenance"], {})
             by_property = by_kind.setdefault(row["kind"], {})
-            by_property.setdefault(row["support"], []).append(
-                {key: row[key] for key in REFERENCE_KEYS}
-            )
+            reference = {key: row[key] for key in REFERENCE_KEYS}
+            if row.get("address_frame") is not None:
+                reference["address_frame"] = row["address_frame"]
+            if row.get("support_address_kind") is not None:
+                reference["support_address_kind"] = row["support_address_kind"]
+            by_property.setdefault(row["support"], []).append(reference)
             got["outcomes"][row["code"]] = got["outcomes"].get(row["code"], 0) + 1
             if (
                 row["provenance"] == "native"

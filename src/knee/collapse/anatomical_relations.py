@@ -17,6 +17,20 @@ RELATIONSHIPS: tuple[Relation, ...] = (
     ("femoral_cartilage", "covers", ("femur",), "articular surface", SOURCE),
     ("tibial_cartilage", "covers", ("tibia",), "articular surface", SOURCE),
     (
+        "patellar_cartilage",
+        "covers",
+        ("patella",),
+        "posterior articular surface",
+        SOURCE,
+    ),
+    (
+        "trochlear_cartilage",
+        "covers",
+        ("femur",),
+        "facing trochlear articular surface",
+        SOURCE,
+    ),
+    (
         "acl",
         "attaches_to",
         ("femur", "tibia"),

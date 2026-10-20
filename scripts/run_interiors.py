@@ -128,6 +128,7 @@ kernel is given; `--root` for where the competition's files are (where a kernel 
 
 import argparse
 import json
+import math
 import os
 from collections import deque
 from collections.abc import Callable, Collection, Iterable, Iterator, Sequence
@@ -143,6 +144,7 @@ from typing import Any, cast
 import numpy as np
 from scipy import ndimage as ndi
 
+from knee.array_archive import write_npz_xz
 from knee.collapse import anatomy_map
 from knee.collapse import relative as rel
 from knee.collapse.anterior_fat import (
@@ -166,7 +168,12 @@ from knee.collapse.cartilage import (
     sagittal_cartilage_observations,
 )
 from knee.collapse.coarse_section import (
+    EMPTY,
+    NO_BONE_SCALE,
     SECTION,
+    SEEDS_UNSEEN,
+    SHARED,
+    STATUS_CODES,
     ScaleEstimate,
     body_axis_bounds_mm,
     coarse_depth,
@@ -194,6 +201,8 @@ from knee.collapse.joint import (
 from knee.collapse.local_native import (
     enclosed_body_at_sources,
     enclosed_components_at_source,
+    enclosed_context,
+    enclosed_target_contacts,
     source_window,
 )
 from knee.collapse.menisci import meniscus_local_body
@@ -259,8 +268,10 @@ from knee.collapse.squint_stack import SquintStack, read_squint_stack
 from knee.collapse.study_map import OBJECTS as MAP_NAMES
 from knee.collapse.study_map import Guide, StudyMap
 from knee.compute.contracts import handed_on
+from knee.json_store import dump_json_atomic, load_json, resolve_json_path
 from knee.objects.assignments import (
     BONE_MM,
+    CARTILAGE_BRIGHTER,
     FIBULA_BELOW_MM,
     FIBULA_POINTER_STATUS,
     FLUID_BRIGHTER,
@@ -903,6 +914,8 @@ def slice_record(
     knee: str,
     lens: tuple[np.ndarray, InteriorRegions, dict],
     field: Field,
+    *,
+    frame: PlaneFrame | None = None,
 ) -> tuple[dict, dict[str, np.ndarray]]:
     """The record and arrays one slice's reading makes before a part is named on it: the lens's
     arrays and what the record says of them, the field's names and peaks, and every part of a
@@ -942,6 +955,14 @@ def slice_record(
             "peaks": [asdict(peak) for peak in field.peaks],
         },
     }
+    if frame is not None:
+        # Retain the already computed native coordinate transform for later
+        # encoders; a key-plane intersection is not a pixel's physical address.
+        record["plane_frame"] = {
+            "origin_lps": frame.origin_lps.tolist(),
+            "basis_lps": frame.basis_lps.tolist(),
+            "spacing_rc": list(frame.spacing_rc),
+        }
     return record, arrays
 
 
@@ -988,7 +1009,7 @@ def name_plane(
         return assignment
 
     assignment = once("naming", (uid, index), name)
-    record, arrays = slice_record(series, index, split, knee, lens, field)
+    record, arrays = slice_record(series, index, split, knee, lens, field, frame=frame)
     arrays["a1_objects"] = assignment.objects
     # a copy: the stages after this change the record's codes, never the slice's own
     record["assignments"].update(
@@ -1015,7 +1036,7 @@ def read_part_slice(
     readings the ledger counts."""
     lens = lens_of(series, index, plane, frame, split, reader)
     field = field_of(series, index, plane, frame, lens[1])
-    record, arrays = slice_record(series, index, split, knee, lens, field)
+    record, arrays = slice_record(series, index, split, knee, lens, field, frame=frame)
     return record, arrays, field
 
 
@@ -4816,6 +4837,7 @@ class BonePlane:
     region: np.ndarray
     naming: Naming | None
     local_lens: "BoneLocalLens | None" = None
+    frame: PlaneFrame | None = None
 
 
 @dataclass(frozen=True)
@@ -6387,6 +6409,7 @@ def bone_plane_read(
             naming.region,
             naming,
             local_lens,
+            frame,
         )
 
     return once(
@@ -7007,6 +7030,7 @@ def name_the_bones(
                             artifact,
                             row,
                             None,
+                            _address_frame(p.frame),
                         )
                     )
                 else:
@@ -7033,6 +7057,7 @@ def name_the_bones(
                             if p.labels is not None
                             else None,
                             held[0] if held and len(held) == 1 else None,
+                            _address_frame(p.frame),
                         )
                     )
             runs = read.arrays[f"a3_{bone}_pointer_runs"]
@@ -7375,7 +7400,139 @@ def bone_key_planes(smap: StudyMap, own: "Measured") -> None:
             )
 
 
-def axial_bone_planes(smap: StudyMap, own: "Measured", leg: Leg) -> dict[str, dict]:
+def _axial_coarse_observations(
+    record: dict, arrays: dict[str, np.ndarray], artifact: str
+) -> list[Observation]:
+    """Address each measured axial coarse-bone product at its retained packed row."""
+    status_by_code = {code: status for status, code in STATUS_CODES.items()}
+    slices = np.asarray(arrays["a4_axial_coarse_slices"])
+    offsets = np.asarray(arrays["a4_axial_coarse_offsets"])
+    shapes = np.asarray(arrays["a4_axial_coarse_shapes"])
+    if (
+        slices.ndim != 1
+        or offsets.shape != (len(slices) + 1,)
+        or shapes.shape != (len(slices), 2)
+        or offsets.dtype.kind not in "iu"
+        or shapes.dtype.kind not in "iu"
+        or slices.dtype.kind not in "iu"
+        or int(offsets[0]) != 0
+        or np.any(offsets[1:] < offsets[:-1])
+        or np.any(shapes < 0)
+        or not np.array_equal(
+            np.diff(offsets.astype(np.int64)),
+            shapes[:, 0].astype(np.int64) * shapes[:, 1].astype(np.int64),
+        )
+        or np.any(slices < 0)
+    ):
+        raise ValueError("invalid_axial_coarse_packed_geometry")
+    observations: list[Observation] = []
+
+    def row_mask(name: str, row: int, lo: int, hi: int) -> np.ndarray:
+        packed = np.asarray(arrays[name])
+        if packed.dtype.kind != "b" or packed.ndim != 1 or hi > len(packed):
+            raise ValueError(f"invalid_axial_coarse_boolean_array:{name}")
+        return packed[lo:hi]
+
+    def add(
+        bone: str,
+        row: int,
+        z: int,
+        status: str,
+        support: str,
+        selected: np.ndarray,
+        note: str,
+    ) -> None:
+        observations.append(
+            observe_in(
+                record,
+                bone,
+                "native",
+                "reading",
+                (z,),
+                status,
+                int(np.count_nonzero(selected)),
+                0.0,
+                support,
+                note,
+                artifact,
+                row,
+            )
+        )
+
+    for bone in REFERENCE_BONES:
+        unfiltered_status = np.asarray(arrays[f"a4_axial_coarse_{bone}_status"])
+        estimate_made = np.asarray(arrays[f"a4_axial_coarse_{bone}_estimate_made"])
+        estimate_status = np.asarray(arrays[f"a4_axial_coarse_{bone}_estimate_status"])
+        if (
+            unfiltered_status.shape != slices.shape
+            or unfiltered_status.dtype.kind not in "iu"
+            or estimate_made.shape != slices.shape
+            or estimate_made.dtype.kind != "b"
+            or estimate_status.shape != slices.shape
+            or estimate_status.dtype.kind not in "iu"
+        ):
+            raise ValueError(f"invalid_axial_coarse_status_rows:{bone}")
+        body_name = f"a4_axial_coarse_{bone}_body"
+        seeds_name = f"a4_axial_coarse_{bone}_seeds"
+        estimate_name = f"a4_axial_coarse_{bone}_estimate_body"
+        for row, raw_z in enumerate(slices):
+            z = int(raw_z)
+            lo, hi = int(offsets[row]), int(offsets[row + 1])
+            unfiltered = status_by_code.get(int(unfiltered_status[row]))
+            if unfiltered is None:
+                raise ValueError(f"unknown_axial_coarse_status:{bone}")
+            if unfiltered in {SEEDS_UNSEEN, EMPTY, SECTION, SHARED}:
+                body = row_mask(body_name, row, lo, hi)
+                seeds = row_mask(seeds_name, row, lo, hi)
+                if body.any():
+                    selected, support = body, body_name
+                elif seeds.any():
+                    selected, support = seeds, seeds_name
+                elif unfiltered == EMPTY:
+                    selected, support = body, body_name
+                else:
+                    selected = None
+                    support = ""
+                if selected is not None:
+                    add(
+                        bone,
+                        row,
+                        z,
+                        unfiltered,
+                        support,
+                        selected,
+                        "unfiltered coarse axial body or seed reading at its retained grid row; count is coarse blocks, not native pixels; location/body-scale evidence, not a cortex boundary",
+                    )
+
+            if not estimate_made[row]:
+                continue
+            filtered = status_by_code.get(int(estimate_status[row]))
+            if filtered is None:
+                raise ValueError(f"unknown_axial_coarse_estimate_status:{bone}")
+            if filtered not in {
+                SEEDS_UNSEEN,
+                EMPTY,
+                SECTION,
+                SHARED,
+                NO_BONE_SCALE,
+            }:
+                continue
+            selected = row_mask(estimate_name, row, lo, hi)
+            add(
+                bone,
+                row,
+                z,
+                filtered,
+                estimate_name,
+                selected,
+                "scale-filtered coarse axial estimate at its retained grid row; count is coarse blocks, not native pixels; location/body-scale evidence, not a cortex or fine boundary",
+            )
+    return observations
+
+
+def axial_bone_planes(
+    smap: StudyMap, own: "Measured", leg: Leg, study_uid: str | None = None
+) -> dict[str, dict]:
     """Find axial bone key planes from shared 2 mm block readings and carried location seeds.
 
     The coarse section is a physical pointer only; the existing anatomy lenses still name the bones.
@@ -7627,13 +7784,22 @@ def axial_bone_planes(smap: StudyMap, own: "Measured", leg: Leg) -> dict[str, di
                 f"axial_bone:{uid}",
             )
     own.record["axial_bone"] = said
+    if study_uid is not None:
+        rows = _axial_coarse_observations(
+            own.record, own.arrays, str(artifact_of(study_uid, own.record))
+        )
+        if rows:
+            keep_on_record(own.record, rows, [])
     handed("axial_bone", ("section_area_mm2",))
     reads("axial_bone", ("section_area_mm2",), "study_map")
     return said
 
 
 def build_study_map(
-    measured: list[Measured], leg: Leg, ideal_parts: tuple
+    measured: list[Measured],
+    leg: Leg,
+    ideal_parts: tuple,
+    study_uid: str | None = None,
 ) -> MapContext:
     """The study's map from what the bones' own cheap readings selected: the sagittal and coronal key planes of
     the femur and the tibia from every series without fat suppression, their axial key planes from every
@@ -7665,7 +7831,7 @@ def build_study_map(
         if view in ("sagittal", "coronal"):
             bone_key_planes(smap, own)
         elif view == "axial":
-            axial_bone_planes(smap, own, leg)
+            axial_bone_planes(smap, own, leg, study_uid)
     handed("study_map", ("record", "guide"))
     return MapContext(smap, ideal, span, diffuse=set(diffuse))
 
@@ -7760,12 +7926,10 @@ def offer_native_family(
 
 
 def finish_map(context: MapContext, run_dir: Path, study_uid: str) -> dict:
-    """The final map, whole, in a file of the study's folder (every object's status, key planes and every
-    candidate, every ordered pair complete or named unresolved, every prediction and the guides' uses); the
-    compact summary the series' record keeps. Counts are on the ledger."""
+    """The final map, whole, in a file of the study's folder; the compact summary the series' record keeps."""
     record = context.smap.record(context.ideal)
     path = run_dir / study_uid / "study_map.json"
-    path.write_text(json.dumps(record, indent=1, default=plain) + "\n")
+    actual_path = dump_json_atomic(path, record, default=plain)
     counts = record["counts"]
     ledger.record(
         "study_map.work",
@@ -7780,7 +7944,7 @@ def finish_map(context: MapContext, run_dir: Path, study_uid: str) -> dict:
     compact = context.smap.summary(context.ideal)
     compact["counts"] = counts
     compact["construction"] = record["construction"]
-    compact["file"] = str(Path(study_uid) / "study_map.json")
+    compact["file"] = str(actual_path.relative_to(run_dir))
     compact["pairs_complete_count"] = counts["pairs_complete"]
     compact["pairs_unresolved_count"] = counts["pairs_unresolved"]
     compact["uses_count"] = counts["uses"]
@@ -8901,6 +9065,16 @@ def coded_label(name: str, support: str) -> int | None:
     return OBJECT_CODES[name] if support.endswith("objects") else None
 
 
+def _address_frame(frame: PlaneFrame | None) -> dict[str, object] | None:
+    """Plain native-slice frame metadata for an observation outside the record's middle slice."""
+    if frame is None:
+        return None
+    return {
+        "origin_lps": np.asarray(frame.origin_lps, dtype=np.float64).tolist(),
+        "basis_lps": np.asarray(frame.basis_lps, dtype=np.float64).tolist(),
+    }
+
+
 def observe(
     name: str,
     provenance: str,
@@ -8915,6 +9089,7 @@ def observe(
     artifact: str,
     row: int | None = None,
     label: int | None = None,
+    address_frame: dict[str, object] | None = None,
 ) -> Observation:
     """One observation of `name` in the series `on`, its series and view read from its record."""
     return observe_in(
@@ -8931,6 +9106,7 @@ def observe(
         artifact,
         row,
         label,
+        address_frame,
     )
 
 
@@ -8948,6 +9124,7 @@ def observe_in(
     artifact: str,
     row: int | None = None,
     label: int | None = None,
+    address_frame: dict[str, object] | None = None,
 ) -> Observation:
     """One observation of `name` in the series a record (a middle slice's or a part's own slice's)
     belongs to, its series and view read from the record."""
@@ -8966,6 +9143,7 @@ def observe_in(
         artifact,
         row,
         label,
+        address_frame,
     )
 
 
@@ -11641,6 +11819,7 @@ def name_the_joint(
                         artifact,
                         row,
                         OBJECT_CODES[name],
+                        _address_frame(frame if not isinstance(frame, str) else None),
                     )
                 )
                 if not isinstance(frame, str) and not cruciate:
@@ -11693,6 +11872,10 @@ def name_the_joint(
                             f"the plane was pointed to by the {quantity} quantity and read in full; the existing rule names nothing here",
                             artifact,
                             row,
+                            label=OBJECT_CODES[name] if name == "acl" else None,
+                            address_frame=_address_frame(
+                                frame if not isinstance(frame, str) else None
+                            ),
                         )
                     )
             # what the same operations find where the rule's gate refuses the plane: readings only
@@ -11733,6 +11916,9 @@ def name_the_joint(
                             artifact,
                             row,
                             OBJECT_CODES[name],
+                            _address_frame(
+                                frame if not isinstance(frame, str) else None
+                            ),
                         )
                     )
             # laid: the plane's parts onto the twin's slice of the same place
@@ -18694,7 +18880,7 @@ def native_meniscus_profiles(
         source.get("status") == "selected" for source in selected_sources.values()
     ):
         return profiles
-    volume = own.series.volume
+    volume = getattr(own.series, "volume", None)
     if volume is None or np.ndim(volume) != 3 or not len(volume):
         own.record[f"a4_{orientation}_meniscus_profile_status"] = (
             "native_volume_unavailable"
@@ -18870,6 +19056,768 @@ def native_meniscus_profiles(
             ),
         )
     return profiles
+
+
+BURSA_NAME = "gastrocnemius_semimembranosus_bursa"
+
+
+BURSA_SUPPORT = "a2_gastrocnemius_semimembranosus_bursa"
+
+
+BURSA_READING_KEY = "a4_native_bursa_reading"
+
+
+BURSA_SOURCES_PRODUCT = "native_axial_bursa_sources"
+
+
+BURSA_PROFILE_PRODUCT = "native_bursa_source_profiles"
+
+
+BURSA_READING_PRODUCT = "native_bursa_reading"
+
+
+BURSA_TARGET_VIEWS = ("sagittal", "coronal")
+
+
+BURSA_UNKNOWN_NOTE = (
+    "unknown, not absent: this measured plane's native white-as-fluid reading did not select "
+    "one body; it says nothing about the source bursa, a boundary or a resolved plane"
+)
+
+
+def _bursa_field(row: Any, key: str) -> Any:
+    return row.get(key) if isinstance(row, dict) else getattr(row, key, None)
+
+
+def _bursa_num(value: Any) -> float | None:
+    """A finite float, or None (unknown, never zero)."""
+    number = float(value)
+    return number if np.isfinite(number) else None
+
+
+def _bursa_floats(values: Any) -> list[float | None]:
+    return [_bursa_num(v) for v in np.asarray(values, dtype=np.float64).ravel()]
+
+
+def _bursa_light(value: Any) -> float | None:
+    if isinstance(value, (bool, np.bool_)):
+        return None
+    try:
+        light = float(value)
+    except (TypeError, ValueError):
+        return None
+    return light if np.isfinite(light) and light > 0 else None
+
+
+def _bursa_unresolved(**facts: Any) -> Unresolved:
+    """A named unknown on the native target plane; source details remain in its record."""
+    return Unresolved(
+        object=BURSA_NAME,
+        provenance="native",
+        series_uid=facts.get("series_uid"),
+        view=facts.get("view"),
+        code=str(facts["code"]),
+    )
+
+
+def _bursa_slice_claims(part_record: dict) -> list[int]:
+    """The saved owning part record's own slice address, if it is a genuine integer."""
+    value = part_record.get("slice_index")
+    if isinstance(value, (int, np.integer)) and not isinstance(value, (bool, np.bool_)):
+        return [int(value)]
+    return []
+
+
+def _bursa_support_span(
+    points: np.ndarray, frame: Any, thickness: float
+) -> np.ndarray | None:
+    """Acquired voxel-support extent in LPS mm: source-center ptp plus the absolute LPS parts of
+    one row and one column basis vector and the slice thickness times the absolute normal."""
+    try:
+        basis = np.asarray(frame.basis_lps, dtype=np.float64)
+        normal = np.asarray(frame.normal(), dtype=np.float64)
+    except (AttributeError, TypeError, ValueError, np.linalg.LinAlgError):
+        return None
+    if basis.shape != (3, 2) or normal.shape != (3,):
+        return None
+    span = (
+        np.ptp(points, axis=0)
+        + np.abs(basis[:, 0])
+        + np.abs(basis[:, 1])
+        + thickness * np.abs(normal)
+    )
+    return span if np.isfinite(span).all() and (span > 0).all() else None
+
+
+def _bursa_source_entry(
+    row: Any,
+    part_record: dict,
+    part_arrays: dict,
+    measured: list[Measured],
+    artifact: str,
+) -> tuple[dict[str, Any] | None, dict[str, Any] | None]:
+    """One resolved axial bursa observation validated against its part record, its measured owner
+    and its saved support. Returns (entry, None) or (None, named invalid state)."""
+    slices = _bursa_field(row, "slices")
+    if (
+        not isinstance(slices, (list, tuple))
+        or len(slices) != 1
+        or isinstance(slices[0], (bool, np.bool_))
+        or not isinstance(slices[0], (int, np.integer))
+    ):
+        return None, {"status": "invalid_slice_address"}
+    z = int(slices[0])
+    uid = str(_bursa_field(row, "series_uid"))
+    view = tuple(_bursa_field(row, "view") or ())
+
+    def bad(status: str) -> tuple[None, dict[str, Any]]:
+        return None, {"slice": z, "status": status}
+
+    if (
+        _bursa_field(row, "support") != BURSA_SUPPORT
+        or _bursa_field(row, "artifact") != artifact
+        or _bursa_field(row, "row") is not None
+        or _bursa_field(row, "label") is not None
+        or len(view) != 3
+        or str(view[0]).casefold() != "axial"
+    ):
+        return bad("invalid_native_address")
+    owner = next((m for m in measured if str(m.series.row.series_uid) == uid), None)
+    volume = None if owner is None else owner.series.volume
+    if owner is None or volume is None or not 0 <= z < len(volume):
+        return bad("source_series_unavailable")
+    if (
+        str(owner.record.get("series_uid")) != uid
+        or str(part_record.get("series_uid")) != uid
+    ):
+        return bad("source_series_uid_mismatch")
+    if (
+        tuple(owner.record.get("view", ())) != view
+        or tuple(part_record.get("view", ())) != view
+    ):
+        return bad("source_view_mismatch")
+    if part_record.get("artifact") is not None and part_record["artifact"] != artifact:
+        return bad("source_artifact_mismatch")
+    claims = _bursa_slice_claims(part_record)
+    if not claims:
+        return bad("source_slice_unverified")
+    if any(claim != z for claim in claims):
+        return bad("source_slice_mismatch")
+    support = part_arrays.get(BURSA_SUPPORT)
+    if (
+        not isinstance(support, np.ndarray)
+        or support.ndim != 2
+        or support.dtype.kind != "b"
+        or support.shape != np.shape(volume[z])
+    ):
+        return bad("invalid_native_support")
+    count = int(support.sum())
+    claimed = _bursa_field(row, "count")
+    if (
+        count == 0
+        or isinstance(claimed, (bool, np.bool_))
+        or not isinstance(claimed, (int, np.integer))
+        or claimed != count
+    ):
+        return bad("invalid_native_count")
+    frame = plane_frame(owner.series, z)
+    if isinstance(frame, str):
+        return bad("source_geometry_unusable")
+    try:
+        thickness = float(owner.series.slice_thickness_mm[z])
+    except (AttributeError, IndexError, TypeError, ValueError):
+        thickness = float("nan")
+    if not np.isfinite(thickness) or thickness <= 0:
+        return bad("source_thickness_unavailable")
+    try:
+        points = np.asarray(
+            frame.to_patient(np.argwhere(support).astype(np.float64)), dtype=np.float64
+        )
+    except (AttributeError, TypeError, ValueError, np.linalg.LinAlgError):
+        points = np.empty((0, 3))
+    if points.shape != (count, 3) or not np.isfinite(points).all():
+        return bad("source_geometry_unusable")
+    span = _bursa_support_span(points, frame, thickness)
+    if span is None:
+        return bad("source_support_span_unusable")
+    metadata = {
+        "series_uid": uid,
+        "view": list(view),
+        "slice": z,
+        "support": BURSA_SUPPORT,
+        "artifact": artifact,
+        "row": None,
+        "label": None,
+        "count": count,
+        "provenance": "native",
+        "kind": "resolved",
+        "code": "identified",
+        "span_lps_mm": [float(v) for v in span],
+        "span_basis": "source center ptp + |row basis| + |column basis| + thickness*|normal|",
+        "source_center_ptp_lps_mm": [float(v) for v in np.ptp(points, axis=0)],
+        "slice_thickness_mm": thickness,
+        "frame_origin_lps": [float(v) for v in np.asarray(frame.origin_lps, float)],
+        "frame_basis_lps": np.asarray(frame.basis_lps, float).tolist(),
+        "normal_lps": [float(v) for v in np.asarray(frame.normal(), float)],
+    }
+    return {"points_lps": points, "metadata": metadata}, None
+
+
+def native_bursa_source(
+    group_found: list[tuple[dict, dict]], measured: list[Measured], study_uid: str
+) -> dict[str, dict[str, Any]]:
+    """The known axial native bursa, shaped as `native_meniscus_profiles` expects of `sources`."""
+    entries: list[dict[str, Any]] = []
+    invalid: list[dict[str, Any]] = []
+    for part_record, part_arrays in group_found:
+        artifact = str(artifact_of(study_uid, part_record))
+        for row in part_record.get("observations", ()):
+            if (
+                _bursa_field(row, "object") != BURSA_NAME
+                or _bursa_field(row, "provenance") != "native"
+                or _bursa_field(row, "kind") != "resolved"
+                or _bursa_field(row, "code") != "identified"
+            ):
+                continue
+            entry, why = _bursa_source_entry(
+                row, part_record, part_arrays, measured, artifact
+            )
+            if entry is not None:
+                entries.append(entry)
+            elif why is not None:
+                invalid.append(why)
+    status = (
+        "selected"
+        if len(entries) == 1
+        else "tied"
+        if entries
+        else "invalid_source_context"
+        if invalid
+        else "unavailable"
+    )
+    if status == "selected":
+        handed(BURSA_SOURCES_PRODUCT, ("points_lps", "metadata"))
+    return {
+        BURSA_NAME: {
+            "status": status,
+            "selected": entries[0] if status == "selected" else None,
+            "entries": [e["metadata"] for e in entries],
+            "invalid_sources": invalid,
+            "product": BURSA_SOURCES_PRODUCT,
+        }
+    }
+
+
+def bursa_reference_for(own: Measured) -> Any:
+    """The bones-light reference `read_recess` / `read_patella` already recorded for THIS owner.
+    The recorded femur/bones scalars go back through `native_middle_reference` (validated and
+    cached there); nothing is measured, no bone is rediscovered. Returns a
+    `NativeMiddleReference` or a named unavailable state."""
+    uid = str(own.series.row.series_uid)
+    codes = [int(OBJECT_CODES["femur"]), int(OBJECT_CODES["tibia"])]
+    state = "no_existing_bones_light_reference"
+    for key in ("recess", "patella"):
+        part = own.record.get(key)
+        rec = part.get("native_reference") if isinstance(part, dict) else None
+        if not isinstance(rec, dict):
+            continue
+        bones = rec.get("bones_light")
+        if (
+            rec.get("state") != "available"
+            or rec.get("source_series_uid") != uid
+            or rec.get("native_middle_slice") != own.record.get("slice_index")
+            or rec.get("support_address") != "a1_objects"
+            or [int(c) for c in rec.get("support_codes") or ()] != codes
+            or rec.get("bones_support_digest") is None
+            or _bursa_light(bones) is None
+        ):
+            continue
+        got = native_middle_reference(own, rec.get("femur_light"), bones)
+        if isinstance(got, str):
+            state = got
+            continue
+        if (
+            got.source_series_uid == uid
+            and got.middle_z == rec["native_middle_slice"]
+            and got.acquisition_key == rec.get("acquisition_key")
+            and got.bones_support_digest == rec["bones_support_digest"]
+            and got.bones_light is not None
+            and float(got.bones_light) == float(bones)
+        ):
+            return got
+        state = "recorded_reference_identity_mismatch"
+    return state
+
+
+def _bursa_guide_boxes(
+    guide: Any, z: int, frame: Any, shape: tuple[int, int]
+) -> tuple[list[dict[str, Any]], str]:
+    """The authored map guide's boxes on this slice (the half-extent rule the profile's `in_map`
+    uses), raw and clipped to the image."""
+    if (
+        guide is None
+        or getattr(guide, "status", None) != "guided"
+        or z not in tuple(guide.slices)
+    ):
+        return [], "no_map_guide"
+    half = np.asarray(guide.half_px or (0.0, 0.0), dtype=float)
+    boxes = []
+    for placement in guide.placements:
+        point = placement.get("point_lps")
+        if placement.get("status") != "ok" or point is None:
+            continue
+        try:
+            center = np.asarray(
+                frame.to_native(np.asarray([point], dtype=float)), dtype=float
+            )
+        except (TypeError, ValueError, OverflowError, np.linalg.LinAlgError):
+            continue
+        if center.shape != (1, 2) or not np.isfinite(center).all():
+            continue
+        lo = np.ceil(center[0] - half - 0.5)
+        hi = np.floor(center[0] + half + 0.5) + 1
+        raw = [int(lo[0]), int(hi[0]), int(lo[1]), int(hi[1])]
+        clipped = [
+            max(0, raw[0]),
+            min(shape[0], raw[1]),
+            max(0, raw[2]),
+            min(shape[1], raw[3]),
+        ]
+        boxes.append(
+            {"raw": raw, "clipped": clipped, "clipped_to_image": raw != clipped}
+        )
+    return boxes, "guided" if boxes else "map_guide_without_usable_placement"
+
+
+def _bursa_crop_query(
+    unique_rc: np.ndarray, window: list[int], boxes: list[dict[str, Any]]
+) -> tuple[list[int], np.ndarray, str]:
+    """Crop bounds (physical source window plus guide boxes) and the query mask at crop shape."""
+    usable = [
+        b["clipped"]
+        for b in boxes
+        if b["clipped"][1] > b["clipped"][0] and b["clipped"][3] > b["clipped"][2]
+    ]
+    rects = [[int(v) for v in window]] + usable
+    crop = [
+        min(r[0] for r in rects),
+        max(r[1] for r in rects),
+        min(r[2] for r in rects),
+        max(r[3] for r in rects),
+    ]
+    query = np.zeros((crop[1] - crop[0], crop[3] - crop[2]), dtype=bool)
+    if not usable:
+        query[:] = True
+        return crop, query, "source_physical_span_window"
+    query[unique_rc[:, 0] - crop[0], unique_rc[:, 1] - crop[2]] = True
+    for r in usable:
+        query[r[0] - crop[0] : r[1] - crop[0], r[2] - crop[2] : r[3] - crop[2]] = True
+    return crop, query, "projected_source_plus_map_guide"
+
+
+def _bursa_clipped_edges(
+    body: np.ndarray, crop: list[int], shape: tuple[int, int]
+) -> list[str]:
+    """Crop edges (not image edges) this component touches: its extent there is unknown."""
+    edges = (
+        ("top", body[0].any(), crop[0] > 0),
+        ("bottom", body[-1].any(), crop[1] < shape[0]),
+        ("left", body[:, 0].any(), crop[2] > 0),
+        ("right", body[:, -1].any(), crop[3] < shape[1]),
+    )
+    return [name for name, touches, interior in edges if touches and interior]
+
+
+def _bursa_crop_objects(
+    own: Measured, z: int, crop: list[int], shape: tuple[int, int]
+) -> np.ndarray:
+    """The native middle object array cropped, where this plane IS the middle plane; otherwise
+    no object is asserted on it."""
+    objects = own.arrays.get("a1_objects")
+    if (
+        z == own.record.get("slice_index")
+        and isinstance(objects, np.ndarray)
+        and objects.shape == np.shape(own.series.volume[z])
+    ):
+        return np.asarray(objects[crop[0] : crop[1], crop[2] : crop[3]])
+    return np.zeros(shape, dtype=np.uint8)
+
+
+def _bursa_calibration(
+    own: Measured, frame: Any, reference: Any
+) -> tuple[dict[str, Any] | None, str | None]:
+    """Validate the recovered reference against this target frame; (calibration, None) or
+    (None, named refusal)."""
+    if isinstance(reference, str):
+        return None, f"calibration_{reference}"
+    try:
+        same_series = reference.source_series_uid == str(own.series.row.series_uid)
+        same_acquisition = reference.acquisition_key == frame_identity(frame, False)
+    except (AttributeError, ValueError, TypeError):
+        same_series = same_acquisition = False
+    if not same_series:
+        return None, "calibration_wrong_series"
+    if not same_acquisition:
+        return None, "calibration_wrong_acquisition"
+    light = _bursa_light(reference.bones_light)
+    if light is None or reference.bones_support_digest is None:
+        return None, "calibration_light_unavailable"
+    return {
+        "kind": "native_middle_reference",
+        "scalar": "bones_light",
+        "bones_light": light,
+        "source_series_uid": reference.source_series_uid,
+        "middle_z": int(reference.middle_z),
+        "support_address": reference.support_address,
+        "support_codes": [int(c) for c in reference.support_codes],
+        "bones_support_digest": str(reference.bones_support_digest),
+        "plane_digest": str(reference.plane_digest),
+    }, None
+
+
+def bursa_plane_reading(
+    own: Measured,
+    z: int,
+    profile: dict[str, Any],
+    span_lps_mm: tuple[float, float, float],
+    reference: Any,
+    prefix: str,
+) -> tuple[dict[str, Any], dict[str, np.ndarray]]:
+    """One tied-maximum target plane. The query and crop are built first; only the cropped raw
+    plane and masks reach the lenses. A refusal has a named status and no arrays."""
+    from knee.collapse.local_native import source_window
+    from knee.objects.assignments import white_as_fluid, white_body_at_location
+
+    info: dict[str, Any] = {
+        "slice": int(z),
+        "profile_source_points": _bursa_num(profile["counts"][z]),
+        "profile_slab_points": _bursa_num(profile["slab_counts"][z]),
+        "profile_status_code": int(profile["statuses"][z]),
+    }
+
+    def refuse(status: str, **extra: Any) -> tuple[dict[str, Any], dict]:
+        return {**info, "status": status, **extra}, {}
+
+    plane = np.asarray(own.series.volume[z])
+    if plane.ndim != 2 or not plane.size:
+        return refuse("target_plane_unavailable")
+    frame = plane_frame(own.series, z)
+    if isinstance(frame, str):
+        return refuse("target_frame_unavailable", detail=frame)
+    shape = (int(plane.shape[0]), int(plane.shape[1]))
+    unique_rc = profile["per_slice"].get(z, {}).get("unique_rc")
+    if unique_rc is None or not len(unique_rc):
+        return refuse("target_projection_unavailable")
+    window = source_window(unique_rc.astype(np.float64), span_lps_mm, frame, shape)
+    win = window.get("window_rc_exclusive")
+    if not win or len(win) != 4 or win[1] <= win[0] or win[3] <= win[2]:
+        return refuse(
+            f"source_window_{window.get('status', 'unavailable')}", window=window
+        )
+    calibration, why = _bursa_calibration(own, frame, reference)
+    if why is not None:
+        return refuse(why)
+
+    boxes, guide_state = _bursa_guide_boxes(profile.get("guide"), z, frame, shape)
+    crop, query, basis = _bursa_crop_query(unique_rc, win, boxes)
+    r0, r1, c0, c1 = crop
+    raw = plane[r0:r1, c0:c1]
+    finite_crop = finite_of(own.series)[z, r0:r1, c0:c1]
+    margin_crop = margin_of(str(own.record["series_uid"]), z, plane)[r0:r1, c0:c1]
+    available = finite_crop & ~margin_crop
+    if not available.any():
+        return refuse("crop_has_no_finite_pixels", crop_rc_exclusive=crop)
+    white = white_as_fluid(
+        raw,
+        _bursa_crop_objects(own, z, crop, raw.shape),
+        None,
+        reference_light=calibration["bones_light"],
+    )
+    if white is None:
+        return refuse("white_as_fluid_unavailable", calibration=calibration)
+    # Unavailable and margin pixels are unknown: removed before labeling, never dark or zero.
+    white = np.asarray(white, dtype=bool) & available
+    selected, code, parts = white_body_at_location(white, query)
+    labels, sizes = parts["labels"], parts["sizes"]
+    winners = {int(v) for v in parts["winner_ids"]}
+    components = [
+        {
+            "label": int(label),
+            "size": int(sizes[int(label) - 1]),
+            "tied_or_selected_largest": int(label) in winners,
+            "edges_clipped_by_crop": _bursa_clipped_edges(labels == label, crop, shape),
+        }
+        for label in parts["eligible_ids"]
+    ]
+    selected = np.asarray(selected, dtype=bool)
+    support = np.zeros(shape, dtype=bool)
+    support[r0:r1, c0:c1] = selected
+    keys = (
+        "crop_rc",
+        "plane",
+        "finite",
+        "margin",
+        "available",
+        "white",
+        "query",
+        "labels",
+        "selected",
+        "component_sizes",
+        "eligible_ids",
+        "winner_ids",
+        "support",
+        "support_slices",
+    )
+    names = {key: f"{prefix}_z{z}_{key}" for key in keys}
+    arrays = {
+        names["crop_rc"]: np.asarray(crop, dtype=np.int64),
+        names["plane"]: np.array(raw),
+        names["finite"]: finite_crop,
+        names["margin"]: margin_crop,
+        names["available"]: available,
+        names["white"]: white,
+        names["query"]: query,
+        names["labels"]: labels.astype(np.int32, copy=False),
+        names["selected"]: selected,
+        names["component_sizes"]: np.asarray(sizes, dtype=np.int64),
+        names["eligible_ids"]: np.asarray(parts["eligible_ids"], dtype=np.int64),
+        names["winner_ids"]: np.asarray(sorted(winners), dtype=np.int64),
+        names["support"]: support,
+        names["support_slices"]: np.asarray([z], dtype=np.int32),
+    }
+    info.update(
+        {
+            "status": "measured",
+            "lens_code": code,
+            "query_basis": basis,
+            "map_guide": guide_state,
+            "guide_boxes": boxes,
+            "source_window": window,
+            "crop_rc_exclusive": crop,
+            "crop_offset_rc": [r0, c0],
+            "crop_shape": [r1 - r0, c1 - c0],
+            "image_shape": list(shape),
+            "unknown_outside_image": True,
+            "unknown_nonfinite_pixels": int((~finite_crop).sum()),
+            "unknown_margin_pixels": int(margin_crop.sum()),
+            "projected_unique_pixels": len(unique_rc),
+            "query_pixels": int(query.sum()),
+            "white_pixels": int(white.sum()),
+            "component_count": len(sizes),
+            "selected_pixels": int(support.sum()),
+            "components": components,
+            "full_boundary_asserted": False,
+            "calibration": calibration,
+            "arrays": names,
+        }
+    )
+    return info, arrays
+
+
+def _bursa_profile_facts(profile: dict[str, Any], prefix: str) -> dict[str, Any]:
+    return {
+        "array_prefix": prefix,
+        "counts": _bursa_floats(profile["counts"]),
+        "slab_counts": _bursa_floats(profile["slab_counts"]),
+        "statuses": [int(v) for v in profile["statuses"]],
+        "complete": [bool(v) for v in profile["complete"]],
+    }
+
+
+def _bursa_rows(
+    own: Measured, infos: list[dict[str, Any]], identity: dict[str, Any], artifact: str
+) -> tuple[list[Observation], list[Unresolved]]:
+    """One native reading per measured plane (its own boolean support and count); a named
+    neutral Unresolved for every plane that did not select a body or was not measured."""
+    view = tuple(own.record["view"])
+    uid = str(own.record["series_uid"])
+    seen: list[Observation] = []
+    missing: list[Unresolved] = []
+    for plane in infos:
+        measured_plane = plane["status"] == "measured"
+        code = plane["lens_code"] if measured_plane else plane["status"]
+        support = plane["arrays"]["support"] if measured_plane else None
+        count = plane["selected_pixels"] if measured_plane else None
+        if measured_plane:
+            seen.append(
+                Observation(
+                    object=BURSA_NAME,
+                    provenance="native",
+                    kind="reading",
+                    series_uid=uid,
+                    view=view,
+                    slices=(int(plane["slice"]),),
+                    code=code,
+                    count=int(count),
+                    off_plane_mm=None,
+                    support=support,
+                    note=(
+                        "native white-as-fluid reading on this source-profile maximum plane, "
+                        "cropped to the axial bursa's physical support "
+                        f"(series {identity['series_uid']}, slice {identity['slice']}): "
+                        "a location prior asked a question, not a boundary, not a resolved plane"
+                    ),
+                    artifact=artifact,
+                    row=None,
+                    label=None,
+                )
+            )
+        if code != "selected":
+            missing.append(
+                _bursa_unresolved(
+                    object=BURSA_NAME,
+                    provenance="native",
+                    series_uid=uid,
+                    view=view,
+                    slices=(int(plane["slice"]),),
+                    code=code,
+                    reason=code,
+                    note=BURSA_UNKNOWN_NOTE,
+                    artifact=artifact,
+                    support=support,
+                    count=count,
+                )
+            )
+    return seen, missing
+
+
+def _bursa_target(
+    own: Measured,
+    source: dict[str, Any],
+    identity: dict[str, Any],
+    mapping: MapContext | None,
+    study_uid: str,
+    reference_for: Callable[[Measured], Any],
+) -> tuple[list[Observation], list[Unresolved]]:
+    view = tuple(own.record.get("view", ()))
+    if len(view) != 3 or str(view[0]).casefold() not in BURSA_TARGET_VIEWS:
+        return [], []
+    orientation = str(view[0]).casefold()
+    artifact = str(artifact_of(study_uid, own.record))
+    base = {
+        "object": BURSA_NAME,
+        "kind": "reading",
+        "orientation": orientation,
+        "series_uid": str(own.record.get("series_uid", "")),
+        "view": list(view),
+        "acquisition": {
+            "fluid_sensitive": getattr(own.series.row, "fluid_sensitive", None),
+            "fat_suppression": getattr(own.series.row, "fat_suppression", None),
+        },
+        "source": identity,
+        "resolved_plane": False,
+    }
+
+    def keep(status: str, **extra: Any) -> tuple[list[Observation], list[Unresolved]]:
+        own.record[BURSA_READING_KEY] = {**base, "status": status, **extra}
+        return [], [
+            _bursa_unresolved(series_uid=base["series_uid"], view=view, code=status)
+        ]
+
+    if (
+        base["acquisition"]["fluid_sensitive"] != "1"
+        or base["acquisition"]["fat_suppression"] != "1"
+    ):
+        return keep("target_not_fluid_sensitive_fat_suppressed")
+    if source["status"] != "selected":
+        return keep(f"source_{source['status']}")
+    profiles = native_meniscus_profiles(
+        own,
+        {BURSA_NAME: source},
+        mapping,
+        orientation=orientation,
+        source_tag="" if orientation == "sagittal" else "axial",
+        names=(BURSA_NAME,),
+        profile_product=BURSA_PROFILE_PRODUCT,
+        sources_product=BURSA_SOURCES_PRODUCT,
+    )
+    profile = None if profiles is None else profiles.get(BURSA_NAME)
+    if not profile or profile.get("status") != "measured":
+        return keep(
+            "target_profile_unavailable",
+            detail=None if not profile else profile.get("status"),
+        )
+    reads(
+        BURSA_PROFILE_PRODUCT,
+        ("counts", "slab_counts", "statuses", "complete", "unique_rc", "guide"),
+        BURSA_READING_PRODUCT,
+    )
+    counts = profile["counts"]
+    finite = np.isfinite(counts)
+    profile_prefix = (
+        f"a4_sagittal_{BURSA_NAME}_source_profile"
+        if orientation == "sagittal"
+        else f"a4_coronal_{BURSA_NAME}_axial_source_profile"
+    )
+    facts = _bursa_profile_facts(profile, profile_prefix)
+    if not finite.any():
+        return keep("target_profile_unusable", profile=facts)
+    top = float(np.max(counts[finite]))
+    if top <= 0:
+        return keep("no_source_points_in_target_half_slabs", profile=facts)
+    tied = [int(z) for z in np.flatnonzero(finite & (counts == top))]
+    facts["maximum_count"] = top
+    facts["maximum_slices_all_ties"] = tied
+    reference = reference_for(own)
+    span = tuple(float(v) for v in identity["span_lps_mm"])
+    reading_prefix = f"a4_{orientation}_bursa_native_reading"
+    infos: list[dict[str, Any]] = []
+    arrays: dict[str, np.ndarray] = {
+        f"a4_axial_bursa_source_{orientation}_lps": np.asarray(
+            source["selected"]["points_lps"], dtype=np.float64
+        )
+    }
+    for z in tied:
+        plane_info, plane_arrays = bursa_plane_reading(
+            own, z, profile, span, reference, reading_prefix
+        )
+        infos.append(plane_info)
+        arrays.update(plane_arrays)
+    own.arrays.update(arrays)
+    statuses = {p["status"] for p in infos}
+    status = (
+        "measured"
+        if "measured" in statuses
+        else statuses.pop()
+        if len(statuses) == 1
+        else "no_plane_measured"
+    )
+    own.record[BURSA_READING_KEY] = {
+        **base,
+        "status": status,
+        "artifact": artifact,
+        "profile": facts,
+        "planes": infos,
+        "support_arrays": sorted(arrays),
+    }
+    return _bursa_rows(own, infos, identity, artifact)
+
+
+def collect_bursa_native_readings(
+    measured: list[Measured],
+    group_found: list[tuple[dict, dict]],
+    study_uid: str,
+    mapping: MapContext | None,
+    reference_for: Callable[[Measured], Any] | None = None,
+) -> list[tuple[list[Observation], list[Unresolved]]]:
+    """The bursa's native white-as-fluid reading on each same-study sagittal/coronal
+    fat-suppressed, fluid-sensitive series at every tied source-profile maximum plane. Writes
+    `own.arrays` / `own.record[BURSA_READING_KEY]` and returns pending rows aligned with
+    `measured` for `keep_recess`. A reading, never a resolved plane."""
+    reference_for = reference_for or bursa_reference_for
+    source = native_bursa_source(group_found, measured, study_uid)[BURSA_NAME]
+    identity = (
+        source["selected"]["metadata"]
+        if source["status"] == "selected"
+        else {"status": source["status"], "invalid_sources": source["invalid_sources"]}
+    )
+    said = [
+        _bursa_target(own, source, identity, mapping, study_uid, reference_for)
+        for own in measured
+    ]
+    if any(seen or missing for seen, missing in said):
+        handed(BURSA_READING_PRODUCT, ("observations", "unresolved"))
+    return said
 
 
 def native_axial_bone_supports(
@@ -19627,6 +20575,7 @@ def name_native_menisci(
                             "identified body on available samples in the bounded native window; "
                             "window completeness is retained separately in crop measurements",
                             artifact,
+                            address_frame=_address_frame(frame),
                         )
                     )
                 elif code in {
@@ -19651,6 +20600,7 @@ def name_native_menisci(
                                 support_name,
                                 "complete bounded local reading selected no support",
                                 artifact,
+                                address_frame=_address_frame(frame),
                             )
                         )
                     elif code == "partial_reading" and selected.any():
@@ -19667,6 +20617,7 @@ def name_native_menisci(
                                 support_name,
                                 "partial local reading; selected support is retained without a native resolution",
                                 artifact,
+                                address_frame=_address_frame(frame),
                             )
                         )
                     unresolved_rows.append(
@@ -20683,13 +21634,124 @@ def name_femoral_cartilage(
     return output
 
 
+def native_fat_profile_window(
+    profiles: dict[str, dict[str, Any]],
+    z: int,
+    frame: PlaneFrame,
+    shape: tuple[int, int],
+) -> dict[str, Any]:
+    """Union authored full-extent windows around this slice's actual fat source samples."""
+    source_names = (
+        "hoffa_fat_pad",
+        "quadriceps_fat_pad",
+        "prefemoral_fat_pad",
+        "suprapatellar_fat",
+    )
+    windows: list[tuple[int, int, int, int]] = []
+    details: dict[str, dict[str, Any]] = {}
+    for name in source_names:
+        per_slice = profiles.get(name, {}).get("per_slice", {})
+        item = per_slice.get(z, {}) if isinstance(per_slice, dict) else {}
+        samples = item.get("sample_rc") if isinstance(item, dict) else None
+        if (
+            not isinstance(samples, np.ndarray)
+            or samples.ndim != 2
+            or samples.shape[1:] != (2,)
+        ):
+            continue
+        if samples.size == 0:
+            continue
+        span = anatomy_map.target_span_mm(name)
+        if span is None:
+            details[name] = {"status": "authored_extent_unavailable"}
+            continue
+        full_span = (
+            float(span[0]) * 2.0,
+            float(span[1]) * 2.0,
+            float(span[2]) * 2.0,
+        )
+        result = source_window(samples, full_span, frame, shape)
+        status = str(result.get("status", "window_unavailable"))
+        window_value = result.get("window_rc_exclusive")
+        if (
+            status not in ("present", "window_clipped_to_image")
+            or not isinstance(window_value, list)
+            or len(window_value) != 4
+        ):
+            details[name] = {"status": status, "window": result}
+            continue
+        window = (
+            int(window_value[0]),
+            int(window_value[1]),
+            int(window_value[2]),
+            int(window_value[3]),
+        )
+        r0, r1, c0, c1 = window
+        if not (0 <= r0 < r1 <= shape[0] and 0 <= c0 < c1 <= shape[1]):
+            details[name] = {"status": "invalid_window_bounds", "window": result}
+            continue
+        windows.append(window)
+        details[name] = {"status": status, "window": result}
+    if not windows:
+        return {
+            "status": "profile_window_unavailable_full_frame",
+            "window_rc": (0, shape[0], 0, shape[1]),
+            "source_windows": details,
+            "full_frame": True,
+        }
+    union = (
+        min(window[0] for window in windows),
+        max(window[1] for window in windows),
+        min(window[2] for window in windows),
+        max(window[3] for window in windows),
+    )
+    has_refusal = any(
+        value.get("status") not in ("present", "window_clipped_to_image")
+        for value in details.values()
+    )
+    clipped = any(
+        value.get("status") == "window_clipped_to_image" for value in details.values()
+    )
+    full_frame = union == (0, shape[0], 0, shape[1])
+    status = (
+        "profile_window_full_frame"
+        if full_frame
+        else "profile_window_partial_sources"
+        if has_refusal
+        else "profile_window_clipped"
+        if clipped
+        else "profile_window"
+    )
+    return {
+        "status": status,
+        "window_rc": union,
+        "source_windows": details,
+        "full_frame": full_frame,
+    }
+
+
+def _embed_native_crop(
+    crop: np.ndarray,
+    window: tuple[int, int, int, int],
+    shape: tuple[int, int],
+    fill: Any,
+) -> np.ndarray:
+    """Place a measured crop in native coordinates with an explicit exterior value."""
+    result = np.full(shape, fill, dtype=crop.dtype)
+    r0, r1, c0, c1 = window
+    if crop.shape != (r1 - r0, c1 - c0):
+        raise ValueError("native_crop_shape_does_not_match_window")
+    result[r0:r1, c0:c1] = crop
+    return result
+
+
 def native_fat_plane_context(
     own: Measured,
     z: int,
     profiles: dict[str, dict[str, Any]],
     leg: "Leg | None",
 ) -> dict[str, Any]:
-    """Read one candidate plane's existing lens and, where Q/P seeds exist, shared basins."""
+    """Measure one native fat plane inside its source-profile domain when available."""
     product = "native_fat_native_context"
     series = own.series
     uid = str(own.record["series_uid"])
@@ -20702,20 +21764,73 @@ def native_fat_plane_context(
     frame = plane_frame(series, z)
     if isinstance(frame, str):
         return {"status": "native_frame_unavailable", "reason": frame}
-    _, reading, _ = lens_of(
-        series, z, raw, frame, float(own.record["background_split"]), product
-    )
-    field = field_of(series, z, raw, frame, reading)
-    lens_available = np.asarray(reading.available)
-    field_available = np.asarray(field.leg)
+
+    scope = native_fat_profile_window(profiles, z, frame, raw.shape)
+    window = tuple(scope["window_rc"])
+    split = float(own.record["background_split"])
     finite = np.asarray(finite_of(series)[z])
-    margin = np.asarray(margin_of(uid, z, raw))
+    if finite.shape != raw.shape or finite.dtype.kind != "b":
+        return {"status": "native_availability_unavailable", "scope": scope}
+    if scope["status"] == "profile_window_unavailable_full_frame":
+        _, reading, _ = lens_of(series, z, raw, frame, split, product)
+        field = field_of(series, z, raw, frame, reading)
+        local_raw = raw
+        local_window = (0, raw.shape[0], 0, raw.shape[1])
+        lens_available = np.asarray(reading.available)
+        field_available = np.asarray(field.leg)
+        lens_markers = np.asarray(reading.markers)
+        lens_labels = np.asarray(reading.labels)
+        local_margin = np.asarray(margin_of(uid, z, raw))
+        margin = local_margin
+        lens_available_native = lens_available
+        lens_markers_native = lens_markers
+        lens_labels_native = lens_labels
+        field_available_native = field_available
+    else:
+        scoped = patella_scope_of(series, z, raw, frame, split, window, product)
+        local_window = window
+        local_raw = np.asarray(scoped.interior.raw)
+        reading = scoped.interior.reading
+        field = scoped.field
+        local_margin = np.asarray(scoped.outside)
+        crop_finite = finite[window[0] : window[1], window[2] : window[3]]
+        crop_lens_available = np.asarray(reading.available)
+        crop_field_available = np.asarray(field.leg)
+        if any(
+            item.shape != local_raw.shape or item.dtype.kind != "b"
+            for item in (
+                crop_lens_available,
+                crop_field_available,
+                crop_finite,
+                local_margin,
+            )
+        ):
+            return {"status": "native_availability_unavailable", "scope": scope}
+        lens_available_native = _embed_native_crop(
+            np.asarray(reading.available, dtype=bool), window, raw.shape, False
+        )
+        lens_markers_native = _embed_native_crop(
+            np.asarray(reading.markers), window, raw.shape, 0
+        )
+        lens_labels_native = _embed_native_crop(
+            np.asarray(reading.labels), window, raw.shape, 0
+        )
+        field_available_native = _embed_native_crop(
+            np.asarray(field.leg, dtype=bool), window, raw.shape, False
+        )
+        margin = np.asarray(margin_of(uid, z, raw))
     if any(
         item.shape != raw.shape or item.dtype.kind != "b"
-        for item in (lens_available, field_available, finite, margin)
+        for item in (lens_available_native, field_available_native, finite, margin)
     ):
-        return {"status": "native_availability_unavailable"}
-    available = lens_available & field_available & finite & ~margin
+        return {"status": "native_availability_unavailable", "scope": scope}
+    available = lens_available_native & field_available_native & finite & ~margin
+    if scope["status"] == "profile_window_unavailable_full_frame":
+        crop_available = available
+    else:
+        crop_available = (
+            crop_lens_available & crop_field_available & crop_finite & ~local_margin
+        )
     targets: dict[str, np.ndarray] = {}
     marker_groups: dict[str, np.ndarray] = {}
     for name in (
@@ -20733,7 +21848,14 @@ def native_fat_plane_context(
         )
         target = np.zeros(raw.shape, dtype=bool)
         if len(samples):
-            target[samples[:, 0], samples[:, 1]] = True
+            samples = np.asarray(samples)
+            if (
+                samples.ndim == 2
+                and samples.shape[1:] == (2,)
+                and np.all(samples >= 0)
+                and np.all(samples < np.asarray(raw.shape))
+            ):
+                target[samples[:, 0], samples[:, 1]] = True
         targets[name] = target
         if len(samples) and name != "suprapatellar_fat":
             marker_groups[name] = target
@@ -20743,11 +21865,17 @@ def native_fat_plane_context(
     gradient = None
     coarse = {"status": "not_needed_without_qp_gradient"}
     if q_or_p_present:
-        for marker_id in np.unique(reading.markers):
+        local_marker_groups: dict[str, np.ndarray] = {}
+        for marker_id in np.unique(np.asarray(reading.markers)):
             code = int(marker_id)
             if code <= 0:
                 continue
-            marker_groups[f"native_lens_peak_{code}"] = reading.markers == code
+            peak_mask = np.asarray(reading.markers) == code
+            peak_name = f"native_lens_peak_{code}"
+            local_marker_groups[peak_name] = peak_mask
+            marker_groups[peak_name] = _embed_native_crop(
+                peak_mask, local_window, raw.shape, False
+            )
         if int(own.record.get("slice_index", -1)) == z:
             codes = own.record.get("assignments", {}).get("codes", {})
             objects = own.arrays.get("a1_objects")
@@ -20758,7 +21886,18 @@ def native_fat_plane_context(
                         tendon |= objects == OBJECT_CODES[name]
                 if tendon.any():
                     marker_groups["native_extensor_tendon"] = tendon
+                    local_marker_groups["native_extensor_tendon"] = tendon[
+                        local_window[0] : local_window[1],
+                        local_window[2] : local_window[3],
+                    ]
+        for name, marker in list(marker_groups.items()):
+            local_marker_groups[name] = marker[
+                local_window[0] : local_window[1], local_window[2] : local_window[3]
+            ]
         marker_groups["frame_margin"] = margin
+        local_marker_groups["frame_margin"] = margin[
+            local_window[0] : local_window[1], local_window[2] : local_window[3]
+        ]
         coarse = native_fat_coarse_femur_context(own, z, raw, frame, leg)
         native_core = coarse.get("native_core")
         if (
@@ -20768,11 +21907,40 @@ def native_fat_plane_context(
             and native_core.any()
         ):
             marker_groups["coarse_femur_core"] = native_core
-        gradient = native_gradient_territories(
-            raw,
-            available,
+            local_marker_groups["coarse_femur_core"] = native_core[
+                local_window[0] : local_window[1], local_window[2] : local_window[3]
+            ]
+        local_gradient = native_gradient_territories(
+            local_raw,
+            crop_available,
             frame.spacing_rc,
-            marker_groups,
+            local_marker_groups,
+        )
+        gradient = SimpleNamespace(
+            gradient_magnitude=_embed_native_crop(
+                local_gradient.gradient_magnitude, local_window, raw.shape, 0.0
+            ),
+            gradient_u16=_embed_native_crop(
+                local_gradient.gradient_u16, local_window, raw.shape, 0
+            ),
+            gradient_valid=_embed_native_crop(
+                local_gradient.gradient_valid, local_window, raw.shape, False
+            ),
+            marker_ids=_embed_native_crop(
+                local_gradient.marker_ids, local_window, raw.shape, 0
+            ),
+            conflicts=_embed_native_crop(
+                local_gradient.conflicts, local_window, raw.shape, False
+            ),
+            labels=_embed_native_crop(
+                local_gradient.labels, local_window, raw.shape, 0
+            ),
+            unknown=_embed_native_crop(
+                local_gradient.unknown, local_window, raw.shape, True
+            ),
+            marker_codes=local_gradient.marker_codes,
+            marker_counts=local_gradient.marker_counts,
+            gradient_facts=local_gradient.gradient_facts,
         )
     context: dict[str, Any] = {
         "status": "measured",
@@ -20780,15 +21948,26 @@ def native_fat_plane_context(
         "raw": raw,
         "frame": frame,
         "available": available,
-        "lens_available": lens_available,
+        "lens_available": lens_available_native,
         "margin": margin,
-        "lens_markers": np.asarray(reading.markers),
-        "lens_labels": np.asarray(reading.labels),
+        "lens_markers": lens_markers_native,
+        "lens_labels": lens_labels_native,
         "targets": targets,
         "gradient": gradient,
         "coarse_femur": coarse,
+        "scope": scope,
+        "scope_raw": local_raw,
+        "scope_available": crop_available,
+        "scope_window_rc": local_window,
     }
-    context_fields = ["lens_context", "targets"]
+    context_fields = [
+        "lens_context",
+        "targets",
+        "scope",
+        "scope_raw",
+        "scope_available",
+        "scope_window_rc",
+    ]
     if q_or_p_present:
         context["gradient_marker_groups"] = marker_groups
         context_fields.extend(("gradient_context", "marker_groups"))
@@ -21090,6 +22269,59 @@ def native_fat_pad_candidates(
         z for z, context in all_contexts.items() if context.get("status") == "measured"
     )
     if native_slices:
+        for _z in native_slices:
+            reads(
+                "native_fat_native_context",
+                ("scope", "scope_raw", "scope_available", "scope_window_rc"),
+                "native_fat_candidate_persistence",
+            )
+        scope_rows = [all_contexts[z] for z in native_slices]
+        own.arrays[f"a4_{view}_native_fat_context_scope_slices"] = np.asarray(
+            native_slices, dtype=np.int32
+        )
+        own.arrays[f"a4_{view}_native_fat_context_scope_windows_rc"] = np.asarray(
+            [item["scope_window_rc"] for item in scope_rows], dtype=np.int32
+        )
+        own.arrays[f"a4_{view}_native_fat_context_scope_status"] = np.asarray(
+            [item["scope"]["status"] for item in scope_rows], dtype="U64"
+        )
+        scope_shapes = np.asarray(
+            [item["scope_raw"].shape for item in scope_rows], dtype=np.int32
+        )
+        scope_offsets = [0]
+        scope_values: list[np.ndarray] = []
+        for item in scope_rows:
+            values = np.asarray(item["scope_raw"]).ravel()
+            scope_values.append(values)
+            scope_offsets.append(scope_offsets[-1] + values.size)
+        own.arrays[f"a4_{view}_native_fat_context_scope_shapes_rc"] = scope_shapes
+        own.arrays[f"a4_{view}_native_fat_context_scope_offsets"] = np.asarray(
+            scope_offsets, dtype=np.int64
+        )
+        own.arrays[f"a4_{view}_native_fat_context_scope_raw_values"] = (
+            np.concatenate(scope_values)
+            if scope_values
+            else np.empty(0, dtype=np.asarray(volume).dtype)
+        )
+        scope_available_values = [
+            np.asarray(item["scope_available"], dtype=bool).ravel()
+            for item in scope_rows
+        ]
+        own.arrays[f"a4_{view}_native_fat_context_scope_available_values"] = (
+            np.concatenate(scope_available_values)
+            if scope_available_values
+            else np.empty(0, dtype=bool)
+        )
+        scope_by_slice = [
+            {
+                "slice": int(z),
+                "status": str(all_contexts[z]["scope"]["status"]),
+                "window_rc_exclusive": list(all_contexts[z]["scope_window_rc"]),
+                "full_frame": bool(all_contexts[z]["scope"].get("full_frame", False)),
+                "source_windows": all_contexts[z]["scope"].get("source_windows", {}),
+            }
+            for z in native_slices
+        ]
         for suffix, key in (
             ("lens_labels", "lens_labels"),
             ("lens_markers", "lens_markers"),
@@ -21295,6 +22527,7 @@ def native_fat_pad_candidates(
             int(z) for z in native_slices if all_contexts[z].get("gradient") is not None
         ],
         "same_series_fluid_level": fluid_level,
+        "scope_by_slice": scope_by_slice if native_slices else [],
         "candidate_slices": {
             name: [int(row["slice"]) for row in rows]
             for name, rows in result_by_name.items()
@@ -23186,6 +24419,2068 @@ class PosteriorSource:
     pixels: int
 
 
+GASTROC_HEADS = ("medial_gastrocnemius", "lateral_gastrocnemius")
+
+
+GASTROC_SCOPED_CODE = "scoped_gradient_gastrocnemius_head_reading"
+
+
+_GASTROC_LOCATION_STATUS = {
+    0: "head_location_not_read",
+    1: "head_location_frame_unavailable",
+    3: "head_location_outside_frame",
+    4: "head_location_unavailable",
+}
+
+
+def native_gastrocnemius_head_sources(
+    measured: list[Measured], study_uid: str
+) -> dict[str, dict[str, Any]]:
+    """The already AX-identified head (its a1_objects label, interior peak, physical places).
+    Each candidate is validated against its own acquisition before use. The AX identity is read,
+    never written; every eligible source is kept in the detail, winner or not."""
+    result: dict[str, dict[str, Any]] = {}
+    for name in GASTROC_HEADS:
+        entries: list[tuple[Measured, np.ndarray, np.ndarray, dict, float]] = []
+        considered: list[dict[str, Any]] = []
+        for own in measured:
+            record = own.record
+            view = tuple(record.get("view", ()))
+            if len(view) != 3 or str(view[0]).casefold() != "axial":
+                continue
+            codes = record.get("assignments", {}).get("codes", {})
+            if codes.get(name) != "identified":
+                continue
+            base = {
+                "series_uid": record.get("series_uid"),
+                "view": list(view),
+                "slice": record.get("slice_index"),
+                "support": "a1_objects",
+                "label": OBJECT_CODES[name],
+                "artifact": str(artifact_of(study_uid, record)),
+                "provenance": "native",
+                "ax_code": codes.get(name),
+            }
+            actual = getattr(getattr(own.series, "row", None), "series_uid", None)
+            if not isinstance(actual, str) or record.get("series_uid") != actual:
+                considered.append(
+                    {
+                        **base,
+                        "status": "native_source_acquisition_invalid",
+                        "reason": "series_uid_mismatch",
+                    }
+                )
+                continue
+            volume = getattr(own.series, "volume", None)
+            si = record.get("slice_index")
+            if not (isinstance(volume, np.ndarray) and volume.ndim == 3):
+                considered.append(
+                    {
+                        **base,
+                        "status": "native_source_slice_invalid",
+                        "reason": "volume_not_3d",
+                    }
+                )
+                continue
+            if (
+                isinstance(si, (bool, np.bool_))
+                or not isinstance(si, (int, np.integer))
+                or not 0 <= int(si) < len(volume)
+            ):
+                considered.append(
+                    {
+                        **base,
+                        "status": "native_source_slice_invalid",
+                        "reason": "slice_index_not_strict_int_in_bounds",
+                    }
+                )
+                continue
+            si = int(si)
+            base["slice"] = si
+            objects = own.arrays.get("a1_objects")
+            if objects is None:
+                considered.append(
+                    {**base, "status": "native_source_support_unavailable"}
+                )
+                continue
+            if not (
+                isinstance(objects, np.ndarray)
+                and objects.ndim == 2
+                and objects.dtype.kind in "iu"
+                and objects.shape == tuple(np.shape(volume[si]))
+            ):
+                considered.append(
+                    {
+                        **base,
+                        "status": "native_source_support_invalid",
+                        "reason": "not_2d_integer_support_matching_native_slice",
+                    }
+                )
+                continue
+            mask = objects == OBJECT_CODES[name]
+            count = int(np.count_nonzero(mask))
+            territory = record.get("assignments", {}).get(name)
+            peak = None
+            if isinstance(territory, (int, np.integer)) and not isinstance(
+                territory, (bool, np.bool_)
+            ):
+                peak = next(
+                    (p for p in own.assignment.peaks if p.territory == int(territory)),
+                    None,
+                )
+            if not count or peak is None:
+                considered.append(
+                    {
+                        **base,
+                        "count": count,
+                        "status": "native_source_support_unavailable"
+                        if not count
+                        else "head_interior_peak_unavailable",
+                    }
+                )
+                continue
+            try:
+                spacing = np.asarray(own.frame.spacing_rc, dtype=float)
+                points = np.asarray(
+                    own.frame.to_patient(np.argwhere(mask).astype(float)), dtype=float
+                )
+                peak_lps = np.asarray(
+                    own.frame.to_patient(np.asarray([peak.peak_rc], dtype=float)),
+                    dtype=float,
+                )[0]
+                area = float(count) * float(np.prod(spacing))
+            except (
+                AttributeError,
+                TypeError,
+                ValueError,
+                OverflowError,
+                np.linalg.LinAlgError,
+            ):
+                considered.append(
+                    {
+                        **base,
+                        "count": count,
+                        "status": "native_source_geometry_unavailable",
+                    }
+                )
+                continue
+            if (
+                points.shape != (count, 3)
+                or peak_lps.shape != (3,)
+                or not np.isfinite(points).all()
+                or not np.isfinite(peak_lps).all()
+                or not np.isfinite(area)
+                or area <= 0
+            ):
+                considered.append(
+                    {
+                        **base,
+                        "count": count,
+                        "status": "native_source_geometry_unavailable",
+                    }
+                )
+                continue
+            meta = {
+                **base,
+                "count": count,
+                "area_mm2": area,
+                "peak_rc": [int(v) for v in peak.peak_rc],
+                "territory": int(territory),
+                "source_level_s_mm": float(points[:, 2].max()),
+                "level_basis": "AX head source level; condyle level is not retained by the "
+                "existing AX naming",
+            }
+            entries.append((own, points, peak_lps, meta, area))
+        if not entries:
+            result[name] = {
+                "status": "unavailable",
+                "detail": {"status": "unavailable", "considered": considered},
+            }
+            continue
+        eligible = [e[3] for e in entries]
+        chosen = unique_largest(np.asarray([e[4] for e in entries]))
+        if chosen is None:
+            result[name] = {
+                "status": "tied",
+                "detail": {
+                    "status": "tied",
+                    "candidates": eligible,
+                    "eligible": eligible,
+                    "considered": considered,
+                },
+            }
+            continue
+        own, points, peak_lps, meta, _ = entries[chosen]
+        own.arrays[f"a4_{name}_gastroc_source_lps"] = points
+        own.arrays[f"a4_{name}_gastroc_peak_lps"] = peak_lps
+        own.record[f"a4_{name}_gastroc_source"] = meta
+        handed(
+            f"native_gastrocnemius_{name}_source",
+            ("points_lps", "peak_lps", "metadata"),
+        )
+        result[name] = {
+            "status": "selected",
+            "selected": {
+                "owner": own,
+                "points": points,
+                "peak_lps": peak_lps,
+                "metadata": meta,
+            },
+            "detail": {
+                "status": "selected",
+                **meta,
+                "eligible": eligible,
+                "considered": considered,
+            },
+        }
+    return result
+
+
+def _gastro_profile(
+    own: Measured, name: str, selected: dict[str, Any]
+) -> dict[str, Any]:
+    """Source half-slab profile on a sagittal/coronal stack; also the head's interior peak as a
+    LOCATION marker per slice (kept even when off the half-slab, with its off-plane distance)."""
+    reads(
+        f"native_gastrocnemius_{name}_source",
+        ("points_lps", "peak_lps", "metadata"),
+        "native_gastrocnemius_profiles",
+    )
+    series, volume = own.series, own.series.volume
+    orientation = str(own.record["view"][0]).casefold()
+    depth, rows, cols = np.shape(volume)
+    points, peak = selected["points"], selected["peak_lps"]
+    try:
+        thick = tuple(
+            None if v is None else float(v) for v in series.slice_thickness_mm
+        )
+    except (TypeError, ValueError, OverflowError):
+        thick = ()
+    if len(thick) != depth:
+        thick = (None,) * depth
+    counts = np.full(depth, np.nan)
+    unique_counts = np.full(depth, np.nan)
+    # 0 unread,1 frame,2 thickness,3 no source points on slab,4 complete,5 clipped,6 projection
+    statuses = np.zeros(depth, dtype=np.int8)
+    complete = np.zeros(depth, dtype=bool)
+    # 0 unread,1 frame,2 inside frame,3 outside frame,4 unavailable
+    loc_status = np.zeros(depth, dtype=np.int8)
+    loc_rc = np.full((depth, 2), -1, dtype=np.int32)
+    loc_off = np.full(depth, np.nan)
+    per_slice: dict[int, dict[str, np.ndarray]] = {}
+    for z in range(depth):
+        frame = plane_frame(series, z)
+        if isinstance(frame, str):
+            statuses[z] = loc_status[z] = 1
+            continue
+        try:
+            off = abs(
+                float(
+                    (peak - np.asarray(frame.origin_lps, float))
+                    @ np.asarray(frame.normal(), float)
+                )
+            )
+            nat = np.asarray(frame.to_native(peak[None, :]), dtype=float)
+        except (
+            TypeError,
+            ValueError,
+            OverflowError,
+            FloatingPointError,
+            np.linalg.LinAlgError,
+        ):
+            loc_status[z] = 4
+        else:
+            if nat.shape == (1, 2) and np.isfinite(nat).all() and np.isfinite(off):
+                rc = np.rint(nat[0]).astype(np.int64)
+                loc_off[z] = off
+                if 0 <= rc[0] < rows and 0 <= rc[1] < cols:
+                    loc_rc[z], loc_status[z] = rc, 2
+                else:
+                    loc_status[z] = 3
+            else:
+                loc_status[z] = 4
+        t = thick[z]
+        if t is None or not np.isfinite(t) or t <= 0:
+            statuses[z] = 2
+            continue
+        unique_rc, sample_rc, slab_count, whole, failure = _extensor_source_projection(
+            points, frame, t, (rows, cols)
+        )
+        if failure is not None:
+            statuses[z] = 6
+            continue
+        counts[z], unique_counts[z] = float(len(sample_rc)), float(len(unique_rc))
+        statuses[z] = 3 if slab_count == 0 else 4 if whole else 5
+        complete[z] = bool(whole)
+        per_slice[z] = {"unique_rc": unique_rc, "sample_rc": sample_rc}
+    peaks = sorted(set(_peak_slices(counts)) | set(_peak_slices(unique_counts)))
+    prefix = f"a4_{orientation}_{name}_gastroc_profile"
+    empty = np.empty((0, 2), dtype=np.int32)
+    offs, uoffs = [0], [0]
+    samples, uniques = [], []
+    for z in range(depth):
+        part = per_slice.get(z, {})
+        s, u = part.get("sample_rc", empty), part.get("unique_rc", empty)
+        samples.append(s)
+        uniques.append(u)
+        offs.append(offs[-1] + len(s))
+        uoffs.append(uoffs[-1] + len(u))
+    own.arrays.update(
+        {
+            f"{prefix}_slices": np.arange(depth, dtype=np.int32),
+            f"{prefix}_count": counts,
+            f"{prefix}_unique_count": unique_counts,
+            f"{prefix}_status": statuses,
+            f"{prefix}_complete": complete,
+            f"{prefix}_offsets": np.asarray(offs, dtype=np.int64),
+            f"{prefix}_rc": np.concatenate(samples) if samples else empty,
+            f"{prefix}_unique_offsets": np.asarray(uoffs, dtype=np.int64),
+            f"{prefix}_unique_rc": np.concatenate(uniques) if uniques else empty,
+            f"{prefix}_location_status": loc_status,
+            f"{prefix}_location_rc": loc_rc,
+            f"{prefix}_location_off_mm": loc_off,
+        }
+    )
+    own.record.setdefault("a4_gastroc_profiles", {})[name] = {
+        "peak_slices": peaks,
+        "tied_maxima": len(peaks) > 1,
+        "status_codes": {
+            "0": "not_read",
+            "1": "frame_unavailable",
+            "2": "thickness_unavailable",
+            "3": "no_source_points_on_slab",
+            "4": "complete_source_projection",
+            "5": "partially_clipped_source_projection",
+            "6": "source_projection_unavailable",
+        },
+    }
+    handed("native_gastrocnemius_profiles", ("profiles", "peaks", "location"))
+    return {
+        "counts": counts,
+        "unique_counts": unique_counts,
+        "statuses": statuses,
+        "complete": complete,
+        "peaks": peaks,
+        "loc_status": loc_status,
+        "loc_rc": loc_rc,
+        "loc_off": loc_off,
+        "level": float(selected["metadata"]["source_level_s_mm"]),
+    }
+
+
+def _gastro_bone_supports(
+    own: Measured, study_uid: str, z: int
+) -> dict[str, dict[str, Any]]:
+    """Exact same-acquisition, same-native-plane resolved bone supports; else unknown/neutral."""
+    record, series = own.record, own.series
+    view = tuple(record.get("view", ()))
+    uid = record.get("series_uid")
+    actual = getattr(getattr(series, "row", None), "series_uid", None)
+    volume = series.volume
+    if (
+        len(view) != 3
+        or str(view[0]).casefold() not in ("sagittal", "coronal")
+        or not isinstance(uid, str)
+        or uid != actual
+        or not isinstance(volume, np.ndarray)
+        or volume.ndim != 3
+        or type(z) is not int
+        or not 0 <= z < len(volume)
+    ):
+        return {
+            b: {"status": "unknown_invalid_acquisition_or_slice"}
+            for b in ("femur", "tibia")
+        }
+    artifact = str(artifact_of(study_uid, record))
+    rows = record.get("observations", ())
+    rows = rows if isinstance(rows, (list, tuple)) else ()
+    shape = tuple(np.shape(volume[z]))
+    result: dict[str, dict[str, Any]] = {}
+    for bone in ("femur", "tibia"):
+        label = OBJECT_CODES[bone]
+        masks: list[np.ndarray] = []
+        addresses: list[dict[str, Any]] = []
+        malformed: list[str] = []
+        for f in rows:
+            if not (
+                isinstance(f, dict)
+                and f.get("object") == bone
+                and f.get("provenance") == "native"
+                and f.get("kind") == "resolved"
+                and f.get("code") == "identified"
+            ):
+                continue
+            sl = f.get("slices")
+            if not isinstance(sl, (list, tuple)) or len(sl) != 1:
+                malformed.append("invalid_slice_address")
+                continue
+            a = sl[0]
+            if isinstance(a, (bool, np.bool_)) or not isinstance(a, (int, np.integer)):
+                malformed.append("invalid_slice_type")
+                continue
+            if int(a) != z:
+                continue
+            if (
+                f.get("series_uid") != uid
+                or tuple(f.get("view") or ()) != view
+                or f.get("artifact") != artifact
+            ):
+                malformed.append("acquisition_address_mismatch")
+                continue
+            count = f.get("count")
+            if isinstance(count, (bool, np.bool_)) or not isinstance(
+                count, (int, np.integer)
+            ):
+                malformed.append("invalid_support_count_type")
+                continue
+            support_name, support = f.get("support"), None
+            meta = {
+                "series_uid": uid,
+                "view": list(view),
+                "slice": z,
+                "support": support_name,
+                "artifact": artifact,
+            }
+            if support_name == "a1_objects":
+                middle, objects = (
+                    record.get("slice_index"),
+                    own.arrays.get("a1_objects"),
+                )
+                lab = f.get("label")
+                if (
+                    isinstance(middle, (bool, np.bool_))
+                    or not isinstance(middle, (int, np.integer))
+                    or int(middle) != z
+                    or f.get("row") is not None
+                    or isinstance(lab, (bool, np.bool_))
+                    or not isinstance(lab, (int, np.integer))
+                    or int(lab) != label
+                    or not isinstance(objects, np.ndarray)
+                    or objects.ndim != 2
+                    or objects.dtype.kind not in "iu"
+                    or objects.shape != shape
+                ):
+                    malformed.append("invalid_middle_native_support")
+                    continue
+                support, meta["label"] = objects == label, label
+            elif support_name == f"a3_{bone}_plane_region":
+                row_index = f.get("row")
+                regions = own.arrays.get(support_name)
+                slices_array = own.arrays.get(f"a3_{bone}_plane_slices")
+                if (
+                    isinstance(row_index, (bool, np.bool_))
+                    or not isinstance(row_index, (int, np.integer))
+                    or f.get("label") is not None
+                    or not isinstance(regions, np.ndarray)
+                    or regions.ndim != 3
+                    or regions.dtype.kind != "b"
+                    or regions.shape[1:] != shape
+                    or not isinstance(slices_array, np.ndarray)
+                    or slices_array.ndim != 1
+                    or slices_array.dtype.kind not in "iu"
+                    or not 0 <= int(row_index) < len(regions)
+                    or len(slices_array) != len(regions)
+                    or int(slices_array[int(row_index)]) != z
+                ):
+                    malformed.append("invalid_pointed_native_support")
+                    continue
+                support, meta["row"] = regions[int(row_index)], int(row_index)
+            else:
+                malformed.append("unsupported_native_support_address")
+                continue
+            actual_count = int(np.count_nonzero(support))
+            if actual_count == 0 or actual_count != int(count):
+                malformed.append("native_support_count_mismatch")
+                continue
+            masks.append(np.asarray(support, dtype=bool))
+            addresses.append(meta)
+        if masks:
+            combined = np.logical_or.reduce(masks)
+            result[bone] = {
+                "status": "resolved_native_support",
+                "mask": combined,
+                "metadata": {
+                    "addresses": addresses,
+                    "count": int(combined.sum()),
+                    "malformed_reasons": malformed,
+                },
+            }
+        elif malformed:
+            result[bone] = {
+                "status": "unknown_invalid_native_support_context",
+                "reasons": malformed,
+            }
+        else:
+            result[bone] = {"status": "unknown_native_support_unavailable"}
+    return result
+
+
+def _gastro_window(
+    frame: Any,
+    shape: tuple[int, int],
+    source_points: dict[str, np.ndarray],
+    level: float,
+) -> dict[str, Any]:
+    """Computational window of one target frame from the AX head source points of every head
+    with usable sources on it. Source points are projected into native pixels; the in-frame
+    transverse span (physical, perpendicular to S inside the plane) gets exactly one
+    SQUINT_TILE_MM of padding on each side; along the leg the window runs from the AX source
+    level (plus one pixel step) to the acquired distal (lower-S) edge. The rectangle is the
+    bounding box of the physical S and transverse masks evaluated per native pixel, so oblique
+    planes need no view-name direction. Unavailable geometry gives a named status, never a
+    full-frame substitute."""
+    try:
+        rows, cols = int(shape[0]), int(shape[1])
+        basis = np.asarray(frame.basis_lps, dtype=float)
+        origin = np.asarray(frame.origin_lps, dtype=float)
+        level = float(level)
+        if (
+            rows < 1
+            or cols < 1
+            or basis.shape != (3, 2)
+            or origin.shape != (3,)
+            or not np.isfinite(basis).all()
+            or not np.isfinite(origin).all()
+            or not np.isfinite(level)
+        ):
+            return {"status": "native_window_geometry_unavailable"}
+        na, nb = (float(v) for v in np.linalg.norm(basis, axis=0))
+        if not (na > 0 and nb > 0):
+            return {"status": "native_window_geometry_unavailable"}
+        ea, eb = basis[2, 0] / na, basis[2, 1] / nb
+        norm = float(np.hypot(ea, eb))
+        if not norm > 1e-6:
+            return {"status": "native_window_leg_axis_unavailable"}
+    except (AttributeError, TypeError, ValueError, OverflowError, IndexError):
+        return {"status": "native_window_geometry_unavailable"}
+    used: list[str] = []
+    unusable: dict[str, str] = {}
+    projected: list[np.ndarray] = []
+    for name, pts in source_points.items():
+        try:
+            nat = np.asarray(frame.to_native(np.asarray(pts, dtype=float)), dtype=float)
+        except (TypeError, ValueError, OverflowError, np.linalg.LinAlgError):
+            unusable[name] = "source_projection_unavailable"
+            continue
+        if nat.ndim != 2 or nat.shape[1] != 2 or not np.isfinite(nat).all():
+            unusable[name] = "source_projection_unavailable"
+            continue
+        rc = np.rint(nat)
+        inside = (
+            (rc[:, 0] >= 0) & (rc[:, 0] < rows) & (rc[:, 1] >= 0) & (rc[:, 1] < cols)
+        )
+        if not inside.any():
+            unusable[name] = "source_projection_outside_frame"
+            continue
+        projected.append(rc[inside])
+        used.append(name)
+    if not projected:
+        return {"status": "native_window_no_usable_source", "unusable": unusable}
+    pts_rc = np.concatenate(projected)
+    t_src = (-eb * pts_rc[:, 0] * na + ea * pts_rc[:, 1] * nb) / norm
+    t_lo = float(t_src.min()) - float(SQUINT_TILE_MM)
+    t_hi = float(t_src.max()) + float(SQUINT_TILE_MM)
+    rr = np.arange(rows, dtype=float)[:, None]
+    cc = np.arange(cols, dtype=float)[None, :]
+    s = origin[2] + rr * basis[2, 0] + cc * basis[2, 1]
+    t = (-eb * rr * na + ea * cc * nb) / norm
+    tol = float(np.max(np.abs(basis[2])))
+    eps = 1e-9
+    mask = (
+        (s <= level + tol + eps)
+        & (t >= t_lo - eps)
+        & (t <= t_hi + eps)
+        & np.isfinite(s)
+    )
+    if not mask.any():
+        return {"status": "native_window_empty", "unusable": unusable}
+    ri_ = np.flatnonzero(mask.any(axis=1))
+    ci_ = np.flatnonzero(mask.any(axis=0))
+    window = (int(ri_[0]), int(ri_[-1]) + 1, int(ci_[0]), int(ci_[-1]) + 1)
+    return {
+        "status": "ok",
+        "window_rc": window,
+        "scope": {
+            "window_rc": window,
+            "full_shape": (rows, cols),
+            "partial": window != (0, rows, 0, cols),
+            "padding_mm": float(SQUINT_TILE_MM),
+            "level_s_mm": level,
+            "s_tolerance_mm": tol,
+            "transverse_span_mm": (t_lo, t_hi),
+            "heads_used": used,
+            "heads_unusable": unusable,
+            "basis": "AX head source points projected to this frame; one SQUINT_TILE_MM "
+            "transverse padding; AX source level toward the acquired distal edge",
+        },
+    }
+
+
+def _gastro_pack_context(
+    own: Measured, pre: str, done: list[int], contexts: dict[int, dict[str, Any]]
+) -> None:
+    """Retain per-slice cropped arrays as flat C-order arrays with shared offsets, per-entry
+    (rows, cols) shapes and window_rc. Windows may be ragged; nothing is expanded to full frame."""
+    shapes = np.asarray([contexts[z]["raw"].shape for z in done], dtype=np.int64)
+    sizes = shapes.prod(axis=1)
+    own.arrays[f"{pre}_slices"] = np.asarray(done, dtype=np.int32)
+    own.arrays[f"{pre}_shapes"] = shapes
+    own.arrays[f"{pre}_offsets"] = np.concatenate(([0], np.cumsum(sizes))).astype(
+        np.int64
+    )
+    own.arrays[f"{pre}_window_rc"] = np.asarray(
+        [contexts[z]["window_rc"] for z in done], dtype=np.int64
+    )
+    keys = set.intersection(*[set(contexts[z]["pack"]) for z in done])
+    for key in sorted(keys):
+        own.arrays[f"{pre}_{key}"] = np.concatenate(
+            [np.asarray(contexts[z]["pack"][key]).ravel() for z in done]
+        )
+
+
+def _gastro_context(
+    own: Measured,
+    z: int,
+    locations: dict[str, tuple[int, int] | None],
+    bones: dict[str, dict[str, Any]],
+    level: float,
+    window: dict[str, Any],
+) -> dict[str, Any]:
+    """The shared native gradient context of one target frame, measured only inside the
+    source-derived window: one crop, one watershed for all heads. Outside the window is unknown."""
+    product = "native_gastrocnemius_context"
+    ledger.record("native_gastrocnemius.context", frames=1)
+    if not isinstance(window, dict) or window.get("status") != "ok":
+        return {
+            "status": str(
+                window.get("status", "native_window_unavailable")
+                if isinstance(window, dict)
+                else "native_window_unavailable"
+            ),
+            "window": window,
+        }
+    series = own.series
+    uid = str(own.record["series_uid"])
+    volume = series.volume
+    if volume is None or np.ndim(volume) != 3 or not 0 <= z < len(volume):
+        return {"status": "native_plane_unavailable"}
+    raw_full = np.asarray(volume[z])
+    if raw_full.ndim != 2:
+        return {"status": "native_plane_unavailable"}
+    frame = plane_frame(series, z)
+    if isinstance(frame, str):
+        return {"status": "native_frame_unavailable", "reason": frame}
+    r0, r1, c0, c1 = (int(v) for v in window["window_rc"])
+    if not (0 <= r0 < r1 <= raw_full.shape[0] and 0 <= c0 < c1 <= raw_full.shape[1]):
+        return {"status": "native_window_unavailable"}
+    win = (r0, r1, c0, c1)
+    crop = (slice(r0, r1), slice(c0, c1))
+    shape = (r1 - r0, c1 - c0)
+    try:
+        split = float(own.record["background_split"])
+    except (KeyError, TypeError, ValueError):
+        return {"status": "native_split_unavailable"}
+    margin_full = np.asarray(margin_of(uid, z, raw_full))
+    if margin_full.shape != raw_full.shape or margin_full.dtype.kind != "b":
+        return {"status": "native_availability_unavailable"}
+    margin = margin_full[crop]
+    scoped = scoped_interior_of(
+        series, z, raw_full, frame.spacing_rc, split, win, "native_gastrocnemius"
+    )
+    reads(
+        "scoped_interior", ("raw", "finite", "reading"), "native_gastrocnemius_context"
+    )
+    reading = scoped.reading
+    raw = np.asarray(scoped.raw)
+    finite = np.asarray(scoped.finite)
+    markers = np.asarray(getattr(reading, "markers", None))
+    if (
+        raw.shape != shape
+        or finite.shape != shape
+        or finite.dtype.kind != "b"
+        or markers.shape != shape
+    ):
+        return {"status": "native_availability_unavailable"}
+    local = local_frame(frame, win)
+    field = read_field(raw, reading, local.basis_lps, margin)
+    leg = np.asarray(field.leg)
+    lens_available = np.asarray(getattr(reading, "available", finite))
+    if any(a.shape != shape or a.dtype.kind != "b" for a in (leg, lens_available)):
+        return {"status": "native_availability_unavailable"}
+    available = lens_available & leg & finite & ~margin
+    try:
+        lbasis = np.asarray(local.basis_lps, dtype=float)
+        lorigin = np.asarray(local.origin_lps, dtype=float)
+        rr = np.arange(shape[0], dtype=float)[:, None]
+        cc = np.arange(shape[1], dtype=float)[None, :]
+        s = lorigin[2] + rr * lbasis[2, 0] + cc * lbasis[2, 1]
+        tol = float(np.max(np.abs(lbasis[2])))
+        domain = (s <= float(level) + tol) & np.isfinite(s)
+    except (TypeError, ValueError, IndexError, FloatingPointError):
+        domain = np.zeros(shape, dtype=bool)
+    groups: dict[str, np.ndarray] = {}
+    local_locs: dict[str, tuple[int, int] | None] = {}
+    full_locs: dict[str, tuple[int, int] | None] = {}
+    for name, rc in locations.items():
+        full_locs[name] = None if rc is None else (int(rc[0]), int(rc[1]))
+        local_locs[name] = None
+        if rc is None:
+            continue
+        lr, lc = int(rc[0]) - r0, int(rc[1]) - c0
+        if 0 <= lr < shape[0] and 0 <= lc < shape[1]:
+            m = np.zeros(shape, dtype=bool)
+            m[lr, lc] = True
+            groups[f"gastrocnemius_head_location_{name}"] = m
+            local_locs[name] = (lr, lc)
+    for marker_id in np.unique(markers):
+        if int(marker_id) > 0:
+            groups[f"native_lens_peak_{int(marker_id)}"] = markers == int(marker_id)
+    groups["frame_margin"] = margin
+    bone_crop: dict[str, np.ndarray] = {}
+    for bone, ctx in bones.items():
+        mask = ctx.get("mask")
+        if (
+            ctx.get("status") == "resolved_native_support"
+            and isinstance(mask, np.ndarray)
+            and mask.shape == raw_full.shape
+        ):
+            bone_crop[bone] = np.asarray(mask, dtype=bool)[crop]
+            groups[f"known_native_{bone}"] = bone_crop[bone]
+    try:
+        gradient = native_gradient_territories(
+            raw, available & domain, local.spacing_rc, groups
+        )
+    except (ValueError, TypeError) as error:
+        return {"status": "native_gradient_unavailable", "reason": str(error)}
+    pack: dict[str, np.ndarray] = {
+        "raw": raw,
+        "available": available,
+        "domain": domain,
+        "margin": margin,
+        "lens_markers": markers,
+    }
+    for key_, attr in (
+        ("lens_dark", "dark"),
+        ("lens_distance_mm", "distance_mm"),
+        ("lens_labels", "labels"),
+    ):
+        arr = getattr(reading, attr, None)
+        if isinstance(arr, np.ndarray) and arr.shape == shape:
+            pack[key_] = arr
+    for key_, dtype in (
+        ("gradient_magnitude", np.float64),
+        ("gradient_u16", np.uint16),
+        ("gradient_valid", bool),
+        ("marker_ids", np.int32),
+        ("conflicts", bool),
+        ("labels", np.int32),
+        ("unknown", bool),
+    ):
+        pack[key_] = np.asarray(getattr(gradient, key_), dtype=dtype)
+    for bone in ("femur", "tibia"):
+        pack[f"bone_{bone}"] = bone_crop.get(bone, np.zeros(shape, dtype=bool))
+    context = {
+        "status": "measured",
+        "z": z,
+        "window_rc": win,
+        "scope": window["scope"],
+        "raw": raw,
+        "frame": frame,
+        "local_frame": local,
+        "available": available,
+        "domain": domain,
+        "margin": margin,
+        "lens_markers": markers,
+        "gradient": gradient,
+        "marker_groups": groups,
+        "bone_crop": bone_crop,
+        "location_local_rc": local_locs,
+        "location_full_rc": full_locs,
+        "pack": pack,
+    }
+    handed(
+        product, ("lens_context", "gradient_context", "marker_groups", "work_domain")
+    )
+    return context
+
+
+def name_native_gastrocnemius_heads(
+    measured: list[Measured],
+    sources: dict[str, dict[str, Any]],
+    study_uid: str,
+) -> list[tuple[list[Observation], list[Unresolved]]]:
+    """Scoped native gradient readings linked to the AX-identified heads, on sagittal/coronal
+    stacks. Reading semantics: the AX identity is untouched; support is whatever the basin is.
+    One cropped context per target frame serves every head."""
+    aligned: list[tuple[list[Observation], list[Unresolved]]] = [
+        ([], []) for _ in measured
+    ]
+    for index, own in enumerate(measured):
+        here, missing = aligned[index]
+        record = own.record
+        uid, view = str(record["series_uid"]), tuple(record["view"])
+        if len(view) != 3 or str(view[0]).casefold() not in ("sagittal", "coronal"):
+            continue
+        orientation = str(view[0]).casefold()
+        volume = getattr(own.series, "volume", None)
+        profiles: dict[str, dict[str, Any]] = {}
+        for name in GASTROC_HEADS:
+            src = sources.get(name, {})
+            if src.get("status") != "selected":
+                missing.append(
+                    Unresolved(
+                        name,
+                        "native",
+                        uid,
+                        view,
+                        f"native_source_{src.get('status', 'unavailable')}",
+                    )
+                )
+            elif volume is None or np.ndim(volume) != 3 or not len(volume):
+                missing.append(
+                    Unresolved(name, "native", uid, view, "native_volume_unavailable")
+                )
+            else:
+                profile = _gastro_profile(own, name, src["selected"])
+                if profile["peaks"]:
+                    profiles[name] = profile
+                else:
+                    missing.append(
+                        Unresolved(
+                            name, "native", uid, view, "no_positive_source_profile"
+                        )
+                    )
+        if not profiles:
+            continue
+        reads(
+            "native_gastrocnemius_profiles",
+            ("profiles", "peaks", "location"),
+            "native_gastrocnemius_reading",
+        )
+        level = max(p["level"] for p in profiles.values())
+        zs = sorted({z for p in profiles.values() for z in p["peaks"]})
+        artifact = str(artifact_of(study_uid, record))
+        source_points = {n: sources[n]["selected"]["points"] for n in profiles}
+        try:
+            split_key = float(record.get("background_split"))
+        except (TypeError, ValueError):
+            split_key = None
+        contexts: dict[int, dict[str, Any]] = {}
+        bones_by_z: dict[int, dict[str, dict[str, Any]]] = {}
+        masks: dict[str, list[np.ndarray]] = {n: [] for n in profiles}
+        mslices: dict[str, list[int]] = {n: [] for n in profiles}
+        mwindows: dict[str, list[tuple[int, int, int, int]]] = {n: [] for n in profiles}
+        for z in zs:
+            locations = {
+                n: (
+                    tuple(int(v) for v in p["loc_rc"][z])
+                    if p["loc_status"][z] == 2
+                    else None
+                )
+                for n, p in profiles.items()
+            }
+            bones = _gastro_bone_supports(own, study_uid, z)
+            bones_by_z[z] = bones
+            frame = plane_frame(own.series, z)
+            full_shape = tuple(np.shape(volume[z]))
+            if isinstance(frame, str):
+                window = {"status": "native_frame_unavailable", "reason": frame}
+                spacing_key = None
+            else:
+                window = _gastro_window(frame, full_shape, source_points, level)
+                try:
+                    spacing_key = tuple(float(s) for s in frame.spacing_rc)
+                except (TypeError, ValueError):
+                    spacing_key = None
+            window_key = (
+                tuple(window["window_rc"])
+                if window.get("status") == "ok"
+                else str(window.get("status"))
+            )
+            key = (
+                uid,
+                int(z),
+                window_key,
+                split_key,
+                spacing_key,
+                float(level),
+                tuple(sorted(locations.items(), key=lambda kv: kv[0])),
+                tuple(
+                    (
+                        b,
+                        c.get("status"),
+                        digest(c["mask"])
+                        if isinstance(c.get("mask"), np.ndarray)
+                        else None,
+                    )
+                    for b, c in sorted(bones.items())
+                ),
+            )
+            context = once(
+                "native_gastrocnemius_context",
+                key,
+                lambda z=z, locations=locations, bones=bones, window=window, own=own, level=level: (
+                    _gastro_context(own, z, locations, bones, level, window)
+                ),
+            )
+            contexts[z] = context
+            if context.get("status") == "measured":
+                reads(
+                    "native_gastrocnemius_context",
+                    (
+                        "lens_context",
+                        "gradient_context",
+                        "marker_groups",
+                        "work_domain",
+                    ),
+                    "native_gastrocnemius_reading",
+                )
+            for name, p in profiles.items():
+                if z not in p["peaks"]:
+                    continue
+                rc = locations[name]
+                status, basin = "scoped_reading", None
+                lrc = None
+                if context.get("status") != "measured":
+                    status = "context_unavailable:" + str(context.get("status"))
+                elif rc is None:
+                    status = _GASTROC_LOCATION_STATUS.get(
+                        int(p["loc_status"][z]), "head_location_unavailable"
+                    )
+                else:
+                    lrc = context["location_local_rc"].get(name)
+                    if lrc is None:
+                        status = "location_outside_window"
+                    else:
+                        grad = context["gradient"]
+                        r, c = lrc
+                        crops = context["bone_crop"]
+                        code = grad.marker_codes.get(
+                            f"gastrocnemius_head_location_{name}"
+                        )
+                        if any(bool(m[r, c]) for m in crops.values()):
+                            status = "known_native_bone_conflict"
+                        elif grad.conflicts[r, c]:
+                            status = "head_marker_conflict"
+                        elif not context["available"][r, c]:
+                            status = "location_not_in_measured_domain"
+                        elif not context["domain"][r, c]:
+                            status = "location_outside_work_domain"
+                        else:
+                            basin = grad.labels == code
+                            if not basin.any():
+                                status = "no_seeded_native_gradient_territory"
+                            elif not basin[r, c]:
+                                status = "head_marker_not_in_basin"
+                            elif any(bool((basin & m).any()) for m in crops.values()):
+                                status = "known_native_bone_conflict"
+                src = sources[name]["selected"]["metadata"]
+                count = int(basin.sum()) if basin is not None else 0
+                win = (
+                    context.get("window_rc")
+                    if context.get("status") == "measured"
+                    else None
+                )
+                record.setdefault("a4_gastroc_candidates", []).append(
+                    {
+                        "head": name,
+                        "slice": int(z),
+                        "status": status,
+                        "basin_count": count,
+                        "location_rc": rc,
+                        "location_local_rc": lrc,
+                        "window_rc": win,
+                        "scope": context.get("scope"),
+                        "location_off_slab_mm": None
+                        if not np.isfinite(p["loc_off"][z])
+                        else float(p["loc_off"][z]),
+                        "source_profile_count": None
+                        if not np.isfinite(p["counts"][z])
+                        else int(p["counts"][z]),
+                        "projection_complete": bool(p["complete"][z]),
+                        "tied_maxima": len(p["peaks"]) > 1,
+                        "ax_source": src,
+                        "bone_context": {
+                            b: {k: v for k, v in c.items() if k != "mask"}
+                            for b, c in bones.items()
+                        },
+                    }
+                )
+                if status != "scoped_reading":
+                    missing.append(
+                        Unresolved(
+                            name, "native", uid, view, f"native_slice_{z}:{status}"
+                        )
+                    )
+                    continue
+                assert basin is not None and win is not None
+                r0, r1, c0, c1 = win
+                # the Observation row addresses a full-plane native support; everything
+                # outside the window stays False (unknown), window_rc is retained beside it
+                full = np.zeros(full_shape, dtype=bool)
+                full[r0:r1, c0:c1] = basin
+                masks[name].append(full)
+                mslices[name].append(int(z))
+                mwindows[name].append((int(r0), int(r1), int(c0), int(c1)))
+                note = (
+                    "scoped native gradient reading: the basin holding the location marker "
+                    "projected from the AX-identified head's interior peak (series "
+                    f"{str(src['series_uid'])[-8:]} slice {src['slice']}, label {src['label']}, "
+                    "condyle/side relation as that AX identity); its support is these "
+                    f"{count} pixels on this slice only, inside the computational window "
+                    f"{list(win)}; the AX observation remains the "
+                    "identity; not whole-head extent, volume, fascia, or a complete boundary"
+                )
+                here.append(
+                    Observation(
+                        name,
+                        "native",
+                        "reading",
+                        uid,
+                        view,
+                        (int(z),),
+                        GASTROC_SCOPED_CODE,
+                        count,
+                        0.0,
+                        f"a4_{orientation}_{name}_gastroc_scoped_support",
+                        note,
+                        artifact,
+                        len(masks[name]) - 1,
+                        None,
+                    )
+                )
+        for name, stack in masks.items():
+            if stack:
+                pre = f"a4_{orientation}_{name}_gastroc_scoped_support"
+                own.arrays[pre] = np.stack(stack)
+                own.arrays[f"{pre}_slices"] = np.asarray(mslices[name], dtype=np.int32)
+                own.arrays[f"{pre}_count"] = np.asarray(
+                    [int(m.sum()) for m in stack], dtype=np.int64
+                )
+                own.arrays[f"{pre}_window_rc"] = np.asarray(
+                    mwindows[name], dtype=np.int64
+                )
+        done = sorted(z for z, c in contexts.items() if c.get("status") == "measured")
+        if done:
+            pre = f"a4_{orientation}_gastroc_context"
+            _gastro_pack_context(own, pre, done, contexts)
+            record["a4_gastroc_context"] = {
+                "context_slices": done,
+                "window_rc": {int(z): contexts[z]["window_rc"] for z in done},
+                "scope": {int(z): contexts[z]["scope"] for z in done},
+                "locations_local_rc": {
+                    int(z): contexts[z]["location_local_rc"] for z in done
+                },
+                "locations_full_rc": {
+                    int(z): contexts[z]["location_full_rc"] for z in done
+                },
+                "bone_status": {
+                    int(z): {b: c.get("status") for b, c in bones_by_z[z].items()}
+                    for z in done
+                },
+                "marker_codes": {
+                    int(z): contexts[z]["gradient"].marker_codes for z in done
+                },
+                "marker_counts": {
+                    int(z): contexts[z]["gradient"].marker_counts for z in done
+                },
+                "packing": "per-entry C-order flat arrays; offsets/shapes/window_rc "
+                "arrays share the entry order of the slices array; outside the window "
+                "is unknown and not stored",
+                "work_domain": "pixels at or distal (lower S) of the AX head source level, "
+                "inside the source-derived window; union over heads on this frame",
+            }
+    if any(rows or gaps for rows, gaps in aligned):
+        handed("gastrocnemius_scoped_said", ("observations", "unresolved"))
+    return aligned
+
+
+READING_NAMES = (
+    "semimembranosus",
+    "semitendinosus",
+    "gracilis",
+    "popliteal_artery",
+    "popliteal_vein",
+)
+
+
+READING_PLANES = ("sagittal", "coronal")
+
+
+READING_SUPPORT_KEY = "a22_posterior_reading_support"
+
+ATTACHMENT_READING_VIEWS = {
+    "mcl": ("sagittal",),
+    "lcl": ("sagittal", "axial"),
+    "iliotibial_band": ("sagittal", "axial"),
+    "popliteus_tendon": ("sagittal", "axial"),
+    BICEPS: ("coronal", "axial"),
+    "acl": ("axial", "coronal"),
+    "sartorius": ("sagittal", "coronal"),
+}
+
+ATTACHMENT_READING_NAMES = tuple(ATTACHMENT_READING_VIEWS)
+
+ATTACHMENT_ALLOWED = (*READING_NAMES, *ATTACHMENT_READING_NAMES)
+
+ATTACHMENT_SOURCE_FIELDS = ("name", "frame", "mask", "pixels", "support")
+
+
+_UNREADABLE_PLANE = (
+    "target_geometry_unavailable",
+    "target_thickness_unavailable",
+    "source_projection_unavailable",
+)
+
+
+def _reading_view(record: Any) -> tuple[str, str, str] | None:
+    try:
+        view = tuple(record.get("view"))
+    except (AttributeError, TypeError):
+        return None
+    if len(view) == 3 and all(isinstance(v, str) for v in view):
+        return cast(tuple[str, str, str], view)
+    return None
+
+
+def posterior_reading_sources(
+    measured: list[Measured],
+    group_records: list[tuple[dict, dict[str, np.ndarray]]],
+    study_uid: str,
+) -> list[PosteriorSource]:
+    """Every native source the five names have on the early middle records and the group's
+    records, extracted by `posterior_sayings` exactly as `index_posterior` did. Its
+    observations are NOT kept again: they were appended once already; only the sources are used."""
+    by_uid = {m.record["series_uid"]: m for m in measured}
+    found: list[PosteriorSource] = []
+
+    def take(record, arrays, frame, parts, by_silence):
+        _seen, _unplaced, native, _laid = posterior_sayings(
+            record, arrays, frame, parts, study_uid, by_silence
+        )
+        found.extend(native)
+
+    early = tuple(p for p in EARLY_MIDDLE_PARTS if p[0] in READING_NAMES)
+    for own in measured:
+        take(own.record, own.arrays, own.frame, early, False)
+    for record, arrays in group_records:
+        parts = MAIN_RECORD_PARTS.get(str(record["main_slice"]["object"]).lower())
+        own = by_uid.get(record["series_uid"])
+        if parts is None or own is None:
+            continue
+        frame = plane_frame(own.series, record["slice_index"])
+        take(
+            record,
+            arrays,
+            frame,
+            tuple(
+                p
+                for p in parts
+                if p[0] in READING_NAMES
+                and (
+                    p[0] not in SILENT_BY_FIND_PART
+                    or record["assignments"]["codes"].get(p[0]) in NAMED
+                )
+            ),
+            True,
+        )
+    if found:
+        handed(
+            "posterior_reading_sources", ("name", "frame", "mask", "pixels", "support")
+        )
+    return found
+
+
+def _strict_index(value: Any) -> bool:
+    return isinstance(value, (int, np.integer)) and not isinstance(
+        value, (bool, np.bool_)
+    )
+
+
+def _observation_rows(record: dict) -> list[dict]:
+    rows = record.get("observations")
+    return [r for r in rows if isinstance(r, dict)] if isinstance(rows, list) else []
+
+
+def _attachment_observation_fault(source: PosteriorSource, own: Measured) -> str | None:
+    """Whether an actual native/resolved observation addresses exactly this source, or why not.
+    Rows are read from the source's record and from its owning middle record (where
+    `joint_existing` keeps the ACL's and LCL's identity rows); the artifact must match."""
+    record = source.record
+    rows = _observation_rows(record)
+    if own.record is not record:
+        rows += _observation_rows(own.record)
+    index = record.get("slice_index")
+    uid = record.get("series_uid")
+    view = tuple(record.get("view") or ())
+    fault = "source_observation_missing"
+    for row in rows:
+        if (
+            row.get("object") != source.name
+            or row.get("provenance") != "native"
+            or row.get("kind") != "resolved"
+            or row.get("artifact") != source.artifact
+        ):
+            continue
+        slice_values = row.get("slices")
+        if (
+            not isinstance(slice_values, (list, tuple))
+            or len(slice_values) != 1
+            or not _strict_index(slice_values[0])
+            or not _strict_index(index)
+            or int(slice_values[0]) != int(index)
+        ):
+            fault = "source_observation_slice_mismatch"
+            continue
+        row_view = row.get("view")
+        if (
+            row.get("series_uid") != uid
+            or not isinstance(row_view, (list, tuple))
+            or tuple(row_view) != view
+        ):
+            fault = "source_observation_series_mismatch"
+            continue
+        if row.get("support") != source.support:
+            fault = "source_observation_support_mismatch"
+            continue
+        if row.get("label") != source.label:
+            fault = "source_observation_label_mismatch"
+            continue
+        if row.get("row") is not None:
+            fault = "source_observation_row_mismatch"
+            continue
+        count = row.get("count")
+        if not _strict_index(count) or int(count) != source.pixels:
+            fault = "source_observation_count_mismatch"
+            continue
+        code = row.get("code")
+        if (
+            not isinstance(code, str)
+            or code not in NAMED
+            or code == "laid_from_its_partner"
+        ):
+            fault = "source_observation_code_not_native_named"
+            continue
+        return None
+    return fault
+
+
+def _posterior_source_fault(
+    source: PosteriorSource,
+    by_uid: dict[str, Measured],
+    study_uid: str,
+    allowed: Collection[str] | None = None,
+) -> str | None:
+    """Why a source fact does not match the real arrays/geometry, or None. Never repaired.
+    `allowed` (default None: the five B8 names, exactly as before) admits further names; explicitly
+    allowed names outside the B8 readings are validated against their actual observation address."""
+    record, name = source.record, source.name
+    own = by_uid.get(record.get("series_uid"))
+    if own is None:
+        return "source_series_not_measured"
+    actual_uid = getattr(getattr(own.series, "row", None), "series_uid", None)
+    if not isinstance(actual_uid, str) or record.get("series_uid") != actual_uid:
+        return "source_series_uid_mismatch"
+    if allowed is None:
+        if name not in READING_NAMES or name not in OBJECT_CODES:
+            return "source_not_a_posterior_reading_object"
+    elif (
+        name not in allowed
+        or (name in READING_NAMES and name not in OBJECT_CODES)
+        or (source.label is not None and name not in OBJECT_CODES)
+    ):
+        return "source_not_a_posterior_reading_object"
+    attached = allowed is not None and name not in READING_NAMES
+    if not attached:
+        code = record.get("assignments", {}).get("codes", {}).get(name)
+        if code not in NAMED or code == "laid_from_its_partner":
+            return "source_code_not_native_named"
+    if tuple(record.get("view", ())) != tuple(own.record["view"]):
+        return "source_view_mismatch"
+    volume = own.series.volume
+    if volume is None or np.ndim(volume) != 3 or not len(volume):
+        return "source_volume_unavailable"
+    index = record.get("slice_index")
+    if not _strict_index(index) or not 0 <= index < len(volume):
+        return "source_slice_out_of_range"
+    shape = tuple(np.shape(volume)[1:])
+    mask = source.mask
+    if not isinstance(mask, np.ndarray) or mask.dtype != bool or mask.shape != shape:
+        return "source_mask_shape_mismatch"
+    if int(np.count_nonzero(mask)) == 0 or int(np.count_nonzero(mask)) != source.pixels:
+        return "source_count_mismatch"
+    array = source.arrays.get(source.support)
+    if not isinstance(array, np.ndarray) or array.shape != shape:
+        return "source_support_missing_or_shape_mismatch"
+    if attached:
+        if source.label is None and array.dtype != np.bool_:
+            return "source_support_dtype_mismatch"
+        if source.label is not None and array.dtype.kind not in "iu":
+            return "source_support_dtype_mismatch"
+    if source.label is None:
+        expected = np.asarray(array, dtype=bool)
+    else:
+        if source.label != OBJECT_CODES[name]:
+            return "source_label_mismatch"
+        expected = array == source.label
+    if not np.array_equal(expected, mask):
+        return "source_mask_not_support_pixels"
+    expected_artifact = str(artifact_of(study_uid, record))
+    record_artifact = record.get("artifact")
+    if "artifact" in record and (
+        not isinstance(record_artifact, str) or record_artifact != expected_artifact
+    ):
+        return "source_artifact_mismatch"
+    if source.artifact != expected_artifact:
+        return "source_artifact_mismatch"
+    if attached:
+        fault = _attachment_observation_fault(source, own)
+        if fault is not None:
+            return fault
+    actual = plane_frame(own.series, int(index))
+    if isinstance(actual, str) or not isinstance(source.frame, PlaneFrame):
+        return "source_frame_unavailable"
+    try:
+        same = (
+            np.allclose(source.frame.origin_lps, actual.origin_lps)
+            and np.allclose(source.frame.basis_lps, actual.basis_lps)
+            and np.allclose(source.frame.spacing_rc, actual.spacing_rc)
+        )
+        spacing = np.asarray(source.frame.spacing_rc, dtype=float)
+        if (
+            spacing.shape != (2,)
+            or not np.isfinite(spacing).all()
+            or (spacing <= 0).any()
+        ):
+            return "source_frame_unavailable"
+    except (TypeError, ValueError):
+        return "source_frame_mismatch"
+    return None if same else "source_frame_mismatch"
+
+
+def posterior_reading_selection(
+    measured: list[Measured],
+    sources: list[PosteriorSource],
+    study_uid: str,
+    allowed: Collection[str] | None = None,
+) -> tuple[
+    dict[str, list[PosteriorSource]],
+    list[tuple[PosteriorSource, str]],
+    dict[str, list[dict[str, Any]]],
+]:
+    """Per name, the valid native cross-sections of unique-largest physical area (all exact
+    ties kept, named by their count), the invalid source facts with their codes, and every
+    candidate. Source selection only: not the object's 3D map reference."""
+    by_uid = {m.record["series_uid"]: m for m in measured}
+    candidates: dict[str, list[dict[str, Any]]] = {}
+    faults: list[tuple[PosteriorSource, str]] = []
+    valid: dict[str, list[tuple[float, PosteriorSource, dict[str, Any]]]] = {}
+    for source in sources:
+        fault = _posterior_source_fault(source, by_uid, study_uid, allowed)
+        area = float("nan")
+        if fault is None:
+            sr, sc = source.frame.spacing_rc
+            area = float(source.pixels) * float(sr) * float(sc)
+        else:
+            faults.append((source, fault))
+        try:
+            slice_index = float(source.record.get("slice_index"))
+        except (TypeError, ValueError):
+            slice_index = -1.0
+        row = {
+            "series_uid": str(source.record.get("series_uid")),
+            "slice_index": slice_index,
+            "pixels": int(source.pixels),
+            "area_mm2": area,
+            "fault": fault,
+            "selected": False,
+        }
+        candidates.setdefault(source.name, []).append(row)
+        if fault is None:
+            valid.setdefault(source.name, []).append((area, source, row))
+    selected: dict[str, list[PosteriorSource]] = {}
+    for name, items in valid.items():
+        best = max(area for area, _, _ in items)
+        chosen = [(s, row) for area, s, row in items if area == best]
+        for _, row in chosen:
+            row["selected"] = True
+        selected[name] = [s for s, _ in chosen]
+    return selected, faults, candidates
+
+
+def posterior_source_planes(
+    own: Measured, points: np.ndarray
+) -> tuple[list[dict[str, Any]], str | None]:
+    """Source points (N, 3) through every slice of one target acquisition, by that slice's own
+    frame and half-slab thickness (`_extensor_source_projection`). Every slice keeps its counts,
+    status and nearest offset; nothing is dropped."""
+    volume = getattr(own.series, "volume", None)
+    if volume is None or np.ndim(volume) != 3 or not len(volume):
+        return [], "target_volume_unavailable"
+    depth, rows, cols = np.shape(volume)
+    thicknesses = tuple(getattr(own.series, "slice_thickness_mm", ()) or ())
+    planes: list[dict[str, Any]] = []
+    for z in range(depth):
+        plane: dict[str, Any] = {
+            "z": z,
+            "status": "",
+            "slab_count": 0,
+            "in_frame_count": 0,
+            "unique_count": 0,
+            "nearest_mm": float("nan"),
+            "unique_rc": np.empty((0, 2), dtype=np.int32),
+            "sample_rc": np.empty((0, 2), dtype=np.int32),
+            "frame": None,
+        }
+        planes.append(plane)
+        frame = plane_frame(own.series, z)
+        if isinstance(frame, str):
+            plane["status"] = "target_geometry_unavailable"
+            continue
+        try:
+            thickness = float(thicknesses[z])
+        except (IndexError, TypeError, ValueError, OverflowError):
+            plane["status"] = "target_thickness_unavailable"
+            continue
+        if not np.isfinite(thickness) or thickness <= 0:
+            plane["status"] = "target_thickness_unavailable"
+            continue
+        plane["frame"] = frame
+        unique_rc, sample_rc, slab_count, whole, failure = _extensor_source_projection(
+            points, frame, thickness, (rows, cols)
+        )
+        plane["slab_count"] = int(slab_count)
+        try:
+            signed = (points - np.asarray(frame.origin_lps, dtype=float)) @ np.asarray(
+                frame.normal(), dtype=float
+            )
+            if len(signed) and np.isfinite(signed).all():
+                plane["nearest_mm"] = float(np.abs(signed).min())
+        except (TypeError, ValueError, FloatingPointError):
+            pass
+        if failure is not None:
+            plane["status"] = failure
+            continue
+        plane.update(
+            unique_rc=unique_rc,
+            sample_rc=sample_rc,
+            unique_count=len(unique_rc),
+            in_frame_count=len(sample_rc),
+            status="no_source_in_slab"
+            if slab_count == 0
+            else "projected_whole"
+            if whole
+            else "projected_partially_outside",
+        )
+    return planes, None
+
+
+def posterior_max_planes(
+    planes: list[dict[str, Any]],
+) -> tuple[list[dict[str, Any]], str | None]:
+    """All global-maximum positive in-frame sample-count planes, or the named reason there are
+    none (an unknown, never an absent object)."""
+    best = max((p["in_frame_count"] for p in planes), default=0)
+    if best > 0:
+        return [p for p in planes if p["in_frame_count"] == best], None
+    if any(p["slab_count"] > 0 for p in planes):
+        return [], "source_on_target_slabs_outside_frame"
+    if any(p["status"] in _UNREADABLE_PLANE for p in planes):
+        return [], "target_slab_geometry_unavailable"
+    return [], "source_outside_target_slabs"
+
+
+def posterior_query_window(
+    unique_rc: np.ndarray, frame: PlaneFrame, shape: tuple[int, int]
+) -> tuple[int, int, int, int] | None:
+    """The projected source pixels' bounding extent plus one SQUINT_TILE_MM of context in the
+    target's native pixel spacings: computational enclosure context, not a size criterion."""
+    try:
+        spacing = np.asarray(frame.spacing_rc, dtype=float)
+        tile = float(SQUINT_TILE_MM)
+    except (TypeError, ValueError):
+        return None
+    if (
+        spacing.shape != (2,)
+        or not np.isfinite(spacing).all()
+        or (spacing <= 0).any()
+        or not np.isfinite(tile)
+        or tile <= 0
+        or not len(unique_rc)
+    ):
+        return None
+    pad = np.ceil(tile / spacing).astype(int)
+    return (
+        max(0, int(unique_rc[:, 0].min()) - int(pad[0])),
+        min(int(shape[0]), int(unique_rc[:, 0].max()) + 1 + int(pad[0])),
+        max(0, int(unique_rc[:, 1].min()) - int(pad[1])),
+        min(int(shape[1]), int(unique_rc[:, 1].max()) + 1 + int(pad[1])),
+    )
+
+
+def merge_query_windows(
+    windows: list[tuple[int, int, int, int]],
+) -> list[tuple[list[int], tuple[int, int, int, int]]]:
+    """Windows on one frame, merged where they overlap (half-open; touching is not overlap)
+    until none do: (member indices, union window) per context, in first-member order."""
+    groups = [([i], tuple(w)) for i, w in enumerate(windows)]
+
+    def overlaps(a, b):
+        return a[0] < b[1] and b[0] < a[1] and a[2] < b[3] and b[2] < a[3]
+
+    merged = True
+    while merged:
+        merged = False
+        for a in range(len(groups)):
+            for b in range(a + 1, len(groups)):
+                if overlaps(groups[a][1], groups[b][1]):
+                    wa, wb = groups[a][1], groups[b][1]
+                    groups[a] = (
+                        sorted(groups[a][0] + groups[b][0]),
+                        (
+                            min(wa[0], wb[0]),
+                            max(wa[1], wb[1]),
+                            min(wa[2], wb[2]),
+                            max(wa[3], wb[3]),
+                        ),
+                    )
+                    del groups[b]
+                    merged = True
+                    break
+            if merged:
+                break
+    return sorted(groups, key=lambda g: g[0][0])
+
+
+def _measure_posterior_context(
+    own: Measured,
+    z: int,
+    window: tuple[int, int, int, int],
+    group: list[dict[str, Any]],
+    prefix: str,
+    artifact: str,
+    stack: list[np.ndarray],
+    here: list[Observation],
+    lack: Callable[[str, str], None],
+) -> None:
+    """One merged context: crop raw, finite_of and margin_of first, build the shared enclosure
+    context once, then measure each member's contacts against it."""
+    series = own.series
+    reads("series", ("volume", "row", "slices"), "posterior_reading_context")
+    plane = np.asarray(series.volume[z])
+    r0, r1, c0, c1 = window
+    crop = (slice(r0, r1), slice(c0, c1))
+    raw = plane[crop].copy()
+    finite = np.asarray(finite_of(series)[z][crop], dtype=bool)
+    exterior = np.asarray(margin_of(series.row.series_uid, z, plane))
+    ledger.record(
+        "posterior_reading.work",
+        contexts=1,
+        objects=len(group),
+        window_pixels=int(raw.size),
+        full_frame_pixels=int(plane.size),
+    )
+    if exterior.shape != plane.shape:
+        for member in group:
+            lack(member["name"], "margin_unavailable")
+        return
+    available = finite & ~exterior[crop].astype(bool)
+    context = enclosed_context(
+        raw, available, local_frame(group[0]["plane"]["frame"], window)
+    )
+    handed(
+        "posterior_reading_context",
+        ("window", "raw", "availability", "enclosed_depth", "labels", "components"),
+    )
+    reads(
+        "posterior_reading_context",
+        ("window", "raw", "availability", "enclosed_depth", "labels", "components"),
+        "posterior_reading_contacts",
+    )
+    arrays = own.arrays
+    arrays[f"{prefix}_slice"] = np.asarray(z, dtype=np.int32)
+    arrays[f"{prefix}_window_rc_exclusive"] = np.asarray(window, dtype=np.int32)
+    arrays[f"{prefix}_raw"] = raw
+    arrays[f"{prefix}_available"] = available
+    shared_written = False
+    offset = np.asarray([r0, c0])
+    for k, member in enumerate(group):
+        name, source, plane_row = member["name"], member["source"], member["plane"]
+        target = np.zeros(raw.shape, dtype=bool)
+        rc = plane_row["unique_rc"] - offset
+        target[rc[:, 0], rc[:, 1]] = True
+        result = enclosed_target_contacts(context, target)
+        if result["enclosed_depth"] is not None and not shared_written:
+            for key in (
+                "depth_input",
+                "enclosed_depth",
+                "positive_enclosure",
+                "labels",
+                "unavailable_boundary",
+            ):
+                arrays[f"{prefix}_{key}"] = result[key]
+            shared_written = True
+        mp = f"{prefix}_m{k}_{name}"
+        arrays[f"{mp}_target"] = target
+        if result["distance_to_target_mm"] is not None:
+            arrays[f"{mp}_distance_mm"] = result["distance_to_target_mm"]
+            arrays[f"{mp}_contacted"] = result["contacted_component_mask"]
+        arrays[f"{mp}_components"] = np.asarray(
+            [
+                [
+                    c["label"],
+                    c["pixels"],
+                    c["minimum_target_distance_mm"],
+                    float(c["within_existing_contact_shell"]),
+                    c["crop_edge_pixels"],
+                    c["unknown_boundary_pixels"],
+                ]
+                for c in result["components"]
+            ],
+            dtype=np.float64,
+        ).reshape(-1, 6)
+        own.record.setdefault("a22_posterior_readings", []).append(
+            {
+                "object": name,
+                "slice": z,
+                "context_prefix": prefix,
+                "member_prefix": mp,
+                "window_rc_exclusive": list(window),
+                "source": {
+                    "series_uid": source.record["series_uid"],
+                    "slice_index": int(source.record["slice_index"]),
+                    "artifact": source.artifact,
+                    "support": source.support,
+                    "label": source.label,
+                    "pixels": source.pixels,
+                    "tied_largest_sources": member["ties"],
+                },
+                "reading": {
+                    key: value
+                    for key, value in result.items()
+                    if not isinstance(value, np.ndarray)
+                },
+            }
+        )
+        if result["status"] not in ("complete", "partial_reading"):
+            lack(name, f"enclosure_{result['status']}")
+            continue
+        if not result["contacted_component_count"]:
+            lack(
+                name,
+                "no_enclosed_darkness_in_query_context"
+                if result["component_count"] == 0
+                else "enclosed_darkness_not_in_source_contact",
+            )
+            continue
+        full = np.zeros(plane.shape, dtype=bool)
+        full[crop] = result["contacted_component_mask"]
+        row = len(stack)
+        stack.append(full)
+        contacted = [
+            c for c in result["components"] if c["within_existing_contact_shell"]
+        ]
+        nearest = plane_row["nearest_mm"]
+        here.append(
+            Observation(
+                name,
+                "native",
+                "reading",
+                own.record["series_uid"],
+                tuple(own.record["view"]),
+                (z,),
+                "source_contacted_enclosed_darkness",
+                int(full.sum()),
+                float(nearest) if np.isfinite(nearest) else None,
+                READING_SUPPORT_KEY,
+                f"union of {len(contacted)} source-contacted strict-positive FOUR-connected "
+                f"enclosed-dark components (sizes "
+                f"{[c['pixels'] for c in contacted]}) measured in a native crop at offset "
+                f"({r0}, {c0}) shape {tuple(raw.shape)} shared with {len(group)} object "
+                f"quer{'y' if len(group) == 1 else 'ies'}; an ambiguous scoped enclosure "
+                "reading with every contact retained, not a winner, boundary, course, "
+                "calibre, volume or diagnosis; "
+                f"{sum(c['touches_crop_edge'] for c in contacted)} contacted components touch "
+                f"the crop edge, {sum(c['touches_unavailable_boundary'] for c in contacted)} "
+                "touch unavailable pixels; source is the largest native section of "
+                f"{name} on slice {source.record['slice_index']} of series "
+                f"{str(source.record['series_uid'])[-8:]}"
+                + (
+                    f" (one of {member['ties']} exactly tied largest areas)"
+                    if member["ties"] > 1
+                    else ""
+                )
+                + "; off-plane is the nearest source point to this slice; "
+                f"arrays[{READING_SUPPORT_KEY}][row] is the boolean full-frame support",
+                artifact,
+                row,
+                None,
+            )
+        )
+
+
+def posterior_readings_from_sources(
+    measured: list[Measured],
+    sources: list[PosteriorSource],
+    study_uid: str,
+    names: Sequence[str] = READING_NAMES,
+    target_planes: dict[str, Collection[str]] | None = None,
+    unresolved_sources: Sequence[Unresolved] = (),
+) -> list[tuple[list[Observation], list[Unresolved]]]:
+    """Native/reading observations of the named objects on the acquisitions their views name
+    (default: the five objects on every SAG and COR acquisition), aligned with `measured`:
+    (observations, unresolved) per series. `target_planes` maps a name to the planes asked
+    (absent name: the default planes); `unresolved_sources` are source facts already refused,
+    kept as named unknowns."""
+    said: list[tuple[list[Observation], list[Unresolved]]] = [
+        ([], []) for _ in measured
+    ]
+    if not measured:
+        return said
+    names = tuple(names)
+    index = {m.record["series_uid"]: i for i, m in enumerate(measured)}
+    selected, faults, candidates = posterior_reading_selection(
+        measured, sources, study_uid, None if names == tuple(READING_NAMES) else names
+    )
+    if sources:
+        reads(
+            "posterior_reading_sources",
+            ("name", "frame", "mask", "pixels", "support"),
+            "posterior_reading_select",
+        )
+        handed("posterior_reading_selection", ("selected", "candidates", "faults"))
+    for source, code in faults:
+        i = index.get(source.record.get("series_uid"), 0)
+        said[i][1].append(
+            Unresolved(
+                source.name,
+                "native",
+                source.record.get("series_uid"),
+                _reading_view(source.record),
+                code,
+            )
+        )
+    for item in unresolved_sources:
+        i = index.get(item.series_uid)
+        if i is not None:
+            said[i][1].append(item)
+    points_of: dict[tuple[str, int], np.ndarray] = {}
+    for name, chosen in selected.items():
+        for si, source in enumerate(chosen):
+            points_of[(name, si)] = np.asarray(
+                source.frame.to_patient(np.argwhere(source.mask).astype(float)),
+                dtype=float,
+            )
+    if points_of:
+        reads("posterior_reading_selection", ("selected",), "posterior_reading_project")
+    for ti, own in enumerate(measured):
+        view = _reading_view(own.record)
+        if view is None:
+            continue
+        plane_name = view[0].casefold()
+        here, missing = said[ti]
+        uid = own.record["series_uid"]
+        artifact = str(artifact_of(study_uid, own.record))
+        told: set[tuple[str, str]] = set()
+
+        def lack(name: str, code: str, uid=uid, view=view, told=told, missing=missing):
+            if (name, code) not in told:
+                told.add((name, code))
+                missing.append(Unresolved(name, "native", uid, view, code))
+
+        by_plane: dict[int, list[dict[str, Any]]] = {}
+        for name in names:
+            asked = (
+                READING_PLANES
+                if target_planes is None or name not in target_planes
+                else target_planes[name]
+            )
+            if plane_name not in asked:
+                continue
+            chosen = selected.get(name, [])
+            if not chosen:
+                continue
+            table = candidates[name]
+            own.arrays[f"a22_posterior_{name}_source_candidates"] = np.asarray(
+                [
+                    [
+                        c["slice_index"],
+                        c["pixels"],
+                        c["area_mm2"],
+                        float(c["fault"] is None),
+                        float(c["selected"]),
+                    ]
+                    for c in table
+                ],
+                dtype=np.float64,
+            ).reshape(-1, 5)
+            own.arrays[f"a22_posterior_{name}_candidate_series"] = np.asarray(
+                [c["series_uid"] for c in table], dtype=str
+            )
+            own.arrays[f"a22_posterior_{name}_candidate_faults"] = np.asarray(
+                [c["fault"] or "" for c in table], dtype=str
+            )
+            for si, source in enumerate(chosen):
+                planes, why = posterior_source_planes(own, points_of[(name, si)])
+                if why is not None:
+                    lack(name, why)
+                    continue
+                best = max((p["in_frame_count"] for p in planes), default=0)
+                picked, code = posterior_max_planes(planes)
+                profile = f"a22_posterior_{name}_s{si}_profile"
+                own.arrays[f"{profile}_slab_count"] = np.asarray(
+                    [p["slab_count"] for p in planes], dtype=np.int64
+                )
+                own.arrays[f"{profile}_in_frame_count"] = np.asarray(
+                    [p["in_frame_count"] for p in planes], dtype=np.int64
+                )
+                own.arrays[f"{profile}_unique_count"] = np.asarray(
+                    [p["unique_count"] for p in planes], dtype=np.int64
+                )
+                own.arrays[f"{profile}_nearest_mm"] = np.asarray(
+                    [p["nearest_mm"] for p in planes], dtype=np.float64
+                )
+                own.arrays[f"{profile}_status"] = np.asarray(
+                    [p["status"] for p in planes], dtype=str
+                )
+                own.arrays[f"{profile}_selected"] = np.asarray(
+                    [best > 0 and p["in_frame_count"] == best for p in planes],
+                    dtype=bool,
+                )
+                handed(
+                    "posterior_reading_profile",
+                    (
+                        "slab_count",
+                        "in_frame_count",
+                        "status",
+                        "nearest_mm",
+                        "selected",
+                    ),
+                )
+                if code is not None:
+                    lack(name, code)
+                    continue
+                reads(
+                    "posterior_reading_profile",
+                    ("in_frame_count", "selected"),
+                    "posterior_reading_context",
+                )
+                shape = tuple(np.shape(own.series.volume)[1:])
+                for plane_row in picked:
+                    window = posterior_query_window(
+                        plane_row["unique_rc"], plane_row["frame"], shape
+                    )
+                    if window is None:
+                        lack(name, "invalid_query_spacing")
+                        continue
+                    by_plane.setdefault(plane_row["z"], []).append(
+                        {
+                            "name": name,
+                            "source": source,
+                            "plane": plane_row,
+                            "window": window,
+                            "ties": len(chosen),
+                        }
+                    )
+        stack: list[np.ndarray] = []
+        context_no = 0
+        for z in sorted(by_plane):
+            members = by_plane[z]
+            for ids, window in merge_query_windows([m["window"] for m in members]):
+                _measure_posterior_context(
+                    own,
+                    z,
+                    window,
+                    [members[i] for i in ids],
+                    f"a22_posterior_context{context_no}",
+                    artifact,
+                    stack,
+                    here,
+                    lack,
+                )
+                context_no += 1
+        if stack:
+            own.arrays[READING_SUPPORT_KEY] = np.stack(stack)
+    if any(here or missing for here, missing in said):
+        handed("posterior_readings", ("observations", "unresolved", "support"))
+    return said
+
+
+def _attachment_source(
+    name: str, row: dict, record: dict, arrays: dict, frame: Any
+) -> PosteriorSource | str:
+    """One source from an actual native/resolved observation's own address, or the named reason
+    it cannot be built. Validation proper is `_posterior_source_fault`."""
+    if isinstance(frame, str):
+        return frame
+    if not isinstance(frame, PlaneFrame):
+        return "source_frame_unavailable"
+    support = row.get("support")
+    array = arrays.get(support) if isinstance(support, str) else None
+    if not isinstance(array, np.ndarray) or array.ndim != 2:
+        return "source_support_missing_or_shape_mismatch"
+    label = row.get("label")
+    if label is None:
+        if array.dtype != np.bool_:
+            return "source_support_dtype_mismatch"
+        mask = array.copy()
+    else:
+        if isinstance(label, (bool, np.bool_)) or not isinstance(
+            label, (int, np.integer)
+        ):
+            return "source_label_mismatch"
+        if array.dtype.kind not in "iu":
+            return "source_support_dtype_mismatch"
+        mask = array == label
+    artifact = row.get("artifact")
+    return PosteriorSource(
+        name,
+        record,
+        arrays,
+        frame,
+        mask,
+        support,
+        None if label is None else int(label),
+        artifact if isinstance(artifact, str) else "",
+        int(np.count_nonzero(mask)),
+    )
+
+
+def attachment_reading_sources(
+    measured: list[Measured],
+    group_records: list[tuple[dict, dict[str, np.ndarray]]],
+    late_records: list[tuple[dict, dict[str, np.ndarray]]],
+    study_uid: str,
+    names: Collection[str] = ATTACHMENT_READING_NAMES,
+) -> tuple[list[PosteriorSource], list[Unresolved]]:
+    """Sources with explicitly requested names from actual native/resolved observation rows of the
+    middle records, the group records and the late main records (call after those rows exist).
+    Laid and projected rows are never sources. Rows that cannot be turned into a source come
+    back as named `Unresolved`, never as absence. Validation happens in the shared fault check."""
+    by_uid = {m.record["series_uid"]: m for m in measured}
+    found: list[PosteriorSource] = []
+    lacking: list[Unresolved] = []
+    seen: set[Any] = set()
+    main = [(r, a) for r, a in (*group_records, *late_records) if "series_uid" in r]
+    main_artifacts = {str(artifact_of(study_uid, r)) for r, _ in main}
+
+    def take(record, arrays, frame, rows):
+        for row in rows:
+            name = row.get("object")
+            if (
+                name not in names
+                or row.get("provenance") != "native"
+                or row.get("kind") != "resolved"
+            ):
+                continue
+            key = (
+                id(record),
+                name,
+                row.get("support"),
+                row.get("label"),
+                tuple(row.get("slices") or ()),
+                row.get("row"),
+                row.get("artifact"),
+            )
+            if key in seen:
+                continue
+            seen.add(key)
+            got = _attachment_source(name, row, record, arrays, frame)
+            if isinstance(got, str):
+                lacking.append(
+                    Unresolved(
+                        name,
+                        "native",
+                        record.get("series_uid"),
+                        _reading_view(record),
+                        got,
+                    )
+                )
+            else:
+                found.append(got)
+
+    for own in measured:
+        rows = [
+            r
+            for r in _observation_rows(own.record)
+            if r.get("artifact") not in main_artifacts
+        ]
+        take(own.record, own.arrays, own.frame, rows)
+    for record, arrays in main:
+        own = by_uid.get(record.get("series_uid"))
+        if own is None:
+            continue
+        mine = str(artifact_of(study_uid, record))
+        rows = _observation_rows(record)
+        if own.record is not record:
+            rows += _observation_rows(own.record)
+        rows = [r for r in rows if r.get("artifact") == mine]
+        index = record.get("slice_index")
+        frame: Any = "source_slice_out_of_range"
+        if _strict_index(index):
+            try:
+                frame = plane_frame(own.series, int(index))
+            except (IndexError, TypeError, ValueError):
+                frame = "source_frame_unavailable"
+        take(record, arrays, frame, rows)
+    if found:
+        handed("attachment_reading_sources", ATTACHMENT_SOURCE_FIELDS)
+    return found, lacking
+
+
+def attachment_target_planes(
+    measured: list[Measured], sources: list[PosteriorSource], study_uid: str
+) -> dict[str, frozenset[str]]:
+    """Per attachment name, the mapped views minus any view in which a valid native source already
+    gives that object's identity. Unknown or invalid sources do not remove a view."""
+    by_uid = {m.record["series_uid"]: m for m in measured}
+    competent: dict[str, set[str]] = {}
+    for source in sources:
+        if source.name not in ATTACHMENT_READING_VIEWS:
+            continue
+        if (
+            _posterior_source_fault(source, by_uid, study_uid, ATTACHMENT_ALLOWED)
+            is not None
+        ):
+            continue
+        view = _reading_view(source.record)
+        if view:
+            competent.setdefault(source.name, set()).add(view[0].casefold())
+    return {
+        name: frozenset(p for p in planes if p not in competent.get(name, ()))
+        for name, planes in ATTACHMENT_READING_VIEWS.items()
+    }
+
+
+def late_native_readings(
+    measured: list[Measured],
+    group_records: list[tuple[dict, dict[str, np.ndarray]]],
+    late_records: list[tuple[dict, dict[str, np.ndarray]]],
+    study_uid: str,
+) -> list[tuple[list[Observation], list[Unresolved]]]:
+    """The one late context-sharing pass: the existing five posterior sources and every attachment
+    source, measured together. Call after `joint_existing` and the late `index_posterior`; no
+    observation is appended here."""
+    posterior = posterior_reading_sources(measured, group_records, study_uid)
+    attached, lacking = attachment_reading_sources(
+        measured, group_records, late_records, study_uid
+    )
+    if attached:
+        reads(
+            "attachment_reading_sources",
+            ATTACHMENT_SOURCE_FIELDS,
+            "posterior_reading_select",
+        )
+    return posterior_readings_from_sources(
+        measured,
+        [*posterior, *attached],
+        study_uid,
+        names=ATTACHMENT_ALLOWED,
+        target_planes=attachment_target_planes(measured, attached, study_uid),
+        unresolved_sources=lacking,
+    )
+
+
 def posterior_sayings(
     record: dict,
     arrays: dict[str, np.ndarray],
@@ -23648,12 +26943,14 @@ def find_part(
 
 
 def artifact_of(study_uid: str, record: dict) -> Path:
-    """Where `save` puts one record's arrays, relative to its run: the study's folder and the series'
-    uid, with the part's name when it is a main slice's. Known before the save, so an observation can
-    name the artifact that will hold its places."""
+    """Where `save` puts this record's lossless array archive, relative to its run.
+
+    Main slices include the part name. The identity is known before writing so every
+    observation names the same artifact; legacy receipt paths remain readable.
+    """
     part = record.get("main_slice", {}).get("object")
     name = record["series_uid"] if part is None else f"{record['series_uid']}-{part}"
-    return Path(study_uid) / f"{name}.npz"
+    return Path(study_uid) / f"{name}.npz.xz"
 
 
 def save(run_dir: Path, study_uid: str, record: dict, arrays: dict) -> dict:
@@ -23662,11 +26959,154 @@ def save(run_dir: Path, study_uid: str, record: dict, arrays: dict) -> dict:
     reading: what is kept here declares no read, so a value no stage reads stays on the list of
     what no stage reads (the module note, TELEMETRY)."""
     artifact = artifact_of(study_uid, record)
-    np.savez_compressed(run_dir / artifact, allow_pickle=False, **arrays)
+    write_npz_xz(run_dir / artifact, arrays)
     record["study_uid"] = study_uid
     record["artifact"] = str(artifact)
     record["arrays"] = {name: {"digest": digest(a)} for name, a in arrays.items()}
     return record
+
+
+def _ordinary_full_native_mask_support(
+    support: object,
+    descriptor: tuple[tuple[int, ...], str],
+    native_shape: tuple[int, int],
+    row: object,
+) -> bool:
+    """Whether a retained support descriptor is a direct ordinary full-native mask row."""
+    if not isinstance(support, str):
+        return False
+    name = support.casefold()
+    if not name.startswith(("a1_", "a2_", "a3_", "a4_", "a22_", "b1_")):
+        return False
+    if any(
+        token in name
+        for token in (
+            "coarse",
+            "packed",
+            "trace",
+            "points",
+            "profile",
+            "sample",
+            "crop",
+            "window",
+        )
+    ):
+        return False
+    shape, dtype_kind = descriptor
+    if dtype_kind not in "biu":
+        return False
+    if shape == native_shape:
+        return row is None
+    return len(shape) == 3 and shape[1:] == native_shape and row is not None
+
+
+def attach_full_native_mask_address_frames(
+    records: list[dict],
+    measured_by_uid: dict[str, Measured],
+    saved_shapes_by_artifact: dict[str, dict[str, tuple[tuple[int, ...], str]]],
+) -> None:
+    """Attach actual native frames and stamp only verified full-native mask addresses."""
+    from knee.collapse.observations import address_frame_status
+
+    frame_cache: dict[tuple[str, int], dict[str, object] | None] = {}
+    for record in records:
+        observations = record.get("observations", [])
+        if not isinstance(observations, list):
+            continue
+        for observation in observations:
+            if not isinstance(observation, dict):
+                continue
+            # Re-validate any prior stamp against the current saved-shape inventory.
+            if observation.get("support_address_kind") == "native_rc":
+                observation.pop("support_address_kind")
+            provenance = observation.get("provenance")
+            if provenance not in ("native", "laid"):
+                continue
+            if observation.get("kind") not in ("resolved", "reading"):
+                continue
+            uid = observation.get("series_uid")
+            own = measured_by_uid.get(uid) if isinstance(uid, str) and uid else None
+            view = observation.get("view")
+            if (
+                own is None
+                or not isinstance(view, (list, tuple))
+                or len(view) != 3
+                or any(not isinstance(part, str) or not part for part in view)
+                or tuple(view) != tuple(own.record["view"])
+                or own.series.row.series_uid != uid
+            ):
+                continue
+            slices = observation.get("slices")
+            if not isinstance(slices, (list, tuple)) or len(slices) != 1:
+                continue
+            z_value = slices[0]
+            if isinstance(z_value, bool) or not isinstance(z_value, (int, np.integer)):
+                continue
+            z = int(z_value)
+            volume = own.series.volume
+            if volume is None or volume.ndim != 3 or not 0 <= z < len(volume):
+                continue
+            artifact = observation.get("artifact")
+            support = observation.get("support")
+            if (
+                not isinstance(artifact, str)
+                or not artifact
+                or not isinstance(support, str)
+                or not support
+            ):
+                continue
+            descriptors = saved_shapes_by_artifact.get(artifact)
+            descriptor = None if descriptors is None else descriptors.get(support)
+            if descriptor is None:
+                continue
+            row = observation.get("row")
+            if row is not None and (
+                isinstance(row, bool) or not isinstance(row, (int, np.integer))
+            ):
+                continue
+            native_shape = tuple(volume.shape[1:])
+            if not _ordinary_full_native_mask_support(
+                support, descriptor, native_shape, row
+            ):
+                continue
+            if row is not None and not 0 <= int(row) < descriptor[0][0]:
+                continue
+
+            # Existing observation frames are retained as authored. A missing frame is
+            # derived from this exact series and slice, as before.
+            address_frame = observation.get("address_frame")
+            if address_frame is None:
+                key = (uid, z)
+                if key not in frame_cache:
+                    try:
+                        frame = plane_frame(own.series, z)
+                    except (IndexError, TypeError, ValueError):
+                        frame = "geometry_unreadable"
+                    frame_cache[key] = (
+                        _address_frame(frame) if not isinstance(frame, str) else None
+                    )
+                address_frame = frame_cache[key]
+                if address_frame is not None:
+                    observation["address_frame"] = address_frame
+            frame_valid = address_frame is not None and (
+                address_frame_status(address_frame) == "frame_valid"
+            )
+
+            # This stamp is a narrow producer assertion. It applies only when the
+            # addressed observation, containing record, measured series, view, and
+            # saved artifact all identify the same acquisition.
+            same_owner = (
+                provenance == "native"
+                and own.series.row.series_uid == uid
+                and own.record.get("series_uid") == uid
+                and record.get("series_uid") == uid
+                and record.get("artifact") == artifact
+                and own.record.get("artifact") == artifact
+                and tuple(record.get("view", ())) == tuple(view)
+                and tuple(own.record.get("view", ())) == tuple(view)
+            )
+            if same_owner and frame_valid:
+                observation["support_address_kind"] = "native_rc"
 
 
 def plain(value: object) -> object:
@@ -23685,14 +27125,14 @@ def write_receipt(
     telemetry: dict | None,
     objects: dict | None = None,
 ) -> None:
-    """Merge one study into the run's receipt (`knee.receipt.merged_receipt`): its records,
-    silences and telemetry replace what the receipt held for it, and every other study's stay."""
+    """Merge one study into the run receipt while preserving all other studies."""
     path = run_dir / "receipt.json"
-    old = json.loads(path.read_text()) if path.exists() else None
+    old_path = resolve_json_path(path)
+    old = load_json(old_path) if old_path.exists() else None
     receipt = merged_receipt(
         old, REQUEST, study_uid, series_uids, records, unread, telemetry, objects
     )
-    path.write_text(json.dumps(receipt, indent=2, default=plain) + "\n")
+    dump_json_atomic(path, receipt, default=plain)
 
 
 def ledger_reading(events: Sequence[Event], totals: dict[str, int]) -> dict:
@@ -24596,6 +28036,7 @@ def name_native_ligament_sections(
                         "exclusion only for intersecting resolved native femur or tibia support; its "
                         "coronal source is a location target, not this body's boundary",
                         artifact,
+                        address_frame=_address_frame(frame),
                     )
                 )
                 continue
@@ -24613,6 +28054,7 @@ def name_native_ligament_sections(
                         support,
                         "local reading retained without a native resolution",
                         artifact,
+                        address_frame=_address_frame(frame),
                     )
                 )
             missing.append(
@@ -24670,6 +28112,1288 @@ def name_native_pcl_sections(
     )
 
 
+def _native_tibial_cartilage_references(
+    own: Measured,
+) -> tuple[list[dict[str, Any]], str | None]:
+    """Reuse existing native marrow-light readings from this acquisition only."""
+    record_uid = own.record.get("series_uid")
+    try:
+        acquisition_uid = str(own.series.row.series_uid)
+    except (AttributeError, TypeError, ValueError):
+        acquisition_uid = ""
+    volume = getattr(own.series, "volume", None)
+    if (
+        not isinstance(record_uid, str)
+        or not record_uid
+        or acquisition_uid != record_uid
+        or volume is None
+        or np.ndim(volume) != 3
+    ):
+        return [], "native_brightness_reference_unavailable"
+    shape = tuple(np.shape(volume)[1:])
+    if len(shape) != 2:
+        return [], "native_brightness_reference_unavailable"
+    view_raw = own.record.get("view", ())
+    view = tuple(view_raw) if isinstance(view_raw, (list, tuple)) else ()
+    if (
+        len(view) != 3
+        or not all(isinstance(part, str) for part in view)
+        or view[0].casefold() != "axial"
+        or view[1:] != ("1", "1")
+    ):
+        return [], "native_brightness_reference_unavailable"
+    candidates = own.record.get("a4_axial_femoral_cartilage_candidates")
+    coarse_rows = own.record.get("a4_axial_femoral_cartilage_coarse_context")
+    if not isinstance(candidates, list) or not isinstance(coarse_rows, list):
+        return [], "native_brightness_reference_unavailable"
+    arrays = own.arrays
+    fields = {
+        "light_values": "a4_axial_femoral_cartilage_context_marrow_median_values",
+        "light_slices": "a4_axial_femoral_cartilage_context_marrow_median_slices",
+        "support_values": "a4_axial_femoral_cartilage_context_selected_enclosure_values",
+        "support_offsets": "a4_axial_femoral_cartilage_context_selected_enclosure_offsets",
+        "support_shapes": "a4_axial_femoral_cartilage_context_selected_enclosure_shapes",
+        "support_slices": "a4_axial_femoral_cartilage_context_selected_enclosure_slices",
+        "available_values": "a4_axial_femoral_cartilage_context_available_values",
+        "available_offsets": "a4_axial_femoral_cartilage_context_available_offsets",
+        "available_shapes": "a4_axial_femoral_cartilage_context_available_shapes",
+        "available_slices": "a4_axial_femoral_cartilage_context_available_slices",
+    }
+    consumed_fields = tuple(
+        key.removeprefix("a4_axial_femoral_cartilage_context_")
+        for key in fields.values()
+        if key in arrays
+    )
+    if consumed_fields:
+        reads(
+            "native_femoral_cartilage_context",
+            consumed_fields,
+            "_native_tibial_cartilage_references",
+        )
+    data = {name: arrays.get(key) for name, key in fields.items()}
+    if any(not isinstance(value, np.ndarray) for value in data.values()):
+        return [], "native_brightness_reference_unavailable"
+    expected_kinds = {
+        "light_values": "f",
+        "light_slices": "iu",
+        "support_values": "b",
+        "support_offsets": "iu",
+        "support_shapes": "iu",
+        "support_slices": "iu",
+        "available_values": "b",
+        "available_offsets": "iu",
+        "available_shapes": "iu",
+        "available_slices": "iu",
+    }
+    if any(
+        data[name].dtype.kind not in kinds for name, kinds in expected_kinds.items()
+    ):
+        return [], "native_brightness_reference_malformed"
+    if (
+        data["light_values"].ndim != 1
+        or data["light_slices"].ndim != 1
+        or len(data["light_values"]) != len(data["light_slices"])
+    ):
+        return [], "native_brightness_reference_malformed"
+
+    def packed_rows_valid(prefix: str) -> bool:
+        offsets = data[f"{prefix}_offsets"]
+        shapes = data[f"{prefix}_shapes"]
+        slices = data[f"{prefix}_slices"]
+        values = data[f"{prefix}_values"]
+        if (
+            values.ndim != 1
+            or offsets.ndim != 1
+            or shapes.ndim != 2
+            or shapes.shape[1:] != (2,)
+            or slices.ndim != 1
+            or len(offsets) == 0
+            or len(offsets) != len(slices) + 1
+            or len(shapes) != len(slices)
+            or int(offsets[0]) != 0
+            or int(offsets[-1]) != len(values)
+            or np.any(np.diff(offsets) < 0)
+        ):
+            return False
+        return all(
+            int(shapes[index, 0]) > 0
+            and int(shapes[index, 1]) > 0
+            and int(offsets[index + 1]) - int(offsets[index])
+            == int(shapes[index, 0]) * int(shapes[index, 1])
+            for index in range(len(slices))
+        )
+
+    if not packed_rows_valid("support") or not packed_rows_valid("available"):
+        return [], "native_brightness_reference_malformed"
+    coarse = {
+        row.get("slice"): row
+        for row in coarse_rows
+        if isinstance(row, dict) and type(row.get("slice")) is int
+    }
+    unique: dict[tuple[float, str], dict[str, Any]] = {}
+    for candidate in candidates:
+        if not isinstance(candidate, dict):
+            continue
+        source_z = candidate.get("slice")
+        if (
+            type(source_z) is not int
+            or source_z < 0
+            or source_z >= len(volume)
+            or candidate.get("status") != "selected_native_component"
+            or candidate.get("marrow_median") is None
+        ):
+            continue
+        context = coarse.get(source_z)
+        if not isinstance(context, dict) or context.get("status") != "section":
+            continue
+        try:
+            light = float(candidate["marrow_median"])
+            brightness_level = float(candidate["brightness_level"])
+        except (KeyError, TypeError, ValueError, OverflowError):
+            continue
+        if (
+            not np.isfinite(light)
+            or light <= 0
+            or brightness_level != CARTILAGE_BRIGHTER * light
+        ):
+            continue
+        light_rows = np.flatnonzero(data["light_slices"] == source_z)
+        support_rows = np.flatnonzero(data["support_slices"] == source_z)
+        available_rows = np.flatnonzero(data["available_slices"] == source_z)
+        if len(light_rows) != 1 or len(support_rows) != 1 or len(available_rows) != 1:
+            continue
+        light_row = int(light_rows[0])
+        support_row = int(support_rows[0])
+        available_row = int(available_rows[0])
+        if (
+            not np.isfinite(data["light_values"][light_row])
+            or float(data["light_values"][light_row]) != light
+        ):
+            continue
+        support_shape = tuple(int(v) for v in data["support_shapes"][support_row])
+        available_shape = tuple(int(v) for v in data["available_shapes"][available_row])
+        if support_shape != shape or available_shape != shape:
+            continue
+        support = data["support_values"][
+            int(data["support_offsets"][support_row]) : int(
+                data["support_offsets"][support_row + 1]
+            )
+        ].reshape(shape)
+        available = data["available_values"][
+            int(data["available_offsets"][available_row]) : int(
+                data["available_offsets"][available_row + 1]
+            )
+        ].reshape(shape)
+        if not support.any() or not available[support].all():
+            continue
+        frame = plane_frame(own.series, source_z)
+        if isinstance(frame, str):
+            continue
+        support_digest = digest(support)
+        key = (light, support_digest)
+        row = {
+            "source_series_uid": record_uid,
+            "source_view": list(view),
+            "source_slice": source_z,
+            "source_record_field": "a4_axial_femoral_cartilage_candidates",
+            "source_candidate_status": candidate.get("status"),
+            "scalar_array": fields["light_values"],
+            "scalar_slice_array": fields["light_slices"],
+            "support_address": fields["support_values"],
+            "support_shape_array": fields["support_shapes"],
+            "support_offsets_array": fields["support_offsets"],
+            "support_slice_array": fields["support_slices"],
+            "support_count": int(support.sum()),
+            "support_digest": support_digest,
+            "reference_light": light,
+            "reference_meaning": "existing Measures.light / marrow_light over the native selected_enclosure used by the femoral-cartilage reading; same-acquisition reference, not target-slice marrow",
+            "coarse_context": {
+                key: context.get(key)
+                for key in (
+                    "status",
+                    "section_area_mm2",
+                    "section_level",
+                    "block_window_rc",
+                    "block_px",
+                    "block_mm",
+                )
+            },
+            "source_frame": {
+                "origin_lps_mm": np.asarray(frame.origin_lps, dtype=float).tolist(),
+                "basis_lps": np.asarray(frame.basis_lps, dtype=float).tolist(),
+                "spacing_rc_mm": np.asarray(frame.spacing_rc, dtype=float).tolist(),
+                "normal_lps": np.asarray(frame.normal(), dtype=float).tolist(),
+            },
+        }
+        if key in unique:
+            unique[key]["source_slices"].append(source_z)
+            unique[key]["source_rows"].append(row)
+        else:
+            unique[key] = {
+                "light": light,
+                "support": support,
+                "source_slices": [source_z],
+                "source_rows": [row],
+            }
+    if not unique:
+        return [], "native_brightness_reference_unavailable"
+    return list(unique.values()), None
+
+
+def _tibial_cartilage_brightness_components(
+    raw: np.ndarray,
+    available: np.ndarray,
+    target: np.ndarray,
+    spacing_rc: np.ndarray,
+    native_light: float,
+    distance_mm: np.ndarray | None = None,
+) -> dict[str, Any]:
+    """Read every source-contacted component in an already bounded native crop."""
+    plane = np.asarray(raw)
+    valid = np.asarray(available)
+    location = np.asarray(target)
+    try:
+        spacing = np.asarray(spacing_rc, dtype=float)
+        light = float(native_light)
+    except (TypeError, ValueError, OverflowError):
+        return {"status": "native_reference_unavailable"}
+    if (
+        plane.ndim != 2
+        or plane.size == 0
+        or plane.dtype.kind not in "iuf"
+        or valid.shape != plane.shape
+        or valid.dtype.kind != "b"
+        or location.shape != plane.shape
+        or location.dtype.kind != "b"
+        or spacing.shape != (2,)
+        or not np.isfinite(spacing).all()
+        or (spacing <= 0).any()
+        or not np.isfinite(light)
+        or light <= 0
+    ):
+        return {"status": "native_measurement_unavailable"}
+    if not valid.any():
+        return {"status": "native_availability_empty"}
+    if not location.any():
+        return {"status": "native_source_location_empty"}
+    if np.any(valid & ~np.isfinite(plane)):
+        return {"status": "native_values_unavailable"}
+    if distance_mm is None:
+        distance = ndi.distance_transform_edt(~location, sampling=spacing)
+    else:
+        distance = np.asarray(distance_mm, dtype=float)
+        if (
+            distance.shape != plane.shape
+            or not np.isfinite(distance).all()
+            or (distance < 0).any()
+        ):
+            return {"status": "native_measurement_unavailable"}
+    effective = valid & np.isfinite(plane)
+    threshold = CARTILAGE_BRIGHTER * light
+    bright = effective & (plane > threshold)
+    labels, count = ndi.label(bright)
+    unavailable_neighborhood = ndi.binary_dilation(~effective)
+    support = np.zeros(plane.shape, dtype=bool)
+    component_rows = []
+    contact_labels = []
+    for label, bounds in enumerate(
+        ndi.find_objects(labels, max_label=int(count)), start=1
+    ):
+        if bounds is None:
+            continue
+        label_crop = labels[bounds]
+        component = label_crop == label
+        local_rc = np.argwhere(component)
+        if not len(local_rc):
+            continue
+        r0, c0 = int(bounds[0].start), int(bounds[1].start)
+        rc = local_rc + np.asarray((r0, c0), dtype=np.int64)
+        component_distance = distance[bounds][component]
+        contacted_distances = component_distance <= SHELL_MM
+        contacted = bool(np.any(contacted_distances))
+        if contacted:
+            support[bounds] |= component
+            contact_labels.append(label)
+        edge = bool(
+            bounds[0].start == 0
+            or bounds[0].stop == plane.shape[0]
+            or bounds[1].start == 0
+            or bounds[1].stop == plane.shape[1]
+        )
+        touches_unavailable = bool(np.any(component & unavailable_neighborhood[bounds]))
+        component_rows.append(
+            {
+                "label": label,
+                "pixels": int(component.sum()),
+                "bbox_rc_exclusive": [
+                    int(rc[:, 0].min()),
+                    int(rc[:, 0].max()) + 1,
+                    int(rc[:, 1].min()),
+                    int(rc[:, 1].max()) + 1,
+                ],
+                "minimum_source_distance_mm": float(component_distance.min()),
+                "contact_pixels_within_shell": int(
+                    np.count_nonzero(contacted_distances)
+                ),
+                "contacted": contacted,
+                "touches_crop_edge": edge,
+                "touches_unavailable_pixels": touches_unavailable,
+            }
+        )
+    return {
+        "status": "measured",
+        "threshold": threshold,
+        "bright": bright,
+        "labels": labels.astype(np.int32, copy=False),
+        "distance_mm": distance,
+        "support": support,
+        "component_count": int(count),
+        "contact_labels": contact_labels,
+        "components": component_rows,
+    }
+
+
+def axial_tibial_cartilage_readings(
+    measured: list[Measured],
+    sources: list[PosteriorSource],
+    study_uid: str,
+) -> list[tuple[list[Observation], list[Unresolved]]]:
+    """Measure native brightness beside existing tibial-cartilage source locations.
+
+    The result is a scoped reading linked to native sources, not independent identity or a complete
+    cartilage boundary. All contacted components are retained; no component wins by size.
+    """
+    said: list[tuple[list[Observation], list[Unresolved]]] = [
+        ([], []) for _ in measured
+    ]
+    if not measured:
+        return said
+    source_rows = []
+    for source in sources:
+        if not isinstance(source, PosteriorSource) or source.name != "tibial_cartilage":
+            continue
+        mask = np.asarray(source.mask)
+        if (
+            mask.ndim != 2
+            or mask.dtype.kind != "b"
+            or not mask.any()
+            or int(mask.sum()) != int(source.pixels)
+        ):
+            continue
+        try:
+            points = np.asarray(
+                source.frame.to_patient(np.argwhere(mask).astype(float)), dtype=float
+            )
+        except (AttributeError, TypeError, ValueError, FloatingPointError):
+            continue
+        if points.shape != (int(mask.sum()), 3) or not np.isfinite(points).all():
+            continue
+        source_rows.append(
+            (
+                source,
+                points,
+                {
+                    "series_uid": source.record.get("series_uid"),
+                    "view": list(source.record.get("view", ())),
+                    "slice": source.record.get("slice_index"),
+                    "support": source.support,
+                    "label": source.label,
+                    "pixels": source.pixels,
+                    "artifact": source.artifact,
+                },
+            )
+        )
+
+    for owner_index, own in enumerate(measured):
+        view = tuple(own.record.get("view", ()))
+        if len(view) != 3 or view[0].casefold() != "axial":
+            continue
+        uid = str(own.record.get("series_uid", ""))
+        try:
+            sequence = (
+                int(own.series.row.fluid_sensitive),
+                int(own.series.row.fat_suppression),
+            )
+        except (AttributeError, TypeError, ValueError, OverflowError):
+            sequence = None
+        if sequence != (1, 1):
+            said[owner_index][1].append(
+                Unresolved(
+                    "tibial_cartilage",
+                    "native",
+                    uid,
+                    view,
+                    "target_not_fat_suppressed_fluid_sensitive",
+                )
+            )
+            continue
+        if not source_rows:
+            said[owner_index][1].append(
+                Unresolved(
+                    "tibial_cartilage",
+                    "native",
+                    uid,
+                    view,
+                    "native_tibial_cartilage_source_unavailable",
+                )
+            )
+            continue
+        volume = getattr(own.series, "volume", None)
+        if volume is None or np.ndim(volume) != 3 or not len(volume):
+            said[owner_index][1].append(
+                Unresolved(
+                    "tibial_cartilage", "native", uid, view, "target_volume_unavailable"
+                )
+            )
+            continue
+        shape = tuple(np.shape(volume)[1:])
+        by_slice: dict[int, list[dict[str, Any]]] = {}
+        for source_index, (_source, points, source_meta) in enumerate(source_rows):
+            planes, why = posterior_source_planes(own, points)
+            if why is not None:
+                said[owner_index][1].append(
+                    Unresolved(
+                        "tibial_cartilage", "native", uid, view, f"source_profile_{why}"
+                    )
+                )
+                continue
+            picked, why = posterior_max_planes(planes)
+            prefix = f"a4_axial_tibial_cartilage_source_{source_index}_profile"
+            own.arrays[f"{prefix}_slices"] = np.arange(len(planes), dtype=np.int32)
+            for field, dtype in (
+                ("slab_count", np.int64),
+                ("in_frame_count", np.int64),
+                ("unique_count", np.int64),
+                ("nearest_mm", np.float64),
+            ):
+                own.arrays[f"{prefix}_{field}"] = np.asarray(
+                    [row[field] for row in planes], dtype=dtype
+                )
+            own.arrays[f"{prefix}_status"] = np.asarray(
+                [row["status"] for row in planes], dtype=str
+            )
+            best = max((int(row["in_frame_count"]) for row in planes), default=0)
+            own.arrays[f"{prefix}_selected"] = np.asarray(
+                [best > 0 and int(row["in_frame_count"]) == best for row in planes],
+                dtype=bool,
+            )
+            sample_offsets = [0]
+            unique_offsets = [0]
+            samples = []
+            unique_rows = []
+            for row in planes:
+                sample_rc = np.asarray(row["sample_rc"], dtype=np.int32).reshape(-1, 2)
+                unique_rc = np.asarray(row["unique_rc"], dtype=np.int32).reshape(-1, 2)
+                samples.append(sample_rc)
+                unique_rows.append(unique_rc)
+                sample_offsets.append(sample_offsets[-1] + len(sample_rc))
+                unique_offsets.append(unique_offsets[-1] + len(unique_rc))
+            own.arrays[f"{prefix}_offsets"] = np.asarray(sample_offsets, dtype=np.int64)
+            own.arrays[f"{prefix}_rc"] = (
+                np.concatenate(samples, axis=0)
+                if samples
+                else np.empty((0, 2), dtype=np.int32)
+            )
+            own.arrays[f"{prefix}_unique_offsets"] = np.asarray(
+                unique_offsets, dtype=np.int64
+            )
+            own.arrays[f"{prefix}_unique_rc"] = (
+                np.concatenate(unique_rows, axis=0)
+                if unique_rows
+                else np.empty((0, 2), dtype=np.int32)
+            )
+            profile_meta = {
+                **source_meta,
+                "profile_prefix": prefix,
+                "maximum_count": best,
+                "maximum_slices": [int(row["z"]) for row in picked],
+                "maximum_reason": why,
+            }
+            own.record.setdefault(
+                "a4_axial_tibial_cartilage_source_profiles", []
+            ).append(profile_meta)
+            if why is not None:
+                said[owner_index][1].append(
+                    Unresolved(
+                        "tibial_cartilage", "native", uid, view, f"source_profile_{why}"
+                    )
+                )
+                continue
+            for row in picked:
+                if row.get("frame") is None or not len(row["unique_rc"]):
+                    continue
+                z = int(row["z"])
+                by_slice.setdefault(z, []).append(
+                    {
+                        "source_meta": source_meta,
+                        "plane": row,
+                        "profile_ties": len(picked),
+                    }
+                )
+                own.record.setdefault(
+                    "a4_axial_tibial_cartilage_source_candidates", []
+                ).append(
+                    {
+                        **source_meta,
+                        "target_slice": z,
+                        "profile_count": int(row["in_frame_count"]),
+                        "unique_pixels": int(row["unique_count"]),
+                        "slab_count": int(row["slab_count"]),
+                        "status": row["status"],
+                    }
+                )
+
+        if not by_slice:
+            if not said[owner_index][1]:
+                said[owner_index][1].append(
+                    Unresolved(
+                        "tibial_cartilage",
+                        "native",
+                        uid,
+                        view,
+                        "source_outside_target_slabs_or_frame",
+                    )
+                )
+            continue
+        references, reference_code = _native_tibial_cartilage_references(own)
+        if reference_code is not None:
+            for z, members in sorted(by_slice.items()):
+                own.record.setdefault("a4_axial_tibial_cartilage_readings", []).append(
+                    {
+                        "slice": z,
+                        "status": reference_code,
+                        "sources": [
+                            {
+                                **member["source_meta"],
+                                "profile_count": int(member["plane"]["in_frame_count"]),
+                                "unique_pixels": int(member["plane"]["unique_count"]),
+                                "slab_count": int(member["plane"]["slab_count"]),
+                                "profile_ties": member["profile_ties"],
+                            }
+                            for member in members
+                        ],
+                    }
+                )
+                said[owner_index][1].append(
+                    Unresolved(
+                        "tibial_cartilage",
+                        "native",
+                        uid,
+                        view,
+                        f"native_slice_{z}:{reference_code}",
+                    )
+                )
+            continue
+
+        support_stack: list[np.ndarray] = []
+        artifact = str(artifact_of(study_uid, own.record))
+        for z, members in sorted(by_slice.items()):
+            frame = members[0]["plane"]["frame"]
+            source_rc = np.unique(
+                np.concatenate(
+                    [
+                        np.asarray(member["plane"]["unique_rc"], dtype=np.int32)
+                        for member in members
+                    ],
+                    axis=0,
+                ),
+                axis=0,
+            )
+            window = posterior_query_window(source_rc, frame, shape)
+            if window is None:
+                said[owner_index][1].append(
+                    Unresolved(
+                        "tibial_cartilage",
+                        "native",
+                        uid,
+                        view,
+                        f"native_slice_{z}:invalid_query_spacing",
+                    )
+                )
+                continue
+            plane = np.asarray(volume[z])
+            if plane.ndim != 2 or plane.shape != shape or plane.dtype.kind not in "iuf":
+                said[owner_index][1].append(
+                    Unresolved(
+                        "tibial_cartilage",
+                        "native",
+                        uid,
+                        view,
+                        f"native_slice_{z}:native_plane_unavailable",
+                    )
+                )
+                continue
+            r0, r1, c0, c1 = window
+            crop = (slice(r0, r1), slice(c0, c1))
+            raw_crop = plane[crop].copy()
+            finite_full = np.asarray(finite_of(own.series)[z])
+            margin_full = np.asarray(margin_of(uid, z, plane))
+            if (
+                finite_full.shape != shape
+                or finite_full.dtype.kind != "b"
+                or margin_full.shape != shape
+                or margin_full.dtype.kind != "b"
+            ):
+                said[owner_index][1].append(
+                    Unresolved(
+                        "tibial_cartilage",
+                        "native",
+                        uid,
+                        view,
+                        f"native_slice_{z}:native_availability_unavailable",
+                    )
+                )
+                continue
+            available = finite_full[crop] & np.isfinite(raw_crop) & ~margin_full[crop]
+            if not available.any():
+                said[owner_index][1].append(
+                    Unresolved(
+                        "tibial_cartilage",
+                        "native",
+                        uid,
+                        view,
+                        f"native_slice_{z}:native_availability_empty",
+                    )
+                )
+                continue
+            local_rc = source_rc - np.asarray((r0, c0), dtype=np.int32)
+            if (
+                (local_rc < 0).any()
+                or (local_rc[:, 0] >= raw_crop.shape[0]).any()
+                or (local_rc[:, 1] >= raw_crop.shape[1]).any()
+            ):
+                said[owner_index][1].append(
+                    Unresolved(
+                        "tibial_cartilage",
+                        "native",
+                        uid,
+                        view,
+                        f"native_slice_{z}:source_outside_query_window",
+                    )
+                )
+                continue
+            target = np.zeros(raw_crop.shape, dtype=bool)
+            target[local_rc[:, 0], local_rc[:, 1]] = True
+            spacing = np.asarray(frame.spacing_rc, dtype=float)
+            try:
+                thickness = float(own.series.slice_thickness_mm[z])
+            except (IndexError, TypeError, ValueError, OverflowError):
+                thickness = float("nan")
+            if not np.isfinite(thickness) or thickness <= 0:
+                said[owner_index][1].append(
+                    Unresolved(
+                        "tibial_cartilage",
+                        "native",
+                        uid,
+                        view,
+                        f"native_slice_{z}:target_thickness_unavailable",
+                    )
+                )
+                continue
+            distance = ndi.distance_transform_edt(~target, sampling=spacing)
+            common = f"a4_axial_tibial_cartilage_z{z}"
+            own.arrays[f"{common}_raw_crop"] = raw_crop
+            own.arrays[f"{common}_available_crop"] = available
+            own.arrays[f"{common}_source_target_crop"] = target
+            own.arrays[f"{common}_source_distance_mm"] = distance
+            reference_reports = []
+            for ref_index, ref in enumerate(references):
+                result = _tibial_cartilage_brightness_components(
+                    raw_crop,
+                    available,
+                    target,
+                    spacing,
+                    ref["light"],
+                    distance_mm=distance,
+                )
+                if result["status"] != "measured":
+                    said[owner_index][1].append(
+                        Unresolved(
+                            "tibial_cartilage",
+                            "native",
+                            uid,
+                            view,
+                            f"native_slice_{z}:{result['status']}",
+                        )
+                    )
+                    continue
+                suffix = f"{common}_r{ref_index}"
+                own.arrays[f"{suffix}_bright_crop"] = result["bright"]
+                own.arrays[f"{suffix}_labels"] = result["labels"]
+                own.arrays[f"{suffix}_contacted_support_crop"] = result["support"]
+                full_support = np.zeros(shape, dtype=bool)
+                full_support[crop] = result["support"]
+                row_index = len(support_stack)
+                support_stack.append(full_support)
+                code = (
+                    "native_brightness_components_contacted"
+                    if result["support"].any()
+                    else "measured_empty_native_brightness_contact"
+                )
+                said[owner_index][0].append(
+                    Observation(
+                        "tibial_cartilage",
+                        "native",
+                        "reading",
+                        uid,
+                        view,
+                        (z,),
+                        code,
+                        int(full_support.sum()),
+                        float(members[0]["plane"]["nearest_mm"])
+                        if np.isfinite(members[0]["plane"]["nearest_mm"])
+                        else None,
+                        "a4_axial_tibial_cartilage_brightness_support",
+                        "all source-contacted four-connected native bright components in this scoped crop; brightness is the existing marrow-relative reading and may include fluid, linked to source location only; not resolved identity or the complete cartilage extent",
+                        artifact,
+                        row_index,
+                        None,
+                    )
+                )
+                reference_reports.append(
+                    {
+                        "reference_index": ref_index,
+                        "light": float(ref["light"]),
+                        "threshold": result["threshold"],
+                        "reference_sources": ref["source_rows"],
+                        "component_count": result["component_count"],
+                        "contacted_labels": result["contact_labels"],
+                        "contacted_pixel_count": int(result["support"].sum()),
+                        "components": result["components"],
+                    }
+                )
+            own.record.setdefault("a4_axial_tibial_cartilage_readings", []).append(
+                {
+                    "slice": z,
+                    "status": "measured_native_brightness_reading",
+                    "window_rc_exclusive": list(window),
+                    "crop_shape_rc": list(raw_crop.shape),
+                    "outside_crop": "not_read_unknown",
+                    "source_locations": [
+                        {
+                            **member["source_meta"],
+                            "target_profile_count": int(
+                                member["plane"]["in_frame_count"]
+                            ),
+                            "target_unique_pixels": int(
+                                member["plane"]["unique_count"]
+                            ),
+                            "target_slab_count": int(member["plane"]["slab_count"]),
+                            "target_profile_ties": member["profile_ties"],
+                        }
+                        for member in members
+                    ],
+                    "target_frame": {
+                        "origin_lps_mm": np.asarray(
+                            frame.origin_lps, dtype=float
+                        ).tolist(),
+                        "basis_lps": np.asarray(frame.basis_lps, dtype=float).tolist(),
+                        "spacing_rc_mm": spacing.tolist(),
+                        "normal_lps": np.asarray(frame.normal(), dtype=float).tolist(),
+                        "slice_thickness_mm": thickness,
+                    },
+                    "references": reference_reports,
+                }
+            )
+        if support_stack:
+            own.arrays["a4_axial_tibial_cartilage_brightness_support"] = np.stack(
+                support_stack
+            )
+    if any(observations or unresolved for observations, unresolved in said):
+        handed(
+            "axial_tibial_cartilage_readings",
+            (
+                "profiles",
+                "crop",
+                "references",
+                "components",
+                "support",
+                "observations",
+                "unresolved",
+            ),
+        )
+    return said
+
+
+def native_tibial_cartilage_readings(
+    measured: list[Measured], study_uid: str
+) -> list[tuple[list[Observation], list[Unresolved]]]:
+    """Hand validated native cartilage identities to the complementary axial reading."""
+    names = ("tibial_cartilage",)
+    sources, faults = attachment_reading_sources(
+        measured, [], [], study_uid, names=names
+    )
+    by_uid = {own.record["series_uid"]: own for own in measured}
+    valid = []
+    for source in sources:
+        fault = _posterior_source_fault(source, by_uid, study_uid, allowed=names)
+        if fault is None:
+            valid.append(source)
+        else:
+            faults.append(
+                Unresolved(
+                    source.name,
+                    "native",
+                    source.record.get("series_uid"),
+                    _reading_view(source.record),
+                    fault,
+                )
+            )
+    if sources:
+        reads(
+            "attachment_reading_sources",
+            ATTACHMENT_SOURCE_FIELDS,
+            "native_tibial_cartilage_readings",
+        )
+    said = axial_tibial_cartilage_readings(measured, valid, study_uid)
+    for own, (_, missing) in zip(measured, said, strict=True):
+        view = _reading_view(own.record)
+        if view is None or view[0].casefold() != "axial" or view[1:] != ("1", "1"):
+            continue
+        if faults:
+            own.record["a4_axial_tibial_cartilage_source_faults"] = [
+                asdict(fault) for fault in faults
+            ]
+        for fault in faults:
+            missing.append(
+                Unresolved(
+                    "tibial_cartilage",
+                    "native",
+                    own.record["series_uid"],
+                    view,
+                    f"source_context:{fault.series_uid}:{fault.code}",
+                )
+            )
+    return said
+
+
+def native_patellofemoral_surface_readings(
+    measured: list[Measured], study_uid: str
+) -> None:
+    """Measure the existing native patella/femur context at selected FS slices only."""
+    from knee.collapse.patellofemoral import patellofemoral_surface_reading
+
+    names = ("patellar_cartilage", "trochlear_cartilage")
+    for own in measured:
+        uid, view = (str(own.record["series_uid"]), tuple(own.record["view"]))
+        artifact = str(artifact_of(study_uid, own.record))
+        here: list[Observation] = []
+        missing: list[Unresolved] = []
+        contexts: list[dict[str, Any]] = []
+        codes = own.record.get("assignments", {}).get("codes", {})
+        series_row = own.series.row
+        eligible_acquisition = (
+            int(getattr(series_row, "fat_suppression", 0)) == 1
+            and int(getattr(series_row, "fluid_sensitive", 0)) == 1
+        )
+        if eligible_acquisition:
+            z = int(own.record["slice_index"])
+            objects = own.arrays.get("a1_objects")
+            raw = own.arrays.get("acquired_plane")
+            if (
+                codes.get("patella") == "identified"
+                and codes.get("femur") == "identified"
+                and isinstance(objects, np.ndarray)
+                and (objects.ndim == 2)
+                and isinstance(raw, np.ndarray)
+                and (raw.shape == objects.shape)
+                and isinstance(own.frame, PlaneFrame)
+            ):
+                patella = objects == OBJECT_CODES["patella"]
+                femur = objects == OBJECT_CODES["femur"]
+                if patella.any() and femur.any():
+                    available = own.arrays.get("b1_available")
+                    if not isinstance(available, np.ndarray):
+                        available = None
+                    if (
+                        isinstance(available, np.ndarray)
+                        and available.shape == raw.shape
+                        and (available.dtype.kind == "b")
+                    ):
+                        h, w = raw.shape
+                        contexts.append(
+                            {
+                                "z": z,
+                                "kind": "a1_middle",
+                                "support": "a1_objects",
+                                "source_row": -1,
+                                "window": (0, h, 0, w),
+                                "raw": raw,
+                                "available": available,
+                                "patella": patella,
+                                "femur": femur,
+                                "frame": own.frame,
+                                "native_frame": own.frame,
+                                "native_shape": raw.shape,
+                                "measures": measures_of(uid, z, raw, own.frame),
+                                "address": {
+                                    "artifact": artifact,
+                                    "support": "a1_objects",
+                                    "row": None,
+                                },
+                                "input_scope": dict(own.record.get("interiors", {})),
+                            }
+                        )
+            plane_slices = np.asarray(own.arrays.get("a3_patella_plane_slices", ()))
+            plane_outcomes = np.asarray(own.arrays.get("a3_patella_plane_outcome", ()))
+            plane_windows = np.asarray(own.arrays.get("a3_patella_plane_window_rc", ()))
+            plane_objects = own.arrays.get("a3_patella_plane_objects")
+            local_slices = np.asarray(own.arrays.get("a3_patella_local_slices", ()))
+            local_windows = np.asarray(own.arrays.get("a3_patella_local_window_rc", ()))
+            local_outcomes = np.asarray(own.arrays.get("a3_patella_local_outcome", ()))
+            outcome_names = np.asarray(
+                own.arrays.get("a3_patella_local_outcome_names", ()), dtype=str
+            )
+            local_femur = np.asarray(
+                own.arrays.get("a3_patella_local_femur", ()), dtype=str
+            )
+            shapes = np.asarray(own.arrays.get("a3_patella_local_crop_shapes", ()))
+            offsets = np.asarray(own.arrays.get("a3_patella_local_crop_offsets", ()))
+            local_objects_flat = own.arrays.get("a3_patella_local_objects")
+            local_frame_origin = np.asarray(
+                own.arrays.get("a3_patella_local_frame_origin_lps", ())
+            )
+            local_frame_basis = np.asarray(
+                own.arrays.get("a3_patella_local_frame_basis_lps", ())
+            )
+            source_observations = own.record.get("observations", [])
+            for plane_row, z_value in enumerate(plane_slices.tolist()):
+                z = int(z_value)
+                if plane_row >= len(plane_outcomes) or plane_row >= len(plane_windows):
+                    continue
+                code_index = int(plane_outcomes[plane_row])
+                if (
+                    code_index < 0
+                    or code_index >= len(PATELLA_OUTCOMES)
+                    or PATELLA_OUTCOMES[code_index] != "identified"
+                ):
+                    continue
+                window = tuple(int(v) for v in plane_windows[plane_row])
+                if (
+                    len(window) != 4
+                    or window[0] < 0
+                    or window[1] <= window[0]
+                    or (window[2] < 0)
+                    or (window[3] <= window[2])
+                ):
+                    continue
+                native_source = any(
+                    obs.get("object") == "patella"
+                    and obs.get("provenance") == "native"
+                    and (obs.get("kind") == "resolved")
+                    and (obs.get("code") == "identified")
+                    and (tuple(obs.get("slices", ())) == (z,))
+                    and (obs.get("support") == "a3_patella_plane_objects")
+                    and (obs.get("row") == plane_row)
+                    for obs in source_observations
+                )
+                if not native_source:
+                    continue
+                local_matches = [
+                    j
+                    for j, local_z in enumerate(local_slices.tolist())
+                    if int(local_z) == z
+                    and j < len(local_windows)
+                    and (tuple(int(v) for v in local_windows[j]) == window)
+                ]
+                if len(local_matches) != 1:
+                    continue
+                local_row = local_matches[0]
+                if (
+                    local_row >= len(local_outcomes)
+                    or local_row >= len(local_femur)
+                    or local_row >= len(shapes)
+                    or (local_row + 1 >= len(offsets))
+                    or (local_row >= len(local_frame_origin))
+                    or (local_row >= len(local_frame_basis))
+                    or (local_objects_flat is None)
+                    or (local_femur[local_row] != "identified")
+                ):
+                    continue
+                local_code = int(local_outcomes[local_row])
+                if (
+                    local_code < 0
+                    or local_code >= len(outcome_names)
+                    or outcome_names[local_code] != "identified"
+                ):
+                    continue
+                shape = tuple(int(v) for v in shapes[local_row])
+                start, stop = (int(offsets[local_row]), int(offsets[local_row + 1]))
+                if shape != (
+                    window[1] - window[0],
+                    window[3] - window[2],
+                ) or stop - start != int(np.prod(shape)):
+                    continue
+                local_objects = np.asarray(local_objects_flat[start:stop]).reshape(
+                    shape
+                )
+                patella = local_objects == OBJECT_CODES["patella"]
+                femur = local_objects == OBJECT_CODES["femur"]
+                if not patella.any() or not femur.any():
+                    continue
+                frame = plane_frame(own.series, z)
+                if isinstance(frame, str):
+                    continue
+                volume = own.series.volume
+                if volume is None or not 0 <= z < len(volume):
+                    continue
+                native_plane = np.asarray(volume[z])
+                context = patella_scope_of(
+                    own.series,
+                    z,
+                    native_plane,
+                    frame,
+                    float(own.record["background_split"]),
+                    window,
+                    "patellofemoral_surface",
+                )
+                raw = np.asarray(context.interior.raw)
+                available = np.asarray(context.interior.reading.available, dtype=bool)
+                crop_frame = local_frame(frame, window)
+                if (
+                    raw.shape != shape
+                    or available.shape != shape
+                    or (
+                        not np.allclose(
+                            crop_frame.origin_lps, local_frame_origin[local_row]
+                        )
+                    )
+                    or (
+                        not np.allclose(
+                            crop_frame.basis_lps, local_frame_basis[local_row]
+                        )
+                    )
+                ):
+                    continue
+                if plane_objects is not None and plane_row < len(plane_objects):
+                    final_objects = np.asarray(plane_objects[plane_row])
+                    if final_objects.shape != native_plane.shape:
+                        continue
+                    crop = (slice(window[0], window[1]), slice(window[2], window[3]))
+                    if not np.array_equal(
+                        final_objects[crop] == OBJECT_CODES["patella"], patella
+                    ):
+                        continue
+                contexts.append(
+                    {
+                        "z": z,
+                        "kind": "a3_patella_local",
+                        "support": "a3_patella_local_objects",
+                        "source_row": local_row,
+                        "window": window,
+                        "raw": raw,
+                        "available": available,
+                        "patella": patella,
+                        "femur": femur,
+                        "frame": context.frame,
+                        "native_frame": frame,
+                        "native_shape": native_plane.shape,
+                        "measures": context.measures,
+                        "address": {
+                            "artifact": artifact,
+                            "support": "a3_patella_plane_objects",
+                            "row": plane_row,
+                            "local_support": "a3_patella_local_objects",
+                            "local_row": local_row,
+                        },
+                    }
+                )
+        else:
+            for name in names:
+                missing.append(
+                    Unresolved(
+                        name,
+                        "native",
+                        uid,
+                        view,
+                        "requires_fat_suppressed_fluid_sensitive_acquisition",
+                    )
+                )
+        scalar_rows: list[dict[str, Any]] = []
+        array_rows: dict[str, list[np.ndarray]] = {}
+        raw_rows: list[np.ndarray] = []
+        native_support_rows: dict[str, list[np.ndarray]] = {
+            "patellar_cartilage": [],
+            "trochlear_cartilage": [],
+        }
+        native_available_rows: list[np.ndarray] = []
+        for context in contexts:
+            raw = np.asarray(context["raw"])
+            available = np.asarray(context["available"], dtype=bool)
+            patella, femur = (
+                np.asarray(context["patella"], dtype=bool),
+                np.asarray(context["femur"], dtype=bool),
+            )
+            frame, measures = (context["frame"], context["measures"])
+            ledger.record(
+                "patellofemoral_surface.work", windows=1, pixels=int(raw.size)
+            )
+            result = patellofemoral_surface_reading(
+                raw,
+                available,
+                patella,
+                femur,
+                frame.spacing_rc,
+                measures.light(patella | femur),
+                distance=measures.distance,
+            )
+            result_row = len(scalar_rows)
+            scalars: dict[str, Any] = {}
+            for key, value in result.items():
+                if isinstance(value, np.ndarray):
+                    array_rows.setdefault(key, []).append(np.asarray(value).copy())
+                else:
+                    if isinstance(value, np.generic):
+                        value = value.item()
+                    if isinstance(value, np.ndarray):
+                        value = value.tolist()
+                    scalars[key] = value
+            scalar_rows.append(scalars)
+            raw_rows.append(raw.copy())
+            native_shape = tuple(int(value) for value in context["native_shape"])
+            window = tuple(int(value) for value in context["window"])
+            if (
+                len(native_shape) != 2
+                or window[1] > native_shape[0]
+                or window[3] > native_shape[1]
+            ):
+                raise ValueError("patellofemoral_crop_outside_native_frame")
+            row_available = np.zeros(native_shape, dtype=bool)
+            crop_slices = (slice(window[0], window[1]), slice(window[2], window[3]))
+            row_available[crop_slices] = available
+            native_available_rows.append(row_available)
+            for name, key in (
+                ("patellar_cartilage", "patella_support"),
+                ("trochlear_cartilage", "trochlear_support"),
+            ):
+                support = np.asarray(result[key], dtype=bool)
+                if support.shape != raw.shape:
+                    raise ValueError(f"patellofemoral_support_shape_mismatch:{key}")
+                native_support = np.zeros(native_shape, dtype=bool)
+                native_support[crop_slices] = support
+                native_support_rows[name].append(native_support)
+                code = str(result["status"])
+                if result.get("reason"):
+                    code = f"{code}:{result['reason']}"
+                support_key = f"a4_patellofemoral_{name}_support"
+                here.append(
+                    observe(
+                        name,
+                        "native",
+                        "reading",
+                        own,
+                        (int(context["z"]),),
+                        code,
+                        (
+                            None
+                            if result["status"] == "unmeasured"
+                            else int(np.count_nonzero(support))
+                        ),
+                        0.0,
+                        support_key,
+                        "bounded native reading: bright band within 3 mm and nearer this bone; crop-local, not a complete boundary; ties retained separately",
+                        artifact,
+                        result_row,
+                        address_frame=_address_frame(context["native_frame"]),
+                    )
+                )
+            context["result_row"] = result_row
+            context["result_scalars"] = scalars
+        if not contexts and (not missing):
+            for name in names:
+                missing.append(
+                    Unresolved(
+                        name,
+                        "native",
+                        uid,
+                        view,
+                        "no_selected_same_slice_native_patella_femur_context",
+                    )
+                )
+        if contexts:
+
+            def offsets_for(sizes: list[int]) -> np.ndarray:
+                return np.concatenate(([0], np.cumsum(sizes, dtype=np.int64))).astype(
+                    np.int64
+                )
+
+            crop_sizes = [int(raw.size) for raw in raw_rows]
+            own.arrays["a4_patellofemoral_slices"] = np.asarray(
+                [int(c["z"]) for c in contexts], dtype=np.int32
+            )
+            own.arrays["a4_patellofemoral_window_rc"] = np.asarray(
+                [c["window"] for c in contexts], dtype=np.int32
+            ).reshape(-1, 4)
+            own.arrays["a4_patellofemoral_crop_shapes"] = np.asarray(
+                [raw.shape for raw in raw_rows], dtype=np.int32
+            ).reshape(-1, 2)
+            own.arrays["a4_patellofemoral_crop_offsets"] = offsets_for(crop_sizes)
+            own.arrays["a4_patellofemoral_source_kind"] = np.asarray(
+                [c["kind"] for c in contexts], dtype=str
+            )
+            native_shapes = {tuple(row.shape) for row in native_available_rows}
+            if len(native_shapes) != 1:
+                raise ValueError("patellofemoral_native_frame_shape_mismatch")
+            own.arrays["a4_patellofemoral_measurement_available"] = np.stack(
+                native_available_rows
+            )
+            for name, rows in native_support_rows.items():
+                own.arrays[f"a4_patellofemoral_{name}_support"] = np.stack(rows)
+            own.arrays["a4_patellofemoral_source_support"] = np.asarray(
+                [c["support"] for c in contexts], dtype=str
+            )
+            own.arrays["a4_patellofemoral_source_row"] = np.asarray(
+                [c["source_row"] for c in contexts], dtype=np.int32
+            )
+            own.arrays["a4_patellofemoral_frame_origin_lps"] = np.asarray(
+                [c["frame"].origin_lps for c in contexts], dtype=np.float64
+            ).reshape(-1, 3)
+            own.arrays["a4_patellofemoral_frame_basis_lps"] = np.asarray(
+                [c["frame"].basis_lps for c in contexts], dtype=np.float64
+            ).reshape(-1, 3, 2)
+            own.arrays["a4_patellofemoral_raw_flat"] = np.concatenate(
+                [raw.ravel() for raw in raw_rows]
+            )
+            own.arrays["a4_patellofemoral_raw_offsets"] = offsets_for(crop_sizes)
+            own.arrays["a4_patellofemoral_raw_shapes"] = own.arrays[
+                "a4_patellofemoral_crop_shapes"
+            ].copy()
+            for key, values in array_rows.items():
+                if len(values) != len(contexts):
+                    raise ValueError(f"patellofemoral_result_array_row_mismatch:{key}")
+                prefix = f"a4_patellofemoral_{key}"
+                own.arrays[f"{prefix}_flat"] = np.concatenate(
+                    [v.ravel() for v in values]
+                )
+                own.arrays[f"{prefix}_offsets"] = offsets_for(
+                    [int(v.size) for v in values]
+                )
+                own.arrays[f"{prefix}_shapes"] = np.asarray(
+                    [v.shape for v in values], dtype=np.int32
+                )
+                own.arrays[f"{prefix}_dtype"] = np.asarray(values[0].dtype.str)
+            own.record["patellofemoral_surface_readings"] = [
+                {
+                    "slice": int(c["z"]),
+                    "source_kind": c["kind"],
+                    "source_address": c["address"],
+                    "window_rc": list(c["window"]),
+                    "input_scope": c.get("input_scope"),
+                    "shape_rc": list(raw.shape),
+                    "source_counts": {
+                        "patella": int(np.count_nonzero(c["patella"])),
+                        "femur": int(np.count_nonzero(c["femur"])),
+                    },
+                    "result_row": c["result_row"],
+                    "result": c["result_scalars"],
+                }
+                for c, raw in zip(contexts, raw_rows, strict=True)
+            ]
+        else:
+            own.record["patellofemoral_surface_readings"] = []
+        keep_observations(own, here, missing)
+
+
 def measure_study(
     corpus: Corpus, study_uid: str, run_dir: Path, main_run: Path, drawn: bool
 ) -> dict:
@@ -24697,6 +29421,20 @@ def measure_study(
                 unread[series.row.series_uid] = reading
             else:
                 measured.append(reading)
+        measured_by_uid = {own.record["series_uid"]: own for own in measured}
+        saved_shapes_by_artifact: dict[str, dict[str, tuple[tuple[int, ...], str]]] = {}
+
+        def save_study_record(
+            destination: Path, record: dict, arrays: dict[str, np.ndarray]
+        ) -> dict:
+            artifact = str(artifact_of(study_uid, record))
+            saved_shapes_by_artifact[artifact] = {
+                name: (tuple(int(size) for size in array.shape), array.dtype.kind)
+                for name, array in arrays.items()
+                if isinstance(array, np.ndarray)
+            }
+            return save(destination, study_uid, record, arrays)
+
         # Each middle slice is read with its partner's, the other sequence's slice of the same
         # place, on the names each made alone (`Measured.assignment`, which this never changes);
         # then saved.
@@ -24789,7 +29527,7 @@ def measure_study(
         # object has a record, every ordered pair a vector or a named unresolved end; the
         # anatomical reference's ideal gives each complete anchor's expectation of every other
         # object, which the families below read where to look first (and fall back from).
-        mapping = build_study_map(measured, refined, anatomical_reference())
+        mapping = build_study_map(measured, refined, anatomical_reference(), study_uid)
         # The patella through the stacks, searched first where the reference says it lies, with
         # the extensor tendons and the fat pads on the planes it names, kept beside the bones'
         # records and observations.
@@ -24800,6 +29538,7 @@ def measure_study(
         name_the_patella(measured, partners, refined, study_uid, reference, mapping)
         patella_key_planes(measured, mapping, study_uid)
         refine_map(mapping, measured)
+        native_patellofemoral_surface_readings(measured, study_uid)
 
         # Completed native families become guidance before the next family asks for a map guide.
         # Keep these returned rows pending for their original append point below. The later
@@ -24992,12 +29731,17 @@ def measure_study(
             measured,
             [rows for _, family_rows in pending_map_families for rows in family_rows],
         )
+        gastrocnemius_sources = native_gastrocnemius_head_sources(measured, study_uid)
+        gastrocnemius_said = name_native_gastrocnemius_heads(
+            measured, gastrocnemius_sources, study_uid
+        )
+        offer_completed_family("gastrocnemius_scoped_said", gastrocnemius_said)
         # The posterior family: what the views say of the heads, the lumens, the sartorius and the
         # semimembranosus group with the bursa, and each tube's continuation along the leg; then
         # the group's records are written once, with the arrays that continuation added.
         index_posterior(measured, EARLY_MIDDLE_PARTS, group_found, study_uid, leg, True)
         for part_record, part_arrays in group_found:
-            save(main_run, study_uid, part_record, part_arrays)
+            save_study_record(main_run, part_record, part_arrays)
         # The fibula, found on its main slice from the profile's pointed planes.
         found_fibulas: list[tuple[Measured, FibulaFound]] = []
         for own in measured:
@@ -25029,7 +29773,9 @@ def measure_study(
             twin = None if partner is None else fibula_twin(own, partner, fibula)
             if isinstance(twin, tuple) and partner is not None:
                 twin_record, twin_arrays, twin_index, twin_light, _ = twin
-                main_records.append(save(main_run, study_uid, twin_record, twin_arrays))
+                main_records.append(
+                    save_study_record(main_run, twin_record, twin_arrays)
+                )
                 main_unread.pop(f"{partner.record['series_uid']}:fibula", None)
                 fibula = replace(
                     fibula,
@@ -25042,7 +29788,7 @@ def measure_study(
                 fibula.record["main_slice"]["transfer"] = twin
             seen, unplaced = fibula_observations(own, fibula, partner, twin, measured)
             keep_on_record(fibula.record, seen, unplaced)
-            save(main_run, study_uid, fibula.record, fibula.arrays)
+            save_study_record(main_run, fibula.record, fibula.arrays)
             shared_fibulas.append(fibula)
         shared = next((f for f in shared_fibulas if f.places is not None), None)
         fibula_lps = None if shared is None else shared.places
@@ -25089,7 +29835,9 @@ def measure_study(
                         anterior_recess_from_axial_pockets(fluid_here, fluid_missing)
                     )
                     keep_on_record(part_record, anterior_here, anterior_missing)
-                main_records.append(save(main_run, study_uid, part_record, part_arrays))
+                main_records.append(
+                    save_study_record(main_run, part_record, part_arrays)
+                )
             main_unread.update(silences)
         # The ACL's and the LCL's own slices stay observations beside the joint's pointed planes.
         joint_existing(
@@ -25109,13 +29857,21 @@ def measure_study(
         )
         # The lateral parts found after the middle records were written (the iliotibial band, the
         # popliteus tendon, the biceps femoris tendon), and every refusal of the posterior family.
+        late_main_records = [*existing.get("lcl", []), *existing.get(BICEPS, [])]
         index_posterior(
             measured,
             (*LATE_MIDDLE_PARTS, *CONTEXT_MIDDLE_PARTS),
-            [*existing.get("lcl", []), *existing.get(BICEPS, [])],
+            late_main_records,
             study_uid,
             leg,
             False,
+        )
+        # The one reading pass, after joint_existing and the late index_posterior.
+        posterior_reading_said = late_native_readings(
+            measured,
+            group_found,
+            [*existing.get("acl", []), *late_main_records],
+            study_uid,
         )
         posterior_silences(measured, main_unread)
         # Append new capsule descriptions after the earlier families' observations.
@@ -25149,6 +29905,16 @@ def measure_study(
         )
         keep_recess(measured, native_fat_said)
         keep_recess(measured, axial_femoral_cartilage_said)
+        axial_tibial_cartilage_said = native_tibial_cartilage_readings(
+            measured, study_uid
+        )
+        if any(rows or missing for rows, missing in axial_tibial_cartilage_said):
+            reads(
+                "axial_tibial_cartilage_readings",
+                ("observations", "unresolved"),
+                "keep_recess",
+            )
+        keep_recess(measured, axial_tibial_cartilage_said)
         if any(rows or missing for rows, missing in sagittal_menisci_said):
             reads(
                 "sagittal_menisci_said",
@@ -25169,15 +29935,35 @@ def measure_study(
         if any(rows or missing for rows, missing in coronal_pcl_said):
             reads("coronal_pcl_said", ("observations", "unresolved"), "keep_recess")
         keep_recess(measured, coronal_pcl_said)
+        if any(rows or missing for rows, missing in posterior_reading_said):
+            reads("posterior_readings", ("observations", "unresolved"), "keep_recess")
+        keep_recess(measured, posterior_reading_said)
+        if any(rows or missing for rows, missing in gastrocnemius_said):
+            reads(
+                "gastrocnemius_scoped_said",
+                ("observations", "unresolved"),
+                "keep_recess",
+            )
+        keep_recess(measured, gastrocnemius_said)
+        # Existing AX bursa identity points to a bounded native fluid reading.
+        bursa_said = collect_bursa_native_readings(
+            measured, group_found, study_uid, mapping
+        )
+        if any(rows or missing for rows, missing in bursa_said):
+            reads(BURSA_READING_PRODUCT, ("observations", "unresolved"), "keep_recess")
+        keep_recess(measured, bursa_said)
         # Write each middle artifact once, after every family has supplied its evidence.
         # Native main-slice results can now feed later middle-record descriptions in memory.
         for own in measured:
-            save(run_dir, study_uid, own.record, own.arrays)
+            save_study_record(run_dir, own.record, own.arrays)
         # every family's resolved sections have entered the map: its last version, whole
         refine_map(mapping, measured, main_records)
         study_map = finish_map(mapping, run_dir, study_uid)
         if records:
             records[0]["study_map"] = study_map
+        attach_full_native_mask_address_frames(
+            records + main_records, measured_by_uid, saved_shapes_by_artifact
+        )
         # The renderers read the saved run, when they draw it: their reads are its last.
         if drawn and records:
             reads("interiors", DRAWN_INTERIORS, "draw")
@@ -25306,6 +30092,63 @@ def measure_study_at(
     return measure_study(opened(root), study_uid, run_dir, main_run, drawn)
 
 
+_COMPETITION_ENCODER: dict[str, Any] | None = None
+
+
+def _initialize_competition_encoder(spec: dict, encoding_run: Path) -> None:
+    """Prepare invariant encoding state once in each competition worker process."""
+    global _COMPETITION_ENCODER
+    from knee.encoding.operation import validate_spec
+
+    prepared = validate_spec(spec)
+    if prepared["storage"] != "h5" or not prepared.get("retain_object_sources"):
+        raise ValueError("competition_worker_requires_self_contained_h5")
+    _COMPETITION_ENCODER = {
+        "prepared": prepared,
+        "encoding_run": Path(encoding_run),
+        "base_spec_sha256": prepared["spec_sha256"],
+    }
+
+
+def _measure_and_encode_competition_at(
+    root: Path, study_uid: str, run_dir: Path, main_run: Path, drawn: bool
+) -> dict:
+    """Measure, encode and publicly verify one study inside its bounded worker."""
+    context = _COMPETITION_ENCODER
+    if context is None:
+        raise RuntimeError("competition_worker_encoder_not_initialized")
+    result = measure_study_at(root, study_uid, run_dir, main_run, drawn)
+    if result.get("study_uid") != study_uid:
+        raise ValueError("competition_worker_study_uid_mismatch")
+    from knee.encoding.operation import encode_study
+
+    prepared = context["prepared"]
+    encoded = encode_study(
+        result,
+        Path(run_dir),
+        Path(main_run),
+        prepared["spec"],
+        context["encoding_run"] / (result["study_uid"] + ".json.xz"),
+        prepared=prepared,
+    )
+    work = dict(encoded["work"])
+    object_sources = _verify_competition_product(encoded, work=work)
+    result["telemetry"]["encoding"] = work
+    result["competition_encoding"] = {
+        "schema": "verified_competition_encoding/v1",
+        "study_uid": result["study_uid"],
+        "base_spec_sha256": context["base_spec_sha256"],
+        "archive": encoded["archive"],
+        "manifest": encoded["manifest"],
+        "status": "complete",
+        "work": work,
+        # This is JSON metadata needed by the parent's compact receipt. Array payloads
+        # remain in the independently verified H5 archive.
+        "object_sources": object_sources,
+    }
+    return result
+
+
 def keep(result: dict, run_dir: Path, main_run: Path) -> None:
     """Merge one study's result into the run's two receipts: the one writer of either."""
     uid, series_uids = result["study_uid"], result["series_uids"]
@@ -25383,10 +30226,154 @@ def on_disk(corpus: Corpus, uids: Iterable[str]) -> list[str]:
     return found
 
 
-def report(result: dict, args: argparse.Namespace) -> None:
-    """Keep one study in the receipts, draw it when asked, and say what it named and what no
-    stage read."""
-    keep(result, args.run, args.main_run)
+def _accept_competition_worker_result(
+    result: dict, args: argparse.Namespace, completion: dict
+) -> dict:
+    """Validate the worker's already-verified product handoff without reopening it."""
+    from collections.abc import Mapping
+
+    uid = result.get("study_uid")
+    prepared = getattr(args, "encoding_prepared", None)
+    expected_hash = (
+        prepared.get("spec_sha256") if isinstance(prepared, Mapping) else None
+    )
+    expected_archive = Path(args.encoding_run) / f"{uid}.h5"
+    expected_archive = expected_archive.resolve()
+    if completion.get("schema") != "verified_competition_encoding/v1":
+        raise ValueError("competition_worker_encoding_schema_invalid")
+    if completion.get("status") != "complete":
+        raise ValueError("competition_worker_encoding_incomplete")
+    if completion.get("study_uid") != uid:
+        raise ValueError("competition_worker_study_uid_mismatch")
+    if (
+        not isinstance(expected_hash, str)
+        or completion.get("base_spec_sha256") != expected_hash
+    ):
+        raise ValueError("competition_worker_spec_mismatch")
+    archive = completion.get("archive")
+    manifest = completion.get("manifest")
+    object_sources = completion.get("object_sources")
+    work = completion.get("work")
+    if (
+        not isinstance(archive, str)
+        or Path(archive).resolve() != expected_archive
+        or not isinstance(manifest, str)
+        or Path(manifest).resolve() != expected_archive
+    ):
+        raise ValueError("competition_worker_archive_mismatch")
+    if not expected_archive.is_file():
+        raise FileNotFoundError("competition_worker_archive_missing")
+    if (
+        not isinstance(object_sources, Mapping)
+        or object_sources.get("schema") != "knee-object-sources/v1"
+        or object_sources.get("status") != "complete"
+        or Path(str(object_sources.get("archive", ""))).resolve() != expected_archive
+    ):
+        raise ValueError("competition_worker_object_sources_incomplete")
+    if not isinstance(work, Mapping):
+        raise TypeError("competition_worker_work_invalid")
+    verified_arrays = work.get("product_verified_arrays")
+    verified_bytes = work.get("product_verified_bytes")
+    verify_seconds = work.get("product_verification_seconds")
+    if (
+        isinstance(verified_arrays, bool)
+        or not isinstance(verified_arrays, int)
+        or verified_arrays < 0
+        or isinstance(verified_bytes, bool)
+        or not isinstance(verified_bytes, int)
+        or verified_bytes < 0
+        or isinstance(verify_seconds, bool)
+        or not isinstance(verify_seconds, (int, float))
+        or verify_seconds < 0
+        or not math.isfinite(verify_seconds)
+    ):
+        raise ValueError("competition_worker_product_verification_missing")
+
+    def contains_array(value: object) -> bool:
+        if isinstance(value, np.ndarray):
+            return True
+        if isinstance(value, Mapping):
+            return any(
+                contains_array(key) or contains_array(item)
+                for key, item in value.items()
+            )
+        if isinstance(value, (list, tuple)):
+            return any(contains_array(item) for item in value)
+        return False
+
+    if contains_array(completion):
+        raise ValueError("competition_worker_array_payload_forbidden")
+    array_count = object_sources.get("array_count")
+    if (
+        isinstance(array_count, bool)
+        or not isinstance(array_count, int)
+        or array_count < 0
+        or array_count > verified_arrays
+    ):
+        raise ValueError("competition_worker_object_array_count_invalid")
+    return {
+        "archive": str(expected_archive),
+        "manifest": str(expected_archive),
+        "object_sources": dict(object_sources),
+        "work": dict(work),
+    }
+
+
+def report(result: dict, args: argparse.Namespace, receipt_batches=None) -> None:
+    """Keep one study, draw it when asked, and report its named and unread stages."""
+    declaration = getattr(args, "encoding_declaration", None)
+    encoded = None
+    worker_completion = result.get("competition_encoding")
+    worker_encoded = bool(
+        getattr(args, "competition_output", False)
+        and getattr(args, "competition_worker_encoding", False)
+    )
+    if worker_encoded:
+        if declaration is None or not isinstance(worker_completion, dict):
+            raise ValueError("competition_worker_encoding_result_missing")
+        encoded = _accept_competition_worker_result(result, args, worker_completion)
+        result["telemetry"]["encoding"] = encoded["work"]
+    elif declaration is not None:
+        from knee.encoding.operation import encode_study
+
+        encoded = encode_study(
+            result,
+            args.run,
+            args.main_run,
+            declaration,
+            args.encoding_run / (result["study_uid"] + ".json.xz"),
+            prepared=getattr(args, "encoding_prepared", None),
+        )
+        result["telemetry"]["encoding"] = encoded["work"]
+    if getattr(args, "competition_output", False):
+        if encoded is None or receipt_batches is None:
+            raise ValueError("competition_output_requires_encoded_receipt_batch")
+        object_sources = (
+            encoded["object_sources"]
+            if worker_encoded
+            else _verify_competition_product(
+                encoded, work=result["telemetry"]["encoding"]
+            )
+        )
+        compact_unread = dict(result.get("unread", {}))
+        for key, value in result.get("main_unread", {}).items():
+            if key in compact_unread:
+                raise ValueError("competition_unread_key_collision")
+            compact_unread[key] = value
+        # Stage recoverable metadata before releasing any source archive.
+        receipt_batches.add(
+            result["study_uid"],
+            result["series_uids"],
+            [],
+            compact_unread,
+            result["telemetry"],
+            object_sources,
+        )
+        _delete_competition_intermediates(result, args.run, args.main_run)
+    elif args.draw or receipt_batches is None:
+        keep(result, args.run, args.main_run)
+    else:
+        receipt_batches.add_study(result)
     uid = result["study_uid"]
     parts = ", ".join(f"{name} {count}" for name, count in result["named"].items())
     unread = ", ".join(result["telemetry"]["read_by_no_stage"])
@@ -25464,6 +30451,379 @@ def bounded_results(
         pending.clear()
 
 
+def _encoding_mode(encode_objects: bool, has_encoding_spec: bool) -> str:
+    """Name the CLI encoding source before shared one-time preparation."""
+    if not isinstance(encode_objects, bool) or not isinstance(has_encoding_spec, bool):
+        return "invalid_mode_flags"
+    if encode_objects and has_encoding_spec:
+        return "conflict"
+    if encode_objects:
+        return "built_in"
+    if has_encoding_spec:
+        return "explicit"
+    return "disabled"
+
+
+def _competition_owned_intermediates(
+    result: dict, run_dir: Path, main_run: Path
+) -> tuple[Path, ...]:
+    """Return only source archives and map metadata named by this study's records."""
+    owned: set[Path] = set()
+    roots = {"run": Path(run_dir).resolve(), "main": Path(main_run).resolve()}
+    for records, root_name in (
+        (result.get("records", ()), "run"),
+        (result.get("main_records", ()), "main"),
+    ):
+        if not isinstance(records, (list, tuple)):
+            raise TypeError("competition_intermediate_records_invalid")
+        root = roots[root_name]
+        for record in records:
+            if not isinstance(record, dict):
+                raise TypeError("competition_intermediate_record_invalid")
+            for reference in (record.get("artifact"),):
+                if reference is None:
+                    continue
+                if not isinstance(reference, str) or not reference:
+                    raise ValueError("competition_intermediate_path_invalid")
+                relative = Path(reference)
+                if relative.is_absolute() or ".." in relative.parts:
+                    raise ValueError("competition_intermediate_path_unsafe")
+                path = (root / relative).resolve()
+                if path == root or root not in path.parents:
+                    raise ValueError("competition_intermediate_path_unsafe")
+                owned.add(path)
+            study_map = record.get("study_map")
+            if isinstance(study_map, dict) and study_map.get("file") is not None:
+                reference = study_map["file"]
+                if not isinstance(reference, str) or not reference:
+                    raise ValueError("competition_study_map_path_invalid")
+                relative = Path(reference)
+                if relative.is_absolute() or ".." in relative.parts:
+                    raise ValueError("competition_study_map_path_unsafe")
+                path = (roots["run"] / relative).resolve()
+                if path == roots["run"] or roots["run"] not in path.parents:
+                    raise ValueError("competition_study_map_path_unsafe")
+                owned.add(path)
+    return tuple(sorted(owned))
+
+
+def _verify_competition_product(encoded: dict, *, work: dict | None = None) -> dict:
+    """Verify source links and read every encoded array through the public H5 reader."""
+    from collections.abc import Mapping
+    from time import perf_counter
+
+    from knee.encoding.product import open_product
+
+    object_sources = encoded.get("object_sources")
+    archive = encoded.get("archive")
+    if (
+        not isinstance(object_sources, Mapping)
+        or object_sources.get("schema") != "knee-object-sources/v1"
+        or object_sources.get("status") != "complete"
+        or not isinstance(object_sources.get("objects"), Mapping)
+        or not isinstance(archive, str)
+        or not archive
+    ):
+        raise ValueError("competition_object_sources_incomplete")
+    if Path(object_sources.get("archive", "")).resolve() != Path(archive).resolve():
+        raise ValueError("competition_object_sources_archive_mismatch")
+    active_arrays: dict[str, Mapping] = {}
+
+    def collect_active(reference: Any, object_name: str, field: str) -> None:
+        if not isinstance(reference, Mapping):
+            raise TypeError(f"competition_object_{field}_entry_invalid:{object_name}")
+        if "active" not in reference or reference.get("active") is None:
+            raise ValueError(f"competition_object_{field}_active_missing:{object_name}")
+        active = reference.get("active")
+        if not isinstance(active, Mapping):
+            raise TypeError(f"competition_object_{field}_active_invalid:{object_name}")
+        name = active.get("name")
+        if not isinstance(name, str) or not name:
+            raise ValueError("competition_object_array_descriptor_invalid")
+        previous = active_arrays.get(name)
+        if previous is not None and dict(previous) != dict(active):
+            raise ValueError(f"competition_object_array_descriptor_conflict:{name}")
+        active_arrays[name] = active
+
+    for object_name, item in object_sources["objects"].items():
+        if (
+            not isinstance(object_name, str)
+            or not object_name
+            or not isinstance(item, Mapping)
+        ):
+            raise ValueError("competition_object_entry_invalid")
+        observations = item.get("observations")
+        if not isinstance(observations, list):
+            raise TypeError(f"competition_object_observations_invalid:{object_name}")
+        for row in observations:
+            if not isinstance(row, Mapping):
+                raise TypeError(f"competition_object_observation_invalid:{object_name}")
+            for field in ("support", "companions"):
+                values = row.get(field)
+                if values is None:
+                    if field == "support":
+                        continue
+                    values = []
+                if field == "support":
+                    values = [values]
+                if not isinstance(values, list):
+                    raise TypeError(f"competition_object_{field}_invalid:{object_name}")
+                for reference in values:
+                    collect_active(reference, object_name, field)
+        fields = item.get("associated_field_references", [])
+        if fields is None:
+            fields = []
+        if not isinstance(fields, list):
+            raise TypeError(
+                f"competition_object_associated_field_references_invalid:{object_name}"
+            )
+        for reference in fields:
+            collect_active(reference, object_name, "associated_field_references")
+    array_count = object_sources.get("array_count")
+    if (
+        isinstance(array_count, bool)
+        or not isinstance(array_count, int)
+        or array_count != len(active_arrays)
+    ):
+        raise ValueError("competition_object_array_count_mismatch")
+    started = perf_counter()
+    verified_arrays = 0
+    verified_bytes = 0
+    with open_product(Path(archive)) as product:
+        manifest = product.manifest
+        if product.storage != "h5":
+            raise ValueError("competition_object_product_not_h5")
+        if manifest.get("object_sources") != object_sources:
+            raise ValueError("competition_object_sources_manifest_mismatch")
+        encoded_descriptors = manifest.get("encoded_arrays")
+        if not isinstance(encoded_descriptors, Mapping):
+            raise TypeError("competition_object_array_manifest_invalid")
+        for name, descriptor in active_arrays.items():
+            if name == "None" or not isinstance(descriptor, Mapping):
+                raise ValueError("competition_object_array_descriptor_invalid")
+            if (
+                Path(str(descriptor.get("archive", ""))).resolve()
+                != Path(archive).resolve()
+            ):
+                raise ValueError(f"competition_object_array_archive_mismatch:{name}")
+            expected = encoded_descriptors.get(name)
+            if not isinstance(expected, Mapping) or any(
+                expected.get(field) != descriptor.get(field)
+                for field in ("digest", "shape", "dtype")
+            ):
+                raise ValueError(f"competition_object_array_manifest_mismatch:{name}")
+        for name, descriptor in encoded_descriptors.items():
+            if (
+                not isinstance(name, str)
+                or not name
+                or not isinstance(descriptor, Mapping)
+            ):
+                raise ValueError("competition_object_array_manifest_invalid")
+            array = product.arrays[name]
+            verified_arrays += 1
+            verified_bytes += int(array.nbytes)
+    if work is not None:
+        work["product_verified_arrays"] = verified_arrays
+        work["product_verified_bytes"] = verified_bytes
+        work["product_verification_seconds"] = perf_counter() - started
+    return dict(object_sources)
+
+
+def _delete_competition_intermediates(
+    result: dict, run_dir: Path, main_run: Path
+) -> None:
+    paths = _competition_owned_intermediates(result, run_dir, main_run)
+    # Validate every path before deleting any of them, so a later malformed entry
+    # cannot leave a partially removed study behind.
+    for path in paths:
+        if path.exists() and not path.is_file():
+            raise ValueError("competition_intermediate_not_file")
+    for path in paths:
+        if path.exists():
+            path.unlink()
+
+
+def _paths_overlap(left: Path, right: Path) -> bool:
+    return left == right or left in right.parents or right in left.parents
+
+
+def _validate_competition_output_roots(args: argparse.Namespace) -> None:
+    """Require fresh, disjoint owned outputs before opening a study."""
+    named = (
+        ("run", Path(args.run)),
+        ("main_run", Path(args.main_run)),
+        ("encoding_run", Path(args.encoding_run)),
+    )
+    resolved = [(name, path.resolve()) for name, path in named]
+    input_root = Path(args.root).resolve()
+    for name, path in resolved:
+        if _paths_overlap(path, input_root):
+            raise ValueError(f"competition_output_overlaps_input:{name}")
+    for index, (name, path) in enumerate(resolved):
+        for other_name, other_path in resolved[index + 1 :]:
+            if _paths_overlap(path, other_path):
+                raise ValueError(
+                    f"competition_output_paths_overlap:{name}:{other_name}"
+                )
+        declared = dict(named)[name]
+        if declared.is_symlink():
+            raise ValueError(f"competition_output_root_not_fresh:{name}")
+        if declared.exists():
+            if not declared.is_dir():
+                raise ValueError(f"competition_output_root_not_fresh:{name}")
+            try:
+                next(declared.iterdir())
+            except StopIteration:
+                pass
+            else:
+                raise ValueError(f"competition_output_root_not_fresh:{name}")
+
+
+def _diagnostic_readout(specification: str | None) -> Callable | None:
+    """Load an explicitly named readout without declaring any default mapping."""
+    if specification is None:
+        return None
+    if not isinstance(specification, str) or specification.count(":") != 1:
+        raise ValueError("diagnostic_readout_malformed")
+    module_name, attribute_name = specification.split(":", 1)
+    if (
+        not module_name
+        or not attribute_name
+        or any(not part.isidentifier() for part in module_name.split("."))
+        or not attribute_name.isidentifier()
+    ):
+        raise ValueError("diagnostic_readout_malformed")
+    from importlib import import_module
+
+    try:
+        module = import_module(module_name)
+    except Exception as error:
+        raise ValueError("diagnostic_readout_import_failed") from error
+    try:
+        callback = getattr(module, attribute_name)
+    except AttributeError as error:
+        raise ValueError("diagnostic_readout_callable_missing") from error
+    if not callable(callback):
+        raise TypeError("diagnostic_readout_not_callable")
+    return callback
+
+
+def _generated_study_source_factory(args) -> Callable:
+    """Create lazy raw-study input from the same built-in competition encoder."""
+
+    def source_factory(selected_uids: tuple[str, ...] | None):
+        from knee.diagnosis.generated import generated_studies
+        from knee.encoding.mri_spec import make_mri_spec
+        from knee.encoding.operation import encode_study, validate_spec
+
+        corpus = opened(args.root)
+        if selected_uids is None:
+            if args.study_uid is not None:
+                requested = tuple(args.study_uid)
+            elif args.labeled:
+                requested = tuple(labeled_uids(corpus.tables))
+            elif args.split:
+                requested = tuple(split_uids(corpus.tables, args.split))
+            else:
+                raise ValueError("diagnostic_generated_study_selector_required")
+        else:
+            requested = tuple(selected_uids)
+        if not requested:
+            raise ValueError("diagnostic_generated_studies_empty")
+        if any(not isinstance(uid, str) or not uid for uid in requested):
+            raise ValueError("diagnostic_generated_study_uid_invalid")
+        if len(set(requested)) != len(requested):
+            raise ValueError("diagnostic_generated_duplicate_study_uid")
+        for uid in requested:
+            if uid not in corpus.tables.studies:
+                raise ValueError(f"diagnostic_generated_study_uid_missing:{uid}")
+            study_row = corpus.tables.studies[uid]
+            if not study_row.series or any(
+                not series_directory(corpus, study_row, series).is_dir()
+                for series in study_row.series
+            ):
+                raise ValueError(f"diagnostic_generated_series_directory_missing:{uid}")
+
+        spec = make_mri_spec(retained_ordinary_profiles=True, include_coarse=True)
+        spec["retain_object_sources"] = True
+        prepared = validate_spec(spec)
+        if prepared["storage"] != "h5" or not prepared.get("retain_object_sources"):
+            raise ValueError("diagnostic_generated_requires_self_contained_h5")
+
+        def producer(uid: str, fresh: Path) -> Path:
+            run_dir = fresh / "run"
+            main_run = fresh / "main"
+            products = fresh / "products"
+            products.mkdir()
+            measured = measure_study(corpus, uid, run_dir, main_run, False)
+            if measured.get("study_uid") != uid:
+                raise ValueError("diagnostic_generated_measurement_uid_mismatch")
+            output = products / f"{uid}.json.xz"
+            encoded = encode_study(
+                measured,
+                run_dir,
+                main_run,
+                prepared["spec"],
+                output,
+                prepared=prepared,
+            )
+            work = dict(encoded["work"])
+            _verify_competition_product(encoded, work=work)
+            archive = encoded.get("archive")
+            if not isinstance(archive, str) or not archive:
+                raise ValueError("diagnostic_generated_archive_missing")
+            product = Path(archive).resolve()
+            if product.suffix.lower() != ".h5" or not product.is_file():
+                raise ValueError("diagnostic_generated_archive_not_h5")
+            # Keep the complete final object product, not only its count profile.
+            # The generated iterator removes only the consumed reconstruction tree.
+            import shutil
+
+            retained_root = Path(args.diagnostic_output) / "objects"
+            retained_root.mkdir(parents=True, exist_ok=True)
+            retained = retained_root / f"{uid}.h5"
+            if retained.exists():
+                raise ValueError("diagnostic_generated_object_product_exists")
+            shutil.move(str(product), str(retained))
+            return retained
+
+        def studies():
+            scratch = args.diagnostic_scratch
+            owns_scratch = scratch is None
+            if scratch is None:
+                if args.diagnostic_output is None:
+                    raise ValueError("diagnostic_generated_output_required")
+                scratch = Path(args.diagnostic_output) / ".generated-scratch"
+                scratch.mkdir(parents=False, exist_ok=False)
+            elif not scratch.is_dir():
+                raise ValueError("diagnostic_scratch_directory_required")
+            try:
+                for uid, profiles, source in generated_studies(
+                    requested, producer, scratch_root=scratch
+                ):
+                    yield (
+                        uid,
+                        profiles,
+                        {
+                            **source,
+                            "source_concurrency": 1,
+                            "selection": (
+                                "pipeline_cohort"
+                                if selected_uids is not None
+                                else args.split
+                                or ("labeled" if args.labeled else "study_uid")
+                            ),
+                        },
+                    )
+            finally:
+                if owns_scratch:
+                    scratch.rmdir()
+
+        return studies()
+
+    return source_factory
+
+
 def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
     which = parser.add_mutually_exclusive_group(required=True)
@@ -25510,7 +30870,115 @@ def main() -> None:
     parser.add_argument(
         "--main-out", type=Path, default=ROOT / "data/pictures/main-slices"
     )
+    encoding = parser.add_mutually_exclusive_group()
+    encoding.add_argument(
+        "--encoding-spec",
+        type=Path,
+        help="explicit versioned bank, source-binding and reference declaration; no inferred defaults",
+    )
+    encoding.add_argument(
+        "--encode-objects",
+        action="store_true",
+        help="use the built-in base-slice measurement declaration (not a full MRI normative catalogue)",
+    )
+    parser.add_argument(
+        "--encoding-run",
+        type=Path,
+        default=ROOT / "data/measurements/encoding",
+        help="retained per-study exact encoding and source addresses",
+    )
+    parser.add_argument(
+        "--competition-output",
+        action="store_true",
+        help=(
+            "retain self-contained object products for competition use; requires fresh "
+            "run, main-run and encoding-run directories and disables drawing"
+        ),
+    )
+    from knee.diagnosis.pipeline import add_arguments, run_diagnostic_cli
+
+    add_arguments(parser, which)
+    parser.add_argument(
+        "--diagnostic-scratch",
+        type=Path,
+        help="existing scratch directory for transient one-study full products",
+    )
+    parser.add_argument(
+        "--diagnostic-readout",
+        help="explicit Python module:callable returning condition probability values",
+    )
     args = parser.parse_args()
+    if (
+        getattr(args, "diagnostic_mode", None) is not None
+        or getattr(args, "diagnostic_products", None) is not None
+        or getattr(args, "diagnostic_inputs", None) is not None
+    ):
+        if (
+            args.draw
+            or args.encode_objects
+            or args.encoding_spec is not None
+            or args.competition_output
+        ):
+            raise ValueError("diagnostic_conflicting_anatomy_options")
+        if args.diagnostic_products is None and args.diagnostic_inputs is None:
+            study_source = _generated_study_source_factory(args)
+            source_mode = "generated_full_reference"
+        else:
+            if args.diagnostic_scratch is not None:
+                raise ValueError("diagnostic_scratch_requires_raw_selector")
+            study_source = None
+            source_mode = None
+        probability_readout = _diagnostic_readout(args.diagnostic_readout)
+        print(
+            json.dumps(
+                run_diagnostic_cli(
+                    args,
+                    study_source=study_source,
+                    source_mode=source_mode,
+                    probability_readout=probability_readout,
+                ),
+                sort_keys=True,
+            )
+        )
+        return
+    if args.diagnostic_scratch is not None or args.diagnostic_readout is not None:
+        raise ValueError("diagnostic_options_require_diagnostic_mode")
+    if args.study_uid is not None and len(set(args.study_uid)) != len(args.study_uid):
+        raise ValueError("duplicate_study_uid")
+    if args.competition_output:
+        if args.draw:
+            raise ValueError("competition_output_disallows_draw")
+        if args.encoding_spec is not None:
+            raise ValueError("competition_output_requires_builtin_encoding")
+        _validate_competition_output_roots(args)
+    encoding_mode = _encoding_mode(
+        args.encode_objects or args.competition_output,
+        getattr(args, "encoding_spec", None) is not None,
+    )
+    if encoding_mode != "disabled":
+        from knee.encoding.operation import validate_spec
+
+        if encoding_mode == "built_in":
+            from knee.encoding.mri_spec import make_mri_spec
+
+            spec = make_mri_spec(retained_ordinary_profiles=True, include_coarse=True)
+            if args.competition_output:
+                spec["retain_object_sources"] = True
+        elif encoding_mode == "explicit":
+            from knee.json_store import load_json
+
+            spec = load_json(args.encoding_spec)
+        else:
+            raise ValueError(f"invalid_encoding_mode:{encoding_mode}")
+        args.encoding_prepared = validate_spec(spec)
+        # Initializers receive the JSON-shaped declaration rather than its frozen view.
+        args.encoding_worker_declaration = json.loads(json.dumps(spec))
+        if args.competition_output and (
+            args.encoding_prepared["storage"] != "h5"
+            or not args.encoding_prepared.get("retain_object_sources")
+        ):
+            raise ValueError("competition_output_requires_self_contained_h5")
+        args.encoding_declaration = args.encoding_prepared["spec"]
     corpus = opened(args.root)
     if args.labeled:
         uids = on_disk(corpus, labeled_uids(corpus.tables))
@@ -25519,21 +30987,67 @@ def main() -> None:
     else:
         uids = args.study_uid
     workers = max(1, min(args.workers, len(uids)))
-    if workers == 1:
-        for uid in uids:
-            report(measure_study(corpus, uid, args.run, args.main_run, args.draw), args)
-        return
-    with ProcessPoolExecutor(max_workers=workers) as pool:
-        jobs = ((args.root, uid, args.run, args.main_run, args.draw) for uid in uids)
+    args.competition_worker_encoding = bool(args.competition_output and workers > 1)
+    batches = None
+    if not args.draw:
+        from knee.json_store import compressed_path, dump_json_atomic, load_json
+        from knee.receipt import merged_receipt
 
-        def submit(job: tuple) -> Future:
-            return pool.submit(measure_study_at, *job)
+        batch_options = {
+            "load_json": load_json,
+            "compressed_path": compressed_path,
+            "dump_json_atomic": dump_json_atomic,
+            "merged_receipt": merged_receipt,
+            "default": plain,
+        }
+        if args.competition_output:
+            from knee.receipt_batch import ReceiptBatch
 
-        # Input order and one receipt writer; the reported result counts within the bound.
-        with closing(bounded_results(submit, jobs, workers)) as results:
-            for result in results:
-                report(result, args)
-                del result
+            # This compact object receipt is the only active aggregate in competition mode.
+            batches = ReceiptBatch(args.encoding_run, REQUEST, **batch_options)
+        else:
+            from knee.receipt_batch import ReceiptBatches
+
+            batches = ReceiptBatches(args.run, args.main_run, REQUEST, **batch_options)
+    try:
+        if workers == 1:
+            for uid in uids:
+                report(
+                    measure_study(corpus, uid, args.run, args.main_run, args.draw),
+                    args,
+                    batches,
+                )
+        else:
+            if args.competition_worker_encoding:
+                pool_context = ProcessPoolExecutor(
+                    max_workers=workers,
+                    initializer=_initialize_competition_encoder,
+                    initargs=(args.encoding_worker_declaration, args.encoding_run),
+                )
+                study_worker = _measure_and_encode_competition_at
+            else:
+                pool_context = ProcessPoolExecutor(max_workers=workers)
+                study_worker = measure_study_at
+            with pool_context as pool:
+                jobs = (
+                    (args.root, uid, args.run, args.main_run, args.draw) for uid in uids
+                )
+
+                def submit(job: tuple) -> Future:
+                    return pool.submit(study_worker, *job)
+
+                # One coordinator stages results in input order and owns final publication.
+                with closing(bounded_results(submit, jobs, workers)) as results:
+                    for result in results:
+                        report(result, args, batches)
+                        del result
+    except Exception as error:
+        if batches is not None:
+            batches.finalize_after_failure(error)
+        raise
+    else:
+        if batches is not None:
+            batches.finalize()
 
 
 if __name__ == "__main__":

@@ -1,4 +1,31 @@
 {
+  "../../../../../../private/tmp/rsna-codex-build-20261019/p8-patellofemoral-max/current-rebase/src/knee/collapse/patellofemoral.py::patellofemoral_surface_reading": {
+    "cut_reasons": [],
+    "function_digest": "dbef412f0d951ea3",
+    "refusal": "",
+    "standing": "incomplete"
+  },
+  "src/knee/collapse/observations.py::address_frame_status": {
+    "cut_reasons": [],
+    "function_digest": "0225b451cc1a941e",
+    "refusal": "",
+    "standing": "complete"
+  },
+  "src/knee/diagnosis/case_inputs.py::call_profile_status": {
+    "cut_reasons": [],
+    "function_digest": "f03a3a1c28e729df",
+    "refusal": "",
+    "standing": "stale"
+  },
+  "src/knee/diagnosis/pipeline.py::diagnostic_action": {
+    "cut_reasons": [
+      "budget_exhausted",
+      "coverage_truncated"
+    ],
+    "function_digest": "700828468254d9d4",
+    "refusal": "",
+    "standing": "ungateable"
+  },
   "src/knee/objects/assignments.py::bursa_code": {
     "cut_reasons": [],
     "function_digest": "c2894b1fb38042fd",

@@ -1,5 +1,22 @@
 # How RSNA_Knee is built: every correction, and what would have prevented it
 
+## Scoped identification is not a mask-completeness target — 2026-10-19
+
+Rohan: «Withdrawing the rule? Is the rule invalid, or just scoped to only a marker lixel?»
+Then: «Recall the "build plan". The point is for this pipeline to be able to have a set of rules
+that are able to follow correct visual reasoning priors to identify objects in the study images.
+Accuracy and completness are for the AI aparts». Complete direct exchange:
+`docs/conversations/2026-10-19-scoped-identification.md`.
+
+Codex had withdrawn a combined anatomical head rule after its gradient reading returned only
+marker-sized supports in two views. That substituted spatial completeness for the required
+validity. Keep a valid scoped reading and the anatomical identification it contributes to; state
+its actual support and withdraw any stronger extent or boundary claim. The rule comes from
+anatomy, the known source object and physical relations, with complementary native readings.
+A gradient partition alone is not a muscle definition, and small support alone is not invalidity.
+A fuller intermediate mask is not a prerequisite for useful identification. Follow the approved
+build; accuracy and completeness are the later AI layer's work.
+
 ## Useful priors, not perfect intermediate boundaries — 2026-10-19
 
 Rohan: «Please remind the lead that P2a only needs a useful prior, not an exact skin boundary.
@@ -681,3 +698,7 @@ What prevents it:
   gate and the audit again on GitHub (`.github/workflows/gate.yml`); read that run.
 - `data/` stays out of git: GitHub is for code, not gigabytes of data (33 GB on 2026-10-18).
 - Invent no privacy restriction on his own work or on the public competition's material.
+
+## Parallel code writing is required, 2026-10-19
+
+Rohan: «Make what I'm saying a fundamental part of the build plan. If I had 5-10 engineers, each of them would obviously have something useful they could work on independently. This should be equally applicable to AI coding agents». Full direct exchange: `docs/conversations/2026-10-19-parallel-construction.md`. Governing construction contract: FULL_BUILD_PLAN §4. Independent private implementations proceed concurrently; the lead owns intent and integration, not every line of code. An active frozen production verification does not freeze candidate construction. Use the local Claude Max terminal CLI for appropriate mechanical work. Do not substitute parallel audits for parallel implementation or promise delivery from worker/token counts. Native validity, retained information, necessary focused checks and the final exact-tree gate remain required. Current scheduling and ETA assumptions live only in §13's active packet.

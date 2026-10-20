@@ -11,6 +11,7 @@ from typing import cast
 import numpy as np
 import pytest
 
+from knee.array_archive import open_arrays
 from knee.collapse.observations import Observation, rows, tally
 from knee.collapse.physical import PlaneFrame
 from knee.objects import assignments as A
@@ -624,7 +625,7 @@ def test_axial_scout_evidence_survives_the_real_driver_save_and_observation_merg
         "earlier_reading",
         "axial_reading",
     }
-    with np.load(tmp_path / "main" / "study" / "sg-fibula.npz") as arrays:
+    with open_arrays(tmp_path / "main" / saved_holder[0]["artifact"]) as arrays:
         assert arrays["a4_scout_evidence"].tolist() == [True, False]
 
 
@@ -706,7 +707,7 @@ def test_middle_record_is_saved_once_after_late_family_evidence_with_matching_di
         "earlier_middle_reading"
     ]
     assert saved_record["observations_by_provenance"]["native"] == 2
-    with np.load(tmp_path / "run" / "study" / "sg.npz") as persisted:
+    with open_arrays(tmp_path / "run" / saved_record["artifact"]) as persisted:
         assert set(persisted.files) == set(saved_record["arrays"])
         for name in persisted.files:
             assert saved_record["arrays"][name]["digest"] == run.digest(persisted[name])

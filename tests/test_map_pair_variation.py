@@ -87,7 +87,7 @@ def _pair(result, origin, target):
     )
 
 
-def test_complete_maps_produce_1806_ordered_pairs_and_sample_statistics(tmp_path):
+def test_complete_maps_cover_all_ordered_pairs_and_sample_statistics(tmp_path):
     a, b = MAP_OBJECTS[:2]
     p1 = {name: (0.0, 0.0, 0.0) for name in MAP_OBJECTS}
     p2 = {name: (0.0, 0.0, 0.0) for name in MAP_OBJECTS}
@@ -97,7 +97,7 @@ def test_complete_maps_produce_1806_ordered_pairs_and_sample_statistics(tmp_path
 
     result = analyze(run)
     pair = _pair(result, a, b)
-    assert len(result["pairs"]) == 43 * 42
+    assert len(result["pairs"]) == len(MAP_OBJECTS) * (len(MAP_OBJECTS) - 1)
     assert pair["coverage_studies"] == 2
     assert pair["measured_studies"] == 2
     assert pair["statistics"]["magnitude_mm"] == {
@@ -193,4 +193,4 @@ def test_output_json_is_strict_and_csv_has_all_pairs(tmp_path):
     json.loads(json_path.read_text(), parse_constant=lambda token: pytest.fail(token))
     with csv_path.open(newline="") as stream:
         rows = list(csv.DictReader(stream))
-    assert len(rows) == 43 * 42
+    assert len(rows) == len(MAP_OBJECTS) * (len(MAP_OBJECTS) - 1)

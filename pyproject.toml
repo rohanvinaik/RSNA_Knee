@@ -15,6 +15,9 @@ dependencies = [
 jit = [
     "numba>=0.68.0",
 ]
+hdc = [
+    "h5py>=3.16.0",
+]
 
 [build-system]
 requires = ["setuptools>=68"]
@@ -121,6 +124,7 @@ dev = [
     "crosshair-tool>=0.0.111",
     "deptry==0.25.1",
     "detective-spec>=1.1.1",
+    "h5py>=3.16.0",
     "hypothesis>=6.168.5",
     "import-linter>=2.15",
     "matplotlib>=3.11.2",

@@ -1035,12 +1035,19 @@ OBJECT_CODES = {
     "biceps_femoris_tendon": 40,
     "gracilis": 41,
     "sartorius": 42,
+    "patellar_cartilage": 43,
+    "trochlear_cartilage": 44,
 }
 RETINACULA = (
     "medial_patellar_retinaculum",
     "lateral_patellar_retinaculum",
 )
-CARTILAGES = ("femoral_cartilage", "tibial_cartilage")
+CARTILAGES = (
+    "femoral_cartilage",
+    "tibial_cartilage",
+    "patellar_cartilage",
+    "trochlear_cartilage",
+)
 # The parts a slice's naming gives a code for (`assign_plane`), in the order it gives them; a part
 # named on a slice of its own says of each of them that it is not named there.
 SLICE_PARTS = (
@@ -1290,6 +1297,26 @@ class Measures:
             "light", digest(places), lambda: marrow_light(self.plane, places)
         )
 
+    def median_filter(self, plane: np.ndarray, size: Sequence[int]) -> np.ndarray:
+        """The exact uniform median-filtered image for an explicit plane and window."""
+        source = np.asarray(plane)
+        window = tuple(int(step) for step in size)
+        inputs = (
+            digest(source),
+            source.shape,
+            source.dtype.str,
+            window,
+            "reflect",
+            0,
+        )
+        return self._kept(
+            "median_filter",
+            inputs,
+            lambda: handed_on(
+                ndi.median_filter(np.asarray(plane, dtype=np.float64), size=window)
+            ),
+        )
+
     def distance(self, places: np.ndarray, spacing_rc: np.ndarray) -> np.ndarray:
         """Each place's distance from a part's places, at the given pixel size (`distance_from`)."""
         size = tuple(float(step) for step in np.asarray(spacing_rc))
@@ -1384,7 +1411,11 @@ def dark_bands(
     if light <= 0:
         return none
     size = tuple(int(2 * round(LIGAMENT_SMOOTH_MM / step) + 1) for step in spacing_rc)
-    uniform = ndi.median_filter(np.asarray(plane, dtype=np.float64), size=size)
+    uniform = (
+        ndi.median_filter(np.asarray(plane, dtype=np.float64), size=size)
+        if measures is None
+        else measures.median_filter(plane, size)
+    )
     dark = (uniform < LIGAMENT_DARKER * light) & ~outside_picture & ~femur & ~tibia
     pieces, _ = ndi.label(thick_parts(dark, spacing_rc, LIGAMENT_THICK_MM))
     return np.asarray(pieces, dtype=np.int32)

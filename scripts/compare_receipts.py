@@ -9,15 +9,16 @@ receipts hold a record's border readings they are still compared, and reported a
 `--study-uid` only those studies' records are compared, and the receipts' other entries (the
 request, the silences) are compared only when every study is.
 
-Run: `.venv/bin/python scripts/compare_receipts.py <before receipt.json> <after receipt.json>
+Run: `.venv/bin/python scripts/compare_receipts.py <before receipt.json[.xz]> <after receipt.json[.xz]>
 [--borders-aside] [--study-uid <uid> ...]`. It prints what differs and exits 1 when anything does.
 """
 
 import argparse
 import copy
-import json
 import sys
 from pathlib import Path
+
+from knee.json_store import load_json
 
 # The border readings a record keeps where its run drew (`run_interiors.slice_record`), and the
 # counts of what they found (`run_interiors.lens_of`).
@@ -131,8 +132,8 @@ def main() -> None:
     parser.add_argument("--study-uid", nargs="+", default=[])
     args = parser.parse_args()
     found = compare(
-        json.loads(args.before.read_text()),
-        json.loads(args.after.read_text()),
+        load_json(args.before),
+        load_json(args.after),
         args.borders_aside,
         frozenset(args.study_uid),
     )

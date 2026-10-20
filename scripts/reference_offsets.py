@@ -34,6 +34,7 @@ from pathlib import Path
 
 import numpy as np
 
+from knee.array_archive import open_arrays
 from knee.collapse.bones import IDENTIFIED, OUTCOMES
 from knee.collapse.reference import (
     REFERENCE_BONES,
@@ -42,6 +43,7 @@ from knee.collapse.reference import (
     reference_position,
     strongest_first,
 )
+from knee.json_store import load_json
 
 
 def places(saved) -> np.ndarray:
@@ -195,7 +197,7 @@ def main() -> None:
     args = parser.parse_args()
     runs = {}
     for name, path in (("obs", args.run), ("ref", args.reference_run)):
-        receipt = json.loads((path / "receipt.json").read_text())
+        receipt = load_json(path / "receipt.json")
         by_study: dict[str, list[dict]] = {}
         for record in receipt["records"]:
             by_study.setdefault(record["study_uid"], []).append(record)
@@ -206,11 +208,21 @@ def main() -> None:
         def load(record: dict):
             key = (which, record["artifact"])
             if key not in cache:
-                cache[key] = np.load(runs[which][0] / record["artifact"])
+                cache[key] = open_arrays(
+                    runs[which][0] / record["artifact"], allow_pickle=False
+                )
             return cache[key]
 
         return load
 
+    try:
+        _reference_offsets(args, runs, saved_in, cache)
+    finally:
+        for archive in cache.values():
+            archive.close()
+
+
+def _reference_offsets(args, runs, saved_in, cache) -> None:
     references, offsets, accounting, slice_rows = [], [], [], []
     agreement = {"same": 0, "different": 0, "saved_profiles_unconfirmed": 0}
     for study, records in sorted(runs["obs"][1].items()):
@@ -244,6 +256,9 @@ def main() -> None:
         if live is None:
             status["unknown"] = "no_confirmed_key_plane_or_no_series_to_read_it_on"
             accounting.append(status)
+            for archive in cache.values():
+                archive.close()
+            cache.clear()
             continue
         for record in (r for r in records if r["view"] == ["Sagittal", "1", "1"]):
             saved = saved_in("obs")(record)
@@ -317,6 +332,9 @@ def main() -> None:
                 )
             status["series"].append(row)
         accounting.append(status)
+        for archive in cache.values():
+            archive.close()
+        cache.clear()
     stats: dict = {"reference_agreement_live_vs_saved_profiles": agreement}
     for kind in ("depth", "in_plane"):
         for convention in ("left_mm", "medial_mm"):

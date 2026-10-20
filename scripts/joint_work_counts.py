@@ -15,6 +15,8 @@ import json
 from collections import Counter
 from pathlib import Path
 
+from knee.json_store import load_json
+
 JOINT_OBJECTS = {
     "medial_meniscus",
     "lateral_meniscus",
@@ -28,7 +30,7 @@ JOINT_OBJECTS = {
 
 
 def load(path: Path) -> tuple[dict, dict]:
-    receipt = json.loads((path / "receipt.json").read_text())
+    receipt = load_json(path / "receipt.json")
     return {r["series_uid"]: r for r in receipt["records"]}, receipt["telemetry"]
 
 

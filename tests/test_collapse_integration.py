@@ -188,7 +188,7 @@ def test_the_retinacula_slice_is_chosen_through_the_patellas_whole_observed_exte
 
 
 def test_the_drivers_keep_writes_the_objects_into_the_interiors_receipt_only(tmp_path):
-    import json
+    from knee.json_store import load_json
 
     result = {
         "study_uid": "S",
@@ -205,9 +205,9 @@ def test_the_drivers_keep_writes_the_objects_into_the_interiors_receipt_only(tmp
     run_dir.mkdir()
     main_dir.mkdir()
     run.keep(result, run_dir, main_dir)
-    kept = json.loads((run_dir / "receipt.json").read_text())
+    kept = load_json(run_dir / "receipt.json.xz")
     assert list(kept["objects"]["S"]) == ["femur"]
-    assert "objects" not in json.loads((main_dir / "receipt.json").read_text())
+    assert "objects" not in load_json(main_dir / "receipt.json.xz")
 
 
 def test_missing_observation_uses_its_own_retained_definition_refusal_only():

@@ -1,4 +1,232 @@
 {
+  "../../../../../../private/tmp/rsna-codex-build-20261019/p8-patellofemoral-max/current-rebase/src/knee/collapse/patellofemoral.py::patellofemoral_surface_reading::dbef412f0d951ea3": [],
+  "src/knee/collapse/observations.py::address_frame_status::0225b451cc1a941e": [
+    {
+      "assertion_code": "result = address_frame_status(frame=None)\nassert result == 'frame_invalid'",
+      "category": "VALUE",
+      "confidence": 0.9,
+      "function_key": "",
+      "golden_case": [
+        "(None,)",
+        "'frame_invalid'"
+      ],
+      "mutant_id": "",
+      "needs_oracle": false,
+      "preconditions": [
+        "golden capture (pure + deterministic)"
+      ],
+      "setup_code": "from knee.collapse.observations import address_frame_status",
+      "source_lenses": [
+        "golden_capture"
+      ]
+    },
+    {
+      "assertion_code": "result = address_frame_status(frame={'origin_lps': [0, 0, 0], 'basis_lps': [[2, 0], [0, 3], [0, 0]]})\nassert result == 'frame_valid'",
+      "category": "VALUE",
+      "confidence": 0.9,
+      "function_key": "",
+      "golden_case": [
+        "({'origin_lps': [0, 0, 0], 'basis_lps': [[2, 0], [0, 3], [0, 0]]},)",
+        "'frame_valid'"
+      ],
+      "mutant_id": "",
+      "needs_oracle": false,
+      "preconditions": [
+        "golden capture (pure + deterministic)"
+      ],
+      "setup_code": "from knee.collapse.observations import address_frame_status",
+      "source_lenses": [
+        "golden_capture"
+      ]
+    },
+    {
+      "assertion_code": "result = address_frame_status(frame={'origin_lps': [1, 2, 3], 'basis_lps': [[2, 7], [3, 11], [5, 13]]})\nassert result == 'frame_valid'",
+      "category": "VALUE",
+      "confidence": 0.9,
+      "function_key": "",
+      "golden_case": [
+        "({'origin_lps': [1, 2, 3], 'basis_lps': [[2, 7], [3, 11], [5, 13]]},)",
+        "'frame_valid'"
+      ],
+      "mutant_id": "",
+      "needs_oracle": false,
+      "preconditions": [
+        "golden capture (pure + deterministic)"
+      ],
+      "setup_code": "from knee.collapse.observations import address_frame_status",
+      "source_lenses": [
+        "golden_capture"
+      ]
+    },
+    {
+      "assertion_code": "result = address_frame_status(frame={'origin_lps': [0, 0, 0], 'basis_lps': [[2, 4], [3, 6], [5, 10]]})\nassert result == 'frame_invalid'",
+      "category": "VALUE",
+      "confidence": 0.9,
+      "function_key": "",
+      "golden_case": [
+        "({'origin_lps': [0, 0, 0], 'basis_lps': [[2, 4], [3, 6], [5, 10]]},)",
+        "'frame_invalid'"
+      ],
+      "mutant_id": "",
+      "needs_oracle": false,
+      "preconditions": [
+        "golden capture (pure + deterministic)"
+      ],
+      "setup_code": "from knee.collapse.observations import address_frame_status",
+      "source_lenses": [
+        "golden_capture"
+      ]
+    },
+    {
+      "assertion_code": "result = address_frame_status(frame={'origin_lps': [0, 0, 0], 'basis_lps': [[0, 1], [0, 2], [0, 3]]})\nassert result == 'frame_invalid'",
+      "category": "VALUE",
+      "confidence": 0.9,
+      "function_key": "",
+      "golden_case": [
+        "({'origin_lps': [0, 0, 0], 'basis_lps': [[0, 1], [0, 2], [0, 3]]},)",
+        "'frame_invalid'"
+      ],
+      "mutant_id": "",
+      "needs_oracle": false,
+      "preconditions": [
+        "golden capture (pure + deterministic)"
+      ],
+      "setup_code": "from knee.collapse.observations import address_frame_status",
+      "source_lenses": [
+        "golden_capture"
+      ]
+    },
+    {
+      "assertion_code": "result = address_frame_status(frame={'origin_lps': [0, 0, 0], 'basis_lps': [[1, 0], [0, 1], [1]]})\nassert result == 'frame_invalid'",
+      "category": "VALUE",
+      "confidence": 0.9,
+      "function_key": "",
+      "golden_case": [
+        "({'origin_lps': [0, 0, 0], 'basis_lps': [[1, 0], [0, 1], [1]]},)",
+        "'frame_invalid'"
+      ],
+      "mutant_id": "",
+      "needs_oracle": false,
+      "preconditions": [
+        "golden capture (pure + deterministic)"
+      ],
+      "setup_code": "from knee.collapse.observations import address_frame_status",
+      "source_lenses": [
+        "golden_capture"
+      ]
+    },
+    {
+      "assertion_code": "result = address_frame_status(frame={'origin_lps': [0, 0, 0], 'basis_lps': [[1e-300, 0], [0, 2e-300], [0, 0]]})\nassert result == 'frame_valid'",
+      "category": "VALUE",
+      "confidence": 0.9,
+      "function_key": "",
+      "golden_case": [
+        "({'origin_lps': [0, 0, 0], 'basis_lps': [[1e-300, 0], [0, 2e-300], [0, 0]]},)",
+        "'frame_valid'"
+      ],
+      "mutant_id": "",
+      "needs_oracle": false,
+      "preconditions": [
+        "golden capture (pure + deterministic)"
+      ],
+      "setup_code": "from knee.collapse.observations import address_frame_status",
+      "source_lenses": [
+        "golden_capture"
+      ]
+    },
+    {
+      "assertion_code": "result = address_frame_status(frame={'origin_lps': [10000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000, 0, 0], 'basis_lps': [[1, 0], [0, 1], [0, 0]]})\nassert result == 'frame_invalid'",
+      "category": "VALUE",
+      "confidence": 0.9,
+      "function_key": "",
+      "golden_case": [
+        "({'origin_lps': [10000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000, 0, 0], 'basis_lps': [[1, 0], [0, 1], [0, 0]]},)",
+        "'frame_invalid'"
+      ],
+      "mutant_id": "",
+      "needs_oracle": false,
+      "preconditions": [
+        "golden capture (pure + deterministic)"
+      ],
+      "setup_code": "from knee.collapse.observations import address_frame_status",
+      "source_lenses": [
+        "golden_capture"
+      ]
+    }
+  ],
+  "src/knee/diagnosis/case_inputs.py::call_profile_status::f03a3a1c28e729df": [
+    {
+      "assertion_code": "result = call_profile_status(digit=2, profile_speaks=False)\nassert result == 'invalid_call_digit'",
+      "category": "VALUE",
+      "confidence": 0.95,
+      "function_key": "",
+      "golden_case": null,
+      "mutant_id": "",
+      "needs_oracle": false,
+      "preconditions": [
+        "distinguishing witness (equivalence search)"
+      ],
+      "setup_code": "from knee.diagnosis.case_inputs import call_profile_status",
+      "source_lenses": [
+        "witness"
+      ]
+    }
+  ],
+  "src/knee/diagnosis/pipeline.py::_source_work::329282e9860883d8": [
+    {
+      "assertion_code": "result = _source_work(source_mode='declared_cheap_acquired_route', source={}, source_elapsed=-1.0)\nassert result == {'full_anatomy_runs': 0, 'producer_seconds': -1.0, 'source_iteration_seconds': -1.0, 'fresh_product_construction': False, 'previously_generated_product_read': False}",
+      "category": "VALUE",
+      "confidence": 0.95,
+      "function_key": "",
+      "golden_case": null,
+      "mutant_id": "",
+      "needs_oracle": false,
+      "preconditions": [
+        "distinguishing witness (equivalence search)"
+      ],
+      "setup_code": "from knee.diagnosis.pipeline import _source_work",
+      "source_lenses": [
+        "witness"
+      ]
+    },
+    {
+      "assertion_code": "result = _source_work(source_mode='retained_full_products_reference_route', source={}, source_elapsed=-1.0)\nassert result == {'full_anatomy_runs': 0, 'producer_seconds': None, 'source_iteration_seconds': -1.0, 'fresh_product_construction': False, 'previously_generated_product_read': True}",
+      "category": "VALUE",
+      "confidence": 0.95,
+      "function_key": "",
+      "golden_case": null,
+      "mutant_id": "",
+      "needs_oracle": false,
+      "preconditions": [
+        "distinguishing witness (equivalence search)"
+      ],
+      "setup_code": "from knee.diagnosis.pipeline import _source_work",
+      "source_lenses": [
+        "witness"
+      ]
+    }
+  ],
+  "src/knee/diagnosis/pipeline.py::diagnostic_action::700828468254d9d4": [
+    {
+      "assertion_code": "result = diagnostic_action(mode='abc', has_products=True, has_inputs=True, has_memory=True, has_labels=True)\nassert result == 'invalid_mode'",
+      "category": "VALUE",
+      "confidence": 0.9,
+      "function_key": "",
+      "golden_case": [
+        "('abc', True, True, True, True)",
+        "'invalid_mode'"
+      ],
+      "mutant_id": "",
+      "needs_oracle": false,
+      "preconditions": [
+        "golden capture (pure + deterministic)"
+      ],
+      "setup_code": "from knee.diagnosis.pipeline import diagnostic_action",
+      "source_lenses": [
+        "golden_capture"
+      ]
+    }
+  ],
   "src/knee/objects/assignments.py::bursa_code::c2894b1fb38042fd": [],
   "src/knee/objects/assignments.py::capsule_code::fb9b169c9d7118ad": [],
   "src/knee/objects/assignments.py::synovium_code::03613e3b02a5b50f": []

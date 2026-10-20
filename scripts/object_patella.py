@@ -10,13 +10,15 @@ every outline is read from the saved arrays and the receipt; the planes' own pix
 the series, since a run keeps only the middle slice's.
 """
 
-import json
 from collections.abc import Callable
+from contextlib import ExitStack
 from pathlib import Path
 
 import matplotlib.pyplot as plt
 import numpy as np
 
+from knee.array_archive import open_arrays
+from knee.json_store import load_json
 from knee.objects.assignments import OBJECT_CODES
 
 PANEL_INCH = 4.5
@@ -42,7 +44,7 @@ def draw(
     run_dir: Path, study_uid: str, out: Path, volume_of: Callable[[str], np.ndarray]
 ) -> list[Path]:
     """One picture per fat-suppressed series of the study that read the patella."""
-    receipt = json.loads((run_dir / "receipt.json").read_text())
+    receipt = load_json(run_dir / "receipt.json")
     records = [r for r in _records(receipt) if r.get("study_uid") == study_uid]
     out.mkdir(parents=True, exist_ok=True)
     drawn: list[Path] = []
@@ -50,17 +52,28 @@ def draw(
         part = record.get("patella", {})
         if "pointed_planes" not in part:
             continue
-        arrays = np.load(run_dir / record["artifact"])
-        prefix = part.get("twin_arrays_prefix")
-        twin = next(
-            (
-                (r, np.load(run_dir / r["artifact"]))
-                for r in records
-                if prefix and f"{prefix}_slices" in r["arrays"]
-            ),
-            None,
-        )
-        drawn.append(_picture(record, part, arrays, volume_of, twin, prefix, out))
+        with ExitStack() as stack:
+            arrays = stack.enter_context(
+                open_arrays(run_dir / record["artifact"], allow_pickle=False)
+            )
+            prefix = part.get("twin_arrays_prefix")
+            twin_record = next(
+                (r for r in records if prefix and f"{prefix}_slices" in r["arrays"]),
+                None,
+            )
+            twin = (
+                None
+                if twin_record is None
+                else (
+                    twin_record,
+                    stack.enter_context(
+                        open_arrays(
+                            run_dir / twin_record["artifact"], allow_pickle=False
+                        )
+                    ),
+                )
+            )
+            drawn.append(_picture(record, part, arrays, volume_of, twin, prefix, out))
     return drawn
 
 
