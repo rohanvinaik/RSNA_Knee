@@ -127,205 +127,26 @@ def _runtime_recall_cache(
 
 
 def _memory_without_study(memory: Mapping[str, Any], uid: str) -> dict[str, Any]:
-    """Return the exact explicit-UID view used by capacity recall."""
-    cases = memory.get("cases", ())
-    censors = memory.get("censors", ())
-    view = dict(memory)
-    if isinstance(cases, Sequence) and not isinstance(cases, (str, bytes)):
-        view["cases"] = [
-            case
-            for case in cases
-            if not isinstance(case, Mapping) or case.get("study_uid") != uid
-        ]
-    if isinstance(censors, Sequence) and not isinstance(censors, (str, bytes)):
-        kept = []
-        for censor in censors:
-            source = censor.get("source") if isinstance(censor, Mapping) else None
-            source_uid = (
-                source.get("study_uid") if isinstance(source, Mapping) else None
-            )
-            attributed_uid = (
-                censor.get("study_uid") if isinstance(censor, Mapping) else None
-            ) or source_uid
-            if attributed_uid != uid:
-                kept.append(censor)
-        view["censors"] = kept
-    view.pop("prepared_recall", None)
-    return view
+    """Delegate capacity's population construction to the shared memory view."""
+    from knee.diagnosis.squint_memory_view import memory_view
+
+    return memory_view(dict(memory), exclude_study_uids=(uid,))
 
 
 def _project_recall_cache_without_study(
     memory: Mapping[str, Any], prepared: Mapping[str, Any], uid: str
 ) -> dict[str, Any] | None:
-    """Project exact stored opposing comparisons onto a study-excluded view."""
-    filtered_memory = _memory_without_study(memory, uid)
-    filtered_fingerprint = recall_source_fingerprint(filtered_memory)
-    cases = filtered_memory.get("cases", ())
-    censors = filtered_memory.get("censors", ())
-    case_indices: dict[str, dict[str, list[int]]] = {}
-    questions: set[str] = set()
-    case_banks = _validated_case_banks(cases)
-    eligible_subjects = sorted(
-        {
-            case.get("subject")
-            for index, case in enumerate(cases)
-            if isinstance(case, Mapping)
-            and index in case_banks
-            and isinstance(case.get("subject"), str)
-            and isinstance(case.get("case_id"), str)
-            and isinstance(case.get("study_uid"), str)
-        }
-    )
-    for index, case in enumerate(cases):
-        if not isinstance(case, Mapping):
-            continue
-        calls = case.get("condition_calls", case.get("calls", {}))
-        case_questions = set()
-        if isinstance(calls, Mapping):
-            case_questions.update(key for key in calls if isinstance(key, str) and key)
-        elif isinstance(calls, Sequence) and not isinstance(calls, (str, bytes)):
-            case_questions.update(
-                row.get("question", row.get("condition"))
-                for row in calls
-                if isinstance(row, Mapping)
-                and isinstance(row.get("question", row.get("condition")), str)
-            )
-        questions.update(case_questions)
-        subject = case.get("subject")
-        if isinstance(subject, str) and isinstance(case.get("profile"), Mapping):
-            for question in case_questions:
-                if _call(case, question) in (-1, 1):
-                    case_indices.setdefault(subject, {}).setdefault(
-                        question, []
-                    ).append(index)
-    censor_indices = {
-        question: [
-            index
-            for index, censor in enumerate(censors)
-            if isinstance(censor, Mapping)
-            and censor.get("question", censor.get("condition")) == question
-        ]
-        for question in questions
-    }
-    envelopes: dict[str, dict[str, dict[str, Any]]] = {}
-    source_envelopes = prepared.get("envelopes")
-    if not isinstance(source_envelopes, Mapping):
+    """Delegate exact cached comparison projection to the shared memory view."""
+    from knee.diagnosis.squint_memory_view import MemoryViewError, memory_view
+
+    try:
+        view = memory_view(
+            {**memory, "prepared_recall": prepared}, exclude_study_uids=(uid,)
+        )
+    except MemoryViewError:
+        # prepare_recall retains its existing legacy-cache rebuild behavior.
         return None
-    for subject in eligible_subjects:
-        subject_indices = [
-            index
-            for index, case in enumerate(cases)
-            if isinstance(case, Mapping)
-            and case.get("subject") == subject
-            and index in case_banks
-            and isinstance(case.get("case_id"), str)
-            and isinstance(case.get("study_uid"), str)
-        ]
-        scoped_questions = {
-            question
-            for question in questions
-            if any(
-                _call(cases[index], question) in (-1, 1) for index in subject_indices
-            )
-        }
-        if not scoped_questions:
-            continue
-        subject_rows = source_envelopes.get(subject)
-        if not isinstance(subject_rows, Mapping):
-            return None
-        for question in sorted(questions):
-            scoped_indices = [
-                index
-                for index in subject_indices
-                if _call(cases[index], question) in (-1, 1)
-            ]
-            if not scoped_indices:
-                continue
-            buckets = subject_rows.get(question, {})
-            if not isinstance(buckets, Mapping):
-                return None
-            kept_buckets = {}
-            for bucket_id, bucket in buckets.items():
-                if not isinstance(bucket, Mapping):
-                    return None
-                comparisons = bucket.get("comparisons")
-                if not isinstance(comparisons, list):
-                    return None
-                retained = []
-                for comparison in comparisons:
-                    if not isinstance(comparison, Mapping):
-                        return None
-                    pair_uids = comparison.get("study_uids")
-                    projection = comparison.get("projection_mode")
-                    ratio = comparison.get("squared_cosine")
-                    if (
-                        not isinstance(pair_uids, list)
-                        or len(pair_uids) != 2
-                        or any(not isinstance(value, str) for value in pair_uids)
-                        or not isinstance(projection, str)
-                        or not isinstance(ratio, Mapping)
-                    ):
-                        return None
-                    pair_case_ids = comparison.get("case_ids")
-                    if (
-                        not isinstance(pair_case_ids, list)
-                        or len(pair_case_ids) != 2
-                        or any(not isinstance(value, str) for value in pair_case_ids)
-                    ):
-                        return None
-                    if uid not in pair_uids:
-                        retained.append(dict(comparison))
-                if not retained:
-                    continue
-                maximum = None
-                population_ids = []
-                modes = []
-                for comparison in retained:
-                    ratio = comparison["squared_cosine"]
-                    try:
-                        numerator = int(ratio["numerator"])
-                        denominator = int(ratio["denominator"])
-                    except (KeyError, TypeError, ValueError):
-                        return None
-                    if numerator < 0 or denominator <= 0:
-                        return None
-                    if maximum is None or numerator * maximum["denominator"] > (
-                        maximum["numerator"] * denominator
-                    ):
-                        maximum = {"numerator": numerator, "denominator": denominator}
-                    for case_id in comparison["case_ids"]:
-                        if case_id not in population_ids:
-                            population_ids.append(case_id)
-                    if comparison["projection_mode"] not in modes:
-                        modes.append(comparison["projection_mode"])
-                projected = {
-                    **bucket,
-                    "projection_modes": modes,
-                    "population_case_ids": population_ids,
-                    "independent_comparison_count": len(retained),
-                    "maximum_squared_cosine": {
-                        "numerator": str(maximum["numerator"]),
-                        "denominator": str(maximum["denominator"]),
-                    },
-                    "comparisons": retained,
-                }
-                kept_buckets[bucket_id] = projected
-            envelopes.setdefault(subject, {})[question] = kept_buckets
-    stored = {
-        **prepared,
-        "memory_source": filtered_memory.get(
-            "source", filtered_memory.get("metadata", {})
-        ),
-        "source_fingerprint": filtered_fingerprint,
-        "envelopes": envelopes,
-        "case_indices": case_indices,
-        "censor_indices": censor_indices,
-    }
-    runtime = _runtime_recall_cache(filtered_memory, stored)
-    if runtime is None:
-        return None
-    runtime["excluded_study_uid"] = uid
-    return runtime
+    return view["prepared_recall"]
 
 
 def _mapping(value: object) -> Mapping[str, Any] | None:

@@ -19,6 +19,9 @@ from collections import Counter
 from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
 
+from knee.diagnosis.squint_interfaces import MEMORY_VIEW_SCHEMA
+from knee.diagnosis.squint_locator import recall_source_fingerprint
+from knee.diagnosis.squint_memory_view import memory_view
 from knee.study.tables import LABELS
 
 SCHEMA = "knee.squint-run/v1"
@@ -268,6 +271,14 @@ def infer_study(
             reason="study_time_budget_exhausted_before_read",
             elapsed_seconds=time.perf_counter() - started,
         )
+    view = memory.get("view")
+    if exclude_same_study and not (
+        isinstance(view, dict)
+        and view.get("schema") == MEMORY_VIEW_SCHEMA
+        and uid in view.get("excluded_study_uids", ())
+        and view.get("source_fingerprint") == recall_source_fingerprint(memory)
+    ):
+        memory, _excluded = _study_excluded_memory(memory, uid)
     study = read_study_squints(root, uid, io_workers=io_workers)
     locations = locate_objects(study, memory, deadline=deadline)
     objects = locations.get("objects", {})
@@ -343,42 +354,18 @@ def infer_study(
 
 
 def _study_excluded_memory(memory: dict, uid: str) -> tuple[dict, dict]:
-    """Make an order-preserving memory view without explicitly attributed UID rows."""
-    cases = memory.get("cases", ())
-    original_case_count = len(cases) if isinstance(cases, (list, tuple)) else 0
-    excluded_case_count = 0
-    kept_cases = []
-    for case in cases if isinstance(cases, (list, tuple)) else ():
-        if isinstance(case, dict) and case.get("study_uid") == uid:
-            excluded_case_count += 1
-            continue
-        kept_cases.append(case)
-    censors = memory.get("censors", ())
-    original_censor_count = len(censors) if isinstance(censors, (list, tuple)) else 0
-    excluded_censor_count = 0
-    kept_censors = []
-    for censor in censors if isinstance(censors, (list, tuple)) else ():
-        source = censor.get("source") if isinstance(censor, dict) else None
-        source_uid = source.get("study_uid") if isinstance(source, dict) else None
-        attributed_uid = (
-            censor.get("study_uid") if isinstance(censor, dict) else None
-        ) or source_uid
-        if attributed_uid == uid:
-            excluded_censor_count += 1
-            continue
-        kept_censors.append(censor)
-    view = {**memory, "cases": kept_cases}
-    if "censors" in memory:
-        view["censors"] = kept_censors
-    view.pop("prepared_recall", None)
+    """Use the same population for capacity location, recall and preparation."""
+    view = memory_view(memory, exclude_study_uids=(uid,))
+    case_count = len(memory.get("cases", ()))
+    censor_count = len(memory.get("censors", ()))
     return view, {
         "excluded_study_uid": uid,
-        "original_case_count": original_case_count,
-        "filtered_case_count": len(kept_cases),
-        "excluded_case_count": excluded_case_count,
-        "original_censor_count": original_censor_count,
-        "filtered_censor_count": len(kept_censors),
-        "excluded_censor_count": excluded_censor_count,
+        "original_case_count": case_count,
+        "filtered_case_count": len(view["cases"]),
+        "excluded_case_count": case_count - len(view["cases"]),
+        "original_censor_count": censor_count,
+        "filtered_censor_count": len(view.get("censors", ())),
+        "excluded_censor_count": censor_count - len(view.get("censors", ())),
     }
 
 
@@ -540,6 +527,8 @@ def run_squint_cli(args, *, prepared_memory_snapshot=None) -> dict:
         raise SquintRunError("squint_memory_snapshot_digest_missing")
     memory_digest = snapshot.sha256
     memory = snapshot.memory
+    if mode == "capacity":
+        memory = {**memory, "memory_manifest_sha256": memory_digest}
     from knee.diagnosis.squint_locator import prepare_recall
     from knee.json_store import dump_json_atomic, load_json, resolve_json_path
 
@@ -660,7 +649,7 @@ def run_squint_cli(args, *, prepared_memory_snapshot=None) -> dict:
         preparation_identity = None
 
     def infer_admitted_study(uid: str, deadline: float, budget_seconds: float) -> dict:
-        study_memory = memory
+        study_memory: dict = memory
         excluded = None
         study_preparation_seconds = 0.0
         study_preparation_source = preparation_cache_status
@@ -703,7 +692,11 @@ def run_squint_cli(args, *, prepared_memory_snapshot=None) -> dict:
                 or study_prepared.get("outcome") != "prepared"
             ):
                 raise SquintRunError("squint_capacity_recall_preparation_invalid")
-            study_memory = {**study_memory, "prepared_recall": study_prepared}
+            study_memory = {
+                **study_memory,
+                "prepared_recall": study_prepared,
+                "view": {**study_memory["view"], "preparation_code": "prepared"},
+            }
             study_preparation_source = (
                 "study_excluded_projected"
                 if study_prepared.get("runtime_indexes_rebuilt") is True
