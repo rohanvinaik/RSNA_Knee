@@ -66,7 +66,7 @@ Worktrees under `/private/tmp/rsna-upgrade-20261021/<job>` (branch `upgrade/<job
 | W6 question selection | Claude sub-agent | w6 | session sub-agent | INTEGRATED c95d61a, with the lead's sourced MCL-surroundings exception (SQUINT_TRAINING_BUILD §10) |
 | W9 bones by structure | Claude sub-agent | w9 | session sub-agent | RUNNING |
 | W10 dependents from anchors | Codex CLI, then Claude sub-agent | w10 | bc9e3zmt4 FAILED (model at capacity, no edits); reassigned to a session sub-agent | RUNNING |
-| W11 location check | Claude sub-agent | w11 | session sub-agent | RUNNING |
+| W11 location check | Claude sub-agent | w11 | session sub-agent | INTEGRATED 19cdac5; corrected the lead's earlier on-target figures (native supports only: femur 14%, tibia 19%, patella 14%) |
 | W14 teaching round | Codex CLI, then Claude sub-agent | w14 | b4jecu4qt FAILED (model at capacity, no edits); reassigned to a session sub-agent | RUNNING |
 | W12 residual executor | Claude sub-agent | w12 | session sub-agent | RUNNING |
 | W7 recall reads only the selection | Codex CLI | w7 | baeddtawc | INTEGRATED (merged onto W8's memory view by the lead); production recall now needs the territory-v2 memory, v1 is refused by name |
