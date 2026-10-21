@@ -94,6 +94,8 @@ EARLIER_NEGATIVE = ("n1", "femur", "sn", [(SAG, (1, 2, 0))], [SAG])
 # Two femur candidates the frozen parent identifies on both views.
 X_BANKS = [(SAG, (4, 0, 1)), (COR, (4, 0, 1))]
 W_BANKS = [(SAG, (5, 0, 1)), (COR, (5, 0, 1))]
+# A fresh femur candidate the corrected child identifies, with no negative against it.
+Z_BANKS = [(SAG, (3, 0, 0)), (COR, (3, 0, 0))]
 
 
 def _load():
@@ -524,6 +526,48 @@ def test_held_out_exclusion_and_the_next_round_hear_the_correction(grown):
     receipt = grow_identity_memory(snapshot, [like_x, again], grown.root / "round-2")
     assert receipt["state_counts"] == {"conflict": 1, "duplicate": 1}
     assert [p.name for p in (grown.root / "round-2").iterdir()] == [DECISIONS_FILE]
+
+
+def test_the_corrected_child_parents_a_published_round_that_keeps_the_correction(
+    grown,
+):
+    """The corrected child is the next parent, and its grandchild keeps the -1."""
+    publish(grown, [row(grown.x, "reject", views=[SAG])], "corrected")
+    corrected = load_memory_snapshot(grown.root / "corrected")
+    receipt = grow_identity_memory(
+        corrected, harvest_candidates(records(("sz", Z_BANKS))), grown.root / "round-2"
+    )
+    assert receipt["outcome"] == "published"
+    [z] = receipt["admitted_case_ids"]
+    assert z.startswith("located:sz:femur:")
+    grandchild = load_memory_snapshot(grown.root / "round-2" / CHILD_DIRECTORY).memory
+    assert z in object_ids(grandchild) and grown.x not in object_ids(grandchild)
+    parent_records = corrected.memory["object_identity_cases"]["cases"]
+    assert grandchild["object_identity_cases"]["cases"] == parent_records
+    teaching = grandchild["object_identity_teaching"]
+    assert teaching["negative_views"][grown.x] == [SAG]
+    assert grown.x in teaching["negative_case_ids"]
+    assert (
+        teaching["admission_reviews"]
+        == (corrected.memory["object_identity_teaching"]["admission_reviews"])
+    )
+    [x_row] = [r for r in teaching["calls"] if r["candidate_id"] == grown.x]
+    assert (x_row["call"], x_row["views"], x_row["reader"]) == (
+        "reject",
+        [SAG],
+        REVIEWER,
+    )
+    rounds = grandchild["object_identity_growth"]["rounds"]
+    assert [entry["parent_manifest_sha256"] for entry in rounds] == [
+        grown.parent.sha256,
+        corrected.sha256,
+    ]
+    # The next reader still meets the corrected case's -1 on its sagittal view.
+    prepared = prepare_identity(grandchild)
+    assert prepared["negative_case_count"] == 2
+    heard = recall_identity(query([(SAG, (4, 0, 1))]), grandchild, prepared=prepared)
+    [against] = [r for r in heard["negative_cases"] if r["case_id"] == grown.x]
+    assert (against["digit"], against["speaks"]) == (-1, True)
 
 
 # --------------------------------------------------------------- refusals
