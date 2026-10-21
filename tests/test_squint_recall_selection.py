@@ -428,7 +428,7 @@ def test_pipeline_supplies_one_selection_to_object_and_configuration(monkeypatch
     monkeypatch.setattr(
         squint_configurations,
         "configuration_profile",
-        lambda profiles, question: {
+        lambda profiles, question, procedure=None: {
             "subject": "diagnosis/ACL",
             "banks": {"qualified": [1, 0, 0]},
         },

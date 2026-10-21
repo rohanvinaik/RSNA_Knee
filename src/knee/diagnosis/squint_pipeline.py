@@ -148,7 +148,29 @@ def _recall_question(
         for subject in question.objects
         if subject in objects and objects[subject].get("profile") is not None
     }
-    combined = configuration_profile(source_profiles, question.question_id)
+    # The configuration is composed in the one writer its located objects
+    # share; objects written by different writers are never mixed.
+    procedures = {
+        (profile.get("source") or {}).get("procedure")
+        for profile in source_profiles.values()
+    }
+    if len(procedures) > 1:
+        evidence[f"diagnosis/{question.question_id}"] = {
+            "outcome": "proposal",
+            "reason": "configuration_mixed_procedures",
+            "procedures": sorted(str(item) for item in procedures),
+            "case_terms": [],
+            "censor_terms": [],
+            "speaking_calls": [],
+        }
+        return evidence
+    combined = (
+        configuration_profile(
+            source_profiles, question.question_id, procedure=procedures.pop()
+        )
+        if procedures
+        else configuration_profile(source_profiles, question.question_id)
+    )
     if combined["banks"]:
         evidence[combined["subject"]] = recall_object(
             combined,
@@ -225,6 +247,15 @@ def _bounded_observation(
     if deadline is not None and time.monotonic() >= deadline:
         return {"code": "deadline_before_zoom", "subject": subject}
     located = objects[subject]
+    previous_source = (located.get("profile") or {}).get("source") or {}
+    if (
+        previous_source.get("procedure")
+        == "knee.squint-profile/leg-tercile-territory-v2"
+    ):
+        # The 2 mm physical squint here is the v1 writer's; it cannot be merged
+        # into a territory profile, which already carries its own 2 mm reading.
+        # The bounded native step for open questions (W12) replaces this.
+        return {"code": "residual_pending_territory_reading", "subject": subject}
     profiles = []
     regions = []
     by_uid = {s["series_uid"]: s for s in study.get("series", [])}

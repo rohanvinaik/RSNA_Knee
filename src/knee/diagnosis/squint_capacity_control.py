@@ -23,6 +23,8 @@ from knee.diagnosis.squint_profiles import (
 )
 
 CONTROL = "teacher_bootstrap_regions/v1"
+CONTROL_V2 = "teacher_bootstrap_profiles/territory-v2"
+_TERRITORY_PROCEDURE = "knee.squint-profile/leg-tercile-territory-v2"
 _CONTROL_LOCK = threading.Lock()
 
 
@@ -46,6 +48,59 @@ def teacher_addresses(memory: dict) -> dict[str, dict[str, list[dict]]]:
             if region not in regions:
                 regions.append(copy.deepcopy(region))
     return addresses
+
+
+def teacher_profiles(memory: dict) -> dict[str, dict[str, dict]]:
+    """Copy each study's own territory-v2 object case profiles and regions.
+
+    For a territory memory the bootstrap already read every case region over
+    the object's own saved outline with the territory writer and the study's
+    leg-only cutoffs: exactly what a query read at the true location would
+    be. Copied before the study is excluded, so recall never meets them as
+    cases. Calls are not copied.
+    """
+    own: dict[str, dict[str, dict]] = {}
+    for case in memory.get("cases", ()):
+        subject = case["subject"]
+        if subject.startswith("diagnosis/"):
+            continue
+        profile = case.get("profile")
+        if not isinstance(profile, dict):
+            continue
+        own.setdefault(case["study_uid"], {})[subject] = {
+            "profile": copy.deepcopy(profile),
+            "regions": copy.deepcopy(case.get("regions", [])),
+        }
+    return own
+
+
+def locate_teacher_profiles(study: object, own: dict[str, dict[str, dict]]) -> dict:
+    """Located objects for one study from its own territory-v2 case profiles."""
+    if (
+        not isinstance(study, dict)
+        or not isinstance(study.get("study_uid"), str)
+        or not study["study_uid"]
+    ):
+        raise CapacityControlError("teacher_study_identity_invalid")
+    uid = study["study_uid"]
+    rows = own.get(uid, {})
+    subjects = sorted(
+        {s for question in QUESTIONS for s in question.objects} | set(rows)
+    )
+    objects = {}
+    for subject in subjects:
+        row = rows.get(subject)
+        located = row is not None and bool(row["profile"].get("banks"))
+        objects[subject] = {
+            "status": "located" if located else "unavailable",
+            "reason": "teacher_profile_copied"
+            if located
+            else "teacher_regions_unavailable",
+            "profile": row["profile"] if located else None,
+            "regions": row["regions"] if located else [],
+            "evidence": {"location_mode": CONTROL_V2, "teacher_study_uid": uid},
+        }
+    return {"outcome": "teacher_locations_read", "objects": objects}
 
 
 def _region_code(region: object, series: dict | None) -> str:
@@ -193,7 +248,15 @@ def run_teacher_capacity(args, *, prepared_memory_snapshot=None) -> dict:
             snapshot = load_memory_snapshot(Path(args.diagnostic_memory))
         if not isinstance(snapshot, MemorySnapshot) or snapshot.memory is None:
             raise CapacityControlError("teacher_memory_snapshot_invalid")
-        addresses = teacher_addresses(snapshot.memory)
+        territory = any(
+            (case.get("profile") or {}).get("source", {}).get("procedure")
+            == _TERRITORY_PROCEDURE
+            for case in snapshot.memory.get("cases", ())
+            if not case["subject"].startswith("diagnosis/")
+        )
+        addresses = {} if territory else teacher_addresses(snapshot.memory)
+        own_profiles = teacher_profiles(snapshot.memory) if territory else {}
+        mode = CONTROL_V2 if territory else CONTROL
         audits = {}
 
         def teacher_locator(study, memory, deadline=None):
@@ -226,6 +289,8 @@ def run_teacher_capacity(args, *, prepared_memory_snapshot=None) -> dict:
                                 "teacher_location_prepared_study_leak:" + uid
                             )
             audits[uid] = {"code": "study_excluded", "source_fingerprint": fingerprint}
+            if territory:
+                return locate_teacher_profiles(study, own_profiles)
             return locate_teacher_objects(study, addresses, deadline=deadline)
 
         with patch.object(squint_locator, "locate_objects", teacher_locator):
@@ -233,8 +298,13 @@ def run_teacher_capacity(args, *, prepared_memory_snapshot=None) -> dict:
                 args, prepared_memory_snapshot=snapshot
             )
         result["capacity_control"] = {
-            "location_mode": CONTROL,
-            "writer": "profile_window+refine_window(2mm), merged per subject",
+            "location_mode": mode,
+            "writer": (
+                "own territory-v2 case profiles (profile_territory + refine_territory "
+                "over each saved outline), copied before exclusion"
+                if territory
+                else "profile_window+refine_window(2mm), merged per subject"
+            ),
             "address_source_manifest_sha256": snapshot.sha256,
             "exclusion_checks": audits,
         }
@@ -248,8 +318,11 @@ def run_teacher_capacity(args, *, prepared_memory_snapshot=None) -> dict:
 
 
 __all__ = [
+    "CONTROL_V2",
     "CapacityControlError",
     "locate_teacher_objects",
+    "locate_teacher_profiles",
     "run_teacher_capacity",
     "teacher_addresses",
+    "teacher_profiles",
 ]
