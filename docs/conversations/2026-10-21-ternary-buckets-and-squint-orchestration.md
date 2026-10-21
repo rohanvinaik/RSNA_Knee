@@ -301,3 +301,20 @@ Second message, verbatim:
 > That makes obliqueness a shared geometric calculation. Each object inherits the correction.
 >
 > The implementation should retain the actual plane normal/rotation, so "the angle" has an explicit geometric meaning. Different series retain their recorded acquisition orientations, all related to that common anatomical reference.
+
+## Rohan — the femur and tibia are told apart by visual reasoning, not by resemblance, 2026-10-21
+
+Recording metadata, not his words: sent after the lead's status report on the first signed memory's run
+over the 3 public studies, which said the femur of one study was nearest a tibia case (cosine about 0.80,
+the nearest femur case about 0.78), called that a conflict, and was heading toward making recall separate
+the two bones. Two messages, verbatim:
+
+> What? The tibia and femur are ABSURDLY easy to resolve. Both look almost identical—big fucking bones. But one is “up” and one is “down”, top-bottom, mirror orientation. Common-sense stuff, come on Claude. If you’re expecting this to BLINDLY “see” the difference, it won’t. That’s WHY we do visual reasoning.
+>
+> Do NOT fuck this up for me, Claude
+
+> Pause this, I need to give you a bonk. You’re about to fuck this up.
+>
+> This is computer vision. How the HELL would a pipeline that resolves objects visually be able to do cosine similarity match that differentiates the tibia and the femur. They’re BOTH BONES. The fact their cosine similarity scores are so similar is fucking PHENOMENAL validation that you just presented as if it’s a problem. If you try to “fix” this you will DESTROY everything.
+>
+> This is baby shit, stuff we solved a LOOOONG time ago. Why are you randomly reinventing object recognition? Consult with codex, tell me what you understand
