@@ -548,3 +548,100 @@ def test_scan_accepts_only_pin_occurrences_and_still_refuses_secrets_in_the_wrap
             (5, "GitHub Token"),
         )
     ]
+
+
+def fixture_value() -> str:
+    return hashlib.sha256(b"public fixture manifest").hexdigest()
+
+
+def fixture_git(source: str, diff: str):
+    return lambda *args: source if len(args) == 2 else diff
+
+
+def test_public_fixture_digest_is_accepted_at_its_exact_binding_and_line(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    checks = tool()
+    value = fixture_value()
+    source = f'"""doc"""\nV1_MANIFEST_SHA256 = "{value}"\n'
+    diff = f'@@ -0,0 +2 @@\n+V1_MANIFEST_SHA256 = "{value}"\n'
+    monkeypatch.setattr(checks, "git", fixture_git(source, diff))
+    assert checks.fixture_digest_hashes("revision") == {1: frozenset({sha1(value)})}
+    assert (
+        checks.finding_verdict(
+            checks.FIXTURE_DIGEST, checks.HEX, sha1(value), frozenset({sha1(value)})
+        )
+        == "public_fixture_digest"
+    )
+
+
+def test_public_fixture_digest_is_refused_elsewhere(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    checks = tool()
+    value = fixture_value()
+    known = frozenset({sha1(value)})
+    assert checks.finding_verdict("tests/other.py", checks.HEX, sha1(value), known) == (
+        "unexplained"
+    )
+    for kind in ("Secret Keyword", "GitHub Token"):
+        assert checks.finding_verdict(
+            checks.FIXTURE_DIGEST, kind, sha1(value), known
+        ) == ("unexplained")
+    # wrong added line: the finding's line is not the bound literal's
+    monkeypatch.setattr(
+        checks,
+        "git",
+        fixture_git(
+            f'V1_MANIFEST_SHA256 = "{value}"\n',
+            f'@@ -0,0 +1,2 @@\n+V1_MANIFEST_SHA256 = "{value}"\n+OTHER = "{value}"\n',
+        ),
+    )
+    assert checks.fixture_digest_hashes("revision").get(2) is None
+    for assignment in (
+        'OTHER = "{value}"',
+        'V1_MANIFEST_SHA256 = "{value}0"',
+        'V1_MANIFEST_SHA256 = "{short}"',
+        'V1_MANIFEST_SHA256 = str("{value}")',
+        'V1_MANIFEST_SHA256 = ALIAS = "{value}"',
+        'def nested():\n    V1_MANIFEST_SHA256 = "{value}"',
+        'V1_MANIFEST_SHA256 = "{value}"; TOKEN = "{value}"',
+    ):
+        source = assignment.format(value=value, short=value[:-1]) + "\n"
+        diff = "@@ -0,0 +1,2 @@\n" + "".join(
+            f"+{line}\n" for line in source.splitlines()
+        )
+        monkeypatch.setattr(checks, "git", fixture_git(source, diff))
+        assert checks.fixture_digest_hashes("revision") == {}
+
+
+def test_scan_accepts_the_fixture_hex_finding_but_refuses_a_keyword_with_its_hash(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    checks = tool()
+    value = fixture_value()
+    lines = [f'V1_MANIFEST_SHA256 = "{value}"', f'PASSWORD = "{value}"']
+    source = "\n".join(lines) + "\n"
+    diff = "@@ -0,0 +1,2 @@\n" + "".join(f"+{line}\n" for line in lines)
+    monkeypatch.setattr(checks, "git", fixture_git(source, diff))
+    monkeypatch.setattr(
+        checks, "commit_additions", lambda _: {checks.FIXTURE_DIGEST: lines}
+    )
+    findings = [
+        {"type": kind, "hashed_secret": sha1(value), "line_number": number}
+        for number, kind in ((1, checks.HEX), (2, "Secret Keyword"), (2, checks.HEX))
+    ]
+
+    def mock_run(command, cwd=None):
+        return subprocess.CompletedProcess(
+            command,
+            0,
+            json.dumps({"results": {f"revision/{checks.FIXTURE_DIGEST}": findings}}),
+            "",
+        )
+
+    monkeypatch.setattr(checks, "run", mock_run)
+    assert checks.scan(["revision"]) == [
+        f"a possible secret in revisio {checks.FIXTURE_DIGEST}, added line 2: {kind}"
+        for kind in ("Secret Keyword", checks.HEX)
+    ]

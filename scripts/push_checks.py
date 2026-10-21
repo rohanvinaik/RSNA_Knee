@@ -61,6 +61,9 @@ RELEASE_PINS = "kaggle/squint-production/run_squint.py"
 RELEASE_PIN_NAMES = frozenset(
     {"EXPECTED_RUNTIME_BUNDLE_ID", "EXPECTED_MEMORY_MANIFEST_SHA256"}
 )
+# Computed public expected-manifest fixture; one module-level name at this path.
+FIXTURE_DIGEST = "tests/test_squint_memory_territory.py"
+FIXTURE_DIGEST_NAMES = frozenset({"V1_MANIFEST_SHA256"})
 HEX = "Hex High Entropy String"
 # Pinned, as the gate pins zizmor, so every push is checked with the same versions. detect-secrets reads the
 # next line's name as a secret keyword; the pragma on it is detect-secrets' own mark for a finding reviewed as
@@ -133,6 +136,8 @@ def finding_verdict(
             return "function_digest"
         if path == RELEASE_PINS:
             return "public_digest_pin"
+        if path == FIXTURE_DIGEST:
+            return "public_fixture_digest"
     return "unexplained"
 
 
@@ -168,17 +173,29 @@ def added_lines(diff: str) -> list[str]:
 
 
 def release_pin_hashes(sha: str) -> dict[int, frozenset[str]]:
-    """The wrapper's public pin hashes keyed by added-line number in this commit.
+    """The wrapper's public pin hashes by added line; see `binding_hashes`."""
+    return binding_hashes(sha, RELEASE_PINS, RELEASE_PIN_NAMES, "release pin")
 
-    Read syntax, never execute the wrapper. Only a single-name, module-level
-    assignment to one of the two documented pins can explain a 64-hex literal.
-    Map its source line through the commit's diff so an identical string in an
-    untyped assignment (or another commit) is not excused by the pin.
+
+def fixture_digest_hashes(sha: str) -> dict[int, frozenset[str]]:
+    """The public fixture digest's hash by added line; see `binding_hashes`."""
+    return binding_hashes(sha, FIXTURE_DIGEST, FIXTURE_DIGEST_NAMES, "fixture digest")
+
+
+def binding_hashes(
+    sha: str, path: str, names: frozenset[str], label: str
+) -> dict[int, frozenset[str]]:
+    """Public hashes (release wrapper pins or the fixture digest) by added line.
+
+    Read syntax, never execute the file. Only a single-name, module-level
+    assignment to a name in `names`, in the caller-specified `path`, can explain
+    a 64-hex literal. Map its source line through the commit's diff so an
+    identical string elsewhere (or in another commit) is not excused.
     """
     try:
-        source = ast.parse(git("show", f"{sha}:{RELEASE_PINS}"))
+        source = ast.parse(git("show", f"{sha}:{path}"))
     except SyntaxError as error:
-        raise Unchecked(f"release pin source cannot be parsed: {error}") from error
+        raise Unchecked(f"{label} source cannot be parsed: {error}") from error
     pins: dict[int, set[str]] = {}
     for node in source.body:
         if isinstance(node, ast.AnnAssign):
@@ -189,7 +206,7 @@ def release_pin_hashes(sha: str) -> dict[int, frozenset[str]]:
             continue
         if (
             isinstance(target, ast.Name)
-            and target.id in RELEASE_PIN_NAMES
+            and target.id in names
             and isinstance(value, ast.Constant)
             and isinstance(value.value, str)
             and value.lineno == value.end_lineno
@@ -214,7 +231,7 @@ def release_pin_hashes(sha: str) -> dict[int, frozenset[str]]:
         "--cc",
         sha,
         "--",
-        RELEASE_PINS,
+        path,
     )
     return {
         added: frozenset(pins[number])
@@ -314,7 +331,7 @@ def scan(commits: list[str]) -> list[str]:
     refusals: list[str] = []
     accepted = 0
     hashes: dict[tuple[str, str], frozenset[str]] = {}
-    pins: dict[str, dict[int, frozenset[str]]] = {}
+    pins: dict[tuple[str, str], dict[int, frozenset[str]]] = {}
     for name, findings in sorted(results.items()):
         sha, _, path = name.removeprefix("./").partition("/")
         key = (sha, path)
@@ -323,12 +340,16 @@ def scan(commits: list[str]) -> list[str]:
                 hashes[key] = recording_hashes(sha)
             elif path == CERTIFICATES:
                 hashes[key] = certificate_hashes(sha)
-        if path == RELEASE_PINS and sha not in pins:
-            pins[sha] = release_pin_hashes(sha)
+        if path in (RELEASE_PINS, FIXTURE_DIGEST) and (sha, path) not in pins:
+            pins[sha, path] = (
+                release_pin_hashes(sha)
+                if path == RELEASE_PINS
+                else fixture_digest_hashes(sha)
+            )
         for finding in findings:
             recognized = (
-                pins[sha].get(finding["line_number"], frozenset())
-                if path == RELEASE_PINS
+                pins[sha, path].get(finding["line_number"], frozenset())
+                if path in (RELEASE_PINS, FIXTURE_DIGEST)
                 else hashes.get(key, frozenset())
             )
             verdict = finding_verdict(
@@ -338,12 +359,17 @@ def scan(commits: list[str]) -> list[str]:
                 recognized,
             )
             where = f"{sha[:7]} {path}, added line {finding['line_number']}: {finding['type']}"
-            if verdict in ("recording_digest", "function_digest", "public_digest_pin"):
+            if verdict in (
+                "recording_digest",
+                "function_digest",
+                "public_digest_pin",
+                "public_fixture_digest",
+            ):
                 accepted += 1
             else:
                 refusals.append(f"a possible secret in {where}")
     print(
-        f"secret scan: {accepted} findings are exact recorded kernel/function digests or public release pins;"
+        f"secret scan: {accepted} findings are exact recorded kernel/function digests, public fixture digests, or public release pins;"
         f" {len(refusals)} are not"
     )
     return refusals
