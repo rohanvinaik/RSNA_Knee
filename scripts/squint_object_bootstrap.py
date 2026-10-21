@@ -8,7 +8,17 @@ drawing-only evidence, write the final review bytes and hash those exact bytes.
 
 admit: rehash the review file bytes, check the rendered sheets, then hand the
 review, the human calls and the hash to the shared seed API. Nothing is
-inferred, ranked or relabelled here.
+inferred, ranked or relabelled here. A review of a growth child's admissions
+(from ``export-admissions``) goes to the shared admission-correction API instead:
+a reject returns its admission as a negative case on exactly its views, a confirm
+is recorded only, and the corrected memory is a new child of the reviewed one.
+
+export-admissions: review a growth child's admissions on their pictures before the
+child becomes the next parent (by default every standing admission of its latest
+round). Each sheet is drawn exactly as ``sheets`` draws a decision: the squint tile
+windows the recognition read, on the native slices. The review pins each admitted
+case and its round's confirm row, with its cheap profile, regions, views and
+lineage. No full profile is required or made, and nothing is recognized.
 
 sheets: draw one picture sheet per identity-admission decision, so the first
 growth round's admissions can be looked at before their child memory becomes
@@ -49,11 +59,15 @@ from pathlib import Path
 from typing import Any
 
 from knee.diagnosis.squint_bootstrap import (
+    ADMISSION_REVIEW_SCHEMA,
     CALLS_SCHEMA,
     SquintBootstrapError,
     adapt_recorded_calls,
+    build_admission_review,
     build_review,
+    publish_admission_corrections,
     publish_seed_memory,
+    round_admissions,
     validate_calls,
 )
 from knee.diagnosis.squint_identity_growth import (
@@ -1655,6 +1669,293 @@ def render_sheets(
     }
 
 
+# ------------------------------------------------------------ admission review
+#
+# ``export-admissions`` turns a growth child's admissions into a review that
+# ``admit`` applies (CLASSICAL_AI_BUILD_DESIGN §§7.1, 13 step 5: the first round's
+# admissions are inspected before its child becomes the next parent, and a wrong
+# one returns as a scoped negative). Each admission's sheet is drawn by
+# ``_draw_study`` exactly as ``sheets`` draws a decision. A view counts as drawn on
+# the review when its window was drawn on a read native slice (``window_state``);
+# no native support exists for a recognition-derived admission, and none is drawn.
+
+ADMISSION_REVIEW_BANNER = "ADMISSION REVIEW"
+ADMISSION_SELECTION_RULE = "growth_round_standing_admissions"
+
+
+def _admission_sheet_regions(regions: Any) -> list[Any]:
+    """Each region as the sheet reads it: a recorded ``source_window`` is its window.
+
+    Inference admissions record ``window``. A memory-candidate admission keeps its
+    catalogue regions, which may record ``source_window`` instead, as the growth
+    decision reads them. Anything else is passed on and named on its sheet.
+    """
+    result: list[Any] = []
+    for region in regions if isinstance(regions, list) else []:
+        if (
+            isinstance(region, Mapping)
+            and "window" not in region
+            and "source_window" in region
+        ):
+            region = {**region, "window": region["source_window"]}
+        result.append(region)
+    return result
+
+
+def _admission_drawing(candidate: Mapping[str, Any]) -> dict[str, Any]:
+    """The decision fields ``_draw_study`` draws for one admission, from its lineage.
+
+    A field the lineage does not record is left out, and the sheet says so.
+    """
+    lineage = candidate["identity_growth"]
+    decision = lineage.get("decision")
+    decision = decision if isinstance(decision, Mapping) else {}
+    drawing: dict[str, Any] = {
+        "candidate_id": candidate["candidate_id"],
+        "study_uid": candidate["study_uid"],
+        "subject": candidate["subject"],
+        "state": str(decision.get("state") or "admitted"),
+        "views": candidate["admitted_views"],
+        "regions": _admission_sheet_regions(candidate["regions"]),
+    }
+    for key in ("reason", "recognized_identity", "support"):
+        if key in decision:
+            drawing[key] = decision[key]
+    if "source" in lineage:
+        drawing["source"] = lineage["source"]
+    return drawing
+
+
+def _admission_evidence(
+    sheet: Mapping[str, Any], tile_mm: float, edge_slices: bool
+) -> dict[str, Any]:
+    """The review's record of one drawn sheet; each panel names whether its window was drawn."""
+    panels = [
+        {
+            **panel,
+            "window_state": "drawn" if panel["image_state"] == "read" else "not_drawn",
+        }
+        for panel in sheet["panels"]
+    ]
+    return {
+        "status": "rendered",
+        "banner": SHEET_BANNER,
+        "evidence_kind": "squint_tile_window",
+        "native_support": "none_recorded_for_a_recognition_derived_admission",
+        "sheet": {
+            "file": sheet["file"],
+            "sha256": sheet["sha256"],
+            "bytes": sheet["bytes"],
+        },
+        "available_views": sorted(
+            {p["view_label"] for p in panels if p["window_state"] == "drawn"}
+        ),
+        "panels": panels,
+        "study_read": sheet["study_read"],
+        "tile_mm": tile_mm,
+        "edge_slices": edge_slices,
+        "inference_performed": False,
+    }
+
+
+def _admission_index_markdown(review: Mapping[str, Any], review_sha256: str) -> str:
+    lines = [
+        "# Identity admission review",
+        "",
+        "**"
+        + ADMISSION_REVIEW_BANNER
+        + "** - every case below was admitted by recognition against a frozen parent: "
+        "recognition-derived, not a visual call. The yellow box is the squint tile window "
+        "the recognition read; it is not an outline of tissue, and no native support is "
+        "drawn.",
+        "",
+        "- review_sha256 (over the exact bytes of review.json): `"
+        + review_sha256
+        + "`",
+        "- source_manifest_sha256: `" + str(review["source_manifest_sha256"]) + "`",
+        "- memory_revision: " + _md_code(str(review.get("memory_revision"))),
+        "- selection: " + _md_code(_verbatim(review.get("selection", _ABSENT))),
+        "- candidates: " + str(len(review["candidates"])),
+        "",
+        "Edit `calls.json`: set `reader` to the actual visual reviewer and list the admissions",
+        "you call. `confirm` leaves an admission as it is and records your confirmation;",
+        "`reject` returns it as a negative case of its proposed identity on exactly the views",
+        "you name (every drawn view when `views` is omitted), and it no longer speaks for that",
+        "identity; `unsure`, or leaving it out, changes nothing. Then run `admit` with",
+        "`--memory` the memory this review was exported from.",
+    ]
+    for candidate in review["candidates"]:
+        evidence = candidate["evidence"]
+        lineage = candidate["identity_growth"]
+        decision = lineage.get("decision")
+        decision = decision if isinstance(decision, Mapping) else {}
+        drawn = evidence["available_views"]
+        lines += [
+            "",
+            "## " + _md_code(candidate["candidate_id"]),
+            "",
+            "- proposed identity: " + _md_code(str(candidate["subject"])),
+            "- study_uid: " + _md_code(str(candidate["study_uid"])),
+            "- admitted views: " + _md_code(_verbatim(candidate["admitted_views"])),
+            "- profile views: " + _md_code(_verbatim(candidate["profile_views"])),
+            "- drawn views: "
+            + (", ".join(_md_code(view) for view in drawn) if drawn else "none"),
+            "- recognized by: "
+            + _md_code(_verbatim(lineage.get("recognized_by", _ABSENT)))
+            + " against parent "
+            + _md_code(_verbatim(lineage.get("parent_manifest_sha256", _ABSENT))),
+            "- speaking cases: "
+            + _md_code(_verbatim(lineage.get("speaking_case_ids", _ABSENT))),
+            "- location support: "
+            + _md_code(_verbatim(decision.get("support", _ABSENT))),
+            "- sheet: "
+            + _md_code(evidence["sheet"]["file"])
+            + " sha256 `"
+            + evidence["sheet"]["sha256"]
+            + "`",
+        ]
+        if evidence["study_read"]["status"] != "read":
+            lines.append(
+                "- study NOT READ: " + _md_code(str(evidence["study_read"]["error"]))
+            )
+        if not evidence["panels"]:
+            lines.append("- no region is recorded for this admission")
+        lines += [_panel_markdown(panel) for panel in evidence["panels"]]
+        lines += ["", f"![{candidate['candidate_id']}]({evidence['sheet']['file']})"]
+    return NL.join(lines) + NL
+
+
+def export_admission_review(
+    memory: Mapping[str, Any],
+    source_manifest_sha256: str,
+    root: Path,
+    output: Path,
+    *,
+    case_ids: Sequence[str] = (),
+    round_index: int | None = None,
+    tile_mm: float = SHEET_TILE_MM,
+    io_workers: int = SHEET_IO_WORKERS,
+    edge_slices: bool = False,
+    study_reader: Callable[..., Any] | None = None,
+) -> dict[str, Any]:
+    """Write review.json, calls.json, index.md and one PNG per admission of a growth child.
+
+    By default every standing admission of the latest growth round (``round_index``
+    names another round, 0 being the first); ``case_ids`` choose admissions
+    explicitly, each of which must still stand. A round's admission that no longer
+    stands is named in the review's selection, never dropped without a trace. Each
+    study is read once, by ``study_reader(root, study_uid, tile_mm=, io_workers=)``
+    (default: the production squint reader), and released before the next. No
+    recognition runs and no full profile is read.
+    """
+    if (
+        isinstance(tile_mm, bool)
+        or not isinstance(tile_mm, (int, float))
+        or not math.isfinite(tile_mm)
+        or tile_mm <= 0
+    ):
+        raise ObjectBootstrapError("tile_mm_invalid")
+    if type(io_workers) is not int or io_workers <= 0:
+        raise ObjectBootstrapError("io_workers_invalid")
+    if isinstance(case_ids, (str, bytes)) or any(
+        not isinstance(value, str) or not value for value in case_ids
+    ):
+        raise ObjectBootstrapError("filter_values_invalid")
+    output = Path(output)
+    if os.path.lexists(output):
+        raise ObjectBootstrapError("export_output_exists", str(output))
+    if case_ids:
+        ids = list(case_ids)
+        selection: dict[str, Any] = {
+            "rule": "explicit_case_ids",
+            "case_ids": sorted(case_ids),
+        }
+    else:
+        chosen = round_admissions(memory, round_index=round_index)
+        ids = list(chosen["standing"])
+        selection = {"rule": ADMISSION_SELECTION_RULE}
+        selection.update(
+            (key, chosen[key])
+            for key in (
+                "round_index",
+                "round_count",
+                "parent_manifest_sha256",
+                "decisions_sha256",
+                "admitted_case_ids",
+                "not_standing",
+            )
+        )
+        if not ids:
+            raise ObjectBootstrapError(
+                "no_standing_admissions", _verbatim(chosen["not_standing"])
+            )
+    by_id = _cases_by_id(memory)
+    ids.sort(key=lambda cid: (str(by_id.get(cid, {}).get("study_uid", "")), cid))
+    names = {cid: _sheet_name(i, cid) for i, cid in enumerate(ids)}
+    review = build_admission_review(memory, source_manifest_sha256, ids, sheets=names)
+    output.mkdir(parents=True, exist_ok=False)
+    reader = study_reader or _default_study_reader
+    drawings = [_admission_drawing(candidate) for candidate in review["candidates"]]
+    groups = [
+        (uid, list(group))
+        for uid, group in groupby(drawings, key=lambda d: d["study_uid"])
+    ]
+    drawn: dict[str, dict[str, Any]] = {}
+    for number, (study_uid, group) in enumerate(groups, 1):
+        print(
+            f"export-admissions: study {number}/{len(groups)} {study_uid}: "
+            f"{len(group)} admission(s)",
+            file=sys.stderr,
+            flush=True,
+        )
+        for sheet in _draw_study(
+            reader,
+            Path(root),
+            study_uid,
+            group,
+            names,
+            output,
+            tile_mm=float(tile_mm),
+            io_workers=io_workers,
+            edge_slices=edge_slices,
+        ):
+            drawn[sheet["candidate_id"]] = sheet
+        # Matplotlib figures are reference cycles; collect them with the study.
+        gc.collect()
+    for candidate in review["candidates"]:
+        candidate["proposed_identity"] = candidate["subject"]
+        candidate["evidence"] = _admission_evidence(
+            drawn[candidate["candidate_id"]], float(tile_mm), bool(edge_slices)
+        )
+    review["memory_revision"] = memory.get("revision")
+    review["selection"] = selection
+    review = _plain(review)
+    review_bytes = _json_bytes(review)
+    review_sha256 = hashlib.sha256(review_bytes).hexdigest()
+    _write_bytes(output / "review.json", review_bytes)
+    template = {
+        "schema": CALLS_SCHEMA,
+        "review_sha256": review_sha256,
+        "reader": "",
+        "calls": [],
+    }
+    _write_bytes(output / "calls.json", _json_bytes(template))
+    (output / "index.md").write_text(
+        _admission_index_markdown(review, review_sha256), encoding="utf-8"
+    )
+    return {
+        "action": "export-admissions",
+        "output": str(output),
+        "review_sha256": review_sha256,
+        "candidate_count": len(review["candidates"]),
+        "candidate_ids": [c["candidate_id"] for c in review["candidates"]],
+        "not_standing": selection.get("not_standing", []),
+        "studies": len(groups),
+        "studies_not_read": _studies_not_read(list(drawn.values())),
+        "panels_not_drawn": _panels_not_drawn(list(drawn.values())),
+    }
+
+
 # ---------------------------------------------------------------------- CLI
 
 
@@ -1669,7 +1970,54 @@ def _parser() -> argparse.ArgumentParser:
     export.add_argument("--subject", dest="subjects", action="append", default=None)
     export.add_argument("--case-id", dest="case_ids", action="append", default=None)
     export.add_argument("--limit", type=int, default=DEFAULT_LIMIT)
-    admit = sub.add_parser("admit", help="admit explicit signed visual identity calls")
+    admissions = sub.add_parser(
+        "export-admissions",
+        help="render one review sheet per admission of a growth child memory",
+    )
+    admissions.add_argument(
+        "--memory",
+        type=Path,
+        required=True,
+        help="the growth child memory whose admissions are reviewed",
+    )
+    admissions.add_argument(
+        "--root",
+        type=Path,
+        required=True,
+        help="competition root holding train_series/ and test_series/",
+    )
+    admissions.add_argument("--output", type=Path, required=True)
+    admissions.add_argument(
+        "--case-id",
+        dest="case_ids",
+        action="append",
+        default=None,
+        help="an admitted case to review; repeatable; default every standing admission",
+    )
+    admissions.add_argument(
+        "--round",
+        dest="round_index",
+        type=int,
+        default=None,
+        help="growth round whose admissions are reviewed, 0 being the first; "
+        "default the latest",
+    )
+    admissions.add_argument(
+        "--tile-mm",
+        type=float,
+        default=SHEET_TILE_MM,
+        help="squint tile size the admissions' windows were made on",
+    )
+    admissions.add_argument("--io-workers", type=int, default=SHEET_IO_WORKERS)
+    admissions.add_argument(
+        "--edge-slices",
+        action="store_true",
+        help="also draw each window's first and last slice, not only its middle",
+    )
+    admit = sub.add_parser(
+        "admit",
+        help="admit explicit signed visual identity calls, or apply calls on admissions",
+    )
     admit.add_argument("--memory", type=Path, required=True)
     admit.add_argument("--review", type=Path, required=True)
     admit.add_argument("--calls", type=Path, required=True)
@@ -1806,10 +2154,35 @@ def run_admit(args: argparse.Namespace) -> dict[str, Any]:
     verify_sheets(review, review_path.resolve().parent)
     snapshot = load_memory_snapshot(args.memory)
     validate_calls(review, calls, review_sha256)
-    published = publish_seed_memory(
-        snapshot, review, calls, review_sha256, Path(args.output)
+    # A review of a growth child's admissions corrects that child; any other review
+    # publishes a seed from its candidate catalogue. Each publisher refuses the other.
+    publish = (
+        publish_admission_corrections
+        if review.get("schema") == ADMISSION_REVIEW_SCHEMA
+        else publish_seed_memory
     )
+    published = publish(snapshot, review, calls, review_sha256, Path(args.output))
     return {"action": "admit", "review_sha256": review_sha256, **published}
+
+
+def run_export_admissions(args: argparse.Namespace) -> dict[str, Any]:
+    root = Path(args.root)
+    if not root.is_dir():
+        raise ObjectBootstrapError("root_not_a_directory", str(root))
+    snapshot = load_memory_snapshot(args.memory)
+    if not isinstance(snapshot.memory, dict) or not isinstance(snapshot.sha256, str):
+        raise ObjectBootstrapError("invalid_snapshot_state")
+    return export_admission_review(
+        snapshot.memory,
+        snapshot.sha256,
+        root,
+        Path(args.output),
+        case_ids=args.case_ids or [],
+        round_index=args.round_index,
+        tile_mm=args.tile_mm,
+        io_workers=args.io_workers,
+        edge_slices=args.edge_slices,
+    )
 
 
 def run_adapt(args: argparse.Namespace) -> dict[str, Any]:
@@ -1965,6 +2338,7 @@ def run_grow(args: argparse.Namespace) -> dict[str, Any]:
 
 _ACTIONS = {
     "export": run_export,
+    "export-admissions": run_export_admissions,
     "admit": run_admit,
     "adapt": run_adapt,
     "sheets": run_sheets,

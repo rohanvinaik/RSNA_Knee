@@ -11,6 +11,22 @@ from the cases diagnosis recall reads. Diagnosis fields of object cases are
 never edited; the whole-condition configuration cases are rebuilt from the
 confirmed object cases by the existing builder, each role on the views where
 its object's identity holds (CLASSICAL_AI_BUILD_DESIGN §5.1).
+
+A growth round's admissions are reviewed the same way, on their own review
+(ADMISSION_REVIEW_SCHEMA; CLASSICAL_AI_BUILD_DESIGN §§7, 7.1, 13 step 5). An
+admission holds a cheap profile, its regions and recognition-derived lineage, and
+no full profile; none is required or made. Its sheet is the squint tile window the
+recognition read on each native slice, so a view counts as drawn when its window
+was drawn on a read slice. A call means what it means on a seed review. Reject
+returns the admission as an ordinary negative identity case of its proposed
+identity on exactly its views (every drawn profile view when it names none): the
+whole case moves to ``object_identity_cases``, its recognition-derived confirm row
+is replaced by the reviewer's reject row, kept verbatim with its actual reader, and
+the case no longer speaks as a positive. Confirm leaves the admission exactly as it
+is and records the reader's confirmation: a recognition-derived case does not become
+an independent confirmation (OpenSpec ``complete-signed-bootstrap-loop``). Unsure
+changes nothing. The corrected memory is a new child of the reviewed one, keeping
+every other record.
 """
 
 from __future__ import annotations
@@ -34,13 +50,20 @@ from knee.diagnosis.squint_memory import (
     _link_configuration_full_profiles,
     _validate_memory,
     full_profile_from_case,
+    load_memory,
     save_memory,
 )
 
 REVIEW_SCHEMA = "knee.object-bootstrap-review/v1"
+ADMISSION_REVIEW_SCHEMA = "knee.object-admission-review/v1"
+ADMISSION_RECORD_SCHEMA = "knee.object-admission-review-record/v1"
+CORRECTION_SCHEMA = "knee.object-admission-correction/v1"
+CORRECTION_KIND = "visual_correction_of_recognition_derived_admission"
 CALLS_SCHEMA = "knee.object-identity-calls/v1"
 TEACHING_SCHEMA = "knee.object-identity-teaching/v1"
 IDENTITY_CASES_SCHEMA = "knee.object-identity-cases/v1"
+# The growth module's lineage kind for its admissions (squint_identity_growth).
+RECOGNITION_KIND = "recognition_derived_identity"
 CALL_VALUES = ("confirm", "reject", "unsure")
 _SHA = re.compile(r"[0-9a-f]{64}")
 _FULL_KEYS = ("payload_ref", "context_ref", "product_record_sha256")
@@ -161,17 +184,7 @@ def build_review(
         if _is_configuration(case):
             raise _fail("configuration_case_not_selectable")
         candidates.append(_entry(case, clean))
-    if sheets is not None:
-        if not isinstance(sheets, Mapping):
-            raise _fail("sheets_invalid")
-        for case_id, path in sheets.items():
-            if case_id not in seen:
-                raise _fail("sheet_candidate_unknown")
-            if not _text(path):
-                raise _fail("sheets_invalid")
-        for entry in candidates:
-            if entry["case_id"] in sheets:
-                entry["sheet_path"] = sheets[entry["case_id"]]
+    _attach_sheets(candidates, seen, sheets)
     review: dict[str, Any] = {
         "schema": REVIEW_SCHEMA,
         "source_manifest_sha256": source_manifest_sha256,
@@ -227,6 +240,269 @@ def _review_candidates(review: object) -> dict[str, dict[str, Any]]:
     return result
 
 
+def _attach_sheets(
+    candidates: list[dict[str, Any]],
+    selected: Collection[str],
+    sheets: Mapping[str, str] | None,
+) -> None:
+    """Give each selected candidate its sheet path; an unselected or empty one refuses."""
+    if sheets is None:
+        return
+    if not isinstance(sheets, Mapping):
+        raise _fail("sheets_invalid")
+    for case_id, path in sheets.items():
+        if case_id not in selected:
+            raise _fail("sheet_candidate_unknown")
+        if not _text(path):
+            raise _fail("sheets_invalid")
+    for entry in candidates:
+        if entry["case_id"] in sheets:
+            entry["sheet_path"] = sheets[entry["case_id"]]
+
+
+# ------------------------------------------------------ admission review
+#
+# A growth round's admissions are inspected on their pictures before its child
+# becomes the next parent, and a wrong one returns as a scoped negative
+# (CLASSICAL_AI_BUILD_DESIGN §§7.1, 13 step 5). Nothing here recognizes or
+# scores: the review pins what the round admitted and what a reviewer saw.
+
+
+def _teaching_rows(
+    memory: Mapping[str, Any],
+) -> tuple[dict[str, list[Mapping[str, Any]]], set[str]]:
+    """Each candidate's teaching call rows and the confirmed case ids of a memory."""
+    teaching = memory.get("object_identity_teaching")
+    if not isinstance(teaching, Mapping) or teaching.get("schema") != TEACHING_SCHEMA:
+        raise _fail("identity_teaching_missing")
+    calls = teaching.get("calls")
+    confirmed = teaching.get("confirmed_case_ids")
+    if (
+        not isinstance(calls, list)
+        or not all(isinstance(row, Mapping) for row in calls)
+        or not isinstance(confirmed, list)
+        or not all(_text(item) for item in confirmed)
+    ):
+        raise _fail("identity_teaching_invalid")
+    rows: dict[str, list[Mapping[str, Any]]] = {}
+    for row in calls:
+        if _text(row.get("candidate_id")):
+            rows.setdefault(row["candidate_id"], []).append(row)
+    return rows, set(confirmed)
+
+
+def _standing_admission(
+    case: Mapping[str, Any],
+    rows_by_id: Mapping[str, list[Mapping[str, Any]]],
+    confirmed: Collection[str],
+) -> tuple[Mapping[str, Any] | None, str | None]:
+    """The case's own recognition-derived confirm row, or why it is no standing admission.
+
+    A standing admission is a growth case (``identity_growth`` of RECOGNITION_KIND)
+    that is still confirmed by exactly one call row: the confirm its round wrote,
+    marked with the same lineage kind and parent, naming views its profile holds.
+    """
+    lineage = case.get("identity_growth")
+    if not isinstance(lineage, Mapping) or lineage.get("kind") != RECOGNITION_KIND:
+        return None, "candidate_not_recognition_derived"
+    rows = rows_by_id.get(case["case_id"], [])
+    mark = rows[0].get("identity_growth") if len(rows) == 1 else None
+    if (
+        len(rows) != 1
+        or rows[0].get("call") != "confirm"
+        or not isinstance(mark, Mapping)
+        or mark.get("kind") != RECOGNITION_KIND
+        or mark.get("parent_manifest_sha256") != lineage.get("parent_manifest_sha256")
+    ):
+        return None, "admission_call_not_found"
+    if case["case_id"] not in confirmed:
+        return None, "admission_not_confirmed"
+    views = rows[0].get("views")
+    available = _profile_views(case)
+    if not _facets_valid(views) or any(view not in available for view in views):
+        return None, "admission_views_invalid"
+    return rows[0], None
+
+
+def round_admissions(memory: Any, *, round_index: int | None = None) -> dict[str, Any]:
+    """One growth round's admissions (default: the latest), each standing or why not.
+
+    A standing admission can be reviewed (``build_admission_review``). One that no
+    longer stands keeps its reason: ``corrected_negative`` once a review returned
+    it as a negative case, else the reason ``_standing_admission`` names.
+    """
+    clean = _clean_memory(memory)
+    growth = clean.get("object_identity_growth")
+    rounds = growth.get("rounds") if isinstance(growth, Mapping) else None
+    if not isinstance(rounds, list) or not rounds:
+        raise _fail("memory_has_no_growth_round")
+    index = len(rounds) - 1 if round_index is None else round_index
+    if type(index) is not int or not 0 <= index < len(rounds):
+        raise _fail("growth_round_unknown")
+    entry = rounds[index]
+    admitted = entry.get("admitted_case_ids") if isinstance(entry, Mapping) else None
+    if not isinstance(admitted, list) or not all(_text(item) for item in admitted):
+        raise _fail("growth_round_malformed")
+    rows_by_id, confirmed = _teaching_rows(clean)
+    negatives = clean["object_identity_teaching"].get("negative_case_ids")
+    corrected = set(negatives) if isinstance(negatives, list) else set()
+    by_id = {case["case_id"]: case for case in clean["cases"]}
+    standing: list[str] = []
+    not_standing: list[dict[str, str]] = []
+    for case_id in admitted:
+        case = by_id.get(case_id)
+        if case is None:
+            reason = (
+                "corrected_negative" if case_id in corrected else "case_not_in_cases"
+            )
+        else:
+            reason = _standing_admission(case, rows_by_id, confirmed)[1]
+        if reason is None:
+            standing.append(case_id)
+        else:
+            not_standing.append({"case_id": case_id, "reason": reason})
+    return {
+        "round_index": index,
+        "round_count": len(rounds),
+        "parent_manifest_sha256": entry.get("parent_manifest_sha256"),
+        "decisions_sha256": entry.get("decisions_sha256"),
+        "admitted_case_ids": list(admitted),
+        "standing": standing,
+        "not_standing": not_standing,
+    }
+
+
+def _admission_entry(case: Mapping[str, Any], row: Mapping[str, Any]) -> dict[str, Any]:
+    entry: dict[str, Any] = {
+        "candidate_id": case["case_id"],
+        "case_id": case["case_id"],
+        "study_uid": case["study_uid"],
+        "subject": case["subject"],
+        "case_sha256": _json_sha256(case),
+        "admission_call_sha256": _json_sha256(row),
+        "admission_call": copy.deepcopy(dict(row)),
+        "admitted_views": copy.deepcopy(row["views"]),
+        "profile_sha256": _json_sha256(case["profile"]),
+        "profile": copy.deepcopy(case["profile"]),
+        "profile_views": _profile_views(case),
+        "regions": copy.deepcopy(case["regions"]),
+        "identity_growth": copy.deepcopy(case["identity_growth"]),
+    }
+    if isinstance(case.get("full_profile"), dict):
+        entry["full_profile"] = copy.deepcopy(case["full_profile"])
+    return entry
+
+
+def build_admission_review(
+    memory: Any,
+    source_manifest_sha256: str,
+    case_ids: Sequence[str],
+    *,
+    sheets: Mapping[str, str] | None = None,
+) -> dict[str, Any]:
+    """Pin the selected standing admissions of a growth child for visual review.
+
+    Each candidate carries its cheap profile, regions, profile views, admitted
+    views and recognition-derived lineage, pinned by the digests of its whole case
+    record and of its admission's confirm row. It carries a full profile only when
+    the case holds one; none is required or made.
+    """
+    if not _is_sha(source_manifest_sha256):
+        raise _fail("source_manifest_sha256_invalid")
+    clean = _clean_memory(memory)
+    if (
+        isinstance(case_ids, (str, bytes))
+        or not isinstance(case_ids, Sequence)
+        or len(case_ids) == 0
+    ):
+        raise _fail("case_ids_invalid")
+    rows_by_id, confirmed = _teaching_rows(clean)
+    by_id = {case["case_id"]: case for case in clean["cases"]}
+    seen: set[str] = set()
+    candidates: list[dict[str, Any]] = []
+    for case_id in case_ids:
+        if not _text(case_id):
+            raise _fail("case_ids_invalid")
+        if case_id in seen:
+            raise _fail("duplicate_candidate")
+        seen.add(case_id)
+        case = by_id.get(case_id)
+        if case is None:
+            raise _fail("unknown_candidate")
+        if _is_configuration(case):
+            raise _fail("configuration_case_not_selectable")
+        row, reason = _standing_admission(case, rows_by_id, confirmed)
+        if row is None:
+            raise _fail(str(reason))
+        candidates.append(_admission_entry(case, row))
+    _attach_sheets(candidates, seen, sheets)
+    return {
+        "schema": ADMISSION_REVIEW_SCHEMA,
+        "source_manifest_sha256": source_manifest_sha256,
+        "source_revision": clean["revision"],
+        "candidates": candidates,
+    }
+
+
+def _strict_sha256(value: object) -> str | None:
+    """The canonical digest of a strict-JSON value, or None for any other value."""
+    try:
+        return _json_sha256(value)
+    except (TypeError, ValueError):
+        return None
+
+
+def _admission_review_candidates(review: object) -> dict[str, dict[str, Any]]:
+    if (
+        not isinstance(review, dict)
+        or review.get("schema") != ADMISSION_REVIEW_SCHEMA
+        or not _is_sha(review.get("source_manifest_sha256"))
+    ):
+        raise _fail("review_malformed")
+    items = review.get("candidates")
+    if not isinstance(items, list) or not items:
+        raise _fail("review_malformed")
+    result: dict[str, dict[str, Any]] = {}
+    for item in items:
+        if not isinstance(item, dict):
+            raise _fail("review_malformed")
+        candidate_id = item.get("candidate_id")
+        lineage = item.get("identity_growth")
+        profile = item.get("profile")
+        admitted = item.get("admitted_views")
+        available = item.get("profile_views")
+        if (
+            not _text(candidate_id)
+            or item.get("case_id") != candidate_id
+            or not _text(item.get("study_uid"))
+            or not _text(item.get("subject"))
+            or not all(
+                _is_sha(item.get(key))
+                for key in ("case_sha256", "admission_call_sha256", "profile_sha256")
+            )
+            or not isinstance(profile, dict)
+            or _strict_sha256(profile) != item["profile_sha256"]
+            or not isinstance(item.get("regions"), list)
+            or not isinstance(lineage, dict)
+            or lineage.get("kind") != RECOGNITION_KIND
+            or not _facets_valid(available)
+            or not _facets_valid(admitted)
+            or any(view not in available for view in admitted)
+        ):
+            raise _fail("review_malformed")
+        if candidate_id in result:
+            raise _fail("duplicate_candidate")
+        result[candidate_id] = item
+    return result
+
+
+def _candidates_of(review: object) -> tuple[dict[str, dict[str, Any]], bool]:
+    """The pinned candidates of a seed or an admission review, and which it is."""
+    if isinstance(review, dict) and review.get("schema") == ADMISSION_REVIEW_SCHEMA:
+        return _admission_review_candidates(review), True
+    return _review_candidates(review), False
+
+
 def _facets_valid(views: object) -> bool:
     """A nonempty list of unique exact (orientation, fluid, fat) string triples."""
     return (
@@ -242,8 +518,15 @@ def _facets_valid(views: object) -> bool:
     )
 
 
-def _drawn_views(candidate: Mapping[str, Any]) -> set[tuple[str, ...]]:
-    """Views whose native image was read and whose recorded support was drawn."""
+def _drawn_views(
+    candidate: Mapping[str, Any], drawn_key: str = "support_state"
+) -> set[tuple[str, ...]]:
+    """Views whose native image was read and whose recorded evidence was drawn.
+
+    On a seed review the evidence is the recorded teacher support
+    (``support_state``); on an admission review it is the squint tile window the
+    recognition read (``window_state``). Neither stands in for the other.
+    """
     evidence = candidate.get("evidence")
     panels = evidence.get("panels") if isinstance(evidence, Mapping) else None
     drawn: set[tuple[str, ...]] = set()
@@ -254,7 +537,7 @@ def _drawn_views(candidate: Mapping[str, Any]) -> set[tuple[str, ...]]:
             view = panel.get("view")
             if (
                 panel.get("image_state") == "read"
-                and panel.get("support_state") == "drawn"
+                and panel.get(drawn_key) == "drawn"
                 and isinstance(view, Mapping)
             ):
                 key = tuple(view.get(name) for name in _VIEW_FIELDS)
@@ -263,18 +546,22 @@ def _drawn_views(candidate: Mapping[str, Any]) -> set[tuple[str, ...]]:
     return drawn
 
 
-def _check_facets(candidate: Mapping[str, Any], views: list) -> None:
+def _check_facets(
+    candidate: Mapping[str, Any], views: list, drawn_key: str = "support_state"
+) -> None:
     """Each called view exists in the source profile and in a drawn native panel."""
     available = candidate.get("profile_views")
     if not isinstance(available, list) or any(view not in available for view in views):
         raise _fail("view_not_available")
-    drawn = _drawn_views(candidate)
+    drawn = _drawn_views(candidate, drawn_key)
     if any(tuple(view) not in drawn for view in views):
         raise _fail("view_not_drawn")
 
 
 def _rejected_views(
-    candidate: Mapping[str, Any], record: Mapping[str, Any]
+    candidate: Mapping[str, Any],
+    record: Mapping[str, Any],
+    drawn_key: str = "support_state",
 ) -> tuple[list[list[str]] | None, str | None]:
     """A reject's negative views: its ``views``, else every drawn profile view.
 
@@ -286,7 +573,7 @@ def _rejected_views(
     available = candidate.get("profile_views")
     if not isinstance(available, list):
         return None, "profile_views_unrecorded"
-    drawn = _drawn_views(candidate)
+    drawn = _drawn_views(candidate, drawn_key)
     resolved = [list(view) for view in available if tuple(view) in drawn]
     if not resolved:
         return None, "no_drawn_profile_view"
@@ -315,6 +602,7 @@ def _check_alternatives(
     candidate: Mapping[str, Any],
     alternatives: list[dict[str, Any]],
     known_subjects: Collection[str] | None,
+    drawn_key: str = "support_state",
 ) -> None:
     for item in alternatives:
         identity = item["identity"]
@@ -326,7 +614,7 @@ def _check_alternatives(
             raise _fail("also_positive_identity_unknown")
         if not _facets_valid(item["views"]):
             raise _fail("call_views_invalid")
-        _check_facets(candidate, item["views"])
+        _check_facets(candidate, item["views"], drawn_key)
 
 
 def _check_one_identity_per_view(
@@ -369,10 +657,18 @@ def validate_calls(
     its own views. Unsure writes nothing on the proposed identity. Every called
     view must exist in the source profile and in a drawn native panel.
     ``known_subjects``, when given, are the object subjects the memory names.
+
+    An admission review (ADMISSION_REVIEW_SCHEMA) is read the same way, with a
+    view drawn when its squint tile window was drawn on a read native slice. Its
+    calls take neither ``negative_views`` nor ``also_positive``: each would split
+    one recognition-derived confirm row between two readers, a meaning no contract
+    gives yet, so both are refused by name. A reject that has no drawn view to
+    name is refused rather than left to change nothing.
     """
     if not _is_sha(review_sha256):
         raise _fail("review_sha256_invalid")
-    candidates = _review_candidates(review)
+    candidates, admissions = _candidates_of(review)
+    drawn_key = "window_state" if admissions else "support_state"
     if (
         not isinstance(calls, dict)
         or calls.get("schema") != CALLS_SCHEMA
@@ -407,28 +703,36 @@ def validate_calls(
         if "reader" in record and not _text(record["reader"]):
             raise _fail("call_reader_invalid")
         candidate = candidates[candidate_id]
+        if admissions and "negative_views" in record:
+            raise _fail("admission_negative_views_unsupported")
+        if admissions and "also_positive" in record:
+            raise _fail("admission_also_positive_unsupported")
         if "views" in record:
             if not _facets_valid(record["views"]):
                 raise _fail("call_views_invalid")
             if call in ("confirm", "reject"):
-                _check_facets(candidate, record["views"])
+                _check_facets(candidate, record["views"], drawn_key)
         if "negative_views" in record:
             if call != "confirm":
                 raise _fail("negative_views_require_confirm")
             if not _facets_valid(record["negative_views"]):
                 raise _fail("call_negative_views_invalid")
-            _check_facets(candidate, record["negative_views"])
+            _check_facets(candidate, record["negative_views"], drawn_key)
         if "also_positive" in record:
             if not _alternatives_shape_valid(record["also_positive"]):
                 raise _fail("call_also_positive_invalid")
-            _check_alternatives(candidate, record["also_positive"], known_subjects)
+            _check_alternatives(
+                candidate, record["also_positive"], known_subjects, drawn_key
+            )
         _check_one_identity_per_view(candidate, record)
         if candidate_id in seen:
             raise _fail("duplicate_call")
         seen.add(candidate_id)
         records.append(copy.deepcopy(record))
         if call == "reject":
-            views, reason = _rejected_views(candidate, record)
+            views, reason = _rejected_views(candidate, record, drawn_key)
+            if views is None and admissions:
+                raise _fail("admission_reject_has_no_drawn_view")
             if views is None:
                 not_written[candidate_id] = str(reason)
             else:
@@ -560,6 +864,19 @@ def _verify_candidates(
             raise _fail("source_product_mismatch")
 
 
+def _snapshot_memory(snapshot: object) -> dict[str, Any]:
+    """The validated memory of a loaded squint snapshot, or a named refusal."""
+    if (
+        not isinstance(snapshot, MemorySnapshot)
+        or snapshot.status != "squint"
+        or not isinstance(snapshot.memory, dict)
+        or not _is_sha(snapshot.sha256)
+        or not isinstance(snapshot.path, Path)
+    ):
+        raise _fail("invalid_snapshot_state")
+    return _clean_memory(snapshot.memory)
+
+
 def _check_output(output: object, snapshot: MemorySnapshot) -> Path:
     if not isinstance(output, Path) or not output.name or ".." in output.parts:
         raise _fail("output_path_unsafe")
@@ -655,15 +972,7 @@ def publish_seed_memory(
     voice. Negative-only teaching publishes; a call file that writes no
     identity case of either sign is refused.
     """
-    if (
-        not isinstance(source_snapshot, MemorySnapshot)
-        or source_snapshot.status != "squint"
-        or not isinstance(source_snapshot.memory, dict)
-        or not _is_sha(source_snapshot.sha256)
-        or not isinstance(source_snapshot.path, Path)
-    ):
-        raise _fail("invalid_snapshot_state")
-    memory = _clean_memory(source_snapshot.memory)
+    memory = _snapshot_memory(source_snapshot)
     candidates = _review_candidates(review)
     if review["source_manifest_sha256"] != source_snapshot.sha256:
         raise _fail("stale_source_pin")
@@ -811,4 +1120,273 @@ def publish_seed_memory(
         "alternative_positive_ids": [
             entry["entry_id"] for entry in validated["alternative_positives"]
         ],
+    }
+
+
+def _verify_admissions(
+    memory: Mapping[str, Any],
+    candidates: Mapping[str, Mapping[str, Any]],
+    rows_by_id: Mapping[str, list[Mapping[str, Any]]],
+    confirmed: Collection[str],
+) -> dict[str, Mapping[str, Any]]:
+    """Each reviewed admission still stands exactly as pinned; returns its confirm row."""
+    by_id = {case["case_id"]: case for case in memory["cases"]}
+    rows: dict[str, Mapping[str, Any]] = {}
+    for entry in candidates.values():
+        case = by_id.get(entry["case_id"])
+        if case is None:
+            raise _fail("unknown_candidate")
+        if _is_configuration(case):
+            raise _fail("configuration_case_not_selectable")
+        if (
+            case["study_uid"] != entry["study_uid"]
+            or case["subject"] != entry["subject"]
+        ):
+            raise _fail("source_identity_mismatch")
+        row, reason = _standing_admission(case, rows_by_id, confirmed)
+        if row is None:
+            raise _fail(str(reason))
+        if _json_sha256(case) != entry["case_sha256"]:
+            raise _fail("admission_case_digest_mismatch")
+        if _json_sha256(row) != entry["admission_call_sha256"]:
+            raise _fail("admission_call_digest_mismatch")
+        if _json_sha256(case["profile"]) != entry["profile_sha256"]:
+            raise _fail("profile_digest_mismatch")
+        if _profile_views(case) != entry["profile_views"]:
+            raise _fail("profile_views_mismatch")
+        if row["views"] != entry["admitted_views"]:
+            raise _fail("admission_views_mismatch")
+        rows[entry["case_id"]] = row
+    return rows
+
+
+def _corrected_teaching(
+    memory: Mapping[str, Any],
+    validated: Mapping[str, Any],
+    rows: Mapping[str, dict[str, Any]],
+    review_record: dict[str, Any],
+) -> dict[str, Any]:
+    """The reviewed memory's teaching with its corrections applied, a fresh copy."""
+    teaching = copy.deepcopy(dict(memory["object_identity_teaching"]))
+    corrected = list(validated["negative_case_ids"])
+    for key, kind in (
+        ("negative_case_ids", list),
+        ("negative_views", Mapping),
+        ("admission_reviews", list),
+    ):
+        if key in teaching and not isinstance(teaching[key], kind):
+            raise _fail("identity_teaching_invalid")
+    teaching["confirmed_case_ids"] = [
+        case_id for case_id in teaching["confirmed_case_ids"] if case_id not in rows
+    ]
+    # Each corrected admission had exactly one row, its round's confirm.
+    teaching["calls"] = [
+        rows.get(row["candidate_id"], row)
+        if isinstance(row.get("candidate_id"), str)
+        else row
+        for row in teaching["calls"]
+    ]
+    if corrected:
+        teaching["negative_case_ids"] = [
+            *teaching.get("negative_case_ids", []),
+            *corrected,
+        ]
+        teaching["negative_views"] = {
+            **teaching.get("negative_views", {}),
+            **{
+                case_id: copy.deepcopy(validated["negative_views"][case_id])
+                for case_id in corrected
+            },
+        }
+    teaching["admission_reviews"] = [
+        *teaching.get("admission_reviews", []),
+        review_record,
+    ]
+    return teaching
+
+
+def _corrected_child(
+    memory: Mapping[str, Any],
+    reviewed_sha256: str,
+    review_sha256: str,
+    calls: Mapping[str, Any],
+    validated: Mapping[str, Any],
+    admission_rows: Mapping[str, Mapping[str, Any]],
+    reviewed_ids: Sequence[str],
+) -> tuple[dict[str, Any], list[dict[str, Any]]]:
+    """The child memory and the corrected records it adds; the reviewed memory is not mutated."""
+    from knee.diagnosis.squint_identity_growth import _RUNTIME_KEYS
+
+    corrected = list(validated["negative_case_ids"])
+    call_by_id = {record["candidate_id"]: record for record in validated["calls"]}
+    table = memory.get("object_identity_cases")
+    if table is None:
+        table = {"schema": IDENTITY_CASES_SCHEMA, "cases": []}
+    if (
+        not isinstance(table, Mapping)
+        or table.get("schema") != IDENTITY_CASES_SCHEMA
+        or not isinstance(table.get("cases"), list)
+    ):
+        raise _fail("identity_cases_table_invalid")
+    held = {row.get("case_id") for row in table["cases"] if isinstance(row, Mapping)}
+    by_id = {case["case_id"]: case for case in memory["cases"]}
+    rows: dict[str, dict[str, Any]] = {}
+    records: list[dict[str, Any]] = []
+    superseded: list[dict[str, Any]] = []
+    for case_id in corrected:
+        if case_id in held:
+            raise _fail("corrected_case_id_already_held")
+        call = call_by_id[case_id]
+        reader = call.get("reader", validated["reader"])
+        mark = {
+            "schema": CORRECTION_SCHEMA,
+            "kind": CORRECTION_KIND,
+            "review_sha256": review_sha256,
+            "reviewed_manifest_sha256": reviewed_sha256,
+        }
+        # The reject row speaks in identity recall with its own reader: the
+        # teaching's top-level reader is the seed's reviewer, not this one.
+        rows[case_id] = {**copy.deepcopy(call), "reader": reader, "correction": mark}
+        record = copy.deepcopy(by_id[case_id])
+        record["identity_correction"] = {
+            **mark,
+            "corrected_by": reader,
+            "reviewed_revision": memory["revision"],
+            "negative_views": copy.deepcopy(validated["negative_views"][case_id]),
+            "call": copy.deepcopy(call),
+            "superseded_call": copy.deepcopy(dict(admission_rows[case_id])),
+        }
+        records.append(record)
+        superseded.append(copy.deepcopy(dict(admission_rows[case_id])))
+    review_record = {
+        "schema": ADMISSION_RECORD_SCHEMA,
+        "review_sha256": review_sha256,
+        "reader": validated["reader"],
+        "reviewed_manifest_sha256": reviewed_sha256,
+        "reviewed_revision": memory["revision"],
+        "reviewed_candidate_ids": list(reviewed_ids),
+        "calls": copy.deepcopy(validated["calls"]),
+        "confirmed_admission_ids": list(validated["confirmed_case_ids"]),
+        "corrected_case_ids": corrected,
+        "unsure_case_ids": [
+            record["candidate_id"]
+            for record in validated["calls"]
+            if record["call"] == "unsure"
+        ],
+        "negative_views": {
+            case_id: copy.deepcopy(validated["negative_views"][case_id])
+            for case_id in corrected
+        },
+        "superseded_calls": superseded,
+        "confirm_effect": "recorded_only_recognition_derived_lineage_kept",
+    }
+    child = {key: value for key, value in memory.items() if key not in _RUNTIME_KEYS}
+    child["cases"] = [case for case in memory["cases"] if case["case_id"] not in rows]
+    child["object_identity_teaching"] = _corrected_teaching(
+        memory, validated, rows, review_record
+    )
+    if records:
+        child["object_identity_cases"] = {**table, "cases": [*table["cases"], *records]}
+    digest = _json_sha256(
+        [reviewed_sha256, review_sha256, calls, ADMISSION_RECORD_SCHEMA]
+    )
+    child["revision"] = f"{memory['revision']}+admission-review-{digest[:16]}"
+    return child, records
+
+
+def publish_admission_corrections(
+    source_snapshot: MemorySnapshot,
+    review: Any,
+    calls: Any,
+    review_sha256: str,
+    output: Path,
+) -> dict[str, Any]:
+    """Publish a child of a reviewed growth child holding the reviewer's calls.
+
+    ``source_snapshot`` is the memory the admission review was exported from. A
+    reject moves its whole case from ``cases`` to ``object_identity_cases`` as an
+    ordinary negative identity case of its proposed identity on exactly its views:
+    the record keeps its cheap profile, regions, source and recognition-derived
+    lineage, and gains an ``identity_correction`` naming the actual reader. Its
+    round's confirm row is replaced in ``calls`` by the reviewer's reject row, with
+    that reader and a ``correction`` mark, and kept verbatim in the correction and
+    in the review record. Confirm and unsure change no case and no row; the review
+    record in ``object_identity_teaching["admission_reviews"]`` keeps every call,
+    the reader and the confirmed admissions. Every other record (cases,
+    configurations, identity records, calls, full tables, source identities and
+    growth rounds) is the reviewed memory's own. A call file applying neither a
+    confirm nor a reject is refused. The child must prepare with exactly the
+    corrected cases moved from the positive side to the negative side.
+    """
+    memory = _snapshot_memory(source_snapshot)
+    if not isinstance(review, dict) or review.get("schema") != ADMISSION_REVIEW_SCHEMA:
+        raise _fail("review_malformed")
+    candidates = _admission_review_candidates(review)
+    if review["source_manifest_sha256"] != source_snapshot.sha256:
+        raise _fail("stale_source_pin")
+    validated = validate_calls(review, calls, review_sha256)
+    if not validated["confirmed_case_ids"] and not validated["negative_case_ids"]:
+        raise _fail("no_admission_calls_applied")
+    rows_by_id, confirmed = _teaching_rows(memory)
+    admission_rows = _verify_admissions(memory, candidates, rows_by_id, confirmed)
+    destination = _check_output(output, source_snapshot)
+    from knee.diagnosis.squint_identity import prepare_identity
+
+    before = prepare_identity(memory)
+    if before.get("outcome") != "prepared":
+        raise _fail("parent_identity_teaching_invalid")
+    child, records = _corrected_child(
+        memory,
+        source_snapshot.sha256,
+        review_sha256,
+        calls,
+        validated,
+        admission_rows,
+        list(candidates),
+    )
+    try:
+        _validate_memory(child)
+        for record in records:
+            reference = record.get("full_profile")
+            if (
+                isinstance(reference, dict)
+                and reference.get("availability") == "retained_sparse_counts"
+            ):
+                _full_profile_from_validated_case(
+                    child, record, reference, record["subject"]
+                )
+    except SquintMemoryError as error:
+        raise _fail("child_memory_invalid") from error
+    prepared = prepare_identity(child)
+    if prepared.get("outcome") != "prepared":
+        raise _fail("child_identity_teaching_invalid")
+    # Exactly the corrected cases left the positive side and reached the negative
+    # side; a row the reader would skip shows up here, not as a silent no-op.
+    moved = len(records)
+    negatives_before = before.get("negative_case_count", 0)
+    negatives_after = prepared.get("negative_case_count", 0)
+    if (
+        negatives_after != negatives_before + moved
+        or prepared.get("seed_count") != before.get("seed_count") - moved
+    ):
+        raise _fail("corrected_negative_not_prepared")
+    receipt = save_memory(child, destination)
+    readback = prepare_identity(load_memory(destination))
+    if readback.get("outcome") != "prepared" or dict(readback) != dict(prepared):
+        raise _fail("child_readback_invalid")
+    return {
+        "outcome": "published",
+        "manifest": receipt["manifest"],
+        "sha256": receipt["sha256"],
+        "case_count": receipt["case_count"],
+        "revision": child["revision"],
+        "confirmed_admission_ids": list(validated["confirmed_case_ids"]),
+        "corrected_case_ids": list(validated["negative_case_ids"]),
+        "negative_views": copy.deepcopy(validated["negative_views"]),
+        "unsure_case_ids": [
+            record["candidate_id"]
+            for record in validated["calls"]
+            if record["call"] == "unsure"
+        ],
+        "identity_preparation": dict(readback),
     }
