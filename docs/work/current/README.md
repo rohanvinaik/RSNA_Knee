@@ -65,7 +65,8 @@ Worktrees under `/private/tmp/rsna-upgrade-20261021/<job>` (branch `upgrade/<job
 | W5 memory rebuild | Claude sub-agent | w5 | session sub-agent | INTEGRATED 14627d2; full compile `bootstrap-territory-v2-r1/` exit 0, 252 s, 9.6 GB peak: 1,192 cases (496 object, 696 configuration), 667 regions read, 289 refused (no outline), 3 outside leg; manifest 586 MB (v1 311 MB) |
 | C1-v2 true-location check on the v2 memory | lead | none | background run | RUNNING into `c1-v2-truelocation/` |
 | W6 question selection | Claude sub-agent | w6 | session sub-agent | INTEGRATED c95d61a, with the lead's sourced MCL-surroundings exception (SQUINT_TRAINING_BUILD §10) |
-| W9 bones by structure | Claude sub-agent | w9 | session sub-agent | RUNNING |
+| W9 bones by structure | Claude sub-agent | w9 | session sub-agent | INTEGRATED 35d98e5 (not yet wired into the locator); found the established rule names posterior thigh soft tissue as femur on some sagittal middle slices, which the bootstrap shares |
+| W16 cross-view consistency of stored bone outlines | Claude sub-agent | w16 (base 35d98e5) | session sub-agent | RUNNING |
 | W10 dependents from anchors | Codex CLI, then Claude sub-agent | w10 | bc9e3zmt4 FAILED (model at capacity, no edits); reassigned to a session sub-agent | RUNNING |
 | W11 location check | Claude sub-agent | w11 | session sub-agent | INTEGRATED 19cdac5; corrected the lead's earlier on-target figures (native supports only: femur 14%, tibia 19%, patella 14%) |
 | W14 teaching round | Codex CLI, then Claude sub-agent | w14 | b4jecu4qt FAILED (model at capacity, no edits); reassigned to a session sub-agent | RUNNING |
