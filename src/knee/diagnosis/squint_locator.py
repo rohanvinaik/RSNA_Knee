@@ -17,9 +17,159 @@ from typing import Any
 import numpy as np
 
 RECALL_CACHE_SCHEMA = "knee.squint-recall-cache/v1"
+_UNSELECTED = object()
 
 
-def recall_source_fingerprint(memory: Mapping[str, Any]) -> str:
+def _selection_names(
+    selection: Mapping[str, Any], subject: str, banks: Mapping
+) -> tuple[str, ...]:
+    """Use W6's one selector for object banks and qualified configuration roles."""
+    from knee.diagnosis.squint_questions import select_cheap_banks
+
+    if subject in selection["subjects"]:
+        names, _code = select_cheap_banks(selection, subject, banks)
+        return names
+    configuration = selection.get(
+        "configuration_subject", "diagnosis/" + selection["question_id"]
+    )
+    if subject != configuration:
+        return ()
+    names = set()
+    for role_subject in selection["subjects"]:
+        qualified = {
+            name: counts
+            for name, counts in banks.items()
+            if name.startswith(f"object/{role_subject}/")
+        }
+        selected, _code = select_cheap_banks(selection, role_subject, qualified)
+        names.update(selected)
+    return tuple(sorted(names))
+
+
+def _selection_digest(selection: Mapping[str, Any]) -> str:
+    """Bind the complete declaration, not a caller-supplied fingerprint alone."""
+    payload = json.dumps(
+        selection, sort_keys=True, separators=(",", ":"), allow_nan=False
+    )
+    return hashlib.sha256(payload.encode("utf-8")).hexdigest()
+
+
+def _selected_profile_banks(
+    selection: Mapping[str, Any], subject: str, profile: object
+) -> dict[str, tuple[int, ...]] | None:
+    """Select names before reading or validating any count payload."""
+    if not isinstance(profile, Mapping) or not isinstance(
+        profile.get("banks"), Mapping
+    ):
+        return None
+    raw = profile["banks"]
+    names = _selection_names(selection, subject, raw)
+    return _banks({"banks": {name: raw[name] for name in names}})
+
+
+def _selected_case_bank_union(question_banks: Mapping) -> dict:
+    result: dict = {}
+    for by_case in question_banks.values():
+        for index, banks in by_case.items():
+            result.setdefault(index, {}).update(banks)
+    return result
+
+
+def _selection_state(
+    cases: Sequence, selections: Mapping[str, Any]
+) -> tuple[dict, dict]:
+    """Project banks before matrices/envelopes; retain selected tuples in identity."""
+    from knee.diagnosis.squint_interfaces import selection_code
+
+    identities, question_banks = {}, {}
+    for question, selection in selections.items():
+        code = selection_code(selection)
+        if code != "valid":
+            raise ValueError(code)
+        if question != selection["question_id"]:
+            raise ValueError("selection_question_mismatch")
+        if not selection["cheap"]:
+            raise ValueError("selection_empty")
+        by_case, by_subject = {}, {}
+        for index, case in enumerate(cases):
+            if not isinstance(case, Mapping) or not isinstance(
+                case.get("subject"), str
+            ):
+                continue
+            subject = case["subject"]
+            banks = _selected_profile_banks(selection, subject, case.get("profile"))
+            if banks is None:
+                continue
+            procedure = selection.get("cheap_procedure")
+            names = (
+                tuple(banks)
+                if procedure is None
+                or procedure == _source(case.get("profile")).get("procedure")
+                else ()
+            )
+            by_case[index] = {name: banks[name] for name in names}
+            by_subject.setdefault(subject, set()).update(names)
+        identities[question] = {
+            "schema": selection["schema"],
+            "version": selection["version"],
+            "descriptor_sha256": _selection_digest(selection),
+            "selected_banks": {
+                subject: sorted(names) for subject, names in sorted(by_subject.items())
+            },
+        }
+        question_banks[question] = by_case
+    return identities, question_banks
+
+
+def _declared_selections(memory: Mapping[str, Any], selections: object) -> dict | None:
+    """Explicit declarations, or W6 for v2 memory; v1 API callers stay readable."""
+    if selections is _UNSELECTED:
+        selections = memory.get("recall_selections", _UNSELECTED)
+    if selections is _UNSELECTED:
+        from knee.diagnosis.squint_interfaces import TERRITORY_PROCEDURE
+
+        cases = memory.get("cases", ())
+        if not any(
+            isinstance(case, Mapping)
+            and _source(case.get("profile")).get("procedure") == TERRITORY_PROCEDURE
+            for case in cases
+        ):
+            return None
+        from knee.diagnosis.squint_questions import question_selection
+
+        questions = {
+            question
+            for case in cases
+            if isinstance(case, Mapping)
+            for question in _case_questions(case)
+        }
+        selections = {
+            question: question_selection(question) for question in sorted(questions)
+        }
+    if not isinstance(selections, Mapping):
+        raise TypeError("selections_mapping_required")
+    if not selections:
+        raise ValueError("selection_empty")
+    return dict(selections)
+
+
+def _case_questions(case: Mapping[str, Any]) -> set[str]:
+    calls = case.get("condition_calls", case.get("calls", {}))
+    if isinstance(calls, Mapping):
+        return {name for name in calls if isinstance(name, str) and name}
+    if isinstance(calls, Sequence) and not isinstance(calls, (str, bytes)):
+        return {
+            row.get("question", row.get("condition"))
+            for row in calls
+            if isinstance(row, Mapping)
+            and isinstance(row.get("question", row.get("condition")), str)
+        }
+    return set()
+
+
+def recall_source_fingerprint(
+    memory: Mapping[str, Any], *, selections: object = _UNSELECTED
+) -> str:
     """Fingerprint exactly the case/censor inputs consumed by recall preparation."""
     cases = memory.get("cases", ())
     if not isinstance(cases, Sequence) or isinstance(cases, (str, bytes)):
@@ -45,6 +195,9 @@ def recall_source_fingerprint(memory: Mapping[str, Any]) -> str:
         "cases": source_cases,
         "censors": censors,
     }
+    selected = _declared_selections(memory, selections)
+    if selected is not None:
+        payload["selection_identity"] = _selection_state(cases, selected)[0]
     try:
         encoded = json.dumps(
             payload, sort_keys=True, separators=(",", ":"), allow_nan=False
@@ -96,7 +249,26 @@ def _runtime_recall_cache(
             for index in indexes
         ):
             return None
-    case_banks = _validated_case_banks(cases)
+    selections = stored.get("selections")
+    identities, question_banks = {}, {}
+    if selections is None:
+        try:
+            if _declared_selections(memory, _UNSELECTED) is not None:
+                return None
+        except (ImportError, TypeError, ValueError):
+            return None
+    if selections is not None:
+        try:
+            identities, question_banks = _selection_state(cases, selections)
+        except (ImportError, TypeError, ValueError):
+            return None
+        if stored.get("selection_identity") != identities:
+            return None
+    case_banks = (
+        _selected_case_bank_union(question_banks)
+        if selections is not None
+        else _validated_case_banks(cases)
+    )
     subjects = sorted(
         {
             case.get("subject")
@@ -109,19 +281,28 @@ def _runtime_recall_cache(
         }
     )
     matrices: dict[str, dict[str, Any]] = {}
+    question_matrices: dict[str, dict[str, Any]] = {}
     for subject in subjects:
         indexes = [
             index
             for index, case in enumerate(cases)
             if isinstance(case, Mapping) and case.get("subject") == subject
         ]
-        matrices[subject] = _case_matrix(
-            [case_banks.get(index) for index in indexes], indexes
-        )
+        if selections is None:
+            matrices[subject] = _case_matrix(
+                [case_banks.get(index) for index in indexes], indexes
+            )
+        else:
+            for question, banks in question_banks.items():
+                question_matrices.setdefault(subject, {})[question] = _case_matrix(
+                    [banks.get(index) for index in indexes], indexes
+                )
     return {
         **stored,
         "case_profile_banks": case_banks,
         "subject_profile_matrices": matrices,
+        "question_case_profile_banks": question_banks,
+        "question_profile_matrices": question_matrices,
         "runtime_indexes_rebuilt": True,
     }
 
@@ -525,6 +706,8 @@ def prepare_recall(
     *,
     cached: Mapping[str, Any] | None = None,
     exclude_study_uid: str = "",
+    selections: object = _UNSELECTED,
+    selection: object = _UNSELECTED,
 ) -> dict:
     """Prepare immutable empirical opposing-case resemblance envelopes.
 
@@ -541,9 +724,36 @@ def prepare_recall(
         not isinstance(exclude_study_uid, str) or not exclude_study_uid
     ):
         return {"outcome": "invalid_input", "reason": "excluded_study_uid_invalid"}
+    if selection is not _UNSELECTED:
+        if selections is not _UNSELECTED:
+            return {
+                "outcome": "invalid_selection",
+                "reason": "selection_arguments_conflict",
+            }
+        selections = (
+            {selection.get("question_id"): selection}
+            if isinstance(selection, Mapping)
+            else selection
+        )
+    try:
+        selections = _declared_selections(memory, selections)
+        selection_identity, question_banks = (
+            _selection_state(cases, selections) if selections is not None else ({}, {})
+        )
+    except ImportError:
+        return {
+            "outcome": "invalid_selection",
+            "reason": "question_selector_unavailable",
+        }
+    except (TypeError, ValueError) as error:
+        return {"outcome": "invalid_selection", "reason": str(error)}
+    selection_args: dict[str, Any] = (
+        {"selections": selections} if selections is not None else {}
+    )
+    cache_status = None
     if cached is not None:
         try:
-            fingerprint = recall_source_fingerprint(memory)
+            fingerprint = recall_source_fingerprint(memory, **selection_args)
         except ValueError:
             return {"outcome": "invalid_input", "reason": "memory_recall_input_invalid"}
         stored = (
@@ -557,6 +767,8 @@ def prepare_recall(
             and stored.get("source_fingerprint") == fingerprint
             and stored.get("schema") == "knee.squint-recall-preparation/v1"
             and stored.get("outcome") == "prepared"
+            and stored.get("selection_identity", {}) == selection_identity
+            and ("selections" in stored) == (selections is not None)
             and cached.get("censor_count") == len(memory.get("censors", ()))
         ):
             runtime = _runtime_recall_cache(memory, stored)
@@ -569,9 +781,24 @@ def prepare_recall(
                 if projected is not None:
                     return projected
         if exclude_study_uid:
-            return prepare_recall(_memory_without_study(memory, exclude_study_uid))
+            rebuilt = prepare_recall(
+                _memory_without_study(memory, exclude_study_uid), **selection_args
+            )
+            rebuilt["cache_status"] = "rebuilt_incompatible_cache"
+            return rebuilt
+        cache_status = (
+            "rebuilt_selection_identity_mismatch"
+            if selections is not None
+            and (
+                not isinstance(stored, Mapping)
+                or stored.get("selection_identity") != selection_identity
+            )
+            else "rebuilt_incompatible_cache"
+        )
     elif exclude_study_uid:
-        return prepare_recall(_memory_without_study(memory, exclude_study_uid))
+        return prepare_recall(
+            _memory_without_study(memory, exclude_study_uid), **selection_args
+        )
     envelopes: dict[str, dict[str, dict[str, Any]]] = {}
     case_indices: dict[str, dict[str, list[int]]] = {}
     censor_indices: dict[str, list[int]] = {}
@@ -589,8 +816,15 @@ def prepare_recall(
                 if isinstance(row, Mapping)
                 and isinstance(row.get("question", row.get("condition")), str)
             )
-    case_banks = _validated_case_banks(cases)
+    case_banks = (
+        _selected_case_bank_union(question_banks)
+        if selections is not None
+        else _validated_case_banks(cases)
+    )
+    if selections is not None:
+        questions = set(selections)
     subject_profile_matrices: dict[str, dict[str, Any]] = {}
+    question_profile_matrices: dict[str, dict[str, Any]] = {}
     subjects = sorted(
         {
             case.get("subject")
@@ -602,17 +836,22 @@ def prepare_recall(
             and isinstance(case.get("study_uid"), str)
         }
     )
-    pair_cache: dict[tuple[int, int], list[tuple[str, dict[str, Any]]]] = {}
+    pair_cache: dict[tuple, list[tuple[str, dict[str, Any]]]] = {}
 
     def pair_projections(
-        first_index: int, second_index: int
+        first_index: int, second_index: int, question: str
     ) -> list[tuple[str, dict[str, Any]]]:
-        key = (first_index, second_index)
+        scoped_banks = (
+            question_banks[question] if selections is not None else case_banks
+        )
+        first_banks = scoped_banks.get(first_index)
+        second_banks = scoped_banks.get(second_index)
+        if first_banks is None or second_banks is None:
+            return []
+        key = (first_index, second_index, tuple(first_banks), tuple(second_banks))
         cached = pair_cache.get(key)
         if cached is not None:
             return cached
-        first_banks = case_banks[first_index]
-        second_banks = case_banks[second_index]
         projected: list[tuple[str, dict[str, Any]]] = []
         if not _same_procedure(
             cases[first_index].get("profile"), cases[second_index].get("profile")
@@ -654,10 +893,19 @@ def prepare_recall(
             for index, case in enumerate(cases)
             if isinstance(case, Mapping) and case.get("subject") == subject
         ]
-        subject_profile_matrices[subject] = _case_matrix(
-            [case_banks.get(index) for index in all_subject_indices],
-            all_subject_indices,
-        )
+        if selections is None:
+            subject_profile_matrices[subject] = _case_matrix(
+                [case_banks.get(index) for index in all_subject_indices],
+                all_subject_indices,
+            )
+        else:
+            for question, banks in question_banks.items():
+                question_profile_matrices.setdefault(subject, {})[question] = (
+                    _case_matrix(
+                        [banks.get(index) for index in all_subject_indices],
+                        all_subject_indices,
+                    )
+                )
         for question in sorted(questions):
             scoped_indices = [
                 index
@@ -684,7 +932,9 @@ def prepare_recall(
                         first, question
                     ) == _call(second, question):
                         continue
-                    for mode, evidence in pair_projections(first_index, second_index):
+                    for mode, evidence in pair_projections(
+                        first_index, second_index, question
+                    ):
                         bank_names = tuple(evidence["common_speaking_banks"])
                         bank_key = json.dumps(bank_names, separators=(",", ":"))
                         envelope = buckets.get(bank_key)
@@ -747,30 +997,49 @@ def prepare_recall(
             if isinstance(memory.get("censors", ()), Sequence)
             else []
         )
-    return {
+    result = {
         "outcome": "prepared",
         "schema": "knee.squint-recall-preparation/v1",
         "memory_source": memory.get("source", memory.get("metadata", {})),
-        "source_fingerprint": recall_source_fingerprint(memory),
+        "source_fingerprint": recall_source_fingerprint(memory, **selection_args),
         "envelopes": envelopes,
         "case_indices": case_indices,
         "censor_indices": censor_indices,
         "case_profile_banks": case_banks,
         "subject_profile_matrices": subject_profile_matrices,
     }
+    if selections is not None:
+        result.update(
+            selections=selections,
+            selection_identity=selection_identity,
+            question_case_profile_banks=question_banks,
+            question_profile_matrices=question_profile_matrices,
+        )
+    if cache_status is not None:
+        result["cache_status"] = cache_status
+    return result
 
 
 def persisted_recall_cache(
     memory: Mapping[str, Any], prepared: Mapping[str, Any]
 ) -> dict[str, Any]:
     """Return JSON-safe invariant preparation bound to its exact source fields."""
-    fingerprint = recall_source_fingerprint(memory)
+    selections = prepared.get("selections")
+    fingerprint = recall_source_fingerprint(
+        memory, selections=selections if selections is not None else _UNSELECTED
+    )
     if (
         prepared.get("schema") != "knee.squint-recall-preparation/v1"
         or prepared.get("outcome") != "prepared"
         or prepared.get("source_fingerprint") != fingerprint
     ):
         raise ValueError("recall_preparation_source_mismatch")
+    if (
+        selections is not None
+        and prepared.get("selection_identity")
+        != _selection_state(memory.get("cases", ()), selections)[0]
+    ):
+        raise ValueError("recall_preparation_selection_identity_mismatch")
     return {
         "schema": RECALL_CACHE_SCHEMA,
         "source_fingerprint": fingerprint,
@@ -786,6 +1055,7 @@ def persisted_recall_cache(
                 "case_indices",
                 "censor_indices",
             )
+            + (("selections", "selection_identity") if selections is not None else ())
         },
     }
 
@@ -1470,7 +1740,12 @@ def locate_objects(study: dict, memory: dict, deadline: float | None = None) -> 
 
 
 def recall_object(
-    profile: dict, memory: dict, question: str, exclude_study_uid: str = ""
+    profile: dict,
+    memory: dict,
+    question: str,
+    exclude_study_uid: str = "",
+    *,
+    selection: Any = _UNSELECTED,
 ) -> dict:
     """Compare every eligible individual precedent and retain conflict/proposals."""
     question_id = _question_id(question)
@@ -1504,8 +1779,8 @@ def recall_object(
             "speaking_calls": [],
         }
     subject = _subject(profile)
-    query_banks = _banks(profile)
-    if subject is None or query_banks is None:
+    query_banks = profile.get("banks")
+    if subject is None or not isinstance(query_banks, Mapping):
         return {
             "outcome": "invalid_input",
             "reason": "invalid_profile",
@@ -1515,6 +1790,89 @@ def recall_object(
             "speaking_calls": [],
         }
     prepared = memory.get("prepared_recall")
+    if selection is _UNSELECTED:
+        selection = memory.get("recall_selection", _UNSELECTED)
+    if (
+        selection is _UNSELECTED
+        and isinstance(prepared, Mapping)
+        and "selections" in prepared
+    ):
+        selection = prepared["selections"].get(question_id)
+    refusal = {
+        "outcome": "proposal",
+        "question_id": question_id,
+        "subject": subject,
+        "case_terms": [],
+        "censor_terms": [],
+        "speaking_calls": [],
+        "vetoed_answers": [],
+    }
+    if selection is _UNSELECTED:
+        from knee.diagnosis.squint_interfaces import TERRITORY_PROCEDURE
+
+        if _source(profile).get("procedure") == TERRITORY_PROCEDURE:
+            try:
+                from knee.diagnosis.squint_questions import question_selection
+
+                selection = question_selection(question_id)
+            except ImportError:
+                return {**refusal, "reason": "question_selector_unavailable"}
+            except ValueError as error:
+                return {**refusal, "reason": str(error)}
+    selected = selection is not _UNSELECTED
+    if selected:
+        from knee.diagnosis.squint_interfaces import selection_code
+
+        code = selection_code(selection)
+        if code != "valid":
+            return {**refusal, "reason": code}
+        if selection["question_id"] != question_id:
+            return {**refusal, "reason": "selection_question_mismatch"}
+        if not selection["cheap"]:
+            return {**refusal, "reason": "selection_empty"}
+        if selection.get(
+            "cheap_procedure", _source(profile).get("procedure")
+        ) != _source(profile).get("procedure"):
+            return {**refusal, "reason": "selection_procedure_mismatch"}
+        try:
+            query_banks = _selected_profile_banks(selection, subject, profile)
+            names = tuple(query_banks) if query_banks is not None else ()
+            digest = _selection_digest(selection)
+        except ImportError:
+            return {**refusal, "reason": "question_selector_unavailable"}
+        except (TypeError, ValueError):
+            return {**refusal, "reason": "selection_descriptor_invalid"}
+        if query_banks is None:
+            return {**refusal, "outcome": "invalid_input", "reason": "invalid_profile"}
+        if not names:
+            return {**refusal, "reason": "selection_no_compatible_banks"}
+        identities = (
+            prepared.get("selection_identity", {})
+            if isinstance(prepared, Mapping)
+            else {}
+        )
+        identity = (
+            identities.get(question_id) if isinstance(identities, Mapping) else None
+        )
+        if not isinstance(identity, Mapping) or not isinstance(
+            identity.get("selected_banks"), Mapping
+        ):
+            return {
+                **refusal,
+                "reason": "recall_preparation_selection_identity_missing",
+            }
+        if (
+            identity.get("version") != selection["version"]
+            or identity.get("descriptor_sha256") != digest
+        ):
+            return {
+                **refusal,
+                "reason": "recall_preparation_selection_identity_mismatch",
+            }
+    else:
+        query_banks = _banks(profile)
+        if query_banks is None:
+            return {**refusal, "outcome": "invalid_input", "reason": "invalid_profile"}
     if (
         not isinstance(prepared, Mapping)
         or prepared.get("schema") != "knee.squint-recall-preparation/v1"
@@ -1554,6 +1912,7 @@ def recall_object(
         "subject": subject,
         "outcome": "proposal",
         "case_terms": [],
+        "case_reasons": [],
         "censor_terms": [],
         "speaking_calls": [],
         "speaking_case_ids": [],
@@ -1568,12 +1927,24 @@ def recall_object(
             "envelopes_used": [],
         },
     }
+    if selected:
+        base["source"]["selection"] = {
+            "schema": selection["schema"],
+            "version": selection["version"],
+            "descriptor_sha256": digest,
+            "selected_banks": list(names),
+            "subjects": dict(selection["subjects"]),
+        }
     if not isinstance(question_envelopes, Mapping):
         question_envelopes = {}
     if not question_envelopes:
         base["envelope_status"] = "unavailable_proposal_only"
     records: list[tuple[int, tuple[int, int], dict[str, Any]]] = []
-    case_profile_banks = prepared.get("case_profile_banks", {})
+    case_profile_banks = (
+        prepared.get("question_case_profile_banks", {}).get(question_id, {})
+        if selected
+        else prepared.get("case_profile_banks", {})
+    )
     if not isinstance(case_profile_banks, Mapping):
         case_profile_banks = {}
     selected_cases: list[
@@ -1597,10 +1968,17 @@ def recall_object(
         ):
             if isinstance(case_id, str):
                 base["excluded_case_ids"].append(case_id)
+                base["case_reasons"].append(
+                    {"case_id": case_id, "reason_code": "excluded_same_study"}
+                )
             continue
         banks = case_profile_banks.get(case_index)
         if banks is None:
-            banks = _banks(case.get("profile"))
+            banks = (
+                _selected_profile_banks(selection, subject, case.get("profile"))
+                if selected
+                else _banks(case.get("profile"))
+            )
         selected_cases.append((case_index, case, sign, banks))
     aligned_banks = [banks for _case_index, _case, _sign, banks in selected_cases]
     query_procedure = _source(profile).get("procedure")
@@ -1608,10 +1986,16 @@ def recall_object(
         query_procedure == _source(case.get("profile")).get("procedure")
         for _case_index, case, _sign, _banks_value in selected_cases
     ]
-    subject_matrices = prepared.get("subject_profile_matrices", {})
+    subject_matrices = (
+        prepared.get("question_profile_matrices", {})
+        if selected
+        else prepared.get("subject_profile_matrices", {})
+    )
     matrix_cache = (
         subject_matrices.get(subject) if isinstance(subject_matrices, Mapping) else None
     )
+    if selected and isinstance(matrix_cache, Mapping):
+        matrix_cache = matrix_cache.get(question_id)
     batched_evidence = _batch_terms(
         query_banks,
         aligned_banks,
@@ -1635,10 +2019,21 @@ def recall_object(
         ):
             if isinstance(case_id, str):
                 base["incompatible_case_ids"].append(case_id)
+                base["case_reasons"].append(
+                    {"case_id": case_id, "reason_code": "incompatible_encoding"}
+                )
             continue
         if evidence.get("code") == "silent":
             if isinstance(case_id, str):
                 base["silent_case_ids"].append(case_id)
+                base["case_reasons"].append(
+                    {
+                        "case_id": case_id,
+                        "reason_code": "no_common_selected_reading"
+                        if selected
+                        else "no_common_reading",
+                    }
+                )
             continue
         ratio = evidence["cosine_squared"]
         bank_key = json.dumps(
@@ -1688,6 +2083,11 @@ def recall_object(
                 "denominator": str(ratio[1]),
             },
             "reaches_empirical_envelope": reaches,
+            "reason_code": "no_compatible_envelope"
+            if maximum is None
+            else "above_empirical_envelope"
+            if reaches
+            else "below_empirical_envelope",
             "trust": None
             if maximum is None
             else {
@@ -1701,6 +2101,9 @@ def recall_object(
         }
         records.append((sign, ratio, record))
         base["case_terms"].append(record)
+        base["case_reasons"].append(
+            {"case_id": case_id, "reason_code": record["reason_code"]}
+        )
         if reaches:
             base["speaking_calls"].append(sign)
             if isinstance(case_id, str):
@@ -1741,7 +2144,20 @@ def recall_object(
             answer = censor.get("answer")
             if type(answer) is not int or answer not in (-1, 1):
                 continue
-            evidence = _terms(profile, censor.get("profile"))
+            censor_profile = censor.get("profile")
+            if selected:
+                censor_banks = _selected_profile_banks(
+                    selection, subject, censor_profile
+                )
+                if (
+                    censor_banks is None
+                    or _subject(censor_profile) != subject
+                    or not _same_procedure(profile, censor_profile)
+                ):
+                    continue
+                evidence = _exact_bank_terms(query_banks, censor_banks)
+            else:
+                evidence = _terms(profile, censor_profile)
             if evidence is None or evidence["code"] != "ok":
                 continue
             numerator, denominator = (

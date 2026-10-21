@@ -129,9 +129,23 @@ def memory_view(
     result.pop("view", None)
     _portable_view(result, excluded)
 
+    prepared_selections = (
+        memory["prepared_recall"].get("selections")
+        if isinstance(memory.get("prepared_recall"), Mapping)
+        else None
+    )
     try:
-        source_fingerprint = recall_source_fingerprint(memory)
-        filtered_fingerprint = recall_source_fingerprint(result)
+        if prepared_selections is not None:
+            # A question-selected preparation fingerprints its selections too.
+            source_fingerprint = recall_source_fingerprint(
+                memory, selections=prepared_selections
+            )
+            filtered_fingerprint = recall_source_fingerprint(
+                result, selections=prepared_selections
+            )
+        else:
+            source_fingerprint = recall_source_fingerprint(memory)
+            filtered_fingerprint = recall_source_fingerprint(result)
     except (TypeError, ValueError) as error:
         raise MemoryViewError("memory_view_recall_source_invalid") from error
     if parent is not None and parent.get("source_fingerprint") != source_fingerprint:
@@ -232,6 +246,8 @@ def _project_prepared_recall(
     from knee.diagnosis.squint_locator import (
         _call,
         _runtime_recall_cache,
+        _selected_case_bank_union,
+        _selection_state,
         _validated_case_banks,
     )
 
@@ -240,7 +256,14 @@ def _project_prepared_recall(
     retained_ids = {row.get("case_id") for row in cases if isinstance(row, Mapping)}
     case_indices: dict[str, dict[str, list[int]]] = {}
     questions: set[str] = set()
-    case_banks = _validated_case_banks(cases)
+    # A question-selected preparation (W7) keeps its selections: each case's
+    # banks are the union of what the selected questions read.
+    selections = prepared.get("selections")
+    case_banks = (
+        _selected_case_bank_union(_selection_state(cases, selections)[1])
+        if selections is not None
+        else _validated_case_banks(cases)
+    )
     eligible_subjects = sorted(
         {
             case.get("subject")
@@ -267,6 +290,8 @@ def _project_prepared_recall(
                 and isinstance(row.get("question", row.get("condition")), str)
             )
         questions.update(case_questions)
+        if selections is not None:
+            case_questions.intersection_update(selections)
         subject = case.get("subject")
         if isinstance(subject, str) and isinstance(case.get("profile"), Mapping):
             for question in case_questions:
@@ -274,6 +299,8 @@ def _project_prepared_recall(
                     case_indices.setdefault(subject, {}).setdefault(
                         question, []
                     ).append(index)
+    if selections is not None:
+        questions = set(selections)
     censor_indices = {
         question: [
             index
@@ -399,6 +426,8 @@ def _project_prepared_recall(
         "case_indices": case_indices,
         "censor_indices": censor_indices,
     }
+    if selections is not None:
+        stored["selection_identity"] = _selection_state(cases, selections)[0]
     runtime = _runtime_recall_cache(filtered_memory, stored)
     if runtime is None:
         return None

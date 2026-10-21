@@ -284,8 +284,13 @@ def test_real_coordinator_excludes_own_object_configuration_censor_and_preparati
     assert f"case:{uid}:acl" not in ids
     assert f"case:{uid}:diagnosis/ACL" not in ids
     assert "own-censor" not in ids
-    assert "case:peer-positive:acl" in ids
-    assert "case:peer-negative:diagnosis/ACL" in ids
+    # The control reproduces the v1 writer and memory. Production recall now
+    # reads only each question's selected v2 banks (W7), so v1 data is refused
+    # by name, never compared over every bank. The v2 control (teacher
+    # territories over the territory writer and memory) restores peer terms.
+    acl = record["questions"]["ACL"]["objects"]["acl"]
+    assert acl["reason"] == "selection_procedure_mismatch"
+    assert "case:peer-positive:acl" not in ids
     assert record["capacity_exclusion"]["excluded_case_count"] == 2
     assert record["capacity_exclusion"]["excluded_censor_count"] == 1
     assert (

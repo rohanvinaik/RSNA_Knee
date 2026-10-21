@@ -118,6 +118,15 @@ def _recall_question(
 ) -> dict:
     from knee.diagnosis.squint_locator import recall_object
 
+    try:
+        from knee.diagnosis.squint_questions import question_selection
+
+        selection = question_selection(question.question_id)
+    except (ImportError, ValueError):
+        selection = None
+    # One declaration reaches both anatomical and role-qualified recalls.
+    # A missing adapter is explicit invalid selection, never all-bank recall.
+    memory = {**memory, "recall_selection": selection}
     evidence = {}
     for subject in question.objects:
         located = objects.get(subject, {})
