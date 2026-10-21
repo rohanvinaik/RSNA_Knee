@@ -67,7 +67,7 @@ Worktrees under `/private/tmp/rsna-upgrade-20261021/<job>` (branch `upgrade/<job
 | W6 question selection | Claude sub-agent | w6 | session sub-agent | INTEGRATED c95d61a, with the lead's sourced MCL-surroundings exception (SQUINT_TRAINING_BUILD §10) |
 | W9 bones by structure | Claude sub-agent | w9 | session sub-agent | INTEGRATED 35d98e5 (not yet wired into the locator); found the established rule names posterior thigh soft tissue as femur on some sagittal middle slices, which the bootstrap shares |
 | W16 cross-view consistency of stored bone outlines | Claude sub-agent | w16 (base 35d98e5) | session sub-agent | RUNNING |
-| W10 dependents from anchors | Codex CLI, then Claude sub-agent | w10 | bc9e3zmt4 FAILED (model at capacity, no edits); reassigned to a session sub-agent | RUNNING |
+| W10 dependents from anchors | Codex CLI, then Claude sub-agent | w10 | session sub-agent | RETURNED, not yet merged (merges with the v2 locator writer and W12): anchors improve candidate sets (35/65 vs 28/65 series with an on-support candidate) but v1 resemblance rarely chooses it (3/50) |
 | W11 location check | Claude sub-agent | w11 | session sub-agent | INTEGRATED 19cdac5; corrected the lead's earlier on-target figures (native supports only: femur 14%, tibia 19%, patella 14%) |
 | W14 teaching round | Codex CLI, then Claude sub-agent | w14 | session sub-agent | RETURNED, PARKED for the teaching stage: command works mechanically, loop test admitted nothing new (`workers/w14/report.md`); found the ACL has a stored case in only 6 of 58 studies |
 | W12 residual executor | Claude sub-agent | w12 | session sub-agent | RUNNING |
