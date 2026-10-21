@@ -64,7 +64,8 @@ def _signal_banks(
             continue
         if parsed.get("role") not in _SPEAKING_ROLES:
             continue
-        if parsed.get("scale_mm") != 10.0:
+        # The bank name's own scale token, as every writer formats it (f"{tile_mm:g}mm").
+        if parsed.get("scale") != "10mm":
             continue
         if views is not None and tuple(parsed.get("view", ())) not in views:
             continue

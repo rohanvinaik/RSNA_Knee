@@ -91,8 +91,22 @@ decode goes to him with its episode.
 
 | Task | State | Evidence |
 |---|---|---|
-| Signed-memory builder (`a59f12296091c35c5`) | returned; patch applied in the working tree | `negative-klines/builder/` |
-| Growth, partial planes, identity consumer | to launch after the checkpoint commit | — |
+| Signed-memory builder | returned; integrated in `20e37e3` | `negative-klines/builder/` |
+| Lane A: signed frozen-parent growth, harvest from inference records, `grow` CLI | running, isolated worktree | — |
+| Lane B: partial-plane anatomical checks | running, isolated worktree | — |
+| Lane C: identity governs condition inputs in `infer_study` | running, isolated worktree | — |
+| Lane D: picture sheets for admissions (`sheets` CLI) | running, isolated worktree | — |
+
+## M1, THE FIRST FULL SIGNED MEMORY (published 2026-10-21)
+
+`data/readings/ai-bootstrap-loop-20261021/signed-memory-m1/memory` (manifest sha256 `506dd4ba71db0543…`),
+from the automatic catalogue and the 441 adapted calls (`signed-memory-m1/adapted-calls/`, 76 Codex lead +
+365 Claude Code lead): 152 confirmed positive cases, 311 negative identity cases, 30 alternative
+identities, 0 negatives unwritten. The ordinary loader reads it offline and `prepare_identity` prepares
+with all 311 negatives and 30 alternatives. Admit took 247 s and 7.9 GB peak RSS (loading the catalogue).
+Confirmed cases by object: tibia 36, femur 27, joint 25, joint fluid 18, medial meniscus 9, lateral
+meniscus 7, PCL 7, tibial cartilage 5, MCL 3, capsule 3, and 1–2 for nine others. 52 review candidates
+remain uncalled.
 
 ## UNREVIEWED / WITHDRAWN / STALE RESULTS
 
