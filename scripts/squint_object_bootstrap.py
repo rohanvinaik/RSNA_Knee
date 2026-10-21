@@ -55,8 +55,8 @@ from knee.diagnosis.squint_bootstrap import (
 from knee.diagnosis.squint_identity_growth import (
     IdentityGrowthError,
     grow_identity_memory,
-    harvest_candidates,
-    read_inference_records,
+    harvest_inference,
+    inference_record_paths,
 )
 from knee.diagnosis.squint_memory import SquintMemoryError, load_memory_snapshot
 
@@ -1883,22 +1883,21 @@ def run_sheets(args: argparse.Namespace) -> dict[str, Any]:
 
 
 def run_grow(args: argparse.Namespace) -> dict[str, Any]:
-    """Harvest every inference record, then decide against the frozen parent."""
+    """Stream every inference record's candidates into one frozen-parent round."""
     output = Path(args.output)
     if output.exists() or output.is_symlink():
         raise ObjectBootstrapError("output_exists")
+    directories = [Path(directory) for directory in args.inference]
+    sources = [
+        {"path": str(directory), "records": len(inference_record_paths(directory))}
+        for directory in directories
+    ]
     snapshot = load_memory_snapshot(args.parent)
-    records: list[dict[str, Any]] = []
-    digests: list[str] = []
-    sources: list[dict[str, Any]] = []
-    for directory in args.inference:
-        pairs = read_inference_records(Path(directory))
-        records.extend(record for record, _ in pairs)
-        digests.extend(digest for _, digest in pairs)
-        sources.append({"path": str(directory), "records": len(pairs)})
-    candidates = harvest_candidates(records, record_sha256s=digests)
     result = grow_identity_memory(
-        snapshot, candidates, output, decisions_only=args.decisions_only
+        snapshot,
+        harvest_inference(directories),
+        output,
+        decisions_only=args.decisions_only,
     )
     return {"action": "grow", "inference": sources, **result}
 

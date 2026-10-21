@@ -339,6 +339,21 @@ def test_unknown_only_anatomy_keeps_a_proposal_even_when_recall_identifies():
     )
 
 
+def test_admission_needs_a_plausible_status_as_well_as_a_recorded_pass():
+    memory = identity_memory(ROUND_SEEDS)
+    passed = sanity("femur", "plausible", "supported_strictly_after")
+    decision = decide(candidate("sx", "femur", [(SAG, (4, 0, 1))], passed), memory)
+    assert decision["state"] == "admitted"
+    inconsistent = sanity("femur", "unknown", "supported_strictly_after")
+    decision = decide(
+        candidate("sx", "femur", [(SAG, (4, 0, 1))], inconsistent), memory
+    )
+    assert (decision["state"], decision["reason"]) == ("proposal", "anatomy_unknown")
+    assert [row["result"] for row in decision["support"]] == [
+        "supported_strictly_after"
+    ]
+
+
 def test_a_known_contradiction_blocks_and_one_reversed_check_is_enough():
     memory = identity_memory(ROUND_SEEDS)
     decision = decide(
@@ -574,14 +589,57 @@ def test_harvest_refuses_a_repeated_study_and_malformed_records_by_name():
         ([{**record, "memory_revision": ""}], "study_record_invalid"),
     ):
         with pytest.raises(IdentityGrowthError) as info:
-            harvest_candidates(records)
+            list(harvest_candidates(records))
         assert info.value.code == code
-    with pytest.raises(IdentityGrowthError) as info:
-        harvest_candidates([record], record_sha256s=["c" * 63])
-    assert info.value.code == "record_sha256s_invalid"
+    for digests in (["c" * 63], [], ["c" * 64, "d" * 64]):
+        with pytest.raises(IdentityGrowthError) as info:
+            list(harvest_candidates([record], record_sha256s=digests))
+        assert info.value.code == "record_sha256s_invalid"
 
 
 # ---------------------------------------------------------- rounds and children
+
+
+def test_a_round_consumes_one_shot_streams_in_arrival_order(tmp_path: Path):
+    parent = saved(tmp_path, "parent", identity_memory(ROUND_SEEDS))
+    records = [
+        study_record(
+            "sx", {"femur": located("femur", [(SAG, (4, 0, 1))], plausible("femur"))}
+        ),
+        # A study the parent holds: scored on its own held-out preparation.
+        study_record(
+            "sa", {"tibia": located("tibia", [(SAG, (2, 1, 0))], plausible("tibia"))}
+        ),
+        study_record(
+            "sw", {"femur": located("femur", [(SAG, (4, 0, 2))], plausible("femur"))}
+        ),
+    ]
+    read: list[str] = []
+
+    def stream():
+        for record in records:
+            read.append(record["study_uid"])
+            yield record
+
+    candidates = harvest_candidates(stream())
+    assert read == []  # nothing is read before the round asks for it
+    receipt = grow_identity_memory(parent, candidates, tmp_path / "streamed")
+    assert read == ["sx", "sa", "sw"]
+    expected = [decide(item, parent.memory) for item in harvest_candidates(records)]
+    document = json.loads((tmp_path / "streamed" / DECISIONS_FILE).read_text())
+    assert document["decisions"] == expected
+    assert receipt["admitted_case_ids"] == [f"located:sx:femur:{INFERENCE_REVISION}"]
+    [held] = harvest_candidates(records[1:2])
+    assert admission_decision(held, parent.memory)["excluded_study_uid"] == "sa"
+    # A refusal met mid-stream leaves nothing written.
+    with pytest.raises(IdentityGrowthError) as info:
+        grow_identity_memory(
+            parent,
+            harvest_candidates(iter([records[0], records[0]])),
+            tmp_path / "broken",
+        )
+    assert info.value.code == "duplicate_study_record"
+    assert not (tmp_path / "broken").exists()
 
 
 def test_admissions_never_speak_in_their_own_round_and_the_next_round_hears_them(
@@ -947,6 +1005,10 @@ def test_a_candidate_memory_case_enters_as_its_source_holds_it(signed):
         child["source_identities"]["study-e"]
         == (signed.catalogue.memory["source_identities"]["study-e"])
     )
+    # The selection is checked at once, before any candidate is made.
+    with pytest.raises(IdentityGrowthError) as info:
+        candidates_from_memory(signed.catalogue, candidate_ids=["unknown-case"])
+    assert info.value.code == "unknown_candidate"
     [plain] = candidates_from_memory(signed.catalogue, candidate_ids=[FE])
     assert admission_decision(plain, signed.parent.memory)["decision"]["reason"] == (
         "anatomy_unknown"

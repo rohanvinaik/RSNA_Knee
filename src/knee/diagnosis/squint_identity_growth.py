@@ -12,7 +12,9 @@ signed identity recall, with one shared preparation per held-out exclusion. A
 candidate's study is excluded from comparison and opposing envelopes whenever any
 parent record of any kind (``cases`` or ``object_identity_cases``) comes from it;
 a study absent from every record kind shares the unexcluded preparation, which
-holds exactly the same population. Nothing admitted in a round speaks in it.
+holds exactly the same population. Nothing admitted in a round speaks in it. A
+round streams: one inference record is decoded at a time (a real one can decode
+to hundreds of MB), and only decisions and admissions outlive their candidates.
 
 Admission (§§7.1-7.2): signed recall identifies the candidate as its own proposed
 subject and no negative case speaks against it; the recorded sanity is plausible,
@@ -51,7 +53,7 @@ import os
 import re
 import tempfile
 from collections import Counter
-from collections.abc import Iterable, Mapping, Sequence
+from collections.abc import Iterable, Iterator, Mapping, Sequence
 from pathlib import Path
 from typing import Any
 
@@ -183,30 +185,12 @@ def _located_regions(located: Mapping[str, Any], label: str) -> list[dict[str, A
     return result
 
 
-def harvest_candidates(
-    study_records: Iterable[Mapping[str, Any]],
-    *,
-    record_sha256s: Sequence[str] | None = None,
-) -> list[dict[str, Any]]:
-    """One candidate per located object holding a cheap profile, in record order.
-
-    Each candidate holds ``case_id`` (``located:<study_uid>:<subject>:<memory
-    revision>``), ``study_uid``, ``subject`` (the located name, a proposal only),
-    ``profile``, ``regions`` (series_uid and half-open tile window), ``sanity``
-    exactly as recorded, and its ``source`` record. ``record_sha256s`` are the
-    exact file-byte digests of the records, when the caller read them from disk;
-    otherwise each decoded record is digested (``record_sha256``). Recall, values
-    and questions already in a record are never read: the round scores afresh.
-    """
-    records = list(study_records)
-    digests = None if record_sha256s is None else list(record_sha256s)
-    if digests is not None and (
-        len(digests) != len(records) or not all(_is_sha(item) for item in digests)
-    ):
-        raise IdentityGrowthError("record_sha256s_invalid")
+def _harvest(
+    pairs: Iterable[tuple[Mapping[str, Any], str | None]],
+) -> Iterator[dict[str, Any]]:
+    """Candidates of each (record, file digest or None), one record alive at a time."""
     studies: set[str] = set()
-    candidates: list[dict[str, Any]] = []
-    for index, record in enumerate(records):
+    for index, (record, digest) in enumerate(pairs):
         if not isinstance(record, Mapping) or record.get("schema") != STUDY_SCHEMA:
             raise IdentityGrowthError("study_record_invalid", str(index))
         uid = record.get("study_uid")
@@ -219,10 +203,8 @@ def harvest_candidates(
         studies.add(uid)
         source = {
             "kind": INFERENCE_SOURCE,
-            "record_sha256": record_sha256(record)
-            if digests is None
-            else digests[index],
-            "record_sha256_scope": "decoded_json" if digests is None else "file_bytes",
+            "record_sha256": record_sha256(record) if digest is None else digest,
+            "record_sha256_scope": "decoded_json" if digest is None else "file_bytes",
             "memory_revision": revision,
         }
         for subject in sorted(objects):
@@ -236,45 +218,102 @@ def harvest_candidates(
                 continue
             if not _text(subject) or subject.startswith("diagnosis/"):
                 raise IdentityGrowthError("study_record_subject_invalid", uid)
-            candidates.append(
-                {
-                    "case_id": f"located:{uid}:{subject}:{revision}",
-                    "study_uid": uid,
-                    "subject": subject,
-                    "profile": copy.deepcopy(profile),
-                    "regions": _located_regions(located, f"{uid}:{subject}"),
-                    "sanity": copy.deepcopy(located.get("sanity")),
-                    "source": dict(source),
-                }
-            )
-    return candidates
+            yield {
+                "case_id": f"located:{uid}:{subject}:{revision}",
+                "study_uid": uid,
+                "subject": subject,
+                "profile": copy.deepcopy(profile),
+                "regions": _located_regions(located, f"{uid}:{subject}"),
+                "sanity": copy.deepcopy(located.get("sanity")),
+                "source": dict(source),
+            }
 
 
-def read_inference_records(directory: Path) -> list[tuple[dict[str, Any], str]]:
-    """Each per-study record of one diagnostic output directory and its byte digest.
+def _paired(
+    records: Iterable[Mapping[str, Any]], digests: Iterable[str]
+) -> Iterator[tuple[Mapping[str, Any], str]]:
+    """Each record with its digest, consumed in lockstep; unequal lengths refuse."""
+    remaining = iter(digests)
+    for record in records:
+        digest = next(remaining, None)
+        if not _is_sha(digest):
+            raise IdentityGrowthError("record_sha256s_invalid")
+        yield record, digest
+    if next(remaining, None) is not None:
+        raise IdentityGrowthError("record_sha256s_invalid")
 
-    Reads ``<directory>/studies/*.json.xz`` (and legacy ``*.json``) in name order.
+
+def harvest_candidates(
+    study_records: Iterable[Mapping[str, Any]],
+    *,
+    record_sha256s: Iterable[str] | None = None,
+) -> Iterator[dict[str, Any]]:
+    """Yield one candidate per located object holding a cheap profile, in record order.
+
+    Each candidate holds ``case_id`` (``located:<study_uid>:<subject>:<memory
+    revision>``), ``study_uid``, ``subject`` (the located name, a proposal only),
+    ``profile``, ``regions`` (series_uid and half-open tile window), ``sanity``
+    exactly as recorded, and its ``source`` record. ``record_sha256s`` are the
+    exact file-byte digests of the records, when the caller read them from disk;
+    otherwise each decoded record is digested (``record_sha256``). Recall, values
+    and questions already in a record are never read: the round scores afresh.
+    Records are consumed lazily, so a stream of them holds one at a time.
+    """
+    if record_sha256s is None:
+        yield from _harvest((record, None) for record in study_records)
+    else:
+        yield from _harvest(_paired(study_records, record_sha256s))
+
+
+def inference_record_paths(directory: Path) -> list[Path]:
+    """The per-study record files of one diagnostic output directory, in name order.
+
+    ``<directory>/studies/*.json.xz``, and legacy plain ``*.json``.
     """
     studies = Path(directory) / "studies"
     if not studies.is_dir():
         raise IdentityGrowthError("inference_studies_missing", str(directory))
-    pairs: list[tuple[dict[str, Any], str]] = []
-    for path in sorted(studies.iterdir()):
-        compressed = path.name.endswith(".json.xz")
-        if not path.is_file() or not (compressed or path.name.endswith(".json")):
-            continue
-        raw = path.read_bytes()
-        try:
-            text = lzma.decompress(raw) if compressed else raw
-            record = json.loads(text.decode("utf-8"))
-        except (lzma.LZMAError, UnicodeError, ValueError) as error:
-            raise IdentityGrowthError(
-                "inference_record_unreadable", str(path)
-            ) from error
-        pairs.append((record, hashlib.sha256(raw).hexdigest()))
-    if not pairs:
+    paths = [
+        path
+        for path in sorted(studies.iterdir())
+        if path.is_file()
+        and (path.name.endswith(".json.xz") or path.name.endswith(".json"))
+    ]
+    if not paths:
         raise IdentityGrowthError("inference_records_missing", str(directory))
-    return pairs
+    return paths
+
+
+def _read_record(path: Path) -> tuple[dict[str, Any], str]:
+    raw = path.read_bytes()
+    try:
+        text = lzma.decompress(raw) if path.name.endswith(".json.xz") else raw
+        record = json.loads(text.decode("utf-8"))
+    except (lzma.LZMAError, UnicodeError, ValueError) as error:
+        raise IdentityGrowthError("inference_record_unreadable", str(path)) from error
+    return record, hashlib.sha256(raw).hexdigest()
+
+
+def read_inference_records(directory: Path) -> Iterator[tuple[dict[str, Any], str]]:
+    """Yield each per-study record of one output directory with its file-byte digest.
+
+    One record is decoded at a time; a real record can decode to hundreds of MB.
+    """
+    for path in inference_record_paths(directory):
+        yield _read_record(path)
+
+
+def harvest_inference(directories: Iterable[Path]) -> Iterator[dict[str, Any]]:
+    """Yield the candidates of every record of the given diagnostic output directories.
+
+    Each record is digested over its exact file bytes and released before the next
+    is read. A study appearing in more than one record is refused by name.
+    """
+    yield from _harvest(
+        pair
+        for directory in directories
+        for pair in read_inference_records(Path(directory))
+    )
 
 
 def _full_refs(case: Mapping[str, Any]) -> tuple[set[str], set[str]]:
@@ -310,12 +349,13 @@ def candidates_from_memory(
     *,
     candidate_ids: Sequence[str] | None = None,
     sanity_by_case_id: Mapping[str, Any] | None = None,
-) -> list[dict[str, Any]]:
+) -> Iterator[dict[str, Any]]:
     """Candidates from the object cases of a candidate memory snapshot.
 
     An admitted memory candidate enters the child exactly as its source memory
     holds it, with its paired full profile; its rows travel in ``retained``. A
-    missing sanity record is unknown anatomy.
+    missing sanity record is unknown anatomy. The selection is checked at once;
+    the candidates are then made one at a time as they are consumed.
     """
     memory = _snapshot_memory(snapshot, "candidate_snapshot_invalid")
     objects = [
@@ -336,42 +376,48 @@ def candidates_from_memory(
     sanity = {} if sanity_by_case_id is None else sanity_by_case_id
     if not isinstance(sanity, Mapping) or any(key not in selected for key in sanity):
         raise IdentityGrowthError("sanity_map_invalid")
+    return _memory_candidates(
+        snapshot, memory, [by_id[item] for item in selected], sanity
+    )
+
+
+def _memory_candidates(
+    snapshot: MemorySnapshot,
+    memory: Mapping[str, Any],
+    cases: Sequence[Mapping[str, Any]],
+    sanity: Mapping[str, Any],
+) -> Iterator[dict[str, Any]]:
     contexts = (memory.get("full_profile_contexts") or {}).get("contexts", {})
     payloads = (memory.get("full_profile_payloads") or {}).get("payloads", {})
     identities = memory.get("source_identities") or {}
-    candidates = []
-    for case_id in selected:
-        case = by_id[case_id]
+    for case in cases:
         payload_refs, context_refs = _full_refs(case)
         payload_rows = {ref: payloads[ref] for ref in payload_refs if ref in payloads}
         context_refs |= {
             row["context_ref"] for row in payload_rows.values() if "context_ref" in row
         }
-        candidates.append(
-            {
-                "case_id": case_id,
-                "study_uid": case["study_uid"],
-                "subject": case["subject"],
-                "profile": copy.deepcopy(case["profile"]),
-                "regions": _decision_regions(case),
-                "sanity": copy.deepcopy(sanity.get(case_id)),
-                "source": {
-                    "kind": MEMORY_SOURCE,
-                    "manifest_sha256": snapshot.sha256,
-                    "memory_revision": memory["revision"],
-                    "case_sha256": _json_sha256(case),
+        yield {
+            "case_id": case["case_id"],
+            "study_uid": case["study_uid"],
+            "subject": case["subject"],
+            "profile": copy.deepcopy(case["profile"]),
+            "regions": _decision_regions(case),
+            "sanity": copy.deepcopy(sanity.get(case["case_id"])),
+            "source": {
+                "kind": MEMORY_SOURCE,
+                "manifest_sha256": snapshot.sha256,
+                "memory_revision": memory["revision"],
+                "case_sha256": _json_sha256(case),
+            },
+            "retained": {
+                "case": case,
+                "payloads": payload_rows,
+                "contexts": {
+                    ref: contexts[ref] for ref in context_refs if ref in contexts
                 },
-                "retained": {
-                    "case": case,
-                    "payloads": payload_rows,
-                    "contexts": {
-                        ref: contexts[ref] for ref in context_refs if ref in contexts
-                    },
-                    "source_identity": identities.get(case["study_uid"]),
-                },
-            }
-        )
-    return candidates
+                "source_identity": identities.get(case["study_uid"]),
+            },
+        }
 
 
 def _check_candidate(candidate: object) -> Mapping[str, Any]:
@@ -646,11 +692,11 @@ def admission_from_recall(
         return _decision(
             candidate, "proposal", str(recall.get("reason") or outcome), support
         )
-    if not support:
+    if anatomy["status"] != "plausible" or not support:
         reason = (
-            "anatomy_unknown"
-            if anatomy["status"] == "unknown"
-            else "anatomy_support_unrecorded"
+            "anatomy_support_unrecorded"
+            if anatomy["status"] == "plausible"
+            else "anatomy_unknown"
         )
         return _decision(candidate, "proposal", reason, support, subject)
     scope = admission_scope(recall, subject)
@@ -750,6 +796,17 @@ def _prior_rounds(parent: Mapping[str, Any]) -> list[Any]:
     ):
         raise IdentityGrowthError("parent_growth_metadata_invalid")
     return rounds
+
+
+def _parent_preparation(
+    parent: Mapping[str, Any], exclusion: str | None
+) -> Mapping[str, Any]:
+    prepared = prepare_identity(parent, exclude_study_uid=exclusion)
+    if prepared.get("outcome") != "prepared":
+        raise IdentityGrowthError(
+            "parent_identity_teaching_invalid", str(prepared.get("reason"))
+        )
+    return prepared
 
 
 def _check_output(output: object, parent_snapshot: MemorySnapshot) -> Path:
@@ -871,15 +928,30 @@ def _admission_call(case_id: str, views: list, parent_sha256: str) -> dict[str, 
     }
 
 
-def _merge_retained(child: dict[str, Any], admitted: Sequence[Mapping]) -> None:
+def _admission(
+    candidate: Mapping[str, Any],
+    scored: Mapping[str, Any],
+    parent: Mapping[str, Any],
+    parent_sha256: str,
+) -> dict[str, Any]:
+    """The child's case and confirm call for one admission, made when it is decided."""
+    case = _admitted_case(candidate, _lineage(candidate, scored, parent, parent_sha256))
+    retained = candidate.get("retained")
+    return {
+        "case": case,
+        "call": _admission_call(
+            case["case_id"], scored["decision"]["views"], parent_sha256
+        ),
+        "retained": retained if isinstance(retained, Mapping) else None,
+    }
+
+
+def _merge_retained(child: dict[str, Any], retained_rows: Sequence[Mapping]) -> None:
     """Carry each admitted memory candidate's full rows and source identity."""
     rows = {"payloads": {}, "contexts": {}}
     identities: dict[str, Any] = {}
     needed: dict[str, set[str]] = {"payloads": set(), "contexts": set()}
-    for candidate in admitted:
-        retained = candidate.get("retained")
-        if not isinstance(retained, Mapping):
-            continue
+    for retained in retained_rows:
         payload_refs, context_refs = _full_refs(retained["case"])
         needed["payloads"] |= payload_refs
         needed["contexts"] |= context_refs
@@ -922,29 +994,27 @@ def _merge_retained(child: dict[str, Any], admitted: Sequence[Mapping]) -> None:
 def _child_memory(
     parent: Mapping[str, Any],
     parent_sha256: str,
-    admitted: Sequence[tuple[Mapping[str, Any], Mapping[str, Any]]],
+    admissions: Sequence[Mapping[str, Any]],
     round_record: dict[str, Any],
 ) -> dict[str, Any]:
     """Every parent record, plus the admissions; shared parent parts are not mutated."""
     child = {key: value for key, value in parent.items() if key not in _RUNTIME_KEYS}
-    cases = []
-    calls = []
-    for candidate, scored in admitted:
-        lineage = _lineage(candidate, scored, parent, parent_sha256)
-        case = _admitted_case(candidate, lineage)
-        cases.append(case)
-        calls.append(
-            _admission_call(case["case_id"], scored["decision"]["views"], parent_sha256)
-        )
+    cases = [entry["case"] for entry in admissions]
     teaching = dict(parent["object_identity_teaching"])
     teaching["confirmed_case_ids"] = [
         *teaching.get("confirmed_case_ids", []),
         *(case["case_id"] for case in cases),
     ]
-    teaching["calls"] = [*teaching.get("calls", []), *calls]
+    teaching["calls"] = [
+        *teaching.get("calls", []),
+        *(entry["call"] for entry in admissions),
+    ]
     child["object_identity_teaching"] = teaching
     child["cases"] = [*parent["cases"], *cases]
-    _merge_retained(child, [candidate for candidate, _ in admitted])
+    _merge_retained(
+        child,
+        [entry["retained"] for entry in admissions if entry["retained"] is not None],
+    )
     child["object_identity_growth"] = {
         "schema": GROWTH_SCHEMA,
         "rounds": [*_prior_rounds(parent), round_record],
@@ -1006,54 +1076,70 @@ def grow_identity_memory(
 ) -> dict[str, Any]:
     """Decide every candidate against one frozen parent; publish the warranted child.
 
-    ``output`` is a new directory. It always receives ``admission-decisions.json``
-    (DECISIONS_SCHEMA). With admissions, and unless ``decisions_only``, the child is
-    published by ``save_memory`` at ``output/memory`` before the decisions are
-    written beside it; no admission publishes no child.
+    Candidates are consumed in arrival order and may be a one-shot stream: only
+    each decision, and each admission's child case, outlives its candidate and its
+    recall. The unexcluded preparation serves the whole round; a candidate whose
+    study the parent holds is scored on that study's own held-out preparation,
+    rebuilt only when the study changes (harvest yields a study's candidates
+    together). ``output`` is a new directory. It always receives
+    ``admission-decisions.json`` (DECISIONS_SCHEMA). With admissions, and unless
+    ``decisions_only``, the child is published by ``save_memory`` at
+    ``output/memory`` before the decisions are written beside it; no admission
+    publishes no child.
     """
     parent = _snapshot_memory(parent_snapshot, "invalid_parent_snapshot")
     if not isinstance(parent.get("object_identity_teaching"), Mapping):
         raise IdentityGrowthError("parent_identity_teaching_missing")
     _prior_rounds(parent)
     output = _check_output(output, parent_snapshot)
-    items = [_check_candidate(candidate) for candidate in candidates]
-    ids = [candidate["case_id"] for candidate in items]
-    if len(set(ids)) != len(ids):
-        raise IdentityGrowthError("duplicate_candidate_id")
     record_studies = exclusion_studies(parent)
     represented = represented_objects(parent)
-    groups: dict[str | None, list[int]] = {}
-    for index, candidate in enumerate(items):
-        study = candidate["study_uid"]
-        groups.setdefault(study if study in record_studies else None, []).append(index)
-    scored: list[Any] = [None] * len(items)
-    # One live preparation at a time, built only when a candidate needs recall.
-    for exclusion in sorted(groups, key=lambda key: (key is not None, key or "")):
-        prepared = None
-        for index in groups[exclusion]:
-            early = _early_decision(items[index], represented)
-            if early is not None:
-                scored[index] = {
-                    "decision": early,
-                    "recall": None,
-                    "excluded_study_uid": exclusion,
-                }
-                continue
-            if prepared is None:
-                prepared = prepare_identity(parent, exclude_study_uid=exclusion)
-                if prepared.get("outcome") != "prepared":
-                    raise IdentityGrowthError(
-                        "parent_identity_teaching_invalid", str(prepared.get("reason"))
-                    )
-            scored[index] = admission_decision(
-                items[index],
-                parent,
-                prepared=prepared,
-                record_studies=record_studies,
-                represented=represented,
+    seen: set[str] = set()
+    sources: set[tuple[str, str]] = set()
+    decisions: list[dict[str, Any]] = []
+    admitted_ids: list[str] = []
+    admissions: list[dict[str, Any]] = []
+    shared = None
+    held_out: tuple[str | None, Mapping[str, Any] | None] = (None, None)
+    for candidate in candidates:
+        _check_candidate(candidate)
+        if candidate["case_id"] in seen:
+            raise IdentityGrowthError("duplicate_candidate_id", candidate["case_id"])
+        seen.add(candidate["case_id"])
+        sources.add(
+            (
+                str(candidate["source"].get("kind")),
+                str(candidate["source"].get("memory_revision")),
             )
-        del prepared
-    decisions = [entry["decision"] for entry in scored]
+        )
+        early = _early_decision(candidate, represented)
+        if early is not None:
+            decisions.append(early)
+            continue
+        study = candidate["study_uid"]
+        if study in record_studies:
+            if held_out[0] != study:
+                held_out = (study, _parent_preparation(parent, study))
+            prepared = held_out[1]
+        else:
+            if shared is None:
+                shared = _parent_preparation(parent, None)
+            prepared = shared
+        scored = admission_decision(
+            candidate,
+            parent,
+            prepared=prepared,
+            record_studies=record_studies,
+            represented=represented,
+        )
+        decisions.append(scored["decision"])
+        if scored["decision"]["state"] == "admitted":
+            admitted_ids.append(candidate["case_id"])
+            if not decisions_only:
+                admissions.append(
+                    _admission(candidate, scored, parent, parent_snapshot.sha256)
+                )
+    shared = held_out = None
     document = {
         "schema": DECISIONS_SCHEMA,
         "parent": {
@@ -1065,49 +1151,36 @@ def grow_identity_memory(
     data = _decisions_bytes(document)
     decisions_sha256 = hashlib.sha256(data).hexdigest()
     counts = dict(sorted(Counter(item["state"] for item in decisions).items()))
-    admitted = [
-        (items[index], entry)
-        for index, entry in enumerate(scored)
-        if entry["decision"]["state"] == "admitted"
-    ]
     receipt: dict[str, Any] = {
         "output": str(output),
         "decisions": str(output / DECISIONS_FILE),
         "decisions_sha256": decisions_sha256,
         "parent": dict(document["parent"]),
-        "candidate_count": len(items),
+        "candidate_count": len(decisions),
         "state_counts": counts,
-        "admitted_case_ids": [candidate["case_id"] for candidate, _ in admitted],
+        "admitted_case_ids": list(admitted_ids),
         "child": None,
     }
-    if decisions_only or not admitted:
+    if decisions_only or not admitted_ids:
         output.mkdir(parents=True)
         _write_atomic(output / DECISIONS_FILE, data)
         receipt["outcome"] = "decisions_only" if decisions_only else "no_admissions"
         return receipt
-    sources = sorted(
-        {
-            (
-                str(candidate["source"].get("kind")),
-                str(candidate["source"].get("memory_revision")),
-            )
-            for candidate in items
-        }
-    )
     round_record = {
         "parent_manifest_sha256": parent_snapshot.sha256,
         "parent_revision": parent["revision"],
         "scoring": "frozen_parent_only",
         "decisions_schema": DECISIONS_SCHEMA,
         "decisions_sha256": decisions_sha256,
-        "candidate_count": len(items),
+        "candidate_count": len(decisions),
         "state_counts": counts,
-        "admitted_case_ids": list(receipt["admitted_case_ids"]),
+        "admitted_case_ids": list(admitted_ids),
         "candidate_sources": [
-            {"kind": kind, "memory_revision": revision} for kind, revision in sources
+            {"kind": kind, "memory_revision": revision}
+            for kind, revision in sorted(sources)
         ],
     }
-    child = _child_memory(parent, parent_snapshot.sha256, admitted, round_record)
+    child = _child_memory(parent, parent_snapshot.sha256, admissions, round_record)
     _verify_child(child)
     output.mkdir(parents=True)
     try:
@@ -1147,6 +1220,8 @@ __all__ = [
     "exclusion_studies",
     "grow_identity_memory",
     "harvest_candidates",
+    "harvest_inference",
+    "inference_record_paths",
     "location_support",
     "read_inference_records",
     "record_sha256",
