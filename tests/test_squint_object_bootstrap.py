@@ -530,13 +530,17 @@ def test_admit_publishes_only_confirmed_and_keeps_call_evidence(
     assert result["confirmed_case_ids"] == ids[:2]
     child = load_memory(output)
     parent_cases = {c["case_id"]: c for c in before["cases"]}
-    assert [c["case_id"] for c in child["cases"]] == ids[:2]
-    for case in child["cases"]:
+    objects = [c for c in child["cases"] if not c["subject"].startswith("diagnosis/")]
+    assert [c["case_id"] for c in objects] == ids[:2]
+    for case in objects:
         assert case == parent_cases[case["case_id"]]
         assert case["condition_calls"] == {"ACL": 1}
-        assert not case["subject"].startswith("diagnosis/")
         profile = full_profile_from_case(child, case)
         assert profile.source_id == case["study_uid"]
+    # The whole-condition cases are rebuilt from the confirmed objects alone.
+    assert [c["case_id"] for c in child["cases"][len(objects) :]] == [
+        f"squint-configuration:{uid}:ACL" for uid in UIDS[:2]
+    ]
     teaching = child["object_identity_teaching"]
     assert teaching["schema"] == TEACHING_SCHEMA
     assert teaching["review_sha256"] == pin
@@ -580,7 +584,11 @@ def test_admit_through_main_prints_result(seed, exported, tmp_path, capsys):
     )
     printed = json.loads(capsys.readouterr().out)
     assert printed["review_sha256"] == pin == result["review_sha256"]
-    assert [c["case_id"] for c in load_memory(output)["cases"]] == [ids[4]]
+    assert [c["case_id"] for c in load_memory(output)["cases"]] == [
+        ids[4],
+        f"squint-configuration:{UIDS[4]}:ACL",
+    ]
+    assert (printed["object_case_count"], printed["configuration_case_count"]) == (1, 1)
 
 
 def test_omitted_calls_are_accepted_as_uncalled(seed, exported):
@@ -741,7 +749,11 @@ def test_admit_publishes_a_negative_case_on_the_drawn_view(seed_views, tmp_path)
     assert result["confirmed_case_ids"] == [ids[0]]
     assert result["negative_case_ids"] == [ids[1]]
     child = load_memory(output)
-    assert [case["case_id"] for case in child["cases"]] == [ids[0]]
+    assert [
+        case["case_id"]
+        for case in child["cases"]
+        if not case["subject"].startswith("diagnosis/")
+    ] == [ids[0]]
     parent = {case["case_id"]: case for case in seed_views.snapshot.memory["cases"]}
     assert child["object_identity_cases"]["cases"] == [parent[ids[1]]]
     teaching = child["object_identity_teaching"]

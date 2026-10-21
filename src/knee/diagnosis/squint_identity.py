@@ -175,6 +175,107 @@ def _other_view_claims(row: Mapping[str, Any]) -> set[tuple[str, ...]] | None:
     return claimed
 
 
+def confirm_call_views(row: object) -> dict[str, Any]:
+    """The views one confirm call establishes its identity on.
+
+    Read exactly as ``prepare_identity`` reads a seed's call: its ``views``,
+    validated as unique exact view triples, or every view of the case when it
+    names none (``views`` is then None); its ``negative_views`` and
+    ``also_positive`` views give those views to other tissue and must not
+    overlap. Returns ``{"outcome": "views", "views": frozenset | None}`` or the
+    same named invalid_input ``prepare_identity`` gives.
+    """
+    if not isinstance(row, Mapping) or row.get("call") != "confirm":
+        return _invalid("teaching_call_not_confirm")
+    call_views = row.get("views")
+    selected: set[tuple[str, ...]] | None = None
+    if call_views is not None:
+        selected = _view_set(call_views)
+        if selected is None:
+            return _invalid("teaching_call_views_invalid")
+    other_claims = _other_view_claims(row)
+    if other_claims is None:
+        return _invalid("teaching_call_views_invalid")
+    if other_claims and (selected is None or selected & other_claims):
+        return _invalid("teaching_call_views_overlap")
+    return {
+        "outcome": "views",
+        "views": None if selected is None else frozenset(selected),
+    }
+
+
+def identity_condition_views(memory: object) -> dict[str, Any]:
+    """Where each object case's identity holds, found as identity recall finds it.
+
+    CLASSICAL_AI_BUILD_DESIGN §5.1: a case's condition evidence speaks only
+    through the views where its identity holds. A case's identity record is
+    the one ``prepare_identity`` makes a seed of: its id is in
+    ``confirmed_case_ids`` and exactly one call row names it, a confirm. A case
+    without one has its identity established in no view. Returns
+    ``{"outcome": "scoped", "views": {case_id: frozenset | None}, "calls":
+    {candidate_id: (row, ...)}}``, None meaning every view, or the named
+    invalid_input ``prepare_identity`` gives for the same teaching. Negative and
+    alternative identity records are never read here: they live outside
+    ``cases`` and carry no condition evidence.
+    """
+    root = _mapping(memory)
+    if root is None:
+        return _invalid("memory_must_be_object")
+    cases = root.get("cases")
+    if not isinstance(cases, Sequence) or isinstance(cases, (str, bytes)):
+        return _invalid("memory_cases_required")
+    teaching = _mapping(root.get("object_identity_teaching"))
+    if teaching is None:
+        return _invalid("object_identity_teaching_required")
+    if teaching.get("schema") != TEACHING_SCHEMA:
+        return _invalid("object_identity_teaching_schema_mismatch")
+    confirmed = teaching.get("confirmed_case_ids")
+    calls = teaching.get("calls")
+    if not isinstance(confirmed, Sequence) or isinstance(confirmed, (str, bytes)):
+        return _invalid("confirmed_case_ids_required")
+    if not all(isinstance(item, str) and item for item in confirmed):
+        return _invalid("confirmed_case_ids_invalid")
+    if not isinstance(calls, Sequence) or isinstance(calls, (str, bytes)):
+        return _invalid("teaching_calls_required")
+    if not all(isinstance(row, Mapping) for row in calls):
+        return _invalid("teaching_call_row_invalid")
+    confirmed_set = set(confirmed)
+    rows_by_id: dict[str, list[Mapping]] = {}
+    for row in calls:
+        candidate = row.get("candidate_id")
+        if isinstance(candidate, str):
+            rows_by_id.setdefault(candidate, []).append(row)
+    views: dict[str, frozenset | None] = {}
+    for case in cases:
+        if not isinstance(case, Mapping):
+            continue
+        case_id = case.get("case_id")
+        if not isinstance(case_id, str) or case_id not in confirmed_set:
+            continue
+        rows = rows_by_id.get(case_id, [])
+        if len(rows) != 1 or rows[0].get("call") != "confirm":
+            continue
+        subject = case.get("subject")
+        study = case.get("study_uid")
+        if not isinstance(subject, str) or not subject:
+            return _invalid("seed_case_subject_invalid")
+        if not isinstance(study, str) or not study:
+            return _invalid("seed_case_study_uid_invalid")
+        if subject.startswith("diagnosis/"):
+            continue
+        if case_id in views:
+            return _invalid("duplicate_seed_case_id")
+        resolved = confirm_call_views(rows[0])
+        if resolved["outcome"] != "views":
+            return resolved
+        views[case_id] = resolved["views"]
+    return {
+        "outcome": "scoped",
+        "views": views,
+        "calls": {candidate: tuple(rows) for candidate, rows in rows_by_id.items()},
+    }
+
+
 def _record_parts(record: Mapping[str, Any]) -> tuple | dict[str, Any]:
     """Subject, study, exact banks and procedure of one identity-case record."""
     subject = record.get("subject")

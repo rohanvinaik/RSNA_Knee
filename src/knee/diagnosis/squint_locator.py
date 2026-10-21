@@ -12,12 +12,15 @@ import math
 import time
 from collections.abc import Mapping, Sequence
 from decimal import Decimal, InvalidOperation
+from functools import lru_cache
 from typing import Any
 
 import numpy as np
 
 RECALL_CACHE_SCHEMA = "knee.squint-recall-cache/v1"
 _UNSELECTED = object()
+_IDENTITY_SCOPE_SCHEMA = "knee.squint-identity-condition-scope/v1"
+_ROLE_QUALIFIER = "object/"
 
 
 def _selection_names(
@@ -167,6 +170,187 @@ def _case_questions(case: Mapping[str, Any]) -> set[str]:
     return set()
 
 
+def _identity_condition_scope(memory: Mapping[str, Any]) -> dict[str, Any] | None:
+    """Where identity teaching lets each case's condition evidence speak.
+
+    None for a memory without ``object_identity_teaching``: nothing is scoped
+    and every bank speaks as before. Otherwise the identity reader's record
+    (``squint_identity.identity_condition_views``); a teaching it cannot read
+    raises ValueError with its named reason, never a fallback to every bank.
+    """
+    if "object_identity_teaching" not in memory:
+        return None
+    from knee.diagnosis.squint_identity import identity_condition_views
+
+    scope = identity_condition_views(memory)
+    if scope.get("outcome") != "scoped":
+        raise ValueError(str(scope.get("reason", "identity_teaching_invalid")))
+    return scope
+
+
+@lru_cache(maxsize=65536)
+def _bank_view(name: str) -> tuple[str, ...] | None:
+    """The acquisition view one bare v2 bank name carries, else None."""
+    from knee.diagnosis.squint_interfaces import parse_territory_bank_name
+
+    fields = parse_territory_bank_name(name)
+    view = fields.get("view") if fields is not None else None
+    if (
+        not isinstance(view, list)
+        or len(view) != 3
+        or not all(isinstance(part, str) for part in view)
+    ):
+        return None
+    return tuple(view)
+
+
+def _identity_view_banks(banks: Mapping[str, Any], views: frozenset) -> dict[str, Any]:
+    """The banks read in one of the views; a bank with no readable view is withheld."""
+    return {
+        name: counts
+        for name, counts in banks.items()
+        if isinstance(name, str) and _bank_view(name) in views
+    }
+
+
+def _configuration_identity_banks(
+    banks: Mapping[str, Any],
+    study_uid: object,
+    views: Mapping[str, frozenset | None],
+    role_cases: Mapping[tuple[str, str], str | None],
+) -> dict[str, Any]:
+    """Each role's qualified banks, kept only through that role's object case.
+
+    The role's object case is the study's one object case of that subject, the
+    same join ``with_configuration_cases`` composes the role from. A role whose
+    case is absent, ambiguous or confirmed nowhere carries nothing.
+    """
+    kept: dict[str, Any] = {}
+    for name, counts in banks.items():
+        if not isinstance(name, str) or not name.startswith(_ROLE_QUALIFIER):
+            continue
+        role, separator, inner = name[len(_ROLE_QUALIFIER) :].partition("/")
+        if not separator or not role or not isinstance(study_uid, str):
+            continue
+        role_case = role_cases.get((study_uid, role))
+        if role_case is None or role_case not in views:
+            continue
+        allowed = views[role_case]
+        if allowed is None or _bank_view(inner) in allowed:
+            kept[name] = counts
+    return kept
+
+
+def _scoped_cases(cases: Sequence, scope: Mapping[str, Any] | None) -> Sequence:
+    """Index-aligned cases holding only the banks their identity lets speak.
+
+    CLASSICAL_AI_BUILD_DESIGN §5.1: identity scope decides diagnosis scope.
+    Without identity teaching (``scope`` None) this is the case list itself.
+    With it, a whole-case confirm leaves its case as it is; any other object
+    case becomes a shallow copy whose profile keeps only the banks of its
+    confirm call's views, and none when no confirm names it. A configuration
+    case keeps each role's banks only through that role's object case. Every
+    bank producer of condition preparation reads this one view, so no matrix,
+    envelope or selected-bank union holds a withheld bank. The stored case and
+    its payload are never changed.
+    """
+    if scope is None:
+        return cases
+    views: Mapping[str, frozenset | None] = scope["views"]
+    role_cases: dict[tuple[str, str], str | None] = {}
+    for case in cases:
+        if not isinstance(case, Mapping):
+            continue
+        subject, study, case_id = (
+            case.get("subject"),
+            case.get("study_uid"),
+            case.get("case_id"),
+        )
+        if (
+            isinstance(subject, str)
+            and not subject.startswith("diagnosis/")
+            and isinstance(study, str)
+            and isinstance(case_id, str)
+        ):
+            key = (study, subject)
+            role_cases[key] = None if key in role_cases else case_id
+    scoped: list = []
+    for case in cases:
+        profile = case.get("profile") if isinstance(case, Mapping) else None
+        subject = case.get("subject") if isinstance(case, Mapping) else None
+        banks = profile.get("banks") if isinstance(profile, Mapping) else None
+        if not isinstance(banks, Mapping) or not isinstance(subject, str):
+            scoped.append(case)
+            continue
+        if subject.startswith("diagnosis/"):
+            kept = _configuration_identity_banks(
+                banks, case.get("study_uid"), views, role_cases
+            )
+        else:
+            case_id = case.get("case_id")
+            if not isinstance(case_id, str) or case_id not in views:
+                kept = {}
+            elif views[case_id] is None:
+                scoped.append(case)
+                continue
+            else:
+                kept = _identity_view_banks(banks, views[case_id])
+        if len(kept) == len(banks):
+            scoped.append(case)
+        else:
+            scoped.append({**case, "profile": {**profile, "banks": kept}})
+    return scoped
+
+
+def _condition_cases(memory: Mapping[str, Any]) -> Sequence:
+    """The memory's cases as condition preparation and recall read them."""
+    return _scoped_cases(memory.get("cases", ()), _identity_condition_scope(memory))
+
+
+def _identity_scope_projection(
+    cases: Sequence, scope: Mapping[str, Any]
+) -> dict[str, Any]:
+    """What decides each present object case's speaking views.
+
+    The recall fingerprint binds it, so a preparation made before identity
+    scoping, or for other identity calls, is never reused as current. Only the
+    view-deciding call fields enter: lineage such as notes or reader does not,
+    nor negative and alternative identity records, which preparation never
+    reads.
+    """
+    views = scope["views"]
+    calls = scope["calls"]
+    entries: dict[str, Any] = {}
+    for case in cases:
+        if not isinstance(case, Mapping):
+            continue
+        case_id, subject = case.get("case_id"), case.get("subject")
+        if (
+            not isinstance(case_id, str)
+            or not isinstance(subject, str)
+            or subject.startswith("diagnosis/")
+        ):
+            continue
+        if case_id not in views:
+            speaking: object = "identity_unasserted"
+        elif views[case_id] is None:
+            speaking = "whole_case"
+        else:
+            speaking = sorted(list(view) for view in views[case_id])
+        entries[case_id] = {
+            "calls": [
+                {
+                    key: row[key]
+                    for key in ("call", "views", "negative_views", "also_positive")
+                    if key in row
+                }
+                for row in calls.get(case_id, ())
+            ],
+            "speaking_views": speaking,
+        }
+    return {"schema": _IDENTITY_SCOPE_SCHEMA, "cases": entries}
+
+
 def recall_source_fingerprint(
     memory: Mapping[str, Any], *, selections: object = _UNSELECTED
 ) -> str:
@@ -195,9 +379,15 @@ def recall_source_fingerprint(
         "cases": source_cases,
         "censors": censors,
     }
+    # Identity teaching decides which banks speak (§5.1); bind what decides it.
+    scope = _identity_condition_scope(memory)
+    if scope is not None:
+        payload["identity_condition_scope"] = _identity_scope_projection(cases, scope)
     selected = _declared_selections(memory, selections)
     if selected is not None:
-        payload["selection_identity"] = _selection_state(cases, selected)[0]
+        payload["selection_identity"] = _selection_state(
+            _scoped_cases(cases, scope), selected
+        )[0]
     try:
         encoded = json.dumps(
             payload, sort_keys=True, separators=(",", ":"), allow_nan=False
@@ -251,6 +441,10 @@ def _runtime_recall_cache(
             return None
     selections = stored.get("selections")
     identities, question_banks = {}, {}
+    try:
+        condition_cases = _condition_cases(memory)
+    except (ImportError, ValueError):
+        return None
     if selections is None:
         try:
             if _declared_selections(memory, _UNSELECTED) is not None:
@@ -259,7 +453,7 @@ def _runtime_recall_cache(
             return None
     if selections is not None:
         try:
-            identities, question_banks = _selection_state(cases, selections)
+            identities, question_banks = _selection_state(condition_cases, selections)
         except (ImportError, TypeError, ValueError):
             return None
         if stored.get("selection_identity") != identities:
@@ -267,7 +461,7 @@ def _runtime_recall_cache(
     case_banks = (
         _selected_case_bank_union(question_banks)
         if selections is not None
-        else _validated_case_banks(cases)
+        else _validated_case_banks(condition_cases)
     )
     subjects = sorted(
         {
@@ -724,6 +918,11 @@ def prepare_recall(
         not isinstance(exclude_study_uid, str) or not exclude_study_uid
     ):
         return {"outcome": "invalid_input", "reason": "excluded_study_uid_invalid"}
+    try:
+        # Identity scope decides diagnosis scope (§5.1), before any bank is read.
+        condition_cases = _scoped_cases(cases, _identity_condition_scope(memory))
+    except ValueError as error:
+        return {"outcome": "invalid_input", "reason": str(error)}
     if selection is not _UNSELECTED:
         if selections is not _UNSELECTED:
             return {
@@ -738,7 +937,9 @@ def prepare_recall(
     try:
         selections = _declared_selections(memory, selections)
         selection_identity, question_banks = (
-            _selection_state(cases, selections) if selections is not None else ({}, {})
+            _selection_state(condition_cases, selections)
+            if selections is not None
+            else ({}, {})
         )
     except ImportError:
         return {
@@ -819,7 +1020,7 @@ def prepare_recall(
     case_banks = (
         _selected_case_bank_union(question_banks)
         if selections is not None
-        else _validated_case_banks(cases)
+        else _validated_case_banks(condition_cases)
     )
     if selections is not None:
         questions = set(selections)
@@ -1037,7 +1238,7 @@ def persisted_recall_cache(
     if (
         selections is not None
         and prepared.get("selection_identity")
-        != _selection_state(memory.get("cases", ()), selections)[0]
+        != _selection_state(_condition_cases(memory), selections)[0]
     ):
         raise ValueError("recall_preparation_selection_identity_mismatch")
     return {
@@ -1969,6 +2170,7 @@ def recall_object(
     selected_cases: list[
         tuple[int, Mapping[str, Any], int, Mapping[str, Sequence[int]] | None]
     ] = []
+    condition_cases: Sequence | None = None
     for case_index in selected_indices:
         if type(case_index) is not int or not 0 <= case_index < len(cases):
             continue
@@ -1993,10 +2195,17 @@ def recall_object(
             continue
         banks = case_profile_banks.get(case_index)
         if banks is None:
+            # Read the profile as preparation does: only identity-view banks.
+            if condition_cases is None:
+                try:
+                    condition_cases = _condition_cases(memory)
+                except ValueError as error:
+                    return {**refusal, "outcome": "invalid_input", "reason": str(error)}
+            scoped_profile = condition_cases[case_index].get("profile")
             banks = (
-                _selected_profile_banks(selection, subject, case.get("profile"))
+                _selected_profile_banks(selection, subject, scoped_profile)
                 if selected
-                else _banks(case.get("profile"))
+                else _banks(scoped_profile)
             )
         selected_cases.append((case_index, case, sign, banks))
     aligned_banks = [banks for _case_index, _case, _sign, banks in selected_cases]

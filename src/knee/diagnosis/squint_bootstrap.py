@@ -7,7 +7,10 @@ is an ordinary negative identity case of the proposed identity (-1): a real case
 on that question's negative side, never a veto. ``also_positive`` records a
 known alternative identity of the pictured support (+1 on that identity).
 Unsure writes nothing. Negative and alternative-identity records are kept apart
-from the cases diagnosis recall reads. Diagnosis fields are never edited.
+from the cases diagnosis recall reads. Diagnosis fields of object cases are
+never edited; the whole-condition configuration cases are rebuilt from the
+confirmed object cases by the existing builder, each role on the views where
+its object's identity holds (CLASSICAL_AI_BUILD_DESIGN §5.1).
 """
 
 from __future__ import annotations
@@ -18,12 +21,17 @@ from collections.abc import Collection, Mapping, Sequence
 from pathlib import Path
 from typing import Any
 
+from knee.diagnosis.squint_configurations import (
+    ConfigurationProfileError,
+    with_configuration_cases,
+)
 from knee.diagnosis.squint_interfaces import parse_territory_bank_name
 from knee.diagnosis.squint_memory import (
     MemorySnapshot,
     SquintMemoryError,
     _full_profile_from_validated_case,
     _json_sha256,
+    _link_configuration_full_profiles,
     _validate_memory,
     full_profile_from_case,
     save_memory,
@@ -573,6 +581,60 @@ def _check_output(output: object, snapshot: MemorySnapshot) -> Path:
     return output
 
 
+def _rebuilt_configurations(
+    source: Mapping[str, Any], child: Mapping[str, Any]
+) -> tuple[list[dict[str, Any]], dict[str, Any] | None, str]:
+    """Whole-condition cases rebuilt from the child's confirmed object cases.
+
+    The existing builder composes each labelled question of each confirmed
+    study exactly as ``compile_bootstrap`` does, from the confirmed object
+    cases alone, each role limited to the views where that object's identity
+    holds: the one condition view preparation reads (``squint_locator``).
+    Missing roles stay explicit, and the study label stays the configuration's
+    own call with its own scope. Negative and alternative identity records live
+    outside ``cases`` and never become roles. A source with no label ledger
+    has no labels to rebuild from, so the child carries none, as before.
+    Returns (configuration cases, the child's ledger rows or None, revision).
+    """
+    ledger = source.get("label_ledger")
+    if ledger is None:
+        return [], None, child["revision"]
+    if not isinstance(ledger, dict):
+        raise _fail("label_ledger_invalid")
+    from knee.diagnosis.squint_identity import identity_condition_views
+    from knee.diagnosis.squint_locator import _scoped_cases, _source
+
+    cases = child["cases"]
+    scope = identity_condition_views(child)
+    if scope.get("outcome") != "scoped":
+        raise _fail("child_identity_teaching_invalid")
+    roles = list(_scoped_cases(cases, scope))
+    for case, role in zip(cases, roles, strict=True):
+        if case["profile"]["banks"] and not role["profile"]["banks"]:
+            raise _fail("confirmed_views_hold_no_banks")
+    procedures = {_source(case["profile"]).get("procedure") for case in cases}
+    if len(procedures) > 1:
+        raise _fail("configuration_procedure_mixed")
+    rows = {
+        uid: copy.deepcopy(ledger[uid])
+        for uid in sorted({case["study_uid"] for case in cases})
+        if uid in ledger
+    }
+    staged = {
+        "schema": child["schema"],
+        "revision": child["revision"],
+        "cases": roles,
+        "label_ledger": rows,
+    }
+    try:
+        built = with_configuration_cases(
+            staged, **({"procedure": procedures.pop()} if procedures else {})
+        )
+    except ConfigurationProfileError as error:
+        raise _fail(f"configuration_rebuild_{error.code}") from error
+    return copy.deepcopy(built["cases"][len(roles) :]), rows, built["revision"]
+
+
 def publish_seed_memory(
     source_snapshot: MemorySnapshot,
     review: Any,
@@ -586,8 +648,12 @@ def publish_seed_memory(
     identity cases and alternative-identity positives keep their whole source
     case records in ``object_identity_cases``, which only identity teaching
     reads: their condition calls belong to their own proposed subject and never
-    reach diagnosis recall. Negative-only teaching publishes; a call file that
-    writes no identity case of either sign is refused.
+    reach diagnosis recall. The whole-condition configuration cases are rebuilt
+    from the confirmed object cases and the source's label ledger rows for
+    their studies, each role on the views where its object's identity holds
+    (``_rebuilt_configurations``), so the published child keeps a diagnosis
+    voice. Negative-only teaching publishes; a call file that writes no
+    identity case of either sign is refused.
     """
     if (
         not isinstance(source_snapshot, MemorySnapshot)
@@ -712,6 +778,12 @@ def publish_seed_memory(
     for key in ("source", "object_order"):
         if key in memory:
             child[key] = copy.deepcopy(memory[key])
+    configurations, ledger, revision = _rebuilt_configurations(memory, child)
+    if ledger is not None:
+        child["label_ledger"] = ledger
+        child["revision"] = revision
+        child["cases"] = [*cases, *configurations]
+        _link_configuration_full_profiles(child)
     try:
         _validate_memory(child)
         for case in cases:
@@ -732,6 +804,8 @@ def publish_seed_memory(
         "manifest": receipt["manifest"],
         "sha256": receipt["sha256"],
         "case_count": receipt["case_count"],
+        "object_case_count": len(cases),
+        "configuration_case_count": len(configurations),
         "confirmed_case_ids": list(validated["confirmed_case_ids"]),
         "negative_case_ids": list(validated["negative_case_ids"]),
         "alternative_positive_ids": [

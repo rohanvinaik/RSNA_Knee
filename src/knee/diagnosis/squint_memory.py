@@ -9,6 +9,7 @@ profiles can be read offline without opening the original H5 product.
 
 from __future__ import annotations
 
+import copy
 import csv
 import hashlib
 import json
@@ -16,7 +17,7 @@ import math
 import os
 import tempfile
 import time
-from collections.abc import Callable, Mapping
+from collections.abc import Callable, Mapping, Sequence
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
@@ -326,6 +327,150 @@ def _condition_calls(
         else:
             scopes[question] = "normal_for_this_condition_only"
     return calls, scopes
+
+
+CONDITION_CARRY_SCHEMA = "knee.squint-condition-carry/v1"
+#: Conditions a study label states for some eligible bone without naming which
+#: (HOW_TO_BUILD, "Preserve study-label scope through bone recall").
+MULTI_SITE_BONE_CONDITIONS = ("Fracture", "Contusion")
+#: The scope of a multi-site bone positive that a supplied call localizes to
+#: this object. The condition combiner keeps such a positive; it holds a
+#: ``positive_condition_presentation`` one unknown, because the study label
+#: alone does not say which bone.
+LOCALIZED_PRESENTATION_SCOPE = "localized_condition_presentation"
+_LOCALIZED_CALL_KEYS = ("question", "study_uid", "subject", "digit", "source")
+
+
+def _localized_call_valid(record: object) -> bool:
+    if not isinstance(record, Mapping) or not set(_LOCALIZED_CALL_KEYS) <= set(record):
+        return False
+    return (
+        record["question"] in LABELS
+        and all(
+            isinstance(record[key], str) and record[key]
+            for key in ("study_uid", "subject")
+        )
+        and type(record["digit"]) is int
+        and record["digit"] in (-1, 0, 1)
+        and isinstance(record["source"], Mapping)
+        and bool(record["source"])
+    )
+
+
+def carry_condition_calls(
+    case: Mapping[str, Any],
+    identity_call: Mapping[str, Any],
+    labels: Mapping[str, int | None],
+    *,
+    localized_calls: Sequence[Mapping[str, Any]] = (),
+) -> dict[str, Any]:
+    """A study's labels on one recognized object, carried across its identity views.
+
+    CLASSICAL_AI_BUILD_DESIGN §5.1: a diagnosis belongs to its object, so a
+    positive for a condition implicating it is a positive presentation in
+    every view where its identity holds at once, and its normal presentations
+    speak through those views alike. ``identity_call`` is the case's confirm
+    call; its views are read as identity recall reads them (every view of the
+    case when it names none), and its ``negative_views``, other tissue, never
+    carry. The calls and scopes are exactly ``_condition_calls``'s: a normal
+    label never carries beyond them and no call is made where the label is
+    blank. A Fracture or Contusion label stays ``positive_condition_presentation``
+    (some bone, not which) unless ``localized_calls`` holds a sourced positive
+    naming this study's object; only then is it this object's presentation
+    (``LOCALIZED_PRESENTATION_SCOPE``). A localized call never creates or flips
+    a call: one that cannot apply is kept, by name, in
+    ``unapplied_localized_calls``. Calls naming another object are not read.
+    Malformed input raises ``SquintMemoryError``.
+    """
+    from knee.diagnosis.squint_identity import confirm_call_views
+    from knee.diagnosis.squint_locator import _bank_view
+
+    if not isinstance(case, Mapping):
+        raise SquintMemoryError("carry_case_invalid")
+    case_id, study_uid, subject = (
+        case.get("case_id"),
+        case.get("study_uid"),
+        case.get("subject"),
+    )
+    if not all(
+        isinstance(value, str) and value for value in (case_id, study_uid, subject)
+    ):
+        raise SquintMemoryError("carry_case_identity_invalid")
+    if subject.startswith("diagnosis/"):
+        raise SquintMemoryError("carry_case_not_object")
+    profile = case.get("profile")
+    banks = profile.get("banks") if isinstance(profile, Mapping) else None
+    if not isinstance(banks, Mapping):
+        raise SquintMemoryError("carry_case_profile_invalid")
+    if (
+        not isinstance(identity_call, Mapping)
+        or identity_call.get("candidate_id") != case_id
+    ):
+        raise SquintMemoryError("carry_identity_call_not_this_case")
+    resolved = confirm_call_views(identity_call)
+    if resolved["outcome"] != "views":
+        raise SquintMemoryError(str(resolved["reason"]))
+    if resolved["views"] is None:
+        # A whole-case confirm holds every view the case's banks are read in.
+        identity_scope = "whole_case"
+        read_views = (_bank_view(name) for name in banks if isinstance(name, str))
+        views = sorted({view for view in read_views if view is not None})
+    else:
+        identity_scope = "confirmed_views"
+        views = sorted(resolved["views"])
+    if not isinstance(labels, Mapping) or any(
+        labels.get(question) is not None
+        and (
+            type(labels.get(question)) is not int or labels.get(question) not in (0, 1)
+        )
+        for question in IMPLICATED_OBJECTS.get(subject, ())
+    ):
+        raise SquintMemoryError("carry_labels_invalid")
+    if isinstance(localized_calls, (str, bytes, Mapping)) or not isinstance(
+        localized_calls, Sequence
+    ):
+        raise SquintMemoryError("carry_localized_calls_invalid")
+    calls, scopes = _condition_calls(subject, dict(labels))
+    applied: dict[str, list[dict[str, Any]]] = {}
+    unapplied: list[dict[str, Any]] = []
+    for record in localized_calls:
+        if not _localized_call_valid(record):
+            raise SquintMemoryError("carry_localized_call_invalid")
+        if record["study_uid"] != study_uid or record["subject"] != subject:
+            continue
+        question = record["question"]
+        if record["digit"] != 1:
+            reason = "carry_is_positive_only"
+        elif question not in IMPLICATED_OBJECTS.get(subject, ()):
+            reason = "condition_not_implicated"
+        elif question not in MULTI_SITE_BONE_CONDITIONS:
+            reason = "condition_not_multi_site"
+        elif labels.get(question) is None:
+            reason = "label_absent"
+        elif labels.get(question) != 1:
+            reason = "label_not_positive"
+        else:
+            reason = None
+        if reason is not None:
+            unapplied.append({"call": copy.deepcopy(dict(record)), "reason": reason})
+            continue
+        scopes[question] = LOCALIZED_PRESENTATION_SCOPE
+        applied.setdefault(question, []).append(copy.deepcopy(dict(record)))
+    view_lists = [list(view) for view in views]
+    return {
+        "schema": CONDITION_CARRY_SCHEMA,
+        "case_id": case_id,
+        "study_uid": study_uid,
+        "subject": subject,
+        "identity_scope": identity_scope,
+        "identity_views": view_lists,
+        "condition_calls": calls,
+        "presentation_scope": scopes,
+        "speaks_through": {question: copy.deepcopy(view_lists) for question in calls},
+        "labels": {question: labels[question] for question in calls},
+        "localized_calls": applied,
+        "unapplied_localized_calls": unapplied,
+    }
 
 
 def _coordinate_bbox(

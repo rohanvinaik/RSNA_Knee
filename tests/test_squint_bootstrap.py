@@ -17,6 +17,7 @@ from knee.diagnosis.squint_bootstrap import (
     REVIEW_SCHEMA,
     TEACHING_SCHEMA,
     SquintBootstrapError,
+    _rebuilt_configurations,
     build_review,
     publish_seed_memory,
     validate_calls,
@@ -260,16 +261,28 @@ def test_publish_keeps_only_confirmed_objects(seed, tmp_path: Path) -> None:
     assert result["outcome"] == "published"
     child = load_memory(out)
     parent_cases = {c["case_id"]: c for c in before["cases"]}
-    assert [c["case_id"] for c in child["cases"]] == ids[:2]
-    for case in child["cases"]:
+    objects = [c for c in child["cases"] if not c["subject"].startswith("diagnosis/")]
+    assert [c["case_id"] for c in objects] == ids[:2]
+    for case in objects:
         assert case == parent_cases[case["case_id"]]
-        assert not case["subject"].startswith("diagnosis/")
+    # The published seed keeps a diagnosis voice: its whole-condition cases are
+    # rebuilt from the confirmed object cases alone. A whole-case confirm keeps
+    # its role whole, so each rebuilt case is the parent's own.
+    configurations = child["cases"][len(objects) :]
+    assert [c["case_id"] for c in configurations] == [
+        f"squint-configuration:{uid}:ACL" for uid in UIDS[:2]
+    ]
+    for case in configurations:
+        assert case == parent_cases[case["case_id"]]
+    assert (result["object_case_count"], result["configuration_case_count"]) == (2, 2)
+    assert child["label_ledger"] == {
+        uid: before["label_ledger"][uid] for uid in UIDS[:2]
+    }
     assert set(child["source_identities"]) == {"study-a", "study-b"}
     assert len(child["full_profile_payloads"]["payloads"]) == 2
     assert len(child["full_profile_contexts"]["contexts"]) == 2
     assert child["full_profile_retention"]["payload_count"] == 2
     assert child["revision"] != before["revision"]
-    assert "label_ledger" not in child
     assert not (out / "recall-preparation.json").exists()
     teaching = child["object_identity_teaching"]
     assert teaching["schema"] == TEACHING_SCHEMA
@@ -289,11 +302,16 @@ def test_publish_keeps_only_confirmed_objects(seed, tmp_path: Path) -> None:
         "schema": IDENTITY_CASES_SCHEMA,
         "cases": [],
     }
-    for uid, case in zip(UIDS[:2], child["cases"], strict=True):
+    for uid, case in zip(UIDS[:2], objects, strict=True):
         expected = profiles_from_manifest(seed.manifests[uid], mode="full")[0]
         actual = full_profile_from_case(child, case)
         assert actual.bundle == expected.bundle
         assert actual.source_id == uid
+    for uid, case in zip(UIDS[:2], configurations, strict=True):
+        expected = profiles_from_manifest(seed.manifests[uid], mode="full")[0]
+        assert full_profile_from_case(child, case, subject="femur").bundle == (
+            expected.bundle
+        )
     assert snapshot.memory == before
 
 
@@ -770,6 +788,20 @@ def _publish(signed: SimpleNamespace, review: dict, rows: list, name: str):
     return result, load_memory(out), calls
 
 
+def object_ids(memory: dict) -> list[str]:
+    return [
+        c["case_id"]
+        for c in memory["cases"]
+        if not c["subject"].startswith("diagnosis/")
+    ]
+
+
+def configuration_ids(memory: dict) -> list[str]:
+    return [
+        c["case_id"] for c in memory["cases"] if c["subject"].startswith("diagnosis/")
+    ]
+
+
 def test_reject_publishes_an_ordinary_negative_case_beside_the_cases(signed):
     parent = {c["case_id"]: c for c in signed.snapshot.memory["cases"]}
     review = _signed_review(signed, [FA, PB, FC, PD], {FC: [SAG, COR], PB: [SAG]})
@@ -782,7 +814,12 @@ def test_reject_publishes_an_ordinary_negative_case_beside_the_cases(signed):
     result, child, calls = _publish(signed, review, rows, "child")
     assert result["confirmed_case_ids"] == [FA, PB]
     assert result["negative_case_ids"] == [FC]
-    assert [case["case_id"] for case in child["cases"]] == [FA, PB]
+    assert object_ids(child) == [FA, PB]
+    # The rejected candidate is no configuration role: study-c composes nothing.
+    assert configuration_ids(child) == [
+        "squint-configuration:study-a:ACL",
+        "squint-configuration:study-b:PF OA",
+    ]
     table = child["object_identity_cases"]
     assert table["schema"] == IDENTITY_CASES_SCHEMA
     assert table["cases"] == [parent[FC]]
@@ -840,7 +877,7 @@ def test_confirm_with_negative_views_splits_one_candidate_by_view(signed):
     result, child, _ = _publish(signed, review, rows, "child")
     assert result["confirmed_case_ids"] == [FA, FC]
     assert result["negative_case_ids"] == [FC]
-    assert [case["case_id"] for case in child["cases"]] == [FA, FC]
+    assert object_ids(child) == [FA, FC]
     assert [r["case_id"] for r in child["object_identity_cases"]["cases"]] == [FC]
     assert child["object_identity_teaching"]["negative_views"] == {FC: [SAG]}
     prepared = prepare_identity(child)
@@ -861,7 +898,9 @@ def test_also_positive_teaches_the_known_alternative_identity_outside_cases(sign
     result, child, _ = _publish(signed, review, rows, "child")
     entry = f"{PD}::also_positive::femur"
     assert result["alternative_positive_ids"] == [entry]
-    assert [case["case_id"] for case in child["cases"]] == [FA, PB]
+    assert object_ids(child) == [FA, PB]
+    # Neither the rejected patella nor its alternative femur becomes a role.
+    assert all(":study-d:" not in case_id for case_id in configuration_ids(child))
     # The record keeps its own subject and condition calls (patella, PF OA).
     assert child["object_identity_cases"]["cases"] == [parent[PD]]
     teaching = child["object_identity_teaching"]
@@ -901,7 +940,9 @@ def test_unsure_writes_nothing_on_its_proposed_identity(signed):
     assert [item["identity"] for item in teaching["alternative_positives"]] == ["femur"]
 
 
-def test_condition_recall_never_reads_identity_teaching(signed):
+def test_condition_recall_never_reads_negative_or_alternative_identity_records(signed):
+    # Confirm calls scope condition evidence to their views (CLASSICAL_AI_BUILD_
+    # DESIGN §5.1); rejects and alternatives, kept outside cases, never reach it.
     review = _signed_review(signed, [FA, PB, FC, PD], {FC: [SAG, COR], PD: [SAG, COR]})
     plain_rows = [_row(FA, "confirm"), _row(PB, "confirm")]
     taught_rows = [
@@ -927,6 +968,162 @@ def test_condition_recall_never_reads_identity_teaching(signed):
             )
     held_out = memory_view(taught, exclude_study_uids=("study-c",))
     assert [r["case_id"] for r in held_out["object_identity_cases"]["cases"]] == [PD]
+
+
+def test_seed_rebuilds_each_configuration_role_on_its_identity_views(signed):
+    """A role whose case is confirmed coronally contributes only coronal banks."""
+    review = _signed_review(signed, [FA, PB, FC, PD], {FC: [SAG, COR], PD: [SAG, COR]})
+    rows = [
+        _row(FA, "confirm"),
+        _row(PB, "confirm"),
+        _row(FC, "confirm", views=[COR], negative_views=[SAG]),
+        _row(PD, "reject", views=[SAG], also_positive=ALT_FEMUR_SAG),
+    ]
+    result, child, _ = _publish(signed, review, rows, "child")
+    parent = {case["case_id"]: case for case in signed.snapshot.memory["cases"]}
+    by_id = {case["case_id"]: case for case in child["cases"]}
+    assert object_ids(child) == [FA, PB, FC]
+    for case_id in (FA, PB, FC):
+        assert by_id[case_id] == parent[case_id]
+    # The rejected patella and its alternative femur are never roles.
+    assert configuration_ids(child) == [
+        "squint-configuration:study-a:ACL",
+        "squint-configuration:study-b:PF OA",
+        "squint-configuration:study-c:ACL",
+    ]
+    assert (result["object_case_count"], result["configuration_case_count"]) == (3, 3)
+    coronal = by_id["squint-configuration:study-c:ACL"]
+    assert set(coronal["profile"]["banks"]) == {"object/femur/" + territory(COR)}
+    source = coronal["profile"]["source"]
+    assert source["roles"]["femur"]["status"] == "present"
+    assert source["roles"]["femur"]["bank_count"] == 1
+    assert source["missing_roles"] == [
+        {"subject": subject, "status": "missing_object_case"}
+        for subject in ("acl", "tibia", "pcl")
+    ]
+    assert coronal["condition_calls"] == {"ACL": 1}
+    assert coronal["presentation_scope"] == {"ACL": "study_condition_configuration"}
+    assert coronal["label_attribution"]["ACL"]["source"] == "label_ledger"
+    assert (
+        coronal["full_profile_refs"]["femur"]["payload_ref"]
+        == (parent[FC]["full_profile"]["payload_ref"])
+    )
+    # A whole-case confirm keeps every bank of its role.
+    whole = by_id["squint-configuration:study-a:ACL"]
+    assert set(whole["profile"]["banks"]) == {
+        "object/femur/" + name for name in parent[FA]["profile"]["banks"]
+    }
+    ledger = signed.snapshot.memory["label_ledger"]
+    assert child["label_ledger"] == {
+        uid: ledger[uid] for uid in ("study-a", "study-b", "study-c")
+    }
+    # Preparation reads the role exactly as published: no sagittal femur bank.
+    prepared = prepare_recall(child)
+    index = [case["case_id"] for case in child["cases"]].index(coronal["case_id"])
+    assert set(prepared["case_profile_banks"][index]) == {
+        "object/femur/" + territory(COR)
+    }
+
+
+def test_rebuilt_configuration_keeps_the_study_scope_of_a_bone_positive(signed):
+    """The study label stays the configuration's call; the femur stays unlocalized."""
+    memory = copy.deepcopy(signed.snapshot.memory)
+    memory["label_ledger"]["study-c"]["Fracture"] = 1
+    femur = next(case for case in memory["cases"] if case["case_id"] == FC)
+    femur["condition_calls"]["Fracture"] = 1
+    femur["presentation_scope"]["Fracture"] = "positive_condition_presentation"
+    review = _signed_review(signed, [FC], {FC: [SAG, COR]})
+    calls, pin = _signed_calls(
+        review, [_row(FC, "confirm", views=[COR], negative_views=[SAG])]
+    )
+    out = signed.root / "fracture-child"
+    publish_seed_memory(
+        replace(signed.snapshot, memory=memory), review, calls, pin, out
+    )
+    child = load_memory(out)
+    by_id = {case["case_id"]: case for case in child["cases"]}
+    assert by_id[FC] == femur
+    assert by_id[FC]["presentation_scope"]["Fracture"] == (
+        "positive_condition_presentation"
+    )
+    fracture = by_id["squint-configuration:study-c:Fracture"]
+    assert fracture["condition_calls"] == {"Fracture": 1}
+    assert fracture["presentation_scope"] == {
+        "Fracture": "study_condition_configuration"
+    }
+    assert set(fracture["profile"]["banks"]) == {"object/femur/" + territory(COR)}
+    assert fracture["profile"]["source"]["missing_roles"] == [
+        {"subject": subject, "status": "missing_object_case"}
+        for subject in ("tibia", "patella", "fibula")
+    ]
+
+
+def test_a_rejected_candidate_beside_a_confirmed_one_is_only_a_missing_role():
+    """In one study a confirmed femur and a rejected patella: PF OA's patella
+    role is recorded missing, never composed from the rejected record."""
+    femur = {
+        "case_id": "squint-case:study-x:femur",
+        "study_uid": "study-x",
+        "subject": "femur",
+        "condition_calls": {"PF OA": 1},
+        "profile": {
+            "schema": "knee.squint-profile/v1",
+            "subject": "femur",
+            "banks": {territory(SAG): [3, 0, 0], territory(COR): [0, 0, 3]},
+            "source": {"procedure": PROCEDURE},
+        },
+        "regions": [],
+    }
+    patella = {**copy.deepcopy(femur), "case_id": "squint-case:study-x:patella"}
+    patella["subject"] = patella["profile"]["subject"] = "patella"
+    child = {
+        "schema": SCHEMA,
+        "revision": "seed-fixture",
+        "cases": [femur],
+        "object_identity_cases": {"schema": IDENTITY_CASES_SCHEMA, "cases": [patella]},
+        "object_identity_teaching": {
+            "schema": TEACHING_SCHEMA,
+            "confirmed_case_ids": [femur["case_id"]],
+            "negative_case_ids": [patella["case_id"]],
+            "negative_views": {patella["case_id"]: [SAG]},
+            "alternative_positives": [],
+            "calls": [
+                _row(femur["case_id"], "confirm", views=[COR]),
+                _row(patella["case_id"], "reject", views=[SAG]),
+            ],
+        },
+    }
+    labels = dict.fromkeys(LABELS)
+    labels["PF OA"] = 1
+    source = {"label_ledger": {"study-x": labels, "study-y": labels}}
+    configurations, ledger, revision = _rebuilt_configurations(source, child)
+    assert ledger == {"study-x": labels}
+    assert revision == "seed-fixture+question-configurations-v1"
+    [case] = configurations
+    assert case["case_id"] == "squint-configuration:study-x:PF OA"
+    assert set(case["profile"]["banks"]) == {"object/femur/" + territory(COR)}
+    assert case["profile"]["source"]["missing_roles"] == [
+        {"subject": subject, "status": "missing_object_case"}
+        for subject in ("patella", "patellar_cartilage", "trochlear_cartilage")
+    ]
+    assert case["presentation_scope"] == {"PF OA": "study_condition_configuration"}
+    assert child["cases"] == [femur]
+
+
+def test_seed_without_a_label_ledger_rebuilds_nothing(signed):
+    """No labels, no whole-condition cases: nothing is invented."""
+    memory = copy.deepcopy(signed.snapshot.memory)
+    del memory["label_ledger"]
+    review = _signed_review(signed, [FA], {})
+    calls, pin = _signed_calls(review, [_row(FA, "confirm")])
+    out = signed.root / "no-ledger-child"
+    result = publish_seed_memory(
+        replace(signed.snapshot, memory=memory), review, calls, pin, out
+    )
+    child = load_memory(out)
+    assert [case["case_id"] for case in child["cases"]] == [FA]
+    assert "label_ledger" not in child
+    assert result["configuration_case_count"] == 0
 
 
 SIGNED_REFUSALS = (
