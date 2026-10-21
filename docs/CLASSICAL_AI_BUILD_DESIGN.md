@@ -211,6 +211,17 @@ missing (§13 step 5).
 
 Apply relations against evidence about this study's anatomy. Partial bone planes may constrain an axis without defining a complete 3D point or volume. Use that available constraint in candidate generation and in plausibility checks, retaining which parts are observed and which remain priors. Do not wait for a complete three-plane reference when the relevant relation is already decidable.
 
+Most acquisition planes are oblique (over the 61 local studies the median tilt from the nearest body
+axis is 7°, the largest 38°; only 3 of 351 series lie exactly on an axis), so a partial reference's own
+plane rarely determines a body axis. Where neither a complete reference with its precision nor an
+exact-normal partial interval determines the axis, the anchor's interval on that axis is the exact
+projection of its own observed tile window onto the axis, computed by the same function that projects
+candidate windows (its window in the candidate's own series first, otherwise the union over its series,
+which can only add neutral overlap). That is observed geometry on both sides of the comparison, with no
+tolerance or map distance; each check records which construction it rested on. Because this lets more
+bone pairs be checked, its effect on anchor quarantine and placement is measured over the local studies
+before it is accepted.
+
 A window is not a measured tissue volume. Two alternative names for one candidate are rival interpretations, not two independently established objects occupying the same space. Consequently, overlapping windows or competing femur/tibia recall cannot trigger a blanket occupancy veto. An exclusion must follow from an applicable relation to established anatomy at the available precision; the source and anatomical meaning of that relation must remain inspectable.
 
 ## 8. What the training material must contain

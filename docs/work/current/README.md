@@ -111,7 +111,7 @@ decode goes to him with its episode.
 |---|---|---|
 | Signed-memory builder | returned; integrated in `20e37e3` | `negative-klines/builder/` |
 | Lane A: signed frozen-parent growth, harvest from inference records, `grow` CLI | running, isolated worktree | — |
-| Lane B: partial-plane anatomical checks | running, isolated worktree | — |
+| Lane B: partial-plane anatomical checks | integrated `0847ff2` (exact-normal partial intervals; fixture anatomy corrected `ec882a0`); follow-up running: anchor-window projection for oblique planes, with a before/after quarantine and placement account over the 61 local studies (a scope change, not an equivalent refactor) | real planes are oblique (median 7°, max 38°) |
 | Lane C: identity governs condition inputs in `infer_study` | running, isolated worktree | — |
 | Lane D: picture sheets for admissions (`sheets` CLI), local only | running, isolated worktree | — |
 | Lane E: diagnosis evidence speaks only through identity views; positives carry to every view where the object is present; whole-condition cases rebuilt from confirmed objects at seed publication | running, isolated worktree | the reproduced defect (a rejected sagittal bank answering Fracture) is its regression test |

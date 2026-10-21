@@ -603,9 +603,7 @@ def _complete_matrix_outputs(monkeypatch):
 #: Captured from squint_sanity at 1804e00, before partial references could supply
 #: an interval: SHA-256 of the canonical JSON (sorted keys, compact separators) of
 #: every matrix case's original-key projection (18234 bytes).
-COMPLETE_MATRIX_SHA256 = (
-    "7583bb6ea6922138532c88119e9f200dd6fffbd686ea592086ea0c87311ca910"
-)
+COMPLETE_MATRIX_SHA256 = "7583bb6ea6922138532c88119e9f200dd6fffbd686ea592086ea0c87311ca910"  # pragma: allowlist secret
 FEMUR_RULES = (
     "authored:femur:superior_to:tibia",
     "authored:patella:anterior_to:femur",
