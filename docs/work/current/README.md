@@ -1,10 +1,10 @@
 # Active task packet
 
-Sole populated current-state record; [FULL_BUILD_PLAN §13](../../FULL_BUILD_PLAN.md#13-context-stable-continuation-and-stop-points) owns this pointer. Revision **110**. Revision 109 is [preserved verbatim](../history/active-task-packet-revision-109.md). Historical instructions are not live jobs.
+Sole populated current-state record; [FULL_BUILD_PLAN §13](../../FULL_BUILD_PLAN.md#13-context-stable-continuation-and-stop-points) owns this pointer. Revision **111**. Revision 110 is [preserved verbatim](../history/active-task-packet-revision-110.md). Historical instructions are not live jobs.
 
 ## TASK ID / PACKET REVISION / STATE
 
-`SQUINT-TRAINING-UPGRADE-20261021` / `110` / paused for realignment: Rohan, «I'd like you to reread the "conversation" documents about how the AI layer is supposed to work. I think you've drifted». The lead stopped W12b and W12c (more production recognition of small parts) and is waiting for his answer; S1 and W13 run on.
+`SQUINT-TRAINING-UPGRADE-20261021` / `111` / paused for realignment: Rohan, «I'd like you to reread the "conversation" documents about how the AI layer is supposed to work. I think you've drifted». The lead stopped W12b and W12c (more production recognition of small parts) and is waiting for his answer; S1 runs on; W13 has returned.
 
 ## CURRENT REQUEST / AUTHORITATIVE EXCHANGES / ACTUAL AUTHORS
 
@@ -72,7 +72,7 @@ Worktrees under `/private/tmp/rsna-upgrade-20261021/<job>` (branch `upgrade/<job
 | W14 teaching round | Codex CLI, then Claude sub-agent | w14 | session sub-agent | RETURNED, PARKED for the teaching stage: command works mechanically, loop test admitted nothing new (`workers/w14/report.md`); found the ACL has a stored case in only 6 of 58 studies |
 | W12 residual executor | Claude sub-agent | w12 | session sub-agent | INTEGRATED 1f3db63, gated: no part's bounded outline decides until validated (`VALIDATED_OUTLINE_PARTS` empty) |
 | W7 recall reads only the selection | Codex CLI | w7 | baeddtawc | INTEGRATED (merged onto W8's memory view by the lead); production recall now needs the territory-v2 memory, v1 is refused by name |
-| W13 picture sheets | Claude sub-agent | w13 | session sub-agent | RUNNING |
+| W13 picture sheets | Claude sub-agent | w13 | session sub-agent | RETURNED, not integrated: 48 sheets (12 questions × proof and bursa × r4 and C1) in `workers/w13/sheets/`; 25 of the 71 stored cases drawn have their outline off the named object in at least one view (`workers/w13/report.md`) |
 | W12b own-outline slice order and validation on 58 | Claude sub-agent | w12b (base 1f3db63) | session sub-agent | STOPPED by the lead mid-run (partial edits in its worktree, unreviewed) |
 | S1 production locator writes territory-v2 queries, placed from the bones (merges W10) | Codex CLI | s1 (base 1f3db63) | background task b09bv720a | RUNNING |
 | W12c sagittal small parts over their own outline (ACL, PCL, synovium, patellar and trochlear cartilage) | Codex CLI | w12c (base 1f3db63) | background task b0gl8dmqh | STOPPED by the lead mid-run (partial edits in its worktree, unreviewed) |
