@@ -54,7 +54,7 @@ Worktrees under `/private/tmp/rsna-upgrade-20261021/<job>` (branch `upgrade/<job
 |---|---|---|---|---|
 | C1 true-location control | Codex CLI | c1 | b8rp85f3o | INTEGRATED (true-location mode); 58-study result in `workers/c1/run/` |
 | P1 push-check false positive | Codex CLI | p1 | background task bz9xdqmzx | VERIFIED by lead (48 focused tests); applied to `squint-upgrade`, not yet committed |
-| W1 leg map | Codex CLI | w1 | bofjc34sb, then revision w1-r2 bim2wmct2 | Returned; lead's picture review found the tile-maximum rule (the lead's) keeps noisy air; revision 2 (tile median) RUNNING |
+| W1 leg map | Codex CLI | w1 | bofjc34sb, revision w1-r2 bim2wmct2 | INTEGRATED 9295870 (median rule; lead packaged the patch after capacity stop; locator excludes only outside tiles; proof smoke exit 0) |
 | W2 territory writer | Codex CLI | w2 | bg3vmootl | INTEGRATED be221ff (38 focused tests) |
 | W4 teacher support to territory | Codex CLI | w4 | bfv17yqgc | INTEGRATED be221ff (763 regions unchanged; 568 supports resolved) |
 | W8 memory view | Codex CLI | w8 | bxk8eq2m3 | INTEGRATED 11da75d (160 focused tests) |
