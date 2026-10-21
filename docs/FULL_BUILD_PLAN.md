@@ -1035,7 +1035,7 @@ milestone before that dependency; do not label the whole competition solution co
 
 ## 13. Context-stable continuation and stop points
 
-**Active task ID:** `BUILD-WORKFLOW-PLAN-20261018`.
+**Active task ID:** `SQUINT-TRAINING-UPGRADE-20261021`.
 **Active packet:** [docs/work/current/README.md](work/current/README.md).
 
 This section is the only active-task index. The named packet is the only populated current-state
@@ -1673,3 +1673,9 @@ Authoritative design: docs/AI_DIAGNOSTIC_DESIGN.md. Frozen engineering interface
 ### Production execution correction, 2026-10-21
 
 Rohan identified the checkpoint's exhaustive locator and context-only configuration decisions as defects to fix before other work. The binding correction is SQUINT_PRODUCTION_CONTRACT.md §Required production correction: anatomy before enumeration; his literal audit is in the latest conversation. Required order: preserve the tested checkpoint; replace full-leg sliding with anatomy-first finite physical windows; enforce defining-tissue coverage for configuration authority; give each study its own budget and ship invariant recall preparation; run the 58-study held-out entrypoint evaluation with complete source exclusion; then time the corrected private Kaggle run and scale. Record per-condition identified/abstained/wrong and value ordering. Storage/portability and further Detective work can wait. Live implementation/worker state remains solely in the §13 packet.
+
+### Squint-to-training execution detail, 2026-10-21
+
+Rohan: «Use the fable consult over the Claude max subscription, then plan out a wide build to meaningfully upgrade this codebase so that we can FINALLY get to AI training properly». [SQUINT_TRAINING_BUILD.md](SQUINT_TRAINING_BUILD.md) is this section's execution appendix, not another master plan. Read it before dispatching or integrating upgrade workers. It records the independently checked Max consultation, existing versus missing joins, frozen meanings, seven disjoint worker lanes plus root integration, dependency waves, two-sign checks and the engineering/visual training-readiness distinction. §13's packet alone owns current jobs and results.
+
+The upgrade connects current-study structural bone evidence to the locator, addressed object/support/context territories to paired cheap/full profiles, predeclared question banks to exact recall and preparation, one excluded memory view to every consumer, and existing independent admission to an executable teaching/publication/evaluation round. Preserve the tested arithmetic, case scopes, warranted-configuration authority and readout. No perfect skin/contour prerequisite, transplanted patient stencil, substituted window-width bone measurement, arbitrary cross-view centre threshold, new healthy reference or full-anatomy production prefix is introduced. Changed observational meanings require explicit compatible writer/corpus identities. Whole-project gates run per integrated batch, not per worker; the competition envelope and verified private runtime pins remain requirements.

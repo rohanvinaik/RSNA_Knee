@@ -1,0 +1,190 @@
+# Squint to training: execution appendix
+
+This is the execution detail for [FULL_BUILD_PLAN §17](FULL_BUILD_PLAN.md#17-approved-squint-first-production-build--2026-10-21), not another master plan or live queue. [Its §13](FULL_BUILD_PLAN.md#13-context-stable-continuation-and-stop-points) points to the sole current task packet. The founder requested a Fable consultation through Claude Max, then a wide build that makes the specified AI trainable. New modules, interfaces and checks below are **planned**, not claims of implemented capability.
+
+## 1. What this upgrade must accomplish
+
+The high-resolution bootstrap has already supplied object definitions, supports and individual full profiles. Production must find useful current-study anatomical territories cheaply, read the relevant raw-scan signals there, and recall independently called individual precedents. A question that remains unsettled requests one bounded additional reading. Teaching adds independently called cases to an immutable memory revision; it does not promote the system's predictions into facts.
+
+An object remains one identity across its views, scales and lenses. Its three key planes establish its physical reference; directional and scale facets belong to that object. Cheap and full profiles coexist, with their actual meanings, provenance and unwritten banks preserved. A cheap measurement is not an inferior vote that must always be replaced by a full reconstruction. Use the cheapest sufficient information for the current question.
+
+The missing work is chiefly **attribution and connection**, not a replacement HDC engine. Preserve exact count arithmetic, the Hadamard carrier, individual cases, existing condition contracts, the approved warranted-configuration authority and the existing readout contract. No fitted healthy band, cosine cutoff, majority prototype, exhaustive window scan or mandatory full-anatomy production prefix follows from this appendix.
+
+## 2. Source audit and Fable review
+
+The audit basis is source commit `c4427e72a9dfc4f9448235d9e8817af5dbdbadc9`. This is an evidence epoch, not an instruction to reset the checkout. Consult records are in `data/readings/squint-upgrade-20261021/fable-consult/`: the lead's independent reading, complete sent packet, source hashes, answer and execution metadata. Fable returned successfully through authenticated **Claude Max subscription CLI**, requested model `fable`, effort `max`; no Anthropic API-key fallback was used. The CLI's cost estimate is not an API-credit charge.
+
+The lead read the relevant whole thesis sections and implementations, inspected the knee image, and adjudicated the review. Fable is a second reader, not authority over the founder's design.
+
+| Established implementation | Upgrade required |
+|---|---|
+| Physical squints and bounded 2 mm refinements are real producers and have consumers. | The writer needs explicit reading territories and background/support/context attribution; finer reading must retain its actual calibration meaning. |
+| The finite locator replaced the exhaustive search. Native anatomy producers also exist elsewhere in the project. | Feed structural native bone evidence into location before resemblance, rather than merely naming a high-scoring window as a bone. |
+| Full sparse object payloads coexist with cheap case profiles and can be read offline. | Bootstrap cheap object facets must use the teacher's actual addressed support, with surrounding context separately represented. A box is not the support. |
+| Typed retrieval already selects question banks. | Raw squint recall currently compares all common banks. Wire an explicit compatible question selection into that route and its preparation. |
+| Capacity mode already filters each held-out study before location, and projects preparation without that study. | Make the same exclusion contract explicit for direct API callers; remove divergent ways to construct a memory view. Do not claim the completed capacity run leaked its own location examples. |
+| Independent report admission validates sourced calls and preserves their scope. | Join observation, admission, preparation/publication and evaluation into an executable teaching round. The current scaling script alone does not do this. |
+
+The r4 capacity report is a completed operational baseline with diagnostic errors, not proof of successful diagnosis. Its report and receipt, rather than copied counts here, own the measurements: `data/readings/squint-production-20261021/heldout-capacity-r4/`. The location audit and actual panels motivate the attribution work. An exact query at a wrong location remains wrong evidence about the intended tissue.
+
+### Review suggestions that must not become substitute rules
+
+- A proposal rectangle's width is **not measured femoral breadth**. Measure breadth from anatomically attributed bone evidence, recording physical direction and source; otherwise retain `unavailable` and authored millimetres. A femur–tibia reference separation is another measurement, not a synonym.
+- Cross-view window centres need not coincide. Use the existing selected key-plane/StudyMap geometry and anatomical relationships. Check whether a proposed territory can contain the corresponding physical reference where applicable; retain obliquity, slice precision and partial evidence. Do not invent a centre-distance cutoff, average conflicting planes, or replace the three-plane reference with one section's centre.
+- Do not subtract every bone from every dependent. Marrow is within bone; cartilage faces bone; muscle is outside it. Apply the particular object's existing inclusion/exclusion relation. Independently resolved native-bone conflicts can reject an incompatible candidate; unavailable or coarse unattributed context stays neutral.
+- The current 2 mm banks already have distinct scale names. They deliberately inherit the coarse scan's coding reference. Preserve and describe that measurement; do not silently switch to locally balanced terciles or call it a healthy zero. A different reference requires a new compatible writer/corpus identity, not a cosmetic rename.
+- Current cheap directions are patient LPS half-spaces around the window's median centre, plus depth and array-gradient directions. Record that origin. An object-reference or bone-relative facet is an additional explicitly defined measurement, not an interchangeable rename. The fuller object encoding remains available.
+- A study-level fracture/contusion label remains an unlocalized condition presentation. That scope repair already exists. Missing scope is not fixed by zooming an arbitrary bone or assigning the label to each bone.
+
+## 3. Freeze the shared contracts before worker dispatch
+
+Extend existing schemas and public adapters where possible. Root owns the compatibility decisions and the shared integration files. The following are logical contract names; workers must not create a generic framework around them.
+
+| Contract | Meaning, producer and actual consumer |
+|---|---|
+| **Reading territory** | Current study/series/view; native slice and pixel addresses; tile mapping; rough leg eligibility; explicit object-associated, context and unknown places; source rule/anchors and outcome. Produced by teacher-support conversion or current-study anatomy. Consumed by the one profile writer, location evidence and bounded refinement. A routing prior does not certify a contour. |
+| **Profile pair** | One case/object with its canonical full payload and cheap observations at addressed places. Each bank identifies metric, acquisition view, scale, direction/origin role, calibration policy and territory role. Missing banks remain unwritten; a measured neutral row remains measured. Consumed by memory publication/readback, question projection and visual decode. |
+| **Question selection** | A frozen selection of defining/supporting roles and compatible bank descriptors, derived from existing question/anatomy definitions. Selected before query scoring. Consumed identically by query projection, case projection, envelope preparation, censors and comparison. No fallback to all banks when the selection is empty or incompatible. |
+| **Memory view** | Immutable memory revision plus excluded study identity, retained case/censor identities, question/descriptor version and preparation fingerprint. One constructor supplies location, retrieval, configuration and preparation. A direct caller cannot request exclusion yet pass unfiltered examples to location. |
+| **Observation attribution** | Which current-study anatomical relation proposed this reading, its anchors and their evidence scope, selected planes, included places and contradictions/unknowns. Consumed by object/configuration evidence and inspection sheets. A bank bearing an object's name alone proves no attribution. |
+| **Teaching round** | Parent revision, observation identities, independent call/report hashes and scopes, admitted/rejected/review results, next immutable revision and prepared sidecar, followed by a separately identified evaluation. Consumed by the next inference/teaching run through the normal memory loader. |
+
+Bank identity must state a reproducible measurement definition. Actual per-scan calibration values stay in provenance; the declared policy specifies how different scans make comparable readings. Do not make all patients incompatible merely because their measured calibration values differ. Conversely, two unlike measurements do not become comparable because their string labels match.
+
+Version any changed calibration/support/bank interpretation and rebuild affected cheap profiles from the saved native data and teacher supports. Do not alter raw lens kernels or rebuild all anatomical recognition merely to recompile case profiles. Full payloads remain exact. Old memory stays readable and is not mixed silently with a new writer.
+
+## 4. Literal implementation work, in parallel
+
+Seven worker lanes plus the integrating lead provide eight useful engineering roles. At most three native helpers run alongside root in this session; use up to four authenticated Max CLI workers for the remaining independent candidates, bounded by actual RAM/CPU pressure. This is a proposed execution schedule, not a claim those builders have been launched.
+
+Each worker gets the founder's applicable literal words, governing coherent sections, source pins, inputs, exact allowed files, producer/consumer contract and two-sign intent checks. A safe-mode/model-only worker must receive its input text; a path it cannot open is not context or a review. No worker commits, edits grounding files or writes another worker's file. Use isolated candidate copies/worktrees and verify their imports resolve to their own source. Root integrates shared files and reviews semantics; workers return facts, patches and receipts.
+
+| Lane and suggested route | Exclusive candidate scope | Concrete output and downstream consumer |
+|---|---|---|
+| **L1 — territory-aware writer; Max** | `squint_profiles.py`, `tests/test_squint_profiles.py` | Add explicit eligibility/support/context selection to the existing writer and refinement. Reuse computed raw metrics. Exclude clearly outside-leg places from object readings and use the declared leg-scoped calibration. Preserve unknown/mixed places and count identity. L3 and runtime consume this same writer. |
+| **L2 — structural anchors; native** | Proposed `diagnosis/squint_anchors.py` and its tests; extraction candidates for root | Adapt existing early `a1_objects`/`leg_of` and physical/interior producers into shared current-study bone evidence. Emit candidate territories, key planes, measured breadth if available, and named partial/conflict outcomes. L0 feeds these into the locator. Do not import the giant runner back into the library or copy a second detector. |
+| **L3 — paired teacher support and case compiler; Max** | Proposed `diagnosis/squint_support.py`, `squint_memory.py`, relevant memory/full-profile tests | Read actual saved native support arrays and offsets; distinguish them from padded bounds. Project them to reading territories and keep context separate. Invoke L1's writer for cheap/fine pairs while preserving canonical full payloads and label scope. Publish a versioned rebuilt bootstrap memory and verify offline public readback. |
+| **L4 — declared question projection and preparation; native** | Proposed `diagnosis/squint_questions.py` adapter and focused tests; candidate hooks for root | Reuse `declarations.py` for the question catalog/selection semantics and `squint_contracts.py` for necessary/alternative/supporting roles. The proposed module only adapts those declarations to compatible measured descriptors. Do not copy either catalog or reuse full-profile prefix strings against unrelated raw banks. Provide the exact same selection to query/case counts, configuration roles, censors and envelopes. Preserve individual cases and exact arithmetic. L0 integrates any necessary declaration-API change and the raw recall/preparation hooks. |
+| **L5 — one excluded memory view; Max** | Proposed `diagnosis/squint_memory_view.py` and focused tests; candidate hooks for root | Unify current filtering/projection implementations behind one immutable public view. Preserve tested cache projection, source fingerprints and maxima; extend keys for L4's selected question banks. Direct API and CLI capacity must have identical exclusion. L0 supplies this view to every consumer. |
+| **L6 — executable teaching round; Max** | `scripts/squint_report_teaching.py`, proposed `scripts/squint_training_round.py`, their tests | Join existing independent-call admission to observation manifests, immutable revision publication, prepared sidecar and held-out evaluation. Produce a machine-readable per-condition trajectory and an executable small round. No new report interpreter or self-labelling policy; accept independent calls in the existing schema. |
+| **L7 — teacher control, visual capacity and evidence; native** | `scripts/evaluate_squint_capacity.py`, its tests; proposed `diagnosis/squint_capacity_control.py`, `scripts/squint_visual_capacity.py` and focused tests | Supply teacher-addressed query territories through the same inference/recall path, exclude the study from all memory consumers, retain per-cause abstentions and make actual normal/presentation images plus named HDC differences for all twelve questions. Build against frozen fixtures now, then real L3 outputs. |
+| **L0 — root integration and deployment** | `squint_pipeline.py`, `squint_anatomy_locator.py`, `squint_locator.py`, `squint_geometry.py`, `squint_configurations.py`, `squint_contracts.py`, declarations/runner, run guide and package/wrapper integration | Connect all producers to the real `scripts/run_interiors.py` route; retain per-study budgets and shared work; integrate object/configuration attribution; run the final private Kaggle check and whole gate. Packaging-only work can move to a finished worker with an explicit new ownership packet. |
+
+These file allocations apply to the upgrade's candidate work. Before editing, trace references and duplicate paths with Serena/Aider/AST as appropriate. If an extracted producer must change an existing owner file, return the extraction patch to root; do not make competing edits. A helper that is only imported and tested is unfinished until its named production consumer calls it.
+
+### L1/L3: support is evidence, a box is an address
+
+Use the existing cheap leg/background producer as a **useful prior**, not an exact skin-segmentation requirement. Its job is to avoid obviously irrelevant work. Preserve uncertainty; do not purify seeds or tighten masks to improve a calibration number. A tile touching the leg is not automatically all leg; a tile touching teacher support is not automatically pure object. Keep mixed-tile occupancy and scope explicit.
+
+The bootstrap knows native object support, so cheap object-associated readings can be paired with it, and surrounding readings get a separate context role. Do not claim that downsampling removes partial volume. Query territories come from that query's own anatomy; never transplant another patient's pixel stencil. Known native contradictions can exclude a region under the specific anatomical definition, while a coarse prior cannot erase an unknown object.
+
+Calibration is one declared observational lens. Restricting its input domain changes its definition and requires a writer/corpus version change. Coarse-reference 2 mm readings remain coarse-reference readings unless the founder specifies otherwise. Neither terciles nor a normal example silently become a clinical healthy reference.
+
+### L2/L0: anatomy before resemblance
+
+Trace `run_interiors.measure/name_plane/leg_of` and their actual lens/assignment dependencies, `collapse.squint_stack`, `collapse.physical`, `collapse.bones` and `objects.interiors`. Reuse the minimum structural producer over already loaded current-study data. Where an established rule needs a native plane, read that one bounded plane and share it; do not execute the later full-depth anatomy passes as an unreported prefix.
+
+Find the bone configuration through its defined structure, then project dependents from the current knee's anchors and the anatomy map. Relative precedents guide a bounded search; they are not inherited patient coordinates. Keep complete and partial key-plane evidence distinct. Resemblance chooses among anatomically meaningful candidates, rather than conferring identity on a bright/dark rectangle.
+
+For each proposed object retain its anchor evidence, source relation, view/native addresses and scope. Cross-view contradictions remain named facets/candidates; do not sum conflicting readings into a single asserted state. Compatible observations still form one object profile. Missing views remain missing; no perfect three-view coverage prerequisite is added to a useful reading or warranted diagnosis.
+
+### L4/L5/L0: make the question's evidence explicit
+
+Reuse the current exact count comparison and empirical precedent envelope; this appendix does not invent a chance model or decision threshold. Select the named question banks **before** computing similarities and opposing-case envelopes. The selected schema and actual commonly speaking bank tuple both belong in preparation/cache identity. A missing compatible envelope differs from an observed match that fails its envelope; expose distinct reasons while preserving existing categorical semantics. Current evidence already distinguishes unavailable versus numeric trust in individual terms, but both can end as `proposal`; add explicit per-case reason codes rather than claiming those final codes already exist.
+
+L4 returns a literal capability/selection table for each of the twelve existing questions: source definition, anatomical role, measured bank family, compatible cheap/full counterpart where one exists, and unavailable readings. A raw signal histogram is not a boolean anatomical lens or a distance lens merely because they concern the same object. Do not invent a mapping to make every declaration appear covered. Root checks that table against the governing definitions before integrating it.
+
+The existing bounded observation executor currently makes a finer raw squint; it does not already execute every anatomical lens. L0 must also connect a **named, justified residual request** to the corresponding existing bounded native producer and canonical encoder where that question requires such information. Reuse its established measurement, support/offset semantics and cached dependencies. Compare it only with compatible stored full banks; do not compare unlike full and cheap words by renaming. This is a bounded tool invocation, not a full-anatomy fallback. A missing procedure/reference returns a named unavailable result. A request that needs a genuinely unspecified AI routing policy is returned to Rohan rather than supplied by a heuristic.
+
+Whole-condition configuration recall retains its approved independent authority. Its comparison must actually read the condition's defining tissue under the existing necessary/alternative/supporting contracts. Supporting context is reported and may route work; it cannot substitute for unread defining tissue. Attribution must be inspectable, without making a perfect contour or a second object-level diagnosis a prerequisite for configuration authority. Preserve all-site negative requirements and independent localized versus study-level scope.
+
+### L6: complete the existing learning operation
+
+Implement one command that consumes an existing memory, observation records and independently supplied report/call records, validates their identities, invokes existing admission, prepares the revised memory, publishes it to a fresh owned root and verifies it through the ordinary loader. Record parent and child revisions and each rejection/review reason. Resume by immutable inputs; never overwrite the parent or teach from an incomplete publication.
+
+The command may invoke observation and evaluation stages or consume their pinned manifests; do not rerun recognition gratuitously. Teaching partitions and evaluation exclusions remain distinct. Labels unavailable to an inference run must not enter features, candidate selection or similarity computation. Report-level diagnoses retain report-level scope. Existing cases can teach immediately at their warranted scope; a missing automatic report-to-call reader does not block a round using already independent calls.
+
+## 5. Dependency waves and the critical path
+
+1. **Freeze interfaces and pin the source.** Root supplies the contracts in §3, fixture examples and ownership. L7 builds teacher-location control against today's writer; L1–L6 start simultaneously. L0 prepares integration/packaging tests while the workers write. Do not wait for one worker to finish before another gets a meaningful task.
+2. **Integrate attribution.** L1's writer and L3's paired teacher data join L2's structural anchors at L0's locator. Run a small representative real-study smoke and inspect the actual regions immediately. In parallel L4/L5 finish question/view hooks and L6/L7 finish their loop/report fixtures.
+3. **Integrate question recall and teaching.** Root connects L4/L5 to raw object/configuration recall; L6 publishes one small independently taught revision and L7 reads it through the same production path. Run teacher-location control and raw-location control on matched source/memory/writer identities, with the same study excluded in both.
+4. **Run the integrated capacity and release batch.** One real 58-study held-out run, per-condition visual/decode evidence, public offline smoke, rebuilt package and corrected private Kaggle timing. Write final records and documentation, then run the whole exact-tree gate last. Push normally and inspect the remote gate. Preserve source/memory pins through asynchronous dataset READY verification before launching the private kernel.
+
+The first teacher-location control is diagnostic, not a gate that leaves seven workers idle. If it helps, the attribution path is implicated; if it does not, inspect bank compatibility, tissue/context scope, selected questions and the named full/fine/cheap readings. It does **not** by itself prove a 10 mm limitation or invalidate HDC. Use the one bounded finer reading only where the observed question calls for it.
+
+Do not make exact count-bound pruning a new prerequisite. The cell `template_sums/window_bound_word` implementation can bound additional eligible candidates without changing selections; port it only if the integrated profile shows a useful residual enumeration cost. Prove identity against an exact reference twin. First eliminate wrong and unnecessary questions, then optimise remaining arithmetic.
+
+## 6. Intent and integration checks
+
+Pin these intentions before implementation, using the project's Detective protocol for pure decision seams and independent expected results. Workers run focused checks; one integrated batch gets independent review and the full gate. Do not invent a test framework or run the whole gate after every worker.
+
+| Intention | Required two signs / adversarial evidence |
+|---|---|
+| Territory means addressed places, not a box | Construct two supports with identical boxes but deliberately different measured values at their addressed places; verify each expected count and the context remainder. A box-only stand-in fails. Equal readings may legitimately have equal counts. Empty, malformed, offset and edge supports have named results. |
+| Background and uncertainty differ | Clearly outside-leg places add no object rows; a measured eligible neutral tile writes a neutral row. Unknown and mixed places retain their stated scope. Adding outside-leg padding cannot change the declared leg-scoped calibration. |
+| One measurement definition | Teacher and query writers produce identical counts on the same inputs; different calibration/origin/territory policies cannot compare silently. Fine coarse-reference banks retain that reference. Zero and silence stay distinct in both dot product and norms. |
+| Structural anchors constrain work | A correct native anchor moves/projects dependent candidates; unavailable anchors remain unknown. An explicitly incompatible native-bone intersection differs from unavailable coarse context. Include marrow-in-bone and muscle-outside-bone examples to catch blanket subtraction. |
+| One object across views | Oblique key planes, partial planes, repeated identical events and conflicting alternatives preserve the existing reference and attribution semantics. Different window centres alone do not fail; contradictory evidence does not become one confident sum. |
+| Questions select their information | Perturbing an unselected bank changes neither selected cosine nor envelope nor verdict; perturbing a selected bank can. Empty selection is named, never all-bank fallback. Full-prefix/cheap-descriptor mismatches cannot pass by string coincidence. A sourced bounded native request invokes only its named producer/dependencies and writes compatible canonical banks; an unavailable procedure never silently becomes another 2 mm histogram. |
+| Study exclusion reaches every consumer | Without exclusion the case is reachable; with it, no attributed case, censor, location precedent or prepared comparison from that UID is reachable. Direct API, raw/cached locator and real CLI agree. Stale prepared identity is rejected/rebuilt. |
+| Configuration authority follows scope | Covered warranted configurations can decide independently; context-only configurations cannot. Localized evidence and unlocalized positive bone presentations remain distinct. Opposed evidence and multi-site negatives retain existing contracts. |
+| Teaching is independent and immutable | A sourced eligible independent call changes the child store; an inference verdict alone cannot. Duplicate/conflicting/malformed/unsupported calls retain existing named remedies. Publication failure leaves parent and consumed inputs intact. Public readback and next-run recall see the published child. |
+| Evidence reaches the competition output | The real entrypoint produces twelve correctly ordered columns and finite values through the existing readout; evidence traces each result to its case/question/territory. Null/missing series, deadline exhaustion and storage failure remain named. Serial/parallel operation preserves results. |
+
+L7 must expose actual source images, query territory and anchor overlays, nearest normal-for-question and diagnosed **presentation** precedents, selected banks and named count/HDC differences. Show full versus cheap versus the bounded finer rung with unread banks visible. A study-level positive image is not a manually localized lesion annotation. Keep that distinction in captions and decoded evidence. Do not reuse the cell figure as knee proof.
+
+## 7. What counts as ready to train
+
+Separate two claims in the output, rather than treating a green gate as diagnostic capacity:
+
+- **Engineering ready:** the real command can observe, recall, ingest independent calls, publish/read a complete prepared child memory and evaluate it with study exclusion; all twelve questions have a declared compatible evidence route and inspectable output. No orphan helper, disconnected teaching script or fabricated clinical zero remains on that path.
+- **Visual capacity:** for each question show the normal/presentation pair, whether the actual defining tissue was read, which named banks discriminate, the warranted/unknown/conflict result and any missing evidence. Run the held-out raw and teacher controls and report identified / abstained / wrong separately by condition, plus ordering and abstention causes. Missing discrimination stays explicitly unresolved; it is not hidden by a combined score or an arbitrary pass threshold.
+
+This is not a requirement for perfect contours, every-study coverage or a chosen AUC. Valid independently labelled cases and functioning teaching can already support training. The baseline visual check must make it possible for Rohan to reason about the next AI changes, rather than present incorrect tissue as a completed capacity proof. Where the existing custom design is silent about a new learning/negative-example policy, return the concrete case and governing readings to him; do not substitute a heuristic.
+
+## 8. Efficiency and release obligations
+
+The information structure buys efficiency: compute one shared leg/squint/anchor representation, visit meaningful territories, prepare invariant memory once, select the question's banks, and refine only its unresolved residual. Do not seek a faster implementation of an avoidable full search. Share read-only memory and per-study producers, bound native thread pools and pending studies, publish final evidence then release consumed intermediates. No all-cohort native volumes or expanded full CountBundles in production workers.
+
+L0 and a freed mechanical worker reuse the existing package/wrapper and resource receipts. W8b storage and W10 full-envelope obligations in [FULL_BUILD_PLAN §16.9](FULL_BUILD_PLAN.md#169-competition-resource-envelope-w8b-storage-closure-and-w10-verification) still apply: nine hours total offline notebook time, actual four-core/RAM route and output/scratch quotas, all phases and worker peaks, complete retained outputs and provenance, and no unaccounted later cost. Recheck the published/current environment during release. Local seconds and hidden-scale projections are labelled separately from a measured Kaggle run.
+
+Refresh changed production recordings; write records and documentation **before** the final exact-tree gate. Read Vulture, telemetry, type, memory and Sonar output as their contracts require. Do not reset a benchmark baseline to conceal a regression. Fix the current normal-push secret-scan false positive at its actual rule/evidence boundary; do not bypass the hook. Review unrelated advisory dependency findings without turning them into a prerequisite redesign.
+
+Private Kaggle deployment must verify the uploaded dataset's current manifest and both independent code/memory pins after READY, then launch the private kernel. Inspect returned pins, output schema, resources and work counts. No competition submission follows from this plan. Current jobs, completed checks, remaining checks and the next operation belong only in the active task packet.
+
+## 9. Launch revision, 2026-10-21: routes, dependencies and the first working slice
+
+Rohan: «How can this be built massively parallel with codex over the CLI and your own sub-agents?» Then, with a relayed review: «Some feedback. Take what is appropriate, then please launch a full parallel build». The relayed review and a later relayed side note are agent text. What the lead adopted from them is listed here as the lead's decision, with the reason checked.
+
+**Routes for this build.** Bounded implementation runs on two routes: Codex CLI workers (`codex exec`, workspace-write sandbox, each in its own git worktree from the wave-0 base) and Claude Code sub-agents (each in its own worktree). For this build Codex is a builder, not only the text reviewer of the worker guide's route table. The Claude Code lead is the sole integrator of shared files and the only committer and pusher. Each candidate is reviewed by the other route against its packet. Worker records live under `data/readings/squint-upgrade-20261021/workers/<job>/`; live handles live only in the §13 packet.
+
+**Adopted.**
+1. A short serial opening. Wave 0 is `src/knee/diagnosis/squint_interfaces.py` (shapes, codes, validators) with `tests/squint_upgrade_fixtures.py` and `tests/test_squint_interfaces.py`. Existing anatomical definitions and early bone producers are reused. No anatomy redesign and no skin-boundary exercise.
+2. Every job states when it can start writing and what its final verification waits for.
+3. The residual executor (W12): an open question invokes its named existing anatomical producer on the bounded region and writes compatible banks over the support it finds. Finer histograms alone are not every anatomical measurement.
+4. Report reading is parallel and never blocks. The first teaching round uses the existing independent labels. Two readers agreeing checks the extraction only. The report's own assertion is the evidence; negation, uncertainty, localization and study-level scope are kept. Agreement says nothing about whether a located region holds the tissue.
+5. The first integration milestone is one working slice through the real entry point: leg map, structural anchors, attributed territory, territory profile, rebuilt memory, recall, contracts, output. Questions, the residual executor and teaching follow. Workers return consumer patches and integration fixtures, not only isolated modules.
+6. Concurrency is bounded and measured: about twelve model workers to start, heavy local runs one at a time, more workers only when measured throughput supports it. Time estimates are not commitments.
+7. Checked from the relayed side note: a report call becomes a case only against the same study's own observed objects (`admit_report_cases` takes per-study squint records), and only the 58 labelled studies' scans are on this machine (6.6 GB). The other 4,349 are on Kaggle's competition mount (train_series.csv lists 4,407 studies, 24,371 series). So they must be observed on Kaggle with the fixed pipeline. K2 prepares that notebook now and runs it once the working slice passes its location check.
+
+| Job | Route | Writes | Can start writing | Final verification waits for |
+|---|---|---|---|---|
+| C1 true-location control on current code | Codex | `scripts/evaluate_squint_capacity.py`, new `squint_capacity_control.py`, tests | now | nothing; 58-study run with 2 workers |
+| P1 push-check false positive | Codex | `scripts/push_checks.py`, tests | now | nothing |
+| K1 private Kaggle timing of verified r6 | sub-agent | Kaggle private dataset/kernel only | now | nothing |
+| R1 report calls for the 58 labelled (two readers) | Codex + sub-agent | worker records only | now | both readers' calls; lead compares with labels |
+| W1 leg map at 10 mm | Codex | new `squint_leg.py`, tests | now (fixture) | 3 real studies; lead looks at the pictures |
+| W2 territory writer and leg-only cutoffs | Codex | `squint_profiles.py`, tests | now (fixture) | W1 real leg maps |
+| W4 teacher support to territory | Codex | new `squint_support.py`, patch to `squint_memory._support_bbox`, tests | now | real bootstrap products (local) |
+| W5 memory rebuild with territory profiles | sub-agent | `squint_memory.py` compile path, script, tests | now (interfaces) | W2 and W4 merged |
+| W6 question selection | sub-agent | new `squint_questions.py`, tests | now | lead checks the capability table |
+| W7 recall and preparation read only the selection | Codex | patch to `squint_locator.py`, tests | after W6's schema | W6 and W8 merged |
+| W8 one excluded memory view | Codex | new `squint_memory_view.py`, consumer patches, tests | now | nothing beyond its tests |
+| W9 bones by structure | sub-agent | new `squint_anchors.py`, tests | now | W11 location check on 58; pictures |
+| W10 dependents placed from the anchors | Codex | patch to `squint_anatomy_locator.py`, tests | after W9's first return | W9 merged |
+| W11 per-object location check | sub-agent | new script, tests | now | any locate output |
+| W12 residual executor | sub-agent | new `squint_residual.py`, patch to `squint_pipeline._bounded_observation`, tests | after the slice's shapes | working slice |
+| W13 picture sheets | sub-agent | new script, tests | after the slice's shapes | working slice |
+| W14 teaching round | Codex | new `scripts/squint_training_round.py`, tests | now | working slice |
+| K2 Kaggle observation of the 4,349 training studies | sub-agent | Kaggle notebook and its script | now; cost measured on 20 studies with current code | working slice passing its location check |
