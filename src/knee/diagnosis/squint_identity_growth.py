@@ -31,8 +31,28 @@ Joint recognition does not require each view to recognize on its own.
 The child keeps every parent record (signed cases, alternatives, calls, full
 tables, prior growth rounds) and adds each admission to ``cases`` with a confirm
 call on exactly its admitted views. An admission is recognition-derived: it carries
-its lineage and is never an independent visual or clinical call. It has no
-condition calls and no full profile; none is manufactured.
+its lineage and is never an independent visual or clinical call. It has no full
+profile; none is manufactured. Without a label file it has no condition calls.
+
+Condition teaching (CLASSICAL_AI_BUILD_DESIGN §§5.1, 8): given the competition's
+``train.csv``, each admitted inference case's study row is carried onto it through
+``squint_memory.carry_condition_calls`` after every decision is made. A positive
+for a condition implicating the object is a positive presentation in every view of
+its admission and its normal labels speak through those views alike; a blank label
+makes no call; a Fracture or Contusion positive stays
+``positive_condition_presentation`` (some bone, not which), since no localized call
+exists here. The calls keep ``train.csv`` (path, digest, column, study) as their
+source, apart from the identity lineage. Only the rows of studies with an admitted
+inference case are parsed; a study with no row (a test study) gets no calls, by
+name. Labels never reach harvesting, recall, admission or query construction, so
+the decisions file is the same bytes with or without them. A memory candidate
+enters as its source memory holds it, its calls included.
+
+Held-out studies: a candidate from a held-out study is never scored or admitted
+(state ``held_out``) and its labels are never read. The held-out set is the
+round's own list joined with the one its parent's growth block records, so every
+child keeps its parent's held-out studies. It is recorded, sorted with the digest
+of that list, in the decisions file and in the child's growth block.
 
 Decision states: ``admitted``; ``proposal`` (identified but anatomy unknown, or
 nothing identified: the reason says which); ``blocked`` (a known anatomical
@@ -40,13 +60,16 @@ contradiction); ``conflict`` (recognized as another identity, which is named, or
 recall's own unresolved conflict); ``opposed`` (a negative case of the proposed
 identity speaks and nothing speaks for any identity); ``duplicate`` (the parent
 already holds this case or a record of this object of this study); ``refused`` (a
-named refusal, including ``admission_scope_unresolved``).
+named refusal, including ``admission_scope_unresolved``); ``held_out`` (the
+candidate's study is held out of this round).
 """
 
 from __future__ import annotations
 
 import copy
+import csv
 import hashlib
+import io
 import json
 import lzma
 import os
@@ -70,9 +93,11 @@ from knee.diagnosis.squint_memory import (
     SquintMemoryError,
     _json_sha256,
     _validate_memory,
+    carry_condition_calls,
     load_memory_snapshot,
     save_memory,
 )
+from knee.study.tables import LABELS
 
 # v1 was the withdrawn prototype's block (candidate_states/admissions); a growth
 # round record now lives in ``rounds``.
@@ -88,6 +113,9 @@ READER = (
 )
 DECISIONS_FILE = "admission-decisions.json"
 CHILD_DIRECTORY = "memory"
+HELD_OUT_SCHEMA = "knee.identity-growth-held-out/v1"
+CONDITION_TEACHING_SCHEMA = "knee.identity-growth-condition-teaching/v1"
+LABEL_SOURCE = "train.csv"
 STATES = (
     "admitted",
     "proposal",
@@ -96,7 +124,10 @@ STATES = (
     "opposed",
     "duplicate",
     "refused",
+    "held_out",
 )
+# The competition's train.csv header, exactly as squint_memory._read_labels reads it.
+_LABEL_COLUMNS = ("StudyInstanceUID", "Report", *LABELS)
 _PROFILE_SCHEMA = "knee.squint-profile/v1"
 _SANITY_STATUSES = ("plausible", "unknown", "contradicted")
 _RUNTIME_KEYS = frozenset(
@@ -766,6 +797,207 @@ def admission_decision(
     }
 
 
+# ------------------------------------------------------------- held-out studies
+
+
+def _study_uid_text(value: object) -> bool:
+    """A StudyInstanceUID as written: nonempty text with no whitespace or NUL."""
+    return (
+        isinstance(value, str)
+        and bool(value)
+        and "\0" not in value
+        and not any(character.isspace() for character in value)
+    )
+
+
+def held_out_record(study_uids: Iterable[str]) -> dict[str, Any]:
+    """The record of a round's held-out studies: the sorted list and its digest.
+
+    ``sha256`` is the strict-JSON digest of the sorted list (``_json_sha256``), so
+    a later round recomputes it from the list alone.
+    """
+    uids = sorted(set(study_uids))
+    return {"schema": HELD_OUT_SCHEMA, "study_uids": uids, "sha256": _json_sha256(uids)}
+
+
+def _held_out_input(values: object) -> frozenset[str]:
+    if isinstance(values, (str, bytes, Mapping)) or not isinstance(values, Iterable):
+        raise IdentityGrowthError("held_out_invalid")
+    uids = list(values)
+    if not all(_study_uid_text(uid) for uid in uids):
+        raise IdentityGrowthError("held_out_invalid")
+    if len(set(uids)) != len(uids):
+        raise IdentityGrowthError("held_out_duplicate")
+    return frozenset(uids)
+
+
+def inherited_held_out(parent: Mapping[str, Any]) -> frozenset[str]:
+    """The held-out studies a parent's growth block records; a child keeps them all.
+
+    A record that is not exactly what ``held_out_record`` writes for a nonempty
+    set, its digest included, is refused by name.
+    """
+    block = parent.get("object_identity_growth")
+    record = block.get("held_out") if isinstance(block, Mapping) else None
+    if record is None:
+        return frozenset()
+    uids = record.get("study_uids") if isinstance(record, Mapping) else None
+    if (
+        not isinstance(record, Mapping)
+        or set(record) != {"schema", "study_uids", "sha256"}
+        or record["schema"] != HELD_OUT_SCHEMA
+        or not isinstance(uids, list)
+        or not uids
+        or not all(_study_uid_text(uid) for uid in uids)
+        or uids != sorted(set(uids))
+        or record["sha256"] != _json_sha256(uids)
+    ):
+        raise IdentityGrowthError("parent_growth_metadata_invalid", "held_out")
+    return frozenset(uids)
+
+
+# ------------------------------------------------------------- study labels
+
+
+def _label_source(path: object) -> dict[str, Any]:
+    """The label file's exact bytes, their digest and its checked header.
+
+    Read once, before any candidate, so a missing or malformed file is refused
+    before the round begins and the rows parsed after it are these bytes. No
+    study row is parsed here.
+    """
+    if not isinstance(path, Path):
+        raise IdentityGrowthError("labels_path_invalid")
+    try:
+        raw = path.read_bytes()
+        text = raw.decode("utf-8")
+    except (OSError, UnicodeError) as error:
+        raise IdentityGrowthError("labels_unreadable", str(path)) from error
+    try:
+        header = next(csv.reader(io.StringIO(text, newline="")), None)
+    except csv.Error as error:
+        raise IdentityGrowthError("labels_unreadable", str(path)) from error
+    if header is None or tuple(header) != _LABEL_COLUMNS:
+        raise IdentityGrowthError("labels_columns_invalid", str(path))
+    return {
+        "reference": {
+            "source": LABEL_SOURCE,
+            "source_path": str(path.resolve()),
+            "source_sha256": hashlib.sha256(raw).hexdigest(),
+        },
+        "text": text,
+    }
+
+
+def _label_rows(
+    source: Mapping[str, Any], study_uids: Iterable[str]
+) -> dict[str, dict[str, int | None]]:
+    """The label rows of exactly ``study_uids``; every other row is passed over.
+
+    A row's label cells are parsed only when its StudyInstanceUID is wanted, by
+    the cell rules of ``squint_memory._read_labels``: blank is no label, "0" and
+    "1" are the label. The Report cell is never parsed. A wanted study absent
+    from the file has no row.
+    """
+    wanted = set(study_uids)
+    rows: dict[str, dict[str, int | None]] = {}
+    if not wanted:
+        return rows
+    reader = csv.reader(io.StringIO(source["text"], newline=""))
+    try:
+        next(reader)  # the header, checked when the file was read
+        for row in reader:
+            if not row or row[0] not in wanted:
+                continue
+            uid = row[0]
+            if len(row) != len(_LABEL_COLUMNS):
+                raise IdentityGrowthError("labels_row_invalid", uid)
+            if uid in rows:
+                raise IdentityGrowthError("labels_study_uid_duplicate", uid)
+            calls: dict[str, int | None] = {}
+            for question, cell in zip(LABELS, row[2:], strict=True):
+                if cell == "":
+                    calls[question] = None
+                elif cell in ("0", "1"):
+                    calls[question] = int(cell)
+                else:
+                    raise IdentityGrowthError(
+                        "labels_value_invalid", f"{uid}:{question}"
+                    )
+            rows[uid] = calls
+    except csv.Error as error:
+        raise IdentityGrowthError(
+            "labels_unreadable", source["reference"]["source_path"]
+        ) from error
+    return rows
+
+
+def _carry_labels(
+    admissions: Sequence[Mapping[str, Any]], source: Mapping[str, Any]
+) -> dict[str, Any]:
+    """Carry each admitted study's labels onto its admitted inference case.
+
+    Runs after every decision is made, on the child's own copies. The calls,
+    their scopes and the views they speak through are exactly those of
+    ``carry_condition_calls`` for the case's admission call, with no localized
+    call. Each call keeps its ``train.csv`` source; ``teaching_source`` and
+    ``identity_growth`` stay the recognition-derived identity lineage. A study
+    with no row keeps no calls, named ``no_label_row``; a memory candidate keeps
+    its source's calls, named ``source_case_retained``, and its row is not read.
+    Returns the round's record of what was taught.
+    """
+    reference = source["reference"]
+    rows = _label_rows(
+        source,
+        {
+            entry["case"]["study_uid"]
+            for entry in admissions
+            if entry["retained"] is None
+        },
+    )
+    taught: dict[str, dict[str, Any]] = {}
+    for entry in admissions:
+        case = entry["case"]
+        if entry["retained"] is not None:
+            taught[case["case_id"]] = {"status": "source_case_retained"}
+            continue
+        study = case["study_uid"]
+        labels = {**reference, "study_uid": study}
+        row = rows.get(study)
+        if row is None:
+            case["condition_teaching"] = {
+                "schema": CONDITION_TEACHING_SCHEMA,
+                "status": "no_label_row",
+                "labels": labels,
+            }
+            taught[case["case_id"]] = {"status": "no_label_row"}
+            continue
+        try:
+            carry = carry_condition_calls(case, entry["call"], row)
+        except SquintMemoryError as error:
+            raise IdentityGrowthError("condition_carry_invalid", error.code) from error
+        calls = dict(carry["condition_calls"])
+        case["condition_calls"] = calls
+        case["presentation_scope"] = dict(carry["presentation_scope"])
+        case["label_attribution"] = {
+            question: {**labels, "condition": question, "column": question}
+            for question in calls
+        }
+        case["condition_teaching"] = {
+            "schema": CONDITION_TEACHING_SCHEMA,
+            "status": "carried",
+            "labels": labels,
+            "carry": carry,
+        }
+        taught[case["case_id"]] = {"status": "carried", "condition_calls": dict(calls)}
+    return {
+        "schema": CONDITION_TEACHING_SCHEMA,
+        "labels": dict(reference),
+        "read_study_uids": sorted(rows),
+        "cases": taught,
+    }
+
+
 # ---------------------------------------------------------------- the round
 
 
@@ -997,7 +1229,13 @@ def _child_memory(
     admissions: Sequence[Mapping[str, Any]],
     round_record: dict[str, Any],
 ) -> dict[str, Any]:
-    """Every parent record, plus the admissions; shared parent parts are not mutated."""
+    """Every parent record, plus the admissions; shared parent parts are not mutated.
+
+    The growth block keeps the round's held-out record, the parent's held-out
+    studies included, so the next round keeps honouring them. The revision binds
+    the parent, the decisions and, when labels were carried, what they taught: a
+    child carrying labels never shares a revision with one that does not.
+    """
     child = {key: value for key, value in parent.items() if key not in _RUNTIME_KEYS}
     cases = [entry["case"] for entry in admissions]
     teaching = dict(parent["object_identity_teaching"])
@@ -1015,13 +1253,17 @@ def _child_memory(
         child,
         [entry["retained"] for entry in admissions if entry["retained"] is not None],
     )
-    child["object_identity_growth"] = {
+    block: dict[str, Any] = {
         "schema": GROWTH_SCHEMA,
         "rounds": [*_prior_rounds(parent), round_record],
     }
-    digest = _json_sha256(
-        [parent_sha256, round_record["decisions_sha256"], GROWTH_SCHEMA]
-    )
+    if round_record.get("held_out") is not None:
+        block["held_out"] = copy.deepcopy(round_record["held_out"])
+    child["object_identity_growth"] = block
+    parts = [parent_sha256, round_record["decisions_sha256"], GROWTH_SCHEMA]
+    if round_record.get("condition_teaching") is not None:
+        parts.append(_json_sha256(round_record["condition_teaching"]))
+    digest = _json_sha256(parts)
     child["revision"] = f"{parent['revision']}+identity-growth-{digest[:16]}"
     return child
 
@@ -1073,6 +1315,8 @@ def grow_identity_memory(
     output: Path,
     *,
     decisions_only: bool = False,
+    labels: Path | None = None,
+    held_out: Iterable[str] = (),
 ) -> dict[str, Any]:
     """Decide every candidate against one frozen parent; publish the warranted child.
 
@@ -1086,12 +1330,26 @@ def grow_identity_memory(
     ``decisions_only``, the child is published by ``save_memory`` at
     ``output/memory`` before the decisions are written beside it; no admission
     publishes no child.
+
+    ``held_out`` names studies whose candidates are never scored or admitted
+    (state ``held_out``); the parent's recorded held-out studies are added to
+    them. When any study is held out, ``held_out_record`` of the union is written
+    in the decisions file and the child's growth block; with none, both are as
+    before. ``labels`` is the competition's ``train.csv``: its bytes and header
+    are read before the round, and after every decision only the rows of studies
+    with an admitted inference case are parsed and carried (``_carry_labels``). A
+    label file with ``decisions_only`` is refused: no child would hear it.
     """
     parent = _snapshot_memory(parent_snapshot, "invalid_parent_snapshot")
     if not isinstance(parent.get("object_identity_teaching"), Mapping):
         raise IdentityGrowthError("parent_identity_teaching_missing")
     _prior_rounds(parent)
+    if decisions_only and labels is not None:
+        raise IdentityGrowthError("labels_with_decisions_only")
+    held = _held_out_input(held_out) | inherited_held_out(parent)
+    held_record = held_out_record(held) if held else None
     output = _check_output(output, parent_snapshot)
+    label_source = None if labels is None else _label_source(labels)
     record_studies = exclusion_studies(parent)
     represented = represented_objects(parent)
     seen: set[str] = set()
@@ -1100,7 +1358,8 @@ def grow_identity_memory(
     admitted_ids: list[str] = []
     admissions: list[dict[str, Any]] = []
     shared = None
-    held_out: tuple[str | None, Mapping[str, Any] | None] = (None, None)
+    # The parent's preparation without one of its own studies, kept per study.
+    held_preparation: tuple[str | None, Mapping[str, Any] | None] = (None, None)
     for candidate in candidates:
         _check_candidate(candidate)
         if candidate["case_id"] in seen:
@@ -1112,15 +1371,19 @@ def grow_identity_memory(
                 str(candidate["source"].get("memory_revision")),
             )
         )
+        if candidate["study_uid"] in held:
+            # Nothing of a held-out study takes part: no recall, no admission.
+            decisions.append(_decision(candidate, "held_out", "study_held_out", ()))
+            continue
         early = _early_decision(candidate, represented)
         if early is not None:
             decisions.append(early)
             continue
         study = candidate["study_uid"]
         if study in record_studies:
-            if held_out[0] != study:
-                held_out = (study, _parent_preparation(parent, study))
-            prepared = held_out[1]
+            if held_preparation[0] != study:
+                held_preparation = (study, _parent_preparation(parent, study))
+            prepared = held_preparation[1]
         else:
             if shared is None:
                 shared = _parent_preparation(parent, None)
@@ -1139,7 +1402,7 @@ def grow_identity_memory(
                 admissions.append(
                     _admission(candidate, scored, parent, parent_snapshot.sha256)
                 )
-    shared = held_out = None
+    shared = held_preparation = None
     document = {
         "schema": DECISIONS_SCHEMA,
         "parent": {
@@ -1148,6 +1411,8 @@ def grow_identity_memory(
         },
         "decisions": decisions,
     }
+    if held_record is not None:
+        document["held_out"] = held_record
     data = _decisions_bytes(document)
     decisions_sha256 = hashlib.sha256(data).hexdigest()
     counts = dict(sorted(Counter(item["state"] for item in decisions).items()))
@@ -1159,13 +1424,27 @@ def grow_identity_memory(
         "candidate_count": len(decisions),
         "state_counts": counts,
         "admitted_case_ids": list(admitted_ids),
+        "held_out": copy.deepcopy(held_record),
+        "condition_teaching": None,
         "child": None,
     }
     if decisions_only or not admitted_ids:
         output.mkdir(parents=True)
         _write_atomic(output / DECISIONS_FILE, data)
         receipt["outcome"] = "decisions_only" if decisions_only else "no_admissions"
+        if label_source is not None:
+            # Nothing was admitted, so no label row was read.
+            receipt["condition_teaching"] = {
+                "schema": CONDITION_TEACHING_SCHEMA,
+                "labels": dict(label_source["reference"]),
+                "read_study_uids": [],
+                "cases": {},
+            }
         return receipt
+    condition_teaching = (
+        None if label_source is None else _carry_labels(admissions, label_source)
+    )
+    label_source = None  # the label file's text is not held past its carry
     round_record = {
         "parent_manifest_sha256": parent_snapshot.sha256,
         "parent_revision": parent["revision"],
@@ -1180,6 +1459,11 @@ def grow_identity_memory(
             for kind, revision in sorted(sources)
         ],
     }
+    if held_record is not None:
+        round_record["held_out"] = copy.deepcopy(held_record)
+    if condition_teaching is not None:
+        round_record["condition_teaching"] = condition_teaching
+        receipt["condition_teaching"] = copy.deepcopy(condition_teaching)
     child = _child_memory(parent, parent_snapshot.sha256, admissions, round_record)
     _verify_child(child)
     output.mkdir(parents=True)
@@ -1208,9 +1492,12 @@ def grow_identity_memory(
 
 __all__ = [
     "CHILD_DIRECTORY",
+    "CONDITION_TEACHING_SCHEMA",
     "DECISIONS_FILE",
     "DECISIONS_SCHEMA",
     "GROWTH_SCHEMA",
+    "HELD_OUT_SCHEMA",
+    "LABEL_SOURCE",
     "STATES",
     "IdentityGrowthError",
     "admission_decision",
@@ -1221,7 +1508,9 @@ __all__ = [
     "grow_identity_memory",
     "harvest_candidates",
     "harvest_inference",
+    "held_out_record",
     "inference_record_paths",
+    "inherited_held_out",
     "location_support",
     "read_inference_records",
     "record_sha256",

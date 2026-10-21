@@ -1159,3 +1159,164 @@ def test_cli_refuses_a_parent_without_identity_teaching(tmp_path: Path):
         )
     assert str(info.value) == "parent_identity_teaching_missing"
     assert not (tmp_path / "out").exists()
+
+
+# ------------------------------------- condition teaching and held-out studies
+#
+# The full two-sign record is tests/test_squint_growth_condition_teaching.py; these
+# pin the memory-candidate path and the CLI flags.
+
+
+def _labels_csv(path: Path, rows: dict) -> Path:
+    """A train.csv with the competition's header; no cell here needs quoting."""
+    lines = [",".join(["StudyInstanceUID", "Report", *LABELS])]
+    for uid, values in rows.items():
+        cells = ["" if values.get(q) is None else str(values[q]) for q in LABELS]
+        lines.append(",".join([uid, "report", *cells]))
+    path.write_text("\n".join(lines) + "\n", encoding="utf-8")
+    return path
+
+
+def test_a_memory_candidate_keeps_its_source_calls_and_its_row_is_not_read(signed):
+    # study-e's row is malformed: reading it would refuse the round.
+    labels = _labels_csv(signed.root / "train.csv", {"study-e": {"ACL": "x"}})
+    items = candidates_from_memory(
+        signed.catalogue,
+        candidate_ids=[FE],
+        sanity_by_case_id={FE: plausible("femur")},
+    )
+    receipt = grow_identity_memory(
+        signed.parent, items, signed.root / "labelled", labels=labels
+    )
+    assert receipt["admitted_case_ids"] == [FE]
+    teaching = receipt["condition_teaching"]
+    assert teaching["read_study_uids"] == []
+    assert teaching["cases"] == {FE: {"status": "source_case_retained"}}
+    child = load_memory_snapshot(signed.root / "labelled" / CHILD_DIRECTORY).memory
+    [case] = [case for case in child["cases"] if case["case_id"] == FE]
+    original = next(c for c in signed.catalogue.memory["cases"] if c["case_id"] == FE)
+    assert {key: value for key, value in case.items() if key != "identity_growth"} == (
+        original
+    )
+    assert case["condition_calls"] == {"ACL": 1}
+    assert "condition_teaching" not in case
+    assert child["object_identity_growth"]["rounds"][0]["condition_teaching"] == (
+        teaching
+    )
+
+
+def test_cli_carries_labels_and_holds_out_studies_without_changing_decisions(
+    tmp_path: Path,
+):
+    saved(tmp_path, "parent", identity_memory(ROUND_SEEDS))
+    records = [
+        study_record(
+            uid, {"femur": located("femur", [(SAG, (4, 0, 1))], plausible("femur"))}
+        )
+        for uid in ("sh", "sx")
+    ]
+    directory = _inference(tmp_path, "inference", records)
+    held = tmp_path / "held-out.txt"
+    held.write_text("sh\n\n", encoding="utf-8")
+    # sh's row is malformed: it is held out, so it is never read.
+    labels = _labels_csv(
+        tmp_path / "train.csv", {"sh": {"ACL": "x"}, "sx": {"ACL": 1, "Fracture": 0}}
+    )
+    base = ["grow", "--parent", str(tmp_path / "parent"), "--inference", str(directory)]
+    result = MOD.main(
+        [
+            *base,
+            "--output",
+            str(tmp_path / "with-labels"),
+            "--labels",
+            str(labels),
+            "--held-out",
+            str(held),
+        ]
+    )
+    plain = MOD.main(
+        [*base, "--output", str(tmp_path / "without-labels"), "--held-out", str(held)]
+    )
+    assert result["held_out_file"] == {
+        "path": str(held.resolve()),
+        "sha256": hashlib.sha256(held.read_bytes()).hexdigest(),
+        "study_uid_count": 1,
+    }
+    data = (tmp_path / "with-labels" / DECISIONS_FILE).read_bytes()
+    assert data == (tmp_path / "without-labels" / DECISIONS_FILE).read_bytes()
+    document = json.loads(data)
+    assert document["held_out"] == {
+        "schema": "knee.identity-growth-held-out/v1",
+        "study_uids": ["sh"],
+        "sha256": _json_sha256(["sh"]),
+    }
+    states = {row["study_uid"]: row["state"] for row in document["decisions"]}
+    assert states == {"sh": "held_out", "sx": "admitted"}
+    case_id = f"located:sx:femur:{INFERENCE_REVISION}"
+    child = load_memory_snapshot(tmp_path / "with-labels" / CHILD_DIRECTORY).memory
+    [case] = [case for case in child["cases"] if case["case_id"] == case_id]
+    assert case["condition_calls"] == {"ACL": 1, "Fracture": -1}
+    assert case["condition_teaching"]["status"] == "carried"
+    assert case["condition_teaching"]["carry"]["speaks_through"] == {
+        "ACL": [SAG],
+        "Fracture": [SAG],
+    }
+    assert case["label_attribution"]["ACL"]["source_path"] == str(labels.resolve())
+    assert child["object_identity_growth"]["held_out"] == document["held_out"]
+    assert result["condition_teaching"]["read_study_uids"] == ["sx"]
+    unlabelled = load_memory_snapshot(
+        tmp_path / "without-labels" / CHILD_DIRECTORY
+    ).memory
+    [same] = [case for case in unlabelled["cases"] if case["case_id"] == case_id]
+    assert same["condition_calls"] == {} and "condition_teaching" not in same
+    assert plain["condition_teaching"] is None
+    assert child["revision"] != unlabelled["revision"]
+
+
+def test_cli_refuses_a_malformed_held_out_file_or_labels_without_a_child(
+    tmp_path: Path,
+):
+    saved(tmp_path, "parent", identity_memory(ROUND_SEEDS))
+    record = study_record(
+        "sx", {"femur": located("femur", [(SAG, (4, 0, 1))], plausible("femur"))}
+    )
+    directory = _inference(tmp_path, "inference", [record])
+    base = ["grow", "--parent", str(tmp_path / "parent"), "--inference", str(directory)]
+    files = {
+        "empty": "\n \n",
+        "twice": "sx\nsy\nsx\n",
+        "spaced": "s x\n",
+    }
+    expected = {
+        "empty": "held_out_file_empty: " + str(tmp_path / "empty.txt"),
+        "twice": "held_out_file_duplicate: sx",
+        "spaced": "held_out_file_line_invalid: s x",
+    }
+    for name, text in files.items():
+        (tmp_path / f"{name}.txt").write_text(text, encoding="utf-8")
+        with pytest.raises(SystemExit) as info:
+            MOD.main(
+                [
+                    *base,
+                    "--output",
+                    str(tmp_path / "out"),
+                    "--held-out",
+                    str(tmp_path / f"{name}.txt"),
+                ]
+            )
+        assert str(info.value) == expected[name]
+        assert not (tmp_path / "out").exists()
+    labels = _labels_csv(tmp_path / "train.csv", {"sx": {"ACL": 1}})
+    with pytest.raises(SystemExit) as info:
+        MOD.main(
+            [
+                *base,
+                "--output",
+                str(tmp_path / "out"),
+                "--labels",
+                str(labels),
+                "--decisions-only",
+            ]
+        )
+    assert str(info.value) == "labels_with_decisions_only"
+    assert not (tmp_path / "out").exists()

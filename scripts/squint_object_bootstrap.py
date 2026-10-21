@@ -21,7 +21,11 @@ grow: read the per-study records of squint inference output directories, turn
 each located object into a candidate, and decide every candidate against one
 frozen signed parent with the shared growth API. ``admission-decisions.json``
 is always written in the new output directory; the warranted child, if any, is
-published at ``<output>/memory`` unless ``--decisions-only``.
+published at ``<output>/memory`` unless ``--decisions-only``. ``--labels``
+(train.csv) carries each admitted study's official labels onto its admitted
+case after every decision is made; ``--held-out`` (one StudyInstanceUID per
+line) names studies whose candidates are never admitted and whose labels are
+never read, joined with those the parent's growth block already holds out.
 """
 
 from __future__ import annotations
@@ -1749,6 +1753,25 @@ def _parser() -> argparse.ArgumentParser:
         action="store_true",
         help="write admission-decisions.json and publish no child memory",
     )
+    grow.add_argument(
+        "--labels",
+        type=Path,
+        default=None,
+        help=(
+            "the competition's train.csv; after every decision, only the rows of "
+            "studies with an admitted candidate are read and carried onto it"
+        ),
+    )
+    grow.add_argument(
+        "--held-out",
+        dest="held_out",
+        type=Path,
+        default=None,
+        help=(
+            "a file of StudyInstanceUIDs, one per line, whose candidates are never "
+            "admitted and whose labels are never read"
+        ),
+    )
     return parser
 
 
@@ -1882,11 +1905,42 @@ def run_sheets(args: argparse.Namespace) -> dict[str, Any]:
     )
 
 
+def held_out_file(path: Path) -> tuple[list[str], dict[str, Any]]:
+    """The StudyInstanceUIDs of a held-out file, one per line, and its provenance.
+
+    Each line is stripped and blank lines are skipped. A line holding whitespace
+    inside it, a repeated study, or a file naming no study is refused by name.
+    """
+    raw = _read_bytes(Path(path), "held_out_file_unreadable")
+    try:
+        text = raw.decode("utf-8")
+    except UnicodeError as error:
+        raise ObjectBootstrapError("held_out_file_unreadable", str(path)) from error
+    uids = [line.strip() for line in text.splitlines() if line.strip()]
+    if not uids:
+        raise ObjectBootstrapError("held_out_file_empty", str(path))
+    for uid in uids:
+        if any(character.isspace() for character in uid) or "\0" in uid:
+            raise ObjectBootstrapError("held_out_file_line_invalid", uid)
+    repeated = sorted(uid for uid, count in Counter(uids).items() if count > 1)
+    if repeated:
+        raise ObjectBootstrapError("held_out_file_duplicate", repeated[0])
+    return uids, {
+        "path": str(Path(path).resolve()),
+        "sha256": hashlib.sha256(raw).hexdigest(),
+        "study_uid_count": len(uids),
+    }
+
+
 def run_grow(args: argparse.Namespace) -> dict[str, Any]:
     """Stream every inference record's candidates into one frozen-parent round."""
     output = Path(args.output)
     if output.exists() or output.is_symlink():
         raise ObjectBootstrapError("output_exists")
+    held_out: list[str] = []
+    held_out_source = None
+    if args.held_out is not None:
+        held_out, held_out_source = held_out_file(Path(args.held_out))
     directories = [Path(directory) for directory in args.inference]
     sources = [
         {"path": str(directory), "records": len(inference_record_paths(directory))}
@@ -1898,8 +1952,15 @@ def run_grow(args: argparse.Namespace) -> dict[str, Any]:
         harvest_inference(directories),
         output,
         decisions_only=args.decisions_only,
+        labels=None if args.labels is None else Path(args.labels),
+        held_out=held_out,
     )
-    return {"action": "grow", "inference": sources, **result}
+    return {
+        "action": "grow",
+        "inference": sources,
+        "held_out_file": held_out_source,
+        **result,
+    }
 
 
 _ACTIONS = {
