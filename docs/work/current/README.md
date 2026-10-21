@@ -52,24 +52,25 @@ Worktrees under `/private/tmp/rsna-upgrade-20261021/<job>` (branch `upgrade/<job
 
 | Job | Route | Worktree | Handle | State |
 |---|---|---|---|---|
-| C1 true-location control | Codex CLI | c1 | background task b8rp85f3o | RUNNING |
+| C1 true-location control | Codex CLI | c1 | b8rp85f3o | INTEGRATED (true-location mode); 58-study result in `workers/c1/run/` |
 | P1 push-check false positive | Codex CLI | p1 | background task bz9xdqmzx | VERIFIED by lead (48 focused tests); applied to `squint-upgrade`, not yet committed |
 | W1 leg map | Codex CLI | w1 | bofjc34sb, then revision w1-r2 bim2wmct2 | Returned; lead's picture review found the tile-maximum rule (the lead's) keeps noisy air; revision 2 (tile median) RUNNING |
 | W2 territory writer | Codex CLI | w2 | bg3vmootl | INTEGRATED be221ff (38 focused tests) |
 | W4 teacher support to territory | Codex CLI | w4 | bfv17yqgc | INTEGRATED be221ff (763 regions unchanged; 568 supports resolved) |
 | W8 memory view | Codex CLI | w8 | bxk8eq2m3 | INTEGRATED 11da75d (160 focused tests) |
 | R1a report reader (58 labelled) | Codex CLI | none | background task b0gpgap48 | RETURNED: 510 calls, 0 rejected; compared with labels in `workers/r1-batch/README.md` |
-| K1 private Kaggle timing of r6 | Claude sub-agent | none | session sub-agent | RUNNING |
+| K1 private Kaggle timing of r6 | Claude sub-agent | none | session sub-agent | DONE: kernel v4 COMPLETE, 25.5 CPU-s/study, 3.23 GB peak, valid CSV (`workers/k1/report.md`) |
 | K2 Kaggle observation notebook | Claude sub-agent | k2 | session sub-agent | RUNNING |
 | R1b report reader (58 labelled) | Claude sub-agent | none | session sub-agent | RUNNING |
 | W5 memory rebuild | Claude sub-agent | w5 | session sub-agent | RUNNING |
-| W6 question selection | Claude sub-agent | w6 | session sub-agent | RUNNING |
+| W6 question selection | Claude sub-agent | w6 | session sub-agent | INTEGRATED c95d61a, with the lead's sourced MCL-surroundings exception (SQUINT_TRAINING_BUILD §10) |
 | W9 bones by structure | Claude sub-agent | w9 | session sub-agent | RUNNING |
 | W10 dependents from anchors | Codex CLI, then Claude sub-agent | w10 | bc9e3zmt4 FAILED (model at capacity, no edits); reassigned to a session sub-agent | RUNNING |
 | W11 location check | Claude sub-agent | w11 | session sub-agent | RUNNING |
-| W14 teaching round | Codex CLI | w14 | b4jecu4qt | RUNNING |
+| W14 teaching round | Codex CLI, then Claude sub-agent | w14 | b4jecu4qt FAILED (model at capacity, no edits); reassigned to a session sub-agent | RUNNING |
 | W12 residual executor | Claude sub-agent | w12 | session sub-agent | RUNNING |
-| W7, W13 | per §9 | created | | READY, launch as slots free |
+| W7 recall reads only the selection | Codex CLI | w7 | baeddtawc | RUNNING |
+| W13 picture sheets | Claude sub-agent | w13 | session sub-agent | RUNNING |
 
 ## UNREVIEWED / WITHDRAWN / STALE RESULTS
 
