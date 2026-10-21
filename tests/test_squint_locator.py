@@ -1229,11 +1229,13 @@ def test_finite_helper_windows_do_not_inherit_teaching_case_positions(
             ],
         }
 
+    # Anatomy as in a knee: the femur's slice lies above (larger LPS z than) the tibia's.
+    # The fixture once had them inverted, which the anatomical check rightly contradicts.
     memory = {
         "cases": [
-            source_case("femur", 1, (0.0, 0.0, 0.0)),
+            source_case("femur", 1, (0.0, 0.0, 100.0)),
             source_case("meniscus", 1, (0.0, 0.0, 60.0)),
-            source_case("tibia", -1, (0.0, 0.0, 100.0)),
+            source_case("tibia", -1, (0.0, 0.0, 0.0)),
         ]
     }
     stack = SimpleNamespace(
@@ -1242,12 +1244,12 @@ def test_finite_helper_windows_do_not_inherit_teaching_case_positions(
         coverage=np.ones((3, 1, 1)),
         bounds_rc=np.asarray([[[0, 2, 0, 2]]], dtype=np.int64),
         centres_lps=np.array(
-            [[[0.0, 0.0, 0.0]], [[0.0, 0.0, 60.0]], [[0.0, 0.0, 100.0]]]
+            [[[0.0, 0.0, 100.0]], [[0.0, 0.0, 60.0]], [[0.0, 0.0, 0.0]]]
         ).reshape(3, 1, 1, 3),
         tile_mm=10.0,
     )
     geometry = {
-        "position": np.asarray([[0.0, 0.0, 0.0], [0.0, 0.0, 60.0], [0.0, 0.0, 100.0]]),
+        "position": np.asarray([[0.0, 0.0, 100.0], [0.0, 0.0, 60.0], [0.0, 0.0, 0.0]]),
         "orientation": np.asarray([[1, 0, 0, 0, 1, 0]] * 3, dtype=float),
         "spacing": np.asarray([[1.0, 1.0]] * 3),
     }
