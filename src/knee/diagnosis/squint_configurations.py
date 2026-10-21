@@ -10,10 +10,14 @@ import json
 from typing import Any
 
 from knee.diagnosis.declarations import question_for
+from knee.diagnosis.squint_interfaces import TERRITORY_PROCEDURE
 
 _MEMORY_SCHEMA = "knee.squint-memory/v1"
 _PROFILE_SCHEMA = "knee.squint-profile/v1"
 _PROCEDURE = "knee.squint-profile/scan-tercile-v1"
+#: Object-profile writers a configuration may compose. One configuration reads
+#: one writer: object roles written by different procedures never share it.
+_PROCEDURES = (_PROCEDURE, TERRITORY_PROCEDURE)
 _CONFIGURATION_REVISION = "question-configurations-v1"
 
 
@@ -25,7 +29,9 @@ class ConfigurationProfileError(ValueError):
         super().__init__(code)
 
 
-def _validate_profile(subject: str, value: dict[str, Any]) -> dict[str, Any]:
+def _validate_profile(
+    subject: str, value: dict[str, Any], procedure: str = _PROCEDURE
+) -> dict[str, Any]:
     profile = value.get("profile") if "profile" in value else value
     if not isinstance(profile, dict) or profile.get("schema") != _PROFILE_SCHEMA:
         raise ConfigurationProfileError("object_profile_invalid")
@@ -34,7 +40,7 @@ def _validate_profile(subject: str, value: dict[str, Any]) -> dict[str, Any]:
     profile_source = profile.get("source")
     if not isinstance(profile_source, dict):
         raise ConfigurationProfileError("object_profile_source_invalid")
-    if profile_source.get("procedure") != _PROCEDURE:
+    if profile_source.get("procedure") != procedure:
         raise ConfigurationProfileError("object_profile_procedure_mismatch")
     banks = profile.get("banks")
     if not isinstance(banks, dict):
@@ -49,17 +55,23 @@ def _validate_profile(subject: str, value: dict[str, Any]) -> dict[str, Any]:
     return profile
 
 
-def configuration_profile(profiles: dict[str, dict], question: str) -> dict:
+def configuration_profile(
+    profiles: dict[str, dict], question: str, *, procedure: str = _PROCEDURE
+) -> dict:
     """Compose the exact declared object roles for one question.
 
     `profiles` maps canonical object subjects to either their memory case or a
     `knee.squint-profile/v1` profile. Missing roles stay explicit in the source
     record and contribute no banks. Non-question objects are not selected.
+    `procedure` names the one writer whose object profiles are composed; every
+    role must carry it, and the configuration is labelled with it.
     """
     if not isinstance(profiles, dict):
         raise ConfigurationProfileError("profiles_mapping_required")
     if not isinstance(question, str) or not question:
         raise ConfigurationProfileError("question_id_invalid")
+    if procedure not in _PROCEDURES:
+        raise ConfigurationProfileError("configuration_procedure_unknown")
     try:
         declaration = question_for(question)
     except KeyError as error:
@@ -80,7 +92,7 @@ def configuration_profile(profiles: dict[str, dict], question: str) -> dict:
             continue
         if not isinstance(case_or_profile, dict):
             raise ConfigurationProfileError("object_case_invalid")
-        profile = _validate_profile(subject, case_or_profile)
+        profile = _validate_profile(subject, case_or_profile, procedure)
         for bank_name, counts in profile["banks"].items():
             qualified = f"object/{subject}/{bank_name}"
             if qualified in banks:
@@ -101,7 +113,7 @@ def configuration_profile(profiles: dict[str, dict], question: str) -> dict:
         "banks": banks,
         "source": {
             "api": "knee.diagnosis.squint_configurations.configuration_profile/v1",
-            "procedure": _PROCEDURE,
+            "procedure": procedure,
             "question_id": declaration.question_id,
             "object_order": list(declaration.objects),
             "roles": role_sources,
@@ -110,15 +122,18 @@ def configuration_profile(profiles: dict[str, dict], question: str) -> dict:
     }
 
 
-def with_configuration_cases(memory: dict) -> dict:
+def with_configuration_cases(memory: dict, *, procedure: str = _PROCEDURE) -> dict:
     """Return a new memory with one label-backed case per available condition.
 
     Label values are stored only in each new case's `condition_calls` and
     `label_attribution`; they are never passed to or inserted into the profile
-    composition function.
+    composition function. `procedure` is the one object-profile writer the
+    memory's cases were read with (see `configuration_profile`).
     """
     if not isinstance(memory, dict) or memory.get("schema") != _MEMORY_SCHEMA:
         raise ConfigurationProfileError("memory_schema_invalid")
+    if procedure not in _PROCEDURES:
+        raise ConfigurationProfileError("configuration_procedure_unknown")
     cases = memory.get("cases")
     ledger = memory.get("label_ledger")
     if not isinstance(cases, list) or not isinstance(ledger, dict):
@@ -170,7 +185,9 @@ def with_configuration_cases(memory: dict) -> dict:
                 raise ConfigurationProfileError("label_ledger_call_invalid")
             case_id = f"squint-configuration:{study_uid}:{declaration.question_id}"
             profile = configuration_profile(
-                cases_by_study.get(study_uid, {}), declaration.question_id
+                cases_by_study.get(study_uid, {}),
+                declaration.question_id,
+                procedure=procedure,
             )
             calls = {declaration.question_id: 1 if value == 1 else -1}
             generated = {

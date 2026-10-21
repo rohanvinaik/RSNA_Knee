@@ -16,7 +16,7 @@ import math
 import os
 import tempfile
 import time
-from collections.abc import Mapping
+from collections.abc import Callable, Mapping
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
@@ -30,6 +30,20 @@ PROCEDURE = "knee.squint-ternary/v1"
 FULL_CONTEXTS_SCHEMA = "knee.squint-full-profile-contexts/v1"
 FULL_PAYLOADS_SCHEMA = "knee.squint-full-profile-payloads/v1"
 FULL_PROFILE_REVISION = "portable-full-profiles-v1"
+
+# Bootstrap profile writers (SQUINT_TRAINING_BUILD §§3-4). ``squint-v1`` reads
+# each case region's box against the scan's own terciles; it stays the default
+# so an old memory rebuilds byte for byte. ``territory-v2`` reads the object's
+# own saved support (its teacher territory), the surrounding tiles as a separate
+# context role and nothing outside the leg, against cutoffs over the leg alone.
+# A v2 memory carries its own revision and never mixes with a v1 one.
+WRITER_V1 = "squint-v1"
+WRITER_TERRITORY = "territory-v2"
+BOOTSTRAP_WRITERS = (WRITER_V1, WRITER_TERRITORY)
+TERRITORY_REVISION = "bootstrap-2026-10-21-territory-v2"
+_V1_REVISION = "bootstrap-2026-10-21-native-supports-v2"
+_TERRITORY_RECEIPT_SCHEMA = "knee.squint-territory-writer/v1"
+_TERRITORY_FINE_TILE_MM = 2.0
 
 # Directly implicated presentations from docs/OBJECTS_AND_CONDITIONS.md §6.
 # Context-only question roles remain in the memory without invented calls.
@@ -535,106 +549,9 @@ def _profile_regions(
     regions_by_subject: dict[str, list[dict]] = {}
     artifact_arrays: dict[Path, dict[str, np.ndarray]] = {}
     for subject, record in full_records.items():
-        context = record.get("spatial_context")
-        point = context.get("point_lps") if isinstance(context, dict) else None
-        keyplanes = context.get("keyplanes", {}) if isinstance(context, dict) else {}
-        choices: list[dict[str, Any]] = []
-        if isinstance(keyplanes, dict):
-            for orientation in ("sagittal", "coronal", "axial"):
-                plane = keyplanes.get(orientation)
-                if isinstance(plane, dict) and plane.get("outcome") == "selected":
-                    choices.append(
-                        {
-                            **plane,
-                            "orientation_name": orientation,
-                            "selection_source": "spatial_context.keyplanes",
-                        }
-                    )
-        if not choices:
-            context_record = (
-                object_contexts.get(subject, {})
-                if isinstance(object_contexts, dict)
-                else {}
-            )
-            decisions = (
-                context_record.get("definition_decisions", [])
-                if isinstance(context_record, dict)
-                else []
-            )
-            for decision in decisions:
-                if (
-                    not isinstance(decision, dict)
-                    or decision.get("code") != "identified"
-                ):
-                    continue
-                view = decision.get("view")
-                if not isinstance(view, list) or not view:
-                    continue
-                choices.append(
-                    {
-                        "orientation_name": str(view[0]).lower(),
-                        "series_uid": decision.get("series_uid"),
-                        "slice": decision.get("slice_index"),
-                        "view": {
-                            "orientation": view[0],
-                            "fluid_sensitive": view[1],
-                            "fat_suppression": view[2],
-                        },
-                        "outcome": "identified",
-                        "selection_source": "object_contexts.definition_decisions",
-                    }
-                )
-        if not choices:
-            owner = (
-                support_ownership.get(subject, {})
-                if isinstance(support_ownership, dict)
-                else {}
-            )
-            addressed = (
-                owner.get("addressed_supports", []) if isinstance(owner, dict) else []
-            )
-            seen_addresses: set[tuple[str, int, tuple[str, ...]]] = set()
-            for entry in addressed:
-                address = (
-                    entry.get("source_address") if isinstance(entry, dict) else None
-                )
-                if not isinstance(address, dict):
-                    continue
-                series_uid = address.get("target_series_uid")
-                slice_index = address.get("record_slice_index")
-                view = address.get("record_view")
-                if (
-                    not isinstance(series_uid, str)
-                    or type(slice_index) is not int
-                    or not isinstance(view, list)
-                ):
-                    continue
-                identity = (
-                    series_uid,
-                    slice_index,
-                    tuple(str(value) for value in view),
-                )
-                if identity in seen_addresses:
-                    continue
-                seen_addresses.add(identity)
-                choices.append(
-                    {
-                        "orientation_name": str(view[0]).lower() if view else "unknown",
-                        "series_uid": series_uid,
-                        "slice": slice_index,
-                        "view": {
-                            "orientation": view[0],
-                            "fluid_sensitive": view[1],
-                            "fat_suppression": view[2],
-                        }
-                        if len(view) == 3
-                        else None,
-                        "outcome": "retained_support_address",
-                        "selection_source": "support_ownership.addressed_supports",
-                    }
-                )
-                if len(choices) >= 3:
-                    break
+        choices, point = _region_choices(
+            subject, record, support_ownership, object_contexts
+        )
         for plane in choices:
             orientation = plane.get("orientation_name")
             series_uid = plane.get("series_uid")
@@ -698,6 +615,724 @@ def _profile_regions(
             raise SquintMemoryError("merge_profiles_result_invalid")
         merged[subject] = result
     return merged, regions_by_subject
+
+
+def _region_choices(
+    subject: str,
+    record: dict[str, Any],
+    support_ownership: dict[str, Any],
+    object_contexts: dict[str, Any],
+) -> tuple[list[dict[str, Any]], Any]:
+    """Name the planes one object's case regions are read on, and its LPS point.
+
+    Selected key planes first; otherwise identified definition decisions;
+    otherwise up to three distinct retained support addresses. Both writers
+    read the same planes, so a territory case differs from its v1 twin only in
+    how each plane is read.
+    """
+    context = record.get("spatial_context")
+    point = context.get("point_lps") if isinstance(context, dict) else None
+    keyplanes = context.get("keyplanes", {}) if isinstance(context, dict) else {}
+    choices: list[dict[str, Any]] = []
+    if isinstance(keyplanes, dict):
+        for orientation in ("sagittal", "coronal", "axial"):
+            plane = keyplanes.get(orientation)
+            if isinstance(plane, dict) and plane.get("outcome") == "selected":
+                choices.append(
+                    {
+                        **plane,
+                        "orientation_name": orientation,
+                        "selection_source": "spatial_context.keyplanes",
+                    }
+                )
+    if not choices:
+        context_record = (
+            object_contexts.get(subject, {})
+            if isinstance(object_contexts, dict)
+            else {}
+        )
+        decisions = (
+            context_record.get("definition_decisions", [])
+            if isinstance(context_record, dict)
+            else []
+        )
+        for decision in decisions:
+            if not isinstance(decision, dict) or decision.get("code") != "identified":
+                continue
+            view = decision.get("view")
+            if not isinstance(view, list) or not view:
+                continue
+            choices.append(
+                {
+                    "orientation_name": str(view[0]).lower(),
+                    "series_uid": decision.get("series_uid"),
+                    "slice": decision.get("slice_index"),
+                    "view": {
+                        "orientation": view[0],
+                        "fluid_sensitive": view[1],
+                        "fat_suppression": view[2],
+                    },
+                    "outcome": "identified",
+                    "selection_source": "object_contexts.definition_decisions",
+                }
+            )
+    if not choices:
+        owner = (
+            support_ownership.get(subject, {})
+            if isinstance(support_ownership, dict)
+            else {}
+        )
+        addressed = (
+            owner.get("addressed_supports", []) if isinstance(owner, dict) else []
+        )
+        seen_addresses: set[tuple[str, int, tuple[str, ...]]] = set()
+        for entry in addressed:
+            address = entry.get("source_address") if isinstance(entry, dict) else None
+            if not isinstance(address, dict):
+                continue
+            series_uid = address.get("target_series_uid")
+            slice_index = address.get("record_slice_index")
+            view = address.get("record_view")
+            if (
+                not isinstance(series_uid, str)
+                or type(slice_index) is not int
+                or not isinstance(view, list)
+            ):
+                continue
+            identity = (
+                series_uid,
+                slice_index,
+                tuple(str(value) for value in view),
+            )
+            if identity in seen_addresses:
+                continue
+            seen_addresses.add(identity)
+            choices.append(
+                {
+                    "orientation_name": str(view[0]).lower() if view else "unknown",
+                    "series_uid": series_uid,
+                    "slice": slice_index,
+                    "view": {
+                        "orientation": view[0],
+                        "fluid_sensitive": view[1],
+                        "fat_suppression": view[2],
+                    }
+                    if len(view) == 3
+                    else None,
+                    "outcome": "retained_support_address",
+                    "selection_source": "support_ownership.addressed_supports",
+                }
+            )
+            if len(choices) >= 3:
+                break
+    return choices, point
+
+
+def _territory_writer(
+    leg_maps: Callable[[dict[str, Any]], Mapping[str, Any]] | None = None,
+) -> dict[str, Any]:
+    """Bind the territory-v2 producers, or refuse by name before any study is read.
+
+    The territory writer (``squint_profiles``) and the teacher support
+    (``squint_support``) come from their lanes; this is the one place the
+    compiler binds them. The leg map stays an explicit input: ``leg_maps`` maps
+    one loaded study to its leg map per series, and defaults to
+    ``squint_leg.leg_maps``. The configuration composer must accept the
+    territory procedure, so configurations are rebuilt from the v2 object
+    profiles, never relabelled to pass the v1 check.
+    """
+    from knee.diagnosis.squint_interfaces import TERRITORY_PROCEDURE
+
+    try:
+        from knee.diagnosis.squint_configurations import (
+            configuration_profile,
+            with_configuration_cases,
+        )
+        from knee.diagnosis.squint_profiles import (
+            leg_calibration,
+            merge_profiles,
+            profile_territory,
+            refine_territory,
+        )
+        from knee.diagnosis.squint_support import support_mask, teacher_territory
+    except ImportError as error:
+        raise SquintMemoryError("territory_writer_unavailable") from error
+    if leg_maps is None:
+        try:
+            from knee.diagnosis.squint_leg import leg_maps
+        except ImportError as error:
+            raise SquintMemoryError("territory_leg_maps_unavailable") from error
+    if not callable(leg_maps):
+        raise SquintMemoryError("territory_leg_maps_invalid")
+    try:
+        probe = configuration_profile({}, LABELS[0], procedure=TERRITORY_PROCEDURE)
+    except TypeError as error:
+        raise SquintMemoryError("territory_configurations_unavailable") from error
+    probe_source = probe.get("source") if isinstance(probe, dict) else None
+    if (
+        not isinstance(probe_source, dict)
+        or probe_source.get("procedure") != TERRITORY_PROCEDURE
+    ):
+        raise SquintMemoryError("territory_configurations_unavailable")
+    return {
+        "leg_maps": leg_maps,
+        "support_mask": support_mask,
+        "teacher_territory": teacher_territory,
+        "leg_calibration": leg_calibration,
+        "profile_territory": profile_territory,
+        "refine_territory": refine_territory,
+        "merge_profiles": merge_profiles,
+        "with_configuration_cases": with_configuration_cases,
+    }
+
+
+def _json_value(value: object) -> Any:
+    """A JSON-safe copy of a provenance value; refuse what JSON cannot hold."""
+    if isinstance(value, Mapping):
+        result: dict[str, Any] = {}
+        for key, item in value.items():
+            if not isinstance(key, str):
+                raise SquintMemoryError("territory_address_not_json")
+            result[key] = _json_value(item)
+        return result
+    if isinstance(value, (list, tuple)):
+        return [_json_value(item) for item in value]
+    if isinstance(value, np.ndarray):
+        return _json_value(value.tolist())
+    if isinstance(value, np.generic):
+        return _json_value(value.item())
+    if value is None or isinstance(value, (bool, str, int)):
+        return value
+    if isinstance(value, float) and math.isfinite(value):
+        return value
+    raise SquintMemoryError("territory_address_not_json")
+
+
+def _territory_address(territory: Mapping[str, Any]) -> dict[str, Any]:
+    """A territory as a JSON address: its window and every tile's role and share.
+
+    The native support mask stays runtime-only (``squint_interfaces``); its
+    slices, offset, shape, pixel count and digest identify it exactly, and its
+    saved source address stays in the provenance.
+    """
+    from knee.diagnosis.squint_interfaces import (
+        ROLE_CONTEXT,
+        ROLE_OBJECT,
+        ROLE_OUTSIDE_LEG,
+        ROLE_UNQUERIED,
+    )
+
+    roles = np.asarray(territory["roles"])
+    share = np.asarray(territory["object_share"], dtype=np.float64)
+    support = territory["native_support"]
+    mask = np.ascontiguousarray(support["mask"], dtype=np.bool_)
+    return {
+        "schema": territory["schema"],
+        "origin": territory["origin"],
+        "study_uid": territory["study_uid"],
+        "series_uid": territory["series_uid"],
+        "subject": territory["subject"],
+        "tile_window": [int(value) for value in territory["tile_window"]],
+        "roles": roles.astype(np.int64).tolist(),
+        "role_counts": {
+            "object": int(np.count_nonzero(roles == ROLE_OBJECT)),
+            "context": int(np.count_nonzero(roles == ROLE_CONTEXT)),
+            "outside_leg": int(np.count_nonzero(roles == ROLE_OUTSIDE_LEG)),
+            "unqueried": int(np.count_nonzero(roles == ROLE_UNQUERIED)),
+        },
+        # NaN means no share was measured for that tile; JSON keeps it as null.
+        "object_share": np.where(np.isfinite(share), share, None).tolist(),
+        "native_support": {
+            "slices": [int(value) for value in support["slices"]],
+            "offset_rc": [int(value) for value in support["offset_rc"]],
+            "shape": [int(value) for value in mask.shape],
+            "pixel_count": int(np.count_nonzero(mask)),
+            "mask_sha256": hashlib.sha256(mask.tobytes()).hexdigest(),
+        },
+        "key_planes": _json_value(territory.get("key_planes")),
+        "relation": _json_value(territory.get("relation")),
+        "anchors": _json_value(territory.get("anchors")),
+        "provenance": _json_value(territory.get("provenance")),
+    }
+
+
+def _native_support_bbox(
+    support: Mapping[str, Any],
+) -> tuple[int, int, int, int] | None:
+    """The native half-open box around the support's own pixels: an address only."""
+    mask = np.asarray(support.get("mask"))
+    offset = support.get("offset_rc")
+    if (
+        mask.dtype != np.bool_
+        or mask.ndim != 3
+        or not isinstance(offset, (list, tuple))
+        or len(offset) != 2
+    ):
+        return None
+    rows, cols = np.nonzero(mask.any(axis=0))
+    if not rows.size:
+        return None
+    row_offset, col_offset = (int(value) for value in offset)
+    return (
+        row_offset + int(rows.min()),
+        row_offset + int(rows.max()) + 1,
+        col_offset + int(cols.min()),
+        col_offset + int(cols.max()) + 1,
+    )
+
+
+def _saved_support_slices(
+    subject: str, series_uid: str, support_ownership: dict[str, Any]
+) -> list[int]:
+    """Observation slices of this series at which the object has a saved native support.
+
+    The same address filter as ``support_mask``: the target series, a native
+    pixel address and available geometry. Coarse-grid estimates and per-slice
+    profile areas are not outlines and are not listed.
+    """
+    owner = (
+        support_ownership.get(subject) if isinstance(support_ownership, dict) else None
+    )
+    entries = owner.get("addressed_supports", []) if isinstance(owner, dict) else []
+    slices: set[int] = set()
+    for entry in entries:
+        address = entry.get("source_address") if isinstance(entry, dict) else None
+        if (
+            not isinstance(address, dict)
+            or address.get("target_series_uid") != series_uid
+            or address.get("address_kind") != "native_rc"
+            or address.get("geometry_status") != "available"
+        ):
+            continue
+        observed = address.get("observation_slices")
+        if isinstance(observed, list):
+            slices.update(
+                value for value in observed if type(value) is int and value >= 0
+            )
+    return sorted(slices)
+
+
+def _teacher_territory(
+    writer: Mapping[str, Any],
+    study_uid: str,
+    series: dict[str, Any],
+    subject: str,
+    slice_index: int,
+    leg_map: Mapping[str, Any],
+    support_ownership: dict[str, Any],
+    source_roots: dict[str, Any],
+    artifact_arrays: dict[Path, dict[str, np.ndarray]],
+    verified_arrays: Mapping[str, np.ndarray] | None,
+    *,
+    already_read: frozenset[int] = frozenset(),
+) -> tuple[dict[str, Any] | None, str, dict[str, Any]]:
+    """Resolve one region's teacher territory, its key slice first.
+
+    Where no saved outline exists at the key slice (``support_unavailable``),
+    the object's other saved native supports in the same series are tried
+    through the same resolver, nearest to the key slice first and the lower
+    slice on a tie, skipping slices this object already reads in the series.
+    Returns ``(territory, "valid", choice)`` or ``(None, reason, choice)``,
+    where ``choice`` records the key slice, the slice used and every attempt
+    with its code. A support that resolves nowhere in the series keeps the key
+    slice's refusal; it is never replaced by a box or a keypoint tile.
+    """
+    series_uid = series.get("series_uid")
+    choice: dict[str, Any] = {
+        "key_slice": slice_index,
+        "used_slice": None,
+        "rule": "key_slice",
+        "attempts": [],
+    }
+
+    def attempt(index: int) -> tuple[dict[str, Any] | None, str]:
+        territory, code = _territory_at(
+            writer,
+            study_uid,
+            series,
+            subject,
+            index,
+            leg_map,
+            support_ownership,
+            source_roots,
+            artifact_arrays,
+            verified_arrays,
+        )
+        choice["attempts"].append({"slice": index, "code": code})
+        return territory, code
+
+    territory, reason = attempt(slice_index)
+    if territory is not None:
+        choice["used_slice"] = slice_index
+        return territory, "valid", choice
+    if reason != "support_unavailable":
+        return None, reason, choice
+    choice["rule"] = "nearest_saved_support_in_series"
+    candidates = sorted(
+        (
+            index
+            for index in _saved_support_slices(subject, series_uid, support_ownership)
+            if index != slice_index
+        ),
+        key=lambda index: (abs(index - slice_index), index),
+    )
+    for index in candidates:
+        if index in already_read:
+            choice["attempts"].append(
+                {"slice": index, "code": "support_slice_already_read"}
+            )
+            continue
+        territory, _ = attempt(index)
+        if territory is not None:
+            distance = abs(index - slice_index)
+            choice.update(
+                {
+                    "used_slice": index,
+                    "distance_slices": distance,
+                    "equally_near_slices": [
+                        other
+                        for other in candidates
+                        if other != index and abs(other - slice_index) == distance
+                    ],
+                }
+            )
+            return territory, "valid", choice
+    return None, reason, choice
+
+
+def _territory_at(
+    writer: Mapping[str, Any],
+    study_uid: str,
+    series: dict[str, Any],
+    subject: str,
+    slice_index: int,
+    leg_map: Mapping[str, Any],
+    support_ownership: dict[str, Any],
+    source_roots: dict[str, Any],
+    artifact_arrays: dict[Path, dict[str, np.ndarray]],
+    verified_arrays: Mapping[str, np.ndarray] | None,
+) -> tuple[dict[str, Any] | None, str]:
+    """Resolve the saved support at one slice into a teacher territory.
+
+    Returns ``(territory, "valid")`` or ``(None, reason)``. The reason is the
+    support resolver's or the territory maker's own named code.
+    """
+    from knee.diagnosis.squint_interfaces import territory_code
+
+    series_uid = series.get("series_uid")
+    mask_info = writer["support_mask"](
+        subject,
+        series_uid,
+        slice_index,
+        support_ownership,
+        source_roots,
+        artifact_arrays,
+        verified_arrays,
+    )
+    if not isinstance(mask_info, Mapping):
+        return None, "support_result_invalid"
+    if mask_info.get("code") != "resolved":
+        code = mask_info.get("code")
+        return None, code if isinstance(code, str) and code else "support_unresolved"
+    territory = writer["teacher_territory"](
+        study_uid, series, subject, mask_info, slice_index, leg_map=leg_map
+    )
+    if not isinstance(territory, Mapping):
+        return None, "teacher_territory_result_invalid"
+    code = territory.get("code", "resolved")
+    if code != "resolved":
+        return None, code if isinstance(code, str) and code else "territory_refused"
+    grid = tuple(int(value) for value in series["stack"].median.shape)
+    code = territory_code(territory, grid_shape=grid)
+    if code != "valid":
+        return None, code
+    if (
+        territory.get("origin") != "teacher_support"
+        or territory.get("study_uid") != study_uid
+        or territory.get("series_uid") != series_uid
+        or territory.get("subject") != subject
+    ):
+        return None, "territory_identity_mismatch"
+    support = territory.get("native_support")
+    if not isinstance(support, Mapping):
+        return None, "territory_native_support_missing"
+    if list(support.get("slices", ())) != [slice_index]:
+        return None, "territory_slice_mismatch"
+    return dict(territory), "valid"
+
+
+def _require_territory_profile(profile: object, subject: str) -> dict[str, Any]:
+    """Return a territory-writer profile, or refuse its first named defect."""
+    from knee.diagnosis.squint_interfaces import (
+        TERRITORY_PROCEDURE,
+        parse_territory_bank_name,
+    )
+
+    if not isinstance(profile, dict) or profile.get("schema") != (
+        "knee.squint-profile/v1"
+    ):
+        raise SquintMemoryError("territory_profile_schema_invalid")
+    if profile.get("subject") != subject:
+        raise SquintMemoryError("territory_profile_subject_mismatch")
+    source = profile.get("source")
+    if not isinstance(source, dict) or source.get("procedure") != TERRITORY_PROCEDURE:
+        raise SquintMemoryError("territory_profile_procedure_mismatch")
+    banks = profile.get("banks")
+    if not isinstance(banks, dict):
+        raise SquintMemoryError("territory_profile_banks_invalid")
+    if any(parse_territory_bank_name(name) is None for name in banks):
+        raise SquintMemoryError("territory_profile_bank_not_role_named")
+    return profile
+
+
+def _leg_map_summary(leg_map: object, series: Mapping[str, Any]) -> dict[str, Any]:
+    """Name one series' leg map and identify it by rule, counts and digest."""
+    from knee.diagnosis.squint_interfaces import (
+        LEG_INSIDE,
+        LEG_MIXED,
+        LEG_OUTSIDE,
+        LEG_UNKNOWN,
+        leg_map_code,
+    )
+
+    if leg_map is None:
+        return {"code": "leg_map_unavailable"}
+    median = getattr(series.get("stack"), "median", None)
+    grid = tuple(median.shape) if isinstance(median, np.ndarray) else None
+    code = leg_map_code(leg_map, grid_shape=grid)
+    if code != "valid":
+        return {"code": code}
+    assert isinstance(leg_map, Mapping)
+    codes = leg_map["codes"]
+    return {
+        "code": "valid",
+        "rule": leg_map["rule"],
+        "counts": {
+            name: int(np.count_nonzero(codes == value))
+            for name, value in (
+                ("inside", LEG_INSIDE),
+                ("outside", LEG_OUTSIDE),
+                ("mixed", LEG_MIXED),
+                ("unknown", LEG_UNKNOWN),
+            )
+        },
+        "codes_sha256": hashlib.sha256(
+            np.ascontiguousarray(codes).tobytes()
+        ).hexdigest(),
+    }
+
+
+def _unprofiled_region(
+    plane: Mapping[str, Any],
+    series: Mapping[str, Any] | None,
+    reason: str,
+    choice: Mapping[str, Any] | None,
+) -> dict[str, Any]:
+    """One plane a case region could not be read on, with its named reason."""
+    view = series.get("view") if isinstance(series, Mapping) else plane.get("view")
+    return {
+        "orientation": plane.get("orientation_name"),
+        "view": view,
+        "series_uid": plane.get("series_uid"),
+        "source_slice": plane.get("slice"),
+        "key_slice": plane.get("slice"),
+        "support_source": plane.get("selection_source"),
+        "support_code": plane.get("outcome"),
+        "writer": WRITER_TERRITORY,
+        "profile_status": "not_profiled",
+        "reason": reason,
+        "slice_choice": None if choice is None else dict(choice),
+    }
+
+
+def _territory_profile_regions(
+    study: dict[str, Any],
+    full_records: dict[str, Any],
+    series_by_uid: dict[str, dict[str, Any]],
+    support_ownership: dict[str, Any],
+    source_roots: dict[str, Any],
+    object_contexts: dict[str, Any],
+    verified_arrays: Mapping[str, np.ndarray] | None,
+    *,
+    subjects: frozenset[str],
+    writer: Mapping[str, Any],
+) -> tuple[
+    dict[str, dict], dict[str, list[dict]], dict[str, list[dict]], dict[str, Any]
+]:
+    """Read every case region of one study over its teacher territory.
+
+    The study's leg maps are made once, and each series' leg-only calibration
+    once, shared by every object read on that series. Only subjects that can
+    become cases are read. Each region is read coarse and fine over the same
+    territory and the two are merged, as v1 merges its box readings. Returns
+    the merged profile per subject, the profiled regions (v1's address fields
+    plus the territory address), the regions left unprofiled with their named
+    reasons, and the study's receipt.
+    """
+    from knee.diagnosis.squint_interfaces import TERRITORY_PROCEDURE
+
+    study_uid = study.get("study_uid")
+    if not isinstance(study_uid, str) or not study_uid:
+        raise SquintMemoryError("squint_study_uid_invalid")
+    leg_maps = writer["leg_maps"](study)
+    if not isinstance(leg_maps, Mapping):
+        raise SquintMemoryError("leg_maps_result_invalid")
+    leg_summary = {
+        uid: _leg_map_summary(leg_maps.get(uid), series)
+        for uid, series in series_by_uid.items()
+    }
+    calibrations: dict[str, Any] = {}
+    artifact_arrays: dict[Path, dict[str, np.ndarray]] = {}
+    profiles_by_subject: dict[str, list[dict]] = {}
+    regions_by_subject: dict[str, list[dict]] = {}
+    unprofiled_by_subject: dict[str, list[dict]] = {}
+    subject_counts: dict[str, dict[str, Any]] = {}
+    for subject, record in full_records.items():
+        if subject not in subjects:
+            continue
+        choices, point = _region_choices(
+            subject, record, support_ownership, object_contexts
+        )
+        counts = subject_counts.setdefault(
+            subject,
+            {
+                "regions": 0,
+                "profiled_at_key_slice": 0,
+                "profiled_at_other_slice": 0,
+                "unprofiled": {},
+            },
+        )
+        read_slices: dict[str, set[int]] = {}
+        for plane in choices:
+            counts["regions"] += 1
+            series_uid = plane.get("series_uid")
+            slice_index = plane.get("slice")
+            series = (
+                series_by_uid.get(series_uid) if isinstance(series_uid, str) else None
+            )
+            territory = None
+            choice: dict[str, Any] | None = None
+            if series is None:
+                reason = "series_unavailable"
+            elif type(slice_index) is not int:
+                reason = "slice_index_invalid"
+            elif getattr(series.get("stack"), "code", None) != "present":
+                reason = "squint_unavailable"
+            elif leg_summary[series_uid]["code"] != "valid":
+                reason = leg_summary[series_uid]["code"]
+            else:
+                territory, reason, choice = _teacher_territory(
+                    writer,
+                    study_uid,
+                    series,
+                    subject,
+                    slice_index,
+                    leg_maps[series_uid],
+                    support_ownership,
+                    source_roots,
+                    artifact_arrays,
+                    verified_arrays,
+                    already_read=frozenset(read_slices.get(series_uid, ())),
+                )
+            geometry = None
+            if territory is not None and choice is not None:
+                bbox = _native_support_bbox(territory["native_support"])
+                geometry = (
+                    None
+                    if bbox is None
+                    else _geometry_window(
+                        series,
+                        point if isinstance(point, list) else None,
+                        choice["used_slice"],
+                        bbox,
+                    )
+                )
+                if geometry is None:
+                    reason = "support_outside_squint_grid"
+            if territory is None or geometry is None or choice is None:
+                unprofiled_by_subject.setdefault(subject, []).append(
+                    _unprofiled_region(plane, series, reason, choice)
+                )
+                counts["unprofiled"][reason] = counts["unprofiled"].get(reason, 0) + 1
+                continue
+            used_slice = choice["used_slice"]
+            read_slices.setdefault(series_uid, set()).add(used_slice)
+            counts[
+                "profiled_at_key_slice"
+                if used_slice == slice_index
+                else "profiled_at_other_slice"
+            ] += 1
+            leg_map = leg_maps[series_uid]
+            _, region = geometry
+            calibration = calibrations.get(series_uid)
+            if calibration is None:
+                calibration = writer["leg_calibration"](series, leg_map)
+                calibrations[series_uid] = calibration
+            coarse = _require_territory_profile(
+                writer["profile_territory"](
+                    series, territory, leg_map, subject=subject, calibration=calibration
+                ),
+                subject,
+            )
+            try:
+                fine = writer["refine_territory"](
+                    series,
+                    territory,
+                    leg_map,
+                    subject=subject,
+                    tile_mm=_TERRITORY_FINE_TILE_MM,
+                )
+            except ValueError as error:
+                # A finer reading the native geometry refuses leaves the coarse
+                # reading standing; the refusal keeps its own named code.
+                combined = coarse
+                region["fine_refinement"] = f"refused:{error}"
+            else:
+                combined = _require_territory_profile(
+                    writer["merge_profiles"](
+                        (coarse, _require_territory_profile(fine, subject)),
+                        subject=subject,
+                    ),
+                    subject,
+                )
+                region["fine_refinement"] = "measured_or_silent"
+            profiles_by_subject.setdefault(subject, []).append(combined)
+            region.update(
+                {
+                    "orientation": plane.get("orientation_name"),
+                    "view": series.get("view"),
+                    "series_uid": series_uid,
+                    # The slice the territory was read on; the key slice is
+                    # kept beside it with the reason any other slice was used.
+                    "source_slice": used_slice,
+                    "key_slice": slice_index,
+                    "slice_choice": choice,
+                    "support_source": plane.get("selection_source"),
+                    "support_code": plane.get("outcome"),
+                    "extent_source": "retained_object_support",
+                    "writer": WRITER_TERRITORY,
+                    "profile_procedure": TERRITORY_PROCEDURE,
+                    "territory": _territory_address(territory),
+                }
+            )
+            regions_by_subject.setdefault(subject, []).append(region)
+    merged: dict[str, dict] = {}
+    for subject, profiles in profiles_by_subject.items():
+        merged[subject] = _require_territory_profile(
+            writer["merge_profiles"](profiles, subject=subject), subject
+        )
+    reasons: dict[str, int] = {}
+    for rows in unprofiled_by_subject.values():
+        for row in rows:
+            reasons[row["reason"]] = reasons.get(row["reason"], 0) + 1
+    receipt = {
+        "leg_maps": leg_summary,
+        "leg_calibrated_series": sorted(calibrations),
+        "profiled_regions": sum(len(rows) for rows in regions_by_subject.values()),
+        "unprofiled_regions": dict(sorted(reasons.items())),
+        "subjects": subject_counts,
+    }
+    return merged, regions_by_subject, unprofiled_by_subject, receipt
 
 
 def _plain_profile(profile: dict[str, Any]) -> dict[str, Any]:
@@ -1070,14 +1705,34 @@ def compile_bootstrap(
     *,
     selected_uids: tuple[str, ...] | None = None,
     io_workers: int = 8,
+    writer: str = WRITER_V1,
+    leg_maps: Callable[[dict[str, Any]], Mapping[str, Any]] | None = None,
 ) -> dict:
-    """Build individual squint cases from existing H5 products and train.csv."""
+    """Build individual squint cases from existing H5 products and train.csv.
+
+    ``writer`` chooses how each case region's cheap profile is read (see
+    ``BOOTSTRAP_WRITERS``). Under ``territory-v2`` the leg-map producer is the
+    explicit ``leg_maps`` input (default ``squint_leg.leg_maps``), and a region
+    whose support does not resolve keeps its named reason, in the case's
+    ``unprofiled_regions`` or, for an object left with no reading at all, in
+    the memory's ``territory_writer`` receipt; it is never given a box. Full
+    payloads, label calls and their scopes are the same under both writers.
+    """
     from knee.diagnosis.squint_configurations import with_configuration_cases
+    from knee.diagnosis.squint_interfaces import TERRITORY_PROCEDURE
     from knee.diagnosis.squint_profiles import read_study_squints
 
     root, products, out = Path(root), Path(products), Path(out)
     if type(io_workers) is not int or io_workers < 1:
         raise SquintMemoryError("io_workers_invalid")
+    if writer not in BOOTSTRAP_WRITERS:
+        raise SquintMemoryError("bootstrap_writer_unknown")
+    if writer == WRITER_V1 and leg_maps is not None:
+        raise SquintMemoryError("bootstrap_leg_maps_require_territory_writer")
+    territory_writer = (
+        _territory_writer(leg_maps) if writer == WRITER_TERRITORY else None
+    )
+    revision = _V1_REVISION if territory_writer is None else TERRITORY_REVISION
     labels = _read_labels(root)
     available = {path.stem: path for path in products.glob("*.h5") if path.is_file()}
     if selected_uids is None:
@@ -1109,6 +1764,8 @@ def compile_bootstrap(
     source_identities: dict[str, dict[str, Any]] = {}
     label_ledger: dict[str, dict[str, int | None]] = {}
     full_contexts, full_payloads = _portable_tables()
+    territory_studies: dict[str, dict[str, Any]] = {}
+    case_subjects = frozenset(_question_object_roles())
     for uid in uids:
         product_path = available[uid]
         # Keep the product's exact object records and shared interpretation
@@ -1143,15 +1800,34 @@ def compile_bootstrap(
                 "full_profile_subjects": sorted(raw_objects),
             }
             full_records = raw_objects
-            cheap_by_subject, regions_by_subject = _profile_regions(
-                squint_study,
-                raw_objects,
-                series_by_uid,
-                ownership if isinstance(ownership, dict) else {},
-                roots if isinstance(roots, dict) else {},
-                contexts if isinstance(contexts, dict) else {},
-                product.arrays,
-            )
+            unprofiled_by_subject: dict[str, list[dict]] = {}
+            if territory_writer is None:
+                cheap_by_subject, regions_by_subject = _profile_regions(
+                    squint_study,
+                    raw_objects,
+                    series_by_uid,
+                    ownership if isinstance(ownership, dict) else {},
+                    roots if isinstance(roots, dict) else {},
+                    contexts if isinstance(contexts, dict) else {},
+                    product.arrays,
+                )
+            else:
+                (
+                    cheap_by_subject,
+                    regions_by_subject,
+                    unprofiled_by_subject,
+                    territory_studies[uid],
+                ) = _territory_profile_regions(
+                    squint_study,
+                    raw_objects,
+                    series_by_uid,
+                    ownership if isinstance(ownership, dict) else {},
+                    roots if isinstance(roots, dict) else {},
+                    contexts if isinstance(contexts, dict) else {},
+                    product.arrays,
+                    subjects=case_subjects,
+                    writer=territory_writer,
+                )
         label_ledger[uid] = dict(labels[uid])
         question_roles = _question_object_roles()
         for subject, full_record in full_records.items():
@@ -1160,6 +1836,14 @@ def compile_bootstrap(
                 continue
             cheap = cheap_by_subject.get(subject)
             if cheap is None:
+                if territory_writer is not None:
+                    rows = unprofiled_by_subject.get(subject, [])
+                    territory_studies[uid].setdefault("unprofiled_subjects", {})[
+                        subject
+                    ] = {
+                        "reason": "no_region_profiled" if rows else "no_region_choice",
+                        "regions": rows,
+                    }
                 continue
             calls, call_scopes = _condition_calls(subject, labels[uid])
             full_source = source_identities[uid]
@@ -1171,66 +1855,72 @@ def compile_bootstrap(
                 full_record,
                 full_payloads["payloads"],
             )
-            cases.append(
-                {
-                    "case_id": case_id,
-                    "study_uid": uid,
-                    "subject": subject,
-                    "condition_calls": calls,
-                    "presentation_scope": call_scopes
-                    or {
-                        "kind": "structural_context",
-                        "label_scope": "condition_not_asked_or_unlabeled",
-                    },
-                    "question_roles": roles,
-                    "label_attribution": {
-                        question: {
-                            "source": "train.csv",
-                            "source_path": str((root / "train.csv").resolve()),
-                            "study_uid": uid,
-                            "condition": question,
-                        }
-                        for question in calls
-                    },
-                    "profile": _plain_profile(cheap),
-                    "regions": regions_by_subject.get(subject, []),
-                    "full_profile": {
-                        "subject": subject,
-                        "mode": "full",
-                        "scope": f"object:{subject}",
-                        "count_layout_id": full_record.get("count_layout_id"),
-                        "reference_set_identity": full_record.get(
-                            "reference_set_identity"
-                        ),
-                        "carrier_identity": composition.get("carrier_identity"),
-                        "layout_fingerprint": composition.get("layout_fingerprint"),
-                        "product_record_sha256": record_sha,
-                        "availability": _sparse_count_availability(full_record),
-                        "context_ref": context_ref,
-                        "payload_ref": payload_ref,
-                    },
-                    "full_source": {
-                        "product_path": full_source["product_path"],
-                        "product_sha256": full_source["product_sha256"],
+            case = {
+                "case_id": case_id,
+                "study_uid": uid,
+                "subject": subject,
+                "condition_calls": calls,
+                "presentation_scope": call_scopes
+                or {
+                    "kind": "structural_context",
+                    "label_scope": "condition_not_asked_or_unlabeled",
+                },
+                "question_roles": roles,
+                "label_attribution": {
+                    question: {
+                        "source": "train.csv",
+                        "source_path": str((root / "train.csv").resolve()),
                         "study_uid": uid,
-                        "source_roots": full_source["source_roots"],
-                    },
-                    "teaching_source": {
-                        "kind": "official_train_csv_label",
-                        "revision": "bootstrap-2026-10-21-native-supports-v2",
-                    },
-                }
-            )
+                        "condition": question,
+                    }
+                    for question in calls
+                },
+                "profile": _plain_profile(cheap),
+                "regions": regions_by_subject.get(subject, []),
+                "full_profile": {
+                    "subject": subject,
+                    "mode": "full",
+                    "scope": f"object:{subject}",
+                    "count_layout_id": full_record.get("count_layout_id"),
+                    "reference_set_identity": full_record.get("reference_set_identity"),
+                    "carrier_identity": composition.get("carrier_identity"),
+                    "layout_fingerprint": composition.get("layout_fingerprint"),
+                    "product_record_sha256": record_sha,
+                    "availability": _sparse_count_availability(full_record),
+                    "context_ref": context_ref,
+                    "payload_ref": payload_ref,
+                },
+                "full_source": {
+                    "product_path": full_source["product_path"],
+                    "product_sha256": full_source["product_sha256"],
+                    "study_uid": uid,
+                    "source_roots": full_source["source_roots"],
+                },
+                "teaching_source": {
+                    "kind": "official_train_csv_label",
+                    "revision": revision,
+                },
+            }
+            if territory_writer is not None:
+                case["unprofiled_regions"] = unprofiled_by_subject.get(subject, [])
+                try:
+                    _json_sha256(
+                        [case["profile"], case["regions"], case["unprofiled_regions"]]
+                    )
+                except (TypeError, ValueError) as error:
+                    raise SquintMemoryError("territory_case_not_json") from error
+            cases.append(case)
         del (
             squint_study,
             series_by_uid,
             cheap_by_subject,
             regions_by_subject,
+            unprofiled_by_subject,
             full_records,
         )
     memory = {
         "schema": SCHEMA,
-        "revision": "bootstrap-2026-10-21-native-supports-v2",
+        "revision": revision,
         "procedure": {
             "id": PROCEDURE,
             "tile_mm": 10.0,
@@ -1247,8 +1937,23 @@ def compile_bootstrap(
         "label_ledger": label_ledger,
         "cases": cases,
     }
+    if territory_writer is not None:
+        memory["procedure"].update(
+            {
+                "writer": WRITER_TERRITORY,
+                "profile_procedure": TERRITORY_PROCEDURE,
+                "fine_tile_mm": _TERRITORY_FINE_TILE_MM,
+            }
+        )
+        memory["territory_writer"] = _territory_receipt(territory_studies, cases)
     memory["revision"] = f"{memory['revision']}+{FULL_PROFILE_REVISION}"
-    memory = with_configuration_cases(memory)
+    if territory_writer is None:
+        memory = with_configuration_cases(memory)
+    else:
+        memory = territory_writer["with_configuration_cases"](
+            memory, procedure=TERRITORY_PROCEDURE
+        )
+        _require_one_writer(memory, TERRITORY_PROCEDURE)
     _link_configuration_full_profiles(memory)
     memory["full_profile_retention"] = _full_profile_retention_receipt(memory)
     from knee.diagnosis.squint_locator import prepare_recall
@@ -1260,7 +1965,7 @@ def compile_bootstrap(
         raise SquintMemoryError("bootstrap_recall_preparation_failed")
     publication = save_memory(memory, out, prepared_recall=prepared_recall)
     configuration_case_count = len(memory["cases"]) - len(cases)
-    return {
+    result = {
         "schema": SCHEMA,
         "path": str((out / "manifest.json").resolve()),
         "study_count": len(uids),
@@ -1273,6 +1978,76 @@ def compile_bootstrap(
         "recall_preparation_seconds": preparation_seconds,
         "recall_preparation_cache": publication.get("recall_preparation_cache"),
     }
+    if territory_writer is not None:
+        result.update(
+            {
+                "writer": WRITER_TERRITORY,
+                "profile_procedure": TERRITORY_PROCEDURE,
+                "territory_counts": memory["territory_writer"]["counts"],
+            }
+        )
+    return result
+
+
+def _territory_receipt(
+    studies: dict[str, dict[str, Any]], cases: list[dict[str, Any]]
+) -> dict[str, Any]:
+    """The territory writer's receipt: per study, and counted over the memory."""
+    from knee.diagnosis.squint_interfaces import TERRITORY_PROCEDURE
+
+    unprofiled: dict[str, int] = {}
+    by_subject: dict[str, dict[str, Any]] = {}
+    for study in studies.values():
+        for reason, count in study["unprofiled_regions"].items():
+            unprofiled[reason] = unprofiled.get(reason, 0) + count
+        for subject, counts in study["subjects"].items():
+            total = by_subject.setdefault(
+                subject,
+                {
+                    "objects_with_regions": 0,
+                    "objects_kept": 0,
+                    "regions": 0,
+                    "profiled_at_key_slice": 0,
+                    "profiled_at_other_slice": 0,
+                    "unprofiled": {},
+                },
+            )
+            total["objects_with_regions"] += int(counts["regions"] > 0)
+            for key in ("regions", "profiled_at_key_slice", "profiled_at_other_slice"):
+                total[key] += counts[key]
+            for reason, count in counts["unprofiled"].items():
+                total["unprofiled"][reason] = total["unprofiled"].get(reason, 0) + count
+    for case in cases:
+        if case["subject"] in by_subject:
+            by_subject[case["subject"]]["objects_kept"] += 1
+    return {
+        "schema": _TERRITORY_RECEIPT_SCHEMA,
+        "writer": WRITER_TERRITORY,
+        "profile_procedure": TERRITORY_PROCEDURE,
+        "fine_tile_mm": _TERRITORY_FINE_TILE_MM,
+        "studies": studies,
+        "counts": {
+            "studies": len(studies),
+            "object_cases": len(cases),
+            "profiled_regions": sum(
+                study["profiled_regions"] for study in studies.values()
+            ),
+            "unprofiled_regions": dict(sorted(unprofiled.items())),
+            "objects_without_reading": sum(
+                len(study.get("unprofiled_subjects", {})) for study in studies.values()
+            ),
+            "by_subject": dict(sorted(by_subject.items())),
+        },
+    }
+
+
+def _require_one_writer(memory: dict[str, Any], procedure: str) -> None:
+    """Refuse a memory whose case profiles were not all written by one writer."""
+    for case in memory.get("cases", []):
+        profile = case.get("profile") if isinstance(case, dict) else None
+        source = profile.get("source") if isinstance(profile, dict) else None
+        if not isinstance(source, dict) or source.get("procedure") != procedure:
+            raise SquintMemoryError("memory_writer_procedure_mixed")
 
 
 def _validate_memory(memory: object) -> dict[str, Any]:
