@@ -65,8 +65,9 @@ def test_the_same_record_still_decides_when_read_over_its_own_outline():
         (_profile(), "grade_only"),
         (None, "grade_only"),
         (_profile("teacher_support"), "decide"),
-        (_profile("residual_native_support"), "decide"),
-        (_profile("residual_native_support", merged=True), "decide"),
+        # The bounded step's outline counts only for validated parts (W12b).
+        (_profile("residual_native_support"), "grade_only"),
+        (_profile("residual_native_support", merged=True), "grade_only"),
         # An own-outline reading merged with an expected-area one is still mixed.
         (
             _profile("anatomical_relation", "residual_native_support", merged=True),
@@ -112,3 +113,14 @@ def test_origins_are_read_through_merge_lineage():
         }
     }
     assert _profile_origins(nested) == {"teacher_support", "residual_native_support"}
+
+
+def test_a_validated_parts_bounded_outline_decides(monkeypatch):
+    from knee.diagnosis import squint_pipeline
+
+    monkeypatch.setattr(
+        squint_pipeline, "VALIDATED_OUTLINE_PARTS", frozenset({"medial_meniscus"})
+    )
+    profile = _profile("residual_native_support")
+    assert squint_pipeline._decision_scope("medial_meniscus", profile) == "decide"
+    assert squint_pipeline._decision_scope("mcl", profile) == "grade_only"

@@ -131,7 +131,10 @@ SMALL_PARTS = frozenset(
         "joint_fluid",
     }
 )
-_OWN_OUTLINE_ORIGINS = frozenset({"teacher_support", "residual_native_support"})
+#: Own-outline readings from the bounded step count as the part's own outline
+#: only for parts whose step has been validated against the bootstrap's own
+#: supports (label-free, W12b). Until then a residual reading still grades.
+VALIDATED_OUTLINE_PARTS: frozenset[str] = frozenset()
 
 
 def _profile_origins(profile: object) -> set[str]:
@@ -156,7 +159,10 @@ def _decision_scope(subject: str, profile: object) -> str:
     if subject not in SMALL_PARTS:
         return "decide"
     origins = _profile_origins(profile)
-    return "decide" if origins and origins <= _OWN_OUTLINE_ORIGINS else "grade_only"
+    own = {"teacher_support"}
+    if subject in VALIDATED_OUTLINE_PARTS:
+        own.add("residual_native_support")
+    return "decide" if origins and origins <= own else "grade_only"
 
 
 def _recall_question(
@@ -292,8 +298,11 @@ def _budget_unexamined_study(
 def _bounded_observation(
     request: dict, study: dict, objects: dict, attempted: set, deadline: float | None
 ) -> dict:
-    """Apply the paired finer lens only to a requested, located native region."""
+    """Apply the paired finer lens only to a requested, located native region. A small part
+    is read over its own outline instead, once per study (``squint_residual.own_outline``);
+    a finer reading an object already holds is not read and merged again."""
     from knee.diagnosis.squint_profiles import merge_profiles, refine_window
+    from knee.diagnosis.squint_residual import holds_reading, own_outline
 
     subject = request.get("object", request.get("subject"))
     if not isinstance(subject, str) or subject not in objects:
@@ -303,6 +312,24 @@ def _bounded_observation(
     if deadline is not None and time.monotonic() >= deadline:
         return {"code": "deadline_before_zoom", "subject": subject}
     located = objects[subject]
+    if subject in SMALL_PARTS:
+        # Rohan's decision (SQUINT_TRAINING_BUILD §10): the part's own existing producer
+        # reads its own outline and that reading replaces its expected-area reading; a part
+        # without one is named, never given a box refinement in its place.
+        record = own_outline(
+            subject,
+            study,
+            objects,
+            deadline=deadline,
+            question_id=str(request.get("question") or "small_part_own_outline"),
+        )
+        attempted.add(subject)
+        return {
+            "code": record["code"],
+            "subject": subject,
+            "lens": record["lens"],
+            "own_outline": record,
+        }
     previous_source = (located.get("profile") or {}).get("source") or {}
     if (
         previous_source.get("procedure")
@@ -314,6 +341,7 @@ def _bounded_observation(
         return {"code": "residual_pending_territory_reading", "subject": subject}
     profiles = []
     regions = []
+    held = []
     by_uid = {s["series_uid"]: s for s in study.get("series", [])}
     for region in located.get("regions", []):
         if not isinstance(region, dict):
@@ -324,12 +352,26 @@ def _bounded_observation(
             continue
         if deadline is not None and time.monotonic() >= deadline:
             break
+        if holds_reading(
+            located.get("profile"),
+            series_uid=region["series_uid"],
+            window=window,
+            scale_mm=2.0,
+        ):
+            held.append({"series_uid": region["series_uid"], "window": list(window)})
+            continue
         profile = refine_window(series, tuple(window), subject=subject, tile_mm=2.0)
         if profile.get("banks"):
             profiles.append(profile)
             regions.append({"series_uid": region["series_uid"], "window": list(window)})
     if not profiles:
-        return {"code": "no_compatible_bounded_reading", "subject": subject}
+        if held:
+            attempted.add(subject)
+        return {
+            "code": "already_measured" if held else "no_compatible_bounded_reading",
+            "subject": subject,
+            "held_regions": held,
+        }
     previous = located.get("profile")
     if previous is not None:
         profiles.insert(0, previous)
@@ -339,6 +381,7 @@ def _bounded_observation(
         "code": "measured",
         "subject": subject,
         "regions": regions,
+        "held_regions": held,
         "lens": "physical_squint",
         "tile_mm": 2.0,
     }
@@ -426,6 +469,20 @@ def infer_study(
         "elapsed_seconds": time.perf_counter() - started,
         "full_anatomy_runs": 0,
         "bounded_zoom_runs": sum(row["code"] == "measured" for row in observations),
+        "own_outline_parts_measured": sum(
+            (row.get("own_outline") or {}).get("code") == "measured"
+            for row in observations
+        ),
+        "own_outline_native_slices_read": sum(
+            ((row.get("own_outline") or {}).get("cost") or {}).get(
+                "native_slices_read", 0
+            )
+            for row in observations
+        ),
+        "own_outline_seconds": sum(
+            ((row.get("own_outline") or {}).get("cost") or {}).get("seconds", 0.0)
+            for row in observations
+        ),
         "source_mode": "raw_squint_case_recall",
     }
     # Neither Series nor SquintStack escapes this operation. Retained profiles
