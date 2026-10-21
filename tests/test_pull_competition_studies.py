@@ -6,10 +6,12 @@ rows at a time and files of the listed sizes, a stub `kaggle` executable stands 
 Pinned: the CLI's output is parsed (a token line or none, an unexpected line before the header fails
 loudly) and its errors are cleaned; the listing is cached page by page, stops once past the studies
 asked for, resumes, survives an uncommitted page file, and walks again when the server ignores a stale
-cursor; studies are chosen in file order and without `train.csv`; a study reaches `train_series/` only
-whole, by renaming, and one already there is neither listed nor touched; staged files are skipped by
-size, a wrong size is fetched again, failures are named and kept for the rerun, 429s are counted, 401
-and 403 stop the run, a study the listing does not hold is a named failure; the disk margin refuses."""
+cursor, and a selection already on disk lists nothing instead of everything; studies are chosen in file
+order and without `train.csv`; a study reaches `train_series/` only whole, by renaming, and one already
+there is neither listed nor touched; a staged file is reused only if it passes the check a fresh download
+does (listed size, DICOM mark, a regular file), otherwise it is discarded, fetched again and named;
+failures are named and kept for the rerun, 429s are counted, 401 and 403 stop the run, a study the
+listing does not hold is a named failure; the disk margin refuses."""
 
 import errno
 import importlib.util
@@ -65,8 +67,10 @@ def listing(skip_series=(), extra=()) -> list[tuple[str, int]]:
     return sorted(rows + list(extra))
 
 
-def dicom(size: int) -> bytes:
-    return b"\0" * 128 + b"DICM" + b"x" * (size - 132)
+def dicom(size: int, fill: bytes = b"x") -> bytes:
+    """A file of the given size with the DICOM mark at offset 128; another fill tells it from the one the
+    fake competition serves."""
+    return b"\0" * 128 + b"DICM" + fill * (size - 132)
 
 
 class FakeCompetition:
@@ -358,6 +362,34 @@ def test_index_stops_once_past_the_studies_asked_for(tool, tmp_path) -> None:
     assert len(files) == 2 * FILES_PER_SERIES
 
 
+def test_index_of_what_is_already_on_disk_lists_nothing_and_says_why(
+    tool, tmp_path
+) -> None:
+    """The defect: a selection that was entirely on disk left no study to bound the listing, so the empty
+    selection became a request for the whole listing (about 4,100 pages). Refused: it returns at once,
+    lists nothing, writes no index and says why. Accepted: a selection with a study still to pull lists as
+    far as that study and no further, and no selection at all still lists everything."""
+    run = Run(tool, tmp_path, FakeCompetition(listing()), on_disk=["1.2.100"])
+    assert run.go("index", "--study-uid", "1.2.100") == 0
+    assert run.fetcher.list_calls == [] and not (run.state / "index").exists()
+    assert any("already on disk" in line for line in run.log)
+
+    every = Run(tool, tmp_path / "every", FakeCompetition(listing()), on_disk=STUDIES)
+    assert every.go("index", "--studies", "2") == 0
+    assert every.fetcher.list_calls == [] and not (every.state / "index").exists()
+    assert any("every study of train_series.csv" in line for line in every.log)
+
+    assert (
+        run.go("index", "--study-uid", "1.2.100", "1.2.200") == 0
+    )  # one is still to pull
+    index = run.index()
+    assert not index.state["complete"] and index.covers(bound(tool, "1.2.200"))
+    assert len(run.fetcher.list_calls) < run.fetcher.pages()
+    assert (
+        run.go("index") == 0 and run.index().state["complete"]
+    )  # no selection: all of it
+
+
 def test_index_resumes_from_the_saved_cursor_and_lists_every_row_once(
     tool, tmp_path
 ) -> None:
@@ -478,6 +510,85 @@ def test_staged_files_are_skipped_by_size_and_a_wrong_size_is_fetched_again(
     assert names == {"2.dcm", "3.dcm"}
     assert run.receipt()["totals"]["files_reused_from_staging"] == 1
     assert (run.final("1.2.100") / "1.2.100.1" / "2.dcm").read_bytes() == dicom(142)
+
+
+def test_a_staged_file_is_reused_only_if_it_passes_the_check_a_fresh_download_does(
+    tool, tmp_path
+) -> None:
+    """The defect: a file left in staging was trusted by its size alone, so a file of the listed size that
+    is not DICOM was published as if it were one. Refused: a staged file that fails the check a fresh
+    download passes (the listed size, the DICOM mark at offset 128, a regular file) is discarded, fetched
+    again and named in the receipt. Accepted: a staged file that passes it is reused untouched."""
+    run = Run(tool, tmp_path, FakeCompetition(listing()))
+    elsewhere = tmp_path / "elsewhere.dcm"
+    elsewhere.write_bytes(dicom(141))  # what a staged link points at
+    first = run.state / "staging" / "1.2.100" / "1.2.100.1"
+    second = run.state / "staging" / "1.2.100" / "1.2.100.2"
+    first.mkdir(parents=True)
+    second.mkdir(parents=True)
+    (first / "1.dcm").write_bytes(b"x" * 141)  # the listed size, no DICOM mark
+    (first / "2.dcm").write_bytes(
+        b"DICM" + b"\0" * 138
+    )  # the listed size, the mark at 0
+    (first / "3.dcm").write_bytes(dicom(143, b"z"))  # passes: reused
+    (second / "1.dcm").symlink_to(elsewhere)  # right size and mark, but a link
+    (second / "2.dcm").write_bytes(dicom(142, b"y"))  # passes: reused
+    assert run.go("pull", "--study-uid", "1.2.100") == 0
+    fetched = {
+        name.removeprefix("train_series/1.2.100/") for name in run.fetcher.downloads
+    }
+    assert fetched == {
+        "1.2.100.1/1.dcm",
+        "1.2.100.1/2.dcm",
+        "1.2.100.2/1.dcm",
+        "1.2.100.2/3.dcm",
+    }
+    made = run.final("1.2.100")
+    assert (made / "1.2.100.1" / "1.dcm").read_bytes() == dicom(141)
+    assert (made / "1.2.100.1" / "2.dcm").read_bytes() == dicom(142)
+    assert (made / "1.2.100.1" / "3.dcm").read_bytes() == dicom(143, b"z")
+    assert not (made / "1.2.100.2" / "1.dcm").is_symlink()
+    assert (made / "1.2.100.2" / "1.dcm").read_bytes() == dicom(141)
+    assert (made / "1.2.100.2" / "2.dcm").read_bytes() == dicom(142, b"y")
+    assert (made / "1.2.100.2" / "3.dcm").read_bytes() == dicom(143)
+    assert elsewhere.read_bytes() == dicom(141)  # a link is removed, never followed
+    receipt = run.receipt()
+    discarded = {
+        item["file"].removeprefix("train_series/1.2.100/"): item["reason"]
+        for item in receipt["studies"][0]["discarded_from_staging"]
+    }
+    assert set(discarded) == {"1.2.100.1/1.dcm", "1.2.100.1/2.dcm", "1.2.100.2/1.dcm"}
+    assert "not DICOM" in discarded["1.2.100.1/1.dcm"]
+    assert "not DICOM" in discarded["1.2.100.1/2.dcm"]
+    assert "not a regular file" in discarded["1.2.100.2/1.dcm"]
+    done = receipt["totals"]
+    assert done["files_discarded_from_staging"] == 3
+    assert done["files_reused_from_staging"] == 2 and done["files_downloaded"] == 4
+
+
+def test_an_invalid_staged_file_still_counts_as_to_fetch_and_a_dry_run_leaves_it(
+    tool, tmp_path
+) -> None:
+    """The same defect through the disk margin and the plan. Refused: staged files of the listed size
+    without the DICOM mark are not counted as already fetched, so the margin sees the whole study; a plan
+    only reads staging and discards nothing. Accepted: the same files with the mark do count as fetched
+    (`test_staged_bytes_are_not_counted_as_still_to_fetch`)."""
+    margin = int(1e-6 * tool.GIB)
+    run = Run(tool, tmp_path, FakeCompetition(listing()))
+    stage = run.state / "staging" / "1.2.100" / "1.2.100.1"
+    stage.mkdir(parents=True)
+    for number in range(1, FILES_PER_SERIES + 1):
+        (stage / f"{number}.dcm").write_bytes(b"x" * (140 + number))
+    staged = sum(140 + number for number in range(1, FILES_PER_SERIES + 1))
+    args = ("pull", "--studies", "1", "--min-free-gib", "1e-6")
+    assert (
+        run.go(*args, free=BYTES_PER_STUDY - staged + margin) == 2
+    )  # as if they counted
+    assert run.go(*args, "--dry-run", free=BYTES_PER_STUDY + margin) == 0
+    assert (stage / "1.dcm").read_bytes() == b"x" * 141  # a plan discards nothing
+    assert run.fetcher.downloads == []
+    assert run.go(*args, free=BYTES_PER_STUDY + margin) == 0
+    assert (run.final("1.2.100") / "1.2.100.1" / "1.dcm").read_bytes() == dicom(141)
 
 
 def test_a_failed_file_is_named_and_kept_in_staging_for_the_rerun(
@@ -637,7 +748,7 @@ def test_the_size_and_the_dicom_mark_are_required(tool, tmp_path) -> None:
         directory / name.rsplit("/", 1)[1]
     ).write_bytes(dicom(size + 1))
     assert run.go("pull", "--study-uid", "1.2.100", "--retries", "0") == 1
-    assert "bytes arrived" in run.receipt()["failures"][0]["error"]
+    assert "the listing says" in run.receipt()["failures"][0]["error"]
     assert not run.final("1.2.100").exists()
 
 

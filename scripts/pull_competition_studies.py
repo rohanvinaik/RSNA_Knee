@@ -12,9 +12,11 @@ DICOM (819,635 files, about 570 GB) one file per request; the local root keeps t
 
 `index` pages through the competition's file listing once and caches it (path and size of every file).
 Given `--studies N` or `--study-uid ...` it stops as soon as the listing has passed the last of those
-studies; given neither it lists everything (about 4,100 pages, some 50 minutes). It resumes where it
-stopped, and `pull` extends it by itself when it does not yet cover the studies chosen, so `index` alone
-is only needed to list everything ahead of time. `pull` downloads every file of the chosen studies,
+studies; given neither it lists everything (about 4,100 pages, some 50 minutes). A selection with no study
+left to pull (every one named, or every one there is, already on disk) lists nothing and says so: it is
+never turned into the request for everything. It resumes where it stopped, and `pull` extends it by itself
+when it does not yet cover the studies chosen, so `index` alone is only needed to list everything ahead of
+time. `pull` downloads every file of the chosen studies,
 `--workers` at once (8) and `--retries` retries each (3), checks each against the index, and puts a study
 into `train_series/` only when all of its files are there.
 
@@ -35,10 +37,13 @@ recognise is not an error: it silently returns the first page again. Every page 
 continue after the last indexed name, and when one does not, the listing is walked again from the start,
 skipping the rows already kept. `kaggle competitions download <slug> -f <path> -p <dir> -q` writes the
 file named by the last segment of the path into <dir>, as it is, not zipped, at its listed size; a missing
-file exits 1 with a 404 line. Each download goes into its own new empty directory, is accepted only at the
-listed size with `DICM` at offset 128, and is then renamed into the study's staging directory. A zip
-delivery would be unpacked from its one member without trusting the member's own name. 401 and 403 stop
-the run; 429 and 5xx are retried with backoff and counted.
+file exits 1 with a 404 line. Each download goes into its own new empty directory, is accepted only as a
+regular file of the listed size with `DICM` at offset 128 (`file_problem`), and is then renamed into the
+study's staging directory. A file already in staging from an earlier run passes the same check before it
+is reused; one that fails it (a file of the right size that is not DICOM, a link) is removed, fetched again
+and named in the receipt (`discarded_from_staging`). A zip delivery would be unpacked from its one member
+without trusting the member's own name. 401 and 403 stop the run; 429 and 5xx are retried with backoff and
+counted.
 
 Rates, measured 2026-10-21 on this machine with one study of 94 files and 61.6 MB (no 429 was seen): a
 200-row listing page takes about 0.7 s, so the whole listing about 50 minutes; every file is a CLI process
@@ -49,7 +54,8 @@ the 4,407 studies, 819,635 files, would take about 22 hours at 24 workers.
 State sits beside the root, in `<root>.pull/` (`--state-dir`): `index/` (one gzip page file for each page
 of new rows, then `state.json`, which counts the committed pages and holds the next page token, a
 pagination cursor and not a credential, written last; `--index-dir` moves it), `staging/<study>/` (the
-verified files of a study not yet complete, kept so a rerun skips them) and `receipts/pull-<time>-NN.json`
+verified files of a study not yet complete, kept so a rerun need not fetch those that pass the check
+again) and `receipts/pull-<time>-NN.json`
 (studies, file counts, bytes, failures named, retries, elapsed time). Nothing here reads, prints or stores
 a Kaggle credential: the CLI authenticates itself, and error text kept in receipts is cut to one line with
 URL queries, tokens and the page cursor removed.
@@ -536,6 +542,8 @@ class StudyResult:
     seconds: float = 0.0
     notes: list[str] = dataclasses.field(default_factory=list)
     failures: list[dict] = dataclasses.field(default_factory=list)
+    # Staged files that failed `file_problem`: removed, fetched again, and named here with the reason.
+    discarded_from_staging: list[dict] = dataclasses.field(default_factory=list)
 
 
 @dataclasses.dataclass
@@ -565,21 +573,41 @@ def unzip_single(archive_path: Path, entry: Entry) -> Path:
     return out
 
 
+def file_problem(path: Path, entry: Entry) -> str | None:
+    """Why a file is not the listed one, or None when it is: a regular file (not a link) of the listed size
+    with the DICOM mark at offset 128. A fresh download and a file left in staging by an earlier run both
+    pass through this one check before either is used."""
+    if path.is_symlink() or not path.is_file():
+        return "not a regular file"
+    size = path.stat().st_size
+    if size != entry.size:
+        return f"{size} bytes, the listing says {entry.size}"
+    with path.open("rb") as handle:
+        head = handle.read(132)
+    if head[128:132] != b"DICM":
+        return "not DICOM (no DICM at offset 128)"
+    return None
+
+
+def discard(path: Path) -> None:
+    """Remove a staged path of ours, whatever it turned out to be; a link is removed, never followed."""
+    if path.is_dir() and not path.is_symlink():
+        shutil.rmtree(path)
+    else:
+        path.unlink()
+
+
 def accept_download(directory: Path, entry: Entry) -> Path:
-    """The downloaded file, picked by the listed name, if it has the listed size and the DICOM mark."""
+    """The downloaded file, picked by the listed name, if it passes `file_problem`."""
     produced = directory / entry.basename
     if not produced.is_file():
         zipped = directory / f"{entry.basename}.zip"
         if not zipped.is_file():
             raise FetchError("the download left no file of the listed name")
         produced = unzip_single(zipped, entry)
-    size = produced.stat().st_size
-    if size != entry.size:
-        raise FetchError(f"{size} bytes arrived, the listing says {entry.size}")
-    with produced.open("rb") as handle:
-        head = handle.read(132)
-    if head[128:132] != b"DICM":
-        raise FetchError("the file is not DICOM (no DICM at offset 128)")
+    problem = file_problem(produced, entry)
+    if problem:
+        raise FetchError(problem)
     return produced
 
 
@@ -717,10 +745,12 @@ class Puller:
         return self.pull_all(plans)
 
     def to_fetch(self, plan: StudyPlan) -> int:
+        """Bytes still to fetch: those of every file not already staged *and valid*. This only reads
+        staging; a plan, a dry run or the disk check never removes a staged file."""
         staged = 0
         for entry in plan.entries:
             path = self.paths.staging / plan.study / entry.relative
-            if path.is_file() and path.stat().st_size == entry.size:
+            if file_problem(path, entry) is None:
                 staged += entry.size
         return plan.total_bytes - staged
 
@@ -825,10 +855,23 @@ class Puller:
         todo = []
         for entry in plan.entries:
             path = stage / entry.relative
-            if path.is_file() and path.stat().st_size == entry.size:
-                result.reused_from_staging += 1
-            else:
+            if not os.path.lexists(path):
                 todo.append(entry)
+                continue
+            problem = file_problem(path, entry)
+            if problem is None:
+                result.reused_from_staging += 1
+                continue
+            discard(path)
+            result.discarded_from_staging.append(
+                {"file": entry.name, "reason": problem}
+            )
+            todo.append(entry)
+        if result.discarded_from_staging:
+            self.say(
+                f"{short(plan.study)}: {len(result.discarded_from_staging)} staged files "
+                "failed the download check and are fetched again"
+            )
         futures = [pool.submit(self.fetch_one, entry, stage) for entry in todo]
         fatal: PullError | None = None
         for entry, future in zip(todo, futures, strict=True):
@@ -942,6 +985,9 @@ class Puller:
             "files_reused_from_staging": sum(
                 result.reused_from_staging for result in results
             ),
+            "files_discarded_from_staging": sum(
+                len(result.discarded_from_staging) for result in results
+            ),
             "bytes": sum(result.bytes for result in results),
             "bytes_downloaded": sum(result.downloaded_bytes for result in results),
             "retries": sum(result.retries for result in results),
@@ -955,7 +1001,8 @@ class Puller:
         self.say(
             f"{status}: {done['studies_promoted']} studies promoted, {done['studies_failed']} failed, "
             f"{done['files_downloaded']} files ({done['bytes_downloaded'] / 1e6:.1f} MB) fetched, "
-            f"{done['files_reused_from_staging']} reused from staging, {done['retries']} retries, "
+            f"{done['files_reused_from_staging']} reused from staging "
+            f"({done['files_discarded_from_staging']} discarded), {done['retries']} retries, "
             f"{done['rate_limited']} rate-limited, {seconds:.1f} s, {rate:.1f} MB/s"
         )
         for failure in self.receipt["failures"]:
@@ -988,13 +1035,22 @@ def run_index(
     sleep: Callable[[float], None],
 ) -> int:
     paths = resolve_paths(args)
-    chosen: list[str] = []
+    bound = None  # no selection: the whole listing
     if args.studies or args.study_uid:
         order, series = read_studies(paths)
         on_disk = studies_on_disk(paths.root)
         chosen, _ = choose_studies(order, series, on_disk, args.studies, args.study_uid)
+        if not chosen:
+            # An empty selection must not fall through to "no bound", which lists everything.
+            what = (
+                "every study named is"
+                if args.study_uid
+                else "every study of train_series.csv is"
+            )
+            say(f"index: nothing to list: {what} already on disk")
+            return 0
+        bound = max(study_bound(study) for study in chosen)
     index = Index.load(paths.index, args.competition)
-    bound = max((study_bound(study) for study in chosen), default=None)
     extend_index(index, fetcher, bound, say, args.retries, sleep)
     return 0
 
