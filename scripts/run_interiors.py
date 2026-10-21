@@ -30907,7 +30907,46 @@ def main() -> None:
         "--diagnostic-readout",
         help="explicit Python module:callable returning condition probability values",
     )
+    parser.add_argument(
+        "--squint-bootstrap-products",
+        type=Path,
+        help="existing full H5 bootstrap products to pair with raw squints during teaching",
+    )
+    parser.add_argument(
+        "--squint-time-limit",
+        type=float,
+        default=30000.0,
+        help="production operation time budget in seconds; leaves notebook output reserve",
+    )
     args = parser.parse_args()
+    from knee.diagnosis.squint_memory import inspect_memory_snapshot
+    from knee.diagnosis.squint_pipeline import run_squint_cli
+
+    memory_snapshot = None
+    bootstrap_products = getattr(args, "squint_bootstrap_products", None)
+    if (
+        bootstrap_products is None
+        and getattr(args, "diagnostic_memory", None) is not None
+    ):
+        memory_snapshot = inspect_memory_snapshot(args.diagnostic_memory)
+    if bootstrap_products is not None or (
+        memory_snapshot is not None
+        and memory_snapshot.declared_schema == "knee.squint-memory/v1"
+    ):
+        if (
+            args.draw
+            or args.encode_objects
+            or args.encoding_spec is not None
+            or args.competition_output
+        ):
+            raise ValueError("diagnostic_conflicting_anatomy_options")
+        print(
+            json.dumps(
+                run_squint_cli(args, prepared_memory_snapshot=memory_snapshot),
+                sort_keys=True,
+            )
+        )
+        return
     if (
         getattr(args, "diagnostic_mode", None) is not None
         or getattr(args, "diagnostic_products", None) is not None

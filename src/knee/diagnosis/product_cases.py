@@ -323,12 +323,26 @@ def _profiles(manifest: dict[str, Any], mode: str) -> tuple[Profile, ...]:
     return tuple(profiles)
 
 
+def profiles_from_manifest(
+    manifest: dict[str, Any], mode: str = "full"
+) -> tuple[Profile, ...]:
+    """Read canonical per-object profiles from a product manifest.
+
+    A retained in-memory manifest is sufficient: exact object sparse counts,
+    their layout, carrier and reference identities are all represented there.
+    The product-file reader delegates here after opening and validating its
+    storage container.
+    """
+    if mode not in {"full", "cheap"}:
+        raise ProductProfileError("mode_unsupported")
+    if not isinstance(manifest, dict):
+        raise ProductProfileError("manifest_not_an_object")
+    return _profiles(manifest, mode)
+
+
 def profiles_from_product(path: Path, mode: str = "full") -> tuple[Profile, ...]:
     """Read one retained product and return its canonical per-object profiles."""
     if mode not in {"full", "cheap"}:
         raise ProductProfileError("mode_unsupported")
     with open_product(path) as product:
-        manifest = product.manifest
-        if not isinstance(manifest, dict):
-            raise ProductProfileError("manifest_not_an_object")
-        return _profiles(manifest, mode)
+        return profiles_from_manifest(product.manifest, mode)

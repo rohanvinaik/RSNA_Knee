@@ -1,3 +1,8 @@
+> Production now uses the approved squint-first route described in
+> [SQUINT_RUN_GUIDE.md](SQUINT_RUN_GUIDE.md). The full-product, recipe and generated
+> routes below remain explicit reference tools. Their legacy hard-endpoint readout
+> is not the squint production policy. Live acceptance results are in the current task packet.
+
 # Diagnostic runs: setup, teaching, inference, readout and submission
 
 This runbook describes the `knee.diagnosis` interfaces and their integration through

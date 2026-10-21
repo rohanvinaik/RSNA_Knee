@@ -30,3 +30,21 @@ Your take on this? On the "reader" question, that should just be common sense. F
 
 He relayed, in the same message, another agent's review of the lead's plan. It is agent text, not his words, and is
 kept verbatim at `data/readings/ai-execution-plan-20261021/relayed-agent-review-20261021.md`.
+
+
+## Rohan, implementation decision on whole-condition configurations, verbatim
+
+The implementation question was whether warranted agreement from an independently diagnosed whole-condition configuration may decide when no necessary anatomical finding contradicts it, or whether that voice should only grade the numerical output. Rohan selected:
+
+> Let warranted configuration recall decide
+
+This is an explicit decision on the recall consumer, not a clinical lesion-count threshold.
+
+## Rohan, clarification of full and cheap profile coexistence, verbatim
+
+This was how we did it in the cell tracking project--note how the full-resolution encoding and the lossy/"squint" one are both able to coexist
+
+He attached *A Cell's Full Profile Beside Its Cheap Profile*. A copy of the supplied figure is retained at
+`data/pictures/squint-production-20261021/full-and-cheap-profile.png`. It shows the two descriptions of the
+same cell bank by bank, including shared readings, differing readings and banks not written by the cheap path.
+This caption is the recorder's account of the figure, not additional words attributed to Rohan.

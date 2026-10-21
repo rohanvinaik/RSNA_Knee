@@ -26,6 +26,20 @@
     "refusal": "",
     "standing": "ungateable"
   },
+  "src/knee/diagnosis/squint_contracts.py::_kleene_or": {
+    "cut_reasons": [],
+    "function_digest": "e63a2d3431aefa2e",
+    "refusal": "",
+    "standing": "complete"
+  },
+  "src/knee/diagnosis/squint_pipeline.py::is_squint_memory": {
+    "cut_reasons": [
+      "verification_basis_changed"
+    ],
+    "function_digest": "cd52010b02cfbdfb",
+    "refusal": "environment_gated:reads the filesystem via .is_file(),reads the filesystem via .read_text()",
+    "standing": "stale"
+  },
   "src/knee/objects/assignments.py::bursa_code": {
     "cut_reasons": [],
     "function_digest": "c2894b1fb38042fd",

@@ -5,3 +5,7 @@
 @docs/FULL_BUILD_PLAN.md
 @docs/conversations/2026-10-13-the-thesis.md
 @docs/conversations/2026-10-18-anatomical-priors-and-targeted-compute.md
+
+@docs/conversations/2026-10-21-ternary-buckets-and-squint-orchestration.md
+@docs/AI_DIAGNOSTIC_DESIGN.md
+@docs/SQUINT_PRODUCTION_CONTRACT.md

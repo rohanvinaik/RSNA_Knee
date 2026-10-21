@@ -4,7 +4,23 @@ This is P12's interface and construction contract, subordinate to FULL_BUILD_PLA
 the author's *What an <Object> Is* §§1, 7 and 13, and his complete clarification in
 [the 2026-10-19 conversation](conversations/2026-10-19-structural-information-and-exact-hdc.md).
 It is not a replacement theory or another project work queue. Live progress is in the
-packet named by FULL_BUILD_PLAN §13. The later AI and diagnostic mechanisms are not specified.
+packet named by FULL_BUILD_PLAN §13. The later supplied AI/diagnostic design and squint-first
+production binding are now in AI_DIAGNOSTIC_DESIGN.md and SQUINT_PRODUCTION_CONTRACT.md;
+the older construction-stage waiting statements below describe the full encoding's original phase.
+
+## Full and cheap profiles of the same object
+
+Rohan's latest clarification and supplied cell figure explicitly retain both descriptions.
+The full bootstrap profile, cheap raw-scan profile and subsequently acquired finer readings
+belong to one anatomical identity, with each reading's bank, source, scope and resolution retained.
+The cheap description need not write every bank in the full one. Compatible shared readings can
+be compared; genuinely different readings stay different, and absent banks stay unread. Neither
+full-only information nor normality is inferred from silence. The original H5 profile remains
+paired with the cheap precedent without being loaded as an unconditional production prefix.
+An available native support must not be replaced by its location marker when making that pair.
+This is the explicit author clarification in the latest conversation, not a new reference scheme.
+
+Portable case memory retains the full object sparse record and its exact interpretation context, not just a local H5 pointer. The public full-profile reader reconstructs that object offline; production keeps it lazy while reading the cheap banks. Context contains the fields the canonical reader consumes, with original source/spec identities, rather than repeated build recipes. Original object records and their assembly/status information remain unchanged. The storage and readback contract is in SQUINT_PRODUCTION_CONTRACT.md; operational examples are in SQUINT_RUN_GUIDE.md.
 
 ## Meaning and exact arithmetic
 
@@ -281,8 +297,9 @@ and the full competition storage/compute envelope remain separate acceptance obl
    complete no-draw compute/storage envelope again before declaring P12 complete.
 
 Tests of synthetic references certify arithmetic and wiring only. They do not establish a
-clinical norm or that the knee's MRI-specific representation is complete. The future AI and
-diagnostic layer still require Rohan's specification.
+clinical norm or that the knee's MRI-specific representation is complete. The later AI and
+diagnostic design Rohan has supplied is recorded in AI_DIAGNOSTIC_DESIGN.md and
+SQUINT_PRODUCTION_CONTRACT.md; genuinely unspecified extensions still require his input.
 
 ## Running the explicit handoff
 
@@ -379,8 +396,8 @@ Current `encode_study` owns live emitted arrays and the composed result before t
 its public return supplies saved-product metadata, not a specified AI implementation. Preserve that
 lifetime as the integration seam so a later consumer can read the actual exact representation before
 compression/release, without a forced disk round trip. H5 remains the durable pre-AI output/teaching
-interface under the current retention contract. The later AI's decision, teaching, query-bank and
-probability mechanisms await the human's design. Do not transplant the cell instance's AI policies,
+interface under the current retention contract. The approved decision, teaching, query-bank and
+ranking mechanisms are in AI_DIAGNOSTIC_DESIGN.md and SQUINT_PRODUCTION_CONTRACT.md. Do not transplant the cell instance's AI policies,
 temporal dynamics, thresholds or normalization as MRI defaults.
 
 Competition scheduling must cover the entire study operation. Independent study workers perform
