@@ -16,6 +16,12 @@ the next parent. Nothing is recognized: a decision carries the squint tile
 windows the recognition read, and each sheet shows those windows on the native
 slices of the study. It runs locally, on the studies under a competition root
 (train_series/ or test_series/, found through the competition's own tables).
+
+grow: read the per-study records of squint inference output directories, turn
+each located object into a candidate, and decide every candidate against one
+frozen signed parent with the shared growth API. ``admission-decisions.json``
+is always written in the new output directory; the warranted child, if any, is
+published at ``<output>/memory`` unless ``--decisions-only``.
 """
 
 from __future__ import annotations
@@ -45,6 +51,12 @@ from knee.diagnosis.squint_bootstrap import (
     build_review,
     publish_seed_memory,
     validate_calls,
+)
+from knee.diagnosis.squint_identity_growth import (
+    IdentityGrowthError,
+    grow_identity_memory,
+    harvest_candidates,
+    read_inference_records,
 )
 from knee.diagnosis.squint_memory import SquintMemoryError, load_memory_snapshot
 
@@ -1719,6 +1731,24 @@ def _parser() -> argparse.ArgumentParser:
         action="store_true",
         help="also draw each window's first and last slice, not only its middle",
     )
+    grow = sub.add_parser(
+        "grow",
+        help="decide located inference objects against one frozen signed parent",
+    )
+    grow.add_argument("--parent", type=Path, required=True)
+    grow.add_argument(
+        "--inference",
+        type=Path,
+        action="append",
+        required=True,
+        help="a squint diagnostic output directory; its studies/ records are read",
+    )
+    grow.add_argument("--output", type=Path, required=True)
+    grow.add_argument(
+        "--decisions-only",
+        action="store_true",
+        help="write admission-decisions.json and publish no child memory",
+    )
     return parser
 
 
@@ -1852,11 +1882,33 @@ def run_sheets(args: argparse.Namespace) -> dict[str, Any]:
     )
 
 
+def run_grow(args: argparse.Namespace) -> dict[str, Any]:
+    """Harvest every inference record, then decide against the frozen parent."""
+    output = Path(args.output)
+    if output.exists() or output.is_symlink():
+        raise ObjectBootstrapError("output_exists")
+    snapshot = load_memory_snapshot(args.parent)
+    records: list[dict[str, Any]] = []
+    digests: list[str] = []
+    sources: list[dict[str, Any]] = []
+    for directory in args.inference:
+        pairs = read_inference_records(Path(directory))
+        records.extend(record for record, _ in pairs)
+        digests.extend(digest for _, digest in pairs)
+        sources.append({"path": str(directory), "records": len(pairs)})
+    candidates = harvest_candidates(records, record_sha256s=digests)
+    result = grow_identity_memory(
+        snapshot, candidates, output, decisions_only=args.decisions_only
+    )
+    return {"action": "grow", "inference": sources, **result}
+
+
 _ACTIONS = {
     "export": run_export,
     "admit": run_admit,
     "adapt": run_adapt,
     "sheets": run_sheets,
+    "grow": run_grow,
 }
 
 
@@ -1864,7 +1916,12 @@ def main(argv: list[str] | None = None) -> dict[str, Any]:
     args = _parser().parse_args(argv)
     try:
         result = _ACTIONS[args.action](args)
-    except (ObjectBootstrapError, SquintBootstrapError, SquintMemoryError) as error:
+    except (
+        ObjectBootstrapError,
+        SquintBootstrapError,
+        SquintMemoryError,
+        IdentityGrowthError,
+    ) as error:
         detail = getattr(error, "detail", None)
         raise SystemExit(
             error.code + ": " + str(detail) if detail else error.code
