@@ -1,10 +1,10 @@
 # Active task packet
 
-Sole populated current-state record; [FULL_BUILD_PLAN §13](../../FULL_BUILD_PLAN.md#13-context-stable-continuation-and-stop-points) owns this pointer. Revision **109**. Revision 108 is [preserved verbatim](../history/active-task-packet-revision-108.md). Historical instructions are not live jobs.
+Sole populated current-state record; [FULL_BUILD_PLAN §13](../../FULL_BUILD_PLAN.md#13-context-stable-continuation-and-stop-points) owns this pointer. Revision **110**. Revision 109 is [preserved verbatim](../history/active-task-packet-revision-109.md). Historical instructions are not live jobs.
 
 ## TASK ID / PACKET REVISION / STATE
 
-`SQUINT-TRAINING-UPGRADE-20261021` / `109` / building: P1, W1, W2, W4–W9, W11, W12 (gated) and C1 integrated on `squint-upgrade` (head 1f3db63); S1, W12b, W12c, W13 and W16 running.
+`SQUINT-TRAINING-UPGRADE-20261021` / `110` / paused for realignment: Rohan, «I'd like you to reread the "conversation" documents about how the AI layer is supposed to work. I think you've drifted». The lead stopped W12b and W12c (more production recognition of small parts) and is waiting for his answer; S1 and W13 run on.
 
 ## CURRENT REQUEST / AUTHORITATIVE EXCHANGES / ACTUAL AUTHORS
 
@@ -32,7 +32,7 @@ Integrate the production locator's territory-v2 queries (S1, with W10's dependen
 
 ## OPEN SEMANTIC CHOICE / PREREQUISITES / OTHER OPEN BUILD ITEMS
 
-Founder choice pending: on the true-location run every decisive OA, fracture and contusion call came from the whole-condition configuration voice, 18/17/16 of them wrong for medial OA, lateral OA and fracture, and the bones hold a median 99.5–100% of the query's counts over the compared banks (`data/readings/squint-upgrade-20261021/config-overcall-check/`). The lead's proposal, which refines «Let warranted configuration recall decide» and is therefore Rohan's call: compare a configuration case role by role, each against its own trust radius, and let it decide only when its roles concur; otherwise it grades. Not built. The leg-map and bone-anchor constructions reuse existing producers and are checked by the lead on actual pictures. The 4,349 unlabelled studies' scans exist only on Kaggle; their observation run (K2) waits for the working slice and its location check.
+Founder choice pending. The side agent's check is confirmed (`config-overcall-check/sides.out`): for medial OA, lateral OA, PF OA and fracture, every decisive configuration call had no normal case allowed to speak, while 224, 203, 14 and 67 resembling normal cases were set aside as `defining_tissue_coverage_incomplete` (a normal case needs every site compared, a diagnosed one needs one); contusion, whose sites are usually all found, is the only condition ever called absent. The lead's bone-share reading below is withdrawn as the cause, and so is its role-by-role proposal. Earlier record: on the true-location run every decisive OA, fracture and contusion call came from the whole-condition configuration voice, 18/17/16 of them wrong for medial OA, lateral OA and fracture, and the bones hold a median 99.5–100% of the query's counts over the compared banks (`data/readings/squint-upgrade-20261021/config-overcall-check/`). The lead's proposal, which refines «Let warranted configuration recall decide» and is therefore Rohan's call: compare a configuration case role by role, each against its own trust radius, and let it decide only when its roles concur; otherwise it grades. Not built. The leg-map and bone-anchor constructions reuse existing producers and are checked by the lead on actual pictures. The 4,349 unlabelled studies' scans exist only on Kaggle; their observation run (K2) waits for the working slice and its location check.
 
 ## ACCEPTED CHECKPOINT / RUN ROOTS / EXACT COMMANDS / EXIT STATUS
 
@@ -66,16 +66,16 @@ Worktrees under `/private/tmp/rsna-upgrade-20261021/<job>` (branch `upgrade/<job
 | C1-v2 true-location check on the v2 memory | lead | none | background run | DONE (`c1-v2-truelocation/`); see the accepted checkpoint line |
 | W6 question selection | Claude sub-agent | w6 | session sub-agent | INTEGRATED c95d61a, with the lead's sourced MCL-surroundings exception (SQUINT_TRAINING_BUILD §10) |
 | W9 bones by structure | Claude sub-agent | w9 | session sub-agent | INTEGRATED 35d98e5 (not yet wired into the locator); found the established rule names posterior thigh soft tissue as femur on some sagittal middle slices, which the bootstrap shares |
-| W16 cross-view consistency of stored bone outlines | Claude sub-agent | w16 (base 35d98e5) | session sub-agent | RUNNING |
+| W16 cross-view consistency of stored bone outlines | Claude sub-agent | w16 (base 35d98e5) | session sub-agent | RETURNED, not integrated: sets nothing aside on this memory (no bone has outlines in three views; axial bone sections are coarse grid addresses); found several stored bone outlines on soft tissue (`workers/w16/report.md`) |
 | W10 dependents from anchors | Codex CLI, then Claude sub-agent | w10 | session sub-agent | RETURNED, not yet merged (merges with the v2 locator writer and W12): anchors improve candidate sets (35/65 vs 28/65 series with an on-support candidate) but v1 resemblance rarely chooses it (3/50) |
 | W11 location check | Claude sub-agent | w11 | session sub-agent | INTEGRATED 19cdac5; corrected the lead's earlier on-target figures (native supports only: femur 14%, tibia 19%, patella 14%) |
 | W14 teaching round | Codex CLI, then Claude sub-agent | w14 | session sub-agent | RETURNED, PARKED for the teaching stage: command works mechanically, loop test admitted nothing new (`workers/w14/report.md`); found the ACL has a stored case in only 6 of 58 studies |
 | W12 residual executor | Claude sub-agent | w12 | session sub-agent | INTEGRATED 1f3db63, gated: no part's bounded outline decides until validated (`VALIDATED_OUTLINE_PARTS` empty) |
 | W7 recall reads only the selection | Codex CLI | w7 | baeddtawc | INTEGRATED (merged onto W8's memory view by the lead); production recall now needs the territory-v2 memory, v1 is refused by name |
 | W13 picture sheets | Claude sub-agent | w13 | session sub-agent | RUNNING |
-| W12b own-outline slice order and validation on 58 | Claude sub-agent | w12b (base 1f3db63) | session sub-agent | RUNNING |
+| W12b own-outline slice order and validation on 58 | Claude sub-agent | w12b (base 1f3db63) | session sub-agent | STOPPED by the lead mid-run (partial edits in its worktree, unreviewed) |
 | S1 production locator writes territory-v2 queries, placed from the bones (merges W10) | Codex CLI | s1 (base 1f3db63) | background task b09bv720a | RUNNING |
-| W12c sagittal small parts over their own outline (ACL, PCL, synovium, patellar and trochlear cartilage) | Codex CLI | w12c (base 1f3db63) | background task b0gl8dmqh | RUNNING |
+| W12c sagittal small parts over their own outline (ACL, PCL, synovium, patellar and trochlear cartilage) | Codex CLI | w12c (base 1f3db63) | background task b0gl8dmqh | STOPPED by the lead mid-run (partial edits in its worktree, unreviewed) |
 
 ## UNREVIEWED / WITHDRAWN / STALE RESULTS
 
