@@ -906,3 +906,55 @@ def test_explicit_ties_stay_ties_on_the_structural_route(monkeypatch):
     assert len(tibia["territories"]) == 3
     assert tibia["evidence"]["selected_view_regions"] == 0
     assert tibia["profile"] is None
+
+
+def test_reversed_bone_anchor_pair_is_quarantined_before_dependent_windows(
+    monkeypatch,
+):
+    _no_producer(monkeypatch)
+    series = _series()
+    femur_point = np.asarray((0.0, 0.0, -100.0))
+    tibia_point = np.asarray((0.0, 0.0, 100.0))
+    femur = _complete_anchor(
+        "femur", femur_point, [_anchor_territory("femur", (2, 3, 6, 10, 13, 20))]
+    )
+    tibia = _complete_anchor(
+        "tibia", tibia_point, [_anchor_territory("tibia", (3, 4, 12, 16, 9, 17))]
+    )
+    for anchor, point in ((femur, femur_point), (tibia, tibia_point)):
+        anchor["reference"] = {
+            "status": "complete",
+            "point_lps": point.tolist(),
+            "precision_mm": [0.0, 0.0, 0.0],
+        }
+
+    from knee.diagnosis import squint_anatomical_priors as priors
+
+    calls = []
+    actual = priors.anatomical_windows
+
+    def observe_windows(series_record, subject, **kwargs):
+        calls.append({"subject": subject, "anchors": dict(kwargs["anchors"])})
+        return actual(series_record, subject, **kwargs)
+
+    monkeypatch.setattr(priors, "anatomical_windows", observe_windows)
+    memory = _memory(series, {"medial_meniscus": (4, 5, 11, 12, 10, 15)})
+    result = locator.locate_objects(
+        _study(
+            series,
+            knee_side="left",
+            anchors={"femur": femur, "tibia": tibia},
+        ),
+        memory,
+    )
+
+    anchor_evidence = result["evidence"]["anchors"]
+    for name in ("femur", "tibia"):
+        bone = anchor_evidence["bones"][name]
+        assert bone["status"] == "conflict"
+        assert bone["code"] == "anatomical_relation_conflict"
+        assert bone["anatomical_sanity"]["status"] == "contradicted"
+    assert anchor_evidence["source"]["route_reason"] == "anatomical_anchor_conflict"
+    assert calls
+    assert {call["subject"] for call in calls} == {"medial_meniscus"}
+    assert all(not ({"femur", "tibia"} & set(call["anchors"])) for call in calls)

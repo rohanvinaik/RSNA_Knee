@@ -69,8 +69,6 @@ import numpy as np
 from knee.diagnosis import squint_locator as shared
 from knee.diagnosis.squint_geometry import (
     object_geometry,
-    relative_scope_priors,
-    window_scope_codes,
 )
 from knee.diagnosis.squint_interfaces import (
     LEG_OUTSIDE,
@@ -84,6 +82,7 @@ from knee.diagnosis.squint_interfaces import (
     parse_territory_bank_name,
     territory_code,
 )
+from knee.diagnosis.squint_sanity import window_sanity_checks
 
 BONES = ("femur", "tibia", "patella", "fibula")
 USABLE_ANCHOR_STATUSES = ("complete", "partial")
@@ -1220,6 +1219,67 @@ def _anchored_object(
     }
 
 
+def _sanity_summary(rows: Sequence[Mapping[str, Any]]) -> dict[str, Any]:
+    """Keep the scope of a plausibility check distinct from an identity claim."""
+    statuses = {row.get("status") for row in rows}
+    return {
+        "schema": "knee.object-anatomical-sanity/v1",
+        "status": "contradicted"
+        if "contradicted" in statuses
+        else "plausible"
+        if "plausible" in statuses
+        else "unknown",
+        "identity_assertion": None,
+        "windows": list(rows),
+    }
+
+
+def _check_anchor_sanity(
+    state: dict[str, Any], series_by_uid: Mapping[str, Any], knee_side: str | None
+) -> None:
+    """A contradicted pair cannot silently anchor dependent objects.
+
+    Preserve both observations and name the conflict; these checks do not choose
+    which of two conflicting bone names was mistaken. Partial/missing references
+    remain neutral and do not prevent their existing useful guide contribution.
+    """
+    checked: dict[str, Any] = {}
+    conflicts: set[str] = set()
+    for name, entry in state["usable"].items():
+        rows = []
+        for territory in entry["territories"]:
+            window = _object_window(territory)
+            series = series_by_uid.get(territory["series_uid"])
+            if window is None or series is None:
+                continue
+            for row in window_sanity_checks(
+                series, name, [window], state["geometry"], knee_side
+            ):
+                row["series_uid"] = territory["series_uid"]
+                rows.append(row)
+                for check in row["checks"]:
+                    if check["result"].startswith("reversed_"):
+                        conflicts.add(name)
+                        reference = check.get("reference_subject")
+                        if reference in state["usable"]:
+                            conflicts.add(reference)
+        checked[name] = _sanity_summary(rows)
+    state["sanity"] = checked
+    for name in sorted(conflicts):
+        state["bones"][name] = {
+            **state["bones"][name],
+            "status": "conflict",
+            "code": "anatomical_relation_conflict",
+            "anatomical_sanity": checked[name],
+        }
+        state["usable"].pop(name, None)
+        state["geometry"].pop(name, None)
+    if not state["usable"]:
+        state["route"] = EXISTING_ROUTE
+        if conflicts:
+            state["source"]["route_reason"] = "anatomical_anchor_conflict"
+
+
 def locate_anatomy_first(
     study: dict,
     memory: dict,
@@ -1341,6 +1401,7 @@ def locate_anatomy_first(
     # (module note): nothing from an earlier location, and nothing when it pairs now.
     retained_support: list[Mapping[str, Any]] | None = None if refine_finalists else []
     anchor_state = study_anchors(study, series_by_uid, deadline=deadline)
+    _check_anchor_sanity(anchor_state, series_by_uid, knee_side)
     structural = anchor_state["route"] == STRUCTURAL_ROUTE
     structural_geometry: dict[str, dict[str, Any]] = anchor_state["geometry"]
     if structural:
@@ -1380,6 +1441,9 @@ def locate_anatomy_first(
                 refine_finalists=refine_finalists,
                 retained_support=retained_support,
             )
+            objects[subject]["sanity"] = anchor_state["sanity"].get(
+                subject, _sanity_summary([])
+            )
             geometry_by_subject[subject] = structural_geometry[subject]
             continue
         if structural:
@@ -1390,7 +1454,6 @@ def locate_anatomy_first(
                 for name, item in structural_geometry.items()
                 if name != subject
             }
-            scope_geometry: dict[str, dict[str, Any]] = dict(structural_geometry)
         else:
             anchors = {
                 name: item
@@ -1400,17 +1463,19 @@ def locate_anatomy_first(
                 and isinstance(item.get("reference"), Mapping)
                 and item["reference"].get("status") in {"complete", "partial"}
             }
-            scope_geometry = geometry_by_subject
         # The atlas scale is femoral breadth. A femur–tibia reference
         # separation is not that measurement, so authored spans remain
         # unscaled until a real breadth measurement is available.
         knee_scale_mm = None
-        relative_priors = relative_scope_priors(
-            subject,
-            shared._anchor_names(subject, set(known)),
-            case_rows,
-            scope_geometry,
-        )
+        # The old exemplar-offset slabs could inherit wrongly named teaching
+        # locations. The authored map generates the finite windows; observed
+        # anatomy checks their plausibility before any resemblance is computed.
+        relative_priors = {
+            "status": "not_used_for_eligibility",
+            "reason": "authored_map_and_observed_anatomical_relations",
+            "cases": [],
+        }
+        sanity_by_region: dict[tuple[Any, ...], dict[str, Any]] = {}
         scope_evidence = []
         proposal_evidence = []
         scope_code_counts: dict[str, int] = {}
@@ -1553,13 +1618,19 @@ def locate_anatomy_first(
             cost["windows_proposed"] += len(windows)
             if not windows:
                 continue
-            scope_codes = window_scope_codes(series_record, windows, relative_priors)
+            sanity_rows = window_sanity_checks(
+                series_record, subject, windows, anchors, knee_side
+            )
+            for row in sanity_rows:
+                row["series_uid"] = series_record.get("series_uid")
+                sanity_by_region[(row["series_uid"], tuple(row["window"]))] = row
+            scope_codes = [row["status"] for row in sanity_rows]
             for code in scope_codes:
                 scope_code_counts[code] = scope_code_counts.get(code, 0) + 1
             eligible = [
                 window
                 for window, code in zip(windows, scope_codes, strict=True)
-                if code != "outside_anatomical_prior"
+                if code != "contradicted"
                 and foreground[
                     window[0] : window[1], window[2] : window[3], window[4] : window[5]
                 ].any()
@@ -1831,6 +1902,10 @@ def locate_anatomy_first(
             if structural or territory_v2
             else {}
         )
+        structural_evidence["anatomical_sanity_checks"] = list(
+            sanity_by_region.values()
+        )
+        structural_evidence["eligibility_source"] = "authored_anatomical_relations"
         if territory_v2:
             coarse_catalog = shared._intern_candidate_profiles(coarse_readings, [])
             structural_evidence.update(
@@ -1931,6 +2006,12 @@ def locate_anatomy_first(
         catalog = shared._intern_candidate_profiles(candidate_profiles, best_candidates)
         objects[subject] = {
             "status": "proposal",
+            "sanity": _sanity_summary(
+                [
+                    sanity_by_region[(region["series_uid"], tuple(region["window"]))]
+                    for region in geometry_regions
+                ]
+            ),
             "profile": merged,
             "candidate_profiles": candidate_profiles,
             "regions": geometry_regions,
@@ -1992,6 +2073,7 @@ def locate_anatomy_first(
                 "route": anchor_state["route"],
                 "source": anchor_state["source"],
                 "bones": anchor_state["bones"],
+                "anatomical_sanity": anchor_state.get("sanity", {}),
             }
         ),
     }

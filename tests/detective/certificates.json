@@ -26,6 +26,12 @@
     "refusal": "",
     "standing": "ungateable"
   },
+  "src/knee/diagnosis/squint_bootstrap.py::validate_calls": {
+    "cut_reasons": [],
+    "function_digest": "3d822e898625a5e3",
+    "refusal": "",
+    "standing": "incomplete"
+  },
   "src/knee/diagnosis/squint_contracts.py::_configuration_case_disposition": {
     "cut_reasons": [],
     "function_digest": "20eb4bf9dcf9092f",
@@ -37,6 +43,14 @@
     "function_digest": "e63a2d3431aefa2e",
     "refusal": "",
     "standing": "complete"
+  },
+  "src/knee/diagnosis/squint_identity.py::_sanity_status": {
+    "cut_reasons": [
+      "mutant_construction_failed"
+    ],
+    "function_digest": "30256d1213817dbe",
+    "refusal": "",
+    "standing": "ungateable"
   },
   "src/knee/diagnosis/squint_pipeline.py::is_squint_memory": {
     "cut_reasons": [

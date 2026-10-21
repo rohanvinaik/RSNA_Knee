@@ -1156,7 +1156,7 @@ def test_locator_refines_only_finite_coarse_best_window(monkeypatch) -> None:
     )
 
 
-def test_finite_helper_keeps_case_index_for_relative_anchor_priors(
+def test_finite_helper_windows_do_not_inherit_teaching_case_positions(
     monkeypatch,
 ) -> None:
     bank = (
@@ -1285,23 +1285,26 @@ def test_finite_helper_keeps_case_index_for_relative_anchor_priors(
         0,
         1,
     )
-    meniscus_priors = result["objects"]["meniscus"]["evidence"]["relative_scope_priors"]
-    source = next(
-        row for row in meniscus_priors["cases"] if row.get("case_id") == "case-meniscus"
-    )
-    assert source["case_index"] == 1
-    assert source["status"] == "available"
-    assert [row["offset_mm"] for row in source["planes"]] == [-60.0, -60.0]
+    evidence = result["objects"]["meniscus"]["evidence"]
+    # A teaching case's stored position, even one at exactly the right offset, does not
+    # decide eligibility: those positions could inherit wrongly named teaching locations.
+    # The authored map makes the finite windows and observed anatomy checks them.
+    assert evidence["relative_scope_priors"] == {
+        "status": "not_used_for_eligibility",
+        "reason": "authored_map_and_observed_anatomical_relations",
+        "cases": [],
+    }
+    assert evidence["eligibility_source"] == "authored_anatomical_relations"
     assert (
-        result["objects"]["meniscus"]["evidence"]["relative_scope_priors"]["subject"]
-        == "meniscus"
-    )
-    assert (
-        result["objects"]["meniscus"]["evidence"]["proposal_sources"][0][
-            "relative_scope_check"
-        ]
+        evidence["proposal_sources"][0]["relative_scope_check"]
         == "direct_finite_candidate_scope_check"
     )
+    # With no bone anchor placed, the anatomical check is unknown, and unknown keeps
+    # the window eligible rather than counting against it.
+    sanity = result["objects"]["meniscus"]["sanity"]
+    assert sanity["status"] == "unknown"
+    assert sanity["identity_assertion"] is None
+    assert [row["eligible"] for row in sanity["windows"]] == [True]
 
 
 def test_capacity_projection_keeps_context_only_profile_without_envelope(monkeypatch):

@@ -724,3 +724,174 @@ def test_each_study_receives_only_its_remaining_time_share():
     assert zero_budget == 0.0
     with pytest.raises(SquintRunError, match="remaining_studies_invalid"):
         _study_budget_deadline(100.0, 0, 1, now=20.0)
+
+
+def _identity_run_snapshot(monkeypatch, tmp_path, memory):
+    class MemorySnapshot:
+        def __init__(self, path, sha256, status, declared_schema, payload):
+            self.path = path.resolve()
+            self.sha256 = sha256
+            self.status = status
+            self.declared_schema = declared_schema
+            self.memory = payload
+            self.error_code = None
+
+    _module(
+        monkeypatch,
+        "knee.diagnosis.squint_memory",
+        MemorySnapshot=MemorySnapshot,
+        load_memory_snapshot=lambda path: MemorySnapshot(
+            path / "manifest.json", "c" * 64, "squint", "knee.squint-memory/v1", memory
+        ),
+        compile_bootstrap=lambda *a, **k: None,
+    )
+    memory_dir = tmp_path / "memory"
+    memory_dir.mkdir()
+    (memory_dir / "manifest.json").write_text("{}")
+    return memory_dir
+
+
+def test_production_studies_reuse_one_identity_preparation_for_shared_view(
+    monkeypatch, tmp_path
+):
+    _wire(monkeypatch)
+    preparations = []
+
+    def prepare(memory, *, exclude_study_uid=None):
+        prepared = {
+            "outcome": "prepared",
+            "source_pin": "shared-unexcluded-view",
+            "exclude_study_uid": exclude_study_uid,
+        }
+        preparations.append((memory, exclude_study_uid, prepared))
+        return prepared
+
+    _module(
+        monkeypatch,
+        "knee.diagnosis.squint_identity",
+        prepare_identity=prepare,
+        recall_identity=lambda *a, **k: {"outcome": "test"},
+    )
+    memory = {
+        "revision": "r1",
+        "object_identity_teaching": {"schema": "knee.object-identity-teaching/v1"},
+    }
+    memory_dir = _identity_run_snapshot(monkeypatch, tmp_path, memory)
+    from knee.diagnosis.squint_pipeline import run_squint_cli
+    from knee.json_store import load_json
+
+    result = run_squint_cli(
+        argparse.Namespace(
+            diagnostic_mode="infer",
+            diagnostic_memory=memory_dir,
+            diagnostic_output=tmp_path / "out",
+            root=tmp_path,
+            study_uid=["query-a", "query-b"],
+            workers=2,
+        )
+    )
+    assert len(preparations) == 1
+    assert preparations[0][1] is None
+    assert result["work"]["identity_preparations_shared"] == 1
+    assert result["work"]["identity_preparation_seconds"] >= 0
+    for study in result["work"]["studies"]:
+        assert study["identity_preparation_source"] == "shared_once"
+        record = load_json(tmp_path / "out" / study["evidence_path"])
+        assert record["identity_recall"]["preparation"]["source_pin"] == (
+            "shared-unexcluded-view"
+        )
+
+
+def test_capacity_studies_prepare_distinct_held_out_identity_views(
+    monkeypatch, tmp_path
+):
+    _wire(monkeypatch)
+    from knee.diagnosis import squint_pipeline
+
+    diagnosis_module = sys.modules["knee.diagnosis.squint_locator"]
+    diagnosis_module.prepare_recall = (
+        lambda memory, *, cached=None, exclude_study_uid=None: {
+            "outcome": "prepared",
+            "runtime_indexes_rebuilt": True,
+        }
+    )
+    monkeypatch.setattr(
+        squint_pipeline, "recall_source_fingerprint", lambda memory: "fp"
+    )
+    excluded_views = []
+
+    def exclude(memory, uid):
+        filtered = {
+            **memory,
+            "cases": [case for case in memory["cases"] if case["study_uid"] != uid],
+            "view": {
+                "schema": squint_pipeline.MEMORY_VIEW_SCHEMA,
+                "excluded_study_uids": [uid],
+                "source_fingerprint": "fp",
+            },
+        }
+        return filtered, {"excluded_study_uid": uid}
+
+    monkeypatch.setattr(squint_pipeline, "_study_excluded_memory", exclude)
+    monkeypatch.setattr(
+        squint_pipeline,
+        "_capacity_exclusion_evidence",
+        lambda excluded, prepared, **kwargs: {
+            "excluded_study_uid": excluded["excluded_study_uid"],
+            "exclusion_status": "applied",
+        },
+    )
+
+    def prepare_identity(memory, *, exclude_study_uid=None):
+        case_studies = {case["study_uid"] for case in memory["cases"]}
+        prepared = {
+            "outcome": "prepared",
+            "exclude_study_uid": exclude_study_uid,
+            "case_studies": sorted(case_studies),
+            "source_pin": "for-" + str(exclude_study_uid),
+        }
+        excluded_views.append(prepared)
+        return prepared
+
+    _module(
+        monkeypatch,
+        "knee.diagnosis.squint_identity",
+        prepare_identity=prepare_identity,
+        recall_identity=lambda *a, **k: {"outcome": "test"},
+    )
+    memory = {
+        "revision": "r2",
+        "cases": [
+            {"case_id": "a-case", "study_uid": "held-a"},
+            {"case_id": "b-case", "study_uid": "held-b"},
+        ],
+        "censors": [],
+        "object_identity_teaching": {"schema": "knee.object-identity-teaching/v1"},
+    }
+    memory_dir = _identity_run_snapshot(monkeypatch, tmp_path, memory)
+    from knee.diagnosis.squint_pipeline import run_squint_cli
+    from knee.json_store import load_json
+
+    result = run_squint_cli(
+        argparse.Namespace(
+            diagnostic_mode="capacity",
+            diagnostic_memory=memory_dir,
+            diagnostic_output=tmp_path / "capacity-out",
+            root=tmp_path,
+            study_uid=["held-a", "held-b"],
+            workers=2,
+            squint_time_limit=60.0,
+        )
+    )
+    assert {row["exclude_study_uid"] for row in excluded_views} == {"held-a", "held-b"}
+    assert result["work"]["identity_preparations_shared"] == 0
+    assert {tuple(row["case_studies"]) for row in excluded_views} == {
+        ("held-b",),
+        ("held-a",),
+    }
+    for study in result["work"]["studies"]:
+        assert study["identity_preparation_source"] == "study_excluded"
+        record = load_json(tmp_path / "capacity-out" / study["evidence_path"])
+        preparation = record["identity_recall"]["preparation"]
+        assert preparation["exclude_study_uid"] == study["study_uid"]
+        assert study["study_uid"] not in preparation["case_studies"]

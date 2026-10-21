@@ -227,7 +227,9 @@
       ]
     }
   ],
+  "src/knee/diagnosis/squint_bootstrap.py::validate_calls::3d822e898625a5e3": [],
   "src/knee/diagnosis/squint_contracts.py::_kleene_or::e63a2d3431aefa2e": [],
+  "src/knee/diagnosis/squint_identity.py::_sanity_status::30256d1213817dbe": [],
   "src/knee/diagnosis/squint_pipeline.py::is_squint_memory::cd52010b02cfbdfb": [
     {
       "assertion_code": "try:\n    _result = is_squint_memory(path=-1)\nexcept TypeError as _exc:\n    assert str(_exc) == \"argument should be a str or an os.PathLike object where __fspath__ returns a str, not 'int'\"\nexcept BaseException as _exc:\n    pytest.fail(f\"expected TypeError, got {type(_exc).__name__}: {_exc!r}\")\nelse:\n    pytest.fail(f\"expected TypeError, but the call returned {_result!r}\")",

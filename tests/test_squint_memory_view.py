@@ -492,3 +492,35 @@ def test_real_cli_entrypoint_excludes_the_dicom_study(tmp_path):
     assert set(load_json(tmp_path / "cli" / study["evidence_path"])["values"]) == set(
         LABELS
     )
+
+
+def test_identity_teaching_records_leave_the_population_with_their_study():
+    memory = _memory()
+    memory["object_identity_cases"] = {
+        "schema": "knee.object-identity-cases/v1",
+        "cases": [
+            {"case_id": "negative-held", "study_uid": "held", "subject": "femur"},
+            {"case_id": "negative-peer", "study_uid": "positive", "subject": "femur"},
+        ],
+    }
+    expected = squint_locator.prepare_recall(memory)
+    memory["prepared_recall"] = expected
+    view = memory_view(memory, exclude_study_uids=("held",))
+    table = view["object_identity_cases"]
+    assert table["schema"] == "knee.object-identity-cases/v1"
+    assert [row["case_id"] for row in table["cases"]] == ["negative-peer"]
+    assert len(memory["object_identity_cases"]["cases"]) == 2
+    # Condition recall's preparation never reads the identity table.
+    assert (
+        expected["source_fingerprint"]
+        == squint_locator.prepare_recall(
+            {
+                key: value
+                for key, value in memory.items()
+                if key != "object_identity_cases"
+            }
+        )["source_fingerprint"]
+    )
+    with pytest.raises(MemoryViewError) as error:
+        memory_view({"cases": [], "object_identity_cases": {"cases": None}})
+    assert error.value.code == "memory_view_object_identity_cases_invalid"

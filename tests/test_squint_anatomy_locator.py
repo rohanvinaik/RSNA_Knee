@@ -139,7 +139,9 @@ def test_public_locator_scores_finite_atlas_windows_before_exact_profiles(monkey
     assert costs["full_profiles_materialized"] == 1
     assert costs["proposal_sources"][0]["series_uid"] == "current-series"
     assert costs["relative_scope_check"] == "direct_finite_candidate_scope_check"
-    assert located["evidence"]["location_scope_codes"] == {"geometry_unavailable": 2}
+    assert located["evidence"]["location_scope_codes"] == {"unknown": 2}
+    assert located["sanity"]["status"] == "unknown"
+    assert costs["windows_scored"] == costs["windows_proposed"]
 
 
 def test_coarse_tie_set_is_kept_but_not_expanded_past_refinement_budget(monkeypatch):
@@ -433,3 +435,60 @@ def test_relative_scope_check_consumes_only_supplied_finite_windows():
     codes = window_scope_codes(series, finite_windows, priors)
 
     assert codes == ["eligible", "outside_anatomical_prior"]
+
+
+def test_public_locator_skips_contradicted_windows_before_scoring_or_exact_reading(
+    monkeypatch,
+):
+    window = (0, 1, 0, 1, 0, 1)
+    series, memory, _helper_calls = _fixture([window], monkeypatch)
+    exact_calls: list[tuple[int, ...]] = []
+    _patch_exact(monkeypatch, exact_calls)
+    sanity_calls = []
+
+    def contradicted(_series, subject, windows, anchors, knee_side):
+        rows = []
+        for index, candidate in enumerate(windows):
+            sanity_calls.append((subject, tuple(candidate), anchors, knee_side))
+            rows.append(
+                {
+                    "index": index,
+                    "window": candidate,
+                    "address": candidate,
+                    "status": "contradicted",
+                    # The caller must consume the named status, not this neutral field.
+                    "eligible": True,
+                    "checks": [{"result": "reversed_strictly_after"}],
+                }
+            )
+        return rows
+
+    monkeypatch.setattr(anatomy_locator, "window_sanity_checks", contradicted)
+    coarse_calls = []
+    original_coarse_batch = locator._window_coarse_batch
+
+    def record_coarse_batch(names, integrals, windows):
+        coarse_calls.append([tuple(candidate) for candidate in windows])
+        return original_coarse_batch(names, integrals, windows)
+
+    monkeypatch.setattr(locator, "_window_coarse_batch", record_coarse_batch)
+    result = locator.locate_objects(
+        {
+            "study_uid": "current-study",
+            "knee_side": None,
+            "series": [series],
+            "anchors": {},
+        },
+        memory,
+    )
+
+    located = result["objects"]["femur"]
+    costs = next(iter(located["evidence"]["candidate_costs_by_view"].values()))
+    recorded = located["evidence"]["anatomical_sanity_checks"]
+    assert sanity_calls == [("femur", window, {}, None)]
+    assert recorded[0]["status"] == "contradicted"
+    assert costs["windows_proposed"] == 1
+    assert costs["windows_scored"] == 0
+    assert costs["full_profiles_materialized"] == 0
+    assert coarse_calls == []
+    assert exact_calls == []

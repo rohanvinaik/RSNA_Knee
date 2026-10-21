@@ -672,6 +672,57 @@ def _fine_readings_held(objects: object) -> int:
     )
 
 
+def _identity_readings(
+    objects: dict,
+    memory: dict,
+    excluded_uid: str | None,
+    *,
+    prepared_identity: Mapping | None = None,
+) -> dict:
+    """Hear called identity seeds once per study view, independently of diagnosis.
+
+    An automatic catalogue is not identity teaching. Missing profiles remain unread;
+    neither a proposed anatomical name nor a plausible location supplies a class.
+    This operation returns evidence only: it never publishes a case or a diagnosis.
+    """
+    if "object_identity_teaching" not in memory:
+        return {"outcome": "unreviewed_candidate_memory", "objects": {}}
+    from knee.diagnosis.squint_identity import prepare_identity, recall_identity
+
+    prepared = (
+        prepared_identity
+        if prepared_identity is not None
+        else prepare_identity(memory, exclude_study_uid=excluded_uid)
+    )
+    if prepared.get("outcome") != "prepared":
+        return {
+            "outcome": "invalid_seed_teaching",
+            "preparation": dict(prepared),
+            "objects": {},
+        }
+    readings = {}
+    for subject, located in sorted(objects.items()):
+        profile = located.get("profile")
+        readings[subject] = (
+            recall_identity(
+                profile,
+                memory,
+                exclude_study_uid=excluded_uid,
+                sanity=located.get("sanity"),
+                prepared=prepared,
+            )
+            if profile is not None
+            else {"outcome": "unresolved_missing_reading", "identity": None}
+        )
+    return {
+        "schema": "knee.study-object-identity/v1",
+        "outcome": "examined",
+        "preparation": dict(prepared),
+        "objects": readings,
+        "memory_published": False,
+    }
+
+
 def infer_study(
     root: Path,
     uid: str,
@@ -680,6 +731,7 @@ def infer_study(
     deadline: float | None = None,
     io_workers: int = 8,
     exclude_same_study: bool = False,
+    prepared_identity: Mapping | None = None,
 ) -> dict:
     """Consume current-study cheap observations; never read teaching calls as features.
 
@@ -712,6 +764,12 @@ def infer_study(
         study, memory, deadline=deadline, **_squint_first_location(locate_objects)
     )
     objects = locations.get("objects", {})
+    identity_readings = _identity_readings(
+        objects,
+        memory,
+        uid if exclude_same_study else None,
+        prepared_identity=prepared_identity,
+    )
     fine_readings_at_location = _fine_readings_held(objects)
     questions = {}
     values = {}
@@ -800,6 +858,7 @@ def infer_study(
         "questions": questions,
         "values": values,
         "objects": objects,
+        "identity_recall": identity_readings,
         "observations": observations,
         "work": work,
         "unresolved_observation_requests": [
@@ -1046,6 +1105,7 @@ def run_squint_cli(args, *, prepared_memory_snapshot=None) -> dict:
                 preparation_cache_status = "cached_candidate"
         elif mode != "capacity":
             preparation_cache_status = "invalid_recomputed"
+    identity_preparation_seconds = 0.0
     if mode != "capacity":
         preparation_started = time.perf_counter()
         prepared = (
@@ -1101,7 +1161,15 @@ def run_squint_cli(args, *, prepared_memory_snapshot=None) -> dict:
             "memory_manifest_sha256": memory_digest,
             "memory_revision": memory.get("revision", ""),
         }
+        identity_prepared_shared = None
+        if "object_identity_teaching" in memory:
+            from knee.diagnosis.squint_identity import prepare_identity
+
+            identity_started = time.perf_counter()
+            identity_prepared_shared = prepare_identity(memory)
+            identity_preparation_seconds = time.perf_counter() - identity_started
     else:
+        identity_prepared_shared = None
         preparation_artifact_schema = None
         preparation_artifact_source = "not_written"
         preparation_identity = None
@@ -1110,6 +1178,7 @@ def run_squint_cli(args, *, prepared_memory_snapshot=None) -> dict:
         study_memory: dict = memory
         excluded = None
         study_preparation_seconds = 0.0
+        study_identity_preparation_seconds = 0.0
         study_preparation_source = preparation_cache_status
         if mode == "capacity":
             study_memory, excluded = _study_excluded_memory(memory, uid)
@@ -1141,6 +1210,7 @@ def run_squint_cli(args, *, prepared_memory_snapshot=None) -> dict:
                     "excluded_study_uid": None,
                 }
             return record
+        identity_prepared = identity_prepared_shared
         if mode == "capacity":
             preparation_started = time.perf_counter()
             study_prepared = prepare_recall(memory, cached=cache, exclude_study_uid=uid)
@@ -1155,6 +1225,16 @@ def run_squint_cli(args, *, prepared_memory_snapshot=None) -> dict:
                 "prepared_recall": study_prepared,
                 "view": {**study_memory["view"], "preparation_code": "prepared"},
             }
+            if "object_identity_teaching" in study_memory:
+                from knee.diagnosis.squint_identity import prepare_identity
+
+                identity_started = time.perf_counter()
+                identity_prepared = prepare_identity(
+                    study_memory, exclude_study_uid=uid
+                )
+                study_identity_preparation_seconds = (
+                    time.perf_counter() - identity_started
+                )
             study_preparation_source = (
                 "study_excluded_projected"
                 if study_prepared.get("runtime_indexes_rebuilt") is True
@@ -1166,6 +1246,7 @@ def run_squint_cli(args, *, prepared_memory_snapshot=None) -> dict:
             study_memory,
             deadline=deadline,
             exclude_same_study=mode == "capacity",
+            prepared_identity=identity_prepared,
         )
         record["work"].update(
             {
@@ -1173,6 +1254,14 @@ def run_squint_cli(args, *, prepared_memory_snapshot=None) -> dict:
                 "study_budget_deadline_exhausted": time.monotonic() >= deadline,
                 "recall_preparation_seconds": study_preparation_seconds,
                 "recall_preparation_source": study_preparation_source,
+                "identity_preparation_seconds": study_identity_preparation_seconds,
+                "identity_preparation_source": (
+                    "study_excluded"
+                    if mode == "capacity" and identity_prepared is not None
+                    else "shared_once"
+                    if identity_prepared is not None
+                    else "not_requested"
+                ),
             }
         )
         if excluded is not None:
@@ -1291,6 +1380,8 @@ def run_squint_cli(args, *, prepared_memory_snapshot=None) -> dict:
             "full_anatomy_runs": 0,
             "memory_loaded_once": True,
             "recall_preparation_seconds": preparation_seconds,
+            "identity_preparation_seconds": identity_preparation_seconds,
+            "identity_preparations_shared": int(identity_prepared_shared is not None),
             "workers": worker_count,
             "studies": studies,
         },

@@ -125,6 +125,17 @@ def memory_view(
     }
     if "censors" in memory:
         result["censors"] = [row for row in censors if not _excluded(row, excluded)]
+    if "object_identity_cases" in memory:
+        # Negative identity cases and alternative-identity positives leave the
+        # population with their study, exactly as its object cases do.
+        table = memory["object_identity_cases"]
+        rows = table.get("cases") if isinstance(table, Mapping) else None
+        if not isinstance(rows, Sequence) or isinstance(rows, (str, bytes)):
+            raise MemoryViewError("memory_view_object_identity_cases_invalid")
+        result["object_identity_cases"] = {
+            **table,
+            "cases": [row for row in rows if not _excluded(row, excluded)],
+        }
     result.pop("prepared_recall", None)
     result.pop("view", None)
     _portable_view(result, excluded)
