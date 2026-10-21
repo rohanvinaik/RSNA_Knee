@@ -9,20 +9,32 @@ drawing-only evidence, write the final review bytes and hash those exact bytes.
 admit: rehash the review file bytes, check the rendered sheets, then hand the
 review, the human calls and the hash to the shared seed API. Nothing is
 inferred, ranked or relabelled here.
+
+sheets: draw one picture sheet per identity-admission decision, so the first
+growth round's admissions can be looked at before their child memory becomes
+the next parent. Nothing is recognized: a decision carries the squint tile
+windows the recognition read, and each sheet shows those windows on the native
+slices of the study. It runs locally, on the studies under a competition root
+(train_series/ or test_series/, found through the competition's own tables).
 """
 
 from __future__ import annotations
 
 import argparse
 import copy
+import gc
 import hashlib
 import importlib.util
 import json
+import math
 import os
 import re
 import sys
 import tempfile
+import textwrap
+from collections import Counter
 from collections.abc import Callable, Mapping, Sequence
+from itertools import groupby
 from pathlib import Path
 from typing import Any
 
@@ -873,6 +885,760 @@ def export_review(
     }
 
 
+# ------------------------------------------------------------ admission sheets
+#
+# ``sheets`` draws one picture sheet per identity-admission decision so that the
+# first growth round's admissions are looked at before their child memory becomes
+# the next parent (docs/OBJECT_BOOTSTRAP_GUIDE.md, "Grow a recognition corpus").
+# Nothing is recognized here. A decision carries the squint tile windows the
+# recognition read; the sheet shows those windows on the native slices of the
+# study. The sheets are drawn locally, from the studies under a competition root
+# (``train_series/`` or ``test_series/``, found through the competition's own
+# tables by the squint reader). The drawing stays in this script: the import
+# contract keeps matplotlib out of ``knee``.
+
+DECISIONS_SCHEMA = "knee.identity-admission-decisions/v1"
+SHEETS_SCHEMA = "knee.identity-admission-sheets/v1"
+SHEET_BANNER = "ADMISSION DECISION - inspect"
+SHEET_DEFAULT_STATE = "admitted"
+SHEET_ORDERING = "study_uid,candidate_id"
+SHEET_TILE_MM = 10.0
+SHEET_IO_WORKERS = 8
+SHEET_CONTEXT_TILES = 3
+_REQUIRED_TEXT = ("candidate_id", "study_uid", "subject", "state")
+_ABSENT = object()
+_ROW_RECEIPT_KEYS = (
+    "series_uid",
+    "view",
+    "view_label",
+    "window",
+    "slice",
+    "slice_role",
+    "series_depth",
+    "image_shape",
+    "image_state",
+    "image_reason",
+    "image_source_path",
+    "native_rect_rc",
+    "context_rect_rc",
+    "notes",
+)
+
+
+def load_decisions(path: Path) -> tuple[dict[str, Any], str]:
+    """The decisions document and the sha256 of its exact bytes, or a named refusal.
+
+    The schema, the required text fields of every decision, a list of regions and
+    the uniqueness of each candidate_id are checked here, before any study is read.
+    The descriptive fields (recognized_identity, views, support, reason, source)
+    are shown as recorded and are not judged.
+    """
+    raw = _read_bytes(path, "decisions_unreadable")
+    document = _parse_json(raw, "decisions_unparseable")
+    if not isinstance(document, dict):
+        raise ObjectBootstrapError("decisions_malformed")
+    if document.get("schema") != DECISIONS_SCHEMA:
+        raise ObjectBootstrapError(
+            "decisions_schema_unrecognized", repr(document.get("schema"))
+        )
+    decisions = document.get("decisions")
+    if not isinstance(decisions, list):
+        raise ObjectBootstrapError("decisions_malformed")
+    first_seen: dict[str, int] = {}
+    for index, decision in enumerate(decisions):
+        where = f"decisions[{index}]"
+        if not isinstance(decision, dict):
+            raise ObjectBootstrapError("decision_malformed", where)
+        for key in _REQUIRED_TEXT:
+            value = decision.get(key)
+            if not isinstance(value, str) or not value:
+                raise ObjectBootstrapError("decision_field_invalid", f"{where}.{key}")
+        if not isinstance(decision.get("regions"), list):
+            raise ObjectBootstrapError("decision_field_invalid", f"{where}.regions")
+        candidate_id = decision["candidate_id"]
+        if candidate_id in first_seen:
+            raise ObjectBootstrapError(
+                "decision_candidate_id_duplicate",
+                f"{candidate_id} at decisions[{first_seen[candidate_id]}] and {where}",
+            )
+        first_seen[candidate_id] = index
+    return document, hashlib.sha256(raw).hexdigest()
+
+
+def select_decisions(
+    document: Mapping[str, Any],
+    *,
+    states: Sequence[str] = (),
+    limit: int | None = None,
+) -> dict[str, Any]:
+    """The decisions to draw: the requested states, in sorted (study_uid, candidate_id) order.
+
+    ``limit`` bounds how many are drawn this run. What it leaves undrawn is listed by
+    candidate_id, never dropped without a trace. Nothing here reads a score or a window.
+    """
+    if limit is not None and (type(limit) is not int or limit <= 0):
+        raise ObjectBootstrapError("limit_invalid")
+    if isinstance(states, (str, bytes)) or any(
+        not isinstance(s, str) or not s for s in states
+    ):
+        raise ObjectBootstrapError("filter_values_invalid")
+    wanted = sorted(set(states)) or [SHEET_DEFAULT_STATE]
+    decisions = document["decisions"]
+    counts = Counter(d["state"] for d in decisions)
+    chosen = sorted(
+        (d for d in decisions if d["state"] in wanted),
+        key=lambda d: (d["study_uid"], d["candidate_id"]),
+    )
+    if not chosen:
+        held = ", ".join(f"{s}={n}" for s, n in sorted(counts.items())) or "none"
+        raise ObjectBootstrapError(
+            "no_decisions_selected",
+            "requested " + ", ".join(wanted) + "; the file holds " + held,
+        )
+    drawn = chosen if limit is None else chosen[:limit]
+    return {
+        "states": wanted,
+        "limit": limit,
+        "ordering": SHEET_ORDERING,
+        "state_counts": dict(sorted(counts.items())),
+        "matched": len(chosen),
+        "drawn": drawn,
+        "undrawn_by_limit": [d["candidate_id"] for d in chosen[len(drawn) :]],
+    }
+
+
+def window_pixel_rect(
+    bounds_rc: Any, window: Sequence[int], shape: Sequence[int]
+) -> tuple[int, int, int, int] | None:
+    """Native half-open pixel rectangle (r0, r1, c0, c1) of a tile window.
+
+    It is the union of the window's tiles' own bounds, so a ragged edge tile is
+    exactly as large as the stack made it. None when the window's tile rows or
+    columns do not lie on the grid: the rectangle is never clipped to fit.
+    """
+    return _native_bounds({"bounds_rc": bounds_rc}, window, tuple(shape))
+
+
+def context_pixel_rect(
+    rect: Sequence[int],
+    tile_px: Sequence[int],
+    shape: Sequence[int],
+    margin_tiles: int = SHEET_CONTEXT_TILES,
+) -> tuple[int, int, int, int]:
+    """A view around a window: ``margin_tiles`` whole tiles each side, kept inside the slice."""
+    r0, r1, c0, c1 = rect
+    dr, dc = int(tile_px[0]) * margin_tiles, int(tile_px[1]) * margin_tiles
+    return (
+        max(0, r0 - dr),
+        min(int(shape[0]), r1 + dr),
+        max(0, c0 - dc),
+        min(int(shape[1]), c1 + dc),
+    )
+
+
+def _slice_plan(window: Sequence[int], edge_slices: bool) -> list[tuple[str, int]]:
+    """The slices of a half-open window to show: its middle, and optionally first and last.
+
+    The window holds slices z0 .. z1-1, so the last is z1-1, not z1, and (z0+z1)//2
+    always lies inside it. Slices that coincide share one entry with joined roles.
+    """
+    z0, z1 = window[0], window[1]
+    wanted = [("middle", (z0 + z1) // 2)]
+    if edge_slices:
+        wanted = [("first", z0), ("middle", (z0 + z1) // 2), ("last", z1 - 1)]
+    roles: dict[int, list[str]] = {}
+    for role, z in wanted:
+        roles.setdefault(z, []).append(role)
+    return [("/".join(names), z) for z, names in sorted(roles.items())]
+
+
+def _new_row(
+    series_uid: Any, window: list[int] | None, role: str | None, z: int | None
+) -> dict[str, Any]:
+    return {
+        "series_uid": series_uid,
+        "view": None,
+        "view_label": "view_unrecorded",
+        "window": window,
+        "slice": z,
+        "slice_role": role,
+        "series_depth": None,
+        "image_shape": None,
+        "image_state": None,
+        "image_reason": None,
+        "image_source_path": None,
+        "native_rect_rc": None,
+        "context_rect_rc": None,
+        "notes": [],
+        "pixels": None,
+    }
+
+
+def _read_row(row: dict[str, Any], record: Mapping[str, Any]) -> None:
+    """Fill one row from its series record, or name why the slice cannot be drawn."""
+    import numpy as np
+
+    stack = record.get("stack")
+    native = record.get("native_series")
+    volume = getattr(native, "volume", None)
+    if volume is None or stack is None or getattr(stack, "code", None) != "present":
+        row["image_state"] = "native_volume_or_squint_unavailable"
+        return
+    depth = int(volume.shape[0])
+    row["series_depth"] = depth
+    z, window = row["slice"], row["window"]
+    if not 0 <= z < depth:
+        row["image_state"] = "slice_outside_series"
+        return
+    shape = (int(volume.shape[1]), int(volume.shape[2]))
+    rect = window_pixel_rect(stack.bounds_rc, window, shape)
+    if rect is None:
+        row["image_state"] = "window_outside_tile_grid"
+        return
+    pixels = np.array(volume[z], dtype=np.float32)
+    if pixels.ndim != 2 or not pixels.size:
+        row["image_state"] = "pixels_invalid"
+        return
+    if window[1] > depth:
+        row["notes"].append(f"window_z_beyond_series_depth:{depth}")
+    paths = getattr(native, "slices", ())
+    row.update(
+        image_state="read",
+        image_shape=list(shape),
+        image_source_path=str(paths[z].path.resolve()) if len(paths) > z else None,
+        native_rect_rc=list(rect),
+        context_rect_rc=list(context_pixel_rect(rect, stack.tile_shape_rc, shape)),
+        pixels=pixels,
+    )
+
+
+def _region_rows(
+    region: Any,
+    by_uid: Mapping[str, Mapping[str, Any]],
+    study_error: str | None,
+    edge_slices: bool,
+) -> list[dict[str, Any]]:
+    """The rows one region draws: one per slice shown, each with its image state named."""
+    if not isinstance(region, Mapping):
+        row = _new_row(None, None, None, None)
+        row["image_state"] = "region_malformed"
+        return [row]
+    series_uid = region.get("series_uid")
+    window = _window_tuple(region.get("window"))
+    if window is None:
+        row = _new_row(series_uid, None, None, None)
+        row["image_state"] = "window_unreadable"
+        return [row]
+    rows = []
+    for role, z in _slice_plan(window, edge_slices):
+        row = _new_row(series_uid, window, role, z)
+        if not isinstance(series_uid, str) or not series_uid:
+            row["image_state"] = "region_series_unrecorded"
+        elif study_error:
+            row["image_state"] = "study_read_failed"
+            row["image_reason"] = study_error
+        elif series_uid not in by_uid:
+            row["image_state"] = "series_missing"
+        else:
+            record = by_uid[series_uid]
+            row["view"] = _plain(record.get("view"))
+            row["view_label"] = _view_label(record.get("view"))
+            _read_row(row, record)
+        rows.append(row)
+    return rows
+
+
+def _row_receipt(row: Mapping[str, Any]) -> dict[str, Any]:
+    """The plain fields of a row; the pixels never travel past the sheet they were drawn on."""
+    return {key: _plain(row[key]) for key in _ROW_RECEIPT_KEYS}
+
+
+def _shown(value: Any) -> str:
+    """A decision field as recorded, for the sheet: text as it is, anything else JSON.
+
+    The JSON is spaced after its separators so that a long value wraps between tokens,
+    not through the middle of a word; the index carries the exact compact form.
+    """
+    if value is _ABSENT:
+        return "unrecorded"
+    if isinstance(value, str):
+        return " ".join(value.split())
+    return json.dumps(
+        _plain(value), sort_keys=True, ensure_ascii=False, separators=(", ", ": ")
+    )
+
+
+def _verbatim(value: Any) -> str:
+    """A decision field exactly as recorded (always JSON, so text keeps its quotes)."""
+    if value is _ABSENT:
+        return "unrecorded"
+    return json.dumps(
+        _plain(value), sort_keys=True, ensure_ascii=False, separators=(",", ":")
+    )
+
+
+def _md_code(text: str) -> str:
+    """A markdown code span that survives backticks inside the text.
+
+    The fence is longer than any run of backticks in the text, and the text is padded
+    with one space on each side only when it begins or ends with a backtick.
+    """
+    fence = "`"
+    while fence in text:
+        fence += "`"
+    pad = " " if text.startswith("`") or text.endswith("`") else ""
+    return f"{fence}{pad}{text}{pad}{fence}"
+
+
+def _wrapped(text: str, lines: int = 2, width: int = 118) -> list[str]:
+    pieces = textwrap.wrap(
+        text, width=width, break_long_words=True, break_on_hyphens=False
+    ) or [""]
+    if len(pieces) > lines:
+        pieces = pieces[:lines]
+        pieces[-1] = pieces[-1][: width - 3] + "..."
+    return pieces
+
+
+def _tile_text(window: Sequence[int] | None) -> str:
+    if window is None:
+        return "window unreadable"
+    z0, z1, r0, r1, c0, c1 = window
+    return f"tile window z {z0}..{z1 - 1}, tile rows {r0}..{r1 - 1}, tile cols {c0}..{c1 - 1}"
+
+
+def _decision_figure(
+    decision: Mapping[str, Any], rows: list[dict[str, Any]], *, tile_mm: float
+) -> Any:
+    """One sheet: the decision's fields on top, then each region's native slice with its window box."""
+    import numpy as np
+    from matplotlib.figure import Figure
+    from matplotlib.patches import Rectangle
+
+    who = (
+        f"subject: {decision['subject']}    recognized identity: "
+        f"{_shown(decision.get('recognized_identity', _ABSENT))}    "
+        f"study: {decision['study_uid']}"
+    )
+    legend = (
+        "Yellow dashed box: the squint tile window the recognition read. It is not an "
+        "outline of tissue, and no native support is drawn. Left: the whole native "
+        f"slice. Right: the window with {SHEET_CONTEXT_TILES} tiles of context. Tiles "
+        f"are {tile_mm:g} mm; tile indices are inclusive. Grey: native raw."
+    )
+    # (text, monospace, most lines shown); the index carries every field in full.
+    fields: list[tuple[str, bool, int]] = [
+        ("candidate: " + decision["candidate_id"], True, 2),
+        (who, False, 2),
+        ("views: " + _shown(decision.get("views", _ABSENT)), False, 2),
+        ("location support: " + _shown(decision.get("support", _ABSENT)), False, 2),
+        ("reason: " + _shown(decision.get("reason", _ABSENT)), False, 2),
+        ("source: " + _shown(decision.get("source", _ABSENT)), False, 2),
+        (legend, False, 3),
+    ]
+    lines = [
+        (piece, mono) for text, mono, most in fields for piece in _wrapped(text, most)
+    ]
+    header = 0.7 + 0.19 * len(lines)
+    n = max(1, len(rows))
+    height = header + 0.15 + 3.7 * n
+    fig = Figure(figsize=(10.0, height), dpi=100)
+
+    def top(offset: float) -> float:
+        return 1.0 - offset / height
+
+    fig.text(
+        0.5,
+        top(0.08),
+        f"{SHEET_BANNER}: {decision['state']}",
+        ha="center",
+        va="top",
+        fontsize=18,
+        weight="bold",
+        color="#1f3a93",
+    )
+    for i, (piece, mono) in enumerate(lines):
+        extra = {"family": "monospace"} if mono else {}
+        fig.text(
+            0.02, top(0.55 + 0.19 * i), piece, ha="left", va="top", fontsize=8, **extra
+        )
+    fig.subplots_adjust(
+        top=top(header + 0.1),
+        bottom=0.02,
+        left=0.04,
+        right=0.98,
+        hspace=0.45,
+        wspace=0.08,
+    )
+    if not rows:
+        fig.text(
+            0.5,
+            0.45,
+            "No region is recorded for this decision",
+            ha="center",
+            va="center",
+            fontsize=10,
+        )
+    for i, row in enumerate(rows):
+        left = fig.add_subplot(n, 2, 2 * i + 1)
+        right = fig.add_subplot(n, 2, 2 * i + 2)
+        for ax in (left, right):
+            ax.set_xticks([])
+            ax.set_yticks([])
+        role = f" ({row['slice_role']})" if row["slice_role"] else ""
+        head = (
+            f"{row['view_label']} | series ...{str(row['series_uid'])[-12:]}"
+            f" | slice {row['slice']}{role}"
+        )
+        left.set_title(head + " | native raw", fontsize=7)
+        if row["image_state"] != "read":
+            right.set_title(_tile_text(row["window"]), fontsize=7)
+            reason = f"{NL}{row['image_reason']}" if row["image_reason"] else ""
+            for ax in (left, right):
+                ax.text(
+                    0.5,
+                    0.5,
+                    f"native slice not drawn:{NL}{row['image_state']}{reason}",
+                    transform=ax.transAxes,
+                    ha="center",
+                    va="center",
+                    fontsize=8,
+                )
+            continue
+        r0, r1, c0, c1 = row["native_rect_rc"]
+        kr0, kr1, kc0, kc1 = row["context_rect_rc"]
+        pixels = row["pixels"]
+        low, high = _limits(np, pixels)
+        left.imshow(pixels, cmap="gray", vmin=low, vmax=high, interpolation="nearest")
+        crop = pixels[kr0:kr1, kc0:kc1]
+        clow, chigh = _limits(np, crop)
+        right.imshow(
+            crop,
+            cmap="gray",
+            vmin=clow,
+            vmax=chigh,
+            interpolation="nearest",
+            extent=(kc0 - 0.5, kc1 - 0.5, kr1 - 0.5, kr0 - 0.5),
+        )
+        for ax in (left, right):
+            ax.add_patch(
+                Rectangle(
+                    (c0 - 0.5, r0 - 0.5),
+                    c1 - c0,
+                    r1 - r0,
+                    fill=False,
+                    edgecolor="#ffd400",
+                    linewidth=1.0,
+                    linestyle=(0, (4, 2)),
+                )
+            )
+        left.set_xlim(-0.5, pixels.shape[1] - 0.5)
+        left.set_ylim(pixels.shape[0] - 0.5, -0.5)
+        right.set_xlim(kc0 - 0.5, kc1 - 0.5)
+        right.set_ylim(kr1 - 0.5, kr0 - 0.5)
+        right.set_title(
+            f"{_tile_text(row['window'])} | pixels rows {r0}:{r1}, cols {c0}:{c1}",
+            fontsize=7,
+        )
+    return fig
+
+
+def _default_study_reader(
+    root: Path, study_uid: str, *, tile_mm: float, io_workers: int
+) -> dict[str, Any]:
+    """The production squint reader, looked up when called so a test can stand in for it."""
+    from knee.diagnosis import squint_profiles
+
+    return squint_profiles.read_study_squints(
+        Path(root), study_uid, io_workers=io_workers, tile_mm=tile_mm
+    )
+
+
+def _series_index(study: Any) -> dict[str, Mapping[str, Any]]:
+    series = study.get("series") if isinstance(study, Mapping) else None
+    if not isinstance(series, (list, tuple)):
+        raise TypeError("study_series_malformed")
+    return {
+        record["series_uid"]: record
+        for record in series
+        if isinstance(record, Mapping) and isinstance(record.get("series_uid"), str)
+    }
+
+
+def _draw_study(
+    reader: Callable[..., Any],
+    root: Path,
+    study_uid: str,
+    group: list[dict[str, Any]],
+    names: Mapping[str, str],
+    output: Path,
+    *,
+    tile_mm: float,
+    io_workers: int,
+    edge_slices: bool,
+) -> list[dict[str, Any]]:
+    """Read one study once, draw every sheet that needs it, and return plain receipts only.
+
+    The study, its volumes and every slice copied for drawing go out of scope with
+    this call; nothing but the receipts reaches the next study.
+    """
+    error = None
+    work = None
+    by_uid: Mapping[str, Mapping[str, Any]] = {}
+    try:
+        study = reader(Path(root), study_uid, tile_mm=tile_mm, io_workers=io_workers)
+        by_uid = _series_index(study)
+        work = _plain(study.get("work"))
+    except Exception as exc:  # noqa: BLE001 - the decoders' failures are open-ended
+        # A study that cannot be read is the reason on each of its sheets, and the
+        # run goes on to the next study; whatever the reader raised is named.
+        error = f"{type(exc).__name__}: {exc}"
+    receipts = []
+    for decision in group:
+        rows = [
+            row
+            for region in decision["regions"]
+            for row in _region_rows(region, by_uid, error, edge_slices)
+        ]
+        path = output / names[decision["candidate_id"]]
+        figure = _decision_figure(decision, rows, tile_mm=tile_mm)
+        figure.savefig(str(path), format="png", metadata={"Software": None})
+        data = path.read_bytes()
+        receipts.append(
+            {
+                "file": path.name,
+                "sha256": hashlib.sha256(data).hexdigest(),
+                "bytes": len(data),
+                "candidate_id": decision["candidate_id"],
+                "study_uid": study_uid,
+                "subject": decision["subject"],
+                "state": decision["state"],
+                "decision": _plain(decision),
+                "study_read": {
+                    "status": "failed" if error else "read",
+                    "error": error,
+                    "work": work,
+                },
+                "panels": [_row_receipt(row) for row in rows],
+            }
+        )
+    return receipts
+
+
+def _panel_markdown(panel: Mapping[str, Any]) -> str:
+    label = _md_code(panel["view_label"])
+    series = _md_code(str(panel["series_uid"]))
+    role = f" ({panel['slice_role']})" if panel["slice_role"] else ""
+    where = f"series {series}, slice {panel['slice']}{role}"
+    tiles = _tile_text(panel["window"])
+    if panel["image_state"] != "read":
+        reason = f" ({panel['image_reason']})" if panel["image_reason"] else ""
+        return (
+            f"- NOT DRAWN {label} {where}: {_md_code(str(panel['image_state']))}{reason};"
+            f" {tiles}"
+        )
+    r0, r1, c0, c1 = panel["native_rect_rc"]
+    notes = "".join(f"; note {_md_code(note)}" for note in panel["notes"])
+    return (
+        f"- {label} {where} of {panel['series_depth']}: {tiles}; native pixels rows "
+        f"{r0}..{r1 - 1}, cols {c0}..{c1 - 1} (half-open rows [{r0}, {r1}), cols "
+        f"[{c0}, {c1})){notes}"
+    )
+
+
+def _panels_not_drawn(sheets: Sequence[Mapping[str, Any]]) -> dict[str, int]:
+    """How many panels were not drawn, by the state that names why."""
+    tally = Counter(
+        panel["image_state"]
+        for sheet in sheets
+        for panel in sheet["panels"]
+        if panel["image_state"] != "read"
+    )
+    return dict(sorted(tally.items()))
+
+
+def _studies_not_read(sheets: Sequence[Mapping[str, Any]]) -> list[str]:
+    return sorted(
+        {s["study_uid"] for s in sheets if s["study_read"]["status"] != "read"}
+    )
+
+
+def _sheets_index_markdown(record: Mapping[str, Any], sheets_sha256: str) -> str:
+    selection = record["selection"]
+    sheets = record["sheets"]
+    unavailable = _panels_not_drawn(sheets)
+    unread = _studies_not_read(sheets)
+    counts = ", ".join(
+        f"{state}={n}" + (" (requested)" if state in selection["states"] else "")
+        for state, n in selection["state_counts"].items()
+    )
+    lines = [
+        "# Identity admission decision sheets",
+        "",
+        "**"
+        + SHEET_BANNER
+        + "** - one sheet per decision. The yellow box is the squint "
+        "tile window the recognition read; it is not an outline of tissue.",
+        "",
+        "- decisions file: "
+        + _md_code(str(record["decisions"]["path"]))
+        + " sha256 `"
+        + record["decisions"]["sha256"]
+        + "`",
+        "- decisions parent: " + _md_code(_verbatim(record["decisions"]["parent"])),
+        "- sheets.json sha256: `" + sheets_sha256 + "`",
+        "- competition root: " + _md_code(str(record["root"])),
+        f"- squint tile size: {record['tile_mm']:g} mm; edge slices: "
+        + ("first, middle and last" if record["edge_slices"] else "middle only"),
+        "- decisions by state: " + (counts or "none"),
+        f"- requested states: {', '.join(selection['states'])}; matched "
+        f"{selection['matched']}, drawn {len(sheets)}, order {selection['ordering']}"
+        + (f", limit {selection['limit']}" if selection["limit"] is not None else ""),
+        "- studies not read: "
+        + (", ".join(_md_code(u) for u in unread) if unread else "none"),
+        "- panels not drawn: "
+        + (
+            ", ".join(f"{state}={n}" for state, n in sorted(unavailable.items()))
+            if unavailable
+            else "none"
+        ),
+        "- left undrawn by the limit: "
+        + (
+            ", ".join(_md_code(c) for c in selection["undrawn_by_limit"])
+            if selection["undrawn_by_limit"]
+            else "none"
+        ),
+    ]
+    for sheet in sheets:
+        decision = sheet["decision"]
+        lines += [
+            "",
+            "## " + _md_code(sheet["candidate_id"]),
+            "",
+            "- state: **" + sheet["state"] + "**",
+            "- subject: " + _md_code(sheet["subject"]),
+            "- recognized identity: "
+            + _md_code(_verbatim(decision.get("recognized_identity", _ABSENT))),
+            "- study_uid: " + _md_code(sheet["study_uid"]),
+            "- views: " + _md_code(_verbatim(decision.get("views", _ABSENT))),
+            "- location support: "
+            + _md_code(_verbatim(decision.get("support", _ABSENT))),
+            "- reason: " + _md_code(_verbatim(decision.get("reason", _ABSENT))),
+            "- source: " + _md_code(_verbatim(decision.get("source", _ABSENT))),
+            "- sheet: " + _md_code(sheet["file"]) + " sha256 `" + sheet["sha256"] + "`",
+        ]
+        status = sheet["study_read"]
+        if status["status"] != "read":
+            lines.append("- study NOT READ: " + _md_code(str(status["error"])))
+        if not sheet["panels"]:
+            lines.append("- no region is recorded for this decision")
+        lines += [_panel_markdown(panel) for panel in sheet["panels"]]
+        lines += ["", f"![{sheet['candidate_id']}]({sheet['file']})"]
+    return NL.join(lines) + NL
+
+
+def render_sheets(
+    document: Mapping[str, Any],
+    decisions_sha256: str,
+    root: Path,
+    output: Path,
+    *,
+    decisions_path: Path | str | None = None,
+    states: Sequence[str] = (),
+    limit: int | None = None,
+    tile_mm: float = SHEET_TILE_MM,
+    io_workers: int = SHEET_IO_WORKERS,
+    edge_slices: bool = False,
+    study_reader: Callable[..., Any] | None = None,
+) -> dict[str, Any]:
+    """Write one PNG per selected decision, then sheets.json and index.md.
+
+    Each study is read once and released before the next. A missing study, series or
+    slice is named on its sheet, in the index and in sheets.json, never skipped.
+    ``study_reader(root, study_uid, tile_mm=, io_workers=)`` defaults to the production
+    squint reader. An existing output directory is refused before anything is read.
+    """
+    if (
+        isinstance(tile_mm, bool)
+        or not isinstance(tile_mm, (int, float))
+        or not math.isfinite(tile_mm)
+        or tile_mm <= 0
+    ):
+        raise ObjectBootstrapError("tile_mm_invalid")
+    if type(io_workers) is not int or io_workers <= 0:
+        raise ObjectBootstrapError("io_workers_invalid")
+    selection = select_decisions(document, states=states, limit=limit)
+    drawn = selection["drawn"]
+    output = Path(output)
+    if os.path.lexists(output):
+        raise ObjectBootstrapError("sheets_output_exists", str(output))
+    output.mkdir(parents=True, exist_ok=False)
+    reader = study_reader or _default_study_reader
+    names = {
+        d["candidate_id"]: _sheet_name(i, d["candidate_id"])
+        for i, d in enumerate(drawn)
+    }
+    groups = [
+        (uid, list(group))
+        for uid, group in groupby(drawn, key=lambda d: d["study_uid"])
+    ]
+    sheets: list[dict[str, Any]] = []
+    for number, (study_uid, group) in enumerate(groups, 1):
+        print(
+            f"sheets: study {number}/{len(groups)} {study_uid}: {len(group)} decision(s)",
+            file=sys.stderr,
+            flush=True,
+        )
+        sheets.extend(
+            _draw_study(
+                reader,
+                Path(root),
+                study_uid,
+                group,
+                names,
+                output,
+                tile_mm=float(tile_mm),
+                io_workers=io_workers,
+                edge_slices=edge_slices,
+            )
+        )
+        # Matplotlib figures are reference cycles; collect them with the study.
+        gc.collect()
+    record = {
+        "schema": SHEETS_SCHEMA,
+        "decisions": {
+            "path": None if decisions_path is None else str(decisions_path),
+            "sha256": decisions_sha256,
+            "schema": document.get("schema"),
+            "parent": document.get("parent"),
+        },
+        "root": str(root),
+        "tile_mm": float(tile_mm),
+        "edge_slices": bool(edge_slices),
+        "selection": {k: v for k, v in selection.items() if k != "drawn"},
+        "sheets": sheets,
+    }
+    sheets_bytes = _json_bytes(record)
+    sheets_sha256 = hashlib.sha256(sheets_bytes).hexdigest()
+    _write_bytes(output / "sheets.json", sheets_bytes)
+    (output / "index.md").write_text(
+        _sheets_index_markdown(_plain(record), sheets_sha256), encoding="utf-8"
+    )
+    return {
+        "action": "sheets",
+        "output": str(output),
+        "decisions_sha256": decisions_sha256,
+        "sheets_json_sha256": sheets_sha256,
+        "matched": selection["matched"],
+        "drawn": len(sheets),
+        "undrawn_by_limit": len(selection["undrawn_by_limit"]),
+        "studies": len(groups),
+        "studies_not_read": _studies_not_read(sheets),
+        "panels": sum(len(s["panels"]) for s in sheets),
+        "panels_not_drawn": _panels_not_drawn(sheets),
+    }
+
+
 # ---------------------------------------------------------------------- CLI
 
 
@@ -912,6 +1678,47 @@ def _parser() -> argparse.ArgumentParser:
         help="recorded calls, one JSON object per line, and who made them",
     )
     adapt.add_argument("--output", type=Path, required=True)
+    sheets = sub.add_parser(
+        "sheets", help="draw one picture sheet per identity-admission decision"
+    )
+    sheets.add_argument(
+        "--root",
+        type=Path,
+        required=True,
+        help="competition root holding train_series/ and test_series/",
+    )
+    sheets.add_argument(
+        "--decisions",
+        type=Path,
+        required=True,
+        help="an admission-decisions.json (" + DECISIONS_SCHEMA + ")",
+    )
+    sheets.add_argument("--output", type=Path, required=True)
+    sheets.add_argument(
+        "--state",
+        dest="states",
+        action="append",
+        default=None,
+        help="decision state to draw; repeatable; default " + SHEET_DEFAULT_STATE,
+    )
+    sheets.add_argument(
+        "--limit",
+        type=int,
+        default=None,
+        help="bound on the sheets drawn this run; what it leaves out is listed",
+    )
+    sheets.add_argument(
+        "--tile-mm",
+        type=float,
+        default=SHEET_TILE_MM,
+        help="squint tile size the decisions' windows were made on",
+    )
+    sheets.add_argument("--io-workers", type=int, default=SHEET_IO_WORKERS)
+    sheets.add_argument(
+        "--edge-slices",
+        action="store_true",
+        help="also draw each window's first and last slice, not only its middle",
+    )
     return parser
 
 
@@ -1024,7 +1831,33 @@ def run_adapt(args: argparse.Namespace) -> dict[str, Any]:
     }
 
 
-_ACTIONS = {"export": run_export, "admit": run_admit, "adapt": run_adapt}
+def run_sheets(args: argparse.Namespace) -> dict[str, Any]:
+    root = Path(args.root)
+    if not root.is_dir():
+        # Refused here, not once per study: a mistyped root would otherwise leave an
+        # output directory of "study not read" sheets that blocks the rerun.
+        raise ObjectBootstrapError("root_not_a_directory", str(root))
+    document, decisions_sha256 = load_decisions(Path(args.decisions))
+    return render_sheets(
+        document,
+        decisions_sha256,
+        root,
+        Path(args.output),
+        decisions_path=Path(args.decisions),
+        states=args.states or [],
+        limit=args.limit,
+        tile_mm=args.tile_mm,
+        io_workers=args.io_workers,
+        edge_slices=args.edge_slices,
+    )
+
+
+_ACTIONS = {
+    "export": run_export,
+    "admit": run_admit,
+    "adapt": run_adapt,
+    "sheets": run_sheets,
+}
 
 
 def main(argv: list[str] | None = None) -> dict[str, Any]:
