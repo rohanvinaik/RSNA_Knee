@@ -97,7 +97,9 @@ decode goes to him with its episode.
 | Lane A: signed frozen-parent growth, harvest from inference records, `grow` CLI | running, isolated worktree | — |
 | Lane B: partial-plane anatomical checks | running, isolated worktree | — |
 | Lane C: identity governs condition inputs in `infer_study` | running, isolated worktree | — |
-| Lane D: picture sheets for admissions (`sheets` CLI) | running, isolated worktree | — |
+| Lane D: picture sheets for admissions (`sheets` CLI), local only | running, isolated worktree | — |
+| Lane E: diagnosis evidence speaks only through identity views; positives carry to every view where the object is present; whole-condition cases rebuilt from confirmed objects at seed publication | running, isolated worktree | the reproduced defect (a rejected sagittal bank answering Fracture) is its regression test |
+| Lane F: `scripts/pull_competition_studies.py` (index, resumable bounded pull of chosen training studies) | running, isolated worktree; test pull into `/tmp` only | — |
 
 ## M1, THE FIRST FULL SIGNED MEMORY (published 2026-10-21)
 
@@ -109,6 +111,19 @@ with all 311 negatives and 30 alternatives. Admit took 247 s and 7.9 GB peak RSS
 Confirmed cases by object: tibia 36, femur 27, joint 25, joint fluid 18, medial meniscus 9, lateral
 meniscus 7, PCL 7, tibial cartilage 5, MCL 3, capsule 3, and 1–2 for nine others. 52 review candidates
 remain uncalled.
+
+## CALLS COMPLETE; DATA FOR SCALING
+
+All 417 uncalled review candidates are now called (`claude-fill-r1/calls-claude.jsonl`, sha256
+`a59b361e4ab9ae11…`; the last 52: 16 confirm, 23 reject, 13 unsure). With root's 76 calls the 493 calls
+validate together (`signed-memory-m1b/adapted-calls/`): 168 confirmed, 335 negative cases, 30 alternative
+identities. The memory is republished once lane E lands, so its whole-condition cases are rebuilt from
+confirmed objects in the same publication (M1 alone holds identity but drops the catalogue's whole-condition
+cases, which production needs).
+
+The competition serves images for all 4,407 training studies: 819,635 DICOM files, 569.8 GB (about 129 MB
+a study); 58 are local (6.6 GB). This machine has 761 GB free, so pulls come in bounded batches through lane
+F's tool, never the whole set at once.
 
 ## UNREVIEWED / WITHDRAWN / STALE RESULTS
 
