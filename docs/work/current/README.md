@@ -1,17 +1,43 @@
 # Active task packet
 
-Sole populated current-state record; FULL_BUILD_PLAN §13 owns this pointer. Revision **135**.
-Prior revision 134 is preserved verbatim at `docs/work/history/active-task-packet-revision-134.md`.
+Sole populated current-state record; FULL_BUILD_PLAN §13 owns this pointer. Revision **136**.
+Prior revision 135 is preserved verbatim at `docs/work/history/active-task-packet-revision-135.md`.
 
 ## TASK ID / PACKET REVISION / STATE
 
-`THIN-OBJECT-BOOTSTRAP-20261021` / `135` / **integration in progress**. The signed identity memory, the
-call adapter, the identity consumer (lane C), the admission picture sheets (lane D) and the first part of
-the partial-plane checks (lane B) are committed and pushed. Lanes A (growth), B (follow-up), E (diagnosis
-follows identity views) and F (pull tool) are running. M1 is running through the real entry point on the
-3 public studies.
+`THIN-OBJECT-BOOTSTRAP-20261021` / `136` / **identity handoff being built**. Rohan corrected the identity
+mechanism (2026-10-21/22, his words below): the femur and tibia are told apart by their observed ordering in the
+scan's known directions, never by appearance; established information is carried forward and conditions every
+later question. Lanes A–F and B's follow-up are integrated and pushed (`3995632`). Workers now: H1 (the
+conditioned identity handoff), G2 (diagnosis teaching for new admissions, held-out studies), G3 (correctable
+admissions). M1b is being published from all 493 calls.
 
 ## CURRENT REQUEST / AUTHORITATIVE EXCHANGES / ACTUAL AUTHORS
+
+**The identity correction (governs everything below).** Rohan, verbatim: «The tibia and femur are ABSURDLY easy
+to resolve. Both look almost identical—big fucking bones. But one is "up" and one is "down"» · «How the HELL would
+a pipeline that resolves objects visually be able to do cosine similarity match that differentiates the tibia and
+the femur. They're BOTH BONES. The fact their cosine similarity scores are so similar is fucking PHENOMENAL
+validation ... If you try to "fix" this you will DESTROY everything» · «These scans aren't upside-down. They're...
+directional». And a pasted message he sent as his instruction (author not stated): «Carry the established
+information forward. Each subsequent question is conditioned on what the system already knows ... known structure
+removes alternatives and unnecessary computation. It is not another score to add after an unconstrained appearance
+competition. Diagnosis asks about the state of the contextually identified object. Growth stores the warranted
+object presentation with that context and lineage. Implement that handoff through preparation, recall, diagnosis
+and admission. Do not introduce a new tissue-kind classifier, tune bone profiles apart, or replace anatomical
+directions with arbitrary "top half of the image" thresholds.» Full record: the end of
+`docs/conversations/2026-10-21-ternary-buckets-and-squint-orchestration.md`; Codex exchanges (agent text) and the
+relayed reviews in `data/readings/ai-bootstrap-loop-20261021/codex-bones-20261021/`. Withdrawn by the lead: making
+remembered cases out-compete look-alikes (any change to who sets a case's bar meant to make appearance name the
+bone), and a tissue-kind table.
+
+Relayed review bindings adopted (agent text): diagnosis teaching is built alongside identity and both are exercised
+in the first real round; wrong admissions are correctable as scoped negatives without a full-resolution rebuild; the
+repair stays bounded; geometry work (shared alignment, carrying views) returns only if the loop cannot establish the
+relations admission needs; a held-out set never enters growth or teaching; an early timed private Kaggle run sets
+the latest safe final launch. Rohan: no more Kaggle data calls from the lead («make sure you're not pinging kaggle
+too much. I'll just do a zip download over the GUI»; a 1 TB SSD holds it).
+
 
 Rohan, verbatim: «Good! Record this properly in the full project specs and documentation. Then, when
 everything is set up formally, for an external reader/other agent/new session context to
