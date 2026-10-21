@@ -1,11 +1,11 @@
 # Active task packet
 
-Sole populated current-state record; FULL_BUILD_PLAN §13 owns this pointer. Revision **134**.
-Prior revision 133 is preserved verbatim at `docs/work/history/active-task-packet-revision-133.md`.
+Sole populated current-state record; FULL_BUILD_PLAN §13 owns this pointer. Revision **135**.
+Prior revision 134 is preserved verbatim at `docs/work/history/active-task-packet-revision-134.md`.
 
 ## TASK ID / PACKET REVISION / STATE
 
-`THIN-OBJECT-BOOTSTRAP-20261021` / `134` / **integration in progress**. The signed identity memory, the
+`THIN-OBJECT-BOOTSTRAP-20261021` / `135` / **integration in progress**. The signed identity memory, the
 call adapter, the identity consumer (lane C), the admission picture sheets (lane D) and the first part of
 the partial-plane checks (lane B) are committed and pushed. Lanes A (growth), B (follow-up), E (diagnosis
 follows identity views) and F (pull tool) are running. M1 is running through the real entry point on the
@@ -100,10 +100,8 @@ diagnosis scope, and a view called other tissue carries nothing.
 
 ## NEXT ACTIONS, IN ORDER
 
-1. Read the M1 public run (`m1-infer-public-r1/`): the real entry point on a signed memory, identity
-   recall and identity consumption in each study record, time and RSS.
-2. Integrate lanes A, E, F and lane B's follow-up as each returns: focused tests, commit, scan-gated push,
-   read the GitHub gate.
+1. Integrate lane E and lane B's follow-up as each returns, and lane F's two fixes: focused tests, commit,
+   scan-gated push, read the GitHub gate.
 3. Republish the memory (M1b) from the 493 calls with lane E's configuration rebuild and identity-view
    restriction, with its recall preparation; verify readback and preparation.
 4. Local loop demonstration through the real entry point: M1b as parent, the 3 public studies inferred,
@@ -131,12 +129,42 @@ decode goes to him with its episode.
 | Task | State | Evidence |
 |---|---|---|
 | Signed-memory builder | returned; integrated in `20e37e3` | `negative-klines/builder/` |
-| Lane A: signed frozen-parent growth (`squint_identity_growth.py`: harvest from inference records, admission decisions, child publication), `grow` CLI | running, isolated worktree | — |
+| Lane A: signed frozen-parent growth (`squint_identity_growth.py`: harvest from inference records, admission decisions, child publication), `grow` CLI | integrated `c82ead4`, `58ef9fe` (merged with lane D's `sheets` in `scripts/squint_object_bootstrap.py`; 200 focused tests). States: admitted, proposal, blocked (contradicted), conflict, opposed, duplicate, refused. Its own real rounds against M1: 3 public studies, 51 candidates, 0 admitted (34 conflict, 2 opposed, 15 proposal; every law check unknown); 2 teaching studies, 33 candidates (24 duplicate). A child costs about 28 s to save and 299 MB. Open: an admission has no full profile, so a wrong one cannot yet return as a scoped negative (`build_review` refuses it); admitted regions are not location precedents; run guides and OpenSpec boxes not updated | `/tmp/rsna-growth-worker/` |
 | Lane B: partial-plane anatomical checks | part 1 integrated `0847ff2` (exact-normal partial intervals; fixture anatomy corrected `ec882a0`). Follow-up running: anchor-window projection for oblique planes, priority complete > exact-normal partial > anchor-window projection > unknown, provenance per check, and a before/after account over the 61 local studies; it stops and reports if a confirmed case is contradicted or a correct bone pair is quarantined | real planes are oblique (median 7°, max 38°) |
 | Lane C: identity governs condition inputs in `infer_study` | integrated `d299fbf` (350 focused tests). Loose ends: dependents placed from an anchor later withheld keep their placement; `scripts/squint_visual_capacity.py` shows withheld objects as not located; OpenSpec task 4.1's wording | `tests/test_squint_pipeline_identity_consumption_intent.py` |
 | Lane D: picture sheets for admissions (`sheets` CLI), local only | integrated `b699de0` (30 tests); a real sheet inspected (`/tmp/admission-sheets-real/final-mixed/sheet-002-real-t1_femur-8b20e1f9.png`) | merges with lane A's `grow` in `scripts/squint_object_bootstrap.py`: keep both actions |
 | Lane E: diagnosis evidence speaks only through identity views (restriction applied before preparation; fingerprint includes identity teaching); positives carry to every identity view; pure label join (Fracture/Contusion unlocalized); whole-condition cases rebuilt from confirmed objects at seed publication | running, isolated worktree | its regression test: a sagittal-only query must not return Fracture `present` from a rejected sagittal bank |
-| Lane F: `scripts/pull_competition_studies.py` (paged resumable index; bounded, resumable, label-blind pull in `train_series.csv` order; receipt; disk margin) | integrated `fad9041` (36 tests). Test pull of one study into `/tmp/rsna_pull_test`: 94 files, 61.6 MB, 9.1 s at 24 workers, every file checked as MR DICOM against its path; a rerun skips it with zero writes. Projected, not measured: the full listing about 50 min, all 819,635 files about 22 h at 24 workers | `pull --root data/raw --studies N`; state in `data/raw.pull/` |
+| Lane F: `scripts/pull_competition_studies.py` (paged resumable index; bounded, resumable, label-blind pull in `train_series.csv` order; receipt; disk margin) | integrated `fad9041` (36 tests). Test pull of one study into `/tmp/rsna_pull_test`: 94 files, 61.6 MB, 9.1 s at 24 workers, every file checked as MR DICOM against its path; a rerun skips it with zero writes. Projected, not measured: the full listing about 50 min, all 819,635 files about 22 h at 24 workers. Two defects reproduced by a reviewer (agent text), fix running before any substantial pull: a resumed staged file is trusted by size alone, and `index` with an already-present selection lists everything | `pull --root data/raw --studies N`; state in `data/raw.pull/` |
+
+## M1 THROUGH THE REAL ENTRY POINT (3 public studies, 2026-10-21)
+
+`data/readings/ai-bootstrap-loop-20261021/m1-infer-public-r1/` (source `fc33758`, clean): exit 0, 66 s wall
+with 2 workers, 5.45 GB peak RSS, 0 full-anatomy runs, recall preparation recomputed (no sidecar) in 3.7 s,
+identity preparation built once and shared (1.6 s). Twelve questions open in all three studies but one
+(Lateral Meniscus defeated once). Identity: 10 objects identified, every one as another object than
+proposed (prefemoral fat pad, patella, femoral and trochlear cartilage as femur; meniscus, joint fluid and
+capsule as joint; fibula as PCL; trochlear cartilage as joint fluid); 18 objects withheld from their
+proposed tissue's questions (10 recognized as other, 8 opposed by negative cases alone). None identified as
+itself. Bone anchors: study 1 femur partial (sagittal and axial planes), study 2 tibia partial, study 3 no
+usable structural anchor. The femur of study 1 is nearest a tibia case (cosine about 0.80; the nearest
+femur case about 0.78), and tibia negatives speak too: a conflict. What tells femur from tibia here is
+position, which the law checks supply and which are silent on these partial oblique anchors.
+
+## OBLIQUE ACQUISITIONS: MEASURED, AND WHAT STAYS OPEN
+
+Over the 61 local studies (351 series, DICOM orientation; `/tmp/rsna-oblique/acquisitions.json`, its
+script beside it): sagittal series tilt from the scanner axes by a median 7.5° (max 20.3°), coronal 9.0° (max
+38.3°), axial 4.7° (max 29.9°). Within a study the sagittal and coronal stay perpendicular to a median 1.9°,
+and same-orientation series agree to 0.1°: each study's acquisitions share one rotation. Fitting the authored
+map to the bootstrap's complete references does not recover it: only 9 of 27 maps with study maps have two
+complete bones (17 of 58 have three covered pairs); the fitted axes miss every acquisition by a median 17–30°,
+and the map's directions differ from the observed ones by a median 31° before any rotation, 22° after the
+best one. The references mark where each bone is most obvious, not the atlas's sites.
+
+Open, explicitly: the one shared anatomical alignment per knee (the relayed note's operation) is not built.
+Lane B's anchor-window projection onto patient axes is partial geometry, kept distinct from it. Also open:
+carrying a partially anchored bone's selected planes into its missing views as a bounded look (the first
+relayed note; `plane_trace_in_frame` gives the trace). Both wait for the first loop demonstration.
 
 ## M1, THE FIRST FULL SIGNED MEMORY (published 2026-10-21)
 
@@ -171,7 +199,7 @@ must be redone on the integrated validator; the `_sanity_status` run failed in t
 
 ## HANDOFF TIME / EVIDENCE LINKS
 
-2026-10-21, about 22:05 UTC. The r133 local gate was stopped at 35% when Rohan said to skip it
+2026-10-21, about 22:55 UTC. The r133 local gate was stopped at 35% when Rohan said to skip it
 (`data/readings/ai-bootstrap-loop-20261021/checkpoint-r133/gate.log`). The stray `generated/certificates.json`
 (a Detective scratch copy) is preserved at
 `data/readings/ai-bootstrap-loop-20261021/docs-contracts-r1/generated-certificates.json`.
