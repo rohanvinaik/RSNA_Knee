@@ -167,10 +167,31 @@ def _decision_scope(subject: str, profile: object) -> str:
 
 
 def _recall_question(
-    question, objects: dict, memory: dict, uid: str, excluded: bool
+    question,
+    objects: dict,
+    memory: dict,
+    uid: str,
+    excluded: bool,
+    *,
+    withheld: Mapping[str, Mapping] | None = None,
 ) -> dict:
+    """Recall each of a question's objects and its whole configuration.
+
+    ``withheld`` names located objects whose identity recall withheld their tissue from
+    their proposed subject (``_identity_consumption``). Each reaches both voices exactly as
+    an unlocated object does: its own voice hears an empty reading, and no configuration
+    composes it. Its named reason is kept beside its evidence as ``identity_withheld``;
+    the condition contracts never read it, so the withheld object stays unknown, never a
+    normal reading and never a defeat. It is not reassigned to the identity it resembles.
+    """
     from knee.diagnosis.squint_locator import recall_object
 
+    if withheld:
+        objects = {
+            name: value for name, value in objects.items() if name not in withheld
+        }
+    else:
+        withheld = {}
     try:
         from knee.diagnosis.squint_questions import question_selection
 
@@ -198,6 +219,8 @@ def _recall_question(
         scope = _decision_scope(subject, located.get("profile"))
         if scope != "unavailable":
             record["decision_scope"] = scope
+        if subject in withheld:
+            record["identity_withheld"] = dict(withheld[subject])
         evidence[subject] = record
     from knee.diagnosis.squint_configurations import configuration_profile
 
@@ -530,7 +553,13 @@ def _named_procedure(
 
 
 def _bounded_observation(
-    request: dict, study: dict, objects: dict, attempted: set, deadline: float | None
+    request: dict,
+    study: dict,
+    objects: dict,
+    attempted: set,
+    deadline: float | None,
+    *,
+    withheld: Mapping[str, Mapping] | None = None,
 ) -> dict:
     """Make the one bounded reading a request asks for, once per object and study.
 
@@ -541,7 +570,9 @@ def _bounded_observation(
     reading the object already holds is neither read nor added again, and every question
     that asks shares the one reading. A ``lens`` naming the object's own native procedure
     runs that existing procedure instead (``_named_procedure``); no part is sent there
-    for what it is. Whatever cannot be read returns a named code and reason.
+    for what it is. A located object its identity recall withheld (``withheld``) earns no
+    read of either kind and its located record is left as it is. Whatever cannot be read
+    returns a named code and reason.
     """
     if not isinstance(request, Mapping):
         return {"code": "request_invalid", "reason": "request_not_a_mapping"}
@@ -555,6 +586,10 @@ def _bounded_observation(
         return {**unlocated, "reason": "request_names_no_object"}
     if subject not in objects:
         return {**unlocated, "reason": "object_not_located"}
+    if withheld and subject in withheld:
+        # Tissue recognized as another object, or opposed by its own negative cases,
+        # is no region of this object to read: the request is named, never read.
+        return {**unlocated, "subject": subject, **withheld[subject]}
     located = objects[subject]
     if not isinstance(located, dict):
         return {**unlocated, "reason": "object_record_invalid"}
@@ -723,6 +758,77 @@ def _identity_readings(
     }
 
 
+def _names(value: object) -> frozenset[str]:
+    """The identity names a recall lists, or none when the list is absent or malformed."""
+    if not isinstance(value, (list, tuple)):
+        return frozenset()
+    return frozenset(item for item in value if isinstance(item, str))
+
+
+def _identity_decision(subject: str, reading: object, examined: object) -> dict:
+    """Whether one located object's tissue may answer its proposed subject's questions.
+
+    ``subject`` is the object the structure placed, ``reading`` its identity recall and
+    ``examined`` the study's identity outcome. Tissue recognized as a different object,
+    or spoken against by negative cases of its own subject with no positive case for it,
+    is ``withheld``: it answers none of that subject's condition questions and earns no
+    bounded read, and it is never reassigned to the identity it resembles. Everything
+    else is ``kept``, the structure's own placement standing, with the outcome that left
+    it standing as its reason. Recognized as itself, conflicted, without precedent,
+    unread, blocked by its anatomical check or heard against a memory with no identity
+    teaching, its tissue still answers: an unresolved identity is no clinical absence.
+    """
+    if examined != "examined":
+        reason = examined if isinstance(examined, str) and examined else None
+        return {"decision": "kept", "reason": reason or "identity_recall_unavailable"}
+    if not isinstance(reading, Mapping):
+        return {"decision": "kept", "reason": "identity_reading_missing"}
+    outcome = reading.get("outcome")
+    identity = reading.get("identity")
+    if outcome == "identified" and isinstance(identity, str) and identity:
+        if identity != subject:
+            return {
+                "decision": "withheld",
+                "reason": "identity_recognized_as_other",
+                "recognized_as": identity,
+            }
+        return {"decision": "kept", "reason": "identified", "recognized_as": identity}
+    opposed = _names(reading.get("opposed_identities"))
+    if subject in opposed and subject not in _names(reading.get("speaking_identities")):
+        return {"decision": "withheld", "reason": "identity_opposed_by_negative_cases"}
+    return {
+        "decision": "kept",
+        "reason": outcome
+        if isinstance(outcome, str) and outcome
+        else "identity_outcome_invalid",
+    }
+
+
+def _identity_consumption(objects: object, identity_readings: object) -> dict:
+    """Each located object's identity decision, as condition reasoning consumes it."""
+    if not isinstance(objects, Mapping):
+        return {}
+    examined = readings = None
+    if isinstance(identity_readings, Mapping):
+        examined = identity_readings.get("outcome")
+        readings = identity_readings.get("objects")
+    if not isinstance(readings, Mapping):
+        readings = {}
+    return {
+        subject: _identity_decision(subject, readings.get(subject), examined)
+        for subject in sorted(objects)
+    }
+
+
+def _withheld_objects(consumption: Mapping) -> dict:
+    """The withheld objects and the named reason each carries to its evidence."""
+    return {
+        subject: {key: value for key, value in decision.items() if key != "decision"}
+        for subject, decision in consumption.items()
+        if decision.get("decision") == "withheld"
+    }
+
+
 def infer_study(
     root: Path,
     uid: str,
@@ -737,6 +843,9 @@ def infer_study(
 
     Squint first: location keeps the 10 mm reading it holds, and only a question left open
     earns the bounded finer reading of the object it names (``_bounded_observation``).
+    Identity recall decides, once per located object, whether its tissue may answer its
+    proposed subject (``identity_consumption``); a withheld object reaches every condition
+    question and bounded read as an unlocated one, and its located record is retained.
     """
     from knee.diagnosis.declarations import QUESTIONS
     from knee.diagnosis.squint_contracts import combine_condition, rank_condition
@@ -770,6 +879,8 @@ def infer_study(
         uid if exclude_same_study else None,
         prepared_identity=prepared_identity,
     )
+    identity_consumption = _identity_consumption(objects, identity_readings)
+    withheld = _withheld_objects(identity_consumption)
     fine_readings_at_location = _fine_readings_held(objects)
     questions = {}
     values = {}
@@ -777,7 +888,7 @@ def infer_study(
     attempted = set()
     for question in QUESTIONS:
         object_evidence = _recall_question(
-            question, objects, memory, uid, exclude_same_study
+            question, objects, memory, uid, exclude_same_study, withheld=withheld
         )
         finding = combine_condition(question.question_id, object_evidence)
         requests = (
@@ -788,10 +899,12 @@ def infer_study(
         if requests:
             for request in requests:
                 observations.append(
-                    _bounded_observation(request, study, objects, attempted, deadline)
+                    _bounded_observation(
+                        request, study, objects, attempted, deadline, withheld=withheld
+                    )
                 )
             object_evidence = _recall_question(
-                question, objects, memory, uid, exclude_same_study
+                question, objects, memory, uid, exclude_same_study, withheld=withheld
             )
             finding = combine_condition(question.question_id, object_evidence)
         ranking = finding.get("rank")
@@ -859,6 +972,7 @@ def infer_study(
         "values": values,
         "objects": objects,
         "identity_recall": identity_readings,
+        "identity_consumption": identity_consumption,
         "observations": observations,
         "work": work,
         "unresolved_observation_requests": [
