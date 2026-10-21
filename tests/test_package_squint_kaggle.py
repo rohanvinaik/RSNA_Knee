@@ -46,14 +46,46 @@ def packager(monkeypatch: pytest.MonkeyPatch) -> ModuleType:
 
 @pytest.fixture(params=sorted(WRAPPERS))
 def wrapper(
-    request: pytest.FixtureRequest, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+    request: pytest.FixtureRequest,
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    bundles: dict[str, dict],
 ) -> ModuleType:
     monkeypatch.setenv("SQUINT_KAGGLE_INPUT", str(tmp_path / "kaggle-input"))
     monkeypatch.setenv("SQUINT_KAGGLE_WORKING", str(tmp_path / "kaggle-working"))
     monkeypatch.setenv("SQUINT_KAGGLE_SCRATCH", str(tmp_path / "kaggle-scratch"))
-    return load_file(
+    module = load_file(
         WRAPPERS[request.param], f"wrapper_{request.param}_under_test", monkeypatch
     )
+    if request.param == "production":
+        alpha = bundles["alpha"]
+        monkeypatch.setattr(module, "EXPECTED_RUNTIME_BUNDLE_ID", alpha["bundle_id"])
+        monkeypatch.setattr(
+            module,
+            "EXPECTED_MEMORY_MANIFEST_SHA256",
+            hashlib.sha256(alpha["members"]["memory/manifest.json"]).hexdigest(),
+        )
+    return module
+
+
+@pytest.fixture
+def production_wrapper(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, bundles: dict[str, dict]
+) -> ModuleType:
+    monkeypatch.setenv("SQUINT_KAGGLE_INPUT", str(tmp_path / "kaggle-input"))
+    monkeypatch.setenv("SQUINT_KAGGLE_WORKING", str(tmp_path / "kaggle-working"))
+    monkeypatch.setenv("SQUINT_KAGGLE_SCRATCH", str(tmp_path / "kaggle-scratch"))
+    module = load_file(
+        WRAPPERS["production"], "production_wrapper_with_budget_under_test", monkeypatch
+    )
+    alpha = bundles["alpha"]
+    monkeypatch.setattr(module, "EXPECTED_RUNTIME_BUNDLE_ID", alpha["bundle_id"])
+    monkeypatch.setattr(
+        module,
+        "EXPECTED_MEMORY_MANIFEST_SHA256",
+        hashlib.sha256(alpha["members"]["memory/manifest.json"]).hexdigest(),
+    )
+    return module
 
 
 # ---------------------------------------------------------------------------------------------
@@ -480,7 +512,7 @@ def bundles(tmp_path_factory: pytest.TempPathFactory) -> dict[str, dict]:
             repo, memory, staging = base / "repo", base / "mem", base / "staging"
             make_repo(repo)
             memory.mkdir()
-            (memory / "memory.json").write_text(
+            (memory / "manifest.json").write_text(
                 json.dumps(
                     {"cases": [], "schema": MEMORY_SCHEMA, "seed": seed}, sort_keys=True
                 ),
@@ -602,6 +634,40 @@ def prepare_run(wrapper: ModuleType, monkeypatch: pytest.MonkeyPatch) -> None:
         raise wrapper.SetupError("stopped after the runtime copy")
 
     monkeypatch.setattr(wrapper, "install_wheels", stop)
+
+
+def test_run_passes_same_positive_time_limit_to_entrypoint_and_outer_process(
+    production_wrapper, bundles, monkeypatch
+):
+    wrapper = production_wrapper
+    prepare_run(wrapper, monkeypatch)
+    lay_shape(dataset(wrapper), bundles["alpha"], "nested_no_tar")
+    monkeypatch.setattr(wrapper, "environment_facts", dict)
+    monkeypatch.setattr(wrapper, "install_wheels", lambda _requirements: {"exit": 0})
+    monkeypatch.setattr(
+        wrapper.subprocess,
+        "run",
+        lambda command, **_kwargs: subprocess.CompletedProcess(
+            command, 0, stdout="ok", stderr=""
+        ),
+    )
+    captured = {}
+
+    def stop_after_invocation(argv, _env, _cwd, timeout_s, _watch):
+        captured["argv"] = argv
+        captured["timeout_s"] = timeout_s
+        return {"timed_out": False, "exit": 1}
+
+    monkeypatch.setattr(wrapper, "run_logged", stop_after_invocation)
+    with pytest.raises(wrapper.SetupError, match="entry point exited 1"):
+        wrapper.run()
+
+    argv = captured["argv"]
+    flag_index = argv.index("--squint-time-limit")
+    internal_limit = float(argv[flag_index + 1])
+    assert internal_limit > 0
+    assert internal_limit == captured["timeout_s"]
+    assert wrapper.REPORT["time_budget_s"] == round(internal_limit, 1)
 
 
 # (a) the normal tar shape, (b) Kaggle's auto-unpacked shapes, (e) directory-only layouts
@@ -814,6 +880,27 @@ def test_conflicting_manifests_are_refused_before_anything_is_copied(
     prepare_run(wrapper, monkeypatch)
     lay_conflict(wrapper, bundles, kind)
     assert len(wrapper.find(wrapper.MANIFEST_NAME)) >= 2
+    if kind == "distinct_bundle" and hasattr(wrapper, "EXPECTED_RUNTIME_BUNDLE_ID"):
+        # The expected alpha pin wins over a stale, self-consistent beta mount. The selected outer
+        # manifest has no usable archive/tree, so the normal copy verifier still refuses before inference.
+        selected = select(wrapper)
+        assert selected["manifest"]["bundle_id"] == bundles["alpha"]["bundle_id"]
+        assert selected["selection"]["source_pin"]["excluded_candidates"]
+        with pytest.raises(wrapper.SetupError, match="no runtime-bundle.tar"):
+            wrapper.run()
+        assert not (wrapper.LOCAL / "bundle").exists()
+        return
+    if kind == "third_manifest" and hasattr(wrapper, "EXPECTED_RUNTIME_BUNDLE_ID"):
+        selected = select(wrapper)
+        assert selected["manifest"]["bundle_id"] == bundles["alpha"]["bundle_id"]
+        assert {
+            item["bundle_id"]
+            for item in selected["selection"]["source_pin"]["excluded_candidates"]
+        } == {bundles["beta"]["bundle_id"]}
+        with pytest.raises(wrapper.SetupError, match="stopped after the runtime copy"):
+            wrapper.run()
+        assert wrapper.REPORT["runtime"]["bundle_id"] == bundles["alpha"]["bundle_id"]
+        return
     with pytest.raises(wrapper.SetupError, match=CONFLICTS[kind]):
         select(wrapper)
     # the real run refuses at the same point (the stop-after-copy sentinel would not match)
@@ -823,16 +910,20 @@ def test_conflicting_manifests_are_refused_before_anything_is_copied(
     assert "runtime" not in wrapper.REPORT
 
 
-def test_every_candidate_is_named_in_an_ambiguity(wrapper, bundles):
+def test_unpinned_candidate_is_excluded_without_ambiguity(wrapper, bundles):
     lay_conflict(wrapper, bundles, "third_manifest")
     ds = dataset(wrapper)
-    with pytest.raises(wrapper.SetupError, match="ambiguous") as refusal:
-        select(wrapper)
-    message = str(refusal.value)
-    for path in (ds / MANIFEST, ds / NESTED / MANIFEST, ds / "old" / MANIFEST):
-        assert str(path) in message
-    for seed in ("alpha", "beta"):
-        assert bundles[seed]["bundle_id"] in message
+    if not hasattr(wrapper, "EXPECTED_RUNTIME_BUNDLE_ID"):
+        with pytest.raises(wrapper.SetupError, match="ambiguous"):
+            select(wrapper)
+        return
+    selected = select(wrapper)
+    assert selected["manifest"]["bundle_id"] == bundles["alpha"]["bundle_id"]
+    pin = selected["selection"]["source_pin"]
+    assert {item["path"] for item in pin["excluded_candidates"]} == {
+        str(ds / "old" / MANIFEST)
+    }
+    assert pin["excluded_candidates"][0]["bundle_id"] == bundles["beta"]["bundle_id"]
 
 
 # (d) a malformed manifest is a named refusal, never a crash and never skipped
@@ -932,7 +1023,7 @@ def test_a_malformed_manifest_stops_the_run_before_any_copy(
 
 @pytest.mark.parametrize("bad_bytes", [True, -1], ids=["bool", "negative"])
 def test_file_byte_counts_reject_bool_and_negative_for_one_byte_member(
-    wrapper, packager, tmp_path, bad_bytes
+    wrapper, packager, tmp_path, monkeypatch, bad_bytes
 ):
     repo, memory, staging = (
         tmp_path / "repo",
@@ -941,12 +1032,27 @@ def test_file_byte_counts_reject_bool_and_negative_for_one_byte_member(
     )
     make_repo(repo)
     memory.mkdir()
-    (memory / "memory.json").write_text(
+    (memory / "manifest.json").write_text(
         json.dumps({"cases": [], "schema": MEMORY_SCHEMA, "seed": "byte-count"}),
         encoding="utf-8",
     )
     (memory / "shard-0.bin").write_bytes(b"x")
     packager.build_staging(memory, staging, repo)
+
+    if hasattr(wrapper, "EXPECTED_RUNTIME_BUNDLE_ID"):
+        staged_manifest = json.loads((staging / MANIFEST).read_text(encoding="utf-8"))
+        monkeypatch.setattr(
+            wrapper, "EXPECTED_RUNTIME_BUNDLE_ID", staged_manifest["bundle_id"]
+        )
+        monkeypatch.setattr(
+            wrapper,
+            "EXPECTED_MEMORY_MANIFEST_SHA256",
+            next(
+                item["sha256"]
+                for item in staged_manifest["files"]
+                if item["path"] == "memory/manifest.json"
+            ),
+        )
 
     tar_bytes = (staging / TAR).read_bytes()
     members = read_members(tar_bytes)

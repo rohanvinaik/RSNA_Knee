@@ -1500,10 +1500,18 @@ def test_supporting_context_never_grades_but_a_joint_whole_case_voice_does() -> 
     assert graded["evidence"]["joint_voice"]["role"] == "joint"
     # Rohan explicitly authorizes warranted whole-configuration recall.
     assert (
-        combine_condition("ACL", {"diagnosis/ACL": _present()})["outcome"] == "assigned"
+        combine_condition(
+            "ACL",
+            {"diagnosis/ACL": _present([_ratio("own-pos", 1, 1, 1, trust="trusted")])},
+        )["outcome"]
+        == "open"
     )
     assert (
-        combine_condition("ACL", {"diagnosis/ACL": _absent()})["outcome"] == "defeated"
+        combine_condition(
+            "ACL",
+            {"diagnosis/ACL": _absent([_ratio("own-neg", -1, 1, 1, trust="trusted")])},
+        )["outcome"]
+        == "open"
     )
 
 
@@ -1611,11 +1619,37 @@ def test_a_full_recall_object_record_is_read_as_supplied() -> None:
 
 def test_warranted_configuration_decides_without_overriding_necessary_negative():
     assert (
-        combine_condition("Medial OA", {"diagnosis/Medial OA": _present()})["outcome"]
+        combine_condition(
+            "Medial OA",
+            {
+                "diagnosis/Medial OA": _present(
+                    [_configuration_row("oa-pos", 1, ("femur",))]
+                )
+            },
+        )["outcome"]
         == "assigned"
     )
     assert (
-        combine_condition("Medial OA", {"diagnosis/Medial OA": _absent()})["outcome"]
+        combine_condition(
+            "Medial OA",
+            {
+                "diagnosis/Medial OA": _absent(
+                    [
+                        _configuration_row(
+                            "oa-neg",
+                            -1,
+                            (
+                                "femur",
+                                "tibia",
+                                "femoral_cartilage",
+                                "tibial_cartilage",
+                                "medial_meniscus",
+                            ),
+                        )
+                    ]
+                )
+            },
+        )["outcome"]
         == "defeated"
     )
     assert (
@@ -1625,12 +1659,135 @@ def test_warranted_configuration_decides_without_overriding_necessary_negative()
         == "defeated"
     )
     assert (
-        combine_condition("ACL", {"acl": _present(), "diagnosis/ACL": _absent()})[
-            "outcome"
-        ]
+        combine_condition(
+            "ACL",
+            {
+                "acl": _present(),
+                "diagnosis/ACL": _absent([_configuration_row("acl-neg", -1, ("acl",))]),
+            },
+        )["outcome"]
         == "open"
     )
     assert combine_condition("ACL", {"diagnosis/ACL": _conflict()})["outcome"] == "open"
+
+
+def _configuration_row(case_id: str, call: int, subjects: tuple[str, ...]) -> dict:
+    row = _ratio(case_id, call, 1, 1, trust="trusted")
+    row["common_speaking_banks"] = [
+        f"object/{subject}/measured-bank" for subject in subjects
+    ]
+    return row
+
+
+def test_supporting_only_configuration_cases_grade_but_cannot_decide() -> None:
+    positive = _configuration_row("context-pos", 1, ("femur", "tibia", "pcl"))
+    negative = _configuration_row("context-neg", -1, ("femur", "tibia", "pcl"))
+    result = combine_condition(
+        "ACL",
+        {"diagnosis/ACL": _rec("unresolved_conflict", [positive, negative])},
+    )
+    assert result["outcome"] == "open"
+    assert result["evidence"]["joint_configuration_coverage"]["eligible_case_ids"] == {
+        "positive": [],
+        "negative": [],
+    }
+    assert result["rank"]["positive_case_ids"] == ["context-pos"]
+    assert result["rank"]["negative_case_ids"] == ["context-neg"]
+
+
+def test_context_only_opposition_does_not_cancel_a_covered_configuration_case() -> None:
+    own_positive = _configuration_row("own-pos", 1, ("acl",))
+    context_negative = _configuration_row("context-neg", -1, ("femur", "tibia"))
+    result = combine_condition(
+        "ACL",
+        {
+            "diagnosis/ACL": _rec(
+                "unresolved_conflict", [own_positive, context_negative]
+            )
+        },
+    )
+    assert result["outcome"] == "assigned"
+    assert result["rank"]["positive_case_ids"] == ["own-pos"]
+    assert result["rank"]["negative_case_ids"] == ["context-neg"]
+    assert result["evidence"]["joint_configuration_coverage"]["eligible_case_ids"] == {
+        "positive": ["own-pos"],
+        "negative": [],
+    }
+
+
+def test_configuration_negative_requires_each_alternative_in_each_case() -> None:
+    alternatives = (
+        "femur",
+        "tibia",
+        "femoral_cartilage",
+        "tibial_cartilage",
+        "medial_meniscus",
+    )
+    partial = _configuration_row("partial-neg", -1, alternatives[:3])
+    result = combine_condition("Medial OA", {"diagnosis/Medial OA": _absent([partial])})
+    assert result["outcome"] == "open"
+    assert result["rank"]["negative_case_ids"] == ["partial-neg"]
+    assert result["evidence"]["joint_configuration_coverage"][
+        "required_negative_subjects"
+    ] == sorted(alternatives)
+
+    split = [
+        _configuration_row(f"split-{index}", -1, (subject,))
+        for index, subject in enumerate(alternatives)
+    ]
+    split_result = combine_condition(
+        "Medial OA", {"diagnosis/Medial OA": _absent(split)}
+    )
+    assert split_result["outcome"] == "open"
+    assert split_result["rank"]["negative_case_ids"] == [
+        row["case_id"] for row in split
+    ]
+
+    complete = _configuration_row("complete-neg", -1, alternatives)
+    complete_result = combine_condition(
+        "Medial OA", {"diagnosis/Medial OA": _absent([complete])}
+    )
+    assert complete_result["outcome"] == "defeated"
+
+
+def test_configuration_positive_requires_a_defining_role_and_keeps_authority() -> None:
+    context_only = _configuration_row("context", 1, ("joint",))
+    assert (
+        combine_condition("ACL", {"diagnosis/ACL": _present([context_only])})["outcome"]
+        == "open"
+    )
+
+    own_tissue = _configuration_row("acl", 1, ("acl",))
+    result = combine_condition("ACL", {"diagnosis/ACL": _present([own_tissue])})
+    assert result["outcome"] == "assigned"
+    assert result["evidence"]["joint_configuration_coverage"]["eligible_case_ids"][
+        "positive"
+    ] == ["acl"]
+
+    proposal_with_trust_fields = _configuration_row("proposal", 1, ("acl",))
+    proposal = combine_condition(
+        "ACL", {"diagnosis/ACL": _proposal([proposal_with_trust_fields])}
+    )
+    assert proposal["outcome"] == "open"
+    assert (
+        proposal["evidence"]["joint_configuration_coverage"]["eligible_case_ids"][
+            "positive"
+        ]
+        == []
+    )
+
+    empty_bank_name = _configuration_row("empty-bank", 1, ("acl",))
+    empty_bank_name["common_speaking_banks"] = ["object/acl/"]
+    empty_bank_result = combine_condition(
+        "ACL", {"diagnosis/ACL": _present([empty_bank_name])}
+    )
+    assert empty_bank_result["outcome"] == "open"
+    assert (
+        empty_bank_result["evidence"]["joint_configuration_coverage"][
+            "eligible_case_ids"
+        ]["positive"]
+        == []
+    )
 
 
 def test_alternative_reasoning_intent_has_both_signs_and_unknowns():
@@ -1642,3 +1799,153 @@ def test_alternative_reasoning_intent_has_both_signs_and_unknowns():
     assert _kleene_or(["negative", "conflict"]) == "conflict"
     assert _kleene_or(["conflict", "positive"]) == "positive"
     assert _kleene_or([]) == "unknown"
+
+
+@pytest.mark.parametrize(
+    ("question", "alternatives"),
+    [
+        ("Fracture", ("femur", "tibia", "patella", "fibula")),
+        ("Contusion", ("femur", "tibia", "patella")),
+    ],
+)
+def test_positive_condition_presentation_is_not_localized_to_any_bone(
+    question: str, alternatives: tuple[str, ...]
+) -> None:
+    for bone in alternatives:
+        row = _ratio(f"presentation-{question}-{bone}", 1, 7, 8, trust="trusted")
+        row["call_scope"] = "positive_condition_presentation"
+        result = combine_condition(question, {bone: _present([row])})
+
+        assert result["outcome"] == "open"
+        reading = result["evidence"]["readings"][bone]
+        assert reading["state"] == "unknown"
+        assert reading["code"] == "study_positive_presentation_not_localized"
+        assert result["rank"]["positive_case_ids"] == [row["case_id"]]
+        assert result["rank"]["negative_case_ids"] == []
+        retained = result["recall_evidence"][bone][0]["case_terms"][0]
+        assert retained["call_scope"] == "positive_condition_presentation"
+        assert all(
+            request["subject"] != bone for request in result["observation_requests"]
+        )
+
+
+@pytest.mark.parametrize(
+    ("question", "alternatives"),
+    [
+        ("Fracture", ("femur", "tibia", "patella", "fibula")),
+        ("Contusion", ("femur", "tibia", "patella")),
+    ],
+)
+def test_one_local_negative_bone_does_not_rule_out_fracture_or_contusion(
+    question: str, alternatives: tuple[str, ...]
+) -> None:
+    row = _ratio(f"one-negative-{question}", -1, 7, 8, trust="trusted")
+    result = combine_condition(question, {alternatives[0]: _absent([row])})
+    assert result["outcome"] == "open"
+    assert result["rank"]["negative_case_ids"] == [row["case_id"]]
+
+
+@pytest.mark.parametrize(
+    ("question", "alternatives"),
+    [
+        ("Fracture", ("femur", "tibia", "patella", "fibula")),
+        ("Contusion", ("femur", "tibia", "patella")),
+    ],
+)
+def test_local_negatives_at_every_alternative_site_can_defeat_condition(
+    question: str, alternatives: tuple[str, ...]
+) -> None:
+    rows = {
+        bone: _ratio(f"all-negative-{question}-{bone}", -1, 7, 8, trust="trusted")
+        for bone in alternatives
+    }
+    result = combine_condition(
+        question, {bone: _absent([row]) for bone, row in rows.items()}
+    )
+    assert result["outcome"] == "defeated"
+    assert set(result["rank"]["negative_case_ids"]) == {
+        rows[bone]["case_id"] for bone in alternatives
+    }
+
+
+def test_covered_whole_fracture_configuration_can_assign_with_presentation_context():
+    row = _ratio("fracture-presentation-context", 1, 7, 8, trust="trusted")
+    row["call_scope"] = "positive_condition_presentation"
+    whole_case = _configuration_row("whole-fracture", 1, ("femur",))
+    result = combine_condition(
+        "Fracture",
+        {
+            "femur": _present([row]),
+            "diagnosis/Fracture": _present([whole_case]),
+        },
+    )
+
+    assert result["outcome"] == "assigned"
+    assert result["reason"] == "warranted_condition_configuration"
+    assert result["evidence"]["joint_configuration_coverage"]["eligible_case_ids"][
+        "positive"
+    ] == ["whole-fracture"]
+    retained_rows = result["recall_evidence"]["femur"][0]["case_terms"]
+    assert row["case_id"] in {item["case_id"] for item in retained_rows}
+    assert result["rank"]["eligible_term_count"] == 2
+
+
+def test_unqualified_local_positive_and_single_tissue_acl_behavior_remain_valid():
+    fracture = combine_condition(
+        "Fracture",
+        {"femur": _present([_ratio("localized-femur", 1, 7, 8, trust="trusted")])},
+    )
+    assert fracture["outcome"] == "assigned"
+    assert fracture["evidence"]["readings"]["femur"]["state"] == "positive"
+
+    scoped_acl = _ratio("acl-presentation", 1, 7, 8, trust="trusted")
+    scoped_acl["call_scope"] = "positive_condition_presentation"
+    acl = combine_condition("ACL", {"acl": _present([scoped_acl])})
+    assert acl["outcome"] == "assigned"
+    assert acl["evidence"]["readings"]["acl"]["state"] == "positive"
+
+
+def test_presentation_context_does_not_erase_local_conflict_or_add_negative_case():
+    presentation = _ratio("presentation-only", 1, 7, 8, trust="trusted")
+    presentation["call_scope"] = "positive_condition_presentation"
+    local_positive = _ratio("localized-positive", 1, 6, 8, trust="trusted")
+    local_negative = _ratio("localized-negative", -1, 6, 8, trust="trusted")
+    result = combine_condition(
+        "Fracture",
+        {
+            "femur": [
+                _present([presentation]),
+                _present([local_positive]),
+                _absent([local_negative]),
+            ]
+        },
+    )
+
+    assert result["outcome"] == "open"
+    assert result["evidence"]["readings"]["femur"]["state"] == "conflict"
+    assert "presentation-only" in result["rank"]["positive_case_ids"]
+    assert result["rank"]["negative_case_ids"] == ["localized-negative"]
+
+
+def test_untrusted_local_row_cannot_upgrade_a_study_presentation_to_local_finding():
+    presentation = _ratio("study-presentation", 1, 7, 8, trust="trusted")
+    presentation["call_scope"] = "positive_condition_presentation"
+    untrusted = _ratio("untrusted-local", 1, 1, 1, trust="untrusted")
+    result = combine_condition(
+        "Fracture", {"femur": _present([presentation, untrusted])}
+    )
+    assert result["outcome"] == "open"
+    assert result["evidence"]["readings"]["femur"]["code"] == (
+        "study_positive_presentation_not_localized"
+    )
+    assert result["rank"]["eligible_term_count"] == 2
+
+
+def test_malformed_case_scope_stays_unknown_instead_of_claiming_local_injury():
+    row = _ratio("malformed-scope", 1, 1, 1, trust="trusted")
+    row["call_scope"] = {"not": "a scope string"}
+    result = combine_condition("Fracture", {"femur": _present([row])})
+    assert result["outcome"] == "open"
+    reading = result["evidence"]["readings"]["femur"]
+    assert reading["state"] == "unknown"
+    assert reading["problems"] == ["case_terms[0]:case_call_scope_invalid"]

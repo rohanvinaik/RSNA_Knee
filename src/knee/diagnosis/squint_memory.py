@@ -17,6 +17,7 @@ import lzma
 import math
 import os
 import tempfile
+import time
 from collections.abc import Mapping
 from dataclasses import dataclass
 from pathlib import Path
@@ -1398,7 +1399,14 @@ def compile_bootstrap(
     memory = with_configuration_cases(memory)
     _link_configuration_full_profiles(memory)
     memory["full_profile_retention"] = _full_profile_retention_receipt(memory)
-    save_memory(memory, out)
+    from knee.diagnosis.squint_locator import prepare_recall
+
+    preparation_started = time.perf_counter()
+    prepared_recall = prepare_recall(memory)
+    preparation_seconds = time.perf_counter() - preparation_started
+    if prepared_recall.get("outcome") != "prepared":
+        raise SquintMemoryError("bootstrap_recall_preparation_failed")
+    publication = save_memory(memory, out, prepared_recall=prepared_recall)
     configuration_case_count = len(memory["cases"]) - len(cases)
     return {
         "schema": SCHEMA,
@@ -1410,6 +1418,8 @@ def compile_bootstrap(
         "source_count": len(source_identities),
         "source_identities": source_identities,
         "revision": memory["revision"],
+        "recall_preparation_seconds": preparation_seconds,
+        "recall_preparation_cache": publication.get("recall_preparation_cache"),
     }
 
 
@@ -1579,7 +1589,9 @@ def _canonical(memory: dict[str, Any]) -> bytes:
     ).encode("utf-8")
 
 
-def save_memory(memory: dict, path: Path) -> dict:
+def save_memory(
+    memory: dict, path: Path, *, prepared_recall: Mapping[str, Any] | None = None
+) -> dict:
     """Atomically publish one immutable memory directory without pickle."""
     if not isinstance(path, Path):
         raise SquintMemoryError("memory_path_required")
@@ -1653,6 +1665,22 @@ def save_memory(memory: dict, path: Path) -> dict:
                 raise SquintMemoryError(
                     "full_profile_publication_readback_failed"
                 ) from error
+        recall_cache_receipt = None
+        if prepared_recall is not None:
+            from knee.diagnosis.squint_locator import persisted_recall_cache
+            from knee.json_store import dump_json_atomic
+
+            cache = persisted_recall_cache(clean, prepared_recall)
+            cache["memory_manifest_sha256"] = hashlib.sha256(data).hexdigest()
+            cache["memory_revision"] = clean["revision"]
+            cache_path = dump_json_atomic(temporary / "recall-preparation.json", cache)
+            recall_cache_receipt = {
+                "schema": cache["schema"],
+                "path": str((destination / cache_path.name).resolve()),
+                "sha256": hashlib.sha256(cache_path.read_bytes()).hexdigest(),
+                "bytes": cache_path.stat().st_size,
+                "memory_manifest_sha256": cache["memory_manifest_sha256"],
+            }
         directory_fd = os.open(temporary, os.O_RDONLY)
         try:
             os.fsync(directory_fd)
@@ -1677,6 +1705,7 @@ def save_memory(memory: dict, path: Path) -> dict:
         "manifest": str(destination / "manifest.json"),
         "sha256": hashlib.sha256(data).hexdigest(),
         "case_count": len(clean["cases"]),
+        "recall_preparation_cache": recall_cache_receipt,
     }
 
 

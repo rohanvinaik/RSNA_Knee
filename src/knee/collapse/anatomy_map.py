@@ -155,6 +155,28 @@ def reference_sites() -> Mapping[str, ReferenceSite]:
         abs(patella_back - femur_front),
         span("patella")[2],
     )
+    cartilage_search_reason = (
+        "The cartilage is the articular layer on subarticular bone plate "
+        "(OBJECTS_AND_CONDITIONS.md §4); this facing-surface coordinate and "
+        "broad span are search guides from the retained anterior contact labels, "
+        "not cartilage thickness, a measured boundary, or an extracted cartilage label."
+    )
+    put(
+        "patellar_cartilage",
+        (patella[0], patella_back, patella[2]),
+        front_span,
+        "Patellar cartilage covers the posterior patellar articular surface; "
+        "use the retained patella-back contact coordinate as a search guide. "
+        + cartilage_search_reason,
+    )
+    put(
+        "trochlear_cartilage",
+        (patella[0], femur_front, patella[2]),
+        front_span,
+        "Trochlear cartilage covers the facing femoral articular surface; "
+        "use the retained femur-front contact coordinate at patellar level as a search guide. "
+        + cartilage_search_reason,
+    )
     for name in ("anterior_synovial_recess", "recess"):
         put(
             name,

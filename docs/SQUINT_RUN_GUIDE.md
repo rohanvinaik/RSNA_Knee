@@ -38,6 +38,8 @@ Both output directories must be fresh. Inspect the memory's `manifest.json` and 
 
 The teaching command publishes both object cases and role-qualified whole-condition configuration cases in that one immutable memory. No second manual memory-expansion step is required. The receipt distinguishes object, configuration and total case counts. Full and cheap descriptions coexist for each object; cheap queries do not fabricate full-only banks.
 
+Bootstrap publication also saves `memory/recall-preparation.json.xz`, bound to the manifest, revision and exact case/call/profile/censor fingerprint. Production restores its runtime indices rather than recomputing the fixed pairwise comparisons. Preserve that sidecar when packaging the memory. For an existing memory, public `prepare_recall(memory)` and `save_memory(memory, new_path, prepared_recall=prepared)` publish a prepared revision without rereading anatomy. A stale or missing cache is reported as recomputed, never silently accepted.
+
 A positive official label supplies the implicated object's condition presentation, without claiming that every contextual tissue is damaged. Only an object implicated by no positive label enters the normal bucket; blank conditions never become negative calls. Structural examples can carry no diagnostic call and still help locate anatomy.
 
 ## Run production inference
@@ -55,10 +57,12 @@ A `knee.squint-memory/v1` manifest selects this route before the reference produ
 
 Each worker owns one study's decoded series. Squints and scan-local metric codes are shared by its object searches. Object profiles combine available views. A missing reading stays missing. An open question can request a bounded finer reading on a located source region; recall consumes the new banks. Already-read regions are shared across conditions. No open question triggers an automatic full-study reconstruction. The time budget stops discretionary refinement first; it never changes unknown into normal. The default operation budget is 30,000 seconds, with notebook output reserve beneath the nine-hour cap; use `--squint-time-limit SECONDS` to declare a different budget.
 
+The locator proposes finite physical windows from anatomy before scoring them: bones first, then their dependents. Native selected bone planes constrain the current study's search. A partial reference can guide an explicitly partial prior; missing directions remain guided by the weak leg-frame/atlas expectation. It never becomes an observed complete point. Unknown knee side retains both hypotheses. Each proposed window addresses one acquired slice; only bounded coarse finalists receive richer profiles. The operation divides remaining time among studies. A study not examined before its budget expires retains twelve open results and an explicit `not_examined_budget` status, not twelve negative findings.
+
 Output contains:
 
-- `studies/<UID>.json.xz`: losslessly stored located regions/profiles, individual case terms, findings, ranking and bounded observations. `knee.json_store.load_json` reads these files and the older plain JSON form; the report-admission command uses that public reader.
-- `recall-preparation.json.xz`: the exact fixed empirical-envelope populations, comparisons and scope, saved once for the operation. Numerical acceleration caches are not additional observations and are not serialized.
+- `studies/<UID>.json.xz`: losslessly stored located regions/profiles, individual case terms, findings, ranking and bounded observations. Production uses XZ preset 0 for these records to reduce write CPU; other metadata retains its default preset 6. Decompressed information is identical. `knee.json_store.load_json` reads these files and the older plain JSON form; the report-admission command uses that public reader.
+- `recall-preparation.json.xz`: for inference, the exact fixed empirical-envelope populations, comparisons and scope. A reused compressed cache is copied byte for byte; its preparation is nested under `preparation` in the `knee.squint-recall-cache/v1` artifact. A freshly computed legacy fallback uses the direct preparation schema. The receipt names the actual schema and hash. Numerical acceleration matrices are rebuilt, not additional observations. Capacity mode instead records each study's excluded-population identity in its own evidence, with no unfiltered operation-wide preparation artifact.
 - `submission.csv`: the official UID order and twelve exact condition columns when a template is supplied.
 - `receipt.json`: source mode, memory identity, envelope-audit hash, per-condition outcomes, actual evidence paths/bytes and measured work.
 
@@ -66,13 +70,54 @@ Each located object's complete recalled `profile` remains directly available. Se
 
 The continuous ranking keeps defeated below open below assigned and uses exact case resemblance within those bands. It emits neither hard zero nor hard one and makes no calibrated-risk claim. Categorical findings remain separate. Silence, conflict and unsupported recall radii remain explicit.
 
-`--diagnostic-mode capacity` excludes the queried study's cases from recall. This is an information check, not a tuning objective. Report identified, abstained and wrong per condition against independently supplied calls; do not collapse those into one success percentage.
+A configuration voice can decide only when that individual case's actually compared banks cover the condition's defining tissue. Supporting-only comparisons may grade an open result. For a negative multi-site condition, every alternative site must be covered in the same comparison; separate partial negative cases do not supply that coverage.
+
+Recall terms retain each case's per-question `call_scope`. For Fracture and Contusion, `positive_condition_presentation` means the object was observed in a diagnosed study; it does not localize injury to that bone. Those terms remain available for retrieval and ranking, but alone do not supply a local positive bone predicate. Independently covered whole-condition recall can still decide. Source-scope uncertainty stays named and does not trigger an image zoom that cannot repair the label's attribution.
+
+`--diagnostic-mode capacity` excludes the queried study before location examples, direct recall, censors and opposing-envelope preparation. Cached comparison rows are projected onto the remaining population; exact maxima and counts are recomputed without repeating pairwise measurements. Context-only objects remain available for location without requiring a diagnostic envelope. This is an information check, not a tuning objective.
+
+Use a fresh output directory and an official-format template containing exactly the selected labelled UIDs. The template supplies identifiers and column order, not inference features:
+
+```python
+import csv
+from pathlib import Path
+from knee.diagnosis.submission import SUBMISSION_COLUMNS
+from knee.study.tables import LABELS
+
+with Path("data/raw/train.csv").open(newline="", encoding="utf-8-sig") as stream:
+    labelled = [
+        row["StudyInstanceUID"]
+        for row in csv.DictReader(stream)
+        if all(row.get(label) in ("0", "1") for label in LABELS)
+    ]
+with Path("/absolute/new/heldout-template.csv").open("x", newline="") as stream:
+    writer = csv.writer(stream)
+    writer.writerow(SUBMISSION_COLUMNS)
+    writer.writerows((uid, *([""] * len(LABELS))) for uid in labelled)
+```
+
+```sh
+.venv/bin/python scripts/run_interiors.py \
+  --labeled --root data/raw --workers 4 --diagnostic-mode capacity \
+  --diagnostic-memory /absolute/existing/prepared-memory \
+  --diagnostic-submission-template /absolute/existing/heldout-template.csv \
+  --diagnostic-output /absolute/new/heldout-run
+
+.venv/bin/python scripts/evaluate_squint_capacity.py \
+  --run /absolute/existing/heldout-run --labels data/raw/train.csv \
+  --output /absolute/new/capacity-report.json \
+  --markdown /absolute/new/capacity-report.md
+```
+
+The reporter checks the run and per-study memory identities, own-study exclusion, exact ranking fractions and exported CSV. It refuses budget-unexamined studies as an incomplete evaluation. It reports identified, abstained and wrong per condition, split by positive/negative truth, plus exact ordering/AUC and ties. Missing labels remain unavailable. Do not collapse these into one success percentage or tune anatomy toward them.
 
 ## Private Kaggle dry run
 
 Package the integrated source and fixed memory with `scripts/package_squint_kaggle.py`. The package ships production source, a manifest and memory; the verified CPython 3.13 wheels are supplied by `rohanvinaik/rsna-knee-wheels-cp313`. Inspect that command's help and verify the staging manifest before upload.
 
 `kaggle/squint-production/` is the private offline test wrapper. It copies code to local disk, installs the offline wheels into a local target, uses four study workers with one thread per numerical library, invokes the same production entry point and validates the final CSV. `kaggle/squint-scaling/` is the separate training-data orchestration wrapper. It does not silently teach recalled answers.
+
+Before launching, set the production wrapper's `EXPECTED_RUNTIME_BUNDLE_ID` and `EXPECTED_MEMORY_MANIFEST_SHA256` to the verified staging manifest's bundle identity and its `memory/manifest.json` digest. Run the gate on that exact wrapper and source. Uploading a dataset version is asynchronous: wait for that version to become ready, download its current runtime manifest and verify both identities against staging, then push the private kernel. The wrapper independently checks both pins before inference and records all observed and excluded mounts; an older internally consistent bundle is not a fallback. The remaining notebook budget is passed to the entry point's per-study allocator.
 
 Keep the dataset and kernel private. A dry run is not a competition submission. Download the actual receipt, per-study evidence, logs and CSV, and compare actual wall time, peak RSS and saved bytes against [FULL_BUILD_PLAN §16.9](FULL_BUILD_PLAN.md). Historical stage timings or sparse-cosine microbenchmarks are not end-to-end acceptance.
 

@@ -6,6 +6,7 @@ from types import ModuleType, SimpleNamespace
 import numpy as np
 import pytest
 
+import knee.diagnosis.squint_locator as locator_module
 from knee.diagnosis.squint_contracts import combine_condition
 from knee.diagnosis.squint_locator import (
     _banks,
@@ -22,6 +23,7 @@ from knee.diagnosis.squint_locator import (
     _window_coarse_batch,
     _window_coarse_counts,
     locate_objects,
+    persisted_recall_cache,
     prepare_recall,
     recall_object,
     resolve_candidate_profile,
@@ -103,6 +105,195 @@ def test_recall_excludes_same_study_and_keeps_conflicting_cases() -> None:
     assert result["outcome"] == "present"
     assert {row["case_id"] for row in result["case_terms"]} == {"positive", "negative"}
     assert result["speaking_calls"] == [1]
+
+
+def test_persisted_recall_cache_rebuilds_runtime_indexes_without_pairwise_work(
+    monkeypatch,
+) -> None:
+    memory = {
+        "source": {"memory_id": "cache-source"},
+        "cases": [
+            _case("positive", "study-positive", 1, (4, 0)),
+            _case("negative", "study-negative", -1, (3, 1)),
+        ],
+    }
+    expected = prepare_recall(memory)
+    cache = persisted_recall_cache(memory, expected)
+
+    def forbidden(*args, **kwargs):
+        raise AssertionError("cached restore recomputed pairwise envelopes")
+
+    import knee.diagnosis.squint_locator as locator
+
+    monkeypatch.setattr(locator, "_exact_bank_terms", forbidden)
+    restored = locator.prepare_recall(memory, cached=cache)
+    assert restored["runtime_indexes_rebuilt"] is True
+    assert restored["envelopes"] == expected["envelopes"]
+    assert restored["case_indices"] == expected["case_indices"]
+    assert restored["case_profile_banks"] == expected["case_profile_banks"]
+    assert restored["subject_profile_matrices"]["femur"]["values"].tolist() == (
+        expected["subject_profile_matrices"]["femur"]["values"].tolist()
+    )
+
+
+def test_persisted_recall_cache_rejects_changed_profile_source() -> None:
+    memory = {
+        "cases": [
+            _case("positive", "study-positive", 1, (4, 0)),
+            _case("negative", "study-negative", -1, (3, 1)),
+        ]
+    }
+    cache = persisted_recall_cache(memory, prepare_recall(memory))
+    changed = {**memory, "cases": [dict(row) for row in memory["cases"]]}
+    changed["cases"][0]["profile"] = _profile(0, 4)
+    restored = prepare_recall(changed, cached=cache)
+    assert restored["outcome"] == "prepared"
+    assert restored.get("runtime_indexes_rebuilt") is not True
+    assert restored["source_fingerprint"] != cache["source_fingerprint"]
+
+
+def test_capacity_projects_cached_opposition_exactly_and_drops_empty_buckets(
+    monkeypatch,
+):
+    from knee.diagnosis import squint_locator
+
+    held = _case("held-positive", "held", 1, (4, 0, 0))
+    peer_positive = _case("peer-positive", "peer", 1, (0, 0, 4))
+    peer_negative = _case("peer-negative", "peer-negative", -1, (4, 0, 0))
+    memory = {
+        "source": {"source_id": "source-r"},
+        "cases": [held, peer_positive, peer_negative],
+        "censors": [
+            {"question": "acl", "study_uid": "held"},
+            {"question": "acl", "study_uid": "peer"},
+        ],
+    }
+    full = prepare_recall(memory)
+    cache = persisted_recall_cache(memory, full)
+    filtered = {
+        **memory,
+        "cases": [peer_positive, peer_negative],
+        "censors": [memory["censors"][1]],
+    }
+    fresh = prepare_recall(filtered)
+    with monkeypatch.context() as patcher:
+        patcher.setattr(
+            squint_locator,
+            "_exact_bank_terms",
+            lambda *args: (_ for _ in ()).throw(
+                AssertionError("capacity projection recomputed pairwise terms")
+            ),
+        )
+        projected = prepare_recall(memory, cached=cache, exclude_study_uid="held")
+    assert projected["runtime_indexes_rebuilt"] is True
+    assert projected["envelopes"] == fresh["envelopes"]
+    assert projected["case_indices"] == fresh["case_indices"]
+    assert projected["censor_indices"] == fresh["censor_indices"]
+    assert projected["case_profile_banks"] == fresh["case_profile_banks"]
+    assert projected["source_fingerprint"] == fresh["source_fingerprint"]
+    assert projected["memory_source"] == fresh["memory_source"]
+    projected_envelope = next(iter(projected["envelopes"]["femur"]["acl"].values()))
+    full_envelope = next(iter(full["envelopes"]["femur"]["acl"].values()))
+    assert full_envelope["maximum_squared_cosine"] == {
+        "numerator": "256",
+        "denominator": "256",
+    }
+    assert projected_envelope["maximum_squared_cosine"] == {
+        "numerator": "0",
+        "denominator": "256",
+    }
+    assert all(
+        "held" not in comparison["study_uids"]
+        for comparison in projected_envelope["comparisons"]
+    )
+    for subject, matrix in fresh["subject_profile_matrices"].items():
+        np.testing.assert_array_equal(
+            projected["subject_profile_matrices"][subject]["values"],
+            matrix["values"],
+        )
+
+    no_opposition = {
+        **memory,
+        "cases": [held, peer_positive],
+        "censors": [memory["censors"][0]],
+    }
+    no_opposition_projected = prepare_recall(
+        no_opposition,
+        cached=persisted_recall_cache(no_opposition, prepare_recall(no_opposition)),
+        exclude_study_uid="held",
+    )
+    no_opposition_fresh = prepare_recall(
+        {**no_opposition, "cases": [peer_positive], "censors": []}
+    )
+    assert no_opposition_projected["envelopes"] == no_opposition_fresh["envelopes"]
+    assert not any(
+        bucket
+        for questions in no_opposition_projected["envelopes"].values()
+        for buckets in questions.values()
+        for bucket in buckets.values()
+    )
+
+    legacy = persisted_recall_cache(memory, full)
+    for questions in legacy["preparation"]["envelopes"].values():
+        for buckets in questions.values():
+            for envelope in buckets.values():
+                for comparison in envelope["comparisons"]:
+                    comparison.pop("projection_mode")
+    calls = []
+    original_terms = squint_locator._exact_bank_terms
+
+    def count_terms(*args):
+        calls.append(args)
+        return original_terms(*args)
+
+    monkeypatch.setattr(squint_locator, "_exact_bank_terms", count_terms)
+    legacy_result = prepare_recall(memory, cached=legacy, exclude_study_uid="held")
+    assert legacy_result.get("runtime_indexes_rebuilt") is not True
+    assert legacy_result["envelopes"] == fresh["envelopes"]
+    assert calls
+
+
+def test_capacity_cache_projection_matches_sequence_calls_and_profileless_rows():
+    positive = _case("sequence-positive", "held", 1, (4, 0, 0))
+    positive["condition_calls"] = [{"question": "acl", "digit": 1}]
+    negative = _case("sequence-negative", "peer", -1, (3, 1, 0))
+    negative["condition_calls"] = [{"question": "acl", "digit": -1}]
+    duplicate = _case("duplicate-question", "duplicate", 1, (0, 4, 0))
+    duplicate["condition_calls"] = [
+        {"question": "acl", "digit": 1},
+        {"question": "acl", "digit": 1},
+    ]
+    profileless = {
+        "case_id": "profileless-baker",
+        "study_uid": "profileless",
+        "subject": "femur",
+        "condition_calls": [{"question": "baker", "digit": 1}],
+    }
+    memory = {
+        "source": {"source_id": "sequence-cache"},
+        "cases": [positive, negative, duplicate, profileless],
+        "censors": [
+            {"question": "acl", "study_uid": "held"},
+            {"question": "baker", "study_uid": "profileless"},
+        ],
+    }
+    full = prepare_recall(memory)
+    cache = persisted_recall_cache(memory, full)
+    filtered = {
+        **memory,
+        "cases": [negative, duplicate, profileless],
+        "censors": [memory["censors"][1]],
+    }
+    fresh = prepare_recall(filtered)
+    projected = prepare_recall(memory, cached=cache, exclude_study_uid="held")
+    assert projected["envelopes"] == fresh["envelopes"]
+    assert projected["case_indices"] == fresh["case_indices"]
+    assert projected["censor_indices"] == fresh["censor_indices"]
+    assert projected["source_fingerprint"] == fresh["source_fingerprint"]
+    assert projected["case_indices"]["femur"]["acl"] == [0]
+    assert projected["case_indices"]["femur"].get("baker") is None
+    assert projected["envelopes"] == {"femur": {"acl": {}}}
+    assert projected["censor_indices"]["baker"] == [0]
 
 
 def test_explicit_censor_vetoes_but_ordinary_negative_does_not() -> None:
@@ -404,227 +595,6 @@ def test_locator_keeps_two_view_anchor_partial_and_projects_case_offset() -> Non
     assert (
         window_scope_code(unavailable, (1, 2, 0, 1, 0, 1), acl_priors)
         == "geometry_unavailable"
-    )
-
-
-def test_locator_generates_current_grid_windows_via_shared_profile_writer(
-    monkeypatch,
-) -> None:
-    calls: list[tuple[int, ...]] = []
-    bank = (
-        'squint/v1/view=["axial","yes","no"]/metric=signal_median/'
-        "direction=overview/scale=10mm"
-    )
-
-    def profile_window(series: dict, window: tuple[int, ...], *, subject: str) -> dict:
-        calls.append(window)
-        return {"subject": subject, "banks": {bank: [1, 7, 0]}, "source": {}}
-
-    writer = ModuleType("knee.diagnosis.squint_profiles")
-    writer.profile_window = profile_window
-    monkeypatch.setitem(sys.modules, writer.__name__, writer)
-    stack = SimpleNamespace(
-        code="present",
-        median=np.ones((2, 2, 2)),
-        coverage=np.ones((2, 2, 2)),
-        centres_lps=np.zeros((2, 2, 2, 3)),
-        tile_mm=10.0,
-    )
-    case_profile = {
-        "subject": "femur",
-        "banks": {bank: [1, 7, 0]},
-        "source": {},
-    }
-    case_profile["source"]["window"] = [0, 2, 0, 2, 0, 2]
-    memory = {"cases": [_case("prior", "other", 1, (4, 0))]}
-    memory["cases"][0]["profile"] = case_profile
-    result = locate_objects(
-        {
-            "study_uid": "current",
-            "series": [
-                {
-                    "series_uid": "series-current",
-                    "view": {
-                        "orientation": "axial",
-                        "fluid_sensitive": "yes",
-                        "fat_suppression": "no",
-                    },
-                    "stack": stack,
-                    "metric_codes": {
-                        "signal_median": np.array(
-                            [[[-1, 0], [0, 0]], [[0, 0], [0, 0]]],
-                            dtype=np.int8,
-                        )
-                    },
-                }
-            ],
-        },
-        memory,
-    )
-    assert calls == [(0, 2, 0, 2, 0, 2)]
-    assert result["objects"]["femur"]["status"] == "proposal"
-    assert result["objects"]["femur"]["regions"][0]["window"] == (0, 2, 0, 2, 0, 2)
-
-
-def test_locator_profiles_only_per_case_coarse_best_window(monkeypatch) -> None:
-    calls: list[tuple[int, ...]] = []
-    bank = (
-        'squint/v1/view=["axial","yes","no"]/metric=signal_median/'
-        "direction=overview/scale=10mm"
-    )
-
-    def profile_window(series: dict, window: tuple[int, ...], *, subject: str) -> dict:
-        calls.append(window)
-        return {"subject": subject, "banks": {bank: [2, 0, 0]}, "source": {}}
-
-    writer = ModuleType("knee.diagnosis.squint_profiles")
-    writer.profile_window = profile_window
-    monkeypatch.setitem(sys.modules, writer.__name__, writer)
-    stack = SimpleNamespace(
-        code="present",
-        median=np.ones((4, 1, 1)),
-        coverage=np.ones((4, 1, 1)),
-        centres_lps=np.zeros((4, 1, 1, 3)),
-        tile_mm=10.0,
-    )
-    case_profile = {
-        "subject": "femur",
-        "banks": {bank: [2, 0, 0]},
-        "source": {"window": [0, 2, 0, 1, 0, 1]},
-    }
-    memory = {
-        "cases": [
-            {
-                **_case("prior", "other", 1, (2, 0)),
-                "profile": case_profile,
-            }
-        ]
-    }
-    result = locate_objects(
-        {
-            "study_uid": "current",
-            "series": [
-                {
-                    "series_uid": "series-current",
-                    "view": {
-                        "orientation": "axial",
-                        "fluid_sensitive": "yes",
-                        "fat_suppression": "no",
-                    },
-                    "stack": stack,
-                    "metric_codes": {
-                        "signal_median": np.array(
-                            [[[-1]], [[-1]], [[1]], [[1]]], dtype=np.int8
-                        )
-                    },
-                }
-            ],
-        },
-        memory,
-    )
-    assert calls == [(0, 2, 0, 1, 0, 1)]
-    assert (
-        result["objects"]["femur"]["evidence"]["case_best_candidates"][0]["case_id"]
-        == "prior"
-    )
-
-
-def test_multiobject_locator_keeps_case_index_for_relative_anchor_priors(
-    monkeypatch,
-) -> None:
-    bank = (
-        'squint/v1/view=["axial","yes","no"]/metric=signal_median/'
-        "direction=overview/scale=10mm"
-    )
-    writer = ModuleType("knee.diagnosis.squint_profiles")
-
-    def profile_window(series: dict, window: tuple[int, ...], *, subject: str) -> dict:
-        codes = series["metric_codes"]["signal_median"]
-        selected = codes[
-            window[0] : window[1], window[2] : window[3], window[4] : window[5]
-        ]
-        counts = [int(np.count_nonzero(selected == digit)) for digit in (-1, 0, 1)]
-        return {"subject": subject, "banks": {bank: counts}, "source": {}}
-
-    writer.profile_window = profile_window
-    monkeypatch.setitem(sys.modules, writer.__name__, writer)
-
-    def source_case(subject: str, call: int, point: tuple[float, float, float]) -> dict:
-        return {
-            "case_id": f"case-{subject}",
-            "study_uid": "source-study",
-            "subject": subject,
-            "condition_calls": {"acl": call},
-            "profile": {
-                "subject": subject,
-                "banks": {
-                    bank: {
-                        "femur": [1, 0, 0],
-                        "meniscus": [0, 1, 0],
-                        "tibia": [0, 0, 1],
-                    }[subject]
-                },
-                "source": {},
-            },
-            "regions": [
-                {
-                    "source_window": [0, 1, 0, 1, 0, 1],
-                    "source_point_lps": list(point),
-                    "view": {
-                        "orientation": "axial",
-                        "fluid_sensitive": "yes",
-                        "fat_suppression": "no",
-                    },
-                }
-            ],
-        }
-
-    memory = {
-        "cases": [
-            source_case("femur", 1, (0.0, 0.0, 0.0)),
-            source_case("meniscus", 1, (60.0, 0.0, 0.0)),
-            source_case("tibia", -1, (100.0, 0.0, 0.0)),
-        ]
-    }
-    stack = SimpleNamespace(
-        code="present",
-        median=np.ones((3, 1, 1)),
-        coverage=np.ones((3, 1, 1)),
-        centres_lps=np.array(
-            [[[0.0, 0.0, 0.0]], [[60.0, 0.0, 0.0]], [[100.0, 0.0, 0.0]]]
-        ).reshape(3, 1, 1, 3),
-        tile_mm=10.0,
-    )
-    result = locate_objects(
-        {
-            "study_uid": "current-study",
-            "series": [
-                {
-                    "series_uid": "current-series",
-                    "view": {
-                        "orientation": "axial",
-                        "fluid_sensitive": "yes",
-                        "fat_suppression": "no",
-                    },
-                    "stack": stack,
-                    "metric_codes": {
-                        "signal_median": np.array([[[-1]], [[0]], [[1]]], dtype=np.int8)
-                    },
-                }
-            ],
-        },
-        memory,
-    )
-    assert result["objects"]["femur"]["status"] == "proposal"
-    assert result["objects"]["tibia"]["status"] == "proposal"
-    assert result["objects"]["meniscus"]["status"] == "proposal"
-    assert result["objects"]["meniscus"]["regions"][0]["window"] == (
-        1,
-        2,
-        0,
-        1,
-        0,
-        1,
     )
 
 
@@ -1012,3 +982,371 @@ def test_coarse_projection_requires_exact_scale_identity() -> None:
         "axial/signal/scale=10mm": [1, 2, 3],
         "axial/gradient/scale=1e1mm": [4, 5, 6],
     }
+
+
+def test_locator_uses_finite_anatomy_windows_via_shared_profile_writer(
+    monkeypatch,
+) -> None:
+    calls: list[tuple[int, ...]] = []
+    bank = (
+        'squint/v1/view=["axial","yes","no"]/metric=signal_median/'
+        "direction=overview/scale=10mm"
+    )
+
+    def profile_window(series: dict, window: tuple[int, ...], *, subject: str) -> dict:
+        calls.append(window)
+        return {
+            "subject": subject,
+            "banks": {bank: [1, 7, 0]},
+            "source": {"procedure": "knee.squint-profile/scan-tercile-v1"},
+        }
+
+    writer = ModuleType("knee.diagnosis.squint_profiles")
+    writer.profile_window = profile_window
+    monkeypatch.setitem(sys.modules, writer.__name__, writer)
+    windows = [(0, 1, 0, 2, 0, 2)]
+    helper_calls = []
+    cached_foreground = np.zeros((2, 2, 2), dtype=bool)
+    cached_foreground[0, 0, 0] = True
+
+    def cached_leg_bounds(_stack):
+        return (0, 0, 0), (2, 2, 2), cached_foreground
+
+    monkeypatch.setattr(locator_module, "_leg_bounds", cached_leg_bounds)
+    helper = ModuleType("knee.diagnosis.squint_anatomical_priors")
+
+    def anatomical_windows(series, subject, **kwargs):
+        helper_calls.append((subject, kwargs, series.get("foreground")))
+        return {"status": "proposed", "windows": windows, "provenance": {"stub": True}}
+
+    helper.anatomical_windows = anatomical_windows
+    monkeypatch.setitem(sys.modules, helper.__name__, helper)
+    stack = SimpleNamespace(
+        code="present",
+        median=np.ones((2, 2, 2)),
+        coverage=np.ones((2, 2, 2)),
+        centres_lps=np.zeros((2, 2, 2, 3)),
+        tile_mm=10.0,
+    )
+    case_profile = {
+        "subject": "femur",
+        "banks": {bank: [1, 7, 0]},
+        "source": {"procedure": "knee.squint-profile/scan-tercile-v1"},
+    }
+    case_profile["source"]["window"] = [0, 1, 0, 2, 0, 2]
+    memory = {"cases": [_case("prior", "other", 1, (4, 0))]}
+    memory["cases"][0]["profile"] = case_profile
+    result = locate_objects(
+        {
+            "study_uid": "current",
+            "series": [
+                {
+                    "series_uid": "series-current",
+                    "view": {
+                        "orientation": "axial",
+                        "fluid_sensitive": "yes",
+                        "fat_suppression": "no",
+                    },
+                    "stack": stack,
+                    "metric_codes": {
+                        "signal_median": np.array(
+                            [[[-1, 0], [0, 0]], [[0, 0], [0, 0]]],
+                            dtype=np.int8,
+                        )
+                    },
+                }
+            ],
+        },
+        memory,
+    )
+    assert calls == [(0, 1, 0, 2, 0, 2)], (
+        helper_calls,
+        result["objects"]["femur"]["evidence"],
+    )
+    assert helper_calls[0][0] == "femur"
+    assert helper_calls[0][1]["knee_scale_mm"] is None
+    assert helper_calls[0][2] is not None
+    assert helper_calls[0][2].dtype == np.dtype(bool)
+    assert helper_calls[0][2] is cached_foreground
+    assert result["objects"]["femur"]["status"] == "proposal"
+    assert result["objects"]["femur"]["regions"][0]["window"] == (0, 1, 0, 2, 0, 2)
+    assert result["evidence"]["candidate_generation"] == "finite_anatomy_first"
+
+
+def test_locator_refines_only_finite_coarse_best_window(monkeypatch) -> None:
+    calls: list[tuple[int, ...]] = []
+    bank = (
+        'squint/v1/view=["axial","yes","no"]/metric=signal_median/'
+        "direction=overview/scale=10mm"
+    )
+
+    def profile_window(series: dict, window: tuple[int, ...], *, subject: str) -> dict:
+        calls.append(window)
+        return {
+            "subject": subject,
+            "banks": {bank: [2, 0, 0]},
+            "source": {"procedure": "knee.squint-profile/scan-tercile-v1"},
+        }
+
+    writer = ModuleType("knee.diagnosis.squint_profiles")
+    writer.profile_window = profile_window
+    monkeypatch.setitem(sys.modules, writer.__name__, writer)
+    finite_windows = [(0, 1, 0, 1, 0, 1), (2, 3, 0, 1, 0, 1)]
+    helper = ModuleType("knee.diagnosis.squint_anatomical_priors")
+    helper.anatomical_windows = lambda *_args, **_kwargs: {
+        "status": "proposed",
+        "windows": finite_windows,
+        "provenance": {"stub": "two-finite-windows"},
+    }
+    monkeypatch.setitem(sys.modules, helper.__name__, helper)
+    stack = SimpleNamespace(
+        code="present",
+        median=np.ones((4, 1, 1)),
+        coverage=np.ones((4, 1, 1)),
+        centres_lps=np.zeros((4, 1, 1, 3)),
+        tile_mm=10.0,
+    )
+    case_profile = {
+        "subject": "femur",
+        "banks": {bank: [2, 0, 0]},
+        "source": {
+            "window": [0, 2, 0, 1, 0, 1],
+            "procedure": "knee.squint-profile/scan-tercile-v1",
+        },
+    }
+    memory = {
+        "cases": [
+            {
+                **_case("prior", "other", 1, (2, 0)),
+                "profile": case_profile,
+            }
+        ]
+    }
+    result = locate_objects(
+        {
+            "study_uid": "current",
+            "series": [
+                {
+                    "series_uid": "series-current",
+                    "view": {
+                        "orientation": "axial",
+                        "fluid_sensitive": "yes",
+                        "fat_suppression": "no",
+                    },
+                    "stack": stack,
+                    "metric_codes": {
+                        "signal_median": np.array(
+                            [[[-1]], [[-1]], [[1]], [[1]]], dtype=np.int8
+                        )
+                    },
+                }
+            ],
+        },
+        memory,
+    )
+    assert calls == [(0, 1, 0, 1, 0, 1)], result["objects"]["femur"]["evidence"]
+    finalists = next(
+        iter(result["objects"]["femur"]["evidence"]["coarse_finalists"].values())
+    )
+    assert finalists["candidate_count"] == 1
+    assert finalists["candidates"][0]["window"] == list(finite_windows[0])
+    assert (
+        result["objects"]["femur"]["evidence"]["case_best_candidates"][0]["case_id"]
+        == "prior"
+    )
+
+
+def test_finite_helper_keeps_case_index_for_relative_anchor_priors(
+    monkeypatch,
+) -> None:
+    bank = (
+        'squint/v1/view=["axial","yes","no"]/metric=signal_median/'
+        "direction=overview/scale=10mm"
+    )
+    writer = ModuleType("knee.diagnosis.squint_profiles")
+
+    def profile_window(series: dict, window: tuple[int, ...], *, subject: str) -> dict:
+        codes = series["metric_codes"]["signal_median"]
+        selected = codes[
+            window[0] : window[1], window[2] : window[3], window[4] : window[5]
+        ]
+        counts = [int(np.count_nonzero(selected == digit)) for digit in (-1, 0, 1)]
+        return {
+            "subject": subject,
+            "banks": {bank: counts},
+            "source": {
+                "procedure": "knee.squint-profile/scan-tercile-v1",
+                "window": list(window),
+            },
+        }
+
+    writer.profile_window = profile_window
+    monkeypatch.setitem(sys.modules, writer.__name__, writer)
+    finite_windows = {
+        "femur": [(0, 1, 0, 1, 0, 1)],
+        "meniscus": [(1, 2, 0, 1, 0, 1)],
+        "tibia": [(2, 3, 0, 1, 0, 1)],
+    }
+    helper = ModuleType("knee.diagnosis.squint_anatomical_priors")
+
+    def anatomical_windows(_series, subject, **_kwargs):
+        return {
+            "status": "proposed",
+            "windows": finite_windows[subject],
+            "provenance": {"stub_subject": subject},
+        }
+
+    helper.anatomical_windows = anatomical_windows
+    monkeypatch.setitem(sys.modules, helper.__name__, helper)
+
+    def source_case(subject: str, call: int, point: tuple[float, float, float]) -> dict:
+        return {
+            "case_id": f"case-{subject}",
+            "study_uid": "source-study",
+            "subject": subject,
+            "condition_calls": {"acl": call},
+            "profile": {
+                "subject": subject,
+                "banks": {
+                    bank: {
+                        "femur": [1, 0, 0],
+                        "meniscus": [0, 1, 0],
+                        "tibia": [0, 0, 1],
+                    }[subject]
+                },
+                "source": {"procedure": "knee.squint-profile/scan-tercile-v1"},
+            },
+            "regions": [
+                {
+                    "source_window": [0, 1, 0, 1, 0, 1],
+                    "source_point_lps": list(point),
+                    "view": {
+                        "orientation": "axial",
+                        "fluid_sensitive": "yes",
+                        "fat_suppression": "no",
+                    },
+                }
+            ],
+        }
+
+    memory = {
+        "cases": [
+            source_case("femur", 1, (0.0, 0.0, 0.0)),
+            source_case("meniscus", 1, (0.0, 0.0, 60.0)),
+            source_case("tibia", -1, (0.0, 0.0, 100.0)),
+        ]
+    }
+    stack = SimpleNamespace(
+        code="present",
+        median=np.ones((3, 1, 1)),
+        coverage=np.ones((3, 1, 1)),
+        bounds_rc=np.asarray([[[0, 2, 0, 2]]], dtype=np.int64),
+        centres_lps=np.array(
+            [[[0.0, 0.0, 0.0]], [[0.0, 0.0, 60.0]], [[0.0, 0.0, 100.0]]]
+        ).reshape(3, 1, 1, 3),
+        tile_mm=10.0,
+    )
+    geometry = {
+        "position": np.asarray([[0.0, 0.0, 0.0], [0.0, 0.0, 60.0], [0.0, 0.0, 100.0]]),
+        "orientation": np.asarray([[1, 0, 0, 0, 1, 0]] * 3, dtype=float),
+        "spacing": np.asarray([[1.0, 1.0]] * 3),
+    }
+    result = locate_objects(
+        {
+            "study_uid": "current-study",
+            "series": [
+                {
+                    "series_uid": "current-series",
+                    "view": {
+                        "orientation": "axial",
+                        "fluid_sensitive": "yes",
+                        "fat_suppression": "no",
+                    },
+                    "stack": stack,
+                    "geometry": geometry,
+                    "metric_codes": {
+                        "signal_median": np.array([[[-1]], [[0]], [[1]]], dtype=np.int8)
+                    },
+                }
+            ],
+        },
+        memory,
+    )
+    assert result["objects"]["femur"]["status"] == "proposal"
+    assert result["objects"]["tibia"]["status"] == "proposal"
+    assert result["objects"]["meniscus"]["status"] == "proposal", result["objects"][
+        "meniscus"
+    ]["evidence"]
+    assert result["objects"]["meniscus"]["regions"][0]["window"] == (
+        1,
+        2,
+        0,
+        1,
+        0,
+        1,
+    )
+    meniscus_priors = result["objects"]["meniscus"]["evidence"]["relative_scope_priors"]
+    source = next(
+        row for row in meniscus_priors["cases"] if row.get("case_id") == "case-meniscus"
+    )
+    assert source["case_index"] == 1
+    assert source["status"] == "available"
+    assert [row["offset_mm"] for row in source["planes"]] == [-60.0, -60.0]
+    assert (
+        result["objects"]["meniscus"]["evidence"]["relative_scope_priors"]["subject"]
+        == "meniscus"
+    )
+    assert (
+        result["objects"]["meniscus"]["evidence"]["proposal_sources"][0][
+            "relative_scope_check"
+        ]
+        == "direct_finite_candidate_scope_check"
+    )
+
+
+def test_capacity_projection_keeps_context_only_profile_without_envelope(monkeypatch):
+    from knee.diagnosis import squint_locator
+
+    held = _case("held-positive", "held", 1, (4, 0, 0))
+    peer_positive = _case("peer-positive", "peer", 1, (0, 0, 4))
+    peer_negative = _case("peer-negative", "peer-negative", -1, (4, 0, 0))
+    context_only = _case("context-only", "context", 0, (0, 4, 0))
+    context_only["subject"] = "patella"
+    context_only["condition_calls"] = {}
+    memory = {
+        "source": {"source_id": "context-only-projection"},
+        "cases": [held, peer_positive, peer_negative, context_only],
+        "censors": [],
+    }
+    full = prepare_recall(memory)
+    assert "patella" not in full["envelopes"]
+    cache = persisted_recall_cache(memory, full)
+    filtered_memory = {
+        **memory,
+        "cases": [peer_positive, peer_negative, context_only],
+    }
+    fresh = prepare_recall(filtered_memory)
+    with monkeypatch.context() as patcher:
+        patcher.setattr(
+            squint_locator,
+            "_exact_bank_terms",
+            lambda *args: (_ for _ in ()).throw(
+                AssertionError("valid capacity cache projection recomputed pair terms")
+            ),
+        )
+        projected = prepare_recall(memory, cached=cache, exclude_study_uid="held")
+    assert projected["runtime_indexes_rebuilt"] is True
+    assert projected["envelopes"] == fresh["envelopes"]
+    assert projected["case_indices"] == fresh["case_indices"]
+    assert projected["censor_indices"] == fresh["censor_indices"]
+    assert projected["case_profile_banks"] == fresh["case_profile_banks"]
+    assert projected["source_fingerprint"] == fresh["source_fingerprint"]
+    assert projected["memory_source"] == fresh["memory_source"]
+    assert "patella" not in projected["envelopes"]
+    assert 2 in projected["case_profile_banks"]
+    assert "patella" in projected["subject_profile_matrices"]
+    for subject, matrix in fresh["subject_profile_matrices"].items():
+        np.testing.assert_array_equal(
+            projected["subject_profile_matrices"][subject]["values"],
+            matrix["values"],
+        )

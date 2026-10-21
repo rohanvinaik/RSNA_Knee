@@ -147,6 +147,58 @@ def _recall_question(
     return evidence
 
 
+def _budget_unexamined_study(
+    uid: str, memory: dict, *, reason: str, elapsed_seconds: float = 0.0
+) -> dict:
+    """Represent a study skipped before pixels as neutral, open evidence."""
+    from knee.diagnosis.declarations import QUESTIONS
+    from knee.diagnosis.squint_contracts import combine_condition, rank_condition
+
+    questions = {}
+    values = {}
+    for question in QUESTIONS:
+        finding = combine_condition(question.question_id, {})
+        ranking = finding.get("rank")
+        if not isinstance(ranking, dict):
+            ranking = rank_condition(finding)
+        value = ranking.get("value")
+        if (
+            isinstance(value, bool)
+            or not isinstance(value, (int, float))
+            or not math.isfinite(value)
+            or not 0.0 < value < 1.0
+        ):
+            raise SquintRunError(
+                "budget_unexamined_ranking_invalid:" + question.question_id
+            )
+        values[question.question_id] = value
+        questions[question.question_id] = {
+            "finding": finding,
+            "ranking": ranking,
+            "objects": {},
+        }
+    return {
+        "schema": "knee.squint-study/v1",
+        "study_uid": uid,
+        "memory_revision": memory.get("revision", ""),
+        "study_status": "not_examined_budget",
+        "not_examined_reason": reason,
+        "questions": questions,
+        "values": values,
+        "objects": {},
+        "observations": [],
+        "work": {
+            "elapsed_seconds": elapsed_seconds,
+            "full_anatomy_runs": 0,
+            "bounded_zoom_runs": 0,
+            "squint_stacks": 0,
+            "image_reads": 0,
+            "source_mode": "raw_squint_case_recall",
+        },
+        "unresolved_observation_requests": [],
+    }
+
+
 def _bounded_observation(
     request: dict, study: dict, objects: dict, attempted: set, deadline: float | None
 ) -> dict:
@@ -209,6 +261,13 @@ def infer_study(
     from knee.diagnosis.squint_profiles import read_study_squints
 
     started = time.perf_counter()
+    if deadline is not None and time.monotonic() >= deadline:
+        return _budget_unexamined_study(
+            uid,
+            memory,
+            reason="study_time_budget_exhausted_before_read",
+            elapsed_seconds=time.perf_counter() - started,
+        )
     study = read_study_squints(root, uid, io_workers=io_workers)
     locations = locate_objects(study, memory, deadline=deadline)
     objects = locations.get("objects", {})
@@ -268,6 +327,7 @@ def infer_study(
         "schema": "knee.squint-study/v1",
         "study_uid": uid,
         "memory_revision": memory.get("revision", ""),
+        "study_status": "examined",
         "questions": questions,
         "values": values,
         "objects": objects,
@@ -280,6 +340,129 @@ def infer_study(
         ],
     }
     return result
+
+
+def _study_excluded_memory(memory: dict, uid: str) -> tuple[dict, dict]:
+    """Make an order-preserving memory view without explicitly attributed UID rows."""
+    cases = memory.get("cases", ())
+    original_case_count = len(cases) if isinstance(cases, (list, tuple)) else 0
+    excluded_case_count = 0
+    kept_cases = []
+    for case in cases if isinstance(cases, (list, tuple)) else ():
+        if isinstance(case, dict) and case.get("study_uid") == uid:
+            excluded_case_count += 1
+            continue
+        kept_cases.append(case)
+    censors = memory.get("censors", ())
+    original_censor_count = len(censors) if isinstance(censors, (list, tuple)) else 0
+    excluded_censor_count = 0
+    kept_censors = []
+    for censor in censors if isinstance(censors, (list, tuple)) else ():
+        source = censor.get("source") if isinstance(censor, dict) else None
+        source_uid = source.get("study_uid") if isinstance(source, dict) else None
+        attributed_uid = (
+            censor.get("study_uid") if isinstance(censor, dict) else None
+        ) or source_uid
+        if attributed_uid == uid:
+            excluded_censor_count += 1
+            continue
+        kept_censors.append(censor)
+    view = {**memory, "cases": kept_cases}
+    if "censors" in memory:
+        view["censors"] = kept_censors
+    view.pop("prepared_recall", None)
+    return view, {
+        "excluded_study_uid": uid,
+        "original_case_count": original_case_count,
+        "filtered_case_count": len(kept_cases),
+        "excluded_case_count": excluded_case_count,
+        "original_censor_count": original_censor_count,
+        "filtered_censor_count": len(kept_censors),
+        "excluded_censor_count": excluded_censor_count,
+    }
+
+
+def _study_budget_deadline(
+    total_deadline: float,
+    remaining_studies: int,
+    worker_count: int,
+    *,
+    now: float | None = None,
+) -> tuple[float, float]:
+    """Allocate one bounded remaining-time share to an admitted study."""
+    moment = time.monotonic() if now is None else now
+    if type(remaining_studies) is not int or remaining_studies < 1:
+        raise SquintRunError("remaining_studies_invalid")
+    if type(worker_count) is not int or worker_count < 1:
+        raise SquintRunError("worker_count_invalid")
+    remaining = max(0.0, total_deadline - moment)
+    active_workers = min(worker_count, remaining_studies)
+    share = remaining * active_workers / remaining_studies
+    return min(total_deadline, moment + share), share
+
+
+def _capacity_exclusion_evidence(
+    excluded: dict,
+    prepared: dict | None,
+    *,
+    memory: dict,
+    memory_digest: str,
+    preparation_status: str,
+) -> dict:
+    prepared = prepared or {}
+    excluded_count = (
+        excluded["excluded_case_count"] or excluded["excluded_censor_count"]
+    )
+    population = {
+        "status": (
+            "prepared" if prepared.get("outcome") == "prepared" else preparation_status
+        ),
+        "source_fingerprint": prepared.get("source_fingerprint"),
+        "source": prepared.get(
+            "memory_source", memory.get("source", memory.get("metadata", {}))
+        ),
+        "memory_manifest_sha256": memory_digest,
+        "case_profile_count": (
+            len(prepared.get("case_profile_banks", {}))
+            if isinstance(prepared.get("case_profile_banks"), dict)
+            else None
+        ),
+    }
+    return {
+        **excluded,
+        "exclusion_status": "applied" if excluded_count else "no_matching_attribution",
+        "consumed_case_fingerprint": prepared.get("source_fingerprint"),
+        "consumed_fingerprint_scope": "source_cases_calls_profiles_and_censors_v1",
+        "preparation_schema": prepared.get("schema"),
+        "preparation_outcome": prepared.get("outcome", preparation_status),
+        "prepared_population_identity": population,
+    }
+
+
+def _publish_preparation_cache_bytes(
+    output: Path, content: bytes, expected_sha256: str
+) -> Path:
+    """Atomically retain the exact validated compressed preparation sidecar."""
+    destination = output / "recall-preparation.json.xz"
+    temporary = output / f".{destination.name}.{os.getpid()}.tmp"
+    try:
+        with temporary.open("xb") as stream:
+            stream.write(content)
+            stream.flush()
+            os.fsync(stream.fileno())
+        copied_sha256 = hashlib.sha256(temporary.read_bytes()).hexdigest()
+        if copied_sha256 != expected_sha256:
+            raise SquintRunError("squint_recall_cache_copy_digest_mismatch")
+        os.replace(temporary, destination)
+        directory_fd = os.open(output, os.O_RDONLY)
+        try:
+            os.fsync(directory_fd)
+        finally:
+            os.close(directory_fd)
+        return destination
+    except BaseException:
+        temporary.unlink(missing_ok=True)
+        raise
 
 
 def run_squint_cli(args, *, prepared_memory_snapshot=None) -> dict:
@@ -339,6 +522,10 @@ def run_squint_cli(args, *, prepared_memory_snapshot=None) -> dict:
         raise SquintRunError("squint_operation_invalid")
     if getattr(args, "diagnostic_labels", None) is not None:
         raise SquintRunError("squint_inference_does_not_read_label_source")
+    limit = float(getattr(args, "squint_time_limit", 30000.0))
+    if not math.isfinite(limit) or limit <= 0:
+        raise SquintRunError("squint_time_limit_invalid")
+    total_deadline = time.monotonic() + limit
     snapshot = prepared_memory_snapshot
     if snapshot is None:
         snapshot = load_memory_snapshot(Path(args.diagnostic_memory))
@@ -354,35 +541,8 @@ def run_squint_cli(args, *, prepared_memory_snapshot=None) -> dict:
     memory_digest = snapshot.sha256
     memory = snapshot.memory
     from knee.diagnosis.squint_locator import prepare_recall
-    from knee.json_store import dump_json_atomic
+    from knee.json_store import dump_json_atomic, load_json, resolve_json_path
 
-    preparation_started = time.perf_counter()
-    prepared = prepare_recall(memory)
-    if not isinstance(prepared, dict) or prepared.get("outcome") == "invalid_input":
-        raise SquintRunError("squint_recall_preparation_invalid")
-    # Persist the exact warrant population once. Numerical acceleration caches
-    # stay private; their arrays contain no additional observations.
-    preparation_path = dump_json_atomic(
-        output / "recall-preparation.json",
-        {
-            "schema": prepared.get("schema"),
-            "memory_manifest_sha256": memory_digest,
-            "memory_revision": memory.get("revision", ""),
-            **{
-                key: prepared[key]
-                for key in (
-                    "outcome",
-                    "memory_source",
-                    "envelopes",
-                    "case_indices",
-                    "censor_indices",
-                )
-                if key in prepared
-            },
-        },
-    )
-    preparation_seconds = time.perf_counter() - preparation_started
-    memory = {**memory, "prepared_recall": prepared}
     uids = _selected_uids(args)
     cohort_path = getattr(args, "diagnostic_cohort", None)
     partition = getattr(args, "diagnostic_partition", None)
@@ -402,10 +562,190 @@ def run_squint_cli(args, *, prepared_memory_snapshot=None) -> dict:
             "partition": partition,
         }
     worker_count = max(1, min(int(args.workers), len(uids), 4))
-    limit = float(getattr(args, "squint_time_limit", 30000.0))
-    if not math.isfinite(limit) or limit <= 0:
-        raise SquintRunError("squint_time_limit_invalid")
-    deadline = time.monotonic() + limit
+    preparation_path = None
+    preparation_seconds = 0.0
+    preparation_cache_path = resolve_json_path(
+        snapshot.path.parent / "recall-preparation.json"
+    )
+    cache = None
+    preparation_cache_status = (
+        "study_excluded_per_study" if mode == "capacity" else "missing_recomputed"
+    )
+    preparation_cache_bytes = None
+    preparation_cache_sha256 = None
+    if preparation_cache_path.is_file():
+        try:
+            pinned_sha256 = hashlib.sha256(
+                preparation_cache_path.read_bytes()
+            ).hexdigest()
+            candidate = load_json(preparation_cache_path)
+            loaded_bytes = preparation_cache_path.read_bytes()
+            if hashlib.sha256(loaded_bytes).hexdigest() != pinned_sha256:
+                candidate = None
+            elif preparation_cache_path.name.endswith(".json.xz"):
+                preparation_cache_bytes = loaded_bytes
+                preparation_cache_sha256 = pinned_sha256
+        except (OSError, ValueError, UnicodeError):
+            candidate = None
+            preparation_cache_bytes = None
+            preparation_cache_sha256 = None
+        if (
+            isinstance(candidate, dict)
+            and candidate.get("memory_manifest_sha256") == memory_digest
+            and candidate.get("memory_revision") == memory.get("revision", "")
+        ):
+            cache = candidate
+            if mode != "capacity":
+                preparation_cache_status = "cached_candidate"
+        elif mode != "capacity":
+            preparation_cache_status = "invalid_recomputed"
+    if mode != "capacity":
+        preparation_started = time.perf_counter()
+        prepared = (
+            prepare_recall(memory, cached=cache)
+            if cache is not None
+            else prepare_recall(memory)
+        )
+        preparation_seconds = time.perf_counter() - preparation_started
+        if not isinstance(prepared, dict) or prepared.get("outcome") != "prepared":
+            raise SquintRunError("squint_recall_preparation_invalid")
+        if prepared.get("runtime_indexes_rebuilt") is True:
+            preparation_cache_status = "persisted_reused"
+        elif cache is not None:
+            preparation_cache_status = "stale_recomputed"
+        memory = {**memory, "prepared_recall": prepared}
+        if (
+            preparation_cache_status == "persisted_reused"
+            and isinstance(cache, dict)
+            and preparation_cache_bytes is not None
+            and preparation_cache_sha256 is not None
+        ):
+            preparation_path = _publish_preparation_cache_bytes(
+                output, preparation_cache_bytes, preparation_cache_sha256
+            )
+            preparation_artifact_schema = cache.get("schema")
+            preparation_artifact_source = "persisted_cache_sidecar_bytes"
+        else:
+            preparation_path = dump_json_atomic(
+                output / "recall-preparation.json",
+                {
+                    "schema": prepared.get("schema"),
+                    "memory_manifest_sha256": memory_digest,
+                    "memory_revision": memory.get("revision", ""),
+                    "cache_status": preparation_cache_status,
+                    **{
+                        key: prepared[key]
+                        for key in (
+                            "outcome",
+                            "source_fingerprint",
+                            "memory_source",
+                            "envelopes",
+                            "case_indices",
+                            "censor_indices",
+                        )
+                        if key in prepared
+                    },
+                },
+            )
+            preparation_artifact_schema = prepared.get("schema")
+            preparation_artifact_source = "computed_preparation"
+        preparation_identity = {
+            "source_fingerprint": prepared.get("source_fingerprint"),
+            "memory_manifest_sha256": memory_digest,
+            "memory_revision": memory.get("revision", ""),
+        }
+    else:
+        preparation_artifact_schema = None
+        preparation_artifact_source = "not_written"
+        preparation_identity = None
+
+    def infer_admitted_study(uid: str, deadline: float, budget_seconds: float) -> dict:
+        study_memory = memory
+        excluded = None
+        study_preparation_seconds = 0.0
+        study_preparation_source = preparation_cache_status
+        if mode == "capacity":
+            study_memory, excluded = _study_excluded_memory(memory, uid)
+        if time.monotonic() >= deadline:
+            record = _budget_unexamined_study(
+                uid,
+                study_memory,
+                reason="study_time_budget_exhausted_before_preparation",
+            )
+            record["work"].update(
+                {
+                    "study_time_budget_seconds": budget_seconds,
+                    "study_budget_deadline_exhausted": True,
+                    "recall_preparation_seconds": 0.0,
+                    "recall_preparation_source": "not_run_budget_exhausted",
+                }
+            )
+            if excluded is not None:
+                record["capacity_exclusion"] = _capacity_exclusion_evidence(
+                    excluded,
+                    None,
+                    memory=memory,
+                    memory_digest=memory_digest,
+                    preparation_status="not_run_budget_exhausted",
+                )
+            else:
+                record["capacity_exclusion"] = {
+                    "exclusion_status": "not_requested",
+                    "excluded_study_uid": None,
+                }
+            return record
+        if mode == "capacity":
+            preparation_started = time.perf_counter()
+            study_prepared = prepare_recall(memory, cached=cache, exclude_study_uid=uid)
+            study_preparation_seconds = time.perf_counter() - preparation_started
+            if (
+                not isinstance(study_prepared, dict)
+                or study_prepared.get("outcome") != "prepared"
+            ):
+                raise SquintRunError("squint_capacity_recall_preparation_invalid")
+            study_memory = {**study_memory, "prepared_recall": study_prepared}
+            study_preparation_source = (
+                "study_excluded_projected"
+                if study_prepared.get("runtime_indexes_rebuilt") is True
+                else "study_excluded_recomputed"
+            )
+        record = infer_study(
+            Path(args.root),
+            uid,
+            study_memory,
+            deadline=deadline,
+            exclude_same_study=mode == "capacity",
+        )
+        record["work"].update(
+            {
+                "study_time_budget_seconds": budget_seconds,
+                "study_budget_deadline_exhausted": time.monotonic() >= deadline,
+                "recall_preparation_seconds": study_preparation_seconds,
+                "recall_preparation_source": study_preparation_source,
+            }
+        )
+        if excluded is not None:
+            prepared = study_memory.get("prepared_recall", {})
+            record["capacity_exclusion"] = _capacity_exclusion_evidence(
+                excluded,
+                prepared,
+                memory=memory,
+                memory_digest=memory_digest,
+                preparation_status=study_preparation_source,
+            )
+        else:
+            record["capacity_exclusion"] = {
+                "exclusion_status": "not_requested",
+                "excluded_study_uid": None,
+            }
+        return record
+
+    def submit_study(pool, uid: str, remaining_studies: int):
+        deadline, budget = _study_budget_deadline(
+            total_deadline, remaining_studies, worker_count
+        )
+        return pool.submit(infer_admitted_study, uid, deadline, budget)
+
     rows = []
     studies = []
     tallies = {label: Counter() for label in LABELS}
@@ -417,41 +757,35 @@ def run_squint_cli(args, *, prepared_memory_snapshot=None) -> dict:
         for _ in range(worker_count):
             uid = next(cursor, None)
             if uid is not None:
-                pending[uid] = pool.submit(
-                    infer_study,
-                    Path(args.root),
-                    uid,
-                    memory,
-                    deadline=deadline,
-                    exclude_same_study=mode == "capacity",
-                )
-        for uid in uids:
+                pending[uid] = submit_study(pool, uid, len(uids))
+        for completed, uid in enumerate(uids, start=1):
             record = pending.pop(uid).result()
             evidence_path = dump_json_atomic(
-                output / "studies" / (uid + ".json"), record
+                output / "studies" / (uid + ".json"),
+                record,
+                compression_preset=0,
             )
             rows.append((uid, record["values"]))
             studies.append(
                 {
                     "study_uid": uid,
                     **record["work"],
+                    "capacity_exclusion": record["capacity_exclusion"],
                     "evidence_path": str(evidence_path.relative_to(output)),
                     "evidence_bytes": evidence_path.stat().st_size,
                 }
             )
             for label, evidence in record["questions"].items():
-                tallies[label][evidence["finding"]["outcome"]] += 1
+                tally = (
+                    "not_examined_budget"
+                    if record.get("study_status") == "not_examined_budget"
+                    else evidence["finding"]["outcome"]
+                )
+                tallies[label][tally] += 1
             del record
             next_uid = next(cursor, None)
             if next_uid is not None:
-                pending[next_uid] = pool.submit(
-                    infer_study,
-                    Path(args.root),
-                    next_uid,
-                    memory,
-                    deadline=deadline,
-                    exclude_same_study=mode == "capacity",
-                )
+                pending[next_uid] = submit_study(pool, next_uid, len(uids) - completed)
     submission = None
     template = getattr(args, "diagnostic_submission_template", None)
     if template is not None:
@@ -473,9 +807,28 @@ def run_squint_cli(args, *, prepared_memory_snapshot=None) -> dict:
         "memory_revision": memory.get("revision", ""),
         "memory_manifest_sha256": memory_digest,
         "recall_preparation": {
-            "path": str(preparation_path.relative_to(output)),
-            "sha256": hashlib.sha256(preparation_path.read_bytes()).hexdigest(),
-            "bytes": preparation_path.stat().st_size,
+            "path": (
+                str(preparation_path.relative_to(output))
+                if preparation_path is not None
+                else None
+            ),
+            "sha256": (
+                hashlib.sha256(preparation_path.read_bytes()).hexdigest()
+                if preparation_path is not None
+                else None
+            ),
+            "bytes": preparation_path.stat().st_size
+            if preparation_path is not None
+            else 0,
+            "cache_status": preparation_cache_status,
+            "seconds": preparation_seconds,
+            "schema": preparation_artifact_schema,
+            "preparation_schema": (
+                prepared.get("schema") if mode != "capacity" else None
+            ),
+            "artifact_source": preparation_artifact_source,
+            "identity": preparation_identity,
+            "source_cache_sha256": preparation_cache_sha256,
         },
         "per_question": {q: dict(c) for q, c in tallies.items()},
         "submission": submission,

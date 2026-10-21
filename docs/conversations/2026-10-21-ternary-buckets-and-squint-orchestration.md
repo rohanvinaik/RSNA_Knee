@@ -48,3 +48,64 @@ He attached *A Cell's Full Profile Beside Its Cheap Profile*. A copy of the supp
 `data/pictures/squint-production-20261021/full-and-cheap-profile.png`. It shows the two descriptions of the
 same cell bank by bank, including shared readings, differing readings and banks not written by the cheap path.
 This caption is the recorder's account of the figure, not additional words attributed to Rohan.
+
+
+## Production audit and correction priority — literal user feedback
+
+Some feedback:
+The architecture is right and a lot got built fast. But two problems, both visible in the latest local run, decide whether it works, and both need fixing before anything else.
+
+## 1. The locator brute-forces instead of using anatomy
+
+For each object and each series, it slides every window size learned from every stored example across the whole leg. It scores all of them against all cases, and only then uses anatomy to discard most of them.
+- **Search size:** one object enumerated 100,000–420,000 windows and built 11,000–26,000 full candidate profiles. Where anatomy filtered the windows, it threw away 95–99% of them. For 8 of the 12 objects searched in one study, including the tibia and patella, no anatomical prior was available at all.
+- **Coverage:** with a 120-second guard, the three studies located 1, 11 and 12 of 22 objects. In the biggest study the femur alone used the whole budget.
+- **Cost:** about 160 s per study here. That is more than the full high-resolution pipeline (about 45 s of CPU per study). By arithmetic from Kaggle's measured per-core speed, it would take roughly 35+ hours for the hidden set, even at this truncated coverage.
+- **The time guard** is one deadline for the whole run, so on the hidden set the later studies would get nothing located at all.
+
+This is exactly the un-orchestrated map colouring you described. The squint itself costs 0.2–0.7 s per study; the search turns it into minutes. The fix, in the thesis's terms:
+- Locate the bones first, cheaply.
+- Generate a handful of candidate windows for each other object at its expected position relative to those bones, using a few sizes in millimetres rather than one per stored example.
+- Build full profiles only for the top few windows.
+- Give each study its share of the time budget.
+- Compute the recall preparation (56 s per process, and the same for every study) once and ship it with the memory.
+
+I'd expect that to bring the locator down to seconds per study and to cover all 22 objects.
+
+## 2. Every confident call came from the configuration voice, on tissue it never saw
+
+Across the three studies there were 8 confirmed or ruled-out calls. All 8 were made by the whole-condition configuration voice, and in every one the condition's own tissue was unknown:
+- In the study where only the femur was found, it confirmed a lateral meniscus tear and ruled out fracture.
+- Elsewhere it ruled out MCL tear and Baker's cyst without the ligament or bursa located, and confirmed effusion with the joint fluid unknown.
+
+The configuration query is built from whatever objects were located, so it matches on context tissue. That breaks the contract module's own rules: "supporting objects are context: they are reported, never decisive", and ruling out a multi-site condition requires every site observed negative.
+
+This doesn't reverse your "let warranted configuration recall decide". A configuration that never read the condition's own tissue isn't warranted about that condition. The fix is small: the configuration voice decides only when its comparison actually includes the condition's own tissue. Otherwise it can only move the value within the "open" band.
+
+## What's good
+- **Production is squint-first:** zero full-anatomy runs, and an offline Kaggle package.
+- **The memory:** 1,145 individual cases (449 object, 696 configuration), built from the existing products in 111 s with no recognition re-run.
+- **The contracts:** they correctly distinguish necessary, alternative and supporting tissue, using the three-valued AND/OR.
+- **The output:** the banded value rule keeps ruled-out below open below confirmed.
+
+## What I'd do next, in order (about 44 hours left)
+1. **Commit.** About 10,000 lines of new code and 7,700 of tests are uncommitted.
+2. **Rebuild the locator** around anatomy-first windows, per-study time budgets and compact evidence.
+3. **Gate the configuration voice** as above.
+4. **Run the held-out check on the 58** through the real entry point, each study excluded from its own memory. Report identified, abstained and wrong per condition, and how the values order positives against negatives. That's the first real evidence the memory discriminates, as information, before scaling.
+5. **Then time the full Kaggle dry run, and start scaling.** Reading the reports can start now in parallel; it doesn't depend on any of the above.
+
+The storage, portability and Detective work going on now isn't on that path and can wait.
+
+The private Kaggle run (version 3) is still going after 13 minutes, without the local time guard. It will show the real per-study cost with full search on Kaggle hardware.
+
+If you want, I'll take the locator rebuild and the configuration gate now.
+
+
+## Rohan — resolve the diagnosis-scope question from the thesis
+
+The agent asked whether a bone's positive study-level condition-presentation case may by itself establish a localized fracture finding, or whether it should remain retrieval/routing evidence until a localized finding or covered whole-condition configuration warrants the diagnosis. Rohan replied verbatim:
+
+> Not sure, should be informed by the core thesis of the project
+
+This is a direction to ground the reasoning in the thesis, not a selection of either proposed implementation option.

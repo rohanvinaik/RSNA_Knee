@@ -16,6 +16,317 @@ from typing import Any
 
 import numpy as np
 
+RECALL_CACHE_SCHEMA = "knee.squint-recall-cache/v1"
+
+
+def recall_source_fingerprint(memory: Mapping[str, Any]) -> str:
+    """Fingerprint exactly the case/censor inputs consumed by recall preparation."""
+    cases = memory.get("cases", ())
+    if not isinstance(cases, Sequence) or isinstance(cases, (str, bytes)):
+        raise TypeError("memory_cases_required")
+    source_cases = []
+    for case in cases:
+        if not isinstance(case, Mapping):
+            source_cases.append(case)
+            continue
+        source_cases.append(
+            {
+                "case_id": case.get("case_id"),
+                "study_uid": case.get("study_uid"),
+                "subject": case.get("subject"),
+                "calls": case.get("condition_calls", case.get("calls", {})),
+                "profile": case.get("profile"),
+            }
+        )
+    censors = memory.get("censors", ())
+    payload = {
+        "schema": "knee.squint-recall-input/v1",
+        "memory_source": memory.get("source", memory.get("metadata", {})),
+        "cases": source_cases,
+        "censors": censors,
+    }
+    try:
+        encoded = json.dumps(
+            payload, sort_keys=True, separators=(",", ":"), allow_nan=False
+        ).encode("utf-8")
+    except (TypeError, ValueError) as error:
+        raise ValueError("memory_recall_input_not_json") from error
+    return hashlib.sha256(encoded).hexdigest()
+
+
+def _runtime_recall_cache(
+    memory: Mapping[str, Any], stored: Mapping[str, Any]
+) -> dict[str, Any] | None:
+    """Rebuild only cheap integer bank indexes/matrices around stored envelopes."""
+    cases = memory.get("cases", ())
+    raw_indices = stored.get("case_indices")
+    raw_censor_indices = stored.get("censor_indices")
+    envelopes = stored.get("envelopes")
+    if not isinstance(raw_indices, Mapping) or not isinstance(envelopes, Mapping):
+        return None
+    if not isinstance(raw_censor_indices, Mapping):
+        return None
+    for subject, questions in raw_indices.items():
+        if not isinstance(subject, str) or not isinstance(questions, Mapping):
+            return None
+        for question, indexes in questions.items():
+            if not isinstance(question, str) or not isinstance(indexes, list):
+                return None
+            if any(
+                type(index) is not int
+                or not 0 <= index < len(cases)
+                or not isinstance(cases[index], Mapping)
+                or cases[index].get("subject") != subject
+                or _call(cases[index], question) not in (-1, 1)
+                for index in indexes
+            ):
+                return None
+    censors = memory.get("censors", ())
+    if not isinstance(censors, Sequence) or isinstance(censors, (str, bytes)):
+        censors = ()
+    for question, indexes in raw_censor_indices.items():
+        if not isinstance(question, str) or not isinstance(indexes, list):
+            return None
+        if any(
+            type(index) is not int
+            or not 0 <= index < len(censors)
+            or not isinstance(censors[index], Mapping)
+            or censors[index].get("question", censors[index].get("condition"))
+            != question
+            for index in indexes
+        ):
+            return None
+    case_banks = _validated_case_banks(cases)
+    subjects = sorted(
+        {
+            case.get("subject")
+            for index, case in enumerate(cases)
+            if isinstance(case, Mapping)
+            and index in case_banks
+            and isinstance(case.get("subject"), str)
+            and isinstance(case.get("case_id"), str)
+            and isinstance(case.get("study_uid"), str)
+        }
+    )
+    matrices: dict[str, dict[str, Any]] = {}
+    for subject in subjects:
+        indexes = [
+            index
+            for index, case in enumerate(cases)
+            if isinstance(case, Mapping) and case.get("subject") == subject
+        ]
+        matrices[subject] = _case_matrix(
+            [case_banks.get(index) for index in indexes], indexes
+        )
+    return {
+        **stored,
+        "case_profile_banks": case_banks,
+        "subject_profile_matrices": matrices,
+        "runtime_indexes_rebuilt": True,
+    }
+
+
+def _memory_without_study(memory: Mapping[str, Any], uid: str) -> dict[str, Any]:
+    """Return the exact explicit-UID view used by capacity recall."""
+    cases = memory.get("cases", ())
+    censors = memory.get("censors", ())
+    view = dict(memory)
+    if isinstance(cases, Sequence) and not isinstance(cases, (str, bytes)):
+        view["cases"] = [
+            case
+            for case in cases
+            if not isinstance(case, Mapping) or case.get("study_uid") != uid
+        ]
+    if isinstance(censors, Sequence) and not isinstance(censors, (str, bytes)):
+        kept = []
+        for censor in censors:
+            source = censor.get("source") if isinstance(censor, Mapping) else None
+            source_uid = (
+                source.get("study_uid") if isinstance(source, Mapping) else None
+            )
+            attributed_uid = (
+                censor.get("study_uid") if isinstance(censor, Mapping) else None
+            ) or source_uid
+            if attributed_uid != uid:
+                kept.append(censor)
+        view["censors"] = kept
+    view.pop("prepared_recall", None)
+    return view
+
+
+def _project_recall_cache_without_study(
+    memory: Mapping[str, Any], prepared: Mapping[str, Any], uid: str
+) -> dict[str, Any] | None:
+    """Project exact stored opposing comparisons onto a study-excluded view."""
+    filtered_memory = _memory_without_study(memory, uid)
+    filtered_fingerprint = recall_source_fingerprint(filtered_memory)
+    cases = filtered_memory.get("cases", ())
+    censors = filtered_memory.get("censors", ())
+    case_indices: dict[str, dict[str, list[int]]] = {}
+    questions: set[str] = set()
+    case_banks = _validated_case_banks(cases)
+    eligible_subjects = sorted(
+        {
+            case.get("subject")
+            for index, case in enumerate(cases)
+            if isinstance(case, Mapping)
+            and index in case_banks
+            and isinstance(case.get("subject"), str)
+            and isinstance(case.get("case_id"), str)
+            and isinstance(case.get("study_uid"), str)
+        }
+    )
+    for index, case in enumerate(cases):
+        if not isinstance(case, Mapping):
+            continue
+        calls = case.get("condition_calls", case.get("calls", {}))
+        case_questions = set()
+        if isinstance(calls, Mapping):
+            case_questions.update(key for key in calls if isinstance(key, str) and key)
+        elif isinstance(calls, Sequence) and not isinstance(calls, (str, bytes)):
+            case_questions.update(
+                row.get("question", row.get("condition"))
+                for row in calls
+                if isinstance(row, Mapping)
+                and isinstance(row.get("question", row.get("condition")), str)
+            )
+        questions.update(case_questions)
+        subject = case.get("subject")
+        if isinstance(subject, str) and isinstance(case.get("profile"), Mapping):
+            for question in case_questions:
+                if _call(case, question) in (-1, 1):
+                    case_indices.setdefault(subject, {}).setdefault(
+                        question, []
+                    ).append(index)
+    censor_indices = {
+        question: [
+            index
+            for index, censor in enumerate(censors)
+            if isinstance(censor, Mapping)
+            and censor.get("question", censor.get("condition")) == question
+        ]
+        for question in questions
+    }
+    envelopes: dict[str, dict[str, dict[str, Any]]] = {}
+    source_envelopes = prepared.get("envelopes")
+    if not isinstance(source_envelopes, Mapping):
+        return None
+    for subject in eligible_subjects:
+        subject_indices = [
+            index
+            for index, case in enumerate(cases)
+            if isinstance(case, Mapping)
+            and case.get("subject") == subject
+            and index in case_banks
+            and isinstance(case.get("case_id"), str)
+            and isinstance(case.get("study_uid"), str)
+        ]
+        scoped_questions = {
+            question
+            for question in questions
+            if any(
+                _call(cases[index], question) in (-1, 1) for index in subject_indices
+            )
+        }
+        if not scoped_questions:
+            continue
+        subject_rows = source_envelopes.get(subject)
+        if not isinstance(subject_rows, Mapping):
+            return None
+        for question in sorted(questions):
+            scoped_indices = [
+                index
+                for index in subject_indices
+                if _call(cases[index], question) in (-1, 1)
+            ]
+            if not scoped_indices:
+                continue
+            buckets = subject_rows.get(question, {})
+            if not isinstance(buckets, Mapping):
+                return None
+            kept_buckets = {}
+            for bucket_id, bucket in buckets.items():
+                if not isinstance(bucket, Mapping):
+                    return None
+                comparisons = bucket.get("comparisons")
+                if not isinstance(comparisons, list):
+                    return None
+                retained = []
+                for comparison in comparisons:
+                    if not isinstance(comparison, Mapping):
+                        return None
+                    pair_uids = comparison.get("study_uids")
+                    projection = comparison.get("projection_mode")
+                    ratio = comparison.get("squared_cosine")
+                    if (
+                        not isinstance(pair_uids, list)
+                        or len(pair_uids) != 2
+                        or any(not isinstance(value, str) for value in pair_uids)
+                        or not isinstance(projection, str)
+                        or not isinstance(ratio, Mapping)
+                    ):
+                        return None
+                    pair_case_ids = comparison.get("case_ids")
+                    if (
+                        not isinstance(pair_case_ids, list)
+                        or len(pair_case_ids) != 2
+                        or any(not isinstance(value, str) for value in pair_case_ids)
+                    ):
+                        return None
+                    if uid not in pair_uids:
+                        retained.append(dict(comparison))
+                if not retained:
+                    continue
+                maximum = None
+                population_ids = []
+                modes = []
+                for comparison in retained:
+                    ratio = comparison["squared_cosine"]
+                    try:
+                        numerator = int(ratio["numerator"])
+                        denominator = int(ratio["denominator"])
+                    except (KeyError, TypeError, ValueError):
+                        return None
+                    if numerator < 0 or denominator <= 0:
+                        return None
+                    if maximum is None or numerator * maximum["denominator"] > (
+                        maximum["numerator"] * denominator
+                    ):
+                        maximum = {"numerator": numerator, "denominator": denominator}
+                    for case_id in comparison["case_ids"]:
+                        if case_id not in population_ids:
+                            population_ids.append(case_id)
+                    if comparison["projection_mode"] not in modes:
+                        modes.append(comparison["projection_mode"])
+                projected = {
+                    **bucket,
+                    "projection_modes": modes,
+                    "population_case_ids": population_ids,
+                    "independent_comparison_count": len(retained),
+                    "maximum_squared_cosine": {
+                        "numerator": str(maximum["numerator"]),
+                        "denominator": str(maximum["denominator"]),
+                    },
+                    "comparisons": retained,
+                }
+                kept_buckets[bucket_id] = projected
+            envelopes.setdefault(subject, {})[question] = kept_buckets
+    stored = {
+        **prepared,
+        "memory_source": filtered_memory.get(
+            "source", filtered_memory.get("metadata", {})
+        ),
+        "source_fingerprint": filtered_fingerprint,
+        "envelopes": envelopes,
+        "case_indices": case_indices,
+        "censor_indices": censor_indices,
+    }
+    runtime = _runtime_recall_cache(filtered_memory, stored)
+    if runtime is None:
+        return None
+    runtime["excluded_study_uid"] = uid
+    return runtime
+
 
 def _mapping(value: object) -> Mapping[str, Any] | None:
     return value if isinstance(value, Mapping) else None
@@ -370,6 +681,15 @@ def _call(case: Mapping[str, Any], question: str) -> int | None:
     return None
 
 
+def _case_call_scope(case: Mapping[str, Any], question: str) -> str | None:
+    """Return the exact nonempty per-question presentation scope, if present."""
+    scopes = case.get("presentation_scope")
+    if not isinstance(scopes, Mapping):
+        return None
+    value = scopes.get(question)
+    return value if isinstance(value, str) and value else None
+
+
 def _question_id(question: object) -> str | None:
     if isinstance(question, str) and question:
         return question
@@ -379,7 +699,12 @@ def _question_id(question: object) -> str | None:
     return None
 
 
-def prepare_recall(memory: dict) -> dict:
+def prepare_recall(
+    memory: dict,
+    *,
+    cached: Mapping[str, Any] | None = None,
+    exclude_study_uid: str = "",
+) -> dict:
     """Prepare immutable empirical opposing-case resemblance envelopes.
 
     Each envelope records the maximum exact squared cosine between independent
@@ -391,6 +716,41 @@ def prepare_recall(memory: dict) -> dict:
     cases = memory.get("cases")
     if not isinstance(cases, Sequence) or isinstance(cases, (str, bytes)):
         return {"outcome": "invalid_input", "reason": "memory_cases_required"}
+    if exclude_study_uid and (
+        not isinstance(exclude_study_uid, str) or not exclude_study_uid
+    ):
+        return {"outcome": "invalid_input", "reason": "excluded_study_uid_invalid"}
+    if cached is not None:
+        try:
+            fingerprint = recall_source_fingerprint(memory)
+        except ValueError:
+            return {"outcome": "invalid_input", "reason": "memory_recall_input_invalid"}
+        stored = (
+            cached.get("preparation")
+            if cached.get("schema") == RECALL_CACHE_SCHEMA
+            else None
+        )
+        if (
+            isinstance(stored, Mapping)
+            and cached.get("source_fingerprint") == fingerprint
+            and stored.get("source_fingerprint") == fingerprint
+            and stored.get("schema") == "knee.squint-recall-preparation/v1"
+            and stored.get("outcome") == "prepared"
+            and cached.get("censor_count") == len(memory.get("censors", ()))
+        ):
+            runtime = _runtime_recall_cache(memory, stored)
+            if runtime is not None:
+                if not exclude_study_uid:
+                    return runtime
+                projected = _project_recall_cache_without_study(
+                    memory, runtime, exclude_study_uid
+                )
+                if projected is not None:
+                    return projected
+        if exclude_study_uid:
+            return prepare_recall(_memory_without_study(memory, exclude_study_uid))
+    elif exclude_study_uid:
+        return prepare_recall(_memory_without_study(memory, exclude_study_uid))
     envelopes: dict[str, dict[str, dict[str, Any]]] = {}
     case_indices: dict[str, dict[str, list[int]]] = {}
     censor_indices: dict[str, list[int]] = {}
@@ -544,6 +904,7 @@ def prepare_recall(memory: dict) -> dict:
                             {
                                 "case_ids": [first["case_id"], second["case_id"]],
                                 "study_uids": [first["study_uid"], second["study_uid"]],
+                                "projection_mode": mode,
                                 "common_speaking_banks": evidence[
                                     "common_speaking_banks"
                                 ],
@@ -569,11 +930,42 @@ def prepare_recall(memory: dict) -> dict:
         "outcome": "prepared",
         "schema": "knee.squint-recall-preparation/v1",
         "memory_source": memory.get("source", memory.get("metadata", {})),
+        "source_fingerprint": recall_source_fingerprint(memory),
         "envelopes": envelopes,
         "case_indices": case_indices,
         "censor_indices": censor_indices,
         "case_profile_banks": case_banks,
         "subject_profile_matrices": subject_profile_matrices,
+    }
+
+
+def persisted_recall_cache(
+    memory: Mapping[str, Any], prepared: Mapping[str, Any]
+) -> dict[str, Any]:
+    """Return JSON-safe invariant preparation bound to its exact source fields."""
+    fingerprint = recall_source_fingerprint(memory)
+    if (
+        prepared.get("schema") != "knee.squint-recall-preparation/v1"
+        or prepared.get("outcome") != "prepared"
+        or prepared.get("source_fingerprint") != fingerprint
+    ):
+        raise ValueError("recall_preparation_source_mismatch")
+    return {
+        "schema": RECALL_CACHE_SCHEMA,
+        "source_fingerprint": fingerprint,
+        "censor_count": len(memory.get("censors", ())),
+        "preparation": {
+            key: prepared[key]
+            for key in (
+                "outcome",
+                "schema",
+                "source_fingerprint",
+                "memory_source",
+                "envelopes",
+                "case_indices",
+                "censor_indices",
+            )
+        },
     }
 
 
@@ -1205,578 +1597,24 @@ def resolve_candidate_profile(
 
 
 def locate_objects(study: dict, memory: dict, deadline: float | None = None) -> dict:
-    """Locate case-known objects from current-study squint grids, preserving silence.
-
-    The writer may supply cached candidate profiles in each series record. When
-    those are absent, this function reports honest unavailability rather than
-    reconstructing pixels or carrying another patient's coordinates.
-    """
+    """Use anatomy-first finite windows for raw studies, cached profiles otherwise."""
     if not isinstance(study, dict) or not isinstance(memory, dict):
         return {
             "outcome": "invalid_input",
             "reason": "study_and_memory_must_be_objects",
             "objects": {},
         }
-    cases = memory.get("cases", ())
-    known = (
-        sorted(
-            {
-                subject
-                for case in cases
-                if isinstance(case, Mapping)
-                for subject in (
-                    (case.get("subject"),)
-                    if isinstance(case.get("subject"), str)
-                    and not case["subject"].startswith("diagnosis/")
-                    else ()
-                )
-            }
-        )
-        if isinstance(cases, Sequence) and not isinstance(cases, (str, bytes))
-        else []
+    series, _uids = _profile_candidates(study)
+    raw_stack_present = any(
+        getattr(row.get("stack"), "code", None) == "present"
+        and isinstance(getattr(row.get("stack"), "median", None), np.ndarray)
+        for row in series
     )
-    declared_objects = memory.get("objects", ())
-    if isinstance(declared_objects, Sequence) and not isinstance(
-        declared_objects, (str, bytes)
-    ):
-        known.extend(
-            subject
-            for subject in declared_objects
-            if isinstance(subject, str)
-            and not subject.startswith("diagnosis/")
-            and subject not in known
-        )
-    objects: dict[str, Any] = {
-        subject: {
-            "status": "unresolved_missing_reading",
-            "profile": None,
-            "regions": [],
-            "evidence": {"reason": "no_current_study_candidate_profiles"},
-        }
-        for subject in known
-    }
-    series, series_uids = _profile_candidates(study)
-    if not series:
-        return {
-            "outcome": "unresolved_missing_reading",
-            "study_uid": study.get("study_uid"),
-            "objects": objects,
-            "evidence": {"series_uids": series_uids, "searches_completed": 0},
-        }
-    # Derive object dimensions from each case's own declared window sizes, but
-    # search those sizes at current-study coordinates only. No prior patient's
-    # coordinates are copied into a candidate.
-    priorities = memory.get("object_order", ())
-    ordered = list(known)
-    anchor_names = {"femur", "tibia", "patella", "fibula"}
-    declared_anchors = memory.get("anchor_objects", ())
-    if isinstance(declared_anchors, Sequence) and not isinstance(
-        declared_anchors, (str, bytes)
-    ):
-        anchor_names.update(name for name in declared_anchors if isinstance(name, str))
-    priority_sequence = (
-        priorities
-        if isinstance(priorities, Sequence) and not isinstance(priorities, (str, bytes))
-        else ()
-    )
-    ordered = _object_order(ordered, priority_sequence, anchor_names)
-    try:
-        from knee.diagnosis.squint_profiles import profile_window
-    except ImportError:
-        profile_window = None
-    from knee.diagnosis.squint_geometry import (
-        object_geometry,
-        relative_scope_priors,
-        window_scope_codes,
-    )
+    if raw_stack_present:
+        from knee.diagnosis.squint_anatomy_locator import locate_anatomy_first
 
-    case_records = (
-        list(cases)
-        if isinstance(cases, Sequence) and not isinstance(cases, (str, bytes))
-        else []
-    )
-    series_by_uid = {
-        record.get("series_uid"): record
-        for record in series
-        if isinstance(record.get("series_uid"), str)
-    }
-    coarse_indexes = {
-        id(series_record): _coarse_index(series_record) for series_record in series
-    }
-    searches = 0
-    geometry_by_subject: dict[str, dict[str, Any]] = {}
-    for subject in ordered:
-        if deadline is not None and time.monotonic() >= deadline:
-            objects[subject]["evidence"] = {
-                "reason": "deadline_before_search",
-                "deadline_reached": True,
-            }
-            continue
-        subject_cases = (
-            [
-                case
-                for case in cases
-                if isinstance(case, Mapping)
-                and case.get("subject") == subject
-                and _banks(case.get("profile")) is not None
-            ]
-            if isinstance(cases, Sequence)
-            else []
-        )
-        base_banks = [_banks(case.get("profile")) for case in subject_cases]
-        default_scope = {
-            "cases": subject_cases,
-            "banks": base_banks,
-            "procedures": [
-                _source(case.get("profile")).get("procedure") for case in subject_cases
-            ],
-            "matrix": _case_matrix(base_banks),
-            "examples": _profile_exemplars(cases, subject)
-            if isinstance(cases, Sequence)
-            else [],
-            "source": "view_unspecified_compatibility",
-        }
-        scope_cache: dict[tuple[str, str, str] | None, dict[str, Any]] = {}
-        scope_evidence: dict[str, dict[str, Any]] = {}
-        subject_anchors = _anchor_names(subject, set(known))
-        relative_priors = relative_scope_priors(
-            subject, subject_anchors, case_records, geometry_by_subject
-        )
-        prior_scope_codes: dict[str, int] = {}
-
-        def scope_for(
-            view: tuple[str, str, str] | None,
-            _scope_cache: dict[
-                tuple[str, str, str] | None, dict[str, Any]
-            ] = scope_cache,
-            _subject: str = subject,
-            _cases: Sequence[Any] = cases,
-        ) -> dict[str, Any]:
-            if view not in _scope_cache:
-                scoped_cases, scoped_examples, source = _location_scope(
-                    _cases if isinstance(_cases, Sequence) else (), _subject, view
-                )
-                banks = [_banks(case.get("profile")) for case in scoped_cases]
-                _scope_cache[view] = {
-                    "cases": scoped_cases,
-                    "banks": banks,
-                    "procedures": [
-                        _source(case.get("profile")).get("procedure")
-                        for case in scoped_cases
-                    ],
-                    "matrix": _case_matrix(banks),
-                    "examples": scoped_examples,
-                    "source": source,
-                }
-            return _scope_cache[view]
-
-        by_view: dict[tuple[str, str, str] | None, dict[str, Any]] = {}
-        exact_case_best: dict[str, dict[str, Any]] = {}
-
-        def consider(
-            candidate: dict[str, Any],
-            series_record: Mapping[str, Any],
-            scope: Mapping[str, Any] = default_scope,
-            _by_view: dict[tuple[str, str, str] | None, dict[str, Any]] = by_view,
-            _exact_case_best: dict[str, dict[str, Any]] = exact_case_best,
-        ) -> None:
-            _precedents = scope["cases"]
-            _precedent_banks = scope["banks"]
-            _precedent_procedures = scope["procedures"]
-            _precedent_matrix = scope["matrix"]
-            query_banks = _banks(candidate.get("profile"))
-            if query_banks is None:
-                return
-            query_procedure = _source(candidate.get("profile")).get("procedure")
-            procedure_compatibility = [
-                query_procedure == procedure for procedure in _precedent_procedures
-            ]
-            evidences = _batch_terms(
-                query_banks,
-                _precedent_banks,
-                matrix_cache=_precedent_matrix,
-                compatible=procedure_compatibility,
-            )
-            best: tuple[int, int] | None = None
-            case_scores: list[tuple[Mapping[str, Any], tuple[int, int]]] = []
-            for case, evidence in zip(_precedents, evidences, strict=True):
-                if evidence is None or evidence.get("code") != "ok":
-                    continue
-                ratio = evidence["cosine_squared"]
-                case_scores.append((case, ratio))
-                if best is None or ratio[0] * best[1] > best[0] * ratio[1]:
-                    best = ratio
-            if best is None:
-                return
-            nonlocal searches
-            searches += 1
-            for case, ratio in case_scores:
-                case_id = case.get("case_id")
-                if not isinstance(case_id, str):
-                    continue
-                current = _exact_case_best.get(case_id)
-                row = {
-                    "profile": candidate["profile"],
-                    "series_uid": series_record.get("series_uid"),
-                    "view": series_record.get("view"),
-                    "window": candidate.get("window"),
-                    "centre_lps": candidate.get("centre_lps"),
-                }
-                if current is None or ratio[0] * current["score"][1] > (
-                    current["score"][0] * ratio[1]
-                ):
-                    _exact_case_best[case_id] = {"score": ratio, "items": [row]}
-                elif ratio[0] * current["score"][1] == (current["score"][0] * ratio[1]):
-                    current["items"].append(row)
-            key = _view_key(series_record.get("view"))
-            group = _by_view.get(key)
-            row = (candidate, series_record)
-            if (
-                group is None
-                or best[0] * group["score"][1] > group["score"][0] * best[1]
-            ):
-                _by_view[key] = {"score": best, "items": [row], "count": 1}
-            elif best[0] * group["score"][1] == group["score"][0] * best[1]:
-                group["items"].append(row)
-                group["count"] += 1
-            else:
-                group["count"] += 1
-
-        for series_record in series:
-            current_view = _view_key(series_record.get("view"))
-            location_scope = scope_for(current_view)
-            scope_key = json.dumps(current_view, separators=(",", ":"))
-            scope_evidence[scope_key] = {
-                "view": None if current_view is None else list(current_view),
-                "source": location_scope["source"],
-                "case_ids": [
-                    case.get("case_id")
-                    for case in location_scope["cases"]
-                    if isinstance(case.get("case_id"), str)
-                ],
-            }
-            if not location_scope["cases"]:
-                continue
-            stack = series_record.get("stack")
-            median = getattr(stack, "median", None)
-            if median is None or getattr(stack, "code", None) != "present":
-                windows = series_record.get("candidate_profiles", ())
-                if isinstance(windows, Sequence) and not isinstance(
-                    windows, (str, bytes)
-                ):
-                    for item in windows:
-                        if (
-                            isinstance(item, Mapping)
-                            and item.get("subject") == subject
-                            and _banks(item.get("profile")) is not None
-                        ):
-                            consider(dict(item), series_record, location_scope)
-                continue
-            z_count, row_count, col_count = median.shape
-            sizes: set[tuple[int, int, int]] = set()
-            for exemplar, region in location_scope["examples"]:
-                source_view = _view_key(_source(exemplar).get("view"))
-                region_view = _view_key(region.get("view"))
-                wanted_view = region_view or source_view
-                if (
-                    wanted_view is not None
-                    and current_view is not None
-                    and wanted_view != current_view
-                ):
-                    continue
-                size = _window_size(region, exemplar)
-                if size is not None:
-                    sizes.add(
-                        (
-                            min(size[0], z_count),
-                            min(size[1], row_count),
-                            min(size[2], col_count),
-                        )
-                    )
-            if location_scope["examples"] and not sizes:
-                continue
-            if not sizes:
-                sizes.add((1, 1, 1))
-            if profile_window is None:
-                # Tests and lightweight callers may provide writer-cached
-                # candidates; production installs the shared profile writer.
-                windows = series_record.get("candidate_profiles", ())
-                if isinstance(windows, Sequence) and not isinstance(
-                    windows, (str, bytes)
-                ):
-                    for item in windows:
-                        if (
-                            isinstance(item, Mapping)
-                            and item.get("subject") == subject
-                            and _banks(item.get("profile")) is not None
-                        ):
-                            consider(dict(item), series_record, location_scope)
-                continue
-            lower, upper, foreground = _leg_bounds(stack)
-            z_lo, r_lo, c_lo = lower
-            z_hi, r_hi, c_hi = upper
-            coarse_names, integrals = coarse_indexes[id(series_record)]
-            if not coarse_names:
-                continue
-            case_vectors, case_bank_masks = _case_coarse_matrix(
-                location_scope["cases"], coarse_names, location_scope["banks"]
-            )
-            best_by_case: dict[int, dict[str, Any]] = {}
-            pending_windows: list[tuple[int, ...]] = []
-
-            def flush_windows(
-                _pending_windows: list[tuple[int, ...]] = pending_windows,
-                _coarse_names: Sequence[str] = coarse_names,
-                _integrals: Mapping[str, np.ndarray] = integrals,
-                _case_vectors: np.ndarray = case_vectors,
-                _case_bank_masks: np.ndarray = case_bank_masks,
-                _best_by_case: dict[int, dict[str, Any]] = best_by_case,
-                _series_record: dict[str, Any] = series_record,
-                _relative_priors: dict[str, Any] = relative_priors,
-                _prior_scope_codes: dict[str, int] = prior_scope_codes,
-            ) -> None:
-                if not _pending_windows:
-                    return
-                scope_codes = window_scope_codes(
-                    _series_record, _pending_windows, _relative_priors
-                )
-                eligible_windows = []
-                for window, scope_code in zip(
-                    _pending_windows, scope_codes, strict=True
-                ):
-                    _prior_scope_codes[scope_code] = (
-                        _prior_scope_codes.get(scope_code, 0) + 1
-                    )
-                    if scope_code != "outside_anatomical_prior":
-                        eligible_windows.append(window)
-                _pending_windows.clear()
-                if not eligible_windows:
-                    return
-                vectors, vector_banks = _window_coarse_batch(
-                    _coarse_names, _integrals, eligible_windows
-                )
-                scores_by_window = _coarse_case_scores_batch(
-                    vectors, vector_banks, _case_vectors, _case_bank_masks
-                )
-                for window, scores in zip(
-                    eligible_windows, scores_by_window, strict=True
-                ):
-                    for case_ordinal, score in enumerate(scores):
-                        if score is None:
-                            continue
-                        current = _best_by_case.get(case_ordinal)
-                        if current is None or score[0] * current["score"][1] > (
-                            current["score"][0] * score[1]
-                        ):
-                            _best_by_case[case_ordinal] = {
-                                "score": score,
-                                "windows": [window],
-                            }
-                        elif score[0] * current["score"][1] == (
-                            current["score"][0] * score[1]
-                        ):
-                            current["windows"].append(window)
-                _pending_windows.clear()
-
-            for ez, er, ec in sorted(sizes):
-                for z0 in _window_starts(z_count, ez):
-                    if z0 < z_lo or z0 + ez > z_hi:
-                        continue
-                    for r0 in _window_starts(row_count, er):
-                        if r0 < r_lo or r0 + er > r_hi:
-                            continue
-                        for c0 in _window_starts(col_count, ec):
-                            if c0 < c_lo or c0 + ec > c_hi:
-                                continue
-                            if deadline is not None and time.monotonic() >= deadline:
-                                break
-                            window = (z0, z0 + ez, r0, r0 + er, c0, c0 + ec)
-                            if not bool(
-                                foreground[
-                                    z0 : z0 + ez, r0 : r0 + er, c0 : c0 + ec
-                                ].any()
-                            ):
-                                continue
-                            pending_windows.append(window)
-                            if len(pending_windows) >= 128:
-                                flush_windows()
-                        if deadline is not None and time.monotonic() >= deadline:
-                            break
-                    if deadline is not None and time.monotonic() >= deadline:
-                        break
-                if deadline is not None and time.monotonic() >= deadline:
-                    break
-            flush_windows()
-            finalists = {
-                window
-                for result in best_by_case.values()
-                for window in result["windows"]
-            }
-            for window in sorted(finalists):
-                if deadline is not None and time.monotonic() >= deadline:
-                    break
-                profile = profile_window(dict(series_record), window, subject=subject)
-                if _banks(profile) is None:
-                    continue
-                consider(
-                    {
-                        "subject": subject,
-                        "window": window,
-                        "profile": profile,
-                    },
-                    series_record,
-                    location_scope,
-                )
-        if not by_view:
-            objects[subject]["evidence"] = {
-                "reason": "no_compatible_current_study_candidates",
-                "series_uids": series_uids,
-            }
-            continue
-        constraints = memory.get("anatomical_constraints", ())
-        relevant_constraints = (
-            [
-                row
-                for row in constraints
-                if isinstance(row, Mapping) and row.get("child") == subject
-            ]
-            if isinstance(constraints, Sequence)
-            and not isinstance(constraints, (str, bytes))
-            else []
-        )
-        chosen: list[tuple[dict[str, Any], Mapping[str, Any], tuple[int, int]]] = []
-        candidate_profiles: list[dict[str, Any]] = []
-        geometry_regions: list[dict[str, Any]] = []
-        for group in by_view.values():
-            kept: list[tuple[dict[str, Any], Mapping[str, Any]]] = []
-            for candidate, series_record in group["items"]:
-                excluded = False
-                for constraint in relevant_constraints:
-                    parent = constraint.get("parent")
-                    parent_geometry = (
-                        geometry_by_subject.get(parent)
-                        if isinstance(parent, str)
-                        else None
-                    )
-                    parent_reference = (
-                        parent_geometry.get("reference")
-                        if isinstance(parent_geometry, Mapping)
-                        else None
-                    )
-                    parent_point = (
-                        parent_reference.get("point_lps")
-                        if isinstance(parent_reference, Mapping)
-                        and parent_reference.get("status") == "complete"
-                        else None
-                    )
-                    if parent_point is None or candidate.get("centre_lps") is None:
-                        continue
-                    point = candidate["centre_lps"]
-                    distance = (
-                        sum((point[i] - parent_point[i]) ** 2 for i in range(3)) ** 0.5
-                    )
-                    low, high = (
-                        constraint.get("min_distance_mm", 0),
-                        constraint.get("max_distance_mm"),
-                    )
-                    if isinstance(low, (int, float)) and distance < low:
-                        excluded = True
-                    if isinstance(high, (int, float)) and distance > high:
-                        excluded = True
-                if excluded:
-                    continue
-                kept.append((candidate, series_record))
-                candidate_profiles.append(
-                    {
-                        "profile": candidate["profile"],
-                        "series_uid": series_record.get("series_uid"),
-                        "view": series_record.get("view"),
-                        "window": candidate.get("window"),
-                        "squared_similarity": {
-                            "numerator": str(group["score"][0]),
-                            "denominator": str(group["score"][1]),
-                        },
-                    }
-                )
-                geometry_regions.append(
-                    {
-                        "series_uid": series_record.get("series_uid"),
-                        "view": series_record.get("view"),
-                        "window": candidate.get("window")
-                        or _source(candidate.get("profile")).get("window"),
-                    }
-                )
-            if len(kept) == 1:
-                candidate, series_record = kept[0]
-                chosen.append((candidate, series_record, group["score"]))
-        if not candidate_profiles:
-            objects[subject]["evidence"] = {
-                "reason": "anatomical_constraints_removed_candidates",
-                "candidate_view_count": len(by_view),
-            }
-            continue
-        spatial_constraints = object_geometry(subject, geometry_regions, series_by_uid)
-        geometry_by_subject[subject] = spatial_constraints
-        profiles = [candidate["profile"] for candidate, _record, _score in chosen]
-        merged_profile = None
-        if profiles:
-            try:
-                from knee.diagnosis.squint_profiles import merge_profiles
-
-                merged_profile = merge_profiles(profiles, subject=subject)
-            except (ImportError, ValueError):
-                if len(profiles) == 1:
-                    merged_profile = profiles[0]
-        case_best_candidates = [
-            {
-                "case_id": case_id,
-                "squared_similarity": {
-                    "numerator": str(result["score"][0]),
-                    "denominator": str(result["score"][1]),
-                },
-                "candidates": result["items"],
-            }
-            for case_id, result in sorted(exact_case_best.items())
-        ]
-        candidate_catalogs = _intern_candidate_profiles(
-            candidate_profiles, case_best_candidates
-        )
-        objects[subject] = {
-            "status": "proposal",
-            "profile": merged_profile,
-            "candidate_profiles": candidate_profiles,
-            "regions": geometry_regions,
-            "evidence": {
-                "source": "current_study_squint_grid_candidate",
-                "candidate_view_count": len(by_view),
-                "selected_view_regions": len(chosen),
-                "candidate_profiles_compared": searches,
-                "supporting_case_count": len(subject_cases),
-                "location_scope_codes": dict(sorted(prior_scope_codes.items())),
-                "location_precedent_scopes": [
-                    scope_evidence[key] for key in sorted(scope_evidence)
-                ],
-                "spatial_constraints": spatial_constraints,
-                "relative_scope_priors": relative_priors,
-                "case_best_candidates": case_best_candidates,
-                "candidate_profile_catalog": candidate_catalogs["profiles"],
-                "candidate_bank_catalog": candidate_catalogs["banks"],
-                "candidate_series_context_catalog": candidate_catalogs[
-                    "series_contexts"
-                ],
-                "patient_coordinates_carried": False,
-                "leg_background_prior": "coverage_and_scan_lowest_maximum",
-            },
-        }
-    return {
-        "outcome": "located_with_proposals",
-        "study_uid": study.get("study_uid"),
-        "objects": objects,
-        "evidence": {
-            "series_uids": series_uids,
-            "candidate_profiles_compared": searches,
-        },
-    }
+        return locate_anatomy_first(study, memory, deadline)
+    return _locate_cached_objects(study, memory, deadline)
 
 
 def recall_object(
@@ -1988,6 +1826,7 @@ def recall_object(
             "case_id": case_id,
             "study_uid": study_uid,
             "call": sign,
+            "call_scope": _case_call_scope(case, question_id),
             "terms": {
                 key: evidence[key] for key in ("dot", "left_norm_sq", "right_norm_sq")
             },
@@ -2101,3 +1940,383 @@ def recall_object(
         base["outcome"] = "unresolved_no_precedent"
     # Explicit ordinary negative calls are cases, never censor records.
     return base
+
+
+def _current_leg_frame_prior(
+    series: Sequence[Mapping[str, Any]],
+    foreground_by_series: dict[int, np.ndarray] | None = None,
+) -> tuple[tuple[float, ...], tuple[float, ...]] | None:
+    """Measure finite current-study foreground bounds in LPS once per study."""
+    points: list[np.ndarray] = []
+    for record in series:
+        stack = record.get("stack")
+        centres = np.asarray(getattr(stack, "centres_lps", None))
+        if centres.ndim != 4 or centres.shape[-1] != 3:
+            continue
+        if foreground_by_series is not None and id(record) in foreground_by_series:
+            foreground = foreground_by_series[id(record)]
+        else:
+            _lower, _upper, foreground = _leg_bounds(stack)
+        if foreground.shape != centres.shape[:3]:
+            continue
+        valid = foreground & np.isfinite(centres).all(axis=-1)
+        if valid.any():
+            points.append(centres[valid])
+    if not points:
+        return None
+    all_points = np.concatenate(points, axis=0)
+    low = np.min(all_points, axis=0)
+    high = np.max(all_points, axis=0)
+    if not np.isfinite(low).all() or not np.isfinite(high).all() or np.any(high < low):
+        return None
+    return tuple(float(value) for value in low), tuple(float(value) for value in high)
+
+
+def _anatomical_window_proposal(
+    series_record: Mapping[str, Any],
+    subject: str,
+    *,
+    leg_bounds_lps: tuple[tuple[float, ...], tuple[float, ...]] | None,
+    foreground: np.ndarray | None = None,
+    anchors: Mapping[str, Any],
+    knee_side: str | None,
+    knee_scale_mm: float | None,
+) -> dict[str, Any]:
+    """Ask the authored anatomy helper for finite current-study windows only."""
+    if leg_bounds_lps is None:
+        return {
+            "status": "geometry_unavailable",
+            "windows": [],
+            "reason": "current_leg_bounds_unavailable",
+        }
+    try:
+        from knee.diagnosis.squint_anatomical_priors import anatomical_windows
+    except ImportError:
+        return {
+            "status": "geometry_unavailable",
+            "windows": [],
+            "reason": "anatomical_prior_helper_unavailable",
+        }
+    try:
+        series_for_helper = dict(series_record)
+        if foreground is not None:
+            series_for_helper["foreground"] = foreground
+        proposal = anatomical_windows(
+            series_for_helper,
+            subject,
+            leg_bounds_lps=leg_bounds_lps,
+            anchors=dict(anchors),
+            knee_side=knee_side,
+            knee_scale_mm=knee_scale_mm,
+        )
+    except (TypeError, ValueError) as error:
+        return {
+            "status": "geometry_unavailable",
+            "windows": [],
+            "reason": f"anatomical_prior_invalid:{type(error).__name__}",
+        }
+    if not isinstance(proposal, Mapping):
+        return {
+            "status": "geometry_unavailable",
+            "windows": [],
+            "reason": "anatomical_prior_result_invalid",
+        }
+    raw_windows = proposal.get("windows")
+    if not isinstance(raw_windows, Sequence) or isinstance(raw_windows, (str, bytes)):
+        return {
+            "status": "geometry_unavailable",
+            "windows": [],
+            "reason": "anatomical_prior_windows_invalid",
+        }
+    stack = series_record.get("stack")
+    shape = getattr(getattr(stack, "median", None), "shape", ())
+    clean: list[tuple[int, ...]] = []
+    for raw in raw_windows:
+        if (
+            not isinstance(raw, (tuple, list))
+            or len(raw) != 6
+            or any(type(value) is not int for value in raw)
+        ):
+            continue
+        window = tuple(raw)
+        z0, z1, r0, r1, c0, c1 = window
+        if len(shape) != 3 or not (
+            0 <= z0 < z1 <= shape[0]
+            and 0 <= r0 < r1 <= shape[1]
+            and 0 <= c0 < c1 <= shape[2]
+            and z1 - z0 == 1
+        ):
+            continue
+        clean.append(window)
+    result = dict(proposal)
+    result["windows"] = sorted(set(clean))
+    if not result["windows"] and result.get("status") in {
+        "available",
+        "proposed",
+        "ok",
+    }:
+        result["status"] = "no_valid_native_window"
+    return result
+
+
+def _window_centre_lps(
+    series: Mapping[str, Any], window: tuple[int, ...]
+) -> list[float] | None:
+    stack = series.get("stack")
+    centres = np.asarray(getattr(stack, "centres_lps", None))
+    if centres.ndim != 4 or centres.shape[-1] != 3:
+        return None
+    z0, z1, r0, r1, c0, c1 = window
+    selected = centres[z0:z1, r0:r1, c0:c1]
+    finite = selected[np.isfinite(selected).all(axis=-1)]
+    if not len(finite):
+        return None
+    return [float(value) for value in np.mean(finite, axis=0)]
+
+
+def _locate_cached_objects(
+    study: dict, memory: dict, deadline: float | None = None
+) -> dict:
+    """Compare only caller-supplied candidate profiles when no raw stack is present."""
+    cases = memory.get("cases", ())
+    case_rows = (
+        list(cases)
+        if isinstance(cases, Sequence) and not isinstance(cases, (str, bytes))
+        else []
+    )
+    known = sorted(
+        {
+            row.get("subject")
+            for row in case_rows
+            if isinstance(row, Mapping)
+            and isinstance(row.get("subject"), str)
+            and not row["subject"].startswith("diagnosis/")
+        }
+    )
+    declared = memory.get("objects", ())
+    if isinstance(declared, Sequence) and not isinstance(declared, (str, bytes)):
+        known.extend(
+            name
+            for name in declared
+            if isinstance(name, str)
+            and not name.startswith("diagnosis/")
+            and name not in known
+        )
+    priorities = memory.get("object_order", ())
+    priorities = (
+        priorities
+        if isinstance(priorities, Sequence) and not isinstance(priorities, (str, bytes))
+        else ()
+    )
+    known = _object_order(known, priorities, {"femur", "tibia", "fibula", "patella"})
+    objects = {
+        name: {
+            "status": "unresolved_missing_reading",
+            "profile": None,
+            "candidate_profiles": [],
+            "regions": [],
+            "evidence": {"reason": "no_current_study_candidate_profiles"},
+        }
+        for name in known
+    }
+    series, series_uids = _profile_candidates(study)
+    series_by_uid = {
+        row.get("series_uid"): row
+        for row in series
+        if isinstance(row.get("series_uid"), str)
+    }
+    geometry_by_subject: dict[str, dict[str, Any]] = {}
+    for subject in known:
+        if deadline is not None and time.monotonic() >= deadline:
+            objects[subject]["evidence"] = {
+                "reason": "deadline_before_search",
+                "deadline_reached": True,
+            }
+            continue
+        by_view: dict[tuple[str, str, str] | None, dict[str, Any]] = {}
+        case_best: dict[str, dict[str, Any]] = {}
+        precedent_scopes: dict[str, dict[str, Any]] = {}
+        for series_record in series:
+            view = _view_key(series_record.get("view"))
+            scoped, _examples, source = _location_scope(case_rows, subject, view)
+            scope_key = json.dumps(view, separators=(",", ":"))
+            precedent_scopes[scope_key] = {
+                "view": None if view is None else list(view),
+                "source": source,
+                "case_ids": [
+                    row.get("case_id")
+                    for row in scoped
+                    if isinstance(row.get("case_id"), str)
+                ],
+            }
+            compatible = [
+                row
+                for row in scoped
+                if _source(row.get("profile")).get("procedure") is not None
+            ]
+            candidates = series_record.get("candidate_profiles", ())
+            if not isinstance(candidates, Sequence) or isinstance(
+                candidates, (str, bytes)
+            ):
+                continue
+            for candidate in candidates:
+                if (
+                    not isinstance(candidate, Mapping)
+                    or candidate.get("subject") != subject
+                ):
+                    continue
+                query = _banks(candidate.get("profile"))
+                if query is None:
+                    continue
+                query_procedure = _source(candidate.get("profile")).get("procedure")
+                rows = [
+                    row
+                    for row in compatible
+                    if _source(row.get("profile")).get("procedure") == query_procedure
+                ]
+                banks = [_banks(row.get("profile")) for row in rows]
+                scores = _batch_terms(query, banks, compatible=[True] * len(rows))
+                usable = [
+                    (row, item)
+                    for row, item in zip(rows, scores, strict=True)
+                    if item is not None and item.get("code") == "ok"
+                ]
+                if not usable:
+                    continue
+                best = usable[0][1]["cosine_squared"]
+                for _row, item in usable[1:]:
+                    score = item["cosine_squared"]
+                    if score[0] * best[1] > best[0] * score[1]:
+                        best = score
+                for case, item in usable:
+                    case_id = case.get("case_id")
+                    if not isinstance(case_id, str):
+                        continue
+                    score = item["cosine_squared"]
+                    entry = {
+                        "profile": candidate["profile"],
+                        "series_uid": series_record.get("series_uid"),
+                        "view": series_record.get("view"),
+                        "window": candidate.get("window"),
+                    }
+                    current = case_best.get(case_id)
+                    if (
+                        current is None
+                        or score[0] * current["score"][1]
+                        > current["score"][0] * score[1]
+                    ):
+                        case_best[case_id] = {"score": score, "items": [entry]}
+                    elif (
+                        score[0] * current["score"][1] == current["score"][0] * score[1]
+                    ):
+                        current["items"].append(entry)
+                group = by_view.get(view)
+                if (
+                    group is None
+                    or best[0] * group["score"][1] > group["score"][0] * best[1]
+                ):
+                    by_view[view] = {
+                        "score": best,
+                        "items": [(dict(candidate), series_record)],
+                        "source": source,
+                    }
+                elif best[0] * group["score"][1] == group["score"][0] * best[1]:
+                    group["items"].append((dict(candidate), series_record))
+        if not by_view:
+            continue
+        candidate_profiles = []
+        regions = []
+        chosen = []
+        for group in by_view.values():
+            for candidate, series_record in group["items"]:
+                candidate_profiles.append(
+                    {
+                        "profile": candidate["profile"],
+                        "series_uid": series_record.get("series_uid"),
+                        "view": series_record.get("view"),
+                        "window": candidate.get("window"),
+                        "squared_similarity": {
+                            "numerator": str(group["score"][0]),
+                            "denominator": str(group["score"][1]),
+                        },
+                    }
+                )
+                regions.append(
+                    {
+                        "series_uid": series_record.get("series_uid"),
+                        "view": series_record.get("view"),
+                        "window": candidate.get("window")
+                        or _source(candidate.get("profile")).get("window"),
+                    }
+                )
+            if len(group["items"]) == 1:
+                chosen.append(group["items"][0][0]["profile"])
+        merged = chosen[0] if len(chosen) == 1 else None
+        best_candidates = [
+            {
+                "case_id": key,
+                "squared_similarity": {
+                    "numerator": str(row["score"][0]),
+                    "denominator": str(row["score"][1]),
+                },
+                "candidates": row["items"],
+            }
+            for key, row in sorted(case_best.items())
+        ]
+        catalog = _intern_candidate_profiles(candidate_profiles, best_candidates)
+        try:
+            from knee.diagnosis.squint_geometry import (
+                object_geometry,
+                relative_scope_priors,
+            )
+
+            spatial = object_geometry(subject, regions, series_by_uid)
+            geometry_by_subject[subject] = spatial
+            relative_priors = relative_scope_priors(
+                subject,
+                _anchor_names(subject, set(known)),
+                case_rows,
+                geometry_by_subject,
+            )
+        except (ImportError, TypeError, ValueError):
+            spatial = None
+            relative_priors = {
+                "schema": "knee.squint-relative-scope-priors/v1",
+                "subject": subject,
+                "anchors": [],
+                "cases": [],
+            }
+        objects[subject] = {
+            "status": "proposal",
+            "profile": merged,
+            "candidate_profiles": candidate_profiles,
+            "regions": regions,
+            "evidence": {
+                "source": "caller_supplied_candidate_profiles",
+                "candidate_view_count": len(by_view),
+                "selected_view_regions": len(chosen),
+                "candidate_profiles_compared": len(candidate_profiles),
+                "location_precedent_scopes": [
+                    precedent_scopes[key] for key in sorted(precedent_scopes)
+                ],
+                "spatial_constraints": spatial,
+                "relative_scope_priors": relative_priors,
+                "case_best_candidates": best_candidates,
+                "candidate_profile_catalog": catalog["profiles"],
+                "candidate_bank_catalog": catalog["banks"],
+                "candidate_series_context_catalog": catalog["series_contexts"],
+                "patient_coordinates_carried": False,
+            },
+        }
+    return {
+        "outcome": "located_with_proposals",
+        "study_uid": study.get("study_uid"),
+        "objects": objects,
+        "evidence": {
+            "series_uids": series_uids,
+            "candidate_generation": "caller_supplied_profiles_only",
+        },
+    }
+
+
+_MAX_EXACT_REFINEMENTS_PER_VIEW = 16

@@ -8,7 +8,8 @@ Steps (each timed in /kaggle/working/squint-production-runtime.json):
 
 1. find the attached private runtime dataset (rohanvinaik/rsna-knee-squint-runtime), the official
    competition files and the locked cp313 wheels dataset (rohanvinaik/rsna-knee-wheels-cp313);
-2. copy the code and the memory to LOCAL disk first: the dataset's tar is streamed once, its sha256 is
+2. require the release's expected bundle_id and memory-manifest sha256 before choosing any mounted
+   version, then copy the code and memory to LOCAL disk: the dataset's tar is streamed once, its sha256 is
    checked against the outer RUNTIME_MANIFEST.json and every file against the inner manifest, so the
    run reads nothing from the network-backed mount except the study images. Kaggle may instead have
    auto-unpacked the tar as runtime-bundle/ beside the outer manifest, so two manifests are found;
@@ -86,6 +87,14 @@ WHEEL_TAG = "cp313"
 MANIFEST_SCHEMA = "knee.squint-runtime-manifest/v1"
 MEMORY_SCHEMA = "knee.squint-memory/v1"
 MANIFEST_NAME = "RUNTIME_MANIFEST.json"
+# Release pins come from verified staging. The uploaded dataset must match both
+# before launching; unpinned or stale mounts refuse before inference.
+EXPECTED_RUNTIME_BUNDLE_ID: str | None = (
+    "00131db179587154f61425ac85f67ebb6a3c61db205fa5972fbab65bba30d343"
+)
+EXPECTED_MEMORY_MANIFEST_SHA256: str | None = (
+    "6642bf6a8bef52594f5b812a36f1d67c24816d841647960af82b2ac47e06addf"
+)
 CONDITION_COUNT = 12
 WORKERS = 4
 KAGGLE_LIMIT_S = 9 * 3600
@@ -111,6 +120,7 @@ ALLOWED_FLAGS = {
     "--diagnostic-memory",
     "--diagnostic-submission-template",
     "--diagnostic-output",
+    "--squint-time-limit",
 }
 IMPORT_CHECK = (
     "import sys\n"
@@ -449,6 +459,17 @@ def load_candidate(path: Path) -> dict:
     return manifest
 
 
+def memory_manifest_sha256(manifest: dict) -> str:
+    """Return the declared digest for the memory's own manifest file."""
+    memory = manifest["memory"]
+    entry = safe_member(memory["entry"]).as_posix()
+    path = f"{entry}/manifest.json"
+    for file_entry in manifest["files"]:
+        if file_entry["path"] == path:
+            return file_entry["sha256"]
+    raise SetupError(f"runtime manifest has no memory manifest file: {path}")
+
+
 def archive_state(base: Path, manifest: dict) -> tuple[Path | None, str]:
     """The recorded archive beside `base` when it is really there with the recorded size (a stat only)."""
     record = manifest["tar"]
@@ -503,43 +524,99 @@ def decided(
     }
 
 
-def select_runtime_manifest(hits: list[Path], hint: str) -> dict:
+def select_runtime_manifest(
+    hits: list[Path],
+    hint: str,
+    *,
+    expected_bundle_id: str | None = None,
+    expected_memory_manifest_sha256: str | None = None,
+) -> dict:
     """The one runtime manifest to materialise from, or a named refusal.
 
     Only manifests are read (whole) and files are stat'ed: nothing is hashed, extracted or copied here.
     `materialise` still streams the tar or copies the tree and checks every file's sha256 and size
     against the chosen manifest. The generic `choose` is not used for the runtime and not weakened.
 
-    * One manifest (a tar beside it, or an extracted source/ and memory/ beside it): used as found, and
-      `materialise` decides between the tar and the directory exactly as before.
+    * First, every candidate is matched against both explicit release pins. Nonmatching, self-consistent
+      versions are recorded as excluded and never considered as fallbacks.
+    * One matching manifest (a tar beside it, or an extracted source/ and memory/ beside it): used as found,
+      and `materialise` decides between the tar and the directory exactly as before.
     * Kaggle's auto-unpacked dataset: the outer manifest (it has a `tar` record) and, in a directory below
       it, the extracted bundle's own manifest. They are one bundle only if the extracted manifest equals the
       outer one in every field except the `tar` record. The recorded archive is then used when it is
       really there with the recorded size, otherwise the extracted tree when every listed file is present.
-    * Anything else is refused, naming every candidate: a different bundle, a pair that disagrees beyond
-      the tar record, two outer or two extracted manifests, a third manifest, an equivalent pair that is
-      not nested, or any malformed manifest. No sort order, shortest path or first hit picks a winner.
+    * Among matching candidates, anything else is refused, naming every candidate: a pair that disagrees
+      beyond the tar record, two outer or two extracted manifests, a third manifest, an equivalent pair that
+      is not nested, or any malformed manifest. No sort order, shortest path or first hit picks a winner.
     """
     what = "squint runtime manifest"
+    if expected_bundle_id is None:
+        expected_bundle_id = EXPECTED_RUNTIME_BUNDLE_ID
+    if expected_memory_manifest_sha256 is None:
+        expected_memory_manifest_sha256 = EXPECTED_MEMORY_MANIFEST_SHA256
+    if not isinstance(expected_bundle_id, str) or len(expected_bundle_id) != 64:
+        raise SetupError("runtime bundle pin is not configured")
+    if (
+        not isinstance(expected_memory_manifest_sha256, str)
+        or len(expected_memory_manifest_sha256) != 64
+    ):
+        raise SetupError("memory manifest pin is not configured")
     if not hits:
         raise SetupError(f"{what} not found under {INPUT}")
     pool = [hit for hit in hits if hint in str(hit)] or hits
     distinct = {str(hit.resolve()): hit for hit in pool}
     paths = [distinct[key] for key in sorted(distinct)]
     manifests: dict[Path, dict] = {path: load_candidate(path) for path in paths}
-    candidates = [
+    all_candidates = [
         {
             "path": str(path),
             "bundle_id": manifests[path]["bundle_id"],
+            "memory_manifest_sha256": memory_manifest_sha256(manifests[path]),
             "tar_record": "tar" in manifests[path],
         }
         for path in paths
     ]
+    pin_record = {
+        "expected_bundle_id": expected_bundle_id,
+        "expected_memory_manifest_sha256": expected_memory_manifest_sha256,
+        "observed_candidates": all_candidates,
+    }
+    REPORT.setdefault("inputs", {})["runtime_source_pin"] = pin_record
+    matching = [
+        path
+        for path in paths
+        if manifests[path]["bundle_id"] == expected_bundle_id
+        and memory_manifest_sha256(manifests[path]) == expected_memory_manifest_sha256
+    ]
+    if not matching:
+        observed = "; ".join(
+            f"{item['path']} [bundle_id={item['bundle_id']}, "
+            f"memory_manifest_sha256={item['memory_manifest_sha256']}]"
+            for item in all_candidates
+        )
+        raise SetupError(
+            "runtime pin mismatch: expected "
+            f"bundle_id={expected_bundle_id}, "
+            f"memory_manifest_sha256={expected_memory_manifest_sha256}; "
+            f"observed: {observed or 'no candidates'}"
+        )
+    excluded = [
+        item
+        for item in all_candidates
+        if item["path"] not in {str(path) for path in matching}
+    ]
+    paths = matching
+    candidates = [
+        item for item in all_candidates if item["path"] in {str(path) for path in paths}
+    ]
+    pin_selection = {**pin_record, "excluded_candidates": excluded}
     if len(paths) == 1:
         only = paths[0]
-        return decided(
+        result = decided(
             only, manifests[only], "single_manifest", "as_found", candidates, []
         )
+        result["selection"]["source_pin"] = pin_selection
+        return result
     outers = [path for path in paths if "tar" in manifests[path]]
     extracted = [path for path in paths if "tar" not in manifests[path]]
     if len(paths) != 2 or len(outers) != 1:
@@ -580,9 +657,11 @@ def select_runtime_manifest(hits: list[Path], hint: str) -> dict:
                 "reason": "the recorded archive is usable and preferred",
             }
         ]
-        return decided(
+        result = decided(
             outer_path, outer, "outer_and_extracted", "tar", candidates, unused
         )
+        result["selection"]["source_pin"] = pin_selection
+        return result
     problems = layout_problems(inner_path.parent, inner)
     if problems:
         raise SetupError(
@@ -595,7 +674,7 @@ def select_runtime_manifest(hits: list[Path], hint: str) -> dict:
             "reason": f"its archive is not usable: {archive_note}",
         }
     ]
-    return decided(
+    result = decided(
         inner_path,
         inner,
         "outer_and_extracted",
@@ -603,6 +682,8 @@ def select_runtime_manifest(hits: list[Path], hint: str) -> dict:
         candidates,
         unused,
     )
+    result["selection"]["source_pin"] = pin_selection
+    return result
 
 
 # ---------------------------------------------------------------------------------------------
@@ -928,6 +1009,14 @@ def check_argv(argv: list[str]) -> None:
         raise SetupError("production runs `--diagnostic-mode infer --split test` only")
     if pairs.get("--workers") != str(WORKERS):
         raise SetupError(f"production runs --workers {WORKERS}")
+    try:
+        internal_limit = Decimal(pairs["--squint-time-limit"])
+    except (KeyError, InvalidOperation) as error:
+        raise SetupError(
+            "production requires a positive --squint-time-limit"
+        ) from error
+    if not internal_limit.is_finite() or internal_limit <= 0:
+        raise SetupError("production requires a positive --squint-time-limit")
 
 
 # ---------------------------------------------------------------------------------------------
@@ -1122,6 +1211,10 @@ def run() -> int:
         )
 
     with Step("locate_inputs"):
+        REPORT.setdefault("inputs", {})["runtime_source_pin"] = {
+            "expected_bundle_id": EXPECTED_RUNTIME_BUNDLE_ID,
+            "expected_memory_manifest_sha256": EXPECTED_MEMORY_MANIFEST_SHA256,
+        }
         runtime = select_runtime_manifest(find(MANIFEST_NAME), RUNTIME_HINT)
         manifest_path = runtime["manifest_path"]
         template_path = choose(
@@ -1139,6 +1232,7 @@ def run() -> int:
         REPORT["inputs"] = {
             "runtime_manifest": str(manifest_path),
             "runtime_manifest_selection": runtime["selection"],
+            "runtime_source_pin": runtime["selection"]["source_pin"],
             "competition_root": str(competition),
             "sample_submission": str(template_path),
             "sample_submission_sha256": template["sha256"],
@@ -1151,6 +1245,9 @@ def run() -> int:
         bundle = LOCAL / "bundle"
         REPORT["runtime"] = {
             "bundle_id": manifest["bundle_id"],
+            "expected_bundle_id": EXPECTED_RUNTIME_BUNDLE_ID,
+            "expected_memory_manifest_sha256": EXPECTED_MEMORY_MANIFEST_SHA256,
+            "actual_memory_manifest_sha256": memory_manifest_sha256(manifest),
             "dataset_id": manifest.get("dataset_id"),
             "memory": manifest["memory"],
             "source": {k: v for k, v in manifest["source"].items() if k != "excluded"},
@@ -1218,6 +1315,10 @@ def run() -> int:
     if OUT_DIR.exists():
         raise SetupError(f"refusing to reuse an existing output directory: {OUT_DIR}")
     OUT_PARENT.mkdir(parents=True, exist_ok=True)
+    limit = KAGGLE_LIMIT_S - RESERVE_S - (time.time() - STARTED)
+    if limit <= 0:
+        raise SetupError("no notebook runtime budget remains before inference launch")
+    REPORT["time_budget_s"] = round(limit, 1)
     argv = [
         python,
         str(script),
@@ -1235,10 +1336,10 @@ def run() -> int:
         str(template_path),
         "--diagnostic-output",
         str(OUT_DIR),
+        "--squint-time-limit",
+        str(limit),
     ]
     check_argv(argv)
-    limit = KAGGLE_LIMIT_S - RESERVE_S - (time.time() - STARTED)
-    REPORT["time_budget_s"] = round(limit, 1)
     with Step("run_squint_inference"):
         info = run_logged(argv, env, LOCAL / "cwd", limit, OUT_PARENT)
         REPORT["run"] = info

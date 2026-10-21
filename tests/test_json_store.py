@@ -234,6 +234,36 @@ def test_standard_encoder_preserves_nonfinite_values_and_mapping_order(tmp_path)
     assert np.signbit(loaded["first"]) and np.isnan(loaded["not_finite"])
 
 
+def test_compression_preset_zero_is_lossless_and_default_matches_preset_six(tmp_path):
+    default_path = tmp_path / "default.json.xz"
+    explicit_six_path = tmp_path / "explicit-six.json.xz"
+    fast_path = tmp_path / "fast.json.xz"
+    dump_json_atomic(default_path, VALUE)
+    dump_json_atomic(explicit_six_path, VALUE, compression_preset=6)
+    dump_json_atomic(fast_path, VALUE, compression_preset=0)
+
+    default_bytes = default_path.read_bytes()
+    fast_bytes = fast_path.read_bytes()
+    default_plain = lzma.decompress(default_bytes, format=lzma.FORMAT_XZ)
+    fast_plain = lzma.decompress(fast_bytes, format=lzma.FORMAT_XZ)
+    assert default_bytes == explicit_six_path.read_bytes()
+    assert default_plain == fast_plain
+    assert load_json(default_path) == load_json(fast_path) == VALUE
+
+
+@pytest.mark.parametrize("preset", [-1, 10, True, False, 1.5, "0", None])
+def test_invalid_compression_preset_preserves_existing_destination(tmp_path, preset):
+    destination = tmp_path / "stable.json.xz"
+    dump_json_atomic(destination, VALUE)
+    before = destination.read_bytes()
+
+    with pytest.raises(ValueError, match="compression_preset_invalid"):
+        dump_json_atomic(destination, {"replacement": True}, compression_preset=preset)
+
+    assert destination.read_bytes() == before
+    assert not list(tmp_path.glob("*.part"))
+
+
 def test_compare_cli_reads_plain_and_xz_receipts(tmp_path, monkeypatch, capsys):
     import sys
 

@@ -44,6 +44,8 @@ The 58 existing H5 products are teaching sources, not a claim that every object 
 
 Anatomy narrows the work; shared producers avoid repetition; exact count-space HDC avoids dense per-pixel hypervectors. Useful priors need not be perfect. Performance figures are information about the implementation, never anatomical tuning targets.
 
+Anatomy generates finite candidate windows before scoring; partial native bone planes can guide explicitly partial priors. Each study receives a bounded time share. Prepared recall ships with the memory. A whole-condition case may decide only through comparisons that actually include its defining tissue. The [run guide](docs/SQUINT_RUN_GUIDE.md) documents the fully study-excluded capacity check and its per-condition report.
+
 [FULL_BUILD_PLAN §16.9](docs/FULL_BUILD_PLAN.md#169-competition-resource-envelope-w8b-storage-closure-and-w10-verification) owns the source-backed deployment envelope:
 
 - At most **nine hours**, with **internet disabled**.
@@ -51,7 +53,7 @@ Anatomy narrows the work; shared producers avoid repetition; exact count-space H
 - **W8b verifies storage closure**: required final object information, original values, addresses and provenance survive release of consumed intermediates.
 - **W10 verifies the complete operation**: startup, decoding, location, recall, refinement, worker/queue memory and output, plus capacity for later stages. Measured public-study workload and hidden-scale projections remain separate.
 
-The private Kaggle wrapper copies production source to local disk, installs the verified offline CPython 3.13 dependency closure, uses four study workers and writes `/kaggle/working/submission.csv`. The same source runs locally. A private dry run does not submit to the competition. Its actual results and remaining checks belong to [the current packet](docs/work/current/README.md), not a historical microbenchmark.
+The private Kaggle wrapper requires the release's exact code-bundle and memory-manifest pins before inference. It copies production source to local disk, installs the verified offline CPython 3.13 dependency closure, gives the remaining notebook budget to the study allocator, uses four study workers and writes `/kaggle/working/submission.csv`. The same source runs locally. A private dry run does not submit to the competition. Its actual results and remaining checks belong to [the current packet](docs/work/current/README.md), not a historical microbenchmark.
 
 ## Reference tools, images and exact products
 

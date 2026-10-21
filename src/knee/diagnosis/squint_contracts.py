@@ -62,7 +62,8 @@ __all__ = [
 POLICY_ID = "knee.squint-contracts/tiered-signed-squared-cosine-v1"
 FINDING_SCHEMA = "knee.squint-condition-finding/v1"
 # A whole-question (joint) recall voice is keyed "diagnosis/<question>". It
-# can grade a finding (rank) but never decides one: it carries no typed role.
+# can grade a finding and can decide only through trusted cases whose common
+# speaking banks cover the condition's declared own-tissue roles.
 JOINT_PREFIX = "diagnosis/"
 
 QUESTION_IDS = (
@@ -712,6 +713,9 @@ def _check_row(
     banks = row.get("common_speaking_banks")
     if banks is not None and not _banks_ok(banks):
         return None, None, "common_speaking_banks_invalid"
+    call_scope = row.get("call_scope")
+    if call_scope is not None and (not isinstance(call_scope, str) or not call_scope):
+        return None, None, "case_call_scope_invalid"
     trust_flag: bool | None = None
     if "trust" in row or "reaches_trust" in row:
         trust = row.get("trust")
@@ -725,7 +729,13 @@ def _check_row(
         "case_id": case_id,
         "call": call,
         "terms": {"dot": dot, "left_norm_sq": left, "right_norm_sq": right},
+        "reaches_trust": trust_flag,
     }
+    if "call_scope" in row:
+        normalized["call_scope"] = call_scope
+    trust = row.get("trust")
+    if isinstance(trust, Mapping) and isinstance(trust.get("source"), str):
+        normalized["trust"] = {"source": trust["source"]}
     if isinstance(banks, list):
         normalized["common_speaking_banks"] = list(banks)
     elif banks is not None:
@@ -850,7 +860,10 @@ def _reading(
 
 
 def _read_subject(
-    raw: object, aliases: tuple[str, ...]
+    raw: object,
+    aliases: tuple[str, ...],
+    *,
+    study_positive_is_context: bool = False,
 ) -> tuple[dict[str, Any], list[dict[str, Any]]]:
     """Reduce one subject's evidence to a reading and its normalized records.
 
@@ -872,6 +885,21 @@ def _read_subject(
             prefix = f"{index}:" if len(records) > 1 else ""
             problems.extend(prefix + item for item in found)
         elif normalized is not None:
+            if study_positive_is_context and normalized["state"] == _POSITIVE:
+                positive_rows = [
+                    row
+                    for row in normalized["case_terms"]
+                    if row["call"] == 1 and row["reaches_trust"] is not False
+                ]
+                if positive_rows and all(
+                    row.get("call_scope") == "positive_condition_presentation"
+                    for row in positive_rows
+                ):
+                    # The study says some bone is affected, not which one.
+                    # Keep every comparison for recall/ranking without
+                    # manufacturing a localized positive bone predicate.
+                    normalized["state"] = _UNKNOWN
+                    normalized["code"] = "study_positive_presentation_not_localized"
             kept.append(normalized)
     if problems:
         return _reading(_UNKNOWN, "evidence_malformed", problems=problems), []
@@ -1139,6 +1167,10 @@ def _requests(
     found: list[dict[str, Any]] = []
     for subject in decision["unresolved"]:
         code = readings[subject]["code"]
+        if code == "study_positive_presentation_not_localized":
+            # More pixels cannot localize the teaching label's source claim.
+            # Keep the scope uncertainty visible without scheduling a zoom.
+            continue
         found.append(_request(question, subject, _REQUEST_KIND[code], code))
     for subject in decision["unsupported"]:
         found.append(_request(question, subject, "bounded_zoom", _UNSUPPORTED_REASON))
@@ -1151,33 +1183,167 @@ def _requests(
 
 
 def _configuration_decision(
-    contract: ConditionContract, decision: dict, readings: dict, joint: dict | None
-) -> dict:
-    """Let an independently taught, warranted configuration speak on its question.
+    contract: ConditionContract,
+    decision: dict,
+    readings: dict,
+    joint: dict | None,
+    joint_records: list[dict[str, Any]],
+) -> tuple[dict, dict[str, Any]]:
+    """Let covered, independently taught configuration cases speak.
 
-    Rohan's explicit decision: configuration recall may decide when no
-    necessary anatomical finding contradicts it. A clean necessary negative
-    remains decisive. Opposing warranted descriptions remain a disagreement.
+    Each decisive sign needs case-level common-bank provenance for the
+    condition's own declared roles. Negative alternative cases cover every
+    alternative themselves. A clean necessary negative remains decisive, and
+    conflicts among covered cases or with anatomical readings stay visible.
     """
+    coverage: dict[str, Any] = {
+        "status": "not_present",
+        "eligible_case_ids": {"positive": [], "negative": []},
+        "excluded_cases": [],
+    }
     if joint is None:
-        return decision
+        return decision, coverage
     if any(readings[name]["state"] == _NEGATIVE for name in contract.necessary):
-        return decision
+        coverage["status"] = "necessary_negative_blocks_configuration"
+        return decision, coverage
     diagnostic = [name for name in (*contract.necessary, *contract.alternatives)]
-    state = joint["state"]
-    if state == _UNKNOWN:
-        return decision
+    eligible_signs: set[str] = set()
+    eligible_ids: dict[str, set[str]] = {"positive": set(), "negative": set()}
+    subjects = set(diagnostic)
+
+    def covered_subjects(row: Mapping[str, Any]) -> set[str] | None:
+        banks = row.get("common_speaking_banks")
+        if not isinstance(banks, list) or any(
+            not isinstance(bank, str) for bank in banks
+        ):
+            return None
+        return {
+            subject
+            for subject in subjects
+            if any(
+                bank.startswith(f"object/{subject}/")
+                and len(bank) > len(f"object/{subject}/")
+                for bank in banks
+            )
+        }
+
+    positive_branches = (
+        [set(branch) for branch in contract.sufficient]
+        if contract.sufficient
+        else (
+            [set(contract.necessary)]
+            if contract.necessary
+            else [{name} for name in contract.alternatives]
+        )
+    )
+    negative_required = set(contract.alternatives or contract.necessary)
+    if contract.necessary and contract.alternatives:
+        negative_required.update(contract.necessary)
+
+    for record in joint_records:
+        vetoed = set(record.get("vetoed_answers", []))
+        for row in record.get("case_terms", []):
+            call = row.get("call") if isinstance(row, Mapping) else None
+            case_id = row.get("case_id") if isinstance(row, Mapping) else None
+            if call not in (-1, 1) or call in vetoed:
+                continue
+            declared_signs = _REQUIRED_SIGNS.get(record.get("outcome"), frozenset())
+            if call not in declared_signs:
+                if isinstance(case_id, str):
+                    coverage["excluded_cases"].append(
+                        {
+                            "case_id": case_id,
+                            "call": call,
+                            "reason": "record_does_not_declare_speaking_sign",
+                        }
+                    )
+                continue
+            if not isinstance(row, Mapping) or row.get("reaches_trust") is not True:
+                if isinstance(case_id, str):
+                    coverage["excluded_cases"].append(
+                        {
+                            "case_id": case_id,
+                            "call": call,
+                            "reason": "case_not_warranted",
+                        }
+                    )
+                continue
+            covered = covered_subjects(row)
+            if covered is None:
+                if isinstance(case_id, str):
+                    coverage["excluded_cases"].append(
+                        {
+                            "case_id": case_id,
+                            "call": call,
+                            "reason": "common_bank_provenance_unavailable",
+                        }
+                    )
+                continue
+            if call == 1:
+                qualifies = any(
+                    branch and branch <= covered for branch in positive_branches
+                )
+            else:
+                qualifies = bool(negative_required) and negative_required <= covered
+            if qualifies:
+                label = "positive" if call == 1 else "negative"
+                eligible_signs.add(label)
+                if isinstance(case_id, str):
+                    eligible_ids[label].add(case_id)
+            elif isinstance(case_id, str):
+                coverage["excluded_cases"].append(
+                    {
+                        "case_id": case_id,
+                        "call": call,
+                        "reason": "defining_tissue_coverage_incomplete",
+                        "covered_subjects": sorted(covered),
+                    }
+                )
+
+    coverage["eligible_case_ids"] = {
+        label: sorted(values) for label, values in eligible_ids.items()
+    }
+    coverage["required_positive_branches"] = [
+        sorted(branch) for branch in positive_branches
+    ]
+    coverage["required_negative_subjects"] = sorted(negative_required)
+    if not eligible_signs:
+        coverage["status"] = "no_covered_warranted_configuration_cases"
+        if decision["outcome"] == _OPEN and joint["state"] in (_POSITIVE, _NEGATIVE):
+            return (
+                _decision(
+                    _OPEN,
+                    "configuration_defining_tissue_coverage_missing",
+                    unresolved=diagnostic,
+                ),
+                coverage,
+            )
+        return decision, coverage
+    state = (
+        _CONFLICT
+        if len(eligible_signs) > 1
+        else _POSITIVE
+        if "positive" in eligible_signs
+        else _NEGATIVE
+    )
+    coverage["status"] = "covered_warranted_cases"
+    coverage["state"] = state
     conflicted = any(readings[name]["state"] == _CONFLICT for name in diagnostic)
     opposing = (state == _POSITIVE and decision["outcome"] == _DEFEATED) or (
         state == _NEGATIVE
         and any(readings[name]["state"] == _POSITIVE for name in diagnostic)
     )
     if state == _CONFLICT or conflicted or opposing:
-        return _decision(_OPEN, "configuration_anatomy_conflict", unresolved=diagnostic)
-    return _decision(
-        _ASSIGNED if state == _POSITIVE else _DEFEATED,
-        "warranted_condition_configuration",
-        decided_by=[JOINT_PREFIX + contract.question],
+        return _decision(
+            _OPEN, "configuration_anatomy_conflict", unresolved=diagnostic
+        ), coverage
+    return (
+        _decision(
+            _ASSIGNED if state == _POSITIVE else _DEFEATED,
+            "warranted_condition_configuration",
+            decided_by=[JOINT_PREFIX + contract.question],
+        ),
+        coverage,
     )
 
 
@@ -1205,7 +1371,12 @@ def combine_condition(question: str, object_evidence: dict) -> dict:
     ):
         for subject in subjects:
             reading, kept = _read_subject(
-                object_evidence.get(subject), (subject, f"object/{subject}")
+                object_evidence.get(subject),
+                (subject, f"object/{subject}"),
+                study_positive_is_context=(
+                    role == "alternative"
+                    and contract.question in {"Fracture", "Contusion"}
+                ),
             )
             reading["role"] = role
             readings[subject] = reading
@@ -1213,16 +1384,20 @@ def combine_condition(question: str, object_evidence: dict) -> dict:
                 graded[subject] = kept
 
     joint_voice: dict[str, Any] | None = None
+    joint_records: list[dict[str, Any]] = []
     if joint_key in object_evidence:
         joint_voice, kept = _read_subject(object_evidence[joint_key], (joint_key,))
         joint_voice["role"] = "joint"
+        joint_records = kept
         if kept:
             graded[joint_key] = kept
 
     declared = {*contract.subjects, joint_key}
     ignored = sorted(str(key) for key in object_evidence if key not in declared)
     decision = _COMBINERS[contract.question](readings)
-    decision = _configuration_decision(contract, decision, readings, joint_voice)
+    decision, configuration_coverage = _configuration_decision(
+        contract, decision, readings, joint_voice, joint_records
+    )
     requests = _requests(contract.question, readings, decision)
 
     supporting_summary: dict[str, list[str]] = {
@@ -1252,6 +1427,7 @@ def combine_condition(question: str, object_evidence: dict) -> dict:
             "supporting": list(contract.supporting),
             "readings": readings,
             "joint_voice": joint_voice,
+            "joint_configuration_coverage": configuration_coverage,
             "decided_by": decision["decided_by"],
             "unresolved_subjects": decision["unresolved"],
             "unsupported_positive_subjects": decision["unsupported"],

@@ -99,6 +99,8 @@ def dump_json_atomic(
     path: str | os.PathLike[str],
     value: Any,
     default: Callable[[Any], Any] | None = None,
+    *,
+    compression_preset: int = 6,
 ) -> Path:
     """Stream compact standard JSON to an XZ sidecar and atomically replace it.
 
@@ -106,6 +108,12 @@ def dump_json_atomic(
     Existing legacy JSON is removed only after the compressed replacement is committed, so a
     subsequent request using the legacy name resolves to the current sidecar rather than stale data.
     """
+    if (
+        isinstance(compression_preset, bool)
+        or not isinstance(compression_preset, int)
+        or not 0 <= compression_preset <= 9
+    ):
+        raise ValueError("compression_preset_invalid")
     requested = Path(path)
     dest = compressed_path(requested)
     dest.parent.mkdir(parents=True, exist_ok=True)
@@ -121,7 +129,12 @@ def dump_json_atomic(
             ensure_ascii=True,
             allow_nan=True,
         )
-        with lzma.LZMAFile(temporary, "wb", format=lzma.FORMAT_XZ, preset=6) as stream:
+        with lzma.LZMAFile(
+            temporary,
+            "wb",
+            format=lzma.FORMAT_XZ,
+            preset=compression_preset,
+        ) as stream:
             _write_json_buffered(stream, encoder, value)
         os.replace(temporary, dest)
         legacy = _legacy_path(dest)

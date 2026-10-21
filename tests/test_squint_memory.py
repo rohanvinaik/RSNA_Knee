@@ -10,6 +10,7 @@ from pathlib import Path
 import numpy as np
 import pytest
 
+from knee.diagnosis.squint_locator import prepare_recall
 from knee.diagnosis.squint_memory import (
     SCHEMA,
     SquintMemoryError,
@@ -22,6 +23,7 @@ from knee.diagnosis.squint_memory import (
     load_memory_snapshot,
     save_memory,
 )
+from knee.json_store import load_json
 from knee.study.tables import LABELS
 
 
@@ -156,6 +158,29 @@ def test_save_load_is_exact_atomic_and_refuses_overwrite(tmp_path: Path) -> None
     assert load_memory(stored) == memory
     with pytest.raises(SquintMemoryError, match="memory_already_exists"):
         save_memory(memory, destination)
+
+
+def test_save_publishes_manifest_bound_recall_cache_for_public_restore(
+    tmp_path: Path,
+) -> None:
+    destination = tmp_path / "memory"
+    memory = _memory()
+    prepared = prepare_recall(memory)
+    receipt = save_memory(memory, destination, prepared_recall=prepared)
+    manifest = destination / "manifest.json"
+    cache = load_json(destination / "recall-preparation.json")
+    loaded = load_memory(destination)
+    restored = prepare_recall(loaded, cached=cache)
+    assert cache["memory_manifest_sha256"] == receipt["sha256"]
+    assert cache["memory_revision"] == memory["revision"]
+    assert cache["source_fingerprint"] == prepared["source_fingerprint"]
+    assert receipt["recall_preparation_cache"]["path"].endswith(
+        "recall-preparation.json.xz"
+    )
+    assert restored["runtime_indexes_rebuilt"] is True
+    assert restored["envelopes"] == prepared["envelopes"]
+    assert restored["case_indices"] == prepared["case_indices"]
+    assert manifest.is_file()
 
 
 @pytest.mark.parametrize(
