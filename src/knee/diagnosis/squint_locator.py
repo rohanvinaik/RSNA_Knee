@@ -1715,6 +1715,9 @@ def locate_objects(study: dict, memory: dict, deadline: float | None = None) -> 
         from knee.diagnosis.squint_anatomy_locator import locate_anatomy_first
         from knee.diagnosis.squint_leg import leg_maps
 
+        series = [row if isinstance(row, dict) else dict(row) for row in series]
+        study["series"] = series
+
         # The territory writer may already have made these. Share that exact
         # result rather than measuring the background split a second time.
         maps = study.get("leg_maps")
@@ -1727,15 +1730,14 @@ def locate_objects(study: dict, memory: dict, deadline: float | None = None) -> 
                 # Records without native pixels (no split can be measured):
                 # every covered tile stays eligible, and the reason is kept.
                 maps, leg_status = {}, f"unavailable:{error}"
-        located_study = {
-            **study,
-            "leg_maps": maps,
-            "leg_map_status": leg_status,
-            "series": [
-                {**row, "leg_map": maps.get(row.get("series_uid"))} for row in series
-            ],
-        }
-        return locate_anatomy_first(located_study, memory, deadline)
+        # Keep the one map on the actual study: the own-outline consumer reads
+        # this same record after location. Keep series identity too, so the
+        # writer and refinement share the cached leg calibration.
+        study["leg_maps"] = maps
+        study["leg_map_status"] = leg_status
+        for row in series:
+            row["leg_map"] = maps.get(row.get("series_uid"))
+        return locate_anatomy_first(study, memory, deadline)
     return _locate_cached_objects(study, memory, deadline)
 
 

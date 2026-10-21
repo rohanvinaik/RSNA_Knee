@@ -466,7 +466,13 @@ def infer_study(
         }
     work = {
         **study.get("work", {}),
+        "leg_map_status": study.get("leg_map_status", "unavailable"),
+        "shared_leg_map_series": len(study.get("leg_maps") or {}),
         "elapsed_seconds": time.perf_counter() - started,
+        "process_peak_rss_bytes_at_study_end": resource.getrusage(
+            resource.RUSAGE_SELF
+        ).ru_maxrss
+        * (1 if platform.system() == "Darwin" else 1024),
         "full_anatomy_runs": 0,
         "bounded_zoom_runs": sum(row["code"] == "measured" for row in observations),
         "own_outline_parts_measured": sum(
