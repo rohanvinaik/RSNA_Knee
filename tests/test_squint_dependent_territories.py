@@ -958,3 +958,76 @@ def test_reversed_bone_anchor_pair_is_quarantined_before_dependent_windows(
     assert calls
     assert {call["subject"] for call in calls} == {"medial_meniscus"}
     assert all(not ({"femur", "tibia"} & set(call["anchors"])) for call in calls)
+
+
+def _partial_axial_anchor(bone: str, box: tuple[int, ...], height_mm: float):
+    """A partial anchor: one coronal territory and one exactly axial key plane."""
+    return {
+        **_unavailable_anchor(bone, status="partial"),
+        "territories": [_anchor_territory(bone, box)],
+        "key_planes": {
+            "axial": _plane(
+                "axial",
+                (0, 0, 1),
+                height_mm,
+                series_uid="fixture-axial",
+                slice_index=0,
+            ),
+            "sagittal": {
+                "orientation": "sagittal",
+                "outcome": "tied",
+                "candidates": [["a", 1], ["b", 2]],
+            },
+        },
+    }
+
+
+def test_partial_anchor_pair_is_checked_on_the_axis_its_planes_determine(monkeypatch):
+    _no_producer(monkeypatch)
+    series = _series()
+    # Tile rows 6-9 span z 20..60 mm, rows 12-15 z -40..0 mm; each axial key plane
+    # lies inside its bone's own territory.
+    high, low = (2, 3, 6, 10, 13, 20), (3, 4, 12, 16, 9, 17)
+
+    def checked(femur_box, femur_z, tibia_box, tibia_z):
+        state = anatomy_locator.study_anchors(
+            {
+                "study_uid": STUDY,
+                "anchors": {
+                    "femur": _partial_axial_anchor("femur", femur_box, femur_z),
+                    "tibia": _partial_axial_anchor("tibia", tibia_box, tibia_z),
+                },
+            },
+            {CORONAL: series},
+        )
+        assert set(state["usable"]) == {"femur", "tibia"}
+        anatomy_locator._check_anchor_sanity(state, {CORONAL: series}, "left")
+        return state
+
+    ordered = checked(high, 40.0, low, -20.0)
+    assert set(ordered["usable"]) == {"femur", "tibia"}
+    assert ordered["route"] == "structural_anchors"
+    for name in ("femur", "tibia"):
+        assert ordered["sanity"][name]["status"] == "plausible"
+        (row,) = ordered["sanity"][name]["windows"]
+        (check,) = [
+            c
+            for c in row["checks"]
+            if c["rule_id"] == "authored:femur:superior_to:tibia"
+        ]
+        assert check["reference_status"] == "partial"
+        assert check["reference_construction"] == "partial_reference_selected_planes"
+        assert [plane["orientation"] for plane in check["reference_planes"]] == [
+            "axial"
+        ]
+
+    # The opposite sign: the bones' own axial planes put the femur below the tibia.
+    reversed_pair = checked(low, -20.0, high, 40.0)
+    assert reversed_pair["usable"] == {}
+    assert reversed_pair["route"] == "existing_finite_route"
+    assert reversed_pair["source"]["route_reason"] == "anatomical_anchor_conflict"
+    for name in ("femur", "tibia"):
+        bone = reversed_pair["bones"][name]
+        assert bone["status"] == "conflict"
+        assert bone["code"] == "anatomical_relation_conflict"
+        assert bone["anatomical_sanity"]["status"] == "contradicted"

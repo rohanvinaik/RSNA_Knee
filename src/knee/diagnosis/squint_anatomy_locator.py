@@ -1240,8 +1240,10 @@ def _check_anchor_sanity(
     """A contradicted pair cannot silently anchor dependent objects.
 
     Preserve both observations and name the conflict; these checks do not choose
-    which of two conflicting bone names was mistaken. Partial/missing references
-    remain neutral and do not prevent their existing useful guide contribution.
+    which of two conflicting bone names was mistaken. A partial reference speaks
+    only on the LPS axes its selected planes determine (``squint_sanity``); its
+    other axes, and missing references, remain neutral and do not prevent their
+    existing useful guide contribution.
     """
     checked: dict[str, Any] = {}
     conflicts: set[str] = set()
