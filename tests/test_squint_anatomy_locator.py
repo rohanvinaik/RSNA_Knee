@@ -446,7 +446,7 @@ def test_public_locator_skips_contradicted_windows_before_scoring_or_exact_readi
     _patch_exact(monkeypatch, exact_calls)
     sanity_calls = []
 
-    def contradicted(_series, subject, windows, anchors, knee_side):
+    def contradicted(_series, subject, windows, anchors, knee_side, **_options):
         rows = []
         for index, candidate in enumerate(windows):
             sanity_calls.append((subject, tuple(candidate), anchors, knee_side))

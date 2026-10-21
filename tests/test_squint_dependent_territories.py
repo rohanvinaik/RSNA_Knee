@@ -14,6 +14,7 @@ import sys
 from types import ModuleType
 
 import numpy as np
+import pytest
 
 import knee.diagnosis.squint_anatomy_locator as anatomy_locator
 import knee.diagnosis.squint_locator as locator
@@ -1023,6 +1024,102 @@ def test_partial_anchor_pair_is_checked_on_the_axis_its_planes_determine(monkeyp
 
     # The opposite sign: the bones' own axial planes put the femur below the tibia.
     reversed_pair = checked(low, -20.0, high, 40.0)
+    assert reversed_pair["usable"] == {}
+    assert reversed_pair["route"] == "existing_finite_route"
+    assert reversed_pair["source"]["route_reason"] == "anatomical_anchor_conflict"
+    for name in ("femur", "tibia"):
+        bone = reversed_pair["bones"][name]
+        assert bone["status"] == "conflict"
+        assert bone["code"] == "anatomical_relation_conflict"
+        assert bone["anatomical_sanity"]["status"] == "contradicted"
+
+
+def _partial_unplaned_anchor(bone: str, box: tuple[int, ...]):
+    """A partial anchor whose only key plane is tied: its territory alone places it."""
+    return {
+        **_unavailable_anchor(bone, status="partial"),
+        "territories": [_anchor_territory(bone, box)],
+        "key_planes": {
+            "sagittal": {
+                "orientation": "sagittal",
+                "outcome": "tied",
+                "candidates": [["a", 1], ["b", 2]],
+            }
+        },
+    }
+
+
+def test_anchor_geometry_carries_its_checked_territories_object_boxes(monkeypatch):
+    _no_producer(monkeypatch)
+    series = _series()
+    box = (2, 3, 6, 10, 13, 20)
+    stray = _anchor_territory("femur", (5, 6, 6, 9, 13, 19))
+    stray["series_uid"] = "not-in-this-study"
+    femur = {
+        **_partial_unplaned_anchor("femur", box),
+        "territories": [_anchor_territory("femur", box), stray],
+    }
+    regions = _geometry(series, femur)["regions"]
+    # Only the territory that passed the anchor's checks, by its object-tile box:
+    # never the territory's tile window, which holds its context ring too.
+    assert regions == [
+        {
+            "series_uid": CORONAL,
+            "window": list(box),
+            "status": "anchor_territory_object_tiles",
+            "origin": "anchor_structure",
+        }
+    ]
+    assert femur["territories"][0]["tile_window"] != list(box)
+
+
+def test_territory_windows_decide_where_no_plane_determines_the_axis(monkeypatch):
+    _no_producer(monkeypatch)
+    series = _series()
+    # Tile rows 6-9 span z 20..60 mm, rows 12-15 z -40..0 mm.
+    high, low = (2, 3, 6, 10, 13, 20), (3, 4, 12, 16, 9, 17)
+
+    def checked(femur_box, tibia_box):
+        state = anatomy_locator.study_anchors(
+            {
+                "study_uid": STUDY,
+                "anchors": {
+                    "femur": _partial_unplaned_anchor("femur", femur_box),
+                    "tibia": _partial_unplaned_anchor("tibia", tibia_box),
+                },
+            },
+            {CORONAL: series},
+        )
+        assert set(state["usable"]) == {"femur", "tibia"}
+        # Production names no knee side; the z rule does not need one.
+        anatomy_locator._check_anchor_sanity(state, {CORONAL: series}, None)
+        return state
+
+    def femur_rule(state, name):
+        (row,) = state["sanity"][name]["windows"]
+        (check,) = [
+            c
+            for c in row["checks"]
+            if c["rule_id"] == "authored:femur:superior_to:tibia"
+        ]
+        return check
+
+    ordered = checked(high, low)
+    assert set(ordered["usable"]) == {"femur", "tibia"}
+    for name, other_z in (("femur", [-40.0, 0.0]), ("tibia", [20.0, 60.0])):
+        assert ordered["sanity"][name]["status"] == "plausible"
+        check = femur_rule(ordered, name)
+        assert check["target_interval"] == pytest.approx(other_z)
+        assert check["reference_construction"] == "anchor_window_projection"
+        assert check["reference_fallbacks"] == [
+            "partial_reference_without_selected_planes"
+        ]
+        (window,) = check["reference_windows"]
+        assert window["series_uid"] == CORONAL
+        assert window["scope"] == "candidate_series"
+
+    # The opposite sign: the territories put the femur below the tibia.
+    reversed_pair = checked(low, high)
     assert reversed_pair["usable"] == {}
     assert reversed_pair["route"] == "existing_finite_route"
     assert reversed_pair["source"]["route_reason"] == "anatomical_anchor_conflict"

@@ -2,6 +2,7 @@ import copy
 import hashlib
 import json
 import math
+from types import SimpleNamespace
 
 import numpy as np
 import pytest
@@ -460,10 +461,9 @@ def _complete(point, precision, planes=None):
 
 
 def _complete_matrix():
-    """Complete-reference inputs whose outputs were captured before partial support."""
+    """Complete references with a usable point and precision: pinned byte-identical."""
     one = [1.0, 1.0, 1.0]
     axial_far = {"axial": _plane("axial", Z, 50.0, 3.0)}
-    axial_near = {"axial": _plane("axial", Z, 10.0, 2.0)}
     return [
         (
             "femur",
@@ -540,38 +540,28 @@ def _complete_matrix():
             "left",
             {Z: (13.0, 20.0)},
         ),
-        # A complete reference without a usable point or precision stays unknown,
-        # even when its record holds selected planes.
-        (
-            "femur",
-            {"tibia": _complete([0.0, 0.0, 10.0], None, axial_near)},
-            "left",
-            {Z: (13.0, 20.0)},
-        ),
-        (
-            "femur",
-            {"tibia": _complete([0.0, 0.0, float("nan")], one, axial_near)},
-            "left",
-            {Z: (13.0, 20.0)},
-        ),
-        (
-            "femur",
-            {"tibia": _complete([0.0, 0.0, 10.0], [1.0, 1.0, -1.0], axial_near)},
-            "left",
-            {Z: (13.0, 20.0)},
-        ),
-        (
-            "femur",
-            {"tibia": _complete(["a", "b", "c"], one, axial_near)},
-            "left",
-            {Z: (13.0, 20.0)},
-        ),
         (
             "femur",
             {"tibia": _complete([0.0, 0.0, 10.0], [0.0, 0.0, 0.0])},
             "left",
             {Z: (10.0, 12.0)},
         ),
+    ]
+
+
+def _complete_unusable_matrix():
+    """Complete references whose point or precision is unusable, with exact planes.
+
+    Before the anchor-window binding these were unknown; now they fall through to
+    their own exact-normal planes (axial z = 10 +/- 2).
+    """
+    one = [1.0, 1.0, 1.0]
+    axial_near = {"axial": _plane("axial", Z, 10.0, 2.0)}
+    return [
+        ("femur", {"tibia": _complete([0.0, 0.0, 10.0], None, axial_near)}),
+        ("femur", {"tibia": _complete([0.0, 0.0, float("nan")], one, axial_near)}),
+        ("femur", {"tibia": _complete([0.0, 0.0, 10.0], [1.0, 1.0, -1.0], axial_near)}),
+        ("femur", {"tibia": _complete(["a", "b", "c"], one, axial_near)}),
     ]
 
 
@@ -600,17 +590,19 @@ def _complete_matrix_outputs(monkeypatch):
     return outputs
 
 
-#: Captured from squint_sanity at 1804e00, before partial references could supply
-#: an interval: SHA-256 of the canonical JSON (sorted keys, compact separators) of
-#: every matrix case's original-key projection (18234 bytes).
-COMPLETE_MATRIX_SHA256 = "7583bb6ea6922138532c88119e9f200dd6fffbd686ea592086ea0c87311ca910"  # pragma: allowlist secret
+#: SHA-256 of the canonical JSON (sorted keys, compact separators) of every case's
+#: original-key projection over the complete references with a usable point and
+#: precision (11674 bytes), captured from squint_sanity at 1804e00 and again at
+#: fc33758 with the same digest. The earlier 16-case digest (7583bb6e...) is retired:
+#: its four complete cases without a usable point or precision now fall through to
+#: their own planes under the anchor-window binding (_complete_unusable_matrix).
+COMPLETE_MATRIX_SHA256 = "1e63d475eeab879975791286c0cca723da4c097ece75fa650e6ac677cfa061c5"  # pragma: allowlist secret
 FEMUR_RULES = (
     "authored:femur:superior_to:tibia",
     "authored:patella:anterior_to:femur",
     "authored:medial_gastrocnemius:posterior_to:femur",
     "authored:lateral_gastrocnemius:posterior_to:femur",
 )
-_ALL_UNKNOWN = ("unknown", [(rule, None, "unknown") for rule in FEMUR_RULES])
 #: The same capture, readable: each case's status and (rule, target interval, result).
 COMPLETE_MATRIX_COMPACT = [
     (
@@ -685,10 +677,6 @@ COMPLETE_MATRIX_COMPACT = [
             (FEMUR_RULES[3], None, "unknown"),
         ],
     ),
-    _ALL_UNKNOWN,
-    _ALL_UNKNOWN,
-    _ALL_UNKNOWN,
-    _ALL_UNKNOWN,
     (
         "unknown",
         [
@@ -720,35 +708,62 @@ def test_complete_references_give_byte_identical_checks(monkeypatch):
 
 def test_complete_reference_names_its_planes_and_never_rereads_them(monkeypatch):
     planes = {"axial": _plane("axial", Z, 50.0, 3.0)}
+    windows = [{"series_uid": "series-axial", "window": [0, 1, 0, 1, 0, 1]}]
     out, _ = _run(
         monkeypatch,
         {Z: (13.0, 20.0)},
         "femur",
-        {"tibia": _complete([0.0, 0.0, 10.0], [1.0, 1.0, 1.0], planes)},
+        {
+            "tibia": {
+                **_complete([0.0, 0.0, 10.0], [1.0, 1.0, 1.0], planes),
+                "regions": windows,
+            }
+        },
     )
     check = _by_rule(out[0], FEMUR_RULES[0])
-    # The point +/- precision, not the plane's 50 +/- 3.
+    # The point +/- precision, not the plane's 50 +/- 3, nor any window.
     assert check["target_interval"] == [9.0, 11.0]
     assert check["reference_status"] == "complete"
     assert check["reference_construction"] == squint_sanity.COMPLETE_CONSTRUCTION
     assert check["reference_planes"] == [
         {"orientation": "axial", "series_uid": "series-axial", "slice": 3}
     ]
-    # Without a usable precision it stays unknown: no fallback to the planes.
+    assert check["reference_windows"] == []
+    assert check["reference_fallbacks"] == []
+
+
+def test_complete_reference_without_usable_precision_reads_its_planes(monkeypatch):
+    # Step 1 covers only a complete reference with a usable point and precision;
+    # the rest take step 2, the record's own exact-normal planes (z = 10 +/- 2).
+    for subject, anchors in _complete_unusable_matrix():
+        out, _ = _run(monkeypatch, {Z: (13.0, 20.0)}, subject, anchors)
+        assert out[0]["status"] == "plausible"
+        check = _by_rule(out[0], FEMUR_RULES[0])
+        assert check["target_interval"] == [8.0, 12.0]
+        assert check["result"] == "supported_strictly_after"
+        assert check["reference_status"] == "complete"
+        assert check["reference_construction"] == (
+            squint_sanity.COMPLETE_PLANES_CONSTRUCTION
+        )
+        assert check["reference_fallbacks"] == [
+            "complete_reference_point_or_precision_unusable"
+        ]
+        assert [plane["weight"] for plane in check["reference_planes"]] == [1.0]
+    # The opposite sign: the same plane, the candidate wholly below it.
     out, _ = _run(
         monkeypatch,
         {Z: (13.0, 20.0)},
         "femur",
-        {"tibia": _complete([0.0, 0.0, 10.0], None, planes)},
+        {
+            "tibia": _complete(
+                [0.0, 0.0, 10.0], None, {"axial": _plane("axial", Z, 50.0, 3.0)}
+            )
+        },
     )
     check = _by_rule(out[0], FEMUR_RULES[0])
-    assert check["target_interval"] is None
-    assert check["result"] == "unknown"
-    assert check["reference_status"] == "complete"
-    assert check["reference_construction"] == (
-        "complete_reference_point_or_precision_unusable"
-    )
-    assert check["reference_planes"] == []
+    assert check["target_interval"] == [47.0, 53.0]
+    assert check["result"] == "reversed_strictly_after"
+    assert out[0]["status"] == "contradicted"
 
 
 # ---------------------------------------------------------------- partial references
@@ -769,6 +784,16 @@ def _partial(planes, **reference):
     if planes is not None:
         record["planes"] = planes
     return record
+
+
+def _assert_without_window(check, plane_step):
+    """No step supplied an interval: the plane step's reason, then no window."""
+    assert check["target_interval"] is None
+    assert check["result"] == "unknown"
+    assert check["reference_construction"] == "anchor_without_window"
+    assert check["reference_fallbacks"] == [plane_step]
+    assert check["reference_planes"] == []
+    assert check["reference_windows"] == []
 
 
 def test_partial_axial_plane_supports_and_reverses_femur_superior_to_tibia(
@@ -829,13 +854,8 @@ def test_partial_axial_plane_leaves_y_rules_unknown(monkeypatch):
             out, _ = _run(monkeypatch, {Y: interval}, subject, {"femur": femur})
             check = _by_rule(out[0], rule)
             assert check["axis"] == "y"
-            assert check["target_interval"] is None
-            assert check["result"] == "unknown"
             assert check["reference_status"] == "partial"
-            assert check["reference_construction"] == (
-                "partial_reference_axis_not_constrained"
-            )
-            assert check["reference_planes"] == []
+            _assert_without_window(check, "partial_reference_axis_not_constrained")
             assert out[0]["status"] == "unknown"
 
 
@@ -843,8 +863,7 @@ def test_partial_sagittal_plane_speaks_on_x_only(monkeypatch):
     tibia = _partial({"sagittal": _plane("sagittal", X, 0.0, 1.0), "coronal": TIED})
     out, _ = _run(monkeypatch, {Z: (13.0, 20.0)}, "femur", {"tibia": tibia})
     check = _by_rule(out[0], FEMUR_RULES[0])
-    assert check["result"] == "unknown"
-    assert check["reference_construction"] == "partial_reference_axis_not_constrained"
+    _assert_without_window(check, "partial_reference_axis_not_constrained")
     out, _ = _run(monkeypatch, {X: (5.0, 6.0)}, "fibula", {"tibia": tibia}, side="left")
     check = _by_rule(out[0], FIBULA_RULE)
     assert check["target_interval"] == [-1.0, 1.0]
@@ -883,11 +902,7 @@ def test_oblique_partial_plane_determines_no_lps_axis(monkeypatch):
         for interval in ((13.0, 20.0), (0.0, 7.0), (500.0, 600.0)):
             out, _ = _run(monkeypatch, {Z: interval}, "femur", {"tibia": tibia})
             check = _by_rule(out[0], FEMUR_RULES[0])
-            assert check["target_interval"] is None
-            assert check["result"] == "unknown"
-            assert check["reference_construction"] == (
-                "partial_reference_axis_not_constrained"
-            )
+            _assert_without_window(check, "partial_reference_axis_not_constrained")
             assert out[0]["status"] == "unknown"
     # Floating noise in an axial normal is not obliquity (relative.py's rank precision).
     noisy = _partial({"axial": _plane("axial", (1e-17, 0.0, 1.0), 10.0, 2.0)})
@@ -924,8 +939,7 @@ def test_two_oblique_planes_that_span_an_axis_determine_it(monkeypatch):
         monkeypatch, {X: (40.0, 50.0)}, "fibula", {"tibia": pair}, side="left"
     )
     check = _by_rule(out[0], FIBULA_RULE)
-    assert check["result"] == "unknown"
-    assert check["reference_construction"] == "partial_reference_axis_not_constrained"
+    _assert_without_window(check, "partial_reference_axis_not_constrained")
 
 
 def test_partial_precision_must_be_known_on_the_planes_an_axis_needs(monkeypatch):
@@ -936,9 +950,7 @@ def test_partial_precision_must_be_known_on_the_planes_an_axis_needs(monkeypatch
         )
         out, _ = _run(monkeypatch, {Z: (13.0, 20.0)}, "femur", {"tibia": tibia})
         check = _by_rule(out[0], FEMUR_RULES[0])
-        assert check["target_interval"] is None
-        assert check["result"] == "unknown"
-        assert check["reference_construction"] == "partial_reference_precision_unknown"
+        _assert_without_window(check, "partial_reference_precision_unknown")
         # The sagittal plane's own axis does not need the axial precision.
         out, _ = _run(
             monkeypatch, {X: (5.0, 6.0)}, "fibula", {"tibia": tibia}, side="left"
@@ -984,17 +996,14 @@ def test_malformed_partial_records_are_unknown_not_errors(monkeypatch):
             "partial_reference_planes_dependent",
         ),
     ]
-    for record, construction in cases:
+    for record, plane_step in cases:
         out, _ = _run(monkeypatch, {Z: (13.0, 20.0)}, "femur", {"tibia": record})
         assert out[0]["status"] == "unknown"
         assert out[0]["eligible"] is True
         check = _by_rule(out[0], FEMUR_RULES[0])
         assert check["candidate_interval"] == [13.0, 20.0]
-        assert check["target_interval"] is None
-        assert check["result"] == "unknown"
         assert check["reference_status"] == "partial"
-        assert check["reference_construction"] == construction
-        assert check["reference_planes"] == []
+        _assert_without_window(check, plane_step)
 
 
 def test_other_reference_statuses_supply_no_interval(monkeypatch):
@@ -1097,3 +1106,235 @@ def test_object_geometry_partial_reference_reaches_the_check_end_to_end():
         assert plane["orientation"] == "axial"
         assert plane["slice"] == tibia_slice
         assert plane["series_uid"] == "axial-series"
+
+
+# ---------------------------------------------------------------- anchor window projection
+
+TILT = math.radians(7.0)
+#: An oblique plane: it determines no LPS axis, so the anchor's windows must speak.
+OBLIQUE = {"axial": _plane("axial", (0.0, -math.sin(TILT), -math.cos(TILT)), 0.0, 5.0)}
+LOW = (0, 1, 0, 3, 0, 3)
+HIGH = (9, 10, 0, 3, 0, 3)
+SPANNING = (7, 10, 0, 3, 0, 3)
+OUTSIDE = (20, 21, 0, 1, 0, 1)
+
+
+def _tilted_series(uid, tilt=TILT, count=10, step=10.0, tiles=3, tile_px=20):
+    """Slices every ``step`` mm along a normal tilted ``tilt`` from z about x.
+
+    Rows run along (0, cos t, -sin t), so a window's tiles spread over z with the
+    tilt, as a real oblique acquisition's do.
+    """
+    rows_dir = (0.0, math.cos(tilt), -math.sin(tilt))
+    depth_dir = np.asarray((0.0, math.sin(tilt), math.cos(tilt)))
+    bounds = np.zeros((tiles, tiles, 4), dtype=np.int64)
+    for r in range(tiles):
+        for c in range(tiles):
+            bounds[r, c] = (
+                r * tile_px,
+                (r + 1) * tile_px,
+                c * tile_px,
+                (c + 1) * tile_px,
+            )
+    return {
+        "series_uid": uid,
+        "view": {
+            "orientation": "axial",
+            "fluid_sensitive": "yes",
+            "fat_suppression": "no",
+        },
+        "stack": SimpleNamespace(
+            median=np.ones((count, tiles, tiles)), bounds_rc=bounds
+        ),
+        "geometry": {
+            "position": np.asarray([k * step * depth_dir for k in range(count)]),
+            "orientation": np.asarray([[1.0, 0.0, 0.0, *rows_dir]] * count),
+            "spacing": np.asarray([[1.0, 1.0]] * count),
+        },
+    }
+
+
+def _with_windows(record, windows):
+    return {
+        **record,
+        "regions": [
+            {"series_uid": uid, "window": list(window)} for uid, window in windows
+        ],
+    }
+
+
+def _z(series, window):
+    """The same projection the module makes of any window: the candidate function."""
+    return list(squint_geometry._candidate_interval(series, window, np.asarray(Z)))
+
+
+def _femur_check(series, window, tibia, series_by_uid=None):
+    rows = squint_sanity.window_sanity_checks(
+        series, "femur", [window], {"tibia": tibia}, None, series_by_uid=series_by_uid
+    )
+    return rows[0], _by_rule(rows[0], FEMUR_RULES[0])
+
+
+def test_oblique_anchor_is_placed_by_its_own_window_in_the_candidate_series():
+    series = _tilted_series("tilted")
+    tibia = _with_windows(_partial(OBLIQUE), [("tilted", LOW)])
+    row, check = _femur_check(series, HIGH, tibia)
+    assert check["candidate_interval"] == _z(series, HIGH)
+    assert check["target_interval"] == _z(series, LOW)
+    assert check["result"] == "supported_strictly_after"
+    assert row["status"] == "plausible"
+    assert check["reference_status"] == "partial"
+    assert check["reference_construction"] == squint_sanity.WINDOW_CONSTRUCTION
+    assert check["reference_fallbacks"] == ["partial_reference_axis_not_constrained"]
+    assert check["reference_planes"] == []
+    assert check["reference_windows"] == [
+        {
+            "series_uid": "tilted",
+            "window": list(LOW),
+            "interval": _z(series, LOW),
+            "scope": "candidate_series",
+        }
+    ]
+    # The opposite sign: the anchor's window above the candidate's.
+    above = _with_windows(_partial(OBLIQUE), [("tilted", HIGH)])
+    row, check = _femur_check(series, LOW, above)
+    assert check["result"] == "reversed_strictly_after"
+    assert row["status"] == "contradicted"
+    # Both sides are built the same way: the same window on both sides overlaps.
+    row, check = _femur_check(series, LOW, tibia)
+    assert check["target_interval"] == check["candidate_interval"]
+    assert check["result"] == "overlap_or_touching"
+    assert row["status"] == "unknown"
+
+
+def test_exact_planes_supply_before_the_anchor_windows():
+    series = _tilted_series("tilted")
+    exact = _with_windows(
+        _partial({"axial": _plane("axial", Z, 10.0, 2.0)}), [("tilted", HIGH)]
+    )
+    _, check = _femur_check(series, HIGH, exact)
+    assert check["target_interval"] == [8.0, 12.0]
+    assert check["result"] == "supported_strictly_after"
+    assert check["reference_construction"] == squint_sanity.PARTIAL_CONSTRUCTION
+    assert check["reference_windows"] == []
+    # Without the exact plane the same record's window speaks, and overlaps.
+    tied_only = _with_windows(_partial({"coronal": TIED}), [("tilted", HIGH)])
+    _, check = _femur_check(series, HIGH, tied_only)
+    assert check["reference_construction"] == squint_sanity.WINDOW_CONSTRUCTION
+    assert check["reference_fallbacks"] == ["partial_reference_without_selected_planes"]
+    assert check["result"] == "overlap_or_touching"
+
+
+def test_the_candidate_series_window_is_used_before_the_anchors_other_series():
+    series = _tilted_series("tilted")
+    other = _tilted_series("other", tilt=0.0)
+    tibia = _with_windows(_partial(OBLIQUE), [("other", SPANNING), ("tilted", LOW)])
+    by_uid = {"other": other, "tilted": series}
+    _, check = _femur_check(series, HIGH, tibia, by_uid)
+    assert check["result"] == "supported_strictly_after"
+    assert [item["series_uid"] for item in check["reference_windows"]] == ["tilted"]
+    assert check["reference_windows"][0]["scope"] == "candidate_series"
+    assert check["target_interval"] == _z(series, LOW)
+    # The other series' window alone would overlap the candidate: it is not read.
+    alone = _with_windows(_partial(OBLIQUE), [("other", SPANNING)])
+    _, check = _femur_check(series, HIGH, alone, by_uid)
+    assert check["result"] == "overlap_or_touching"
+
+
+def test_without_a_candidate_series_window_the_union_over_its_series_speaks():
+    series = _tilted_series("tilted")
+    other = _tilted_series("other", tilt=0.0)
+    by_uid = {"other": other, "tilted": series}
+    low_only = _with_windows(_partial(OBLIQUE), [("other", LOW)])
+    _, check = _femur_check(series, HIGH, low_only, by_uid)
+    assert check["result"] == "supported_strictly_after"
+    assert check["reference_windows"][0]["scope"] == "anchor_series_union"
+    assert check["target_interval"] == _z(other, LOW)
+    # The union can only add overlap: a second window reaching the candidate's
+    # height turns the strict result neutral, never reversed.
+    both = _with_windows(_partial(OBLIQUE), [("other", LOW), ("other", SPANNING)])
+    row, check = _femur_check(series, HIGH, both, by_uid)
+    assert check["result"] == "overlap_or_touching"
+    assert row["status"] == "unknown"
+    assert check["target_interval"] == [_z(other, LOW)[0], _z(other, SPANNING)[1]]
+    assert len(check["reference_windows"]) == 2
+
+
+def test_unusable_anchor_windows_are_unknown_by_name():
+    series = _tilted_series("tilted")
+    other = _tilted_series("other", tilt=0.0)
+    not_windows = [None, {"window": list(LOW)}, {"series_uid": "tilted"}]
+    cases = [
+        # No window recorded at all, or nothing recorded that is one.
+        (_partial(OBLIQUE), None, "anchor_without_window"),
+        ({**_partial(OBLIQUE), "regions": not_windows}, None, "anchor_without_window"),
+        # Its series is not available to project the window.
+        (
+            _with_windows(_partial(OBLIQUE), [("other", LOW)]),
+            None,
+            "anchor_window_series_unavailable",
+        ),
+        # The window does not project in its series.
+        (
+            _with_windows(_partial(OBLIQUE), [("tilted", OUTSIDE)]),
+            None,
+            "anchor_window_projection_unavailable",
+        ),
+        # All or nothing: a union missing one window could be narrower than observed.
+        (
+            _with_windows(_partial(OBLIQUE), [("other", LOW), ("other", OUTSIDE)]),
+            {"other": other},
+            "anchor_window_projection_unavailable",
+        ),
+    ]
+    for record, by_uid, construction in cases:
+        row, check = _femur_check(series, HIGH, record, by_uid)
+        assert row["status"] == "unknown"
+        assert check["target_interval"] is None
+        assert check["result"] == "unknown"
+        assert check["reference_construction"] == construction
+        assert check["reference_fallbacks"] == [
+            "partial_reference_axis_not_constrained"
+        ]
+        assert check["reference_windows"] == []
+
+
+def test_anchor_windows_are_projected_by_the_candidate_function(monkeypatch):
+    series = _tilted_series("tilted")
+    other = _tilted_series("other", tilt=0.0)
+    real = squint_geometry._candidate_interval
+    calls = []
+
+    def spy(series_arg, window, normal):
+        calls.append((series_arg, tuple(window), tuple(float(v) for v in normal)))
+        return real(series_arg, window, normal)
+
+    monkeypatch.setattr(squint_geometry, "_candidate_interval", spy)
+    tibia = _with_windows(_partial(OBLIQUE), [("other", LOW)])
+    _, check = _femur_check(series, HIGH, tibia, {"other": other})
+    assert check["reference_construction"] == squint_sanity.WINDOW_CONSTRUCTION
+    assert any(call[0] is other and call[1] == LOW and call[2] == Z for call in calls)
+    assert any(call[0] is series and call[1] == HIGH and call[2] == Z for call in calls)
+
+
+def test_object_geometry_oblique_reference_is_placed_by_its_located_window():
+    """A resemblance-located tibia on an oblique acquisition: its plane determines
+    no axis, so its own located window speaks, through the real record."""
+    series = _tilted_series("tilted")
+    for tibia_window, femur_window, result in (
+        (LOW, HIGH, "supported_strictly_after"),
+        (HIGH, LOW, "reversed_strictly_after"),
+    ):
+        tibia = squint_geometry.object_geometry(
+            "tibia",
+            [{"series_uid": "tilted", "window": list(tibia_window)}],
+            {"tilted": series},
+        )
+        assert tibia["reference"]["status"] == relative.PARTIAL
+        _, check = _femur_check(series, femur_window, tibia, {"tilted": series})
+        assert check["result"] == result
+        assert check["reference_construction"] == squint_sanity.WINDOW_CONSTRUCTION
+        assert check["reference_fallbacks"] == [
+            "partial_reference_axis_not_constrained"
+        ]
+        assert check["reference_windows"][0]["window"] == list(tibia_window)

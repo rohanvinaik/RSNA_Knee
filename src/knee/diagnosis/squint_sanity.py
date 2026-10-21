@@ -6,28 +6,41 @@ evidence stays unknown and the window stays eligible.
 
 A reference supplies an interval only on an LPS axis its own record determines
 (``docs/RELATIVE_POSITION_MAP.md`` §8.8: each key plane is one physical depth
-constraint; oblique planes are solved, never read by their orientation label).
+constraint; oblique planes are solved, never read by their orientation label;
+``docs/CLASSICAL_AI_BUILD_DESIGN.md`` §7.2 for the order below). For a
+``complete`` or ``partial`` record, in this order:
 
-* A ``complete`` reference supplies its measured point +/- its recorded
-  precision on every axis, exactly as before; its planes are not reread.
-* A ``partial`` reference supplies an interval only on an axis that lies in the
-  row space of its selected planes' normals. That test is the floating-precision
-  rank ``knee.collapse.relative.reference_position`` already uses for singular
-  planes, not an anatomical or angular threshold. The interval is the solved
-  coordinate ``w . d`` +/- ``sum |w_i| precision_i`` over the planes that
-  determine the axis: with three planes this is row ``a`` of ``N^-1`` and
-  ``|N^-1| @ precision``, the complete construction itself. A plane whose
-  normal is exactly one axis gives that axis its own offset +/- its precision;
-  an oblique plane determines no single LPS axis and supplies nothing.
-* Every undetermined axis, and every other status, stays unknown.
+1. A complete reference with a usable point and precision supplies its measured
+   point +/- its recorded precision, exactly as before; its planes and windows
+   are not reread.
+2. Otherwise the record's selected planes supply an interval only on an axis
+   that lies in the row space of their normals. That test is the floating-
+   precision rank ``knee.collapse.relative.reference_position`` already uses
+   for singular planes, not an anatomical or angular threshold. The interval is
+   the solved coordinate ``w . d`` +/- ``sum |w_i| precision_i`` over the
+   planes that determine the axis: with three planes this is row ``a`` of
+   ``N^-1`` and ``|N^-1| @ precision``, the complete construction itself. A
+   plane whose normal is exactly one axis gives that axis its own offset +/-
+   its precision; an oblique plane determines no single LPS axis.
+3. Otherwise the anchor's own observed tile windows (its record's ``regions``)
+   supply the exact projection of their tiles onto the axis, made by
+   ``squint_geometry._candidate_interval``, the same function that projects the
+   candidate's window: its windows in the candidate's own series when it has
+   any, else the union over its series, which can only add overlap. Every
+   chosen window must project, or the axis stays unknown.
+4. An anchor with no usable window stays unknown, by name.
 
-Each check records which reference status supplied it, how
-(``reference_construction``) and from which planes, with their weights
-(``reference_planes``). A pass remains a location statement only.
+Every other status stays unknown. Each check records which reference status
+supplied it, how (``reference_construction``), from which planes with their
+weights (``reference_planes``) or which series' windows with their projected
+intervals (``reference_windows``), and why each earlier step supplied nothing
+(``reference_fallbacks``). No tolerance or map distance enters. A pass remains a
+location statement only.
 """
 
 from __future__ import annotations
 
+import copy
 import itertools
 import math
 from collections.abc import Mapping, Sequence
@@ -45,6 +58,8 @@ SOURCE = "docs/OBJECTS_AND_CONDITIONS.md §4"
 #: How a check's target interval was obtained (``reference_construction``).
 COMPLETE_CONSTRUCTION = "complete_reference_point_and_precision"
 PARTIAL_CONSTRUCTION = "partial_reference_selected_planes"
+COMPLETE_PLANES_CONSTRUCTION = "complete_reference_selected_planes"
+WINDOW_CONSTRUCTION = "anchor_window_projection"
 
 _RELATIONS = ("strictly_before", "strictly_after")
 _OPPOSITE = {"strictly_before": "strictly_after", "strictly_after": "strictly_before"}
@@ -246,18 +261,19 @@ def _rank(rows: np.ndarray) -> int:
     return int(np.sum(singular > float(singular[0]) * max(rows.shape) * relative.EPS))
 
 
-def _partial_interval(record: Mapping, axis: str):
-    """(interval, construction code, planes) on one LPS axis of a partial reference.
+def _planes_interval(record: Mapping, axis: str, prefix: str):
+    """(interval, construction code, planes) on one LPS axis from selected planes.
 
     The axis is determined only when it lies in the row space of the selected
     planes' normals; then the smallest set of planes whose span holds it gives
     the solved coordinate and its precision bound. Dependent (parallel)
     planes, a malformed selected plane, or an unknown precision on a plane the
-    axis needs supply nothing, by name.
+    axis needs supply nothing, by name. Codes carry the record's status as
+    ``prefix`` (``partial_reference_`` or ``complete_reference_``).
     """
     planes = record.get("planes")
     if not isinstance(planes, Mapping):
-        return None, "partial_reference_without_selected_planes", []
+        return None, prefix + "without_selected_planes", []
     rows = []
     for orientation in relative.ORIENTATIONS:
         address = planes.get(orientation)
@@ -268,13 +284,13 @@ def _partial_interval(record: Mapping, axis: str):
             continue
         row = _plane_row(orientation, address)
         if row is None:
-            return None, "partial_reference_plane_malformed", []
+            return None, prefix + "plane_malformed", []
         rows.append(row)
     if not rows:
-        return None, "partial_reference_without_selected_planes", []
+        return None, prefix + "without_selected_planes", []
     normals = np.asarray([row["normal"] for row in rows], dtype=np.float64)
     if _rank(normals) < len(rows):
-        return None, "partial_reference_planes_dependent", []
+        return None, prefix + "planes_dependent", []
     unit = np.zeros(3, dtype=np.float64)
     unit[_AXIS_INDEX[axis]] = 1.0
     for size in range(1, len(rows) + 1):
@@ -285,10 +301,10 @@ def _partial_interval(record: Mapping, axis: str):
             try:
                 weights = np.linalg.solve(chosen @ chosen.T, chosen @ unit)
             except np.linalg.LinAlgError:
-                return None, "partial_reference_planes_dependent", []
+                return None, prefix + "planes_dependent", []
             used = [rows[index] for index in subset]
             if any(row["precision_mm"] is None for row in used):
-                return None, "partial_reference_precision_unknown", []
+                return None, prefix + "precision_unknown", []
             value = math.fsum(
                 float(weight) * row["offset_mm"]
                 for weight, row in zip(weights, used, strict=True)
@@ -299,10 +315,10 @@ def _partial_interval(record: Mapping, axis: str):
             )
             interval = _valid_interval((value - reach, value + reach))
             if interval is None:
-                return None, "partial_reference_interval_nonfinite", []
+                return None, prefix + "interval_nonfinite", []
             return (
                 interval,
-                PARTIAL_CONSTRUCTION,
+                prefix + "selected_planes",
                 [
                     {
                         "orientation": row["orientation"],
@@ -316,50 +332,133 @@ def _partial_interval(record: Mapping, axis: str):
                     for weight, row in zip(weights, used, strict=True)
                 ],
             )
-    return None, "partial_reference_axis_not_constrained", []
+    return None, prefix + "axis_not_constrained", []
 
 
-def _reference_supply(anchors: object, name: str, axis: str) -> dict[str, Any]:
+def _observed_windows(record: Mapping) -> list[tuple[str, tuple]]:
+    """The anchor's own observed tile windows, ``(series_uid, window)``, once each.
+
+    They are the ``regions`` its record carries: a structural anchor's checked
+    territories' object-tile boxes, or the windows a located object was found
+    in. An entry without a series or a six-integer window is not a window.
+    """
+    regions = record.get("regions")
+    if not isinstance(regions, Sequence) or isinstance(regions, (str, bytes)):
+        return []
+    found: list[tuple[str, tuple]] = []
+    for region in regions:
+        if not isinstance(region, Mapping):
+            continue
+        uid = region.get("series_uid")
+        window = _window_tuple(region)
+        usable = isinstance(uid, str) and uid and window is not None
+        if usable and (uid, window) not in found:
+            found.append((uid, window))
+    return found
+
+
+def _window_interval(record: Mapping, axis: str, series, series_by_uid):
+    """(interval, construction code, windows) from the anchor's own observed windows.
+
+    Each window is projected onto the axis by ``squint_geometry._candidate_interval``,
+    the function that projects the candidate's window: every tile corner through
+    its slice's own frame, widened by that slice's precision along the axis. The
+    anchor's windows in the candidate's own series are used when it has any;
+    otherwise all of its windows over its series. The interval is their union,
+    which can only add overlap. A union missing a window could be narrower than
+    what was observed, so every chosen window must project: a series that is not
+    available, or a window that does not project, leaves the axis unknown, by name.
+    """
+    windows = _observed_windows(record)
+    if not windows:
+        return None, "anchor_without_window", []
+    own_uid = series.get("series_uid") if isinstance(series, Mapping) else None
+    own = [item for item in windows if isinstance(own_uid, str) and item[0] == own_uid]
+    scope = "candidate_series" if own else "anchor_series_union"
+    unit = np.asarray(_AXES[axis], dtype=np.float64)
+    used = []
+    for uid, window in own or windows:
+        if uid == own_uid:
+            source = series
+        elif isinstance(series_by_uid, Mapping):
+            source = series_by_uid.get(uid)
+        else:
+            source = None
+        if not isinstance(source, dict):
+            return None, "anchor_window_series_unavailable", []
+        try:
+            interval = _valid_interval(
+                squint_geometry._candidate_interval(source, window, unit)
+            )
+        except (TypeError, ValueError, IndexError):
+            interval = None
+        if interval is None:
+            return None, "anchor_window_projection_unavailable", []
+        used.append(
+            {
+                "series_uid": uid,
+                "window": list(window),
+                "interval": list(interval),
+                "scope": scope,
+            }
+        )
+    low = min(item["interval"][0] for item in used)
+    high = max(item["interval"][1] for item in used)
+    return (low, high), WINDOW_CONSTRUCTION, used
+
+
+def _supply(interval, status, construction, *, planes=(), windows=(), fallbacks=()):
+    return {
+        "interval": interval,
+        "status": status,
+        "construction": construction,
+        "planes": list(planes),
+        "windows": list(windows),
+        "fallbacks": list(fallbacks),
+    }
+
+
+def _reference_supply(
+    anchors: object, name: str, axis: str, series=None, series_by_uid=None
+) -> dict[str, Any]:
     """The target interval one reference supplies on one axis, and from what.
 
     ``status`` is the reference record's own status (None without a record);
-    ``construction`` names how the interval was made or why none was;
-    ``planes`` lists the planes that made it (empty when none was made).
+    ``construction`` names how the interval was made, or why none was;
+    ``planes`` and ``windows`` hold what made it (empty when none was made);
+    ``fallbacks`` names, in order, why each earlier step supplied nothing.
     """
     record = anchors.get(name) if isinstance(anchors, Mapping) else None
     reference = record.get("reference") if isinstance(record, Mapping) else None
     if not isinstance(reference, Mapping):
-        return {
-            "interval": None,
-            "status": None,
-            "construction": "no_reference",
-            "planes": [],
-        }
+        return _supply(None, None, "no_reference")
     status = reference.get("status")
+    if status not in (relative.COMPLETE, relative.PARTIAL):
+        return _supply(
+            None,
+            status if isinstance(status, str) else None,
+            "reference_status_supplies_no_interval",
+        )
+    fallbacks = []
     if status == relative.COMPLETE:
         interval = _complete_interval(reference, axis)
-        return {
-            "interval": interval,
-            "status": status,
-            "construction": COMPLETE_CONSTRUCTION
-            if interval is not None
-            else "complete_reference_point_or_precision_unusable",
-            "planes": _selected_names(record) if interval is not None else [],
-        }
-    if status == relative.PARTIAL:
-        interval, construction, planes = _partial_interval(record, axis)
-        return {
-            "interval": interval,
-            "status": status,
-            "construction": construction,
-            "planes": planes,
-        }
-    return {
-        "interval": None,
-        "status": status if isinstance(status, str) else None,
-        "construction": "reference_status_supplies_no_interval",
-        "planes": [],
-    }
+        if interval is not None:
+            return _supply(
+                interval, status, COMPLETE_CONSTRUCTION, planes=_selected_names(record)
+            )
+        fallbacks.append("complete_reference_point_or_precision_unusable")
+    interval, construction, planes = _planes_interval(
+        record, axis, f"{status}_reference_"
+    )
+    if interval is not None:
+        return _supply(
+            interval, status, construction, planes=planes, fallbacks=fallbacks
+        )
+    fallbacks.append(construction)
+    interval, construction, windows = _window_interval(
+        record, axis, series, series_by_uid
+    )
+    return _supply(interval, status, construction, windows=windows, fallbacks=fallbacks)
 
 
 def _window_tuple(item: object) -> tuple | None:
@@ -416,7 +515,14 @@ def _check(
 
 
 def _window_checks(
-    series, candidate_subject, window, anchors, knee_side, rules, supplies
+    series,
+    candidate_subject,
+    window,
+    anchors,
+    knee_side,
+    rules,
+    supplies,
+    series_by_uid,
 ):
     cache: dict[str, Any] = {}
     checks = []
@@ -428,10 +534,13 @@ def _window_checks(
         else:
             continue
         axis, relation = _expected(predicate, knee_side)
-        # A reference's interval does not depend on the window: made once per call.
+        # A reference's interval does not depend on the candidate window (only on
+        # the candidate's series, fixed for the call): made once per call.
         key = (other, axis)
         if key not in supplies:
-            supplies[key] = _reference_supply(anchors, other, axis)
+            supplies[key] = _reference_supply(
+                anchors, other, axis, series, series_by_uid
+            )
         supply = supplies[key]
         reference = supply["interval"]
         if relation is not None and role == "target":
@@ -457,7 +566,10 @@ def _window_checks(
         checks[-1]["reference_subject"] = other
         checks[-1]["reference_status"] = supply["status"]
         checks[-1]["reference_construction"] = supply["construction"]
-        checks[-1]["reference_planes"] = [dict(plane) for plane in supply["planes"]]
+        # Each check owns its provenance: nothing is shared between checks.
+        checks[-1]["reference_planes"] = copy.deepcopy(supply["planes"])
+        checks[-1]["reference_windows"] = copy.deepcopy(supply["windows"])
+        checks[-1]["reference_fallbacks"] = list(supply["fallbacks"])
     return checks
 
 
@@ -470,16 +582,20 @@ def _status(checks: list[dict]) -> str:
     return "unknown"
 
 
-def window_sanity_checks(series, subject, windows, anchors, knee_side):
+def window_sanity_checks(
+    series, subject, windows, anchors, knee_side, *, series_by_uid=None
+):
     """Advisory per-window checks of candidate windows against authored anatomy.
 
     Returns one result per input window, in input order, each holding the
     original window, its address, a list of named checks, and an aggregate
     status: contradicted, plausible or unknown. Unknown and overlapping checks
-    are neutral; every window stays eligible. A complete reference speaks on
-    every axis; a partial one only on the axes its selected planes determine
-    (module note), and each check names the reference status, construction
-    and planes that supplied its target interval.
+    are neutral; every window stays eligible. Each reference's interval comes
+    from the module note's order (complete point, exact planes, the anchor's
+    own observed windows), and each check names what supplied it.
+    ``series_by_uid`` holds the study's series records, so an anchor's windows
+    in other series than the candidate's can be projected; without it only
+    the candidate's own series is available.
     """
     if not isinstance(windows, Sequence) or isinstance(windows, (str, bytes)):
         return []
@@ -489,7 +605,14 @@ def window_sanity_checks(series, subject, windows, anchors, knee_side):
     for index, item in enumerate(windows):
         window = _window_tuple(item)
         checks = _window_checks(
-            series, subject, window, anchors, knee_side, rules, supplies
+            series,
+            subject,
+            window,
+            anchors,
+            knee_side,
+            rules,
+            supplies,
+            series_by_uid,
         )
         address = (
             item.get("address", item.get("window"))
@@ -511,7 +634,9 @@ def window_sanity_checks(series, subject, windows, anchors, knee_side):
 
 __all__ = [
     "COMPLETE_CONSTRUCTION",
+    "COMPLETE_PLANES_CONSTRUCTION",
     "PARTIAL_CONSTRUCTION",
+    "WINDOW_CONSTRUCTION",
     "interval_relation_code",
     "window_sanity_checks",
 ]

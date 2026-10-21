@@ -440,14 +440,45 @@ def _plane_has_geometry(address: Mapping[str, Any]) -> bool:
     )
 
 
+def _observed_regions(
+    territories: Sequence[Mapping[str, Any]],
+) -> list[dict[str, Any]]:
+    """Each checked anchor territory's object-tile box, as an observed window.
+
+    The object role's box (``_object_window``), never the territory's tile
+    window, which holds its context ring too. ``squint_sanity`` projects these
+    where neither a complete reference nor an exact plane determines an axis.
+    """
+    regions = []
+    for territory in territories:
+        window = _object_window(territory)
+        if window is None:
+            continue
+        regions.append(
+            {
+                "series_uid": territory["series_uid"],
+                "window": list(window),
+                "status": "anchor_territory_object_tiles",
+                "origin": territory.get("origin"),
+            }
+        )
+    return regions
+
+
 def _anchor_geometry(
-    subject: str, anchor: Mapping[str, Any], series_by_uid: Mapping[str, Any]
+    subject: str,
+    anchor: Mapping[str, Any],
+    series_by_uid: Mapping[str, Any],
+    territories: Sequence[Mapping[str, Any]] = (),
 ) -> dict[str, Any]:
-    """One usable anchor's planes and reference, in the shape the priors read.
+    """One usable anchor's planes, reference and observed windows.
 
     A selected plane given only as its series and slice takes its physical
     plane from that slice's own acquisition frame (``object_geometry``). A plane
     the anchor does not supply is not made, and its unresolved outcomes stay.
+    ``regions`` holds the object-tile boxes of the territories that passed the
+    anchor's checks (``_observed_regions``), as ``object_geometry`` holds a
+    located object's windows.
     """
     planes: dict[str, Any] = {}
     derive: list[tuple[str, Mapping[str, Any]]] = []
@@ -536,6 +567,7 @@ def _anchor_geometry(
             "construction": "the anchor's own key planes; no centroid stands in "
             "for a missing plane",
         },
+        "regions": _observed_regions(territories),
     }
 
 
@@ -685,7 +717,9 @@ def study_anchors(
         state["bones"][name] = _anchor_summary(anchor, code, territories, refused)
         if code == "valid" and anchor["status"] in USABLE_ANCHOR_STATUSES:
             state["usable"][name] = {"anchor": anchor, "territories": territories}
-            state["geometry"][name] = _anchor_geometry(name, anchor, series_by_uid)
+            state["geometry"][name] = _anchor_geometry(
+                name, anchor, series_by_uid, territories
+            )
     for name in BONES:
         state["bones"].setdefault(
             name, {"status": "unavailable", "code": "anchor_not_returned"}
@@ -1240,10 +1274,12 @@ def _check_anchor_sanity(
     """A contradicted pair cannot silently anchor dependent objects.
 
     Preserve both observations and name the conflict; these checks do not choose
-    which of two conflicting bone names was mistaken. A partial reference speaks
-    only on the LPS axes its selected planes determine (``squint_sanity``); its
-    other axes, and missing references, remain neutral and do not prevent their
-    existing useful guide contribution.
+    which of two conflicting bone names was mistaken. Each reference supplies its
+    interval in ``squint_sanity``'s order: a complete point and precision, its
+    exact planes, or the projection of its own observed territory windows, made
+    like the candidate's; an axis none of them determines, and a missing
+    reference, remain neutral and do not prevent their existing useful guide
+    contribution.
     """
     checked: dict[str, Any] = {}
     conflicts: set[str] = set()
@@ -1255,7 +1291,12 @@ def _check_anchor_sanity(
             if window is None or series is None:
                 continue
             for row in window_sanity_checks(
-                series, name, [window], state["geometry"], knee_side
+                series,
+                name,
+                [window],
+                state["geometry"],
+                knee_side,
+                series_by_uid=series_by_uid,
             ):
                 row["series_uid"] = territory["series_uid"]
                 rows.append(row)
@@ -1621,7 +1662,12 @@ def locate_anatomy_first(
             if not windows:
                 continue
             sanity_rows = window_sanity_checks(
-                series_record, subject, windows, anchors, knee_side
+                series_record,
+                subject,
+                windows,
+                anchors,
+                knee_side,
+                series_by_uid=series_by_uid,
             )
             for row in sanity_rows:
                 row["series_uid"] = series_record.get("series_uid")
