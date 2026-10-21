@@ -318,3 +318,37 @@ the two bones. Two messages, verbatim:
 > This is computer vision. How the HELL would a pipeline that resolves objects visually be able to do cosine similarity match that differentiates the tibia and the femur. They’re BOTH BONES. The fact their cosine similarity scores are so similar is fucking PHENOMENAL validation that you just presented as if it’s a problem. If you try to “fix” this you will DESTROY everything.
 >
 > This is baby shit, stuff we solved a LOOOONG time ago. Why are you randomly reinventing object recognition? Consult with codex, tell me what you understand
+
+## Rohan — the scans have known directions; carry the established information forward, 2026-10-22
+
+Recording metadata, not his words: sent after the lead asked whether identity should come from reasoning over the
+whole map. Verbatim:
+
+> Claude. Why are you thinking through how we find the bones. "the bones are found by their structure". Uh huh. Cool. But...we're already done with that???
+>
+> Did you read the "Anatomical map" or whatever document I wrote up? Because that, in conjunction with the "significance weighting" paper, should make this pretty unambiguous
+>
+> But even BEFORE that, the WAAAAAAAAAAAY easier, efficient, effective way to do this? These scans aren't upside-down. They're...directional. They show a "knee" with a basic x-y (or x-z for axial) grid showing the leg. So...femur is "up", tibia is "down"? Do you really not see what I've been trying to tell you MANY MANY MANY times now? Consult with codex as well, churn through thousands of toxens of SOTA LLM usage...to tell me if you understand the most basic thought I could possibly pose to you. For the love of God, Claude. I have told you MANY times, this is baby stuff
+
+After the lead answered without consulting Codex:
+
+> Um, I rather think you DO need codex to see this. I don't care if you THINK it's obvious, you've fucked this up DOZENS of times. I gave you an explicit instruction
+
+Then a pasted message (its author not stated; recorded verbatim, acted on as his request):
+
+> The operation for finding and naming the bones is already built. Use its results and their supporting observations. Do not restart bone recognition because a downstream appearance comparison resembles another bone.
+>
+> These images already have known directions. Where the existing reader establishes two bone territories, their anatomical ordering distinguishes femur from tibia. You do not need a complete three-plane reference or a newly recovered global alignment to use an ordering already observed in one view.
+>
+> A femur resembling a tibia is compatible with both being bones. That resemblance does not contradict the positional evidence establishing which bone this is.
+>
+> Carry the established information forward. Each subsequent question is conditioned on what the system already knows. The anatomical map then narrows where neighbouring objects can be, and each additional observation further constrains the remaining questions. Do not repeatedly return every question to a naive state.
+>
+> This is the relevant information-theoretic point: known structure removes alternatives and unnecessary computation. It is not another score to add after an unconstrained appearance competition.
+>
+> Diagnosis asks about the state of the contextually identified object. Growth stores the warranted object presentation with that context and lineage.
+>
+> Implement that handoff through preparation, recall, diagnosis and admission. Do not introduce a new tissue-kind classifier, tune bone profiles apart, or replace anatomical directions with arbitrary "top half of the image" thresholds. Genuine contradictory observations remain revisable evidence; similarity to another bone is not such an observation.
+
+The Codex exchanges of this correction (agent text) are kept in
+`data/readings/ai-bootstrap-loop-20261021/codex-bones-20261021/`.
