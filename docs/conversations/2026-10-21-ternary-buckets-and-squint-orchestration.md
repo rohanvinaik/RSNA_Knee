@@ -252,3 +252,52 @@ Recording metadata, not his words: sent while the lead's plan put the first real
 private Kaggle scaling notebook. Verbatim:
 
 > Also, we do not waste kaggle compute on nonsense. We will pull as much data as  we need locally when it's time to scale the AI part
+
+## Oblique acquisitions: carry what is known, and one shared alignment per knee, 2026-10-21
+
+Recording metadata, not his words: two messages Rohan sent while the lead was integrating the lanes,
+after the lead's oblique-plane binding (an anchor's interval along a patient axis taken from the exact
+projection of its own observed tile window). The first message does not state its author; its form (file
+links with line numbers, «My proposed knee application») reads as relayed agent analysis, so it is kept
+verbatim and not quoted as Rohan's words. The second is introduced by Rohan as a note from another agent;
+only «Note from another agent:» is his. Both are agent text to check against the thesis, recorded whole.
+
+First message, verbatim:
+
+> On the "oblique" issue:
+>
+> **Yes—the tracking sections supply a very direct pattern for this.** The system carries what it already knows, bounds the uncertainty, takes a cheap look, and corrects only what that look leaves unsettled. [Thesis §12](/Users/rohanvinaik/Projects/Kaggle_Killer/competitions/cell_tracking/docs/pipeline_thesis/paper/what_an_object_is.md:3861)
+>
+> My proposed knee application is:
+>
+> 1. **Establish the object where it is clear.** Keep its identity, observed geometry, and full/cheap profiles.
+> 2. **Carry its constraints into another view.** Use the actual acquisition geometry and anatomical relationships. An incomplete oblique reference can predict a strip or region rather than an exact point.
+> 3. **Look cheaply within that region.** Compare the appropriate target-view profile against compatible remembered presentations. The different views remain facets of one object.
+> 4. **Use the observation to refine the prediction.** A predicted location guides the search; the actual image supplies evidence. Preserve that distinction.
+> 5. **Request finer information only for the unresolved question.** Diagnosis may already be settled without obtaining an exact position or border.
+>
+> That is the tracking chapter's "look" translated from movement through time to a change of viewing coordinates. We carry its orchestration; the knee supplies its own geometry and anatomical constraints.
+>
+> The **sandwich** idea also transfers: complementary views constrain the same physical object, and disagreement identifies work still needed. The thesis explicitly says that agreement can support a result without establishing it—two carries can agree on the same wrong neighbour. Signed identity memory remains part of resolving that question.
+>
+> There is already useful wiring: [`plane_trace_in_frame`](/Users/rohanvinaik/Projects/Kaggle_Killer/competitions/RSNA_Knee/src/knee/collapse/relative.py:754) calculates where a selected plane cuts another image. Its precision can inform a search band, which other observations narrow.
+>
+> The efficiency follows naturally: shared geometric projections, bounded searches, cheap-with-cheap comparisons, and richer readings only where needed. [§7.4](/Users/rohanvinaik/Projects/Kaggle_Killer/competitions/cell_tracking/docs/pipeline_thesis/paper/what_an_object_is.md:2995) and [§13.3](/Users/rohanvinaik/Projects/Kaggle_Killer/competitions/cell_tracking/docs/pipeline_thesis/paper/what_an_object_is.md:4198) make those mechanics explicit.
+>
+> **The key correction is to let partial geometry guide a useful observation before demanding complete localization.** That is more operational than merely broadening the current axis-interval check, and closely follows the thesis.
+
+Second message, verbatim:
+
+> Note from another agent:
+>
+> Yes—I understand you to mean **one shared anatomical alignment to recover**, then reuse throughout that knee.
+>
+> The concrete operation is:
+>
+> 1. Use the clearly resolved bone structure to establish the anatomical reference plane.
+> 2. Resolve its angular relationship to the acquired images, whose orientations DICOM already records.
+> 3. Apply that same alignment to the anatomical map, object search regions and cross-view checks.
+>
+> That makes obliqueness a shared geometric calculation. Each object inherits the correction.
+>
+> The implementation should retain the actual plane normal/rotation, so "the angle" has an explicit geometric meaning. Different series retain their recorded acquisition orientations, all related to that common anatomical reference.

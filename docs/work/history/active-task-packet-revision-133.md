@@ -1,0 +1,162 @@
+# Active task packet
+
+Sole populated current-state record; FULL_BUILD_PLAN §13 owns this pointer. Revision **133**.
+Prior revision 132 is preserved verbatim at `docs/work/history/active-task-packet-revision-132.md`.
+
+## TASK ID / PACKET REVISION / STATE
+
+`THIN-OBJECT-BOOTSTRAP-20261021` / `133` / **execution started**. The anatomy-check correction is
+recorded; the signed identity memory, the call adapter and the locator-test repair are in the working
+tree; the checkpoint gate, commit and push come next, then the parallel integration lanes.
+
+## CURRENT REQUEST / AUTHORITATIVE EXCHANGES / ACTUAL AUTHORS
+
+Rohan, verbatim: «Good! Record this properly in the full project specs and documentation. Then, when
+everything is set up formally, for an external reader/other agent/new session context to
+understand...let's do it!» Full record, with the relayed agent review and a relayed side note (both agent
+text), at the end of `docs/conversations/2026-10-21-ternary-buckets-and-squint-orchestration.md`. The
+review is kept verbatim at `data/readings/ai-bootstrap-loop-20261021/relayed-review-anatomy-check-20261021.md`.
+
+What was decided (the lead's agreement with that review, recorded in CLASSICAL_AI_BUILD_DESIGN §7.1,
+§13 step 5 and §14, HOW_TO_BUILD's last section and the OpenSpec change):
+- The anatomy check is a law check. A pass records where a candidate lies, never what tissue it is.
+  Plausible but wrong tissue is stopped by negative cases in joint recall. No standalone anatomy
+  classifier is a prerequisite of growth; the map's distances aim the search and are not admission limits.
+- Unchanged: a candidate the check could not judge stays a proposal.
+- The first growth round's admissions are inspected on their pictures before its child becomes the next
+  parent. Later rounds are spot-checked, not held (the side note caught a first draft that held every
+  round). A wrong admission returns as a scoped negative; a recurring failure calls for a new rule drafted
+  from the pictures through FULL_BUILD_PLAN §7's review.
+
+## SOURCE HEAD / DIRTY UNITS / MANIFEST / INPUT IDENTITIES
+
+HEAD `f4daf63` (branch `squint-upgrade`) plus the uncommitted thin-bootstrap wave, the unified
+documentation and OpenSpec change of revision 132, and this revision's work:
+- signed memory: `data/readings/ai-bootstrap-loop-20261021/negative-klines/builder/candidate.patch`
+  (sha256 `08d0bb1347658edb…`) applied to code and tests; its bootstrap-guide hunks merged by hand,
+  because the guide's interim "positive-only" text no longer holds;
+- `adapt_recorded_calls` and an optional per-call `reader` in `squint_bootstrap.py`; the `adapt`
+  subcommand of `scripts/squint_object_bootstrap.py`; `tests/test_call_adapter_intent.py`;
+- `tests/test_squint_locator.py`: the test pinning teaching-case positions as eligibility priors is
+  rewritten to the wave's deliberate meaning (the authored map makes the windows; stored teaching
+  positions, which could inherit wrongly named locations, do not decide eligibility). It failed on the
+  wave and passes at `f4daf63` with that commit's own source.
+
+Call sources for the first full signed memory (M1), all against review `0c6c657366b78980…`:
+`catalogue-called-review-r2/calls-root-r3.json` (`6506d4534354e8d7…`, 76 calls, Codex lead) and
+`claude-fill-r1/calls-claude.jsonl` (`1ce48c16fc2ce1f6…`, 365 calls, Claude Code lead); 52 candidates
+of the review are still uncalled. Automatic catalogue: `data/readings/lead-repair-20261021/bursa-reencode-r1/curated-memory`.
+
+## OWNER / PERMITTED WRITES / WORKER ROUTES
+
+Root (this Claude Code session) owns intent, shared source, integration and acceptance. Workers run in
+isolated worktrees branched from the checkpoint commit and return patches; root integrates.
+
+## CONTRACTS / INPUT AND OUTPUT MEANINGS / REAL CONSUMER
+
+Admission: confident joint identity recall, an affirmative applicable anatomical pass (location only),
+no known contradiction and no signed conflict. Unknown-only anatomy: proposal. Contradicted: refused.
+Scope: the views that spoke, minus any view a negative speaks through; malformed scope: named refusal.
+Every child keeps all signed tables, payloads and lineage; held-out exclusion covers every record kind.
+
+Identity consumer binding (CLASSICAL_AI_BUILD_DESIGN §10 step 5, thesis §11.2): an object recognized as
+another identity, or spoken against by negative cases alone, is withheld from its proposed tissue's
+condition questions with a named reason. Conflict, no precedent or unknown leaves the structure's own
+placement standing, flagged. A withheld object reaches the condition contracts as unmeasured, never as
+normal.
+
+## INTEGRATION ACCEPTANCE CHECKS (from a relayed review, agent text, adopted)
+
+1. Cross-view teaching: a diagnosed state follows the same object into every view where its identity
+   holds, with one shared study/object lineage; those presentations enrich recognition and never count as
+   independent confirmations.
+2. Configuration rebuild: built from confirmed object facets only, keeping each clinical call's actual
+   scope (unlocalized bone positives stay unlocalized) and recording missing constituents; unread tissue is
+   never treated as observed.
+3. Actual consumers: identity changes both condition evidence and the bounded observation requests; the
+   stored-case view restriction reaches prepared comparisons, envelopes and the preparation fingerprint, so
+   a stale preparation is never reused.
+4. Growth demonstration: genuinely new admissions (named apart from existing teachers), a published child
+   keeping all signed evidence, and a next round that actually reads that child; the first round inspected.
+   The local demonstration comes before any substantial download; then one small batch exercises the whole
+   pull, recognition, inspection and publication cycle, resumable and within bounded storage.
+
+## NEXT ACTIONS, IN ORDER
+
+1. Full gate on the final tree; commit by concern with explicit paths; push; read the hook and GitHub.
+2. In parallel: workers for (a) signed frozen-parent growth, (b) partial-plane anatomical checks,
+   (c) the identity consumer in `infer_study`; root: `adapt` the 441 calls, publish M1 and verify its
+   readback and preparation; root: the last 52 visual calls.
+3. Integrate, gate, commit, push.
+4. Local loop demonstration through the real entry point (only the 58 teaching and 3 public studies have
+   images locally): parent, admissions, child, next round reading the child with negatives intact.
+5. Real first round, locally: pull a bounded set of training studies from the competition data to
+   `data/raw/train_series/`, run the real entry point over them, grow, draw a picture sheet per admission,
+   inspect them, promote the child; later rounds spot-checked. No growth runs on Kaggle (Rohan: «we do not
+   waste kaggle compute on nonsense. We will pull as much data as we need locally when it's time to scale
+   the AI part»); Kaggle runs only the competition notebook and its timed private dry run.
+6. Timed private dry run of the competition notebook. No submission without Rohan's word.
+
+Report reading is the lowest priority: `train.csv` already carries the twelve study-level labels for all
+4,407 studies. It runs only in spare capacity.
+
+## OPEN SEMANTIC CHOICE / PREREQUISITES
+
+None needs Rohan. A concrete near-miss binding that the thesis's §8.6 test cannot settle with the exact
+decode goes to him with its episode.
+
+## WORKERS
+
+| Task | State | Evidence |
+|---|---|---|
+| Signed-memory builder | returned; integrated in `20e37e3` | `negative-klines/builder/` |
+| Lane A: signed frozen-parent growth, harvest from inference records, `grow` CLI | running, isolated worktree | — |
+| Lane B: partial-plane anatomical checks | integrated `0847ff2` (exact-normal partial intervals; fixture anatomy corrected `ec882a0`); follow-up running: anchor-window projection for oblique planes, with a before/after quarantine and placement account over the 61 local studies (a scope change, not an equivalent refactor) | real planes are oblique (median 7°, max 38°) |
+| Lane C: identity governs condition inputs in `infer_study` | running, isolated worktree | — |
+| Lane D: picture sheets for admissions (`sheets` CLI), local only | running, isolated worktree | — |
+| Lane E: diagnosis evidence speaks only through identity views; positives carry to every view where the object is present; whole-condition cases rebuilt from confirmed objects at seed publication | running, isolated worktree | the reproduced defect (a rejected sagittal bank answering Fracture) is its regression test |
+| Lane F: `scripts/pull_competition_studies.py` (index, resumable bounded pull of chosen training studies) | running, isolated worktree; test pull into `/tmp` only | — |
+
+## M1, THE FIRST FULL SIGNED MEMORY (published 2026-10-21)
+
+`data/readings/ai-bootstrap-loop-20261021/signed-memory-m1/memory` (manifest sha256 `506dd4ba71db0543…`),
+from the automatic catalogue and the 441 adapted calls (`signed-memory-m1/adapted-calls/`, 76 Codex lead +
+365 Claude Code lead): 152 confirmed positive cases, 311 negative identity cases, 30 alternative
+identities, 0 negatives unwritten. The ordinary loader reads it offline and `prepare_identity` prepares
+with all 311 negatives and 30 alternatives. Admit took 247 s and 7.9 GB peak RSS (loading the catalogue).
+Confirmed cases by object: tibia 36, femur 27, joint 25, joint fluid 18, medial meniscus 9, lateral
+meniscus 7, PCL 7, tibial cartilage 5, MCL 3, capsule 3, and 1–2 for nine others. 52 review candidates
+remain uncalled.
+
+## CALLS COMPLETE; DATA FOR SCALING
+
+All 417 uncalled review candidates are now called (`claude-fill-r1/calls-claude.jsonl`, sha256
+`a59b361e4ab9ae11…`; the last 52: 16 confirm, 23 reject, 13 unsure). With root's 76 calls the 493 calls
+validate together (`signed-memory-m1b/adapted-calls/`): 168 confirmed, 335 negative cases, 30 alternative
+identities. The memory is republished once lane E lands, so its whole-condition cases are rebuilt from
+confirmed objects in the same publication (M1 alone holds identity but drops the catalogue's whole-condition
+cases, which production needs).
+
+The competition serves images for all 4,407 training studies: 819,635 DICOM files, 569.8 GB (about 129 MB
+a study); 58 are local (6.6 GB). This machine has 761 GB free, so pulls come in bounded batches through lane
+F's tool, never the whole set at once.
+
+## UNREVIEWED / WITHDRAWN / STALE RESULTS
+
+The worked example's round two stays withdrawn (it dropped negatives and alternatives; its "new" teachers
+were already confirmed). Its README carries the withdrawal. The dry-run child `/tmp/negkl-dryrun/child-r3-signed`
+holds only the root calls and is superseded by M1 once published.
+
+## VERIFICATION STILL OWED
+
+Gate on the final tree; M1 readback and preparation; the three lanes' integration and two-sign tests;
+the local loop; the Kaggle round and its inspection; the identity consumer's effect on real condition
+inputs; the private offline resource envelope. Detective's `validate_calls` result must be redone on
+the integrated validator; the `_sanity_status` run failed in the tool, not the suite.
+
+## HANDOFF TIME / EVIDENCE LINKS
+
+2026-10-21, about 21:40 UTC. Squint test family 1,198 passed on the working tree before the gate.
+Checkpoint gate log: `data/readings/ai-bootstrap-loop-20261021/checkpoint-r133/gate.log`.
+The stray `generated/certificates.json` (a Detective scratch copy) is preserved at
+`data/readings/ai-bootstrap-loop-20261021/docs-contracts-r1/generated-certificates.json`.

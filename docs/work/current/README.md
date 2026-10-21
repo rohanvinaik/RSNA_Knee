@@ -1,21 +1,28 @@
 # Active task packet
 
-Sole populated current-state record; FULL_BUILD_PLAN §13 owns this pointer. Revision **133**.
-Prior revision 132 is preserved verbatim at `docs/work/history/active-task-packet-revision-132.md`.
+Sole populated current-state record; FULL_BUILD_PLAN §13 owns this pointer. Revision **134**.
+Prior revision 133 is preserved verbatim at `docs/work/history/active-task-packet-revision-133.md`.
 
 ## TASK ID / PACKET REVISION / STATE
 
-`THIN-OBJECT-BOOTSTRAP-20261021` / `133` / **execution started**. The anatomy-check correction is
-recorded; the signed identity memory, the call adapter and the locator-test repair are in the working
-tree; the checkpoint gate, commit and push come next, then the parallel integration lanes.
+`THIN-OBJECT-BOOTSTRAP-20261021` / `134` / **integration in progress**. The signed identity memory, the
+call adapter, the identity consumer (lane C), the admission picture sheets (lane D) and the first part of
+the partial-plane checks (lane B) are committed and pushed. Lanes A (growth), B (follow-up), E (diagnosis
+follows identity views) and F (pull tool) are running. M1 is running through the real entry point on the
+3 public studies.
 
 ## CURRENT REQUEST / AUTHORITATIVE EXCHANGES / ACTUAL AUTHORS
 
 Rohan, verbatim: «Good! Record this properly in the full project specs and documentation. Then, when
 everything is set up formally, for an external reader/other agent/new session context to
-understand...let's do it!» Full record, with the relayed agent review and a relayed side note (both agent
-text), at the end of `docs/conversations/2026-10-21-ternary-buckets-and-squint-orchestration.md`. The
-review is kept verbatim at `data/readings/ai-bootstrap-loop-20261021/relayed-review-anatomy-check-20261021.md`.
+understand...let's do it!» And: «Note one obvious connection--if a diagnosis is clear in one of the three
+views (coronal/saggittal/axial), then IF the object is also present in another view, that is an IMMEDIATE
+positive k-line» (bound in CLASSICAL_AI_BUILD_DESIGN §5.1 and the OpenSpec requirement "A diagnosis
+carries across the views of its object"; lane E builds it). And: «We can skip the long local gate, just
+build, push, and report where we are and what we need to do to train the AI». Full records, with the
+relayed agent review and side notes (agent text), at the end of
+`docs/conversations/2026-10-21-ternary-buckets-and-squint-orchestration.md`; the review verbatim at
+`data/readings/ai-bootstrap-loop-20261021/relayed-review-anatomy-check-20261021.md`.
 
 What was decided (the lead's agreement with that review, recorded in CLASSICAL_AI_BUILD_DESIGN §7.1,
 §13 step 5 and §14, HOW_TO_BUILD's last section and the OpenSpec change):
@@ -24,33 +31,39 @@ What was decided (the lead's agreement with that review, recorded in CLASSICAL_A
   classifier is a prerequisite of growth; the map's distances aim the search and are not admission limits.
 - Unchanged: a candidate the check could not judge stays a proposal.
 - The first growth round's admissions are inspected on their pictures before its child becomes the next
-  parent. Later rounds are spot-checked, not held (the side note caught a first draft that held every
-  round). A wrong admission returns as a scoped negative; a recurring failure calls for a new rule drafted
-  from the pictures through FULL_BUILD_PLAN §7's review.
+  parent. Later rounds are spot-checked, not held. A wrong admission returns as a scoped negative; a
+  recurring failure calls for a new rule drafted from the pictures through FULL_BUILD_PLAN §7's review.
+- Oblique planes (lead decision, CLASSICAL_AI_BUILD_DESIGN §7.2): where neither a complete reference nor an
+  exact-normal partial interval determines an axis, an anchor's interval is the exact projection of its own
+  observed tile window, built like a candidate's. It is a scope change, measured before acceptance.
 
 ## SOURCE HEAD / DIRTY UNITS / MANIFEST / INPUT IDENTITIES
 
-HEAD `f4daf63` (branch `squint-upgrade`) plus the uncommitted thin-bootstrap wave, the unified
-documentation and OpenSpec change of revision 132, and this revision's work:
-- signed memory: `data/readings/ai-bootstrap-loop-20261021/negative-klines/builder/candidate.patch`
-  (sha256 `08d0bb1347658edb…`) applied to code and tests; its bootstrap-guide hunks merged by hand,
-  because the guide's interim "positive-only" text no longer holds;
-- `adapt_recorded_calls` and an optional per-call `reader` in `squint_bootstrap.py`; the `adapt`
-  subcommand of `scripts/squint_object_bootstrap.py`; `tests/test_call_adapter_intent.py`;
-- `tests/test_squint_locator.py`: the test pinning teaching-case positions as eligibility priors is
-  rewritten to the wave's deliberate meaning (the authored map makes the windows; stored teaching
-  positions, which could inherit wrongly named locations, do not decide eligibility). It failed on the
-  wave and passes at `f4daf63` with that commit's own source.
+HEAD `fc33758` (branch `squint-upgrade`, clean, pushed). Since `f4daf63`: `20e37e3` signed identity
+memory, call adapter, locator-test repair; `1804e00`, `fca0c77`, `40e722b`, `5a51d20` documentation and
+packet; `3ed7546` Sonar correctness fix; `d299fbf` lane C; `b699de0` lane D; `0847ff2` lane B part 1;
+`ec882a0` lane B fixture anatomy; `fc33758` the sanity digest's reviewed mark and the oblique binding.
+GitHub gate: passed on `3ed7546` and `5a51d20` (later runs superseded and cancelled); the run on `fc33758`
+is in progress. The local gate is skipped by Rohan's instruction; the GitHub gate runs the full gate on
+every push.
 
-Call sources for the first full signed memory (M1), all against review `0c6c657366b78980…`:
-`catalogue-called-review-r2/calls-root-r3.json` (`6506d4534354e8d7…`, 76 calls, Codex lead) and
-`claude-fill-r1/calls-claude.jsonl` (`1ce48c16fc2ce1f6…`, 365 calls, Claude Code lead); 52 candidates
-of the review are still uncalled. Automatic catalogue: `data/readings/lead-repair-20261021/bursa-reencode-r1/curated-memory`.
+**Push incident, 2026-10-21 about 21:58 UTC (the lead's error).** The secret scan refused the added line
+of `0847ff2` (`tests/test_squint_sanity.py`, flagged as a high-entropy hex string). The push command piped
+the scan through `tail`, which hid its exit status, so the push went out anyway (`b699de0..ec882a0`). The
+line is `COMPLETE_MATRIX_SHA256`, the SHA-256 of the canonical JSON of the sanity matrix outputs captured
+at `1804e00`, not a secret. `fc33758` marks it with detect-secrets' reviewed mark; that push's scan
+passed. Every push now uses the scan's own exit status, never a pipe:
+`.venv/bin/python scripts/push_checks.py scan origin/squint-upgrade..HEAD && git push --no-verify origin squint-upgrade`.
+
+Calls for the next memory (M1b), all against review `0c6c657366b78980…`: `catalogue-called-review-r2/calls-root-r3.json`
+(76 calls, Codex lead) and `claude-fill-r1/calls-claude.jsonl` (sha256 `a59b361e4ab9ae11…`, 417 calls,
+Claude Code lead); adapted together at `signed-memory-m1b/adapted-calls/` (493 calls). Automatic
+catalogue: `data/readings/lead-repair-20261021/bursa-reencode-r1/curated-memory`.
 
 ## OWNER / PERMITTED WRITES / WORKER ROUTES
 
 Root (this Claude Code session) owns intent, shared source, integration and acceptance. Workers run in
-isolated worktrees branched from the checkpoint commit and return patches; root integrates.
+isolated worktrees, fast-forward to `squint-upgrade`, and return commits or patches; root integrates.
 
 ## CONTRACTS / INPUT AND OUTPUT MEANINGS / REAL CONSUMER
 
@@ -64,6 +77,10 @@ another identity, or spoken against by negative cases alone, is withheld from it
 condition questions with a named reason. Conflict, no precedent or unknown leaves the structure's own
 placement standing, flagged. A withheld object reaches the condition contracts as unmeasured, never as
 normal.
+
+Diagnosis across views (CLASSICAL_AI_BUILD_DESIGN §5.1): a diagnosed state carries, positive only, to every
+view where the same object's identity holds, with one shared study/object lineage; identity scope decides
+diagnosis scope, and a view called other tissue carries nothing.
 
 ## INTEGRATION ACCEPTANCE CHECKS (from a relayed review, agent text, adopted)
 
@@ -83,19 +100,23 @@ normal.
 
 ## NEXT ACTIONS, IN ORDER
 
-1. Full gate on the final tree; commit by concern with explicit paths; push; read the hook and GitHub.
-2. In parallel: workers for (a) signed frozen-parent growth, (b) partial-plane anatomical checks,
-   (c) the identity consumer in `infer_study`; root: `adapt` the 441 calls, publish M1 and verify its
-   readback and preparation; root: the last 52 visual calls.
-3. Integrate, gate, commit, push.
-4. Local loop demonstration through the real entry point (only the 58 teaching and 3 public studies have
-   images locally): parent, admissions, child, next round reading the child with negatives intact.
-5. Real first round, locally: pull a bounded set of training studies from the competition data to
-   `data/raw/train_series/`, run the real entry point over them, grow, draw a picture sheet per admission,
-   inspect them, promote the child; later rounds spot-checked. No growth runs on Kaggle (Rohan: «we do not
-   waste kaggle compute on nonsense. We will pull as much data as we need locally when it's time to scale
-   the AI part»); Kaggle runs only the competition notebook and its timed private dry run.
-6. Timed private dry run of the competition notebook. No submission without Rohan's word.
+1. Read the M1 public run (`m1-infer-public-r1/`): the real entry point on a signed memory, identity
+   recall and identity consumption in each study record, time and RSS.
+2. Integrate lanes A, E, F and lane B's follow-up as each returns: focused tests, commit, scan-gated push,
+   read the GitHub gate.
+3. Republish the memory (M1b) from the 493 calls with lane E's configuration rebuild and identity-view
+   restriction, with its recall preparation; verify readback and preparation.
+4. Local loop demonstration through the real entry point: M1b as parent, the 3 public studies inferred,
+   `grow`, `sheets`, inspect every admission, publish the child, a next round reading the child with
+   negatives intact.
+5. First real round: pull a bounded batch of training studies with lane F's tool into
+   `data/raw/train_series/`, infer, grow, sheets, inspect, promote; later rounds spot-checked. No growth runs
+   on Kaggle (Rohan: «we do not waste kaggle compute on nonsense. We will pull as much data as we need locally
+   when it's time to scale the AI part»).
+6. Diagnosis teaching at scale: `train.csv`'s twelve study-level labels joined to recognized objects at their
+   actual scope (Fracture and Contusion stay unlocalized), carried across the object's identity views.
+7. Held-out capacity replay; timed private Kaggle dry run of the competition notebook. No submission without
+   Rohan's word.
 
 Report reading is the lowest priority: `train.csv` already carries the twelve study-level labels for all
 4,407 studies. It runs only in spare capacity.
@@ -110,32 +131,26 @@ decode goes to him with its episode.
 | Task | State | Evidence |
 |---|---|---|
 | Signed-memory builder | returned; integrated in `20e37e3` | `negative-klines/builder/` |
-| Lane A: signed frozen-parent growth, harvest from inference records, `grow` CLI | running, isolated worktree | — |
-| Lane B: partial-plane anatomical checks | integrated `0847ff2` (exact-normal partial intervals; fixture anatomy corrected `ec882a0`); follow-up running: anchor-window projection for oblique planes, with a before/after quarantine and placement account over the 61 local studies (a scope change, not an equivalent refactor) | real planes are oblique (median 7°, max 38°) |
-| Lane C: identity governs condition inputs in `infer_study` | running, isolated worktree | — |
-| Lane D: picture sheets for admissions (`sheets` CLI), local only | running, isolated worktree | — |
-| Lane E: diagnosis evidence speaks only through identity views; positives carry to every view where the object is present; whole-condition cases rebuilt from confirmed objects at seed publication | running, isolated worktree | the reproduced defect (a rejected sagittal bank answering Fracture) is its regression test |
-| Lane F: `scripts/pull_competition_studies.py` (index, resumable bounded pull of chosen training studies) | running, isolated worktree; test pull into `/tmp` only | — |
+| Lane A: signed frozen-parent growth (`squint_identity_growth.py`: harvest from inference records, admission decisions, child publication), `grow` CLI | running, isolated worktree | — |
+| Lane B: partial-plane anatomical checks | part 1 integrated `0847ff2` (exact-normal partial intervals; fixture anatomy corrected `ec882a0`). Follow-up running: anchor-window projection for oblique planes, priority complete > exact-normal partial > anchor-window projection > unknown, provenance per check, and a before/after account over the 61 local studies; it stops and reports if a confirmed case is contradicted or a correct bone pair is quarantined | real planes are oblique (median 7°, max 38°) |
+| Lane C: identity governs condition inputs in `infer_study` | integrated `d299fbf` (350 focused tests). Loose ends: dependents placed from an anchor later withheld keep their placement; `scripts/squint_visual_capacity.py` shows withheld objects as not located; OpenSpec task 4.1's wording | `tests/test_squint_pipeline_identity_consumption_intent.py` |
+| Lane D: picture sheets for admissions (`sheets` CLI), local only | integrated `b699de0` (30 tests); a real sheet inspected (`/tmp/admission-sheets-real/final-mixed/sheet-002-real-t1_femur-8b20e1f9.png`) | merges with lane A's `grow` in `scripts/squint_object_bootstrap.py`: keep both actions |
+| Lane E: diagnosis evidence speaks only through identity views (restriction applied before preparation; fingerprint includes identity teaching); positives carry to every identity view; pure label join (Fracture/Contusion unlocalized); whole-condition cases rebuilt from confirmed objects at seed publication | running, isolated worktree | its regression test: a sagittal-only query must not return Fracture `present` from a rejected sagittal bank |
+| Lane F: `scripts/pull_competition_studies.py` (paged resumable index; bounded, resumable, label-blind pull in `train_series.csv` order; receipt; disk margin) | integrated `fad9041` (36 tests). Test pull of one study into `/tmp/rsna_pull_test`: 94 files, 61.6 MB, 9.1 s at 24 workers, every file checked as MR DICOM against its path; a rerun skips it with zero writes. Projected, not measured: the full listing about 50 min, all 819,635 files about 22 h at 24 workers | `pull --root data/raw --studies N`; state in `data/raw.pull/` |
 
 ## M1, THE FIRST FULL SIGNED MEMORY (published 2026-10-21)
 
 `data/readings/ai-bootstrap-loop-20261021/signed-memory-m1/memory` (manifest sha256 `506dd4ba71db0543…`),
-from the automatic catalogue and the 441 adapted calls (`signed-memory-m1/adapted-calls/`, 76 Codex lead +
-365 Claude Code lead): 152 confirmed positive cases, 311 negative identity cases, 30 alternative
-identities, 0 negatives unwritten. The ordinary loader reads it offline and `prepare_identity` prepares
-with all 311 negatives and 30 alternatives. Admit took 247 s and 7.9 GB peak RSS (loading the catalogue).
-Confirmed cases by object: tibia 36, femur 27, joint 25, joint fluid 18, medial meniscus 9, lateral
-meniscus 7, PCL 7, tibial cartilage 5, MCL 3, capsule 3, and 1–2 for nine others. 52 review candidates
-remain uncalled.
+from the automatic catalogue and the 441 calls then made: 152 confirmed positive cases, 311 negative
+identity cases, 30 alternative identities, 0 negatives unwritten. The ordinary loader reads it offline and
+`prepare_identity` prepares with all 311 negatives and 30 alternatives. Admit took 247 s and 7.9 GB peak
+RSS. It has no recall-preparation sidecar and no whole-condition cases; M1b replaces it.
 
 ## CALLS COMPLETE; DATA FOR SCALING
 
-All 417 uncalled review candidates are now called (`claude-fill-r1/calls-claude.jsonl`, sha256
-`a59b361e4ab9ae11…`; the last 52: 16 confirm, 23 reject, 13 unsure). With root's 76 calls the 493 calls
-validate together (`signed-memory-m1b/adapted-calls/`): 168 confirmed, 335 negative cases, 30 alternative
-identities. The memory is republished once lane E lands, so its whole-condition cases are rebuilt from
-confirmed objects in the same publication (M1 alone holds identity but drops the catalogue's whole-condition
-cases, which production needs).
+All 417 review candidates left to Claude Code are called (the last 52: 16 confirm, 23 reject, 13 unsure).
+With root's 76 calls the 493 calls validate together (`signed-memory-m1b/adapted-calls/`): 168 confirmed,
+335 negative cases, 30 alternative identities.
 
 The competition serves images for all 4,407 training studies: 819,635 DICOM files, 569.8 GB (about 129 MB
 a study); 58 are local (6.6 GB). This machine has 761 GB free, so pulls come in bounded batches through lane
@@ -145,18 +160,18 @@ F's tool, never the whole set at once.
 
 The worked example's round two stays withdrawn (it dropped negatives and alternatives; its "new" teachers
 were already confirmed). Its README carries the withdrawal. The dry-run child `/tmp/negkl-dryrun/child-r3-signed`
-holds only the root calls and is superseded by M1 once published.
+holds only the root calls and is superseded by M1.
 
 ## VERIFICATION STILL OWED
 
-Gate on the final tree; M1 readback and preparation; the three lanes' integration and two-sign tests;
-the local loop; the Kaggle round and its inspection; the identity consumer's effect on real condition
-inputs; the private offline resource envelope. Detective's `validate_calls` result must be redone on
-the integrated validator; the `_sanity_status` run failed in the tool, not the suite.
+The M1 public run's reading; lanes A, B (follow-up), E and F integration and their two-sign tests; M1b
+readback and preparation; the local loop; the first real round and its inspection; the identity consumer's
+effect on real condition inputs; the private offline resource envelope. Detective's `validate_calls` result
+must be redone on the integrated validator; the `_sanity_status` run failed in the tool, not the suite.
 
 ## HANDOFF TIME / EVIDENCE LINKS
 
-2026-10-21, about 21:40 UTC. Squint test family 1,198 passed on the working tree before the gate.
-Checkpoint gate log: `data/readings/ai-bootstrap-loop-20261021/checkpoint-r133/gate.log`.
-The stray `generated/certificates.json` (a Detective scratch copy) is preserved at
+2026-10-21, about 22:05 UTC. The r133 local gate was stopped at 35% when Rohan said to skip it
+(`data/readings/ai-bootstrap-loop-20261021/checkpoint-r133/gate.log`). The stray `generated/certificates.json`
+(a Detective scratch copy) is preserved at
 `data/readings/ai-bootstrap-loop-20261021/docs-contracts-r1/generated-certificates.json`.
