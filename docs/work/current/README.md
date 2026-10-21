@@ -60,7 +60,7 @@ Worktrees under `/private/tmp/rsna-upgrade-20261021/<job>` (branch `upgrade/<job
 | W8 memory view | Codex CLI | w8 | bxk8eq2m3 | INTEGRATED 11da75d (160 focused tests) |
 | R1a report reader (58 labelled) | Codex CLI | none | background task b0gpgap48 | RETURNED: 510 calls, 0 rejected; compared with labels in `workers/r1-batch/README.md` |
 | K1 private Kaggle timing of r6 | Claude sub-agent | none | session sub-agent | DONE: kernel v4 COMPLETE, 25.5 CPU-s/study, 3.23 GB peak, valid CSV (`workers/k1/report.md`) |
-| K2 Kaggle observation notebook | Claude sub-agent | k2 | session sub-agent | RUNNING |
+| K2 Kaggle observation notebook | Claude sub-agent | k2 | session sub-agent | RETURNED, PARKED for the teaching stage: kernel + shard launcher ready, 20-study Kaggle measurement 16.0 CPU-s/study observation-only (`workers/k2/report.md`); full run not launched |
 | R1b report reader (58 labelled) | Claude sub-agent | none | session sub-agent | RUNNING |
 | W5 memory rebuild | Claude sub-agent | w5 | session sub-agent | RUNNING |
 | W6 question selection | Claude sub-agent | w6 | session sub-agent | INTEGRATED c95d61a, with the lead's sourced MCL-surroundings exception (SQUINT_TRAINING_BUILD §10) |
