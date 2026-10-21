@@ -113,6 +113,52 @@ def _empty_profile(subject: str) -> dict:
     }
 
 
+#: Rohan's decision (SQUINT_TRAINING_BUILD §10): parts the 10 mm squint cannot
+#: isolate are read over their own outline whenever their question is decided;
+#: until then their comparison may only grade within "open".
+SMALL_PARTS = frozenset(
+    {
+        "medial_meniscus",
+        "lateral_meniscus",
+        "acl",
+        "pcl",
+        "mcl",
+        "femoral_cartilage",
+        "tibial_cartilage",
+        "patellar_cartilage",
+        "trochlear_cartilage",
+        "synovium",
+        "joint_fluid",
+    }
+)
+_OWN_OUTLINE_ORIGINS = frozenset({"teacher_support", "residual_native_support"})
+
+
+def _profile_origins(profile: object) -> set[str]:
+    """Territory origins a profile was read from, through its merge lineage."""
+    origins: set[str] = set()
+    stack = [profile.get("source") if isinstance(profile, dict) else None]
+    while stack:
+        source = stack.pop()
+        if not isinstance(source, dict):
+            continue
+        territory = source.get("territory")
+        if isinstance(territory, dict) and isinstance(territory.get("origin"), str):
+            origins.add(territory["origin"])
+        lineage = source.get("lineage")
+        if isinstance(lineage, list):
+            stack.extend(lineage)
+    return origins
+
+
+def _decision_scope(subject: str, profile: object) -> str:
+    """``decide`` unless a small part was not read over its own outline only."""
+    if subject not in SMALL_PARTS:
+        return "decide"
+    origins = _profile_origins(profile)
+    return "decide" if origins and origins <= _OWN_OUTLINE_ORIGINS else "grade_only"
+
+
 def _recall_question(
     question, objects: dict, memory: dict, uid: str, excluded: bool
 ) -> dict:
@@ -140,6 +186,8 @@ def _recall_question(
             ),
             "location_status": located.get("status", "unavailable"),
             "regions": located.get("regions", []),
+            "decision_scope": _decision_scope(subject, located.get("profile")),
+            "query_origins": sorted(_profile_origins(located.get("profile"))),
         }
     from knee.diagnosis.squint_configurations import configuration_profile
 
@@ -178,6 +226,14 @@ def _recall_question(
             question=question.question_id,
             exclude_study_uid=uid if excluded else "",
         )
+        # A configuration that reads a small defining part not yet read over
+        # its own outline may grade, never decide.
+        roles = (selection or {}).get("subjects", {}) if selection else {}
+        defining = [s for s, r in roles.items() if r in ("defining", "alternative")]
+        if any(
+            evidence.get(s, {}).get("decision_scope") == "grade_only" for s in defining
+        ):
+            evidence[combined["subject"]]["decision_scope"] = "grade_only"
     return evidence
 
 

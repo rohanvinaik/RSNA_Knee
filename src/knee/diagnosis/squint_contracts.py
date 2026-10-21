@@ -900,6 +900,17 @@ def _read_subject(
                     # manufacturing a localized positive bone predicate.
                     normalized["state"] = _UNKNOWN
                     normalized["code"] = "study_positive_presentation_not_localized"
+            if (
+                isinstance(record, dict)
+                and record.get("decision_scope") == "grade_only"
+                and normalized["state"] != _UNKNOWN
+            ):
+                # Rohan's decision (SQUINT_TRAINING_BUILD §10): a small part
+                # read only over its expected area, not its own outline, is
+                # compared with outline-read cases unlike with like. Its terms
+                # stay for ranking within "open"; it never assigns or defeats.
+                normalized["state"] = _UNKNOWN
+                normalized["code"] = "small_part_not_read_over_own_outline"
             kept.append(normalized)
     if problems:
         return _reading(_UNKNOWN, "evidence_malformed", problems=problems), []
@@ -1139,6 +1150,9 @@ _REQUEST_KIND = {
     "conflicting_trusted_cases": "bounded_zoom",
     "recall_rejected_input": "repeat_object_recall",
     "evidence_malformed": "repeat_object_recall",
+    # A small part read only over its expected area: the bounded look that can
+    # settle it is reading the part over its own outline (SQUINT_TRAINING_BUILD §10).
+    "small_part_not_read_over_own_outline": "bounded_zoom",
 }
 
 
