@@ -1,10 +1,10 @@
 # Active task packet
 
-Sole populated current-state record; [FULL_BUILD_PLAN §13](../../FULL_BUILD_PLAN.md#13-context-stable-continuation-and-stop-points) owns this pointer. Revision **111**. Revision 110 is [preserved verbatim](../history/active-task-packet-revision-110.md). Historical instructions are not live jobs.
+Sole populated current-state record; [FULL_BUILD_PLAN §13](../../FULL_BUILD_PLAN.md#13-context-stable-continuation-and-stop-points) owns this pointer. Revision **112**. Revision 111 is [preserved verbatim](../history/active-task-packet-revision-111.md). Historical instructions are not live jobs.
 
 ## TASK ID / PACKET REVISION / STATE
 
-`SQUINT-TRAINING-UPGRADE-20261021` / `111` / paused for realignment: Rohan, «I'd like you to reread the "conversation" documents about how the AI layer is supposed to work. I think you've drifted». The lead stopped W12b and W12c (more production recognition of small parts) and is waiting for his answer; S1 runs on; W13 has returned.
+`SQUINT-TRAINING-UPGRADE-20261021` / `112` / paused for realignment: Rohan, «I'd like you to reread the "conversation" documents about how the AI layer is supposed to work. I think you've drifted». The lead stopped W12b and W12c (more production recognition of small parts) and is waiting for his answer. S1 is integrated (53df302); W13 has returned; no worker is running.
 
 ## CURRENT REQUEST / AUTHORITATIVE EXCHANGES / ACTUAL AUTHORS
 
@@ -67,14 +67,14 @@ Worktrees under `/private/tmp/rsna-upgrade-20261021/<job>` (branch `upgrade/<job
 | W6 question selection | Claude sub-agent | w6 | session sub-agent | INTEGRATED c95d61a, with the lead's sourced MCL-surroundings exception (SQUINT_TRAINING_BUILD §10) |
 | W9 bones by structure | Claude sub-agent | w9 | session sub-agent | INTEGRATED 35d98e5 (not yet wired into the locator); found the established rule names posterior thigh soft tissue as femur on some sagittal middle slices, which the bootstrap shares |
 | W16 cross-view consistency of stored bone outlines | Claude sub-agent | w16 (base 35d98e5) | session sub-agent | RETURNED, not integrated: sets nothing aside on this memory (no bone has outlines in three views; axial bone sections are coarse grid addresses); found several stored bone outlines on soft tissue (`workers/w16/report.md`) |
-| W10 dependents from anchors | Codex CLI, then Claude sub-agent | w10 | session sub-agent | RETURNED, not yet merged (merges with the v2 locator writer and W12): anchors improve candidate sets (35/65 vs 28/65 series with an on-support candidate) but v1 resemblance rarely chooses it (3/50) |
+| W10 dependents from anchors | Codex CLI, then Claude sub-agent | w10 | session sub-agent | INTEGRATED with S1 in 53df302 |
 | W11 location check | Claude sub-agent | w11 | session sub-agent | INTEGRATED 19cdac5; corrected the lead's earlier on-target figures (native supports only: femur 14%, tibia 19%, patella 14%) |
 | W14 teaching round | Codex CLI, then Claude sub-agent | w14 | session sub-agent | RETURNED, PARKED for the teaching stage: command works mechanically, loop test admitted nothing new (`workers/w14/report.md`); found the ACL has a stored case in only 6 of 58 studies |
 | W12 residual executor | Claude sub-agent | w12 | session sub-agent | INTEGRATED 1f3db63, gated: no part's bounded outline decides until validated (`VALIDATED_OUTLINE_PARTS` empty) |
 | W7 recall reads only the selection | Codex CLI | w7 | baeddtawc | INTEGRATED (merged onto W8's memory view by the lead); production recall now needs the territory-v2 memory, v1 is refused by name |
 | W13 picture sheets | Claude sub-agent | w13 | session sub-agent | RETURNED, not integrated: 48 sheets (12 questions × proof and bursa × r4 and C1) in `workers/w13/sheets/`; 25 of the 71 stored cases drawn have their outline off the named object in at least one view (`workers/w13/report.md`) |
 | W12b own-outline slice order and validation on 58 | Claude sub-agent | w12b (base 1f3db63) | session sub-agent | STOPPED by the lead mid-run (partial edits in its worktree, unreviewed) |
-| S1 production locator writes territory-v2 queries, placed from the bones (merges W10) | Codex CLI | s1 (base 1f3db63) | background task b09bv720a | RUNNING |
+| S1 production locator writes territory-v2 queries, placed from the bones (merges W10) | Codex CLI | s1 (base 1f3db63) | background task b09bv720a | INTEGRATED 53df302 (420 focused tests on the integration branch); real entry point on 3 studies: every located profile territory-v2, recall terms for every question, 13.7–18.8 s inference per study, 8.2 GiB peak for the one process (`workers/s1/report.md`) |
 | W12c sagittal small parts over their own outline (ACL, PCL, synovium, patellar and trochlear cartilage) | Codex CLI | w12c (base 1f3db63) | background task b0gl8dmqh | STOPPED by the lead mid-run (partial edits in its worktree, unreviewed) |
 
 ## UNREVIEWED / WITHDRAWN / STALE RESULTS
