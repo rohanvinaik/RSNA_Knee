@@ -62,7 +62,7 @@ Worktrees under `/private/tmp/rsna-upgrade-20261021/<job>` (branch `upgrade/<job
 | K1 private Kaggle timing of r6 | Claude sub-agent | none | session sub-agent | DONE: kernel v4 COMPLETE, 25.5 CPU-s/study, 3.23 GB peak, valid CSV (`workers/k1/report.md`) |
 | K2 Kaggle observation notebook | Claude sub-agent | k2 | session sub-agent | RETURNED, PARKED for the teaching stage: kernel + shard launcher ready, 20-study Kaggle measurement 16.0 CPU-s/study observation-only (`workers/k2/report.md`); full run not launched |
 | R1b report reader (58 labelled) | Claude sub-agent | none | session sub-agent | RUNNING |
-| W5 memory rebuild | Claude sub-agent | w5 | session sub-agent | RUNNING |
+| W5 memory rebuild | Claude sub-agent | w5 | session sub-agent | INTEGRATED 14627d2 (territory-v2 writer, other-slice outlines); full 58-study compile running into `bootstrap-territory-v2-r1/` |
 | W6 question selection | Claude sub-agent | w6 | session sub-agent | INTEGRATED c95d61a, with the lead's sourced MCL-surroundings exception (SQUINT_TRAINING_BUILD §10) |
 | W9 bones by structure | Claude sub-agent | w9 | session sub-agent | RUNNING |
 | W10 dependents from anchors | Codex CLI, then Claude sub-agent | w10 | bc9e3zmt4 FAILED (model at capacity, no edits); reassigned to a session sub-agent | RUNNING |
