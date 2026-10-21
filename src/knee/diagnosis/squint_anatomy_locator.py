@@ -156,7 +156,7 @@ def locate_anatomy_first(
             has_compatible_precedent = True
             if not foreground_prepared:
                 bounds_by_series = {
-                    id(row): shared._leg_bounds(row.get("stack"))
+                    id(row): shared._leg_bounds(row.get("stack"), row.get("leg_map"))
                     for row in series
                     if getattr(row.get("stack"), "code", None) == "present"
                     and isinstance(

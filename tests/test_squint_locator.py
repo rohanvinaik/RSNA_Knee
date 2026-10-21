@@ -1009,7 +1009,7 @@ def test_locator_uses_finite_anatomy_windows_via_shared_profile_writer(
     cached_foreground = np.zeros((2, 2, 2), dtype=bool)
     cached_foreground[0, 0, 0] = True
 
-    def cached_leg_bounds(_stack):
+    def cached_leg_bounds(_stack, _leg_map=None):
         return (0, 0, 0), (2, 2, 2), cached_foreground
 
     monkeypatch.setattr(locator_module, "_leg_bounds", cached_leg_bounds)

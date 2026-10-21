@@ -1000,27 +1000,37 @@ def _object_order(
 
 def _leg_bounds(
     stack: object,
+    leg_map: object = None,
 ) -> tuple[tuple[int, int, int], tuple[int, int, int], np.ndarray]:
-    coverage = np.asarray(stack.coverage)
-    valid = np.isfinite(coverage) & (coverage > 0)
-    maximum = getattr(stack, "maximum", None)
-    if (
-        isinstance(maximum, np.ndarray)
-        and maximum.shape == coverage.shape
-        and valid.any()
-    ):
-        usable = valid & np.isfinite(maximum)
-        if usable.any():
-            scan_lowest = float(np.min(maximum[usable]))
-            foreground = usable & (maximum > scan_lowest)
-            if foreground.any():
-                valid = foreground
-    points = np.argwhere(valid)
+    """Bounds and candidate eligibility from the one shared leg map.
+
+    Only tiles the map calls outside the leg are excluded (Rohan, 2026-10-18:
+    what is not in the leg is never computed on). Inside, mixed and unknown
+    tiles stay eligible: unknown is never outside, and a missing split must
+    not silently stop location on a series. Without a map (a record with no
+    native pixels to measure a split from) every covered tile stays eligible.
+    """
+    from knee.diagnosis.squint_interfaces import LEG_OUTSIDE, leg_map_code
+
+    coverage = getattr(stack, "coverage", None)
+    if not isinstance(coverage, np.ndarray) or coverage.ndim != 3:
+        raise ValueError("leg_stack_coverage_invalid")
+    foreground = np.isfinite(coverage) & (coverage > 0)
+    if leg_map is not None:
+        if not isinstance(leg_map, Mapping):
+            raise TypeError("leg_map_invalid")
+        code = leg_map_code(leg_map, grid_shape=coverage.shape)
+        if code != "valid":
+            raise ValueError(code)
+        if leg_map["series_uid"] != getattr(stack, "series_uid", None):
+            raise ValueError("leg_map_series_mismatch")
+        foreground = foreground & (leg_map["codes"] != LEG_OUTSIDE)
+    points = np.argwhere(foreground)
     if not len(points):
-        return (0, 0, 0), tuple(int(dim) for dim in coverage.shape), valid
+        return (0, 0, 0), (0, 0, 0), foreground
     lower = tuple(int(value) for value in points.min(axis=0))
     upper = tuple(int(value) + 1 for value in points.max(axis=0))
-    return lower, upper, valid
+    return lower, upper, foreground
 
 
 _COARSE_METRICS = (
@@ -1433,8 +1443,29 @@ def locate_objects(study: dict, memory: dict, deadline: float | None = None) -> 
     )
     if raw_stack_present:
         from knee.diagnosis.squint_anatomy_locator import locate_anatomy_first
+        from knee.diagnosis.squint_leg import leg_maps
 
-        return locate_anatomy_first(study, memory, deadline)
+        # The territory writer may already have made these. Share that exact
+        # result rather than measuring the background split a second time.
+        maps = study.get("leg_maps")
+        leg_status = "shared"
+        if maps is None:
+            try:
+                maps = leg_maps(study)
+                leg_status = "measured"
+            except (TypeError, ValueError) as error:
+                # Records without native pixels (no split can be measured):
+                # every covered tile stays eligible, and the reason is kept.
+                maps, leg_status = {}, f"unavailable:{error}"
+        located_study = {
+            **study,
+            "leg_maps": maps,
+            "leg_map_status": leg_status,
+            "series": [
+                {**row, "leg_map": maps.get(row.get("series_uid"))} for row in series
+            ],
+        }
+        return locate_anatomy_first(located_study, memory, deadline)
     return _locate_cached_objects(study, memory, deadline)
 
 
@@ -1777,7 +1808,7 @@ def _current_leg_frame_prior(
         if foreground_by_series is not None and id(record) in foreground_by_series:
             foreground = foreground_by_series[id(record)]
         else:
-            _lower, _upper, foreground = _leg_bounds(stack)
+            _lower, _upper, foreground = _leg_bounds(stack, record.get("leg_map"))
         if foreground.shape != centres.shape[:3]:
             continue
         valid = foreground & np.isfinite(centres).all(axis=-1)
