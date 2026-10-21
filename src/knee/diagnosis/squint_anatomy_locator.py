@@ -15,6 +15,18 @@ placed from them (SQUINT_TRAINING_BUILD §4 L2/L0, §9 W10).
   and the shared leg calibration at 10 mm and 2 mm. Candidate resemblance reads
   only object-role 10 mm banks, case by case. A v1 memory retains the v1 writer
   and comparison path.
+* The 2 mm reading is written beside the 10 mm one while locating
+  (``refine_finalists``, the default) or left to the named question that asks for
+  it (False, the production caller; ``squint_pipeline._bounded_observation``
+  reads it then, once, over the same territory). Deferred, the located profile is
+  exactly the 10 mm reading held, for a bone with a native mask as for any other
+  territory. The JSON record holds that mask as an address and digest alone, so a
+  deferring location keeps the original territory it read by reference on the runtime
+  study (``NATIVE_SUPPORT_RETAINED``). ``retained_native_territory`` gives it back for
+  the question that asks, when its own serialization is the record asked about, and
+  the later reading is made over that very mask. The located objects and their JSON
+  never hold it, and it goes with the runtime study. A mask the study does not hold,
+  or holds as another territory, is named and never read in its place.
 * Every other object is proposed from the usable anchors only, through the
   authored anatomy map in physical millimetres (``anatomical_windows``, which
   reads each anchor's complete reference, or its selected planes when partial).
@@ -81,6 +93,11 @@ ANCHOR_GEOMETRY_SCHEMA = "knee.squint-anchor-geometry/v1"
 TERRITORY_RECORD_SERIALIZATION = "knee.squint-territory-record/v1"
 STRUCTURAL_ROUTE = "structural_anchors"
 EXISTING_ROUTE = "existing_finite_route"
+#: What the evidence names when the 2 mm reading is left to a question (module note).
+FINE_READING_DEFERRED = "deferred_to_a_named_question"
+#: Where a deferring location keeps, on the runtime study alone, the original territories
+#: whose native masks their JSON records hold as an address (module note).
+NATIVE_SUPPORT_RETAINED = "native_support_territories"
 _DEPENDENT_API = "knee.diagnosis.squint_anatomy_locator.dependent_territories/v1"
 _ORIENTATIONS = ("sagittal", "coronal", "axial")
 
@@ -182,7 +199,12 @@ def _object_coarse_banks(profile: object) -> dict[str, list[int]]:
     result = {}
     for name, counts in (shared._banks(profile) or {}).items():
         fields = parse_territory_bank_name(name)
-        if fields and fields["role"] == "object" and fields["scale_mm"] == 10.0:
+        if (
+            fields
+            and fields["role"] == "object"
+            # Bank scale is an exact typed address; near scales must remain ineligible.
+            and fields["scale_mm"] == 10.0  # NOSONAR(S1244)
+        ):
             result[name] = list(counts)
     return result
 
@@ -359,6 +381,50 @@ def territory_from_record(record: Mapping[str, Any]) -> dict[str, Any]:
     if code != "valid":
         raise ValueError(code)
     return territory
+
+
+def retained_native_territory(
+    study: object, record: Mapping[str, Any]
+) -> tuple[Mapping[str, Any] | None, str]:
+    """The retained original of a record that holds its native mask as an address alone.
+
+    ``territory_record`` replaces the runtime-only mask by its address and digest, and a
+    territory rebuilt from the record has none: read over its coarse object tiles, it
+    would be other pixels than its 10 mm reading. A deferring location keeps the original
+    territories it read by reference on the runtime study (``locate_anatomy_first``). One
+    is returned only when its own ``territory_record`` is this record: the same study,
+    subject, series, tile window, roles, shares and mask address and digest, never a
+    bounding box or a subject alone. Otherwise the reason is named:
+    ``native_support_mask_not_retained`` (the study holds no territory at the record's
+    address) or ``native_support_mask_mismatch`` (it holds some there, none of them this).
+    """
+
+    def address(value: Mapping[str, Any]) -> list[Any]:
+        return [
+            value.get("study_uid"),
+            value.get("subject"),
+            value.get("series_uid"),
+            _json_safe(value.get("tile_window")),
+        ]
+
+    retained = (
+        study.get(NATIVE_SUPPORT_RETAINED) if isinstance(study, Mapping) else None
+    )
+    wanted = address(record)
+    here = [
+        territory
+        for territory in (retained if isinstance(retained, list) else ())
+        if isinstance(territory, Mapping) and address(territory) == wanted
+    ]
+    if not here:
+        return None, "native_support_mask_not_retained"
+    for territory in here:
+        try:
+            if territory_record(territory) == dict(record):
+                return territory, "retained"
+        except (AttributeError, KeyError, TypeError, ValueError):
+            continue
+    return None, "native_support_mask_mismatch"
 
 
 def _plane_has_geometry(address: Mapping[str, Any]) -> bool:
@@ -989,8 +1055,18 @@ def _anchored_object(
     series_by_uid: Mapping[str, Any],
     calibrations: Mapping[str, Any] | None = None,
     deadline: float | None = None,
+    *,
+    refine_finalists: bool = True,
+    retained_support: list[Mapping[str, Any]] | None = None,
 ) -> dict[str, Any]:
-    """A bone located by its own anchor: its territories, read, never searched."""
+    """A bone located by its own anchor: its territories, read, never searched.
+
+    A territory-v2 reading is paired with its 2 mm one unless ``refine_finalists`` is
+    False, which leaves it to the question that asks, whether or not the territory
+    carries a native mask. A given ``retained_support`` collects, by reference, each
+    territory read that does: its record holds the mask as an address alone, and the
+    question that asks needs the original (``retained_native_territory``).
+    """
     from knee.diagnosis.squint_profiles import merge_profiles, profile_window
 
     territories = list(entry["territories"])
@@ -1004,6 +1080,8 @@ def _anchored_object(
     records = []
     candidate_profiles = []
     read: list[Mapping[str, Any]] = []
+    #: for each held territory-v2 reading, whether its 2 mm one was made while locating
+    paired: list[bool] = []
     seen: set[tuple[Any, ...]] = set()
     duplicates = 0
     refusals = []
@@ -1041,7 +1119,11 @@ def _anchored_object(
                 )
                 continue
             profile = _territory_profile(
-                series_record, territory, calibration, refine=True, deadline=deadline
+                series_record,
+                territory,
+                calibration,
+                refine=refine_finalists,
+                deadline=deadline,
             )
             if not _object_coarse_banks(profile):
                 refusals.append(
@@ -1051,6 +1133,7 @@ def _anchored_object(
                     }
                 )
                 continue
+            paired.append(refine_finalists)
         else:
             profile = profile_window(dict(series_record), window, subject=subject)
         read.append(territory)
@@ -1067,6 +1150,12 @@ def _anchored_object(
             # W11 reads each region's own territory. Keep the aligned object
             # list as well, for W10's public readback adapter.
             regions[-1]["territory"] = records[-1]
+            if (
+                retained_support is not None
+                and territory.get("native_support") is not None
+            ):
+                # The record holds this territory's native mask as an address alone.
+                retained_support.append(territory)
         candidate_profiles.append(
             {
                 "profile": profile,
@@ -1089,6 +1178,13 @@ def _anchored_object(
         for item in territories
         if not any(item is used for used in read)
     ]
+    deferred = paired.count(False)
+    if calibrations is None:
+        profile_reading = "scan_tercile_v1_over_object_tile_box"
+    elif not deferred:
+        profile_reading = "leg_tercile_territory_v2_10mm_and_2mm"
+    else:
+        profile_reading = "leg_tercile_territory_v2_10mm"
     evidence: dict[str, Any] = {
         "source": "current_study_structural_anchor",
         "location_route": "structural_anchor",
@@ -1097,9 +1193,7 @@ def _anchored_object(
         "candidate_profiles_compared": 0,
         "reading_territories": reading_policy,
         "duplicate_reading_territories": duplicates,
-        "profile_reading": "leg_tercile_territory_v2_10mm_and_2mm"
-        if calibrations is not None
-        else "scan_tercile_v1_over_object_tile_box",
+        "profile_reading": profile_reading,
         "reading_refusals": refusals,
         "other_anchor_territories": other,
         "spatial_constraints": dict(geometry),
@@ -1108,6 +1202,12 @@ def _anchored_object(
         "candidate_series_context_catalog": catalog["series_contexts"],
         "patient_coordinates_carried": False,
     }
+    if calibrations is not None and not refine_finalists:
+        evidence["fine_reading"] = {
+            "policy": FINE_READING_DEFERRED,
+            "requested_at_location": paired.count(True),
+            "deferred": deferred,
+        }
     if not regions:
         evidence["reason"] = "structural_anchor_without_readable_territory"
     return {
@@ -1121,14 +1221,28 @@ def _anchored_object(
 
 
 def locate_anatomy_first(
-    study: dict, memory: dict, deadline: float | None = None
+    study: dict,
+    memory: dict,
+    deadline: float | None = None,
+    *,
+    refine_finalists: bool = True,
 ) -> dict:
     """Locate bones by their structural anchors and place the rest from them.
 
     Only finite candidates are scored, and only to choose among them; a bounded
     exact tie set is refined. Without a usable structural anchor the existing
     finite route runs unchanged, named (module note).
+
+    ``refine_finalists`` False defers every territory-v2 object's 2 mm reading to the
+    question that asks for it, a bone's territory with a native mask included. The
+    original of each such territory read is kept by reference on the runtime ``study``
+    (``NATIVE_SUPPORT_RETAINED``; never in the result) for that question. Nothing that
+    places an object changes: candidates, ties, territories, key planes and source
+    addresses are the same either way.
     """
+    # A new location owns only the mask-bearing territories it reads and leaves
+    # to its questions. Clear a previous invocation before any early return.
+    study.pop(NATIVE_SUPPORT_RETAINED, None)
     cases = memory.get("cases", ())
     case_rows = (
         list(cases)
@@ -1223,6 +1337,9 @@ def locate_anatomy_first(
                 calibrations[uid] = f"leg_calibration_unavailable:{error}"
     geometry_by_subject: dict[str, dict[str, Any]] = {}
     exact_refinements = 0
+    # What the runtime study keeps is what this location reads and leaves to a question
+    # (module note): nothing from an earlier location, and nothing when it pairs now.
+    retained_support: list[Mapping[str, Any]] | None = None if refine_finalists else []
     anchor_state = study_anchors(study, series_by_uid, deadline=deadline)
     structural = anchor_state["route"] == STRUCTURAL_ROUTE
     structural_geometry: dict[str, dict[str, Any]] = anchor_state["geometry"]
@@ -1260,6 +1377,8 @@ def locate_anatomy_first(
                 series_by_uid,
                 calibrations if territory_v2 else None,
                 deadline,
+                refine_finalists=refine_finalists,
+                retained_support=retained_support,
             )
             geometry_by_subject[subject] = structural_geometry[subject]
             continue
@@ -1302,6 +1421,7 @@ def locate_anatomy_first(
         territory_by_key: dict[tuple[Any, ...], dict[str, Any]] = {}
         coarse_readings: list[dict[str, Any]] = []
         reading_refusals: list[dict[str, Any]] = []
+        finalists_paired = finalists_deferred = 0
 
         for series_record in series:
             stack = series_record.get("stack")
@@ -1596,18 +1716,24 @@ def locate_anatomy_first(
                 if deadline is not None and time.monotonic() >= deadline:
                     break
                 series_record = candidate["series"]
+                full = True  # a v1 candidate is always written in full
                 if territory_v2:
                     territory = territory_by_key[
                         (series_record["series_uid"], candidate["window"])
                     ]
+                    full = refine_finalists
                     profile = _territory_profile(
                         series_record,
                         territory,
                         calibrations[series_record["series_uid"]],
                         coarse=candidate["coarse_profile"],
-                        refine=True,
+                        refine=full,
                         deadline=deadline,
                     )
+                    if full:
+                        finalists_paired += 1
+                    else:
+                        finalists_deferred += 1
                     query = _object_coarse_banks(profile)
                 else:
                     profile = profile_window(
@@ -1617,7 +1743,7 @@ def locate_anatomy_first(
                 if query is None:
                     continue
                 view_id = json.dumps(view, separators=(",", ":"))
-                if view_id in view_costs:
+                if view_id in view_costs and full:
                     view_costs[view_id]["full_profiles_materialized"] += 1
                 if territory_v2:
                     # Fine banks do not enter location resemblance. These exact
@@ -1714,6 +1840,12 @@ def locate_anatomy_first(
                 coarse_readings=coarse_readings,
                 coarse_reading_catalog=coarse_catalog,
             )
+            if not refine_finalists:
+                structural_evidence["fine_reading"] = {
+                    "policy": FINE_READING_DEFERRED,
+                    "requested_at_location": finalists_paired,
+                    "deferred": finalists_deferred,
+                }
         if territory_v2 and subject in BONES and subject not in anchor_state["usable"]:
             structural_evidence["unanchored_bone"] = anchor_state["bones"].get(
                 subject,
@@ -1849,22 +1981,27 @@ def locate_anatomy_first(
                     geometry_regions, objects[subject]["territories"], strict=True
                 ):
                     region["territory"] = record
+    if retained_support:
+        study[NATIVE_SUPPORT_RETAINED] = retained_support
+    study_evidence = {
+        "series_uids": series_uids,
+        "candidate_profiles_compared": exact_refinements,
+        "candidate_generation": "finite_anatomy_first",
+        "anchors": _json_safe(
+            {
+                "route": anchor_state["route"],
+                "source": anchor_state["source"],
+                "bones": anchor_state["bones"],
+            }
+        ),
+    }
+    if territory_v2 and not refine_finalists:
+        study_evidence["fine_reading"] = FINE_READING_DEFERRED
     return {
         "outcome": "located_with_proposals",
         "study_uid": study.get("study_uid"),
         "objects": objects,
-        "evidence": {
-            "series_uids": series_uids,
-            "candidate_profiles_compared": exact_refinements,
-            "candidate_generation": "finite_anatomy_first",
-            "anchors": _json_safe(
-                {
-                    "route": anchor_state["route"],
-                    "source": anchor_state["source"],
-                    "bones": anchor_state["bones"],
-                }
-            ),
-        },
+        "evidence": study_evidence,
     }
 
 
@@ -1872,12 +2009,15 @@ __all__ = [
     "BONES",
     "CONTEXT_RING_TILES",
     "EXISTING_ROUTE",
+    "FINE_READING_DEFERRED",
+    "NATIVE_SUPPORT_RETAINED",
     "STRUCTURAL_ROUTE",
     "TERRITORY_RECORD_SERIALIZATION",
     "USABLE_ANCHOR_STATUSES",
     "dependent_territories",
     "locate_anatomy_first",
     "resolve_anchor_views",
+    "retained_native_territory",
     "study_anchors",
     "territory_from_record",
     "territory_record",

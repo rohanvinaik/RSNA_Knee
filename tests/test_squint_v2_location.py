@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import copy
+import inspect
 import json
 
 import numpy as np
@@ -10,14 +11,17 @@ import pytest
 
 from knee.diagnosis import squint_anatomy_locator as anatomy
 from knee.diagnosis import squint_locator as locator
+from knee.diagnosis import squint_pipeline
 from knee.diagnosis import squint_profiles as writer
 from knee.diagnosis.squint_interfaces import (
     ANCHOR_SCHEMA,
+    ROLE_CONTEXT,
     ROLE_OBJECT,
     TERRITORY_PROCEDURE,
     anchor_code,
     parse_territory_bank_name,
 )
+from knee.diagnosis.squint_residual import held_readings
 from tests import test_squint_dependent_territories as dependent
 from tests.test_squint_profiles_territory import _native_fixture
 
@@ -115,8 +119,9 @@ def test_native_anchor_writes_own_places_at_both_scales_and_recall_terms(tmp_pat
     json.dumps(result, allow_nan=False)
 
 
+@pytest.mark.parametrize("refine_finalists", [True, False], ids=["paired", "deferred"])
 def test_locator_keeps_one_map_and_one_measured_calibration_for_two_bones(
-    tmp_path, monkeypatch
+    tmp_path, monkeypatch, refine_finalists
 ):
     series, leg, territory = _native_bone(tmp_path)
     other = {**territory, "subject": "tibia"}
@@ -145,7 +150,9 @@ def test_locator_keeps_one_map_and_one_measured_calibration_for_two_bones(
         },
     }
     result = locator.locate_objects(
-        study, {"objects": ["femur", "tibia"], "procedure": TERRITORY_PROCEDURE}
+        study,
+        {"objects": ["femur", "tibia"], "procedure": TERRITORY_PROCEDURE},
+        refine_finalists=refine_finalists,
     )
     assert map_calls == [territory["study_uid"]]
     assert study["leg_maps"][series["series_uid"]] is leg
@@ -425,3 +432,305 @@ def test_missing_leg_map_and_deadline_keep_named_unavailable_states(monkeypatch)
         row["evidence"]["reason"] == "deadline_before_search"
         for row in late["objects"].values()
     )
+
+
+# ---------------------------------------------------------------------------
+# squint first: the 2 mm reading waits for the question that names it
+# ---------------------------------------------------------------------------
+
+
+def _watch_fine_readings(monkeypatch) -> list[str]:
+    """Each call to the territory writer's 2 mm reader, by the subject it was made for."""
+    calls: list[str] = []
+    real = writer.refine_territory
+
+    def watched(series, territory, leg_map, **kwargs):
+        calls.append(territory["subject"])
+        return real(series, territory, leg_map, **kwargs)
+
+    monkeypatch.setattr(writer, "refine_territory", watched)
+    return calls
+
+
+def _bone_study(tmp_path, *, native_mask: bool = False):
+    """A femur given by its anchor, with the native pixels a 2 mm reading needs."""
+    series, leg, territory = _native_bone(tmp_path)
+    if native_mask:
+        support = np.zeros((1, 16, 16), dtype=bool)
+        support[0, 0, 0] = support[0, -1, -1] = True
+        support[0, 4:8, 4:8] = True
+        territory["native_support"] = {
+            "mask": support,
+            "offset_rc": [60, 60],
+            "slices": [0],
+        }
+    coarse = writer.profile_territory(series, territory, leg, subject="femur")
+    study = {
+        "study_uid": territory["study_uid"],
+        "series": [series],
+        "leg_maps": {series["series_uid"]: leg},
+        "anchors": {"femur": _anchor(series, territory)},
+    }
+    return study, {"cases": [_case(coarse, "femur")]}, coarse
+
+
+def _scales(profile) -> set[float]:
+    fields = [parse_territory_bank_name(name) for name in profile["banks"]]
+    assert all(field is not None for field in fields)
+    return {field["scale_mm"] for field in fields if field is not None}
+
+
+#: What a located object's evidence says of its profile's payload, not of where it is.
+_PROFILE_EVIDENCE = (
+    "profile_reading",
+    "fine_reading",
+    "candidate_costs_by_view",
+    "candidate_profile_catalog",
+    "candidate_bank_catalog",
+    "candidate_series_context_catalog",
+)
+
+
+def _without_profile_refs(value):
+    """A content id names a payload; a payload that differs has a different one."""
+    if isinstance(value, dict):
+        return {
+            key: _without_profile_refs(item)
+            for key, item in value.items()
+            if key != "profile_ref"
+        }
+    if isinstance(value, list):
+        return [_without_profile_refs(item) for item in value]
+    return value
+
+
+def _placement(located: dict) -> dict:
+    """Everything that places an object and nothing that is a reading's payload."""
+    return {
+        "status": located["status"],
+        "regions": located["regions"],
+        "territories": located["territories"],
+        "evidence": {
+            key: _without_profile_refs(value)
+            for key, value in located["evidence"].items()
+            if key not in _PROFILE_EVIDENCE
+        },
+        "candidates": [
+            {key: item.get(key) for key in ("series_uid", "window", "territory_origin")}
+            for item in located["candidate_profiles"]
+        ],
+    }
+
+
+def test_the_deferral_keyword_is_off_for_direct_and_reference_callers():
+    for function in (
+        locator.locate_objects,
+        anatomy.locate_anatomy_first,
+        anatomy._anchored_object,
+    ):
+        parameter = inspect.signature(function).parameters["refine_finalists"]
+        assert parameter.default is True
+        assert parameter.kind is inspect.Parameter.KEYWORD_ONLY
+
+
+def test_deferred_location_places_a_bone_alike_and_holds_only_its_coarse_reading(
+    tmp_path, monkeypatch
+):
+    study, memory, coarse = _bone_study(tmp_path)
+    calls = _watch_fine_readings(monkeypatch)
+    reference = locator.locate_objects(study, memory)
+    assert calls == ["femur"]
+    deferred = locator.locate_objects(study, memory, refine_finalists=False)
+    assert calls == ["femur"]  # the deferred location read no 2 mm
+    paired, bone = reference["objects"]["femur"], deferred["objects"]["femur"]
+    # Where the bone is, and the addresses its readings carry, are not touched.
+    assert _placement(bone) == _placement(paired)
+    assert bone["regions"][0]["territory"]["origin"] == "anchor_structure"
+    # The profile is exactly the coarse reading held: no fine bank, no refusal marker.
+    assert _scales(paired["profile"]) == {10.0, 2.0}
+    assert _scales(bone["profile"]) == {10.0}
+    assert bone["profile"] == writer.merge_profiles([coarse], subject="femur")
+    assert anatomy._object_coarse_banks(bone["profile"]) == (
+        anatomy._object_coarse_banks(paired["profile"])
+    )
+    # The evidence says what each location read, and nothing it did not.
+    assert paired["evidence"]["profile_reading"] == (
+        "leg_tercile_territory_v2_10mm_and_2mm"
+    )
+    assert "fine_reading" not in paired["evidence"]
+    assert "fine_reading" not in reference["evidence"]
+    assert bone["evidence"]["profile_reading"] == "leg_tercile_territory_v2_10mm"
+    assert bone["evidence"]["fine_reading"] == {
+        "policy": anatomy.FINE_READING_DEFERRED,
+        "requested_at_location": 0,
+        "deferred": 1,
+    }
+    assert deferred["evidence"]["fine_reading"] == anatomy.FINE_READING_DEFERRED
+    json.dumps(deferred, allow_nan=False)
+    # The question that names the bone then reads the same pair once: the profile is
+    # the one the paired location wrote, and the fine counts are added a single time.
+    objects = {"femur": bone}
+    observed = squint_pipeline._bounded_observation(
+        {"object": "femur", "question": "Fracture"}, study, objects, set(), None
+    )
+    assert observed["code"] == "measured"
+    assert calls == ["femur", "femur"]
+    assert objects["femur"]["profile"]["banks"] == paired["profile"]["banks"]
+    assert held_readings(objects["femur"]["profile"]) == held_readings(
+        paired["profile"]
+    )
+
+
+def test_a_bone_over_two_territories_ends_with_the_same_pairs_and_counts_nothing_twice(
+    tmp_path, monkeypatch
+):
+    series, leg, first = _native_bone(tmp_path)
+    second = copy.deepcopy(first)
+    second["roles"][0, 3:5, 3:5] = ROLE_CONTEXT
+    second["roles"][0, 2:4, 1:3] = ROLE_OBJECT
+    second["object_share"][:] = np.nan
+    second["object_share"][0, 2:4, 1:3] = 0.5
+    anchor = _anchor(series, first)
+    anchor["territories"] = [first, second]
+    held = [
+        writer.profile_territory(series, item, leg, subject="femur")
+        for item in (first, second)
+    ]
+    study = {
+        "study_uid": first["study_uid"],
+        "series": [series],
+        "leg_maps": {series["series_uid"]: leg},
+        "anchors": {"femur": anchor},
+    }
+    memory = {"cases": [_case(writer.merge_profiles(held, subject="femur"), "femur")]}
+    calls = _watch_fine_readings(monkeypatch)
+    paired = locator.locate_objects(study, memory)["objects"]["femur"]
+    assert len(paired["regions"]) == 2
+    assert calls == ["femur", "femur"]
+    bone = locator.locate_objects(study, memory, refine_finalists=False)["objects"][
+        "femur"
+    ]
+    assert calls == ["femur", "femur"]
+    assert _placement(bone) == _placement(paired)
+    assert _scales(bone["profile"]) == {10.0}
+    assert bone["profile"] == writer.merge_profiles(held, subject="femur")
+    assert bone["evidence"]["fine_reading"]["deferred"] == 2
+    # One question reads both territories' pairs; the next reads nothing more.
+    objects, attempted = {"femur": bone}, set()
+    observed = squint_pipeline._bounded_observation(
+        {"object": "femur"}, study, objects, attempted, None
+    )
+    assert observed["code"] == "measured"
+    assert len(observed["regions"]) == 2
+    assert calls == ["femur"] * 4
+    assert objects["femur"]["profile"]["banks"] == paired["profile"]["banks"]
+    assert held_readings(objects["femur"]["profile"]) == held_readings(
+        paired["profile"]
+    )
+    again = squint_pipeline._bounded_observation(
+        {"object": "femur"}, study, objects, attempted, None
+    )
+    assert again["code"] == "shared_observation_already_available"
+    assert calls == ["femur"] * 4
+    assert objects["femur"]["profile"]["banks"] == paired["profile"]["banks"]
+
+
+def test_a_bone_whose_native_mask_cannot_be_rebuilt_keeps_its_pair_when_deferred(
+    tmp_path, monkeypatch
+):
+    study, memory, _coarse = _bone_study(tmp_path, native_mask=True)
+    calls = _watch_fine_readings(monkeypatch)
+    paired = locator.locate_objects(study, memory)["objects"]["femur"]
+    bone = locator.locate_objects(study, memory, refine_finalists=False)["objects"][
+        "femur"
+    ]
+    # The located record has only the address and digest. The original territory stays
+    # on the runtime study, while the located profile holds only the coarse reading.
+    assert calls == ["femur"]
+    assert _scales(paired["profile"]) == {10.0, 2.0}
+    assert _scales(bone["profile"]) == {10.0}
+    assert bone["territories"][0]["native_support"] is None
+    assert bone["territories"][0]["native_support_address"]["support_count"] > 0
+    assert bone["evidence"]["fine_reading"] == {
+        "policy": anatomy.FINE_READING_DEFERRED,
+        "requested_at_location": 0,
+        "deferred": 1,
+    }
+    assert bone["evidence"]["profile_reading"] == "leg_tercile_territory_v2_10mm"
+    # A named question can refine from the original retained mask, once.
+    objects = {"femur": bone}
+    observed = squint_pipeline._bounded_observation(
+        {"object": "femur"}, study, objects, set(), None
+    )
+    assert observed["code"] == "measured"
+    assert observed["unavailable_regions"] == []
+    assert calls == ["femur", "femur"]
+    assert _scales(objects["femur"]["profile"]) == {10.0, 2.0}
+
+
+def test_deferred_location_leaves_dependent_finalists_at_their_coarse_reading(
+    monkeypatch,
+):
+    series, femur, built, profiles, memory = _v2_dependent()
+    study = dependent._study(series, knee_side="left", anchors={"femur": femur})
+    calls = _watch_fine_readings(monkeypatch)
+    reference = locator.locate_objects(study, memory)
+    assert calls == ["femur", "medial_meniscus"]
+    calls.clear()
+    deferred = locator.locate_objects(study, memory, refine_finalists=False)
+    # The femur's and dependent's readings both wait for their named questions.
+    assert calls == []
+    paired = reference["objects"]["medial_meniscus"]
+    part = deferred["objects"]["medial_meniscus"]
+    assert _placement(part) == _placement(paired)
+    assert part["profile"] is not None
+    windows = [anatomy._object_window(t) for t in built["territories"]]
+    held = [profiles[windows.index(tuple(r["window"]))] for r in part["regions"]]
+    assert part["profile"] == writer.merge_profiles(held, subject="medial_meniscus")
+    # This fixture holds no native pixels: the paired location carries the reader's
+    # named refusal, and the deferred one never asked.
+    marker = paired["profile"]["source"]["lineage"][0]["fine_reading"]
+    assert marker["code"] == "territory_refinement_unavailable"
+    assert "fine_reading" not in part["profile"]["source"]["lineage"][0]
+    assert part["evidence"]["fine_reading"] == {
+        "policy": anatomy.FINE_READING_DEFERRED,
+        "requested_at_location": 0,
+        "deferred": 1,
+    }
+    assert "fine_reading" not in paired["evidence"]
+    paired_cost = next(iter(paired["evidence"]["candidate_costs_by_view"].values()))
+    cost = next(iter(part["evidence"]["candidate_costs_by_view"].values()))
+    assert (paired_cost["full_profiles_materialized"], cost) == (
+        1,
+        {**paired_cost, "full_profiles_materialized": 0},
+    )
+    assert deferred["evidence"]["fine_reading"] == anatomy.FINE_READING_DEFERRED
+    assert "fine_reading" not in reference["evidence"]
+    json.dumps(deferred, allow_nan=False)
+
+
+def test_deferred_location_changes_nothing_on_a_v1_memory(monkeypatch):
+    dependent._no_producer(monkeypatch)
+    series = dependent._series()
+    memory = dependent._memory(
+        series,
+        {
+            "femur": (2, 3, 6, 10, 13, 20),
+            "tibia": (3, 4, 10, 15, 13, 21),
+            "medial_meniscus": (4, 5, 11, 12, 10, 15),
+        },
+    )
+
+    def v2_forbidden(*args, **kwargs):
+        raise AssertionError("v1 memory must not calibrate or write a v2 profile")
+
+    monkeypatch.setattr(writer, "leg_calibration", v2_forbidden)
+    monkeypatch.setattr(writer, "profile_territory", v2_forbidden)
+    monkeypatch.setattr(writer, "refine_territory", v2_forbidden)
+    study = dependent._study(series, knee_side="left", anchors={})
+    reference = locator.locate_objects(study, memory)
+    deferred = locator.locate_objects(study, memory, refine_finalists=False)
+    assert json.dumps(deferred, sort_keys=True, default=str) == json.dumps(
+        reference, sort_keys=True, default=str
+    )
+    assert "fine_reading" not in deferred["evidence"]

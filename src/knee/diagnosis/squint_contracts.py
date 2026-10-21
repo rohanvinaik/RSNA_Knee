@@ -92,6 +92,7 @@ _UNKNOWN = "unknown"
 _CONFLICT = "conflict"
 
 _SIGNS = (-1, 1)
+_DECISION_SCOPES = frozenset({"decide", "grade_only"})
 _UNSUPPORTED_REASON = "unsupported_combination:sufficient_configuration_not_sourced"
 
 # ---------------------------------------------------------------------------
@@ -756,6 +757,11 @@ def _normalize_record(
     named = record.get("subject")
     if named is not None and named not in aliases:
         problems.append("subject_mismatch")
+    decision_scope = record.get("decision_scope")
+    if "decision_scope" in record and (
+        not isinstance(decision_scope, str) or decision_scope not in _DECISION_SCOPES
+    ):
+        problems.append("decision_scope_invalid")
 
     id_lists: dict[str, list[str]] = {}
     for field in _ID_FIELDS:
@@ -832,6 +838,8 @@ def _normalize_record(
         "vetoed_answers": sorted(vetoes),
         "trust_checked": trust_checked,
     }
+    if decision_scope is not None:
+        normalized_record["decision_scope"] = decision_scope
     for field in _ID_FIELDS:
         normalized_record[field] = id_lists[field]
     reason = record.get("reason")
@@ -901,16 +909,13 @@ def _read_subject(
                     normalized["state"] = _UNKNOWN
                     normalized["code"] = "study_positive_presentation_not_localized"
             if (
-                isinstance(record, dict)
-                and record.get("decision_scope") == "grade_only"
+                normalized.get("decision_scope") == "grade_only"
                 and normalized["state"] != _UNKNOWN
             ):
-                # Rohan's decision (SQUINT_TRAINING_BUILD §10): a small part
-                # read only over its expected area, not its own outline, is
-                # compared with outline-read cases unlike with like. Its terms
-                # stay for ranking within "open"; it never assigns or defeats.
+                # The caller explicitly withheld decision authority. Keep its
+                # terms for ranking while making its reading non-decisive.
                 normalized["state"] = _UNKNOWN
-                normalized["code"] = "small_part_not_read_over_own_outline"
+                normalized["code"] = "query_decision_scope_grade_only"
             kept.append(normalized)
     if problems:
         return _reading(_UNKNOWN, "evidence_malformed", problems=problems), []
@@ -1150,9 +1155,7 @@ _REQUEST_KIND = {
     "conflicting_trusted_cases": "bounded_zoom",
     "recall_rejected_input": "repeat_object_recall",
     "evidence_malformed": "repeat_object_recall",
-    # A small part read only over its expected area: the bounded look that can
-    # settle it is reading the part over its own outline (SQUINT_TRAINING_BUILD §10).
-    "small_part_not_read_over_own_outline": "bounded_zoom",
+    "query_decision_scope_grade_only": "bounded_zoom",
 }
 
 
@@ -1191,6 +1194,40 @@ def _requests(
     return found
 
 
+def _partial_configuration_relation(
+    positive_subjects: list[str], negative_subjects: list[str]
+) -> tuple[str, list[str]]:
+    """Name whether partial configuration comparisons share a defining site."""
+    overlap = sorted(set(positive_subjects) & set(negative_subjects))
+    if overlap:
+        return "competing_partial_presentations", overlap
+    return "counterevidence_on_other_sites", []
+
+
+def _configuration_case_disposition(
+    call: int,
+    covered_subjects: list[str],
+    positive_branches: list[list[str]],
+    required_negative: list[str],
+) -> str:
+    """Classify one trusted case by sign and its actual defining-site coverage."""
+    defining_subjects = set(required_negative)
+    for branch in positive_branches:
+        defining_subjects.update(branch)
+    covered = set(covered_subjects) & defining_subjects
+    if call == 1:
+        if any(branch and set(branch) <= covered for branch in positive_branches):
+            return "positive_configuration"
+        return "positive_coverage_incomplete"
+    if call == -1:
+        if required_negative and set(required_negative) <= covered:
+            return "complete_negative"
+        if covered:
+            return "partial_normal_counterevidence"
+        return "context_only"
+    return "invalid_call"
+
+
 # ---------------------------------------------------------------------------
 # public combination
 # ---------------------------------------------------------------------------
@@ -1207,13 +1244,16 @@ def _configuration_decision(
 
     Each decisive sign needs case-level common-bank provenance for the
     condition's own declared roles. Negative alternative cases cover every
-    alternative themselves. A clean necessary negative remains decisive, and
-    conflicts among covered cases or with anatomical readings stay visible.
+    alternative themselves; partial normal cases remain counterevidence on
+    their covered sites. Opposing partial presentations compete only where
+    their defining-site coverage overlaps. A clean necessary negative remains
+    decisive, and complete conflicts with anatomical readings stay visible.
     """
     coverage: dict[str, Any] = {
         "status": "not_present",
         "eligible_case_ids": {"positive": [], "negative": []},
         "excluded_cases": [],
+        "competing_anatomical_counterevidence": [],
     }
     if joint is None:
         return decision, coverage
@@ -1223,6 +1263,9 @@ def _configuration_decision(
     diagnostic = [name for name in (*contract.necessary, *contract.alternatives)]
     eligible_signs: set[str] = set()
     eligible_ids: dict[str, set[str]] = {"positive": set(), "negative": set()}
+    positive_covered_by_case: dict[str, set[str]] = {}
+    partial_negative_covered_by_case: dict[str, set[str]] = {}
+    grade_only_seen = False
     subjects = set(diagnostic)
 
     def covered_subjects(row: Mapping[str, Any]) -> set[str] | None:
@@ -1255,6 +1298,20 @@ def _configuration_decision(
         negative_required.update(contract.necessary)
 
     for record in joint_records:
+        if record.get("decision_scope") == "grade_only":
+            grade_only_seen = True
+            for row in record.get("case_terms", []):
+                case_id = row.get("case_id") if isinstance(row, Mapping) else None
+                call = row.get("call") if isinstance(row, Mapping) else None
+                if isinstance(case_id, str) and call in _SIGNS:
+                    coverage["excluded_cases"].append(
+                        {
+                            "case_id": case_id,
+                            "call": call,
+                            "reason": "query_decision_scope_grade_only",
+                        }
+                    )
+            continue
         vetoed = set(record.get("vetoed_answers", []))
         for row in record.get("case_terms", []):
             call = row.get("call") if isinstance(row, Mapping) else None
@@ -1293,36 +1350,76 @@ def _configuration_decision(
                         }
                     )
                 continue
-            if call == 1:
-                qualifies = any(
-                    branch and branch <= covered for branch in positive_branches
+            disposition = _configuration_case_disposition(
+                call,
+                sorted(covered),
+                [sorted(branch) for branch in positive_branches],
+                sorted(negative_required),
+            )
+            if disposition in {"positive_configuration", "complete_negative"}:
+                label = (
+                    "positive"
+                    if disposition == "positive_configuration"
+                    else "negative"
                 )
-            else:
-                qualifies = bool(negative_required) and negative_required <= covered
-            if qualifies:
-                label = "positive" if call == 1 else "negative"
                 eligible_signs.add(label)
                 if isinstance(case_id, str):
                     eligible_ids[label].add(case_id)
+                    if call == 1:
+                        positive_covered_by_case.setdefault(case_id, set()).update(
+                            covered
+                        )
             elif isinstance(case_id, str):
-                coverage["excluded_cases"].append(
-                    {
-                        "case_id": case_id,
-                        "call": call,
-                        "reason": "defining_tissue_coverage_incomplete",
-                        "covered_subjects": sorted(covered),
-                    }
-                )
+                excluded: dict[str, Any] = {
+                    "case_id": case_id,
+                    "call": call,
+                    "reason": "defining_tissue_coverage_incomplete",
+                    "covered_subjects": sorted(covered),
+                    "case_coverage_disposition": disposition,
+                }
+                if disposition == "partial_normal_counterevidence":
+                    # A warranted normal comparison on a defining site is
+                    # counterevidence there, even when it cannot establish
+                    # that every alternative site is normal.
+                    partial_negative_covered_by_case.setdefault(case_id, set()).update(
+                        covered
+                    )
+                    excluded["excluded_from"] = "categorical_defeat"
+                    excluded["disposition"] = "retained_as_counterevidence"
+                coverage["excluded_cases"].append(excluded)
 
     coverage["eligible_case_ids"] = {
         label: sorted(values) for label, values in eligible_ids.items()
     }
+    coverage["counterevidence_case_ids"] = sorted(partial_negative_covered_by_case)
+    competing_partial: dict[str, list[str]] = {}
+    positive_subjects = sorted(
+        set().union(*positive_covered_by_case.values())
+        if positive_covered_by_case
+        else set()
+    )
+    normal_subjects = {
+        name for name in diagnostic if readings[name]["state"] == _NEGATIVE
+    }
+    anatomical_overlap = sorted(set(positive_subjects) & normal_subjects)
+    coverage["competing_anatomical_counterevidence"] = anatomical_overlap
+    for negative_id, negative_subjects in partial_negative_covered_by_case.items():
+        relation, overlap = _partial_configuration_relation(
+            positive_subjects, sorted(negative_subjects)
+        )
+        if relation == "competing_partial_presentations":
+            competing_partial[negative_id] = overlap
+    coverage["competing_partial_counterevidence"] = competing_partial
     coverage["required_positive_branches"] = [
         sorted(branch) for branch in positive_branches
     ]
     coverage["required_negative_subjects"] = sorted(negative_required)
     if not eligible_signs:
-        coverage["status"] = "no_covered_warranted_configuration_cases"
+        coverage["status"] = (
+            "query_grade_only"
+            if grade_only_seen
+            else "no_covered_warranted_configuration_cases"
+        )
         if decision["outcome"] == _OPEN and joint["state"] in (_POSITIVE, _NEGATIVE):
             return (
                 _decision(
@@ -1351,6 +1448,20 @@ def _configuration_decision(
         return _decision(
             _OPEN, "configuration_anatomy_conflict", unresolved=diagnostic
         ), coverage
+    if state == _POSITIVE and decision["outcome"] == _OPEN and anatomical_overlap:
+        return _decision(
+            _OPEN,
+            "configuration_anatomy_counterevidence",
+            unresolved=diagnostic,
+        ), coverage
+    if competing_partial and decision["outcome"] == _OPEN:
+        return _decision(
+            _OPEN,
+            "configuration_partial_presentations_compete",
+            unresolved=diagnostic,
+        ), coverage
+    if state == _POSITIVE and decision["outcome"] == _ASSIGNED:
+        return decision, coverage
     return (
         _decision(
             _ASSIGNED if state == _POSITIVE else _DEFEATED,

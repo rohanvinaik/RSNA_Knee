@@ -90,10 +90,10 @@ MANIFEST_NAME = "RUNTIME_MANIFEST.json"
 # Release pins come from verified staging. The uploaded dataset must match both
 # before launching; unpinned or stale mounts refuse before inference.
 EXPECTED_RUNTIME_BUNDLE_ID: str | None = (
-    "00131db179587154f61425ac85f67ebb6a3c61db205fa5972fbab65bba30d343"
+    "63c4a727f0319052095fbf95a8e38a508cf02fab949897e6b82b5f26c393834a"
 )
 EXPECTED_MEMORY_MANIFEST_SHA256: str | None = (
-    "6642bf6a8bef52594f5b812a36f1d67c24816d841647960af82b2ac47e06addf"
+    "e8beae4bc8fbaef51b4c8c7a48e47ed2cb39d1b12198fe74b894271c6b22e0c8"
 )
 CONDITION_COUNT = 12
 WORKERS = 4

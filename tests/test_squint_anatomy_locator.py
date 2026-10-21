@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import json
 import sys
 from types import ModuleType, SimpleNamespace
 
@@ -254,6 +255,78 @@ def test_stack_unavailable_uses_existing_cached_profile_route():
         )
         == case_profile
     )
+
+
+def test_deferring_the_fine_reading_changes_nothing_on_a_v1_memory(monkeypatch):
+    first = (0, 1, 0, 1, 0, 1)
+    second = (1, 2, 0, 1, 0, 1)
+    series, memory, _helper_calls = _fixture([first, second], monkeypatch)
+    calls: list[tuple[int, ...]] = []
+    _patch_exact(monkeypatch, calls)
+    # Anchors given (none), so no producer runs and no clock is recorded in the result.
+    study = {
+        "study_uid": "current-study",
+        "knee_side": None,
+        "series": [series],
+        "anchors": {},
+    }
+
+    reference = locator.locate_objects(study, memory)
+    deferred = locator.locate_objects(study, memory, refine_finalists=False)
+
+    # A v1 memory makes no 2 mm territory reading: its writer ran exactly as before,
+    # once per location, and the located result and its evidence are the same.
+    assert calls == [first, first]
+    assert json.dumps(deferred, sort_keys=True, default=str) == json.dumps(
+        reference, sort_keys=True, default=str
+    )
+    assert "fine_reading" not in deferred["evidence"]
+
+
+def test_no_series_clears_native_support_retained_from_a_previous_location():
+    study = {
+        "study_uid": "current-study",
+        "series": [],
+        anatomy_locator.NATIVE_SUPPORT_RETAINED: [{"subject": "femur"}],
+    }
+
+    located = anatomy_locator.locate_anatomy_first(study, {"cases": []})
+
+    assert located["outcome"] == "unresolved_missing_reading"
+    assert anatomy_locator.NATIVE_SUPPORT_RETAINED not in study
+
+
+def test_deferring_the_fine_reading_changes_nothing_on_the_cached_profile_route():
+    case_profile = {
+        "schema": "knee.squint-profile/v1",
+        "subject": "femur",
+        "banks": {BANK: [1, 0, 0]},
+        "source": {"procedure": PROCEDURE},
+    }
+    memory = {
+        "cases": [
+            {
+                "case_id": "prior",
+                "study_uid": "other",
+                "subject": "femur",
+                "condition_calls": {},
+                "profile": case_profile,
+            }
+        ],
+    }
+    study = {
+        "study_uid": "current",
+        "series": [
+            {
+                "series_uid": "cached",
+                "candidate_profiles": [{"subject": "femur", "profile": case_profile}],
+            }
+        ],
+    }
+    reference = locator.locate_objects(study, memory)
+    deferred = locator.locate_objects(study, memory, refine_finalists=False)
+    assert reference["objects"]["femur"]["status"] == "proposal"
+    assert deferred == reference
 
 
 def test_femur_tibia_separation_is_not_used_as_femoral_breadth(monkeypatch):

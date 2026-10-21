@@ -44,7 +44,7 @@ echo "== ruff format --check (pinned, whole tree)"
 # Under coverage, once: its coverage.xml is what the Sonar step reads.
 echo "== pytest (under coverage)"
 PYTHONPATH="$PP" .venv/bin/python -m coverage run -m pytest || fail=1
-.venv/bin/python -m coverage xml -q -o coverage.xml || fail=1
+.venv/bin/python -m coverage xml -o coverage.xml || fail=1
 
 # THE WORKFLOWS. Blocking: zizmor (SquishOS repo-hygiene.md) on the GitHub workflows: unpinned actions,
 # broad token permissions, persisted credentials, template injection. Pinned to the version that first
@@ -105,11 +105,11 @@ echo "== vulture (advisory) 2/2: nothing ANYWHERE calls it, tests included"
 # step (--fail-on-increase; pytest keeps the runs in .pytest_cache/, so on GitHub, where every run
 # starts fresh, it never fires, and CodSpeed compares commits there instead). After a deliberate
 # increase, one run without the flag sets the new baseline:
-#     .venv/bin/python -m pytest benchmarks -q --memray
+#     .venv/bin/python -m pytest benchmarks --memray
 # and `pytest --cache-clear` anywhere in the project clears it. Not under coverage. Information, never
 # a target: it never fails the gate.
 echo "== kernel costs (advisory): each kernel's costliest production call on the proof study, replayed"
-.venv/bin/python -m pytest benchmarks -q -rP --durations=0 --memray --most-allocations=0 --fail-on-increase ||
+.venv/bin/python -m pytest benchmarks -rP --durations=0 --memray --most-allocations=0 --fail-on-increase ||
     echo "kernel costs: a replay above failed or held more memory than at its last run here; information, not a gate"
 
 # SONAR. Blocking, bare correctness only: the scan and its analysis ran, the open bugs and

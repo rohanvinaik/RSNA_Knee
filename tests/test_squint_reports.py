@@ -1171,3 +1171,113 @@ def test_new_question_can_teach_existing_object_and_prior_opposition_is_receipte
     )
     assert with_new["report_admissions"][-1]["added_case_count"] == 1
     assert with_new["cases"][-1]["condition_calls"] == {"Fracture": -1}
+
+
+# --- admission of a child from a parent with a runtime view -------------------
+
+
+def _deep_equal(left: object, right: object) -> bool:
+    import numpy as np
+
+    if isinstance(left, np.ndarray) or isinstance(right, np.ndarray):
+        return (
+            isinstance(left, np.ndarray)
+            and isinstance(right, np.ndarray)
+            and left.dtype == right.dtype
+            and np.array_equal(left, right)
+        )
+    if isinstance(left, dict) and isinstance(right, dict):
+        return list(left) == list(right) and all(
+            _deep_equal(left[key], right[key]) for key in left
+        )
+    if isinstance(left, (list, tuple)) and isinstance(right, (list, tuple)):
+        return (
+            type(left) is type(right)
+            and len(left) == len(right)
+            and all(_deep_equal(a, b) for a, b in zip(left, right, strict=True))
+        )
+    return type(left) is type(right) and left == right
+
+
+def _viewed_parent() -> dict:
+    from knee.diagnosis.squint_locator import prepare_recall
+    from knee.diagnosis.squint_memory_view import memory_view
+
+    case = _existing_case()
+    case["regions"] = []
+    case["full_profile"] = None
+    case["full_source"] = {"status": "unavailable"}
+    parent = {
+        "schema": "knee.squint-memory/v1",
+        "revision": "rev-1",
+        "questions": list(LABELS),
+        "cases": [case],
+        "memory_manifest_sha256": "a" * 64,
+    }
+    parent["prepared_recall"] = prepare_recall(parent)
+    return memory_view(parent, exclude_study_uids=[UID_A])
+
+
+def test_admit_child_drops_parent_runtime_state_and_keeps_provenance(
+    tmp_path: Path,
+) -> None:
+    from knee.diagnosis.squint_locator import prepare_recall
+    from knee.diagnosis.squint_memory import load_memory, save_memory
+    from knee.diagnosis.squint_memory_view import memory_view
+
+    parent = _viewed_parent()
+    assert parent["view"]["excluded_study_uids"] == [UID_A]
+    assert UID_A not in {c["study_uid"] for c in parent["cases"]}
+    assert parent["view"]["revision"] == parent["revision"]
+    assert parent["view"]["source_fingerprint"]
+    before = copy.deepcopy(parent)
+    view_before = copy.deepcopy(parent["view"])
+
+    child = admit_report_cases(
+        parent,
+        [_finding(regions=[])],
+        _validate(_call()),
+        "rev-2",
+        reports={UID_A: REPORT_A, UID_B: REPORT_B},
+    )
+    assert _deep_equal(parent, before)
+    receipt = child["report_admissions"][-1]
+    assert receipt["parent_view_provenance"] == view_before
+    assert receipt["parent_view_provenance"] is not parent["view"]
+    assert receipt["added_case_count"] == 1
+    for key in ("view", "prepared_recall", "memory_manifest_sha256"):
+        assert key not in child
+    assert child["revision"] == "rev-2"
+    assert [c["study_uid"] for c in child["cases"]] == ["1.2.826.0099", UID_A]
+    assert child["cases"][-1]["teaching"]["calls"][0]["sentence"] == SENT_PRESENT
+
+    prepared = prepare_recall(child)
+    assert prepared["outcome"] == "prepared"
+    published = save_memory(child, tmp_path / "child", prepared_recall=prepared)
+    assert published["case_count"] == 2
+    loaded = load_memory(tmp_path / "child")
+    assert len(loaded["cases"]) == 2
+    loaded["prepared_recall"] = prepare_recall(loaded)
+    held_out = memory_view(loaded, exclude_study_uids=[UID_A])
+    assert [c["study_uid"] for c in held_out["cases"]] == ["1.2.826.0099"]
+    assert held_out["view"]["excluded_study_uids"] == [UID_A]
+    assert held_out["view"]["preparation_code"] == "prepared"
+    assert _deep_equal(parent, before)
+
+
+def test_memory_view_still_rejects_stale_and_malformed_parent_views() -> None:
+    from knee.diagnosis.squint_memory_view import MemoryViewError, memory_view
+
+    parent = _viewed_parent()
+    stale = {**parent, "revision": "rev-2"}
+    with pytest.raises(MemoryViewError) as stale_error:
+        memory_view(stale)
+    assert stale_error.value.code == "memory_view_parent_invalid"
+    malformed = {**parent, "view": {**parent["view"], "manifest_identity": None}}
+    with pytest.raises(MemoryViewError) as malformed_error:
+        memory_view(malformed)
+    assert malformed_error.value.code == "memory_view_parent_invalid"
+    drifted = {**parent, "cases": []}
+    with pytest.raises(MemoryViewError) as drift_error:
+        memory_view(drifted)
+    assert drift_error.value.code == "memory_view_parent_source_mismatch"

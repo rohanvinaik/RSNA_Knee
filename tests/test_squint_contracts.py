@@ -1750,6 +1750,313 @@ def test_configuration_negative_requires_each_alternative_in_each_case() -> None
     assert complete_result["outcome"] == "defeated"
 
 
+@pytest.mark.parametrize(
+    ("call", "outcome"),
+    [(1, "present"), (-1, "absent")],
+)
+def test_grade_only_configuration_cases_grade_but_cannot_decide(
+    call: int, outcome: str
+) -> None:
+    row = _configuration_row(f"grade-only-{call}", call, ("acl",))
+    raw = _rec(outcome, [row], decision_scope="grade_only")
+    result = combine_condition("ACL", {"diagnosis/ACL": raw})
+
+    assert result["outcome"] == "open"
+    assert result["rank"]["positive_case_ids"] == (
+        [row["case_id"]] if call == 1 else []
+    )
+    assert result["rank"]["negative_case_ids"] == (
+        [row["case_id"]] if call == -1 else []
+    )
+    assert result["recall_evidence"]["diagnosis/ACL"][0]["decision_scope"] == (
+        "grade_only"
+    )
+    assert result["evidence"]["joint_configuration_coverage"]["status"] == (
+        "query_grade_only"
+    )
+    assert result["evidence"]["joint_configuration_coverage"]["eligible_case_ids"] == {
+        "positive": [],
+        "negative": [],
+    }
+    excluded = result["evidence"]["joint_configuration_coverage"]["excluded_cases"]
+    assert excluded == [
+        {
+            "case_id": row["case_id"],
+            "call": call,
+            "reason": "query_decision_scope_grade_only",
+        }
+    ]
+
+
+@pytest.mark.parametrize(
+    ("call", "outcome"),
+    [(1, "present"), (-1, "absent")],
+)
+def test_grade_only_object_cases_grade_but_cannot_decide(
+    call: int, outcome: str
+) -> None:
+    row = _ratio(f"object-grade-only-{call}", call, 1, 1, trust="trusted")
+    result = combine_condition(
+        "ACL",
+        {"acl": _rec(outcome, [row], decision_scope="grade_only")},
+    )
+
+    assert result["outcome"] == "open"
+    assert result["rank"]["positive_case_ids"] == (
+        [row["case_id"]] if call == 1 else []
+    )
+    assert result["rank"]["negative_case_ids"] == (
+        [row["case_id"]] if call == -1 else []
+    )
+    assert result["evidence"]["readings"]["acl"]["code"] == (
+        "query_decision_scope_grade_only"
+    )
+
+
+@pytest.mark.parametrize("scope", [None, [], {}, "unexpected"])
+def test_malformed_decision_scope_is_rejected(scope) -> None:
+    result = combine_condition("ACL", {"acl": _rec("present", decision_scope=scope)})
+    assert result["outcome"] == "open"
+    assert result["evidence"]["readings"]["acl"]["code"] == "evidence_malformed"
+
+
+def test_partial_normal_configuration_counters_only_on_its_own_site() -> None:
+    positive = _configuration_row("positive-femur", 1, ("femur",))
+    same_site_normal = _configuration_row("normal-femur", -1, ("femur",))
+    same_site = combine_condition(
+        "Medial OA",
+        {
+            "diagnosis/Medial OA": _conflict([positive, same_site_normal]),
+        },
+    )
+
+    assert same_site["outcome"] == "open"
+    assert same_site["reason"] == "configuration_partial_presentations_compete"
+    assert same_site["evidence"]["joint_configuration_coverage"][
+        "counterevidence_case_ids"
+    ] == ["normal-femur"]
+    assert same_site["evidence"]["joint_configuration_coverage"][
+        "eligible_case_ids"
+    ] == {"positive": ["positive-femur"], "negative": []}
+    excluded_normal = next(
+        row
+        for row in same_site["evidence"]["joint_configuration_coverage"][
+            "excluded_cases"
+        ]
+        if row["case_id"] == "normal-femur"
+    )
+    assert excluded_normal["excluded_from"] == "categorical_defeat"
+    assert excluded_normal["disposition"] == "retained_as_counterevidence"
+    assert excluded_normal["reason"] == "defining_tissue_coverage_incomplete"
+    assert excluded_normal["case_coverage_disposition"] == (
+        "partial_normal_counterevidence"
+    )
+
+    other_site_normal = _configuration_row("normal-tibia", -1, ("tibia",))
+    different_site = combine_condition(
+        "Medial OA",
+        {
+            "diagnosis/Medial OA": _conflict([positive, other_site_normal]),
+        },
+    )
+    assert different_site["outcome"] == "assigned"
+    assert different_site["evidence"]["joint_configuration_coverage"][
+        "counterevidence_case_ids"
+    ] == ["normal-tibia"]
+
+
+def test_partial_normal_at_other_site_does_not_revoke_anatomical_assignment() -> None:
+    positive = _configuration_row("positive-femur-tibia", 1, ("femur", "tibia"))
+    normal = _configuration_row("normal-tibia", -1, ("tibia",))
+    result = combine_condition(
+        "Fracture",
+        {
+            "femur": _present(),
+            "diagnosis/Fracture": _conflict([positive, normal]),
+        },
+    )
+
+    assert result["outcome"] == "assigned"
+    assert result["evidence"]["decided_by"] == ["femur"]
+    assert result["evidence"]["joint_configuration_coverage"][
+        "competing_partial_counterevidence"
+    ] == {"normal-tibia": ["tibia"]}
+
+
+PARTIAL_OBJECT_NORMALS = [
+    ("Fracture", ("femur", "tibia"), "femur"),
+    ("Contusion", ("femur", "patella"), "patella"),
+    ("Effusion", ("joint_fluid",), "joint_fluid"),
+    ("Medial OA", ("femur", "tibia"), "tibia"),
+    ("PF OA", ("patella", "femur"), "femur"),
+]
+
+
+@pytest.mark.parametrize(
+    ("question", "covered", "normal_site"),
+    PARTIAL_OBJECT_NORMALS,
+    ids=[f"{question}:{site}" for question, _, site in PARTIAL_OBJECT_NORMALS],
+)
+def test_a_covered_object_normal_opposes_but_does_not_defeat_a_configuration(
+    question: str, covered: tuple[str, ...], normal_site: str
+) -> None:
+    configuration = _configuration_row("config-positive", 1, covered)
+    normal = _ratio(f"{normal_site}-normal", -1, 1, 1, trust="trusted")
+
+    configuration_alone = combine_condition(
+        question,
+        {f"diagnosis/{question}": _present([configuration])},
+    )
+    normal_alone = combine_condition(question, {normal_site: _absent([normal])})
+    together = combine_condition(
+        question,
+        {
+            f"diagnosis/{question}": _present([configuration]),
+            normal_site: _absent([normal]),
+        },
+    )
+
+    assert configuration_alone["outcome"] == "assigned"
+    assert normal_alone["outcome"] == "open"
+    assert normal_alone["evidence"]["decided_by"] == []
+    assert together["outcome"] == "open"
+    assert together["reason"] == "configuration_anatomy_counterevidence"
+    assert together["evidence"]["decided_by"] == []
+    assert together["evidence"]["joint_configuration_coverage"][
+        "competing_anatomical_counterevidence"
+    ] == [normal_site]
+
+
+def test_another_site_normal_does_not_revoke_an_independent_local_positive() -> None:
+    configuration = _configuration_row("config-positive", 1, ("femur", "tibia"))
+    positive = _ratio("femur-positive", 1, 1, 1, trust="trusted")
+    normal = _ratio("tibia-normal", -1, 1, 1, trust="trusted")
+    result = combine_condition(
+        "Fracture",
+        {
+            "femur": _present([positive]),
+            "tibia": _absent([normal]),
+            "diagnosis/Fracture": _present([configuration]),
+        },
+    )
+
+    assert result["outcome"] == "assigned"
+    assert result["evidence"]["decided_by"] == ["femur"]
+    assert result["evidence"]["joint_configuration_coverage"][
+        "competing_anatomical_counterevidence"
+    ] == ["tibia"]
+
+
+def test_complete_anatomical_negative_conflict_keeps_its_existing_open_result() -> None:
+    branches = ("femur", "tibia", "patella", "fibula")
+    normal = {
+        subject: _absent([_ratio(f"{subject}-normal", -1, 1, 1, trust="trusted")])
+        for subject in branches
+    }
+    config = _configuration_row("config-positive", 1, ("femur",))
+    result = combine_condition(
+        "Fracture",
+        {**normal, "diagnosis/Fracture": _present([config])},
+    )
+
+    assert result["outcome"] == "open"
+    assert result["reason"] == "configuration_anatomy_conflict"
+
+
+def test_context_and_grade_only_normals_do_not_compete_with_a_configuration() -> None:
+    config = _configuration_row("config-positive", 1, ("acl",))
+    context = _ratio("context-normal", -1, 1, 1, trust="trusted")
+    context_result = combine_condition(
+        "ACL",
+        {
+            "femur": _absent([context]),
+            "diagnosis/ACL": _present([config]),
+        },
+    )
+    grade_only = _ratio("grade-normal", -1, 1, 1, trust="trusted")
+    grade_only_result = combine_condition(
+        "Fracture",
+        {
+            "femur": _rec("absent", [grade_only], decision_scope="grade_only"),
+            "diagnosis/Fracture": _present(
+                [_configuration_row("fracture-positive", 1, ("femur",))]
+            ),
+        },
+    )
+
+    assert context_result["outcome"] == "assigned"
+    assert (
+        context_result["evidence"]["joint_configuration_coverage"][
+            "competing_anatomical_counterevidence"
+        ]
+        == []
+    )
+    assert grade_only_result["outcome"] == "assigned"
+    assert (
+        grade_only_result["evidence"]["joint_configuration_coverage"][
+            "competing_anatomical_counterevidence"
+        ]
+        == []
+    )
+    assert grade_only_result["evidence"]["readings"]["femur"]["code"] == (
+        "query_decision_scope_grade_only"
+    )
+
+
+def test_partial_configuration_relation_names_shared_and_distinct_sites() -> None:
+    relation = squint_contracts._partial_configuration_relation
+
+    assert relation(["femur", "tibia"], ["tibia"]) == (
+        "competing_partial_presentations",
+        ["tibia"],
+    )
+    assert relation(["femur"], ["tibia"]) == (
+        "counterevidence_on_other_sites",
+        [],
+    )
+
+
+def test_repeated_case_coverage_is_record_order_invariant() -> None:
+    rows = [
+        _present([_configuration_row("repeat-positive", 1, ("femur",))]),
+        _present([_configuration_row("repeat-positive", 1, ("tibia",))]),
+        _absent([_configuration_row("repeat-normal", -1, ("tibia",))]),
+        _absent([_configuration_row("repeat-normal", -1, ("femur",))]),
+    ]
+
+    forward = combine_condition("Medial OA", {"diagnosis/Medial OA": rows})
+    interleaved = combine_condition(
+        "Medial OA",
+        {"diagnosis/Medial OA": [rows[0], rows[1], rows[3], rows[2]]},
+    )
+
+    assert forward["outcome"] == interleaved["outcome"] == "open"
+    for result in (forward, interleaved):
+        coverage = result["evidence"]["joint_configuration_coverage"]
+        assert coverage["eligible_case_ids"] == {
+            "positive": ["repeat-positive"],
+            "negative": [],
+        }
+        assert coverage["counterevidence_case_ids"] == ["repeat-normal"]
+        assert coverage["competing_partial_counterevidence"] == {
+            "repeat-normal": ["femur", "tibia"]
+        }
+
+
+def test_configuration_case_disposition_names_sign_and_coverage() -> None:
+    classify = squint_contracts._configuration_case_disposition
+    branches = [["femur", "tibia"], ["patella"]]
+    complete = ["femur", "tibia", "patella"]
+
+    assert classify(1, ["patella"], branches, complete) == "positive_configuration"
+    assert classify(-1, complete, branches, complete) == "complete_negative"
+    assert classify(-1, ["tibia"], branches, complete) == (
+        "partial_normal_counterevidence"
+    )
+    assert classify(-1, ["joint"], branches, complete) == "context_only"
+    assert classify(0, complete, branches, complete) == "invalid_call"
+
+
 def test_configuration_positive_requires_a_defining_role_and_keeps_authority() -> None:
     context_only = _configuration_row("context", 1, ("joint",))
     assert (

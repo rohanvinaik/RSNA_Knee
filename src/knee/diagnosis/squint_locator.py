@@ -1697,8 +1697,23 @@ def resolve_candidate_profile(
     return result
 
 
-def locate_objects(study: dict, memory: dict, deadline: float | None = None) -> dict:
-    """Use anatomy-first finite windows for raw studies, cached profiles otherwise."""
+def locate_objects(
+    study: dict,
+    memory: dict,
+    deadline: float | None = None,
+    *,
+    refine_finalists: bool = True,
+) -> dict:
+    """Use anatomy-first finite windows for raw studies, cached profiles otherwise.
+
+    ``refine_finalists`` (True for the direct and reference callers) writes each located
+    territory's 2 mm reading beside its 10 mm one while locating. False, the squint-first
+    production caller, keeps the 10 mm reading it holds and leaves the 2 mm one to the
+    named question that asks for it (``squint_pipeline._bounded_observation``). It moves
+    no candidate, tie, territory, key plane, source address, map or calibration, and it
+    does not reach the cached-profile route or a v1 memory, which make no 2 mm territory
+    reading.
+    """
     if not isinstance(study, dict) or not isinstance(memory, dict):
         return {
             "outcome": "invalid_input",
@@ -1737,7 +1752,9 @@ def locate_objects(study: dict, memory: dict, deadline: float | None = None) -> 
         study["leg_map_status"] = leg_status
         for row in series:
             row["leg_map"] = maps.get(row.get("series_uid"))
-        return locate_anatomy_first(study, memory, deadline)
+        # The default call is the legacy one; only a departure from it is named.
+        options = {} if refine_finalists else {"refine_finalists": False}
+        return locate_anatomy_first(study, memory, deadline, **options)
     return _locate_cached_objects(study, memory, deadline)
 
 

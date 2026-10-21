@@ -1399,6 +1399,13 @@ def admit_report_cases(
         "source_scope": "study_condition",
     }
     result = dict(memory)
+    # The parent's runtime view, preparation and manifest digest describe only
+    # the parent population; the child gets a new revision and new cases.
+    parent_view = result.pop("view", None)
+    result.pop("prepared_recall", None)
+    result.pop("memory_manifest_sha256", None)
+    if parent_view is not None:
+        receipt["parent_view_provenance"] = copy.deepcopy(parent_view)
     result["cases"] = new_container
     result["revision"] = revision
     result["parent_revision"] = parent_revision

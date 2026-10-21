@@ -444,3 +444,146 @@ def test_patellofemoral_native_row_supports_keep_slice_frame_and_context(tmp_pat
 
     dispositions = _retained_ordinary_dispositions([bad_frame], [], (), profiles)
     assert dispositions[0]["disposition"] == "missing_observation_address_frame"
+
+
+BURSA = "a2_gastrocnemius_semimembranosus_bursa"
+
+
+def _bursa_observation(**changes):
+    return _observation(
+        object="gastrocnemius_semimembranosus_bursa", support=BURSA, **changes
+    )
+
+
+def test_bursa_native_bool_2d_is_admitted_as_ordinary_main_profile():
+    observation = _bursa_observation(count=3)
+    record = _record([observation])
+    profiles = _retained_ordinary_profiles([], [record])
+    assert len(profiles) == 1
+    profile = profiles[0]
+    assert profile["support"] == BURSA
+    assert profile["object"] == "gastrocnemius_semimembranosus_bursa"
+    assert profile["provenance"] == "native"
+    address = profile["retained_address"]
+    assert address["owner_collection"] == "main"
+    assert address["support"] == BURSA
+    assert address["artifact"] == "study/series.npz.xz"
+    assert address["slices"] == [4]
+    assert address["row"] is None
+    assert address["observation_index"] == 0
+    assert address["count"] == 3
+
+
+def test_bursa_refusals_keep_their_named_outcomes():
+    from knee.encoding.operation import _retained_ordinary_dispositions
+
+    projected = _bursa_observation(provenance="projected", kind="target")
+    foreign = _bursa_observation(artifact="study/other.npz.xz")
+    rowed = _bursa_observation(row=0)
+    bad_view = _bursa_observation(view=["Axial"])
+    off_slice = _bursa_observation(slices=[9])
+    record = _record([projected, foreign, rowed, bad_view, off_slice])
+    assert _retained_ordinary_profiles([], [record]) == []
+    reasons = {
+        row["observation_index"]: row["disposition"]
+        for row in _retained_ordinary_dispositions([], [record], (), [])
+    }
+    assert reasons[0] == "projected_target_not_observation"
+    assert reasons[1] == "different_owner_artifact"
+    assert reasons[3] == "invalid_observation_view"
+    assert reasons[4] == "missing_observation_address_frame"
+    missing = _record([])
+    assert _retained_ordinary_profiles([], [missing]) == []
+
+
+def test_encode_study_retains_bursa_main_record_and_product_reads_exact_mask(tmp_path):
+    spec = make_mri_spec(retained_ordinary_profiles=True)
+    spec["storage"] = "npz_xz"
+    prepared = validate_spec(spec)
+    mask = np.asarray([[False, True, False], [True, False, True]])
+    arrays = {
+        BURSA: mask,
+        "b1_dark": np.zeros((2, 3), dtype=np.bool_),
+        "b1_available": np.ones((2, 3), dtype=np.bool_),
+        "acquired_plane": np.full((2, 3), 5, dtype=np.int16),
+        "b1_distance_mm": np.zeros((2, 3), dtype=np.float32),
+    }
+    artifact = "study/series.npz.xz"
+    (tmp_path / "study").mkdir()
+    write_npz_xz(tmp_path / artifact, arrays.items())
+    record = _record([_bursa_observation(count=3)])
+    record["plane_frame"] = FRAME
+    record["arrays"] = {
+        name: {"digest": digest(array)} for name, array in arrays.items()
+    }
+    result = {
+        "study_uid": "study",
+        "records": [],
+        "main_records": [record],
+        "objects": {name: {} for name, code in OBJECT_CODES.items() if code != 0},
+    }
+    statuses = encode_study(
+        result,
+        tmp_path,
+        tmp_path,
+        prepared["spec"],
+        tmp_path / "encoded.json.xz",
+        prepared=prepared,
+    )
+    generated = [
+        p for p in statuses["profiles"] if p.get("retained_expansion") is not None
+    ]
+    assert len(generated) == 1
+    profile = generated[0]
+    assert profile["support"] == BURSA
+    assert profile["retained_address"]["owner_collection"] == "main"
+    outcome = profile["outcomes"][0]
+    assert outcome["artifact"] == artifact
+    assert outcome["status"] == "missing_reference"
+    state = statuses["retained_ordinary_expansion_state"]
+    assert state["expanded_observation_count"] == 1
+    assert state["not_expanded"] == []
+    from knee.array_archive import open_arrays
+    from knee.diagnosis.squint_support import support_mask
+
+    subject = "gastrocnemius_semimembranosus_bursa"
+    with open_product(statuses["manifest"]) as product:
+        saved = product.manifest
+        saved_profile = saved["spec"]["profiles"][profile["profile_index"]]
+        assert saved_profile["support"] == BURSA
+        assert saved_profile["retained_address"]["owner_collection"] == "main"
+        ownership = saved["support_ownership"]
+        entries = ownership[subject]["addressed_supports"]
+        links = [
+            link
+            for entry in entries
+            for link in entry["links"]
+            if link.get("coordinate_field") == "points_rc"
+            and link.get("profile_object") == subject
+        ]
+        assert links
+        member = links[0]["coordinate_member"]
+        assert isinstance(member, str) and member
+        verified = {member: np.asarray(product.arrays[member])}
+        resolved = support_mask(
+            subject,
+            "series",
+            4,
+            ownership,
+            saved["source_roots"],
+            {},
+            verified,
+        )
+    assert resolved["code"] == "resolved"
+    assert resolved["provenance"]["resolver"] == "verified_public_coordinates"
+    assert resolved["provenance"]["coordinate_member"] == member
+    assert resolved["mask"].dtype == np.bool_
+    assert resolved["mask"].tolist() == mask.tolist()
+    assert resolved["bbox"] == (0, 2, 0, 3)
+    assert int(np.count_nonzero(resolved["mask"])) == 3
+    assert resolved["source_address"]["target_series_uid"] == "series"
+    assert 4 in resolved["source_address"]["observation_slices"]
+
+    with open_arrays(tmp_path / artifact) as stored:
+        assert stored[BURSA].dtype == np.bool_
+        assert stored[BURSA].tolist() == mask.tolist()

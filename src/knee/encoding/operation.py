@@ -333,6 +333,7 @@ _RETAINED_ORDINARY_2D_SUPPORTS = frozenset(
         "a2_synovium",
         "a2_iliotibial_band",
         "a2_joint_capsule",
+        "a2_gastrocnemius_semimembranosus_bursa",
         "a2_popliteal_artery",
         "a2_popliteal_vein",
         "a2_sartorius",

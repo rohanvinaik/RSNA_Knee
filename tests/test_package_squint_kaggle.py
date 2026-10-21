@@ -12,6 +12,7 @@ import importlib.util
 import io
 import json
 import lzma
+import shutil
 import subprocess
 import sys
 import tarfile
@@ -243,6 +244,259 @@ def test_build_refuses_a_nested_schema_and_leaves_nothing(packager, tmp_path):
     with pytest.raises(packager.PackagingError, match="top-level schema"):
         packager.build_staging(memory, out, repo)
     assert not out.exists()
+
+
+# ---------------------------------------------------------------------------------------------
+# Packager: the shipped source can import what it imports, in the Python the wrappers run
+#
+# The wrappers' import check loads `squint_pipeline` and runs `--help`. The production code reaches
+# `squint_questions`, `squint_leg`, `squint_support`, `squint_anchors` and others lazily, and in
+# several places behind `except ImportError`, where a missing module is a quiet degrade to open
+# results after hours of work, not a crash. Only the packager sees the whole shipped tree.
+# ---------------------------------------------------------------------------------------------
+
+MISSING = "squint_leg"
+PIPELINE = "src/knee/diagnosis/squint_pipeline.py"
+IMPORT_FORMS = {
+    "from_module": "from knee.diagnosis.{name} import leg_maps\n",
+    "import_module": "import knee.diagnosis.{name}\n",
+    "lazy_in_a_function": (
+        "def later():\n    from knee.diagnosis.{name} import leg_maps\n    return leg_maps\n"
+    ),
+    "guarded_by_except_importerror": (
+        "def selection():\n"
+        "    try:\n"
+        "        from knee.diagnosis.{name} import leg_maps\n"
+        "    except ImportError:\n"
+        "        return None\n"
+        "    return leg_maps\n"
+    ),
+    "submodule_from_its_package": "from knee.diagnosis import {name}\n",
+    "relative_module": "from .{name} import leg_maps\n",
+    "relative_submodule": "from . import {name}\n",
+    "relative_through_the_parent": "from ..diagnosis import {name}\n",
+}
+
+
+def repo_with(base: Path, files: dict[str, str]) -> Path:
+    """The minimal shipped tree, with some files replaced or added."""
+    repo = base / "repo"
+    make_repo(repo)
+    for relative, text in files.items():
+        target = repo / relative
+        target.parent.mkdir(parents=True, exist_ok=True)
+        target.write_text(text, encoding="utf-8")
+    return repo
+
+
+def plain_memory(directory: Path) -> Path:
+    directory.mkdir(parents=True)
+    (directory / "manifest.json").write_text(
+        json.dumps({"cases": [], "schema": MEMORY_SCHEMA}), encoding="utf-8"
+    )
+    return directory
+
+
+@pytest.mark.parametrize("form", sorted(IMPORT_FORMS))
+def test_an_import_the_bundle_cannot_satisfy_is_refused_whatever_its_form(
+    packager, tmp_path, form
+):
+    repo = repo_with(tmp_path, {PIPELINE: IMPORT_FORMS[form].format(name=MISSING)})
+    out = tmp_path / "out"
+    with pytest.raises(
+        packager.PackagingError,
+        match=rf"squint_pipeline\.py:\d+: imports knee\.diagnosis\.{MISSING}, which the bundle does not ship",
+    ):
+        packager.build_staging(plain_memory(tmp_path / "mem"), out, repo)
+    assert not out.exists()
+
+
+@pytest.mark.parametrize("form", sorted(IMPORT_FORMS))
+def test_the_same_import_of_a_shipped_module_is_accepted(packager, tmp_path, form):
+    repo = repo_with(
+        tmp_path, {PIPELINE: IMPORT_FORMS[form].format(name="squint_memory")}
+    )
+    memory = plain_memory(tmp_path / "mem")
+    packager.build_staging(memory, tmp_path / "out", repo)
+    verified = packager.verify_staging(tmp_path / "out", memory=memory, root=repo)
+    assert "source" in verified["compared_with_sources"]
+
+
+def test_a_runtime_script_is_held_to_the_same_rule(packager, tmp_path):
+    lazy = "def main():\n    from knee.diagnosis.squint_pipeline_v2 import run\n"
+    repo = repo_with(tmp_path, {"scripts/run_interiors.py": lazy})
+    refused = r"source/scripts/run_interiors\.py:2: imports knee\.diagnosis\.squint_pipeline_v2"
+    # the plan alone refuses it, and so does a build, whose own final re-read of the tar would too
+    with pytest.raises(packager.PackagingError, match=refused):
+        packager.plan_all(None, repo, (), None, roles=packager.PYTHON_ROLES)
+    with pytest.raises(packager.PackagingError, match=refused):
+        packager.build_staging(plain_memory(tmp_path / "mem"), tmp_path / "out", repo)
+    extra = repo_with(
+        tmp_path / "extra",
+        {"scripts/helper.py": "from knee.diagnosis.squint_pipeline import VALUE\n"},
+    )
+    packager.build_staging(
+        plain_memory(tmp_path / "extra-mem"),
+        tmp_path / "extra-out",
+        extra,
+        ("scripts/helper.py",),
+    )
+    (extra / "scripts" / "helper.py").write_text(
+        f"from knee.diagnosis.{MISSING} import leg_maps\n", encoding="utf-8"
+    )
+    with pytest.raises(
+        packager.PackagingError, match=r"source/scripts/helper\.py:1: imports"
+    ):
+        packager.build_staging(
+            plain_memory(tmp_path / "extra-mem-2"),
+            tmp_path / "extra-out-2",
+            extra,
+            ("scripts/helper.py",),
+        )
+
+
+BINDINGS = {
+    "assignment": "LIMIT = 3\n",
+    "annotated": "LIMIT: int = 3\n",
+    "function": "def LIMIT():\n    return 3\n",
+    "class": "class LIMIT:\n    pass\n",
+    "import_as": "from knee.diagnosis.squint_memory import VALUE as LIMIT\n",
+    "inside_a_conditional": "import sys\nif sys.platform:\n    LIMIT = 3\nelse:\n    LIMIT = 4\n",
+    "inside_a_try": "try:\n    LIMIT = 3\nexcept ImportError:\n    LIMIT = 4\n",
+}
+
+
+@pytest.mark.parametrize("binding", sorted(BINDINGS))
+def test_a_name_a_package_binds_can_be_imported_from_it(packager, tmp_path, binding):
+    repo = repo_with(
+        tmp_path,
+        {
+            "src/knee/diagnosis/__init__.py": BINDINGS[binding],
+            PIPELINE: "from knee.diagnosis import LIMIT\n",
+        },
+    )
+    packager.build_staging(plain_memory(tmp_path / "mem"), tmp_path / "out", repo)
+
+
+def test_a_name_the_package_does_not_bind_is_refused(packager, tmp_path):
+    repo = repo_with(
+        tmp_path,
+        {
+            "src/knee/diagnosis/__init__.py": BINDINGS["assignment"],
+            PIPELINE: "from knee.diagnosis import LIMIT, UNBOUND\n",
+        },
+    )
+    with pytest.raises(
+        packager.PackagingError,
+        match=r"squint_pipeline\.py:1: imports knee\.diagnosis\.UNBOUND, which the bundle does not ship",
+    ) as refusal:
+        packager.build_staging(plain_memory(tmp_path / "mem"), tmp_path / "out", repo)
+    assert "knee.diagnosis.LIMIT" not in str(refusal.value)
+
+
+@pytest.mark.parametrize(
+    "init",
+    [
+        "from knee.diagnosis.squint_memory import *\n",
+        "def __getattr__(name):\n    raise AttributeError(name)\n",
+    ],
+    ids=["star_import", "module_getattr"],
+)
+def test_names_a_package_cannot_list_are_not_guessed_at(packager, tmp_path, init):
+    repo = repo_with(
+        tmp_path,
+        {
+            "src/knee/diagnosis/__init__.py": init,
+            PIPELINE: "from knee.diagnosis import anything_at_all\n",
+        },
+    )
+    packager.build_staging(plain_memory(tmp_path / "mem"), tmp_path / "out", repo)
+
+
+def test_other_packages_are_not_this_checks_business(packager, tmp_path):
+    outside = "import json\nimport numpy\nfrom scipy import ndimage\nimport knee\nimport knee.diagnosis\n"
+    repo = repo_with(tmp_path, {PIPELINE: outside})
+    packager.build_staging(plain_memory(tmp_path / "mem"), tmp_path / "out", repo)
+
+
+def test_verify_rereads_the_imports_from_the_tar_it_is_given(
+    packager, tmp_path, monkeypatch
+):
+    guarded = IMPORT_FORMS["guarded_by_except_importerror"].format(name=MISSING)
+    repo = repo_with(tmp_path, {PIPELINE: guarded})
+    memory, out = plain_memory(tmp_path / "mem"), tmp_path / "out"
+    with monkeypatch.context() as patch:
+        # a build that did not look
+        patch.setattr(packager, "import_problems", lambda _facts: [])
+        packager.build_staging(memory, out, repo)
+    for kwargs in ({}, {"memory": memory, "root": repo}):
+        with pytest.raises(
+            packager.PackagingError, match=rf"knee\.diagnosis\.{MISSING}"
+        ):
+            packager.verify_staging(out, **kwargs)
+
+
+NEWER_THAN_THE_RUNTIME = {
+    "template_string": 'greeting = t"hello {1}"\n',
+    "unparenthesised_except": "try:\n    pass\nexcept ValueError, TypeError:\n    pass\n",
+}
+WITHIN_THE_RUNTIME = {
+    "match_statement": "match 1:\n    case 1:\n        pass\n",
+    "except_star": "try:\n    pass\nexcept* ValueError:\n    pass\n",
+    "type_statement": "type Alias = int\n",
+    "generic_function": "def identity[T](value: T) -> T:\n    return value\n",
+}
+
+
+@pytest.mark.parametrize(
+    "place", ["src/knee/diagnosis/squint_profiles.py", "scripts/run_interiors.py"]
+)
+@pytest.mark.parametrize("syntax", sorted(NEWER_THAN_THE_RUNTIME))
+def test_syntax_newer_than_the_offline_runtime_is_refused(
+    packager, tmp_path, place, syntax
+):
+    repo = repo_with(tmp_path, {place: NEWER_THAN_THE_RUNTIME[syntax]})
+    with pytest.raises(
+        packager.PackagingError,
+        match=rf"source/{place} does not parse as Python 3\.13",
+    ):
+        packager.build_staging(plain_memory(tmp_path / "mem"), tmp_path / "out", repo)
+
+
+@pytest.mark.parametrize("syntax", sorted(WITHIN_THE_RUNTIME))
+def test_syntax_within_the_offline_runtime_is_accepted(packager, tmp_path, syntax):
+    repo = repo_with(
+        tmp_path, {"src/knee/diagnosis/squint_profiles.py": WITHIN_THE_RUNTIME[syntax]}
+    )
+    packager.build_staging(plain_memory(tmp_path / "mem"), tmp_path / "out", repo)
+
+
+def test_the_grammar_gate_aims_at_the_python_both_wrappers_install(packager, wrapper):
+    assert wrapper.WHEEL_TAG == "cp{}{}".format(*packager.RUNTIME_PYTHON)
+
+
+def test_the_real_source_closes_under_its_own_imports(packager):
+    plan = packager.plan_all(None, ROOT, (), None, roles=packager.PYTHON_ROLES)
+    shipped = {item.dest for item in plan["payloads"]}
+    assert set(packager.REQUIRED_PATHS) <= shipped
+
+
+def test_dropping_a_module_the_real_pipeline_imports_behind_a_guard_is_refused(
+    packager, tmp_path
+):
+    shutil.copytree(
+        ROOT / "src", tmp_path / "src", ignore=shutil.ignore_patterns("__pycache__")
+    )
+    (tmp_path / "scripts").mkdir()
+    shutil.copyfile(
+        ROOT / "scripts" / "run_interiors.py", tmp_path / "scripts" / "run_interiors.py"
+    )
+    (tmp_path / "src" / "knee" / "diagnosis" / "squint_questions.py").unlink()
+    with pytest.raises(packager.PackagingError) as refusal:
+        packager.plan_all(None, tmp_path, (), None, roles=packager.PYTHON_ROLES)
+    message = str(refusal.value)
+    assert "knee.diagnosis.squint_questions" in message
+    assert "source/src/knee/diagnosis/squint_pipeline.py" in message
 
 
 # ---------------------------------------------------------------------------------------------
@@ -1094,3 +1348,171 @@ def test_file_byte_counts_reject_bool_and_negative_for_one_byte_member(
         wrapper.select_runtime_manifest(
             wrapper.find(wrapper.MANIFEST_NAME), wrapper.RUNTIME_HINT
         )
+
+
+# ---------------------------------------------------------------------------------------------
+# The staged real tree, copied and read back the way the production wrapper does
+#
+# `tests/test_portable_sparse_packaging.py` stages the real tree and reads a full profile back with the
+# checkout's own code. These read the copy back with the copy's code: what Kaggle will import, and the
+# memory and recall preparation it will find. The memory is a real, empty, published squint memory; no
+# study is decoded.
+# ---------------------------------------------------------------------------------------------
+
+SIDECAR = "recall-preparation.json.xz"
+# The decisions `run_squint_cli` makes about the memory it is given, on the bundle's own code.
+READBACK = """
+import json
+import sys
+from pathlib import Path
+
+bundle = Path(sys.argv[1]).resolve()
+import knee
+import knee.diagnosis.squint_pipeline as pipeline
+from knee.diagnosis.squint_locator import prepare_recall
+from knee.diagnosis.squint_memory import load_memory_snapshot
+from knee.json_store import load_json
+
+source = bundle / "source" / "src"
+snapshot = load_memory_snapshot(bundle / "memory")
+cache = load_json(bundle / "memory" / "recall-preparation.json")
+bound = (
+    cache["memory_manifest_sha256"] == snapshot.sha256
+    and cache["memory_revision"] == snapshot.memory["revision"]
+)
+prepared = prepare_recall(snapshot.memory, cached=cache if bound else None)
+print(
+    json.dumps(
+        {
+            "knee_from_bundle": Path(knee.__file__).resolve().is_relative_to(source),
+            "pipeline_from_bundle": Path(pipeline.__file__).resolve().is_relative_to(source),
+            "memory_status": snapshot.status,
+            "revision": snapshot.memory["revision"],
+            "cache_bound_to_manifest": bound,
+            "preparation": prepared["outcome"],
+            "recall_preparation_reused": prepared.get("runtime_indexes_rebuilt") is True,
+        }
+    )
+)
+"""
+
+
+def published_empty_memory(directory: Path, revision: str) -> Path:
+    """A squint memory published by the ordinary writer, with its recall preparation beside it."""
+    from knee.diagnosis.squint_locator import prepare_recall
+    from knee.diagnosis.squint_memory import SCHEMA, save_memory
+    from knee.study.tables import LABELS
+
+    memory = {
+        "schema": SCHEMA,
+        "revision": revision,
+        "questions": list(LABELS),
+        "cases": [],
+    }
+    save_memory(memory, directory, prepared_recall=prepare_recall(memory))
+    return directory
+
+
+@pytest.fixture(scope="module")
+def staged_real_tree(tmp_path_factory: pytest.TempPathFactory) -> dict:
+    """The real source and an empty published memory, staged, selected by the production wrapper under
+    explicit pins taken from the sources, and copied to local disk."""
+    base = tmp_path_factory.mktemp("real-tree")
+    with pytest.MonkeyPatch.context() as patch:
+        patch.setenv("SQUINT_KAGGLE_INPUT", str(base / "kaggle-input"))
+        patch.setenv("SQUINT_KAGGLE_WORKING", str(base / "kaggle-working"))
+        patch.setenv("SQUINT_KAGGLE_SCRATCH", str(base / "kaggle-scratch"))
+        packager = load_file(PACKAGER, "package_squint_kaggle_for_real_tree", patch)
+        wrapper = load_file(
+            WRAPPERS["production"], "production_wrapper_for_real_tree", patch
+        )
+        memory = published_empty_memory(base / "memory", "rehearsal-r1")
+        staging = base / "staging"
+        built = packager.build_staging(memory, staging, ROOT)
+        chosen = wrapper.select_runtime_manifest(
+            [staging / MANIFEST],
+            wrapper.RUNTIME_HINT,
+            expected_bundle_id=built["bundle_id"],
+            expected_memory_manifest_sha256=hashlib.sha256(
+                (memory / "manifest.json").read_bytes()
+            ).hexdigest(),
+        )
+        bundle = base / "local" / "bundle"
+        wrapper.materialise(chosen["manifest_path"], chosen["manifest"], bundle)
+        cwd = base / "local" / "cwd"
+        cwd.mkdir()
+        return {
+            "base": base,
+            "bundle": bundle,
+            "cwd": cwd,
+            "env": wrapper.child_env(
+                base / "local" / "site", bundle, chosen["manifest"]
+            ),
+            "manifest": chosen["manifest"],
+        }
+
+
+def read_back(staged: dict, bundle: Path) -> dict:
+    """Run the readback in a fresh process whose code and memory are the copied bundle's."""
+    done = subprocess.run(
+        [sys.executable, "-c", READBACK, str(bundle)],
+        env=staged["env"],
+        cwd=staged["cwd"],
+        capture_output=True,
+        text=True,
+        timeout=900,
+        check=False,
+    )
+    assert done.returncode == 0, done.stderr
+    return json.loads(done.stdout.splitlines()[-1])
+
+
+def test_the_bundle_imports_from_its_own_copy_and_reuses_its_recall_preparation(
+    staged_real_tree,
+):
+    assert read_back(staged_real_tree, staged_real_tree["bundle"]) == {
+        "knee_from_bundle": True,
+        "pipeline_from_bundle": True,
+        "memory_status": "squint",
+        "revision": "rehearsal-r1",
+        "cache_bound_to_manifest": True,
+        "preparation": "prepared",
+        "recall_preparation_reused": True,
+    }
+
+
+def test_a_recall_preparation_bound_to_another_memory_is_not_reused(
+    staged_real_tree, tmp_path
+):
+    staged = staged_real_tree
+    other = published_empty_memory(tmp_path / "other-memory", "rehearsal-r2")
+    copy = tmp_path / "bundle-copy"
+    shutil.copytree(staged["bundle"], copy)
+    shutil.copyfile(other / SIDECAR, copy / "memory" / SIDECAR)
+    facts = read_back(staged, copy)
+    assert facts["revision"] == "rehearsal-r1"
+    assert facts["cache_bound_to_manifest"] is False
+    assert facts["recall_preparation_reused"] is False
+    assert facts["preparation"] == "prepared"  # recomputed, never silently trusted
+
+
+def test_the_shipped_runner_accepts_every_flag_the_wrapper_passes(
+    staged_real_tree, wrapper
+):
+    staged = staged_real_tree
+    assert {"--diagnostic-mode", "--diagnostic-memory"} <= wrapper.ALLOWED_FLAGS
+    script = staged["bundle"].joinpath(*staged["manifest"]["entrypoint"].split("/"))
+    done = subprocess.run(
+        [sys.executable, str(script), "--help"],
+        env={**staged["env"], "COLUMNS": "240"},
+        cwd=staged["cwd"],
+        capture_output=True,
+        text=True,
+        timeout=900,
+        check=False,
+    )
+    assert done.returncode == 0, done.stderr
+    assert (
+        sorted(flag for flag in wrapper.ALLOWED_FLAGS if flag not in done.stdout) == []
+    )
+    assert "{teach,infer,capacity}" in done.stdout

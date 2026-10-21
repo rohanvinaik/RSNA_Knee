@@ -6,6 +6,13 @@ with a white fluid pocket in its middle, and a dark wedge at each end of the joi
 coronal rule (``assign_plane``) names the wedges as the menisci (sided from the header), the
 bright layer within 3 mm of each bone as its cartilage and the pocket as joint fluid; the tests
 read what the executor makes of them.
+
+The executor is an explicit tool. The dispatcher (``squint_pipeline._bounded_observation``) runs it
+only for a request that names the part's native procedure; a generic request, whatever the part,
+asks for the paired finer reading. SQUINT_TRAINING_BUILD §10's "always read a small part over its
+outline", and the validation gate that kept an outline reading from deciding until each part was
+validated, are withdrawn: an outline reading decides like any compatible cheap reading, under its
+own origin name.
 """
 
 from __future__ import annotations
@@ -561,7 +568,10 @@ def test_own_outline_replaces_the_expected_area_reading_once_per_study(
         )
     }
     located = objects["medial_meniscus"]
-    assert squint_pipeline._decision_scope("medial_meniscus", expected) == "grade_only"
+    assert expected["banks"]
+    # Neither reading is gated on an outline: each is a compatible cheap reading that decides
+    # at its own scope (the validation gate of VALIDATED_OUTLINE_PARTS is withdrawn).
+    assert squint_pipeline._decision_scope("medial_meniscus", expected) == "decide"
 
     record = own_outline(
         "medial_meniscus", study, objects, question_id="Medial Meniscus"
@@ -571,19 +581,14 @@ def test_own_outline_replaces_the_expected_area_reading_once_per_study(
     assert located["expected_area_profile"] == expected  # kept beside, not lost
     assert located["profile"]["source"]["procedure"] == TERRITORY_PROCEDURE
     assert located["profile"]["source"]["readings"] == held_readings(located["profile"])
-    # The bounded outline decides only once the part's step is validated (W12b).
     assert squint_pipeline._decision_scope("medial_meniscus", located["profile"]) == (
-        "grade_only"
+        "decide"
     )
-    validated = frozenset({"medial_meniscus"})
-    saved = squint_pipeline.VALIDATED_OUTLINE_PARTS
-    squint_pipeline.VALIDATED_OUTLINE_PARTS = validated
-    try:
-        assert squint_pipeline._decision_scope(
-            "medial_meniscus", located["profile"]
-        ) == ("decide")
-    finally:
-        squint_pipeline.VALIDATED_OUTLINE_PARTS = saved
+    # Names stay: the outline is residual native support, never relabelled a teacher's.
+    assert squint_pipeline._profile_origins(located["profile"]) == {
+        "residual_native_support"
+    }
+    assert squint_pipeline._profile_origins(expected) == set()
     assert record["cost"]["native_slices_read"] == 1
     assert record["cost"]["seconds"] > 0
     json.dumps(record)
@@ -678,66 +683,257 @@ def test_holds_reading_knows_the_teacher_pair_of_coarse_and_fine_readings(tmp_pa
 
 
 # ---------------------------------------------------------------------------
-# the consumer hook in squint_pipeline._bounded_observation (consumer.patch)
+# the consumer hook in squint_pipeline._bounded_observation
+#
+# The own-outline step is an explicit tool: only a request that names the part's
+# native procedure (its ``lens``) runs it. A request that does not name one asks
+# for the paired finer reading, whatever the part, and never reads an outline.
+# SQUINT_TRAINING_BUILD §10's "always outline a small part" is withdrawn.
 # ---------------------------------------------------------------------------
 
 
-def test_bounded_observation_reads_a_small_part_over_its_own_outline(tmp_path):
+def _lens(subject: str) -> str:
+    producer = producer_for(subject)
+    assert producer is not None
+    return producer.lens
+
+
+def _named(subject: str, **extra) -> dict:
+    """A request that names the part's own native procedure, as a caller must to ask for it."""
+    return {
+        "object": subject,
+        "question": "Medial Meniscus",
+        "lens": _lens(subject),
+        **extra,
+    }
+
+
+def _boom(*args, **kwargs):
+    raise AssertionError("the native own-outline step must not be selected here")
+
+
+def test_a_request_naming_the_procedure_reads_a_small_part_over_its_own_outline(
+    tmp_path, naming_calls
+):
     study = _study(tmp_path)
     series = _coronal(study)
     expected = profile_window(series, MEDIAL_TILES, subject="medial_meniscus")
     objects = {"medial_meniscus": _located(series, MEDIAL_WINDOW, profile=expected)}
     attempted: set = set()
-    request = {
-        "object": "medial_meniscus",
-        "question": "Medial Meniscus",
-        "reason": "small_part_not_read_over_own_outline",
-    }
+    request = _named("medial_meniscus")
     observed = squint_pipeline._bounded_observation(
         request, study, objects, attempted, None
     )
     assert observed["code"] == "measured"
+    assert observed["lens"] == request["lens"]
     assert observed["own_outline"]["results"][0]["support"]["support_count"] == (
         WIDE_WEDGE
     )
     assert "medial_meniscus" in attempted
     located = objects["medial_meniscus"]
     assert located["expected_area_profile"] == expected
-    # The bounded outline decides only once the part's step is validated (W12b).
+    # The outline reading decides like any compatible cheap reading, under its own name.
     assert squint_pipeline._decision_scope("medial_meniscus", located["profile"]) == (
-        "grade_only"
+        "decide"
     )
-    validated = frozenset({"medial_meniscus"})
-    saved = squint_pipeline.VALIDATED_OUTLINE_PARTS
-    squint_pipeline.VALIDATED_OUTLINE_PARTS = validated
-    try:
-        assert squint_pipeline._decision_scope(
-            "medial_meniscus", located["profile"]
-        ) == ("decide")
-    finally:
-        squint_pipeline.VALIDATED_OUTLINE_PARTS = saved
-    shared = squint_pipeline._bounded_observation(
-        request, study, objects, attempted, None
+    assert squint_pipeline._profile_origins(located["profile"]) == {
+        "residual_native_support"
+    }
+    assert len(naming_calls) == 1
+    # Named again, by this or another question, nothing is read again.
+    again = squint_pipeline._bounded_observation(
+        _named("medial_meniscus", question="Medial OA"), study, objects, attempted, None
     )
-    assert shared["code"] == "shared_observation_already_available"
+    assert again["code"] == "already_measured"
+    assert again["own_outline"]["repeat"] is True
+    assert len(naming_calls) == 1
+    # A generic request after it adds no finer reading over the part's own reading.
+    generic = squint_pipeline._bounded_observation(
+        {"object": "medial_meniscus", "question": "MCL"},
+        study,
+        objects,
+        attempted,
+        None,
+    )
+    assert generic == {
+        "code": "shared_observation_already_available",
+        "subject": "medial_meniscus",
+    }
     json.dumps(observed)
     json.dumps(objects)
 
 
-def test_bounded_observation_names_a_small_part_without_a_producer(tmp_path):
+def test_a_generic_request_on_a_small_part_reads_the_paired_finer_lens_not_its_outline(
+    tmp_path, naming_calls, monkeypatch
+):
+    study = _study(tmp_path)
+    series = _coronal(study)
+    window = MEDIAL_TILES
+    monkeypatch.setattr(squint_residual, "own_outline", _boom)
+    monkeypatch.setattr(squint_residual, "run_residual", _boom)
+    coarse = profile_window(series, window, subject="medial_meniscus")
+    expected_pair = merge_profiles(
+        (
+            coarse,
+            refine_window(series, window, subject="medial_meniscus", tile_mm=2.0),
+        ),
+        subject="medial_meniscus",
+    )
+    objects = {
+        "medial_meniscus": _located(
+            series, MEDIAL_WINDOW, profile=copy.deepcopy(coarse)
+        )
+    }
+    observed = squint_pipeline._bounded_observation(
+        {"object": "medial_meniscus", "question": "Medial Meniscus"},
+        study,
+        objects,
+        set(),
+        None,
+    )
+    assert observed["code"] == "measured"
+    assert observed["lens"] == "physical_squint"
+    assert "own_outline" not in observed
+    located = objects["medial_meniscus"]
+    assert "own_outline" not in located
+    assert located["profile"]["banks"] == expected_pair["banks"]
+    assert naming_calls == []  # no native slice was named
+    assert squint_pipeline._decision_scope("medial_meniscus", located["profile"]) == (
+        "decide"
+    )
+
+
+def test_a_named_procedure_for_a_part_without_one_names_what_is_missing(
+    tmp_path, naming_calls
+):
     study = _study(tmp_path)
     series = _coronal(study)
     expected = profile_window(series, CENTRAL_TILES, subject="acl")
     objects = {"acl": _located(series, CENTRAL_WINDOW, profile=expected)}
     observed = squint_pipeline._bounded_observation(
-        {"object": "acl", "question": "ACL"}, study, objects, set(), None
+        {
+            "object": "acl",
+            "question": "ACL",
+            "lens": "knee.objects.assignments.acl_on_slice",
+        },
+        study,
+        objects,
+        set(),
+        None,
     )
     assert observed["code"] == "procedure_unavailable"
-    assert observed["own_outline"]["reason"] == UNAVAILABLE["acl"]
+    assert observed["reason"] == UNAVAILABLE["acl"]
     assert objects["acl"]["profile"] is expected  # no box refinement in its place
+    assert "own_outline" not in objects["acl"]
+    assert naming_calls == []
+    json.dumps(observed)
 
 
-def test_bounded_observation_does_not_double_a_held_fine_reading(tmp_path, monkeypatch):
+def test_a_generic_request_on_a_part_without_a_native_producer_gets_the_paired_reading(
+    tmp_path,
+):
+    study = _study(tmp_path)
+    series = _coronal(study)
+    window = CENTRAL_TILES
+    coarse = profile_window(series, window, subject="acl")
+    expected_pair = merge_profiles(
+        (coarse, refine_window(series, window, subject="acl", tile_mm=2.0)),
+        subject="acl",
+    )
+    objects = {"acl": _located(series, CENTRAL_WINDOW, profile=copy.deepcopy(coarse))}
+    observed = squint_pipeline._bounded_observation(
+        {"object": "acl", "question": "ACL"}, study, objects, set(), None
+    )
+    assert observed["code"] == "measured"
+    assert objects["acl"]["profile"]["banks"] == expected_pair["banks"]
+
+
+def test_a_named_procedure_that_is_not_the_parts_own_reads_nothing(
+    tmp_path, naming_calls
+):
+    study = _study(tmp_path)
+    series = _coronal(study)
+    expected = profile_window(series, MEDIAL_TILES, subject="medial_meniscus")
+    objects = {"medial_meniscus": _located(series, MEDIAL_WINDOW, profile=expected)}
+    attempted: set = set()
+    # The six coronal producers share one lens, so another part's coronal lens is this
+    # part's own; a procedure the table does not give this part is a different name.
+    assert _lens("mcl") == _lens("medial_meniscus")
+    other = "knee.objects.assignments.acl_on_slice"
+    assert other != _lens("medial_meniscus")
+    observed = squint_pipeline._bounded_observation(
+        {"object": "medial_meniscus", "lens": other},
+        study,
+        objects,
+        attempted,
+        None,
+    )
+    assert observed["code"] == "procedure_unavailable"
+    assert observed["reason"] == "request_lens_is_not_this_objects_producer"
+    assert objects["medial_meniscus"]["profile"] is expected
+    assert "own_outline" not in objects["medial_meniscus"]
+    assert attempted == set()
+    assert naming_calls == []
+
+
+def test_a_named_procedure_after_the_deadline_reads_and_records_nothing(
+    tmp_path, naming_calls
+):
+    study = _study(tmp_path)
+    series = _coronal(study)
+    expected = profile_window(series, MEDIAL_TILES, subject="medial_meniscus")
+    objects = {"medial_meniscus": _located(series, MEDIAL_WINDOW, profile=expected)}
+    attempted: set = set()
+    observed = squint_pipeline._bounded_observation(
+        _named("medial_meniscus"),
+        study,
+        objects,
+        attempted,
+        time.monotonic() - 1.0,
+    )
+    assert observed["code"] == "deadline_before_residual"
+    assert "own_outline" not in objects["medial_meniscus"]  # a later call may still run
+    assert attempted == set()
+    assert naming_calls == []
+
+
+def test_the_paired_finer_lens_named_explicitly_is_the_generic_reading(
+    tmp_path, monkeypatch
+):
+    study = _study(tmp_path)
+    series = _coronal(study)
+    monkeypatch.setattr(squint_residual, "own_outline", _boom)
+    coarse = profile_window(series, MEDIAL_TILES, subject="femur")
+    objects = {"femur": _located(series, MEDIAL_WINDOW, profile=coarse)}
+    observed = squint_pipeline._bounded_observation(
+        {"object": "femur", "lens": "physical_squint"}, study, objects, set(), None
+    )
+    assert observed["code"] == "measured"
+    assert observed["lens"] == "physical_squint"
+
+
+def test_a_generic_request_never_doubles_the_pixels_of_a_part_read_over_its_outline(
+    tmp_path,
+):
+    study = _study(tmp_path)
+    series = _coronal(study)
+    expected = profile_window(series, MEDIAL_TILES, subject="medial_meniscus")
+    objects = {"medial_meniscus": _located(series, MEDIAL_WINDOW, profile=expected)}
+    own_outline("medial_meniscus", study, objects)
+    replaced = copy.deepcopy(objects["medial_meniscus"]["profile"])
+    # A caller that holds no record of the earlier step still must not read the expected
+    # area's region and add it to a profile whose own outline replaced that area.
+    fresh = squint_pipeline._bounded_observation(
+        {"object": "medial_meniscus", "question": "MCL"}, study, objects, set(), None
+    )
+    assert fresh["code"] == "already_measured"
+    assert objects["medial_meniscus"]["profile"] == replaced
+
+
+@pytest.mark.parametrize("subject", ["femur", "medial_meniscus"])
+def test_bounded_observation_does_not_double_a_held_fine_reading(
+    tmp_path, monkeypatch, subject
+):
     study = _study(tmp_path)
     series = _coronal(study)
     window = MEDIAL_TILES
@@ -749,35 +945,36 @@ def test_bounded_observation_does_not_double_a_held_fine_reading(tmp_path, monke
         return real_refine(*args, **kwargs)
 
     monkeypatch.setattr(squint_profiles, "refine_window", counted)
+    monkeypatch.setattr(squint_residual, "own_outline", _boom)
     held_pair = merge_profiles(
         (
-            profile_window(series, window, subject="femur"),
-            real_refine(series, window, subject="femur", tile_mm=2.0),
+            profile_window(series, window, subject=subject),
+            real_refine(series, window, subject=subject, tile_mm=2.0),
         ),
-        subject="femur",
+        subject=subject,
     )
-    objects = {"femur": _located(series, window, profile=copy.deepcopy(held_pair))}
+    objects = {subject: _located(series, window, profile=copy.deepcopy(held_pair))}
     attempted: set = set()
     observed = squint_pipeline._bounded_observation(
-        {"object": "femur", "question": "Medial OA"}, study, objects, attempted, None
+        {"object": subject, "question": "Medial OA"}, study, objects, attempted, None
     )
     assert observed["code"] == "already_measured"
     assert observed["held_regions"] == [
         {"series_uid": series["series_uid"], "window": list(window)}
     ]
     assert calls == []
-    assert objects["femur"]["profile"] == held_pair  # the 2 mm counts are not doubled
-    assert "femur" in attempted
+    assert objects[subject]["profile"] == held_pair  # the 2 mm counts are not doubled
+    assert subject in attempted
 
     # Without the 2 mm reading held, the finer reading is made and added once.
-    coarse_only = profile_window(series, window, subject="femur")
-    objects = {"femur": _located(series, window, profile=copy.deepcopy(coarse_only))}
+    coarse_only = profile_window(series, window, subject=subject)
+    objects = {subject: _located(series, window, profile=copy.deepcopy(coarse_only))}
     observed = squint_pipeline._bounded_observation(
-        {"object": "femur", "question": "Medial OA"}, study, objects, set(), None
+        {"object": subject, "question": "Medial OA"}, study, objects, set(), None
     )
     assert observed["code"] == "measured"
     assert calls == [window]
-    assert objects["femur"]["profile"]["banks"] == held_pair["banks"]
+    assert objects[subject]["profile"]["banks"] == held_pair["banks"]
     json.dumps(observed)
 
 
@@ -806,8 +1003,22 @@ def test_every_contract_part_has_a_producer_or_a_named_unavailability():
         "tibial_cartilage",
         "joint_fluid",
     }
-    # Every small part of Rohan's decision is either covered or named unavailable.
-    assert squint_pipeline.SMALL_PARTS <= set(PRODUCERS) | set(UNAVAILABLE)
+    # Every small part Rohan named (SQUINT_TRAINING_BUILD §10) is either covered or named
+    # unavailable, so a request that names the native procedure for one always gets an answer.
+    small_parts = {
+        "medial_meniscus",
+        "lateral_meniscus",
+        "acl",
+        "pcl",
+        "mcl",
+        "femoral_cartilage",
+        "tibial_cartilage",
+        "patellar_cartilage",
+        "trochlear_cartilage",
+        "synovium",
+        "joint_fluid",
+    }
+    assert small_parts <= set(PRODUCERS) | set(UNAVAILABLE)
     table = producer_table()
     json.dumps(table)
     assert all(table[name]["status"] == "available" for name in PRODUCERS)

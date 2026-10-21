@@ -40,11 +40,15 @@ The `knee.squint-memory/v1` manifest selects the fast route. Outputs retain loca
 
 The 58 existing H5 products are teaching sources, not a claim that every object was observed in every study. The compiler retains usable addressed evidence and records coverage. New report-confirmed cases enter a later memory revision; recalled answers cannot label themselves.
 
+The [run guide](docs/SQUINT_RUN_GUIDE.md) also gives the immutable teaching-round command, saved-evidence replay, and explicit retirement of independently reviewed bad teaching cases. A retired case remains preserved for inspection; its evidence cannot keep voting through a derived configuration.
+
 ## Efficiency and competition requirements
 
 Anatomy narrows the work; shared producers avoid repetition; exact count-space HDC avoids dense per-pixel hypervectors. Useful priors need not be perfect. Performance figures are information about the implementation, never anatomical tuning targets.
 
-Anatomy generates finite candidate windows before scoring; partial native bone planes can guide explicitly partial priors. Each study receives a bounded time share. Prepared recall ships with the memory. A whole-condition case may decide only through comparisons that actually include its defining tissue. The [run guide](docs/SQUINT_RUN_GUIDE.md) documents the fully study-excluded capacity check and its per-condition report.
+Anatomy generates finite candidate windows before scoring; partial native bone planes can guide explicitly partial priors. Each study receives a bounded time share. Location keeps the cheap 10 mm reading and recalls from it first; only a named unresolved question earns its 2 mm reading at the same address, while direct and reference callers still pair upfront (the [run guide](docs/SQUINT_RUN_GUIDE.md#run-production-inference) names the counters). Prepared recall ships with the memory. A whole-condition case may decide only through comparisons that actually include its defining tissue. The [run guide](docs/SQUINT_RUN_GUIDE.md) documents the fully study-excluded capacity check and its per-condition report.
+
+Partial normal evidence still speaks at its observed site. It can oppose an overlapping configuration claim without asserting that every possible site is normal. Context and explicitly restricted readings cannot acquire categorical authority through configuration bundling.
 
 [FULL_BUILD_PLAN §16.9](docs/FULL_BUILD_PLAN.md#169-competition-resource-envelope-w8b-storage-closure-and-w10-verification) owns the source-backed deployment envelope:
 
@@ -63,7 +67,7 @@ High-resolution development remains available through the same entry point:
 .venv/bin/python scripts/run_interiors.py --study-uid <UID> --root <data-root> --workers 1 --draw --run <new-interiors> --main-run <new-main-slices>
 ```
 
-Drawing is optional and off in competition. `--competition-output` builds verified self-contained H5 object products before releasing consumed intermediates. Retained pixel supports preserve native, inherited and projected provenance; none silently claims a measured 3D volume.
+Drawing is optional and off in competition. The development-only `scripts/squint_visual_capacity.py` pictures what a finished run's recall compared; the [run guide](docs/SQUINT_RUN_GUIDE.md#draw-what-recall-compared-development-only) gives its command. A drawing is never production, and a positive study label does not localize a lesion. `--competition-output` builds verified self-contained H5 object products before releasing consumed intermediates. Retained pixel supports preserve native, inherited and projected provenance; none silently claims a measured 3D volume.
 
 See [OBJECT_OUTPUT.md](docs/OBJECT_OUTPUT.md) for addressed output, [HDC_ENCODING.md](docs/HDC_ENCODING.md) for the exact Hadamard/count representation, and [DIAGNOSTIC_RUN_GUIDE.md](docs/DIAGNOSTIC_RUN_GUIDE.md) for the older explicit full-product/recipe/reference tools. Those legacy routes and their readout remain available as reference behavior; they are not the new production default. Unread facets remain silent; source values without a declared interpretation remain named as such.
 

@@ -26,6 +26,12 @@
     "refusal": "",
     "standing": "ungateable"
   },
+  "src/knee/diagnosis/squint_contracts.py::_configuration_case_disposition": {
+    "cut_reasons": [],
+    "function_digest": "20eb4bf9dcf9092f",
+    "refusal": "",
+    "standing": "complete"
+  },
   "src/knee/diagnosis/squint_contracts.py::_kleene_or": {
     "cut_reasons": [],
     "function_digest": "e63a2d3431aefa2e",

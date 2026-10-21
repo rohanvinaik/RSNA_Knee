@@ -109,6 +109,62 @@ def test_unlocated_objects_remain_open_and_do_not_invoke_reconstruction(
     assert all(c[2] == "query" for c in calls if c[0] == "recall")
 
 
+def test_production_location_defers_the_fine_reading_where_the_locator_declares_it(
+    monkeypatch, tmp_path
+):
+    _wire(monkeypatch)
+    seen = []
+
+    def locator(study, memory, deadline=None, *, refine_finalists=True):
+        seen.append((deadline, refine_finalists))
+        return {"objects": {}}
+
+    monkeypatch.setattr(
+        sys.modules["knee.diagnosis.squint_locator"], "locate_objects", locator
+    )
+    infer_study(tmp_path, "query", {"revision": "r1"}, deadline=None)
+    assert seen == [(None, False)]
+
+
+@pytest.mark.parametrize("shape", ["teacher_control", "variadic_keywords"])
+def test_a_locator_that_does_not_declare_the_keyword_is_called_as_before(
+    monkeypatch, tmp_path, shape
+):
+    # The teacher control substitutes a locator that reads its own pairs upfront; its
+    # signature is (study, memory, deadline=None) and must never be handed the keyword.
+    _wire(monkeypatch)
+    seen = []
+
+    def teacher(study, memory, deadline=None):
+        seen.append(deadline)
+        return {"objects": {}}
+
+    def variadic(study, memory, deadline=None, **options):
+        seen.append(options)
+        return {"objects": {}}
+
+    monkeypatch.setattr(
+        sys.modules["knee.diagnosis.squint_locator"],
+        "locate_objects",
+        teacher if shape == "teacher_control" else variadic,
+    )
+    record = infer_study(tmp_path, "query", {"revision": "r1"}, deadline=None)
+    assert seen == ([None] if shape == "teacher_control" else [{}])
+    assert record["work"]["location_fine_readings"] == 0
+
+
+def test_the_deferral_is_named_only_for_a_locator_that_declares_it():
+    from knee.diagnosis import squint_locator
+    from knee.diagnosis.squint_pipeline import _squint_first_location
+
+    assert _squint_first_location(squint_locator.locate_objects) == {
+        "refine_finalists": False
+    }
+    assert _squint_first_location(lambda study, memory, deadline=None: None) == {}
+    assert _squint_first_location(lambda study, memory, **options: None) == {}
+    assert _squint_first_location(object()) == {}
+
+
 def test_expired_study_deadline_returns_neutral_unexamined_record(
     monkeypatch, tmp_path
 ):

@@ -9,6 +9,7 @@ from __future__ import annotations
 
 import csv
 import hashlib
+import inspect
 import json
 import math
 import os
@@ -16,10 +17,11 @@ import platform
 import resource
 import time
 from collections import Counter
+from collections.abc import Mapping
 from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
 
-from knee.diagnosis.squint_interfaces import MEMORY_VIEW_SCHEMA
+from knee.diagnosis.squint_interfaces import MEMORY_VIEW_SCHEMA, TERRITORY_PROCEDURE
 from knee.diagnosis.squint_locator import recall_source_fingerprint
 from knee.diagnosis.squint_memory_view import memory_view
 from knee.study.tables import LABELS
@@ -113,56 +115,55 @@ def _empty_profile(subject: str) -> dict:
     }
 
 
-#: Rohan's decision (SQUINT_TRAINING_BUILD §10): parts the 10 mm squint cannot
-#: isolate are read over their own outline whenever their question is decided;
-#: until then their comparison may only grade within "open".
-SMALL_PARTS = frozenset(
-    {
-        "medial_meniscus",
-        "lateral_meniscus",
-        "acl",
-        "pcl",
-        "mcl",
-        "femoral_cartilage",
-        "tibial_cartilage",
-        "patellar_cartilage",
-        "trochlear_cartilage",
-        "synovium",
-        "joint_fluid",
-    }
-)
-#: Own-outline readings from the bounded step count as the part's own outline
-#: only for parts whose step has been validated against the bootstrap's own
-#: supports (label-free, W12b). Until then a residual reading still grades.
-VALIDATED_OUTLINE_PARTS: frozenset[str] = frozenset()
+#: The lens a generic bounded observation names: the paired finer reading of a reading
+#: the object already holds (``refine_territory`` for a territory profile, otherwise
+#: ``refine_window``). A request naming any other lens names a native procedure.
+PAIRED_FINER_LENS = "physical_squint"
 
 
-def _profile_origins(profile: object) -> set[str]:
-    """Territory origins a profile was read from, through its merge lineage."""
-    origins: set[str] = set()
+def _lineage_sources(profile: object):
+    """Each writer call's source a profile was made from, through its merge lineage."""
     stack = [profile.get("source") if isinstance(profile, dict) else None]
     while stack:
         source = stack.pop()
         if not isinstance(source, dict):
             continue
-        territory = source.get("territory")
-        if isinstance(territory, dict) and isinstance(territory.get("origin"), str):
-            origins.add(territory["origin"])
+        yield source
         lineage = source.get("lineage")
         if isinstance(lineage, list):
             stack.extend(lineage)
+
+
+def _profile_origins(profile: object) -> set[str]:
+    """Territory origins a profile was read from, through its merge lineage."""
+    origins: set[str] = set()
+    for source in _lineage_sources(profile):
+        territory = source.get("territory")
+        if isinstance(territory, dict) and isinstance(territory.get("origin"), str):
+            origins.add(territory["origin"])
     return origins
 
 
 def _decision_scope(subject: str, profile: object) -> str:
-    """``decide`` unless a small part was not read over its own outline only."""
-    if subject not in SMALL_PARTS:
-        return "decide"
-    origins = _profile_origins(profile)
-    own = {"teacher_support"}
-    if subject in VALIDATED_OUTLINE_PARTS:
-        own.add("residual_native_support")
-    return "decide" if origins and origins <= own else "grade_only"
+    """How far one object's reading may speak: ``decide``, ``grade_only`` or ``unavailable``.
+
+    A compatible cheap reading decides at its own scope however it was placed: a useful
+    anatomical prior is enough, and a native outline is an explicit tool, never a
+    prerequisite (SQUINT_TRAINING_BUILD §10's gate on small parts is withdrawn). Only
+    what an input states limits a reading: a ``decision_scope`` of ``grade_only`` in its
+    source or merge lineage. An object with no reading (no profile, no banks, or another
+    object's) is ``unavailable``. Where each reading was placed from stays named in the
+    evidence (``query_origins``).
+    """
+    if (
+        not isinstance(profile, dict)
+        or profile.get("subject") != subject
+        or not profile.get("banks")
+    ):
+        return "unavailable"
+    if any(s.get("decision_scope") == "grade_only" for s in _lineage_sources(profile)):
+        return "grade_only"
+    return "decide"
 
 
 def _recall_question(
@@ -183,7 +184,7 @@ def _recall_question(
     for subject in question.objects:
         located = objects.get(subject, {})
         profile = located.get("profile") or _empty_profile(subject)
-        evidence[subject] = {
+        record = {
             **recall_object(
                 profile,
                 memory,
@@ -192,9 +193,12 @@ def _recall_question(
             ),
             "location_status": located.get("status", "unavailable"),
             "regions": located.get("regions", []),
-            "decision_scope": _decision_scope(subject, located.get("profile")),
             "query_origins": sorted(_profile_origins(located.get("profile"))),
         }
+        scope = _decision_scope(subject, located.get("profile"))
+        if scope != "unavailable":
+            record["decision_scope"] = scope
+        evidence[subject] = record
     from knee.diagnosis.squint_configurations import configuration_profile
 
     source_profiles = {
@@ -232,8 +236,8 @@ def _recall_question(
             question=question.question_id,
             exclude_study_uid=uid if excluded else "",
         )
-        # A configuration that reads a small defining part not yet read over
-        # its own outline may grade, never decide.
+        # A configuration that reads a defining part its input limited to grading
+        # may grade, never decide.
         roles = (selection or {}).get("subjects", {}) if selection else {}
         defining = [s for s, r in roles.items() if r in ("defining", "alternative")]
         if any(
@@ -295,96 +299,377 @@ def _budget_unexamined_study(
     }
 
 
+def _region_window(region: dict) -> tuple[int, int, int, int, int, int] | None:
+    """The six-integer tile window a located region is addressed by, else None."""
+    window = region.get("window", region.get("source_window"))
+    if (
+        isinstance(window, (list, tuple))
+        and len(window) == 6
+        and all(type(value) is int for value in window)
+    ):
+        z0, z1, r0, r1, c0, c1 = window
+        return z0, z1, r0, r1, c0, c1
+    return None
+
+
+def _region_address(region: object) -> dict:
+    """Where a located region was addressed, as the evidence names it."""
+    address = region if isinstance(region, dict) else {}
+    window = _region_window(address)
+    series_uid = address.get("series_uid")
+    return {
+        "series_uid": series_uid if isinstance(series_uid, str) else None,
+        "window": list(window) if window is not None else None,
+    }
+
+
+def _window_pairing(subject: str, profile: object):
+    """Settle a v1 region: its tile window's reading, held at 2 mm or to be refined."""
+    from knee.diagnosis.squint_profiles import refine_window
+    from knee.diagnosis.squint_residual import FINE_TILE_MM, holds_reading
+
+    def pair(region: dict, by_uid: dict):
+        window = _region_window(region)
+        if window is None:
+            return "unread", "region_window_invalid"
+        series = by_uid.get(region.get("series_uid"))
+        if series is None:
+            return "unread", "series_not_in_study"
+        coarse_mm = getattr(series.get("stack"), "tile_mm", None)
+        if isinstance(coarse_mm, bool) or not isinstance(coarse_mm, (int, float)):
+            return "unread", "series_scale_unavailable"
+        if not holds_reading(
+            profile,
+            series_uid=region["series_uid"],
+            window=window,
+            scale_mm=float(coarse_mm),
+        ):
+            return "unread", "coarse_reading_not_held"
+        if holds_reading(
+            profile,
+            series_uid=region["series_uid"],
+            window=window,
+            scale_mm=FINE_TILE_MM,
+        ):
+            return "held", None
+        return "read", lambda: refine_window(
+            series, window, subject=subject, tile_mm=FINE_TILE_MM
+        )
+
+    return pair
+
+
+def _territory_pairing(subject: str, profile: object, study: dict):
+    """Settle a territory-v2 region: the finer reading of the 10 mm territory it holds.
+
+    The territory is the region's own record from the locator and the series and leg map
+    are the study's. A record the profile holds no reading of is another candidate and is
+    not read into it. A record that holds its native mask as an address alone is read
+    over the original territory the study kept at location, and only when that
+    territory's own serialization is the record (``retained_native_territory``); a mask
+    the study does not hold, or holds as another territory, would be read over different
+    pixels than its coarse reading. Each is named, never read in its place.
+    """
+    from knee.diagnosis.squint_anatomy_locator import (
+        retained_native_territory,
+        territory_from_record,
+    )
+    from knee.diagnosis.squint_profiles import refine_territory
+    from knee.diagnosis.squint_residual import FINE_TILE_MM, held_readings
+
+    held = held_readings(profile)
+    leg_maps = study.get("leg_maps")
+
+    def pair(region: dict, by_uid: dict):
+        record = region.get("territory")
+        if not isinstance(record, Mapping):
+            return "unread", "region_without_territory_record"
+        series_uid = region.get("series_uid")
+        if not isinstance(series_uid, str) or series_uid not in by_uid:
+            return "unread", "series_not_in_study"
+        series = by_uid[series_uid]
+
+        def identity(**scale) -> list[dict]:
+            # The reading identity the territory writer's own call carries: held_readings
+            # reads it from a source of that shape, so the lookup is the profile's own.
+            source = {
+                "procedure": TERRITORY_PROCEDURE,
+                "series_context": series.get("source"),
+                "territory": record,
+                **scale,
+            }
+            return held_readings({"source": source})
+
+        try:
+            territory = territory_from_record(record)
+            coarse = identity()
+            fine = identity(refinement=True, fine_tile_mm=FINE_TILE_MM)
+        except (TypeError, ValueError) as error:
+            return "unread", f"territory_record_refused:{error}"
+        if not coarse or not fine:
+            return "unread", "territory_identity_unavailable"
+        if coarse[0] not in held:
+            return "unread", "territory_not_held_by_the_profile"
+        if fine[0] in held:
+            return "held", None
+        to_read = territory
+        if record.get("native_support_address") is not None:
+            # The record holds the mask as an address alone: the original, kept by the
+            # location that read it, is the territory to refine, or the reason is named.
+            retained, why = retained_native_territory(study, record)
+            if retained is None:
+                return "unread", why
+            to_read = retained
+        leg_map = series.get("leg_map")
+        if leg_map is None and isinstance(leg_maps, Mapping):
+            leg_map = leg_maps.get(series_uid)
+        if leg_map is None:
+            return "unread", "leg_map_unavailable"
+        return "read", lambda: refine_territory(
+            series, to_read, leg_map, subject=subject, tile_mm=FINE_TILE_MM
+        )
+
+    return pair
+
+
+def _refine_regions(located: dict, deadline: float | None, by_uid: dict, pair):
+    """Make each located region's finer reading once and name every region's outcome.
+
+    ``pair`` settles a region cheaply as ``held`` (already read), ``unread`` (with its
+    reason) or ``read`` (a call making the reading). The deadline is checked only before
+    a read, so a late study still reports which regions it held or could not read.
+    """
+    fines: list[dict] = []
+    read: list[dict] = []
+    held: list[dict] = []
+    unavailable: list[dict] = []
+    regions = located.get("regions")
+    for region in regions if isinstance(regions, list) else ():
+        address = _region_address(region)
+        if not isinstance(region, dict):
+            unavailable.append({**address, "reason": "region_malformed"})
+            continue
+        verdict, detail = pair(region, by_uid)
+        if verdict == "held":
+            held.append(address)
+        elif verdict == "unread":
+            unavailable.append({**address, "reason": detail})
+        elif deadline is not None and time.monotonic() >= deadline:
+            unavailable.append({**address, "reason": "deadline_before_zoom"})
+        else:
+            try:
+                fine = detail()
+            except (TypeError, ValueError) as error:
+                reason = f"refinement_refused:{error}"
+                unavailable.append({**address, "reason": reason})
+                continue
+            if isinstance(fine, dict) and fine.get("banks"):
+                fines.append(fine)
+                read.append(address)
+            else:
+                unavailable.append({**address, "reason": "refinement_wrote_no_bank"})
+    return fines, read, held, unavailable
+
+
+def _named_procedure(
+    request: Mapping,
+    lens: str,
+    subject: str,
+    study: dict,
+    objects: dict,
+    attempted: set,
+    deadline: float | None,
+) -> dict:
+    """Run the object's own existing native procedure because the request named it.
+
+    Only the object's producer in the residual table can be named. Another lens, or a part
+    with no producer, is ``procedure_unavailable`` with its reason, never another reading
+    in its place. The step runs once per object and study (``own_outline``) and replaces
+    the expected-area reading, which it keeps beside it; its whole answer is the evidence.
+    """
+    from knee.diagnosis.squint_residual import (
+        OWN_OUTLINE_REASON,
+        UNAVAILABLE,
+        own_outline,
+        producer_for,
+    )
+
+    producer = producer_for(subject)
+    if producer is None:
+        reason = UNAVAILABLE.get(subject, "no_existing_bounded_native_producer_named")
+        return {
+            "code": "procedure_unavailable",
+            "subject": subject,
+            "lens": lens,
+            "reason": reason,
+        }
+    if lens != producer.lens:
+        return {
+            "code": "procedure_unavailable",
+            "subject": subject,
+            "lens": lens,
+            "reason": "request_lens_is_not_this_objects_producer",
+        }
+    if deadline is not None and time.monotonic() >= deadline:
+        return {"code": "deadline_before_residual", "subject": subject, "lens": lens}
+    record = own_outline(
+        subject,
+        study,
+        objects,
+        deadline=deadline,
+        question_id=str(request.get("question") or OWN_OUTLINE_REASON),
+    )
+    if "measured" in (record["code"], record.get("first_code")):
+        attempted.add(subject)
+    return {
+        "code": record["code"],
+        "subject": subject,
+        "lens": record["lens"],
+        "own_outline": record,
+    }
+
+
 def _bounded_observation(
     request: dict, study: dict, objects: dict, attempted: set, deadline: float | None
 ) -> dict:
-    """Apply the paired finer lens only to a requested, located native region. A small part
-    is read over its own outline instead, once per study (``squint_residual.own_outline``);
-    a finer reading an object already holds is not read and merged again."""
-    from knee.diagnosis.squint_profiles import merge_profiles, refine_window
-    from knee.diagnosis.squint_residual import holds_reading, own_outline
+    """Make the one bounded reading a request asks for, once per object and study.
 
+    A request that names no procedure asks for the paired finer reading: a reading the
+    object holds at 10 mm, read again at 2 mm over the same native region. A territory
+    reading is refined over its region's own territory record (``refine_territory``), a
+    v1 reading over its tile window (``refine_window``); the two are never mixed. A
+    reading the object already holds is neither read nor added again, and every question
+    that asks shares the one reading. A ``lens`` naming the object's own native procedure
+    runs that existing procedure instead (``_named_procedure``); no part is sent there
+    for what it is. Whatever cannot be read returns a named code and reason.
+    """
+    if not isinstance(request, Mapping):
+        return {"code": "request_invalid", "reason": "request_not_a_mapping"}
     subject = request.get("object", request.get("subject"))
-    if not isinstance(subject, str) or subject not in objects:
-        return {"code": "object_region_unavailable", "request": request}
+    unlocated = {"code": "object_region_unavailable", "request": request}
+    if not isinstance(objects, Mapping):
+        return {**unlocated, "reason": "objects_not_a_mapping"}
+    if not isinstance(study, Mapping):
+        return {**unlocated, "reason": "study_not_a_mapping"}
+    if not isinstance(subject, str):
+        return {**unlocated, "reason": "request_names_no_object"}
+    if subject not in objects:
+        return {**unlocated, "reason": "object_not_located"}
+    located = objects[subject]
+    if not isinstance(located, dict):
+        return {**unlocated, "reason": "object_record_invalid"}
+    if "lens" in request:
+        lens = request["lens"]
+        if not isinstance(lens, str) or not lens.strip():
+            return {
+                "code": "request_invalid",
+                "subject": subject,
+                "reason": "lens_not_a_name",
+            }
+        if lens != PAIRED_FINER_LENS:
+            return _named_procedure(
+                request, lens, subject, study, objects, attempted, deadline
+            )
     if subject in attempted:
         return {"code": "shared_observation_already_available", "subject": subject}
     if deadline is not None and time.monotonic() >= deadline:
         return {"code": "deadline_before_zoom", "subject": subject}
-    located = objects[subject]
-    if subject in SMALL_PARTS:
-        # Rohan's decision (SQUINT_TRAINING_BUILD §10): the part's own existing producer
-        # reads its own outline and that reading replaces its expected-area reading; a part
-        # without one is named, never given a box refinement in its place.
-        record = own_outline(
-            subject,
-            study,
-            objects,
-            deadline=deadline,
-            question_id=str(request.get("question") or "small_part_own_outline"),
-        )
+    own = located.get("own_outline")
+    if isinstance(own, Mapping) and own.get("code") == "measured":
+        # The part's own outline replaced its expected-area reading, so the regions it
+        # was located at no longer describe what its profile holds.
         attempted.add(subject)
         return {
-            "code": record["code"],
+            "code": "already_measured",
             "subject": subject,
-            "lens": record["lens"],
-            "own_outline": record,
+            "reason": "own_outline_replaced_the_expected_area_reading",
         }
-    previous_source = (located.get("profile") or {}).get("source") or {}
-    if (
-        previous_source.get("procedure")
-        == "knee.squint-profile/leg-tercile-territory-v2"
-    ):
-        # The 2 mm physical squint here is the v1 writer's; it cannot be merged
-        # into a territory profile, which already carries its own 2 mm reading.
-        # The bounded native step for open questions (W12) replaces this.
-        return {"code": "residual_pending_territory_reading", "subject": subject}
-    profiles = []
-    regions = []
-    held = []
-    by_uid = {s["series_uid"]: s for s in study.get("series", [])}
-    for region in located.get("regions", []):
-        if not isinstance(region, dict):
-            continue
-        series = by_uid.get(region.get("series_uid"))
-        window = region.get("window", region.get("source_window"))
-        if series is None or not isinstance(window, (list, tuple)) or len(window) != 6:
-            continue
-        if deadline is not None and time.monotonic() >= deadline:
-            break
-        if holds_reading(
-            located.get("profile"),
-            series_uid=region["series_uid"],
-            window=window,
-            scale_mm=2.0,
-        ):
-            held.append({"series_uid": region["series_uid"], "window": list(window)})
-            continue
-        profile = refine_window(series, tuple(window), subject=subject, tile_mm=2.0)
-        if profile.get("banks"):
-            profiles.append(profile)
-            regions.append({"series_uid": region["series_uid"], "window": list(window)})
-    if not profiles:
+    from knee.diagnosis.squint_profiles import merge_profiles
+    from knee.diagnosis.squint_residual import FINE_TILE_MM
+
+    previous = located.get("profile")
+    regions = located.get("regions")
+    source = previous.get("source") if isinstance(previous, dict) else None
+    territory_reading = (
+        isinstance(source, dict) and source.get("procedure") == TERRITORY_PROCEDURE
+    ) or any(
+        isinstance(region, dict) and isinstance(region.get("territory"), Mapping)
+        for region in (regions if isinstance(regions, list) else ())
+    )
+    by_uid = {
+        s["series_uid"]: s
+        for s in study.get("series", ())
+        if isinstance(s, dict) and "series_uid" in s
+    }
+    pair = (
+        _territory_pairing(subject, previous, study)
+        if territory_reading
+        else _window_pairing(subject, previous)
+    )
+    fines, read, held, unavailable = _refine_regions(located, deadline, by_uid, pair)
+    outcome = {
+        "subject": subject,
+        "held_regions": held,
+        "unavailable_regions": unavailable,
+    }
+    if not fines:
         if held:
             attempted.add(subject)
-        return {
-            "code": "already_measured" if held else "no_compatible_bounded_reading",
-            "subject": subject,
-            "held_regions": held,
-        }
-    previous = located.get("profile")
-    if previous is not None:
-        profiles.insert(0, previous)
-    located["profile"] = merge_profiles(profiles, subject=subject)
+            code, reason = "already_measured", "paired_reading_already_held"
+        elif any(item["reason"] == "deadline_before_zoom" for item in unavailable):
+            code, reason = "deadline_before_zoom", "deadline_reached_before_the_read"
+        else:
+            code = "no_compatible_bounded_reading"
+            reason = (
+                "no_located_region"
+                if not unavailable
+                else "territory_unavailable"
+                if territory_reading
+                else "region_unavailable"
+            )
+        return {"code": code, "reason": reason, **outcome}
+    try:
+        merged = merge_profiles(
+            [previous, *fines] if previous is not None else fines, subject=subject
+        )
+    except (TypeError, ValueError) as error:
+        reason = f"profile_merge_refused:{error}"
+        return {"code": "no_compatible_bounded_reading", "reason": reason, **outcome}
+    located["profile"] = merged
     attempted.add(subject)
     return {
         "code": "measured",
-        "subject": subject,
-        "regions": regions,
-        "held_regions": held,
-        "lens": "physical_squint",
-        "tile_mm": 2.0,
+        "regions": read,
+        "lens": PAIRED_FINER_LENS,
+        "tile_mm": FINE_TILE_MM,
+        "procedure": merged["source"]["procedure"],
+        **outcome,
     }
+
+
+def _squint_first_location(locate) -> dict:
+    """The production locator's option: the 2 mm reading waits for a named question.
+
+    Offered only to a locator that declares it. The teacher control substitutes a locator
+    that reads its own pairs upfront, and its signature predates the keyword.
+    """
+    try:
+        declared = "refine_finalists" in inspect.signature(locate).parameters
+    except (TypeError, ValueError):
+        declared = False
+    return {"refine_finalists": False} if declared else {}
+
+
+def _fine_readings_held(objects: object) -> int:
+    """How many 2 mm readings the located objects' profiles hold."""
+    from knee.diagnosis.squint_residual import FINE_TILE_MM, held_readings
+
+    return sum(
+        reading.get("scale_mm") == FINE_TILE_MM
+        for located in (objects.values() if isinstance(objects, Mapping) else ())
+        if isinstance(located, Mapping)
+        for reading in held_readings(located.get("profile"))
+    )
 
 
 def infer_study(
@@ -396,7 +681,11 @@ def infer_study(
     io_workers: int = 8,
     exclude_same_study: bool = False,
 ) -> dict:
-    """Consume current-study cheap observations; never read teaching calls as features."""
+    """Consume current-study cheap observations; never read teaching calls as features.
+
+    Squint first: location keeps the 10 mm reading it holds, and only a question left open
+    earns the bounded finer reading of the object it names (``_bounded_observation``).
+    """
     from knee.diagnosis.declarations import QUESTIONS
     from knee.diagnosis.squint_contracts import combine_condition, rank_condition
     from knee.diagnosis.squint_locator import locate_objects
@@ -419,8 +708,11 @@ def infer_study(
     ):
         memory, _excluded = _study_excluded_memory(memory, uid)
     study = read_study_squints(root, uid, io_workers=io_workers)
-    locations = locate_objects(study, memory, deadline=deadline)
+    locations = locate_objects(
+        study, memory, deadline=deadline, **_squint_first_location(locate_objects)
+    )
     objects = locations.get("objects", {})
+    fine_readings_at_location = _fine_readings_held(objects)
     questions = {}
     values = {}
     observations = []
@@ -475,6 +767,13 @@ def infer_study(
         * (1 if platform.system() == "Darwin" else 1024),
         "full_anatomy_runs": 0,
         "bounded_zoom_runs": sum(row["code"] == "measured" for row in observations),
+        # 2 mm readings held when location returned, against those a question earned.
+        "location_fine_readings": fine_readings_at_location,
+        "paired_fine_readings": sum(
+            len(row.get("regions") or ())
+            for row in observations
+            if row["code"] == "measured" and row.get("lens") == PAIRED_FINER_LENS
+        ),
         "own_outline_parts_measured": sum(
             (row.get("own_outline") or {}).get("code") == "measured"
             for row in observations

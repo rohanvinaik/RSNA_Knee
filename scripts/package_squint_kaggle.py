@@ -24,8 +24,16 @@ no top-level JSON file of the memory (plain, .gz or .xz, parsed whole) has the e
 `schema` value `knee.squint-memory/v1` (a string nested elsewhere, such as inside `cases`, is not a
 schema); any file is a symlink, a pickle or model artifact, an
 object-dtype numpy array, a credential-like name, DICOM pixel data or a teaching label file; any text carries
-a secret-like string; a shipped Python file does not parse or asks numpy for `allow_pickle=True`; or the
-source lacks the squint production modules.
+a secret-like string; a shipped Python file asks numpy for `allow_pickle=True` or does not parse as the
+offline runtime's Python (3.13, the interpreter of the cp313 wheels; a best-effort grammar check, so the
+newer syntax CPython's parser version-gates, such as template strings, is refused);
+a shipped file imports a `knee` module, or a name a `knee` package binds, that the bundle does not hold; or
+the source lacks the squint production modules.
+
+The import rule counts every import wherever it sits: the production code reaches several modules lazily and
+some behind `except ImportError`, where a missing one is a quiet degrade to open results after hours of work,
+not a crash, and the wrappers' import check cannot see it. Shipped code is parsed, never imported or run:
+modules are checked, and the names a package's `__init__` binds; attributes of a plain module are not.
 
 Not packaged, by construction: `.git`, `.serena`, caches, `data/`, archives, tests, study data, reading
 products and anything under `src/` that is not a `.py` file (those are listed under `source.excluded` in the
@@ -68,7 +76,7 @@ import struct
 import sys
 import tarfile
 import zipfile
-from collections.abc import Callable, Sequence
+from collections.abc import Callable, Mapping, Sequence
 from contextlib import ExitStack
 from dataclasses import dataclass
 from pathlib import Path, PurePosixPath
@@ -88,6 +96,9 @@ SELECTION_DEST = "config/scaling-selection.json"
 ENTRYPOINT = "source/" + RUNNER
 PYTHONPATH_ENTRIES = ["source/src"]
 SOURCE_PACKAGE = ("src", "knee")
+SOURCE_ROOT = "source/" + SOURCE_PACKAGE[0] + "/"
+# The interpreter the offline wheels (cp313) and both Kaggle wrappers run: shipped files must parse as it does.
+RUNTIME_PYTHON = (3, 13)
 REQUIRED_PATHS = (
     "source/scripts/run_interiors.py",
     "source/src/knee/__init__.py",
@@ -207,6 +218,17 @@ class Planned:
     role: str
     sha256: str
     bytes: int
+
+
+@dataclass(frozen=True)
+class PythonFacts:
+    """What one shipped Python file says about the package it ships with."""
+
+    warnings: tuple[str, ...]
+    # (module, names, line) of each import of the shipped package, relative ones made absolute
+    imports: tuple[tuple[str, tuple[str, ...], int], ...]
+    # the names a package's `__init__` binds at module level; None when they cannot be listed
+    defined: frozenset[str] | None
 
 
 # ---------------------------------------------------------------------------------------------
@@ -405,12 +427,91 @@ def check_container(suffix: str, opener: Opener, label: str) -> None:
             raise PackagingError(f"{label}: unreadable compressed file: {exc}") from exc
 
 
-def inspect_python(label: str, data: bytes) -> list[str]:
-    """Parse a shipped Python file; refuse allow_pickle=True; return pickle-module import warnings."""
+def module_of(dest: str) -> tuple[str, bool] | None:
+    """The dotted module a shipped source file is, and whether it is a package's `__init__`."""
+    if not dest.startswith(SOURCE_ROOT) or not dest.endswith(".py"):
+        return None
+    parts = PurePosixPath(dest[len(SOURCE_ROOT) : -len(".py")]).parts
+    if parts[-1] == "__init__":
+        return ".".join(parts[:-1]), True
+    return ".".join(parts), False
+
+
+def package_imports(
+    tree: ast.AST, label: str
+) -> tuple[tuple[str, tuple[str, ...], int], ...]:
+    """Every import of the shipped package, wherever it sits, as (module, names, line)."""
+    located = module_of(label)
+    package = (
+        ""
+        if located is None
+        else located[0]
+        if located[1]
+        else located[0].rpartition(".")[0]
+    )
+    parts = package.split(".") if package else []
+    found: list[tuple[str, tuple[str, ...], int]] = []
+    for node in ast.walk(tree):
+        if isinstance(node, ast.Import):
+            found.extend((alias.name, (), node.lineno) for alias in node.names)
+        elif isinstance(node, ast.ImportFrom):
+            names = tuple(alias.name for alias in node.names)
+            module = node.module or ""
+            if node.level and located is None:
+                continue  # a script has no package to be relative to
+            if node.level > len(parts):
+                # above the top package: never resolves
+                module = "." * node.level + module
+            elif node.level:
+                base = parts[: len(parts) - node.level + 1]
+                module = ".".join([*base, *([module] if module else [])])
+            found.append((module, names, node.lineno))
+    own = SOURCE_PACKAGE[-1]
+    return tuple(
+        item
+        for item in sorted(found, key=lambda item: (item[2], item[0]))
+        if item[0].partition(".")[0] in (own, "")
+    )
+
+
+def bound_names(tree: ast.Module) -> frozenset[str] | None:
+    """The names a module binds at its top level, or None when they cannot be listed."""
+    names: set[str] = set()
+    pending: list[ast.AST] = list(tree.body)
+    while pending:
+        node = pending.pop()
+        if isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef, ast.ClassDef)):
+            if node.name == "__getattr__":
+                return None
+            names.add(node.name)
+        elif isinstance(node, (ast.Import, ast.ImportFrom)):
+            for alias in node.names:
+                if alias.name == "*":
+                    return None
+                names.add(alias.asname or alias.name.partition(".")[0])
+        elif isinstance(node, (ast.Assign, ast.AnnAssign, ast.AugAssign)):
+            targets = node.targets if isinstance(node, ast.Assign) else [node.target]
+            names.update(
+                name.id
+                for target in targets
+                for name in ast.walk(target)
+                if isinstance(name, ast.Name)
+            )
+        else:
+            for field in ("body", "orelse", "finalbody", "handlers", "cases"):
+                pending.extend(getattr(node, field, ()))
+    return frozenset(names)
+
+
+def inspect_python(label: str, data: bytes) -> PythonFacts:
+    """Parse a shipped file as the offline runtime's Python; refuse allow_pickle=True; report its imports."""
     try:
-        tree = ast.parse(data, filename=label)
+        tree = ast.parse(data, filename=label, feature_version=RUNTIME_PYTHON)
     except (SyntaxError, ValueError) as exc:
-        raise PackagingError(f"{label} does not parse: {exc}") from exc
+        raise PackagingError(
+            f"{label} does not parse as Python {RUNTIME_PYTHON[0]}.{RUNTIME_PYTHON[1]} "
+            f"(the offline runtime): {exc}"
+        ) from exc
     warnings: list[str] = []
     for node in ast.walk(tree):
         if (
@@ -429,7 +530,59 @@ def inspect_python(label: str, data: bytes) -> list[str]:
         for name in names:
             if name in PICKLE_MODULES:
                 warnings.append(f"{label} imports {name}")
-    return warnings
+    located = module_of(label)
+    return PythonFacts(
+        tuple(warnings),
+        package_imports(tree, label),
+        bound_names(tree) if located is not None and located[1] else None,
+    )
+
+
+def import_problems(facts_by_dest: Mapping[str, PythonFacts]) -> list[str]:
+    """Imports of the shipped package that name a module, or a package name, the bundle does not hold."""
+    modules: dict[str, bool] = {}  # dotted name -> is a package
+    inits: dict[str, PythonFacts] = {}
+    for dest, facts in facts_by_dest.items():
+        located = module_of(dest)
+        if located is None:
+            continue
+        name, is_package = located
+        modules[name] = is_package
+        if is_package:
+            inits[name] = facts
+        parts = name.split(".")
+        for end in range(1, len(parts)):
+            modules.setdefault(".".join(parts[:end]), True)
+    problems: list[str] = []
+    for dest in sorted(facts_by_dest):
+        for module, names, line in facts_by_dest[dest].imports:
+            if module not in modules:
+                problems.append(
+                    f"{dest}:{line}: imports {module}, which the bundle does not ship"
+                )
+                continue
+            if not modules[module]:
+                continue  # the attributes of a plain module are not listed
+            init = inits.get(module)
+            for name in names:
+                if f"{module}.{name}" in modules or name == "*":
+                    continue
+                if init is not None and init.defined is None:
+                    continue  # a star import or module __getattr__: not guessed at
+                if init is None or name not in (init.defined or ()):
+                    problems.append(
+                        f"{dest}:{line}: imports {module}.{name}, which the bundle does not ship"
+                    )
+    return problems
+
+
+def require_closed_imports(facts_by_dest: Mapping[str, PythonFacts]) -> None:
+    problems = import_problems(facts_by_dest)
+    if problems:
+        raise PackagingError(
+            "the shipped source is not closed under its own imports:\n- "
+            + "\n- ".join(problems)
+        )
 
 
 def validate_selection_bytes(data: bytes, label: str) -> dict[str, Any]:
@@ -520,22 +673,26 @@ def check_name(dest: str, role: str) -> None:
         raise PackagingError(f"{dest}: unknown role {role!r}")
 
 
-def inspect_payload(dest: str, role: str, opener: Opener) -> tuple[str, int, list[str]]:
+def inspect_payload(
+    dest: str, role: str, opener: Opener
+) -> tuple[str, int, list[str], PythonFacts | None]:
     """Every content check for one file as stored: the same call builds and verifies."""
     check_name(dest, role)
     keep = role in PYTHON_ROLES or role == "config"
     with opener() as reader:
         digest, size, kept = hash_and_scan(reader, dest, keep)
     warnings: list[str] = []
+    facts: PythonFacts | None = None
     if role in PYTHON_ROLES:
         assert kept is not None
-        warnings = inspect_python(dest, kept)
+        facts = inspect_python(dest, kept)
+        warnings = list(facts.warnings)
     elif role == "memory":
         check_container(PurePosixPath(dest).suffix.lower(), opener, dest)
     elif role == "config":
         assert kept is not None
         validate_selection_bytes(kept, dest)
-    return digest, size, warnings
+    return digest, size, warnings, facts
 
 
 # ---------------------------------------------------------------------------------------------
@@ -774,10 +931,16 @@ def plan_all(
     check_collisions(items)
     payloads: list[Planned] = []
     warnings: set[str] = set()
+    facts_by_dest: dict[str, PythonFacts] = {}
     for path, dest, role in items:
-        digest, size, found_warnings = inspect_payload(dest, role, path_opener(path))
+        digest, size, found_warnings, facts = inspect_payload(
+            dest, role, path_opener(path)
+        )
         warnings.update(found_warnings)
+        if facts is not None:
+            facts_by_dest[dest] = facts
         payloads.append(Planned(path, dest, role, digest, size))
+    require_closed_imports(facts_by_dest)
     return {
         "payloads": sorted(payloads, key=lambda item: item.dest),
         "excluded": excluded,
@@ -1004,15 +1167,16 @@ def _clean_entries(
 
 def _verify_tar(
     tar_path: Path, expected: dict[str, dict[str, Any]], problems: list[str]
-) -> dict[str, Any] | None:
+) -> tuple[dict[str, Any] | None, dict[str, PythonFacts]]:
     seen: list[str] = []
     inner: dict[str, Any] | None = None
+    facts_by_dest: dict[str, PythonFacts] = {}
     with ExitStack() as stack:
         try:
             archive = stack.enter_context(tarfile.open(tar_path, "r:"))
         except (tarfile.TarError, OSError) as exc:
             problems.append(f"{TAR_NAME} cannot be opened: {exc}")
-            return None
+            return None, facts_by_dest
         for member in archive:
             name = member.name
             seen.append(name)
@@ -1055,7 +1219,7 @@ def _verify_tar(
                 problems.append(f"tar member is not in the manifest: {name}")
                 continue
             try:
-                digest, size, _ = inspect_payload(
+                digest, size, _, facts = inspect_payload(
                     name,
                     entry["role"],
                     lambda m=member: archive.extractfile(m),  # type: ignore[arg-type,return-value]
@@ -1063,6 +1227,8 @@ def _verify_tar(
             except PackagingError as exc:
                 problems.append(str(exc))
                 continue
+            if facts is not None:
+                facts_by_dest[name] = facts
             if digest != entry["sha256"] or size != entry["bytes"]:
                 problems.append(f"hash or size mismatch in the tar: {name}")
     if seen != sorted(seen):
@@ -1073,7 +1239,8 @@ def _verify_tar(
         problems.append(f"manifest file is missing from the tar: {name}")
     if MANIFEST_NAME not in seen:
         problems.append("tar has no inner RUNTIME_MANIFEST.json")
-    return inner
+    problems.extend(import_problems(facts_by_dest))
+    return inner, facts_by_dest
 
 
 def _check_manifest(
@@ -1208,7 +1375,7 @@ def verify_staging(
         "bytes": size,
     }:
         problems.append("manifest tar record does not match the tar file")
-    inner = _verify_tar(
+    inner, facts_by_dest = _verify_tar(
         output / TAR_NAME, {entry["path"]: entry for entry in clean}, problems
     )
     if inner is not None and inner != {k: v for k, v in outer.items() if k != "tar"}:
@@ -1225,6 +1392,11 @@ def verify_staging(
         "memory": outer["memory"],
         "scaling_selection": outer["scaling_selection"],
         "compared_with_sources": compared,
+        "source_checks": {
+            "python_grammar": "{}.{}".format(*RUNTIME_PYTHON),
+            "python_files": len(facts_by_dest),
+            "package_imports": sum(len(f.imports) for f in facts_by_dest.values()),
+        },
         "dataset_dir": str(output),
     }
 
