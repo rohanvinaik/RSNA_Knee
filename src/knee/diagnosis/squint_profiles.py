@@ -7,6 +7,7 @@ contain dense pixel vectors or copied study volumes.
 
 from __future__ import annotations
 
+import hashlib
 import json
 import math
 from concurrent.futures import ThreadPoolExecutor
@@ -17,6 +18,18 @@ import numpy as np
 
 from knee.collapse.physical import PlaneFrame, physical_squint
 from knee.collapse.squint_stack import SquintStack, read_squint_stack, tile_centres_lps
+from knee.diagnosis.squint_interfaces import (
+    LEG_INSIDE,
+    LEG_MIXED,
+    ROLE_CONTEXT,
+    ROLE_NAMES,
+    ROLE_OBJECT,
+    ROLE_UNQUERIED,
+    TERRITORY_PROCEDURE,
+    leg_map_code,
+    territory_bank_name,
+    territory_code,
+)
 from knee.study.corpus import open_corpus, series_directory
 from knee.study.series import Series, read_series
 
@@ -478,13 +491,13 @@ def profile_window(
     }
 
 
-def refine_window(
+def _refined_series(
     series: dict[str, Any],
     window: tuple[int, int, int, int, int, int],
     *,
-    subject: str,
     tile_mm: float = 2.0,
-) -> dict[str, Any]:
+    native_eligible: np.ndarray | None = None,
+) -> tuple[dict[str, Any], list[int]]:
     """Make a finer physical squint only inside one coarse window's native support.
 
     The coarse scan's calibration is reused. The crop is translated back through each original
@@ -530,6 +543,11 @@ def refine_window(
     cropped = native.volume[z0:z1, row0:row1, col0:col1]
     if cropped.size == 0 or row1 <= row0 or col1 <= col0:
         raise ValueError("squint_refine_empty_native_support")
+    if native_eligible is not None:
+        if native_eligible.shape != cropped.shape:
+            raise ValueError("squint_refine_eligibility_shape_invalid")
+        # A bounded input: outside and unqueried pixels receive no reading.
+        cropped = np.where(native_eligible, cropped, np.nan)
 
     fine_medians: list[np.ndarray] = []
     fine_minima: list[np.ndarray] = []
@@ -601,11 +619,29 @@ def refine_window(
         fine_codes[metric] = codes
     fine_record = {
         "stack": fine_stack,
+        "metric_values": fine_values,
+        "metric_available": fine_available,
         "metric_codes": fine_codes,
         "calibration": coarse_calibration,
         "view": view,
         "source": source,
     }
+    return fine_record, [row0, row1, col0, col1]
+
+
+def refine_window(
+    series: dict[str, Any],
+    window: tuple[int, int, int, int, int, int],
+    *,
+    subject: str,
+    tile_mm: float = 2.0,
+) -> dict[str, Any]:
+    """Read a finer native crop using the unchanged v1 coarse scan reference."""
+    fine_record, crop = _refined_series(series, window, tile_mm=tile_mm)
+    fine_stack = fine_record["stack"]
+    tile_mm = float(fine_stack.tile_mm)
+    z0, z1, *_ = window
+    row0, row1, col0, col1 = crop
     profile = profile_window(
         fine_record,
         (0, z1 - z0, 0, fine_stack.median.shape[1], 0, fine_stack.median.shape[2]),
@@ -619,6 +655,443 @@ def refine_window(
             "native_crop_rc": [row0, row1, col0, col1],
             "native_slice_range": [z0, z1],
             "native_bounds_rc": [row0, row1, col0, col1],
+        }
+    )
+    return profile
+
+
+def _leg_inputs(series: dict, leg_map: dict) -> tuple[SquintStack, np.ndarray]:
+    """Check the addressed leg grid before using it as a reading prior."""
+    stack = series.get("stack") if isinstance(series, dict) else None
+    if not isinstance(stack, SquintStack):
+        raise TypeError("squint_stack_required")
+    code = leg_map_code(leg_map, grid_shape=stack.median.shape)
+    if code != "valid":
+        raise ValueError(code)
+    if leg_map["series_uid"] != series.get("series_uid"):
+        raise ValueError("squint_leg_series_mismatch")
+    if leg_map["tile_mm"] != stack.tile_mm:
+        raise ValueError("squint_leg_scale_mismatch")
+    source = series.get("source")
+    if not isinstance(source, dict) or source.get("procedure") != _PROCEDURE:
+        raise ValueError("squint_source_identity_invalid")
+    if leg_map.get("study_uid", source.get("study_uid")) != source.get("study_uid"):
+        raise ValueError("squint_leg_study_mismatch")
+    return stack, leg_map["codes"]
+
+
+def _leg_fingerprint(leg_map: dict) -> str:
+    return hashlib.sha256(np.ascontiguousarray(leg_map["codes"]).tobytes()).hexdigest()
+
+
+def _codes_against(
+    values: dict, available: dict, calibration: dict, eligible: np.ndarray
+) -> dict[str, np.ndarray]:
+    """Write only available eligible readings against already measured edges."""
+    result = {}
+    for metric, array in values.items():
+        record = calibration.get(metric, {})
+        codes = np.full(array.shape, _UNREAD, dtype=np.int8)
+        if record.get("status") == "measured":
+            low, high = record["low"], record["high"]
+            writable = available[metric] & eligible & np.isfinite(array)
+            codes[writable & (array < low)] = -1
+            codes[writable & (array >= low) & (array <= high)] = 0
+            codes[writable & (array > high)] = 1
+        codes.flags.writeable = False
+        result[metric] = codes
+    return result
+
+
+def leg_calibration(series: dict, leg_map: dict) -> tuple[dict, dict]:
+    """Return ``(calibration, codes)`` like ``_calibrate``, using inside tiles only.
+
+    Mixed tiles can be coded, but never set the edges. Unknown and outside tiles
+    remain unread. The raw six metrics and their availability are reused unchanged.
+    Pass this pair to ``profile_territory`` to share it across a series' objects.
+    """
+    stack, leg = _leg_inputs(series, leg_map)
+    values = series.get("metric_values")
+    available = series.get("metric_available")
+    if not isinstance(values, dict) or not isinstance(available, dict):
+        raise TypeError("squint_metric_values_required")
+    inside = leg == LEG_INSIDE
+    eligible = inside | (leg == LEG_MIXED)
+    calibration = {}
+    fingerprint = _leg_fingerprint(leg_map)
+    signature = (
+        series["series_uid"],
+        stack.tile_mm,
+        fingerprint,
+        tuple(
+            (metric, id(array), id(available.get(metric)))
+            for metric, array in values.items()
+        ),
+    )
+    immutable = all(
+        isinstance(array, np.ndarray)
+        and not array.flags.writeable
+        and isinstance(available.get(metric), np.ndarray)
+        and not available[metric].flags.writeable
+        for metric, array in values.items()
+    )
+    cached = series.get("_territory_leg_calibration")
+    if immutable and cached is not None and cached[0] == signature:
+        return cached[1]
+    for metric, array in values.items():
+        _array(array, stack.median.shape)
+        mask = _array(available.get(metric), stack.median.shape)
+        if mask.dtype != np.bool_:
+            raise ValueError("squint_metric_availability_invalid")
+        selected = np.asarray(
+            array[inside & mask & np.isfinite(array)], dtype=np.float64
+        )
+        low, high = (None, None)
+        if selected.size:
+            low, high = (float(x) for x in np.quantile(selected, (1 / 3, 2 / 3)))
+        calibration[metric] = {
+            "status": "measured" if selected.size else "unavailable",
+            "policy": "leg_inside_terciles",
+            "available_count": int(selected.size),
+            "inside_count": int(np.count_nonzero(inside)),
+            "mixed_count": int(np.count_nonzero(leg == LEG_MIXED)),
+            "writable_count": int(
+                np.count_nonzero(eligible & mask & np.isfinite(array))
+            )
+            if selected.size
+            else 0,
+            "quantile_method": "numpy_linear_terciles",
+            "low": low,
+            "high": high,
+            "series_uid": series["series_uid"],
+            "tile_mm": float(stack.tile_mm),
+            "leg_map_sha256": fingerprint,
+        }
+    result = calibration, _codes_against(values, available, calibration, eligible)
+    if immutable:
+        # Runtime-only, just like the cached raw metrics. Refinement consumes
+        # this same coarse reference rather than calibrating each object again.
+        series["_territory_leg_calibration"] = (signature, result)
+    return result
+
+
+def _territory_inputs(series: dict, territory: dict, leg_map: dict, subject: str):
+    stack, leg = _leg_inputs(series, leg_map)
+    code = territory_code(territory, grid_shape=stack.median.shape)
+    if code != "valid":
+        raise ValueError(code)
+    if not _plain_text(subject) or territory["subject"] != subject:
+        raise ValueError("squint_territory_subject_mismatch")
+    if territory["series_uid"] != series["series_uid"]:
+        raise ValueError("squint_territory_series_mismatch")
+    if territory["study_uid"] != series["source"].get("study_uid"):
+        raise ValueError("squint_territory_study_mismatch")
+    view = series.get("view")
+    if (
+        not isinstance(view, dict)
+        or set(view) != {"orientation", "fluid_sensitive", "fat_suppression"}
+        or any(not isinstance(value, str) for value in view.values())
+    ):
+        raise ValueError("squint_view_invalid")
+    return stack, leg
+
+
+def _territory_source(territory: dict) -> dict:
+    """Retain the address/roles/shares, excluding the runtime-only native mask."""
+    source = {
+        k: v
+        for k, v in territory.items()
+        if k not in {"roles", "object_share", "native_support"}
+    }
+    source["roles"] = territory["roles"].tolist()
+    share = territory["object_share"]
+    source["object_share"] = np.where(np.isfinite(share), share, None).tolist()
+    support = territory.get("native_support")
+    if support is not None:
+        source["native_support_address"] = {
+            "slices": list(support["slices"]),
+            "offset_rc": list(support["offset_rc"]),
+            "shape": list(support["mask"].shape),
+            "support_count": int(np.count_nonzero(support["mask"])),
+            "mask_sha256": hashlib.sha256(support["mask"].tobytes()).hexdigest(),
+        }
+    return source
+
+
+def _count_territory(series, window, roles, eligible, calibration, codes, *, subject):
+    """Count role facets using one object-centred origin and v1 depth partitions."""
+    stack = series["stack"]
+    z0, z1, r0, r1, c0, c1 = window
+    selection = (slice(z0, z1), slice(r0, r1), slice(c0, c1))
+    centres = np.asarray(stack.centres_lps)[selection]
+    finite = np.all(np.isfinite(centres), axis=-1)
+    object_places = (roles == ROLE_OBJECT) & eligible
+    origin_places = object_places & finite
+    origin = np.median(centres[origin_places], axis=0) if origin_places.any() else None
+    directions = _depth_masks(window)
+    if origin is not None:
+        delta = centres - origin
+        for positive, negative, axis in (
+            ("left", "right", 0),
+            ("posterior", "anterior", 1),
+            ("superior", "inferior", 2),
+        ):
+            directions[f"patient_lps_{positive}"] = finite & (delta[..., axis] > 0)
+            directions[f"patient_lps_{negative}"] = finite & (delta[..., axis] < 0)
+    banks = {}
+    for role, name in ROLE_NAMES.items():
+        role_mask = (roles == role) & eligible
+        for metric, code_array in codes.items():
+            if calibration.get(metric, {}).get("status") != "measured":
+                continue
+            selected = code_array[selection]
+            main_direction = {"gradient_row": "row", "gradient_column": "column"}.get(
+                metric, "overview"
+            )
+            for direction, mask in {
+                main_direction: role_mask,
+                **{key: value & role_mask for key, value in directions.items()},
+            }.items():
+                counts = _ternary_counts(selected[mask])
+                if counts is not None:
+                    banks[
+                        territory_bank_name(
+                            series["view"],
+                            name,
+                            metric,
+                            direction,
+                            float(stack.tile_mm),
+                        )
+                    ] = counts
+    bounds = stack.bounds_rc[r0:r1, c0:c1]
+    return {
+        "schema": _PROFILE_SCHEMA,
+        "subject": subject,
+        "banks": banks,
+        "source": {
+            "procedure": TERRITORY_PROCEDURE,
+            "series_context": series["source"],
+            "calibration": calibration,
+            "calibration_policy": "leg_inside_terciles",
+            "window": list(window),
+            "native_bounds_rc": [
+                int(bounds[..., 0].min()),
+                int(bounds[..., 1].max()),
+                int(bounds[..., 2].min()),
+                int(bounds[..., 3].max()),
+            ],
+            "status": "measured" if banks else "silent",
+            "view": dict(series["view"]),
+            "direction_origin": {
+                "policy": "median_object_tile_centres_lps",
+                "lps": origin.tolist() if origin is not None else None,
+                "tile_count": int(np.count_nonzero(origin_places)),
+                "status": "measured"
+                if origin is not None
+                else "object_geometry_unavailable",
+            },
+            "depth_policy": "window_stack_depth_thirds_intersect_role",
+            "role_tile_counts": {
+                name: int(np.count_nonzero((roles == role) & eligible))
+                for role, name in ROLE_NAMES.items()
+            },
+        },
+    }
+
+
+def profile_territory(series, territory, leg_map, *, subject, calibration=None) -> dict:
+    """Read object and context places separately; no box-only object surrogate.
+
+    ``calibration`` may be the pair returned by ``leg_calibration`` (reuses
+    codes), or its edge dictionary (codes the cached metrics against those edges).
+    """
+    _, leg = _territory_inputs(series, territory, leg_map, subject)
+    if calibration is None:
+        calibration = leg_calibration(series, leg_map)
+    if isinstance(calibration, tuple) and len(calibration) == 2:
+        records, codes = calibration
+    else:
+        records, codes = calibration, None
+    if not isinstance(records, dict):
+        raise TypeError("squint_leg_calibration_invalid")
+    fingerprint = _leg_fingerprint(leg_map)
+    for metric in series["metric_values"]:
+        record = records.get(metric)
+        if (
+            not isinstance(record, dict)
+            or record.get("policy") != "leg_inside_terciles"
+            or record.get("series_uid") != series["series_uid"]
+            or record.get("leg_map_sha256") != fingerprint
+        ):
+            raise ValueError("squint_leg_calibration_identity_mismatch")
+        if record.get("status") not in ("measured", "unavailable"):
+            raise ValueError("squint_leg_calibration_status_invalid")
+        if record["status"] == "measured":
+            low, high = record.get("low"), record.get("high")
+            if (
+                not isinstance(low, (int, float))
+                or not isinstance(high, (int, float))
+                or not math.isfinite(low)
+                or not math.isfinite(high)
+                or low > high
+            ):
+                raise ValueError("squint_leg_calibration_edges_invalid")
+    eligible = (leg == LEG_INSIDE) | (leg == LEG_MIXED)
+    if codes is None:
+        codes = _codes_against(
+            series["metric_values"], series["metric_available"], records, eligible
+        )
+    if not isinstance(codes, dict):
+        raise TypeError("squint_leg_codes_invalid")
+    for metric in series["metric_values"]:
+        array = _array(codes.get(metric), leg.shape)
+        if array.dtype != np.int8 or not np.isin(array, (_UNREAD, -1, 0, 1)).all():
+            raise ValueError("squint_leg_codes_invalid")
+    window = tuple(territory["tile_window"])
+    z0, z1, r0, r1, c0, c1 = window
+    profile = _count_territory(
+        series,
+        window,
+        territory["roles"],
+        eligible[z0:z1, r0:r1, c0:c1],
+        records,
+        codes,
+        subject=subject,
+    )
+    profile["source"].update(
+        {
+            "territory": _territory_source(territory),
+            "leg_map": {
+                "rule": leg_map["rule"],
+                "provenance": leg_map["provenance"],
+                "codes_sha256": fingerprint,
+            },
+        }
+    )
+    return profile
+
+
+def refine_territory(series, territory, leg_map, *, subject, tile_mm=2.0) -> dict:
+    """Read a finer addressed territory against its coarse leg-only reference.
+
+    Any overlap with a measured native support makes a fine object-associated
+    tile; other queried leg tiles are context. Without native support, the
+    coarse object tiles supply the support. Partial occupancy is retained.
+    """
+    coarse, leg = _territory_inputs(series, territory, leg_map, subject)
+    calibration, _ = leg_calibration(series, leg_map)
+    window = tuple(territory["tile_window"])
+    z0, z1, tr0, tr1, tc0, tc1 = window
+    bounds = coarse.bounds_rc[tr0:tr1, tc0:tc1]
+    row0, row1 = int(bounds[..., 0].min()), int(bounds[..., 1].max())
+    col0, col1 = int(bounds[..., 2].min()), int(bounds[..., 3].max())
+    shape = (z1 - z0, row1 - row0, col1 - col0)
+    eligible = np.zeros(shape, dtype=np.bool_)
+    object_pixels = np.zeros(shape, dtype=np.bool_)
+    roles = territory["roles"]
+    for r, c in np.ndindex(bounds.shape[:2]):
+        r0, r1, c0, c1 = (int(x) for x in bounds[r, c])
+        for z in range(z1 - z0):
+            role = roles[z, r, c]
+            if role not in ROLE_NAMES or leg[z0 + z, tr0 + r, tc0 + c] not in (
+                LEG_INSIDE,
+                LEG_MIXED,
+            ):
+                continue
+            address = (z, slice(r0 - row0, r1 - row0), slice(c0 - col0, c1 - col0))
+            eligible[address] = True
+            object_pixels[address] = role == ROLE_OBJECT
+    support = territory.get("native_support")
+    if support is not None:
+        object_pixels[:] = False
+        mask = support["mask"]
+        sr, sc = support["offset_rc"]
+        if not mask.any():
+            raise ValueError("squint_native_support_empty")
+        depth, rows, cols = series["shape"]
+        if (
+            sr < 0
+            or sc < 0
+            or sr + mask.shape[1] > rows
+            or sc + mask.shape[2] > cols
+            or any(z < 0 or z >= depth for z in support["slices"])
+            or len(set(support["slices"])) != len(support["slices"])
+        ):
+            raise ValueError("squint_native_support_address_invalid")
+        ir0, ir1 = max(sr, row0), min(sr + mask.shape[1], row1)
+        ic0, ic1 = max(sc, col0), min(sc + mask.shape[2], col1)
+        if ir0 < ir1 and ic0 < ic1:
+            for index, z in enumerate(support["slices"]):
+                if z0 <= z < z1:
+                    object_pixels[
+                        z - z0, ir0 - row0 : ir1 - row0, ic0 - col0 : ic1 - col0
+                    ] = mask[index, ir0 - sr : ir1 - sr, ic0 - sc : ic1 - sc]
+        if not object_pixels.any():
+            raise ValueError("squint_native_support_outside_territory")
+        object_pixels &= eligible
+    # Share the exact native crop/geometry producer with v1; only the input
+    # domain and coding reference differ. Do not measure outside the queried leg.
+    fine_series, crop = _refined_series(
+        {**series, "calibration": calibration},
+        window,
+        tile_mm=tile_mm,
+        native_eligible=eligible,
+    )
+    fine = fine_series["stack"]
+    fine_roles = np.full(fine.median.shape, ROLE_UNQUERIED, dtype=np.int8)
+    object_share = np.full(fine.median.shape, np.nan, dtype=np.float64)
+    eligible_share = np.zeros(fine.median.shape, dtype=np.float64)
+    for r, c in np.ndindex(fine.bounds_rc.shape[:2]):
+        r0, r1, c0, c1 = (int(x) for x in fine.bounds_rc[r, c])
+        for z in range(z1 - z0):
+            address = (z, slice(r0, r1), slice(c0, c1))
+            region = eligible[address]
+            if not region.any():
+                continue
+            count = int(np.count_nonzero(object_pixels[address]))
+            fine_roles[z, r, c] = ROLE_OBJECT if count else ROLE_CONTEXT
+            object_share[z, r, c] = count / region.size
+            eligible_share[z, r, c] = np.count_nonzero(region) / region.size
+    fine_window = (
+        0,
+        fine.median.shape[0],
+        0,
+        fine.median.shape[1],
+        0,
+        fine.median.shape[2],
+    )
+    profile = _count_territory(
+        fine_series,
+        fine_window,
+        fine_roles,
+        eligible_share > 0,
+        calibration,
+        fine_series["metric_codes"],
+        subject=subject,
+    )
+    profile["source"].update(
+        {
+            "territory": _territory_source(territory),
+            "leg_map": {
+                "rule": leg_map["rule"],
+                "provenance": leg_map["provenance"],
+                "codes_sha256": _leg_fingerprint(leg_map),
+            },
+            "refinement": True,
+            "calibration_policy": "coarse_leg_inside_terciles_reused",
+            "coarse_window": list(window),
+            "fine_tile_mm": float(tile_mm),
+            "native_crop_rc": crop,
+            "native_bounds_rc": crop,
+            "native_slice_range": [z0, z1],
+            "fine_roles": fine_roles.tolist(),
+            "fine_object_share": np.where(
+                np.isfinite(object_share), object_share, None
+            ).tolist(),
+            "fine_eligible_share": eligible_share.tolist(),
+            "fine_support_policy": "native_support_overlap"
+            if support is not None
+            else "coarse_object_tile_overlap",
         }
     )
     return profile
@@ -645,7 +1118,7 @@ def _profile(profile: object) -> tuple[str, dict[str, list[int]], dict[str, Any]
             raise ValueError("squint_profile_bank_invalid")
         if any(not _plain_nonnegative_int(value) for value in counts):
             raise ValueError("squint_profile_count_invalid")
-    if source.get("procedure") != _PROCEDURE:
+    if source.get("procedure") not in (_PROCEDURE, TERRITORY_PROCEDURE):
         raise ValueError("squint_profile_procedure_mismatch")
     return subject, banks, source
 
@@ -661,6 +1134,9 @@ def merge_profiles(profiles, *, subject: str) -> dict[str, Any]:
     if not items:
         raise ValueError("squint_profiles_nonempty_required")
     parsed = [_profile(item) for item in items]
+    procedures = {source["procedure"] for _, _, source in parsed}
+    if len(procedures) != 1:
+        raise ValueError("squint_profile_procedure_mismatch")
     if any(profile_subject != subject for profile_subject, _, _ in parsed):
         raise ValueError("squint_profile_subject_mismatch")
     bank_names = sorted({name for _, banks, _ in parsed for name in banks})
@@ -685,7 +1161,7 @@ def merge_profiles(profiles, *, subject: str) -> dict[str, Any]:
         "banks": merged,
         "source": {
             "api": "knee.diagnosis.squint_profiles.merge_profiles/v1",
-            "procedure": _PROCEDURE,
+            "procedure": parsed[0][2]["procedure"],
             "lineage": lineage,
             "status": "measured" if merged else "silent",
         },
@@ -732,8 +1208,11 @@ def cosine_evidence(left: dict[str, Any], right: dict[str, Any]) -> dict[str, An
 
 __all__ = [
     "cosine_evidence",
+    "leg_calibration",
     "merge_profiles",
+    "profile_territory",
     "profile_window",
     "read_study_squints",
+    "refine_territory",
     "refine_window",
 ]

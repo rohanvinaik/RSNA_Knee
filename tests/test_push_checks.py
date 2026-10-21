@@ -354,3 +354,197 @@ def test_the_audit_refuses_no_push_and_the_secret_scan_does(
     assert push("no_known_flaws", []) == 0
     assert push("no_known_flaws", ["a possible secret in a pushed line"]) == 1
     assert "REFUSED: a possible secret in a pushed line" in capsys.readouterr().out
+
+
+def test_addition_records_preserve_source_addresses() -> None:
+    diff = (
+        "diff --git a/wrapper.py b/wrapper.py\n"
+        "--- a/wrapper.py\n"
+        "+++ b/wrapper.py\n"
+        "@@ -10,3 +10,4 @@ a function heading\n"
+        " context\n"
+        "-old\n"
+        "+new\n"
+        "+second\n"
+        " context\n"
+        "\\ No newline at end of file\n"
+        "@@ -30 +31 @@\n"
+        "-old\n"
+        "+last\n"
+    )
+    assert tool().addition_records(diff) == [(11, "new"), (12, "second"), (31, "last")]
+
+
+def test_addition_records_keep_merge_result_addresses() -> None:
+    diff = (
+        "diff --cc wrapper.py\n"
+        "@@@ -4,3 -5,3 +8,4 @@@ a function heading\n"
+        "- old from first\n"
+        " -old from second\n"
+        "+ from second parent\n"
+        " +from first parent\n"
+        "  context\n"
+        "++new to both\n"
+    )
+    assert tool().addition_records(diff) == [(11, "new to both")]
+
+
+@pytest.mark.parametrize(
+    "name", ["EXPECTED_RUNTIME_BUNDLE_ID", "EXPECTED_MEMORY_MANIFEST_SHA256"]
+)
+@pytest.mark.parametrize("uppercase", [False, True])
+def test_public_pin_recognition_reads_the_commit_binding_even_when_only_value_changes(
+    name: str, uppercase: bool, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    checks = tool()
+    value = hashlib.sha256(name.encode()).hexdigest()
+    if uppercase:
+        value = value.upper()
+    source = f'# public release\n{name}: str | None = (\n    "{value}"\n)\n'
+    diff = f'@@ -3 +3 @@\n-    "old"\n+    "{value}"\n'
+    calls = []
+
+    def mock_git(*arguments: str) -> str:
+        calls.append(arguments)
+        return (
+            source if arguments == ("show", f"revision:{checks.RELEASE_PINS}") else diff
+        )
+
+    monkeypatch.setattr(checks, "git", mock_git)
+    assert checks.release_pin_hashes("revision") == {1: frozenset({sha1(value)})}
+    assert calls == [
+        ("show", f"revision:{checks.RELEASE_PINS}"),
+        (
+            "show",
+            "--format=",
+            "--unified=0",
+            "--no-color",
+            "--no-ext-diff",
+            "--cc",
+            "revision",
+            "--",
+            checks.RELEASE_PINS,
+        ),
+    ]
+    assert (
+        checks.finding_verdict(
+            checks.RELEASE_PINS, checks.HEX, sha1(value), frozenset({sha1(value)})
+        )
+        == "public_digest_pin"
+    )
+
+
+@pytest.mark.parametrize(
+    "assignment",
+    [
+        'PAYLOAD = "{value}"',
+        'OTHER_SHA256 = "{value}"',
+        'EXPECTED_MEMORY_MANIFEST_SHA256 = "{value}0"',
+        'EXPECTED_MEMORY_MANIFEST_SHA256 = "{bad}"',
+        'EXPECTED_MEMORY_MANIFEST_SHA256 = "{short}"',
+        "EXPECTED_MEMORY_MANIFEST_SHA256 = None",
+        "EXPECTED_MEMORY_MANIFEST_SHA256 = 123",
+        'EXPECTED_MEMORY_MANIFEST_SHA256 = str("{value}")',
+        'EXPECTED_MEMORY_MANIFEST_SHA256 = TOKEN = "{value}"',
+        'def nested():\n    EXPECTED_MEMORY_MANIFEST_SHA256 = "{value}"',
+        'EXPECTED_MEMORY_MANIFEST_SHA256 = "{value}"; TOKEN = "{value}"',
+    ],
+)
+def test_public_pin_recognition_refuses_untyped_malformed_or_ambiguous_bindings(
+    assignment: str, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    checks = tool()
+    value = hashlib.sha256(b"not a public pin").hexdigest()
+    source = (
+        assignment.format(value=value, short=value[:-1], bad=value[:-1] + "g") + "\n"
+    )
+    diff = "@@ -0,0 +1,2 @@\n" + "".join(f"+{line}\n" for line in source.splitlines())
+    monkeypatch.setattr(checks, "git", lambda *args: source if len(args) == 2 else diff)
+    assert checks.release_pin_hashes("revision") == {}
+
+
+def test_public_pin_verdict_does_not_explain_tokens_passwords_or_other_paths() -> None:
+    checks = tool()
+    known = sha1(hashlib.sha256(b"public pin").hexdigest())
+    recognized = frozenset({known})
+    for kind in ("Secret Keyword", "GitHub Token", "Base64 High Entropy String"):
+        assert checks.finding_verdict(checks.RELEASE_PINS, kind, known, recognized) == (
+            "unexplained"
+        )
+    assert checks.finding_verdict("src/other.py", checks.HEX, known, recognized) == (
+        "unexplained"
+    )
+    assert checks.finding_verdict(
+        checks.RELEASE_PINS, checks.HEX, sha1("other"), recognized
+    ) == ("unexplained")
+
+
+def test_unreadable_public_pin_syntax_cannot_become_an_exemption(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    checks = tool()
+    monkeypatch.setattr(checks, "git", lambda *_: "not valid python !")
+    with pytest.raises(checks.Unchecked, match="release pin source cannot be parsed"):
+        checks.release_pin_hashes("revision")
+
+
+def test_scan_accepts_only_pin_occurrences_and_still_refuses_secrets_in_the_wrapper(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    checks = tool()
+    value = hashlib.sha256(b"public release pin").hexdigest()
+    memory = hashlib.sha256(b"public memory pin").hexdigest()
+    lines = [
+        "EXPECTED_RUNTIME_BUNDLE_ID: str | None = (",
+        f'    "{value}"',
+        ")",
+        f'EXPECTED_MEMORY_MANIFEST_SHA256 = "{memory}"',
+        f'PAYLOAD = "{value}"',
+        f'PASSWORD = "{memory}"',
+        'TOKEN = "synthetic token"',
+    ]
+    source = "\n".join(lines) + "\n"
+    # The added-line addresses differ from source addresses. The binding itself
+    # need not change for a literal pin update to be recognized.
+    added = [lines[i] for i in (1, 3, 4, 5, 6)]
+    diff = (
+        f'@@ -2 +2 @@\n-    "old"\n+{lines[1]}\n'
+        + "@@ -4,4 +4,4 @@\n"
+        + "".join(f"+{line}\n" for line in lines[3:])
+    )
+    monkeypatch.setattr(checks, "git", lambda *args: source if len(args) == 2 else diff)
+    monkeypatch.setattr(
+        checks, "commit_additions", lambda _: {checks.RELEASE_PINS: added}
+    )
+    findings = [
+        {"type": kind, "hashed_secret": sha1(text), "line_number": number}
+        for number, kind, text in (
+            (1, checks.HEX, value),
+            (2, checks.HEX, memory),
+            (3, checks.HEX, value),
+            (4, "Secret Keyword", memory),
+            (5, "GitHub Token", "synthetic token"),
+        )
+    ]
+
+    def mock_run(command, cwd=None):
+        assert command == ["uvx", checks.DETECT_SECRETS, "scan", "--all-files", "."]
+        assert (Path(cwd) / "revision" / checks.RELEASE_PINS).read_text() == (
+            "\n".join(added) + "\n"
+        )
+        return subprocess.CompletedProcess(
+            command,
+            0,
+            json.dumps({"results": {f"revision/{checks.RELEASE_PINS}": findings}}),
+            "",
+        )
+
+    monkeypatch.setattr(checks, "run", mock_run)
+    assert checks.scan(["revision"]) == [
+        f"a possible secret in revisio {checks.RELEASE_PINS}, added line {number}: {kind}"
+        for number, kind in (
+            (3, checks.HEX),
+            (4, "Secret Keyword"),
+            (5, "GitHub Token"),
+        )
+    ]

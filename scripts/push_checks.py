@@ -14,7 +14,9 @@ files on disk). Git hands the hook each ref being pushed, with its local and rem
   (detect-secrets); a merge adds the lines it writes itself, in none of its parents (`commit_additions`).
   It recognizes the kernel-benchmark recording's own digests/commit and Detective's typed
   16-hex function digests, only at their respective manifest paths and matched exactly against that
-  commit's fields. This recognizes digest data, never a certificate's completeness. Other findings
+  commit's fields. The Kaggle wrapper's two public SHA-256 release pins are recognized only at their
+  own assignments in that commit, matched to the finding's added line. This recognizes digest data,
+  never a certificate's completeness. Other findings
   remain unexplained. A line carrying `# pragma: allowlist secret`, detect-secrets' own mark for a
   finding reviewed as no secret, is not a finding: that is how a false finding is answered, never
   `--no-verify`;
@@ -39,6 +41,7 @@ audit again on every push, but not the secret scan, which matters before the com
 
 from __future__ import annotations
 
+import ast
 import hashlib
 import json
 import os
@@ -52,6 +55,12 @@ ROOT = Path(__file__).resolve().parents[1]
 ZERO = "0" * 40
 RECORDING = "benchmarks/recorded/manifest.json"
 CERTIFICATES = "tests/detective/certificates.json"
+RELEASE_PINS = "kaggle/squint-production/run_squint.py"
+# Both are public SHA-256 identities: tree_id hashes the bundle's file records;
+# memory_manifest_sha256 reads the memory manifest's recorded file digest.
+RELEASE_PIN_NAMES = frozenset(
+    {"EXPECTED_RUNTIME_BUNDLE_ID", "EXPECTED_MEMORY_MANIFEST_SHA256"}
+)
 HEX = "Hex High Entropy String"
 # Pinned, as the gate pins zizmor, so every push is checked with the same versions. detect-secrets reads the
 # next line's name as a secret keyword; the pragma on it is detect-secrets' own mark for a finding reviewed as
@@ -111,33 +120,107 @@ def ref_check(
 def finding_verdict(
     path: str, kind: str, hashed: str, recording: frozenset[str]
 ) -> str:
-    """Recognize only exact typed digest fields at their own manifest path.
+    """Recognize only exact typed digest fields at their own path.
 
-    The recognized set is derived from the same commit and file. All other
-    findings remain unexplained; a function digest does not certify its standing.
+    The recognized set is derived from the same commit and file, and for release
+    pins from the finding's exact added line. All other findings remain
+    unexplained; a function digest does not certify its standing.
     """
     if kind == HEX and hashed in recording:
         if path == RECORDING:
             return "recording_digest"
         if path == CERTIFICATES:
             return "function_digest"
+        if path == RELEASE_PINS:
+            return "public_digest_pin"
     return "unexplained"
 
 
-def added_lines(diff: str) -> list[str]:
-    """The lines a diff of one file adds, its headers left out. A hunk header's run of '@' gives the number
-    of parents, one prefix column each (two or more in a merge's combined diff); a line is added only when
-    every column is a '+', and the columns are left out."""
-    lines: list[str] = []
+def addition_records(diff: str) -> list[tuple[int, str]]:
+    """Added lines with their resulting source line numbers, including combined diffs.
+
+    A hunk header's run of '@' gives the number of parents, one prefix column
+    each. Only an all-'+' prefix is new to every parent. Context and partial
+    additions advance the resulting line number; deletions do not.
+    """
+    lines: list[tuple[int, str]] = []
     columns = 0
+    number = 0
     for line in diff.splitlines():
         if line.startswith("diff "):
             columns = 0
         elif line.startswith("@@"):
             columns = len(line) - len(line.lstrip("@")) - 1
-        elif columns and line[:columns] == "+" * columns:
-            lines.append(line[columns:])
+            result_range = line.split()[columns + 1]
+            number = int(result_range[1:].split(",")[0])
+        elif columns:
+            prefix = line[:columns]
+            if prefix == "+" * columns:
+                lines.append((number, line[columns:]))
+            if len(prefix) == columns and set(prefix) <= {" ", "+"}:
+                number += 1
     return lines
+
+
+def added_lines(diff: str) -> list[str]:
+    """The lines a diff of one file adds, its headers and prefix columns left out."""
+    return [text for _, text in addition_records(diff)]
+
+
+def release_pin_hashes(sha: str) -> dict[int, frozenset[str]]:
+    """The wrapper's public pin hashes keyed by added-line number in this commit.
+
+    Read syntax, never execute the wrapper. Only a single-name, module-level
+    assignment to one of the two documented pins can explain a 64-hex literal.
+    Map its source line through the commit's diff so an identical string in an
+    untyped assignment (or another commit) is not excused by the pin.
+    """
+    try:
+        source = ast.parse(git("show", f"{sha}:{RELEASE_PINS}"))
+    except SyntaxError as error:
+        raise Unchecked(f"release pin source cannot be parsed: {error}") from error
+    pins: dict[int, set[str]] = {}
+    for node in source.body:
+        if isinstance(node, ast.AnnAssign):
+            target, value = node.target, node.value
+        elif isinstance(node, ast.Assign) and len(node.targets) == 1:
+            target, value = node.targets[0], node.value
+        else:
+            continue
+        if (
+            isinstance(target, ast.Name)
+            and target.id in RELEASE_PIN_NAMES
+            and isinstance(value, ast.Constant)
+            and isinstance(value.value, str)
+            and value.lineno == value.end_lineno
+            and len(value.value) == 64
+            and all(character in "0123456789abcdefABCDEF" for character in value.value)
+            and not any(
+                other is not node
+                and other.end_lineno is not None
+                and other.lineno <= value.lineno <= other.end_lineno
+                for other in source.body
+            )
+        ):
+            pins.setdefault(value.lineno, set()).add(
+                hashlib.sha1(value.value.encode(), usedforsecurity=False).hexdigest()
+            )
+    diff = git(
+        "show",
+        "--format=",
+        "--unified=0",
+        "--no-color",
+        "--no-ext-diff",
+        "--cc",
+        sha,
+        "--",
+        RELEASE_PINS,
+    )
+    return {
+        added: frozenset(pins[number])
+        for added, (number, _) in enumerate(addition_records(diff), start=1)
+        if number in pins
+    }
 
 
 def recording_hashes(sha: str) -> frozenset[str]:
@@ -208,7 +291,7 @@ def commit_additions(sha: str) -> dict[str, list[str]]:
 
 
 def scan(commits: list[str]) -> list[str]:
-    """Scan added lines, recognizing exact recorded digest fields per file."""
+    """Scan added lines, recognizing exact digest fields at their declared locations."""
     if not commits:
         return []
     with tempfile.TemporaryDirectory() as folder:
@@ -231,6 +314,7 @@ def scan(commits: list[str]) -> list[str]:
     refusals: list[str] = []
     accepted = 0
     hashes: dict[tuple[str, str], frozenset[str]] = {}
+    pins: dict[str, dict[int, frozenset[str]]] = {}
     for name, findings in sorted(results.items()):
         sha, _, path = name.removeprefix("./").partition("/")
         key = (sha, path)
@@ -239,20 +323,27 @@ def scan(commits: list[str]) -> list[str]:
                 hashes[key] = recording_hashes(sha)
             elif path == CERTIFICATES:
                 hashes[key] = certificate_hashes(sha)
+        if path == RELEASE_PINS and sha not in pins:
+            pins[sha] = release_pin_hashes(sha)
         for finding in findings:
+            recognized = (
+                pins[sha].get(finding["line_number"], frozenset())
+                if path == RELEASE_PINS
+                else hashes.get(key, frozenset())
+            )
             verdict = finding_verdict(
                 path,
                 finding["type"],
                 finding["hashed_secret"],
-                hashes.get(key, frozenset()),
+                recognized,
             )
             where = f"{sha[:7]} {path}, added line {finding['line_number']}: {finding['type']}"
-            if verdict in ("recording_digest", "function_digest"):
+            if verdict in ("recording_digest", "function_digest", "public_digest_pin"):
                 accepted += 1
             else:
                 refusals.append(f"a possible secret in {where}")
     print(
-        f"secret scan: {accepted} findings are exact recorded kernel or function digests;"
+        f"secret scan: {accepted} findings are exact recorded kernel/function digests or public release pins;"
         f" {len(refusals)} are not"
     )
     return refusals

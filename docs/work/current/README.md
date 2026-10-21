@@ -48,9 +48,26 @@ No production output changed yet.
 
 ## WORKERS
 
-| Job | Route | Worktree / record | Handle | State |
+Worktrees under `/private/tmp/rsna-upgrade-20261021/<job>` (branch `upgrade/<job>`, base `e7fe990`); records, packets and launchers under `data/readings/squint-upgrade-20261021/workers/`. Launched 2026-10-21 about 06:30 UTC.
+
+| Job | Route | Worktree | Handle | State |
 |---|---|---|---|---|
-| (filled at launch) | | | | |
+| C1 true-location control | Codex CLI | c1 | background task b8rp85f3o | RUNNING |
+| P1 push-check false positive | Codex CLI | p1 | background task bz9xdqmzx | VERIFIED by lead (48 focused tests); applied to `squint-upgrade`, not yet committed |
+| W1 leg map | Codex CLI | w1 | background task bofjc34sb | RUNNING |
+| W2 territory writer | Codex CLI | w2 | background task bg3vmootl | RUNNING |
+| W4 teacher support to territory | Codex CLI | w4 | background task bfv17yqgc | RUNNING |
+| W8 memory view | Codex CLI | w8 | background task bxk8eq2m3 | RUNNING |
+| R1a report reader (58 labelled) | Codex CLI | none | background task b0gpgap48 | RETURNED: 510 calls, 0 rejected; compared with labels in `workers/r1-batch/README.md` |
+| K1 private Kaggle timing of r6 | Claude sub-agent | none | session sub-agent | RUNNING |
+| K2 Kaggle observation notebook | Claude sub-agent | k2 | session sub-agent | RUNNING |
+| R1b report reader (58 labelled) | Claude sub-agent | none | session sub-agent | RUNNING |
+| W5 memory rebuild | Claude sub-agent | w5 | session sub-agent | RUNNING |
+| W6 question selection | Claude sub-agent | w6 | session sub-agent | RUNNING |
+| W9 bones by structure | Claude sub-agent | w9 | session sub-agent | RUNNING |
+| W10 dependents from anchors | Codex CLI | w10 | background task bc9e3zmt4 | RUNNING |
+| W11 location check | Claude sub-agent | w11 | session sub-agent | RUNNING |
+| W7, W12, W13, W14 | per §9 | created | | READY, launch as slots free |
 
 ## UNREVIEWED / WITHDRAWN / STALE RESULTS
 

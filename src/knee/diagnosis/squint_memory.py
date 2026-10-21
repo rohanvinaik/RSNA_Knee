@@ -11,9 +11,7 @@ from __future__ import annotations
 
 import csv
 import hashlib
-import io
 import json
-import lzma
 import math
 import os
 import tempfile
@@ -401,164 +399,18 @@ def _support_bbox(
     verified_arrays: Mapping[str, np.ndarray] | None = None,
 ) -> tuple[int, int, int, int] | None:
     """Return native bounds for support at this target series and observation slice."""
-    owner = (
-        support_ownership.get(subject) if isinstance(support_ownership, dict) else None
+    from knee.diagnosis.squint_support import support_mask
+
+    resolved = support_mask(
+        subject,
+        series_uid,
+        slice_index,
+        support_ownership,
+        source_roots,
+        artifact_arrays,
+        verified_arrays,
     )
-    entries = owner.get("addressed_supports", []) if isinstance(owner, dict) else []
-    candidates: list[tuple[dict[str, Any], dict[str, Any]]] = []
-    for entry in entries:
-        if not isinstance(entry, dict):
-            continue
-        address = entry.get("source_address")
-        if not isinstance(address, dict):
-            continue
-        if address.get("target_series_uid") != series_uid:
-            continue
-        observation_slices = address.get("observation_slices")
-        if (
-            not isinstance(observation_slices, list)
-            or slice_index not in observation_slices
-        ):
-            continue
-        if address.get("address_kind") != "native_rc":
-            continue
-        if address.get("geometry_status") != "available":
-            continue
-        candidates.append((entry, address))
-    for entry, address in candidates:
-        coordinate_bbox = _coordinate_bbox(
-            subject, series_uid, slice_index, entry, address, verified_arrays
-        )
-        if coordinate_bbox is not None:
-            return coordinate_bbox
-        public_member_available = verified_arrays is not None and any(
-            isinstance(link, dict)
-            and link.get("coordinate_field") == "points_rc"
-            and isinstance(link.get("coordinate_member"), str)
-            and link.get("coordinate_member") in verified_arrays
-            for link in entry.get("links", [])
-        )
-        if public_member_available:
-            continue
-        root_name = address.get("source_root")
-        artifact = address.get("observation_artifact")
-        if not isinstance(root_name, str) or not isinstance(artifact, str):
-            continue
-        source_root = source_roots.get(root_name)
-        if not isinstance(source_root, str) or not source_root:
-            continue
-        root_path = Path(source_root).resolve()
-        artifact_path = (root_path / artifact).resolve()
-        try:
-            artifact_path.relative_to(root_path)
-        except ValueError:
-            continue
-        if not artifact_path.is_file():
-            continue
-        arrays = artifact_arrays.get(artifact_path)
-        if arrays is None:
-            try:
-                raw = (
-                    lzma.decompress(artifact_path.read_bytes())
-                    if artifact_path.suffix == ".xz"
-                    else artifact_path.read_bytes()
-                )
-                with np.load(io.BytesIO(raw), allow_pickle=False) as archive:
-                    lineage = address.get("lineage")
-                    support_array = (
-                        lineage.get("support_array")
-                        if isinstance(lineage, dict)
-                        else None
-                    )
-                    support_name = address.get("observation_support")
-                    desired = [
-                        name
-                        for name in (support_array, support_name, "a1_objects")
-                        if isinstance(name, str) and name
-                    ]
-                    names = set(desired)
-                    for name in desired:
-                        names.add(f"{name}_slices")
-                    names.update(
-                        (
-                            "a3_bone_plane_labels",
-                            "a3_bone_plane_slices",
-                            "a3_femur_plane_region",
-                            "a3_femur_plane_slices",
-                            "a3_tibia_plane_region",
-                            "a3_tibia_plane_slices",
-                        )
-                    )
-                    arrays = {
-                        name: archive[name] for name in archive.files if name in names
-                    }
-            except (OSError, EOFError, lzma.LZMAError, ValueError):
-                continue
-            artifact_arrays[artifact_path] = arrays
-        support_name = address.get("observation_support")
-        lineage = address.get("lineage")
-        support_array = (
-            lineage.get("support_array") if isinstance(lineage, dict) else None
-        )
-        candidates_names: list[str] = []
-        for name in (support_array, support_name, "a1_objects"):
-            if (
-                isinstance(name, str)
-                and name in arrays
-                and name not in candidates_names
-            ):
-                candidates_names.append(name)
-        label = address.get("observation_label")
-        for array_name in candidates_names:
-            array = np.asarray(arrays[array_name])
-            native_shape = address.get("native_shape_rc")
-            if (
-                not isinstance(native_shape, list)
-                or len(native_shape) != 2
-                or any(type(value) is not int or value <= 0 for value in native_shape)
-            ):
-                continue
-            if array.ndim == 3:
-                slice_key = {
-                    "a3_bone_plane_labels": "a3_bone_plane_slices",
-                    "a3_femur_plane_region": "a3_femur_plane_slices",
-                    "a3_tibia_plane_region": "a3_tibia_plane_slices",
-                }.get(array_name, f"{array_name.removesuffix('_labels')}_slices")
-                if (
-                    slice_key not in arrays
-                    and "a3_bone_plane_slices" in arrays
-                    and array_name == "a3_bone_plane_labels"
-                ):
-                    slice_key = "a3_bone_plane_slices"
-                if slice_key in arrays:
-                    source_slices = np.asarray(arrays[slice_key]).reshape(-1)
-                    choices = np.flatnonzero(source_slices == slice_index)
-                    row = address.get("observation_row")
-                    if (
-                        choices.size != 1
-                        or type(row) is not int
-                        or row != int(choices[0])
-                        or not 0 <= row < array.shape[0]
-                    ):
-                        continue
-                    array = array[row]
-                else:
-                    row = address.get("observation_row")
-                    if type(row) is not int or not 0 <= row < array.shape[0]:
-                        continue
-                    array = array[row]
-            if array.ndim != 2 or array.shape != tuple(native_shape):
-                continue
-            mask = array == label if type(label) is int else array != 0
-            rows, cols = np.nonzero(mask)
-            if rows.size:
-                return (
-                    int(rows.min()),
-                    int(rows.max()) + 1,
-                    int(cols.min()),
-                    int(cols.max()) + 1,
-                )
-    return None
+    return resolved["bbox"] if resolved["code"] == "resolved" else None
 
 
 def _geometry_window(
