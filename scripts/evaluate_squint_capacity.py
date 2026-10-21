@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Report held-out capacity results from a completed squint production run."""
+"""Report held-out capacity, optionally running the teacher-location control."""
 
 from __future__ import annotations
 
@@ -280,6 +280,58 @@ def _auc_summary(positive: list[Fraction], negative: list[Fraction]) -> dict[str
     }
 
 
+def _object_abstentions(records: dict[str, dict]) -> dict[str, Any]:
+    """Count named location and per-question recall causes, without new verdicts."""
+    summaries = {}
+    for record in records.values():
+        for subject, located in record.get("objects", {}).items():
+            summary = summaries.setdefault(
+                subject,
+                {
+                    "location_status": Counter(),
+                    "location_reasons": Counter(),
+                    "questions": {},
+                },
+            )
+            summary["location_status"][located.get("status", "unavailable")] += 1
+            reasons = located.get("evidence", {}).get("unavailable_reasons", [])
+            if located.get("status") != "located" and not reasons:
+                reasons = [located.get("reason", "location_reason_unavailable")]
+            summary["location_reasons"].update(reasons)
+        for question, result in record["questions"].items():
+            for subject, evidence in result.get("objects", {}).items():
+                if subject.startswith("diagnosis/"):
+                    continue
+                summary = summaries.setdefault(
+                    subject,
+                    {
+                        "location_status": Counter(),
+                        "location_reasons": Counter(),
+                        "questions": {},
+                    },
+                )
+                detail = summary["questions"].setdefault(
+                    question, {"outcomes": Counter(), "abstention_reasons": Counter()}
+                )
+                outcome = evidence.get("outcome", "recall_outcome_unavailable")
+                detail["outcomes"][outcome] += 1
+                if outcome in ("present", "absent"):
+                    continue
+                reason = evidence.get("reason")
+                if not reason:
+                    if outcome == "proposal":
+                        reason = (
+                            "empirical_envelope_unavailable"
+                            if evidence.get("envelope_status")
+                            == "unavailable_proposal_only"
+                            else "no_case_reaches_empirical_envelope"
+                        )
+                    else:
+                        reason = outcome
+                detail["abstention_reasons"][reason] += 1
+    return summaries
+
+
 def evaluate_capacity(run_dir: Path, labels_path: Path) -> dict[str, Any]:
     """Read and reconcile a complete capacity run against independent official labels."""
     run = run_dir.resolve()
@@ -489,6 +541,8 @@ def evaluate_capacity(run_dir: Path, labels_path: Path) -> dict[str, Any]:
             "study_count": len(labels),
         },
         "capacity_exclusions": {uid: exclusions[uid] for uid in receipt_uids},
+        "capacity_control": receipt.get("capacity_control"),
+        "per_object": _object_abstentions(records),
         "per_condition": by_condition,
     }
 
@@ -503,6 +557,7 @@ def _markdown(report: dict[str, Any]) -> str:
         f"Memory manifest SHA-256: `{report['run']['memory_manifest_sha256']}`  ",
         f"Label source SHA-256: `{report['labels']['sha256']}`  ",
         f"Studies: {report['run']['study_count']}",
+        f"Query location: `{(report.get('capacity_control') or {}).get('location_mode', 'production_locator')}`",
         "",
         "Counts below use only literal official labels `1` and `0`; blank or unrecognized labels are unavailable, not negative.",
         "Identified means decisive and correct; wrong means decisive and incorrect; abstained means open.",
@@ -525,6 +580,26 @@ def _markdown(report: dict[str, Any]) -> str:
             f"{neg['identified']} / {neg['abstained']} / {neg['wrong']} | {unavailable} | {auc} |"
         )
     lines.extend(("", "No combined or macro score is reported.", ""))
+    if report.get("per_object"):
+        lines.extend(
+            (
+                "## Per-object abstention causes",
+                "",
+                "| Object | Location status | Location refusals / partial readings | Question recall abstentions |",
+                "|---|---|---|---|",
+            )
+        )
+        for subject, summary in sorted(report["per_object"].items()):
+            recall = {
+                question: dict(detail["abstention_reasons"])
+                for question, detail in summary["questions"].items()
+                if detail["abstention_reasons"]
+            }
+            lines.append(
+                f"| {subject} | {dict(summary['location_status'])} | "
+                f"{dict(summary['location_reasons'])} | {recall} |"
+            )
+        lines.append("")
     return "\n".join(lines)
 
 
@@ -545,9 +620,36 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument(
         "--markdown", type=Path, help="optional new Markdown report path"
     )
+    parser.add_argument(
+        "--teacher-location",
+        action="store_true",
+        help="first run a new capacity experiment at this study's bootstrap addresses",
+    )
+    parser.add_argument(
+        "--root", type=Path, help="raw competition root for teacher control"
+    )
+    parser.add_argument(
+        "--memory", type=Path, help="bootstrap memory for teacher control"
+    )
+    parser.add_argument(
+        "--template", type=Path, help="submission template for teacher control"
+    )
+    parser.add_argument(
+        "--study-uid",
+        action="append",
+        help="optional control subset; defaults to all memory studies",
+    )
+    parser.add_argument(
+        "--workers", type=int, default=2, help="control study workers (1-3, default 2)"
+    )
+    parser.add_argument(
+        "--time-limit",
+        type=float,
+        default=1800.0,
+        help="control operation budget in seconds",
+    )
     args = parser.parse_args(argv)
     try:
-        report = evaluate_capacity(args.run, args.labels)
         if (
             args.markdown is not None
             and args.markdown.resolve() == args.output.resolve()
@@ -556,6 +658,38 @@ def main(argv: list[str] | None = None) -> int:
         for output in (args.output, args.markdown):
             if output is not None and output.exists():
                 raise CapacityReportError("output_already_exists:" + str(output))
+        if args.teacher_location:
+            from knee.diagnosis.squint_capacity_control import (
+                run_teacher_capacity,
+            )
+            from knee.diagnosis.squint_memory import load_memory_snapshot
+
+            if any(value is None for value in (args.root, args.memory, args.template)):
+                raise CapacityReportError("teacher_root_memory_template_required")
+            if not 1 <= args.workers <= 3:
+                raise CapacityReportError("teacher_workers_must_be_1_to_3")
+            # Select from independent memory identities, not diagnosis labels.
+            # The coordinator receives no evaluation-label path.
+            snapshot = load_memory_snapshot(args.memory)
+            if snapshot.memory is None:
+                raise CapacityReportError("teacher_memory_snapshot_invalid")
+            uids = args.study_uid or sorted(
+                {c["study_uid"] for c in snapshot.memory["cases"]}
+            )
+            run_teacher_capacity(
+                argparse.Namespace(
+                    diagnostic_mode="capacity",
+                    diagnostic_memory=args.memory,
+                    diagnostic_output=args.run,
+                    diagnostic_submission_template=args.template,
+                    root=args.root,
+                    study_uid=uids,
+                    workers=args.workers,
+                    squint_time_limit=args.time_limit,
+                ),
+                prepared_memory_snapshot=snapshot,
+            )
+        report = evaluate_capacity(args.run, args.labels)
         args.output.parent.mkdir(parents=True, exist_ok=True)
         with args.output.open("x", encoding="utf-8") as stream:
             stream.write(json.dumps(report, sort_keys=True, indent=2) + "\n")
@@ -563,7 +697,7 @@ def main(argv: list[str] | None = None) -> int:
             args.markdown.parent.mkdir(parents=True, exist_ok=True)
             with args.markdown.open("x", encoding="utf-8") as stream:
                 stream.write(_markdown(report))
-    except (CapacityReportError, OSError) as error:
+    except (ValueError, OSError) as error:
         print(str(error), file=sys.stderr)
         return 2
     print(f"wrote {args.output}")
