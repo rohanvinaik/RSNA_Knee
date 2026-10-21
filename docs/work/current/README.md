@@ -4,7 +4,7 @@ Sole populated current-state record; [FULL_BUILD_PLAN §13](../../FULL_BUILD_PLA
 
 ## TASK ID / PACKET REVISION / STATE
 
-`SQUINT-TRAINING-UPGRADE-20261021` / `108` / building: P1, W2, W4, W8 integrated on `squint-upgrade` (0f1c03a, 0da9a8a); others running.
+`SQUINT-TRAINING-UPGRADE-20261021` / `108` / building: P1, W2, W4, W8 integrated on `squint-upgrade` (be221ff, 11da75d); others running.
 
 ## CURRENT REQUEST / AUTHORITATIVE EXCHANGES / ACTUAL AUTHORS
 
@@ -55,9 +55,9 @@ Worktrees under `/private/tmp/rsna-upgrade-20261021/<job>` (branch `upgrade/<job
 | C1 true-location control | Codex CLI | c1 | background task b8rp85f3o | RUNNING |
 | P1 push-check false positive | Codex CLI | p1 | background task bz9xdqmzx | VERIFIED by lead (48 focused tests); applied to `squint-upgrade`, not yet committed |
 | W1 leg map | Codex CLI | w1 | bofjc34sb, then revision w1-r2 bim2wmct2 | Returned; lead's picture review found the tile-maximum rule (the lead's) keeps noisy air; revision 2 (tile median) RUNNING |
-| W2 territory writer | Codex CLI | w2 | bg3vmootl | INTEGRATED 0f1c03a (38 focused tests) |
-| W4 teacher support to territory | Codex CLI | w4 | bfv17yqgc | INTEGRATED 0f1c03a (763 regions unchanged; 568 supports resolved) |
-| W8 memory view | Codex CLI | w8 | bxk8eq2m3 | INTEGRATED 0da9a8a (160 focused tests) |
+| W2 territory writer | Codex CLI | w2 | bg3vmootl | INTEGRATED be221ff (38 focused tests) |
+| W4 teacher support to territory | Codex CLI | w4 | bfv17yqgc | INTEGRATED be221ff (763 regions unchanged; 568 supports resolved) |
+| W8 memory view | Codex CLI | w8 | bxk8eq2m3 | INTEGRATED 11da75d (160 focused tests) |
 | R1a report reader (58 labelled) | Codex CLI | none | background task b0gpgap48 | RETURNED: 510 calls, 0 rejected; compared with labels in `workers/r1-batch/README.md` |
 | K1 private Kaggle timing of r6 | Claude sub-agent | none | session sub-agent | RUNNING |
 | K2 Kaggle observation notebook | Claude sub-agent | k2 | session sub-agent | RUNNING |

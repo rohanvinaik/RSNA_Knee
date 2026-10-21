@@ -188,3 +188,12 @@ Rohan: «How can this be built massively parallel with codex over the CLI and yo
 | W13 picture sheets | sub-agent | new script, tests | after the slice's shapes | working slice |
 | W14 teaching round | Codex | new `scripts/squint_training_round.py`, tests | now | working slice |
 | K2 Kaggle observation of the 4,349 training studies | sub-agent | Kaggle notebook and its script | now; cost measured on 20 studies with current code | working slice passing its location check |
+
+## 10. Lead decisions during the build, 2026-10-21
+
+Each is the lead's, from the named source; none was chosen by how well it separates labelled cases.
+
+- **Which questions read an object's surroundings.** Only the MCL question reads its own ligament's context tiles, from the domain document's description of the normal MCL: "a uniformly low-signal line, with no surrounding oedema or internal signal" (OBJECTS_AND_CONDITIONS §4, Ligaments, source [C]). Every other question reads its declared objects over their own places only; supporting objects remain its context. Context banks never count as reading a condition's defining tissue in the configuration coverage check. Selection version `declared-object-places-v2`.
+- **Leg map, dark-tile test.** The lead's first rule (tile maximum at or below the series' background split) kept noisy air in the leg: one bright noise pixel lifts a tile's maximum, so the T1 maps excluded almost no air, and carrying them to fat-suppressed series undid those series' correct exclusion (W1's proof-study sheet, axial FS). Revised: a tile is dark background when its median is at or below the split. The carry from non-fat-suppressed to fat-suppressed series stays, since it correctly keeps suppressed subcutaneous fat in the leg.
+- **Correction of a reported measurement.** The lead first reported a stored meniscus case's box as about 2.5% meniscus (97% other tissue) from W4's figures, which were measured over the box plus a ring. Measured over the box each case was read from, it is 9-13% (87-91% other tissue); cartilage, joint fluid and synovium are 1-2% (`data/readings/squint-upgrade-20261021/box-share-recheck/`).
+- **Codex capacity.** Two Codex runs stopped on "model at capacity" before writing (W10, W14); both moved to Claude sub-agents. Codex runs at most two at a time for the rest of this build.
