@@ -65,6 +65,22 @@ condition questions with a named reason. Conflict, no precedent or unknown leave
 placement standing, flagged. A withheld object reaches the condition contracts as unmeasured, never as
 normal.
 
+## INTEGRATION ACCEPTANCE CHECKS (from a relayed review, agent text, adopted)
+
+1. Cross-view teaching: a diagnosed state follows the same object into every view where its identity
+   holds, with one shared study/object lineage; those presentations enrich recognition and never count as
+   independent confirmations.
+2. Configuration rebuild: built from confirmed object facets only, keeping each clinical call's actual
+   scope (unlocalized bone positives stay unlocalized) and recording missing constituents; unread tissue is
+   never treated as observed.
+3. Actual consumers: identity changes both condition evidence and the bounded observation requests; the
+   stored-case view restriction reaches prepared comparisons, envelopes and the preparation fingerprint, so
+   a stale preparation is never reused.
+4. Growth demonstration: genuinely new admissions (named apart from existing teachers), a published child
+   keeping all signed evidence, and a next round that actually reads that child; the first round inspected.
+   The local demonstration comes before any substantial download; then one small batch exercises the whole
+   pull, recognition, inspection and publication cycle, resumable and within bounded storage.
+
 ## NEXT ACTIONS, IN ORDER
 
 1. Full gate on the final tree; commit by concern with explicit paths; push; read the hook and GitHub.
