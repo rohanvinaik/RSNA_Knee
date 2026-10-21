@@ -1,5 +1,33 @@
 # How RSNA_Knee is built: every correction, and what would have prevented it
 
+## Ternary encoding, the buckets as the reference, production by squint — 2026-10-21
+
+Rohan: «Balanced ternary. It's not "not dark". We ALREADY encode it as "bright". Inherent polarity
+and orthogonality, purely from the data encoding.» · «Trust me, build it like it works, you'll see it
+in action» · «The high-resolution analyses is how we get the bootstrap part of this to resolve the key
+slice cheaply in each of the three views, then be able to pull out refined objects that are correct
+enough. Then, in production, we NEVER have to run it ever again at that resolution.» Complete message:
+`docs/conversations/2026-10-21-ternary-buckets-and-squint-orchestration.md`.
+
+What the agent had done: read the B1 low-signal encoding as binary ("dark / not dark") and, from one
+bank of one seed pair, called the contusion reading degenerate; proposed as "the fix" a statistical
+middle read from a hand-curated normal set; treated whether the object vectors carry the diagnostic
+distinctions as an open question; and organised the competition run around the high-resolution
+pipeline with the AI on top.
+
+What prevents it:
+- The encoding is balanced ternary with inherent polarity: dark, bright, and an orthogonal third that
+  says the measure is not significant there. Read an object across all its lenses and views; one bank
+  of one view is not the object.
+- The reference is the buckets: normal and diagnosed cases kept as precedents, read by recall and by
+  the exact decode of a difference. No statistical middle from a curated set replaces the lenses'
+  encoding.
+- Correctly built object vectors carry the diagnostic distinctions. Build it like it works.
+- Classical AI is orchestration (Winston's map colouring). The high-resolution pipeline is bootstrap
+  tooling: key slices, refined objects, the buckets. Production squints, recalls and decides, and
+  zooms to higher fidelity only where a question cannot otherwise be settled (thesis §§1.3, 2.5,
+  12.3–12.4, 13.6).
+
 ## Scoped identification is not a mask-completeness target — 2026-10-19
 
 Rohan: «Withdrawing the rule? Is the rule invalid, or just scoped to only a marker lixel?»
