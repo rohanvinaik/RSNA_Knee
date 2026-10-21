@@ -6,6 +6,43 @@ The high-resolution anatomical pipeline supplies bootstrap examples. **Productio
 
 Read [Rohan's latest production explanation](docs/conversations/2026-10-21-ternary-buckets-and-squint-orchestration.md), [the original conversation](docs/conversations/2026-10-13-the-thesis.md), and [the theory](docs/THEORY_OF_THE_CASE.md). [FULL_BUILD_PLAN §0](docs/FULL_BUILD_PLAN.md#0-grounding-every-session-start-and-every-compaction) gives the grounding sequence; §13 points to the sole current task packet. The approved production design and interfaces are [AI_DIAGNOSTIC_DESIGN.md](docs/AI_DIAGNOSTIC_DESIGN.md) and [SQUINT_PRODUCTION_CONTRACT.md](docs/SQUINT_PRODUCTION_CONTRACT.md).
 
+The [full classical-AI design](docs/CLASSICAL_AI_BUILD_DESIGN.md) connects bootstrap recognition,
+corpus/training-data construction, agency learning and runtime memory. K-lines serve both initial
+recognition and the continuing recall of interpretations/procedures. Confirmed negative examples
+are active teaching information; unresolved calls remain silent. Populating the corpus enables the
+classical learning process and does not exhaust it. Implementation status remains in the current packet.
+
+## How the complete operation fits together
+
+1. **Bootstrap tools supply candidates.** The existing high-resolution results retain object supports,
+   full HDC descriptions and raw source addresses. Automatic object names remain proposals until called.
+2. **Visual calls establish the starting memory.** Keep every warranted positive, negative and
+   alternative identity at the scope actually established. Useful messy examples are welcome; an
+   unasserted view is not a negative. The full and cheap descriptions coexist within each case.
+3. **Recognition grows the corpus.** Squint the new study, constrain candidates with its own anatomy,
+   and hear both signed sides through the joint available views. Automated new-case admission requires
+   confident identity plus affirmative applicable anatomical support and no known contradiction.
+   Unknown anatomy alone leaves a proposal; it neither admits nor rejects it. An anatomical pass records
+   where the candidate lies, not what tissue it is: plausible but wrong tissue meets the negative cases.
+   Not every anatomical check, every view or a perfect outline is required. Each round reads a frozen
+   parent memory and publishes a child retaining its signed cases, source scope and recognition lineage;
+   the first round's admissions are inspected before its child becomes the next parent.
+4. **Training develops the active classical system.** Work problems with that corpus and the available
+   tools; retain what was expected, what was tried, the independently established outcome and any
+   explanatory difference. Those experiences can add a case, refine or split a K-line's claim, establish
+   a scoped censor, or associate a recalled situation with a useful procedure. The governing design
+   supplies these mechanisms; filling buckets alone is not the whole training process, and no generic
+   episode framework is a prerequisite for getting recognition to work.
+5. **Production uses the resulting memory.** Current-study squints and anatomical relations cue
+   individual cases and useful procedures. Their interpretations govern the condition questions;
+   disagreement or missing evidence remains open. Only a named unresolved question earns a bounded
+   additional reading. The run writes the twelve competition values and releases each completed study.
+
+Object identity, object state and clinical diagnosis are distinct questions. A visual “not femur” is
+not “no fracture”; a fracture-positive study does not label every bone fractured. Labels, reports and
+independent clinical calls retain their actual scope. Recognition-derived examples retain their lineage
+and never become independent confirmation of their own ancestry.
+
 ## Setup and operation
 
 ```sh
@@ -16,31 +53,41 @@ export PYTHONPATH="$PWD/src"
 
 The [squint run guide](docs/SQUINT_RUN_GUIDE.md) gives bootstrap compilation, inference, retained evidence, memory growth and private Kaggle deployment instructions. Memory is immutable and loaded once. Each active worker finishes and releases one study; decoded arrays do not accumulate across the cohort.
 
-Compile the existing 58 bootstrap products into a fresh memory:
+Compile the existing 58 bootstrap products into a fresh **candidate catalogue**:
 
 ```sh
 .venv/bin/python scripts/run_interiors.py \
   --labeled --root data/raw --workers 4 --diagnostic-mode teach \
   --squint-bootstrap-products data/readings/hdc-20261020/cohort/attempt-1/encoding \
-  --diagnostic-memory /absolute/new/squint-memory \
+  --diagnostic-memory /absolute/new/candidate-catalogue \
   --diagnostic-output /absolute/new/bootstrap-receipt
 ```
 
-Run the competition operation with that memory and a fresh output directory:
+Then use the [reviewed bootstrap guide](docs/OBJECT_BOOTSTRAP_GUIDE.md) to export the actual pictures,
+record calls and publish a reviewed seed. Catalogue compilation is not visual approval of its cases.
+The guide publishes signed identity teaching (positive, negative and alternative-identity cases at
+their called views) and merges recorded calls from several reviewers without widening any call's scope.
+
+Run the competition operation with an explicitly chosen published memory and a fresh output directory:
 
 ```sh
 .venv/bin/python scripts/run_interiors.py \
   --split test --root data/raw --workers 4 --diagnostic-mode infer \
-  --diagnostic-memory /absolute/existing/squint-memory \
+  --diagnostic-memory /absolute/existing/reviewed-memory \
   --diagnostic-submission-template data/raw/sample_submission.csv \
   --diagnostic-output /absolute/new/inference
 ```
 
 The `knee.squint-memory/v1` manifest selects the fast route. Outputs retain located object profiles/regions, per-case comparisons, categorical findings and continuous rankings, with the official template's exact UIDs and twelve columns. Missing evidence stays unknown; disagreement stays visible. The new production policy emits neither hard zero nor hard one. Calls, reports and cohort labels do not become image features or teach during inference.
 
-The 58 existing H5 products are teaching sources, not a claim that every object was observed in every study. The compiler retains usable addressed evidence and records coverage. New report-confirmed cases enter a later memory revision; recalled answers cannot label themselves.
+The 58 existing H5 products are candidate teaching sources, not a claim that every object was observed correctly in every study. The [reviewed object bootstrap guide](docs/OBJECT_BOOTSTRAP_GUIDE.md) exports actual native pictures and publishes correctly called object examples with their full and cheap profiles. Admit all correct candidates; rough borders are acceptable for categorization. Record the actual visual reviewer and the views whose identity was established. Object identity can grow by warranted recognition with anatomical checks; that does not manufacture an independent clinical diagnosis. New report-confirmed clinical calls enter a later memory revision at their stated scope.
 
 The [run guide](docs/SQUINT_RUN_GUIDE.md) also gives the immutable teaching-round command, saved-evidence replay, and explicit retirement of independently reviewed bad teaching cases. A retired case remains preserved for inspection; its evidence cannot keep voting through a derived configuration.
+
+The [run guide's integration boundary](docs/SQUINT_RUN_GUIDE.md#implementation-boundary-and-next-integration)
+names the remaining connections. In particular, a saved `identity_recall` record is not yet evidence
+that condition reasoning consumed that identity. Neither the current report-teaching command nor
+the scratch identity-growth writer is a complete implementation of the classical training process.
 
 ## Efficiency and competition requirements
 
@@ -85,5 +132,11 @@ The gate includes intent tests, import contracts, Sonar correctness checks, Vult
 - [OBJECTS_AND_CONDITIONS.md](docs/OBJECTS_AND_CONDITIONS.md): anatomical domain and condition scope.
 - [RESOLVING_THE_PARTS.md](docs/RESOLVING_THE_PARTS.md): views and complementary measurements.
 - [SQUINT_RUN_GUIDE.md](docs/SQUINT_RUN_GUIDE.md): the production and teaching workflow.
+- [OpenSpec integration contract](openspec/changes/complete-signed-bootstrap-loop/proposal.md): the
+  remaining signed-loop requirements, named scenarios and parallel tasks; validated planning is not
+  completed implementation.
+- [Two-sign boundary tests](tests/test_bootstrap_contract_intent.py) and
+  [status intent tests](tests/test_anatomical_status_intent.py): executable intent at the
+  existing interfaces. Future admission/growth/consumer scenarios remain in OpenSpec until integrated.
 
 `archive/` and `archive2/` are outside the active project and remain unread unless Rohan requests them.

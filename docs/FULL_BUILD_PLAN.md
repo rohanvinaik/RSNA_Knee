@@ -28,9 +28,10 @@ epistemology and working contract.» This section is that sequence. AGENTS.md, H
 NEXT_SESSION_PROMPT and the project memory point here.
 
 **Loaded into every session by `CLAUDE.md`:** AGENTS.md, THEORY_OF_THE_CASE.md, HOW_TO_BUILD.md (the
-rules and every correction), this plan, the thesis conversation
-(`docs/conversations/2026-10-13-the-thesis.md`) and his anatomical-priors messages
-(`docs/conversations/2026-10-18-anatomical-priors-and-targeted-compute.md`).
+rules and every correction), this plan, the original thesis and anatomical-priors conversations,
+the exact-HDC and classical-AI conversations of 2026-10-19 and 2026-10-20, the latest
+squint/bootstrap conversation, AI_DIAGNOSTIC_DESIGN, SQUINT_PRODUCTION_CONTRACT and
+CLASSICAL_AI_BUILD_DESIGN. Imports establish availability, not proof of comprehension.
 
 **Straight after a compaction, and at every session start, in this order, before anything else:**
 
@@ -52,6 +53,15 @@ rules and every correction), this plan, the thesis conversation
    `docs/conversations/2026-10-19-structural-information-and-exact-hdc.md` and the
    interface contract `docs/HDC_ENCODING.md`. His later clarification governs the knee-specific
    healthy reference; do not substitute the cell experiment's provisional terciles.
+   For bootstrap, case admission, memory, agency learning or diagnostic-AI work, also read the
+   complete AI conversation (`2026-10-20-classical-ai-diagnostic-control.md`), the latest
+   squint/bootstrap conversation (`2026-10-21-ternary-buckets-and-squint-orchestration.md`) and
+   [CLASSICAL_AI_BUILD_DESIGN.md](CLASSICAL_AI_BUILD_DESIGN.md) whole. K-lines enable corpus
+   construction and remain active classical memory; corpus population is not the whole learning
+   process. Confirmed negative examples must reach the actual memory consumer.
+   Before changing bootstrap/learning integration, read the pending acceptance contract at
+   `openspec/changes/complete-signed-bootstrap-loop/` (proposal, design, capability spec and tasks).
+   It declares unfinished behavior; artifact validation does not certify runtime completion.
 3. Look at the proof study's pictures with the conversation in mind: see the parts of the knee the
    lenses already pull out («you can already see parts of it peeking out from that image»), not an
    audit of your own code. The lens pictures, `data/pictures/interiors/<proof uid>/series.png` and its
@@ -1035,7 +1045,7 @@ milestone before that dependency; do not label the whole competition solution co
 
 ## 13. Context-stable continuation and stop points
 
-**Active task ID:** `SQUINT-TRAINING-UPGRADE-20261021`.
+**Active task ID:** `THIN-OBJECT-BOOTSTRAP-20261021`.
 **Active packet:** [docs/work/current/README.md](work/current/README.md).
 
 This section is the only active-task index. The named packet is the only populated current-state
@@ -1679,3 +1689,78 @@ Rohan identified the checkpoint's exhaustive locator and context-only configurat
 Rohan: «Use the fable consult over the Claude max subscription, then plan out a wide build to meaningfully upgrade this codebase so that we can FINALLY get to AI training properly». [SQUINT_TRAINING_BUILD.md](SQUINT_TRAINING_BUILD.md) is this section's execution appendix, not another master plan. Read it before dispatching or integrating upgrade workers. It records the independently checked Max consultation, existing versus missing joins, frozen meanings, seven disjoint worker lanes plus root integration, dependency waves, two-sign checks and the engineering/visual training-readiness distinction. §13's packet alone owns current jobs and results.
 
 The upgrade connects current-study structural bone evidence to the locator, addressed object/support/context territories to paired cheap/full profiles, predeclared question banks to exact recall and preparation, one excluded memory view to every consumer, and existing independent admission to an executable teaching/publication/evaluation round. Preserve the tested arithmetic, case scopes, warranted-configuration authority and readout. No perfect skin/contour prerequisite, transplanted patient stencil, substituted window-width bone measurement, arbitrary cross-view centre threshold, new healthy reference or full-anatomy production prefix is introduced. Changed observational meanings require explicit compatible writer/corpus identities. Whole-project gates run per integrated batch, not per worker; the competition envelope and verified private runtime pins remain requirements.
+
+## 18. Thin object bootstrap — Rohan's execution order, 2026-10-21
+
+The complete human clarification and admission answers are in
+`docs/conversations/2026-10-21-ternary-buckets-and-squint-orchestration.md`.
+This is the next application of the existing representation, not another anatomy-definition campaign.
+
+The complete bootstrap -> corpus construction -> agency learning -> runtime-memory binding is
+[CLASSICAL_AI_BUILD_DESIGN.md](CLASSICAL_AI_BUILD_DESIGN.md), this plan's design appendix, not a
+second master plan or live queue. Read it whole before implementing these stages. Rohan explicitly
+clarified that K-lines BOTH build the basic recognition corpus needed to construct the training
+dataset AND remain part of the classical Minsky-style AI stack. Filling buckets is an enabling
+operation, not the entire agency-learning algorithm. The earlier “equivalent of training” analogy
+must not erase this distinction.
+
+1. Consume the authored relative map and anatomical relations as cheap sanity checks while resolving
+   candidates. An observed anatomical contradiction prevents that interpretation. A missing neighbour,
+   overlapping coarse bounds or unavailable view is unknown, not a negative finding. The numerical
+   scatter of unreviewed outputs from the 58 studies is not a tolerance. Record each checked relation,
+   its source and the observation that supported or contradicted it; a plausible location never proves identity.
+2. Build the starting fill from actual native pictures of candidates in the existing 58 teaching
+   products, with stable source addresses and the paired cheap/full bundles. Rohan's correction:
+   «We fill everything we can with ALL correct candidates.» Start with clear examples, then admit
+   every additional visually warranted example; do not impose an arbitrary small final seed count.
+   A reviewer may make the common-sense visual call; record the actual reviewer, never attribute an
+   agent's call to Rohan. Messy borders do not prevent a correct object call. If particular views are
+   mistaken, retain correct view evidence at its explicit scope rather than discarding the object or
+   teaching the wrong facet. Genuine ambiguity remains unresolved. The automatically compiled memory
+   is a source of proposals, not a trusted fill before review.
+   Retain confirmed negative calls as usable negative cases at their actual question/view/region
+   scope, not only rejection notes. An incorrect proposed name can teach against that interpretation
+   without supplying another identity or a clinical diagnosis. Missing matches and unresolved calls
+   do not teach negatives. Ordinary negative memories and specialized near-miss censors are distinct.
+3. Expand by HDC recognition against that fill. Rohan explicitly authorizes a high-confidence identity
+   match, with common-sense anatomical checks, to enter its object bucket. Preserve the recalled seed
+   lineage and what was asserted. This does not invent a clinical label or turn a routed identity into an
+   independent radiology observation. Unresolved or conflicting candidates stay available for review.
+
+**Answering versus automated admission.** Unknown anatomy remains neutral when answering an identity
+question. It cannot by itself warrant a new automatic memory addition. Require confident joint recall,
+affirmative applicable anatomical support for the claimed scope, and no known contradiction. Unknown-only
+anatomy leaves a proposal, not a rejection. This does not demand every relation or all three planes;
+use directions available native geometry actually constrains. A direct warranted visual call teaches
+independently and does not wait for the automated filter to be complete. This is the engineering binding
+of the subsequent review exchange, not an additional verbatim quotation attributed to Rohan.
+An anatomical pass is a law check that records location, not tissue (thesis §11.5). Plausible but
+wrong tissue is stopped by negative cases in joint recall, never by requiring the check to recognize
+tissue alone; the map's distances aim the search and are not admission limits. The first growth round's
+admissions are inspected before its child becomes the next parent; later rounds are spot-checked, not
+held for a picture check (CLASSICAL_AI_BUILD_DESIGN §7.1 and §13).
+
+The completion contract is [the OpenSpec change](../openspec/changes/complete-signed-bootstrap-loop/).
+Integrate signed publication and exact call adaptation, partial anatomical checking, signed frozen-parent
+growth and active identity consumers in parallel where independent. Children must preserve the negative
+and alternative store; whole-study exclusion covers all record kinds. No changed round may silently
+drop negatives or rebrand already-confirmed teachers as newly learned examples. The worked example's
+second round is withdrawn as evidence of growth. New tests pin existing boundaries; unmet integration
+scenarios remain explicit OpenSpec tasks. Root owns actual entry-point and final-tree acceptance.
+
+The growing corpus supplies task-specific experiences: observations, signed calls, expectations,
+procedures and appropriately sourced outcomes. Agencies use those episodes to learn contextual
+interpretations, significant differences, censors/splits and useful routes through the existing tools.
+Their K-lines remain active in production recall and reasoning. Preserve independent clinical calls
+and recognition-derived identity lineage as different sources; this distinction does not prohibit
+the identity-growth operation Rohan authorized. No evaluation of a tiny unfilled memory replaces the
+immediate work of supplying its positive and negative teaching examples.
+
+Rohan's scope clarification: «This is a PURE categorization task, which is WAAAAAAAAY easier. Thus
+warranting some cheap deviations from the full "thesis"». Neither exact borders, all three complete
+outlines, nor perfect positional recovery is a prerequisite for a recognizable seed. Preserve the one
+object across the views available and the distinction between its coarse and full descriptions. No
+mandatory high-resolution production prefix follows. Use the already implemented compiler, readers,
+publication and production entry point; parallelize bounded mechanical work through native helpers
+and the local Claude Max CLI. Root owns meaning, visual inspection and integration. §13's packet
+alone holds the active jobs, source pins and measured outcomes.

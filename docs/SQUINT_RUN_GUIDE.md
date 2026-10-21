@@ -2,7 +2,36 @@
 
 The competition operation reads raw MRI series, locates anatomy in their cheap physical squints, recalls individual normal and condition-presentation cases, and writes twelve ranked values. Full anatomical reconstruction supplies bootstrap examples. It is not a required inference prefix.
 
-The governing design is [AI_DIAGNOSTIC_DESIGN.md](AI_DIAGNOSTIC_DESIGN.md); the exact implementation interfaces are [SQUINT_PRODUCTION_CONTRACT.md](SQUINT_PRODUCTION_CONTRACT.md). Current acceptance evidence and pending work live only in [the current packet](work/current/README.md).
+The complete mechanism is [CLASSICAL_AI_BUILD_DESIGN.md](CLASSICAL_AI_BUILD_DESIGN.md): bootstrap,
+signed recognition, corpus construction, classical agency learning and continuing runtime memory.
+[AI_DIAGNOSTIC_DESIGN.md](AI_DIAGNOSTIC_DESIGN.md) and
+[SQUINT_PRODUCTION_CONTRACT.md](SQUINT_PRODUCTION_CONTRACT.md) give the diagnostic and production
+interfaces. Current acceptance evidence and pending work live only in
+[the current packet](work/current/README.md).
+
+## Implementation boundary and next integration
+
+The commands below operate on the implementation in this checkout. Their existence is not a claim
+that the complete learning system is integrated:
+
+| Boundary | What runs here | Required completion |
+|---|---|---|
+| Candidate compilation | The compiler pairs saved high-resolution products with cheap scan readings and retains attributed labels. | The automatic catalogue is not a visually approved identity seed. Use actual pictures and scoped calls. |
+| Reviewed seed | `squint_object_bootstrap.py export`, `adapt` and `admit` publish signed identity teaching: confirmed positives, ordinary negative cases and alternative identities at their called views. Identity recall hears both signs; held-out exclusion covers every record kind. | Finish the remaining visual calls and publish them. See [the bootstrap guide](OBJECT_BOOTSTRAP_GUIDE.md). |
+| Recognition | The real inference path retains `identity_recall` beside located objects. | Condition reasoning must consume those identity results; serializing them alone does not change its tissue evidence. |
+| Identity growth | A separate prototype proposes immutable child publication. | Preserve every signed record and source-study exclusion, require affirmative applicable anatomical support (a law check: it records location, never tissue), inspect the first round's admissions before promotion, and verify the next round reads that child. No root growth CLI is documented as complete. |
+| Clinical teaching | `squint_training_round.py` joins independently sourced report calls to observations and publishes a prepared child. | This is one teaching operation, not the complete custom classical-AI training algorithm. |
+| Active learning | Case recall and bounded observation tools exist. | Cases, corrections, warranted censors/splits and useful procedure associations must reach the decisions they serve, as the canonical design specifies. |
+
+The integration sequence is signed seed publication, supported recognition/admission, complete child
+readback, then the next round through the real production consumer. Remaining visual calls and report
+reading run in parallel. Do not replace that small working loop with another general framework.
+
+Unknown is neutral when answering a question. Automated admission of a **new recognition-derived
+teacher** additionally requires confident joint identity and affirmative applicable anatomical support,
+with no known contradiction. Unknown-only checks leave a proposal, not a negative and not an admission.
+This does not require every relation or all three bone planes. Independently warranted visual calls
+remain usable at their actual scope. See [the canonical admission contract](CLASSICAL_AI_BUILD_DESIGN.md).
 
 ## Commands and what they exchange
 
@@ -10,7 +39,8 @@ A published memory and a completed run are read-only inputs to every later step.
 
 | Step | Command | Reads | Writes |
 |---|---|---|---|
-| Compile bootstrap memory | `scripts/run_interiors.py --diagnostic-mode teach`, or `scripts/compile_squint_memory.py` to choose the profile writer | `train.csv` and the raw studies under `--root`; the full H5 products | the memory directory (`manifest.json` and `recall-preparation.json.xz`) and a bootstrap receipt |
+| Compile candidate catalogue | `scripts/run_interiors.py --diagnostic-mode teach`, or `scripts/compile_squint_memory.py` to choose the profile writer | `train.csv` and the raw studies under `--root`; the full H5 products | the memory directory (`manifest.json` and `recall-preparation.json.xz`) and a bootstrap receipt; not visual approval of its identities |
+| Review and publish seed | `scripts/squint_object_bootstrap.py export`, then `admit` | exact source catalogue, exported native pictures, pinned scoped calls | reviewed seed; the root publisher currently retains positive identities only |
 | Raw inference | `scripts/run_interiors.py --diagnostic-mode infer` | the memory, the raw studies and the official submission template | the diagnostics directory: `receipt.json`, `studies/<UID>.json.xz`, `recall-preparation.json.xz`, `submission.csv` |
 | Held-out check | `scripts/run_interiors.py --diagnostic-mode capacity`, then `scripts/evaluate_squint_capacity.py` | a prepared memory, labelled raw studies and a template of exactly those UIDs; the labels only in the reporter | a run directory, then the capacity report (JSON and Markdown) |
 | Reports for independent readers | `scripts/squint_report_teaching.py export` | `train.csv` | a reader batch of report text without label values |
@@ -36,9 +66,13 @@ export NUMBA_NUM_THREADS=1
 
 The import must name this checkout. An isolated worker may reuse an interpreter, but must set its own `PYTHONPATH`; it must never run `uv sync` or auto-sync `uv run` against a shared environment.
 
-## Compile bootstrap memory once
+## Compile candidate bootstrap memory once
 
-Use the existing complete H5 product directory and matching raw studies. All source object supports, identities and silence remain attributed. A product declaring an object without an observed support does not teach that object. The compiler does not rerun anatomy.
+Use the existing complete H5 product directory and matching raw studies. All source object supports,
+proposed identities and silence remain attributed. A product declaring an object without an observed
+support does not teach that object. The compiler does not rerun anatomy, and compilation does not
+verify the anatomical names visually. Export and call candidates with
+[OBJECT_BOOTSTRAP_GUIDE.md](OBJECT_BOOTSTRAP_GUIDE.md) before treating them as identity teachers.
 
 ```sh
 .venv/bin/python scripts/run_interiors.py \
@@ -51,7 +85,11 @@ Use the existing complete H5 product directory and matching raw studies. All sou
 
 Both output directories must be fresh. Inspect the memory's `manifest.json` and the bootstrap receipt before inference. Cases remain individual, with paired exact full sparse records, coarse/finer profiles, acquisition identity, source windows, calibration and independent calls. Shared context/payload tables make the full profile readable offline. Preserve the immutable original H5 products for inspecting original pixels and arrays; production does not open them to recall cheap cases.
 
-The teaching command publishes both object cases and role-qualified whole-condition configuration cases in that one immutable memory. No second manual memory-expansion step is required. The receipt distinguishes object, configuration and total case counts. Full and cheap descriptions coexist for each object; cheap queries do not fabricate full-only banks.
+The teaching command publishes both object cases and role-qualified whole-condition configuration cases
+in that one immutable catalogue. This includes the automatic compilation's records; it does not replace
+the reviewed identity bootstrap or independently warrant their tissue attribution. The receipt
+distinguishes object, configuration and total case counts. Full and cheap descriptions coexist for each
+object; cheap queries do not fabricate full-only banks.
 
 Bootstrap publication also saves `memory/recall-preparation.json.xz`, bound to the manifest, revision and exact case/call/profile/censor fingerprint. Production restores its runtime indices rather than recomputing the fixed pairwise comparisons. Preserve that sidecar when packaging the memory. For an existing memory, public `prepare_recall(memory)` and `save_memory(memory, new_path, prepared_recall=prepared)` publish a prepared revision without rereading anatomy. A stale or missing cache is reported as recomputed, never silently accepted.
 
@@ -220,6 +258,12 @@ Keep the dataset and kernel private. A dry run is not a competition submission. 
 
 ## Grow memory separately
 
+There are two distinct operations. Recognition-derived **identity corpus growth** uses the supported
+admission contract above and retains its inference lineage. Independently sourced **clinical teaching**
+uses labels/reports at the scope they assert. Neither converts a recalled answer into independent
+confirmation of itself. The commands in this section implement the latter operation; they are not the
+pending signed identity-growth integration or the whole classical training process.
+
 Independent report calls retain their exact source sentences, question, anatomical attribution, uncertainty and reader identity. Unmentioned or equivocal findings provide no signed call. The report import/admission interface validates those records and publishes a new memory revision; it never modifies a running inference memory. Predictions do not supply missing teaching calls. Conflicts remain attributed; duplicate sources count once.
 
 `scripts/squint_report_teaching.py export --train-csv data/raw/train.csv --output /absolute/new/reader-batch.json` (optionally `--study-uid UID [UID ...]`) writes each report's text and SHA-256, with no label values, for independent readers. Their calls come back as documents in the `knee.squint-report-calls/v1` schema, bound to those reports. `scripts/squint_report_teaching.py admit` (`--train-csv`, `--calls`, `--findings-dir`, `--memory`, `--revision`, `--output-memory`) publishes a revision through the same admission, but with the manifest only: it saves no recall preparation beside it, so inference on that memory recomputes the preparation. The teaching round below publishes a prepared, read-back child.
@@ -249,6 +293,26 @@ The round root receives `round-inputs.json` (the pinned inputs), `round.json`, t
 `--evaluate` adds a held-out evaluation of the child and needs `--root` (the raw competition files), `--labels` (the official `train.csv`) and studies from `--evaluate-study-uid` (default: the `--study-uid` scope). It runs the production capacity route with each study left out of its own memory, reports identified, abstained and wrong per condition with the reporter of `scripts/evaluate_squint_capacity.py`, and checks each study's excluded population against the one memory view the other consumers use. A population that disagrees is kept as `exclusion_mismatch`, not as an evaluation. `--workers` takes 1 to 3 (default 2) and `--time-limit` is the operation budget in seconds (default 1800). A completed evaluation of the same request on the same child is kept and reused, never rerun, and a failed attempt stays under `evaluation/<request digest prefix>/attempt-N/` as evidence. When the parent round was evaluated over the same studies, labels and source, the two evaluations are laid side by side as a trajectory and never summed.
 
 The command prints one JSON line and exits 0 only when the round reached the state it was asked for: `published`, or `evaluated` with `--evaluate`. A published child whose evaluation failed or disagreed exits 2, and the child stays published. `tests/test_squint_training_round.py` uses invented fixtures and a stand-in for the capacity route. It pins the join to observations, publication, readback, resume, the parent checks and the evaluation checks; the real capacity route inside a round is not exercised there, and none of it measures diagnostic capacity.
+
+### Train the active classical system
+
+The starting buckets make recognition possible and supply material for later learning. Training means
+working the relevant tasks with the agencies and tools, comparing expectations/actions with sourced
+outcomes, and retaining the changes those experiences warrant. A recalled case can supply an
+interpretation or reactivate a useful procedure; an independently corrected failure may supply ordinary
+negative evidence, a justified scoped censor, or a split of an overbroad claim. These are different
+operations, not synonyms for adding more images.
+
+Use [CLASSICAL_AI_BUILD_DESIGN.md](CLASSICAL_AI_BUILD_DESIGN.md) for their governing meanings and
+the small remaining contracts. There is no complete root `train` CLI to invoke here. Implement the
+specific producer/consumer seam and its two-sign intent checks rather than inventing a universal episode
+schema, a fitted cosine cutoff, or a replacement learner. Clinical truth, identity and routing success
+retain their separate sources and scopes.
+
+The first actual growth demonstration must hold the mechanism fixed: both signed sides remain present,
+the parent is frozen, and the next run loads the published child with the same comparison policy. The
+withdrawn worked-example round two dropped negatives and supplies no evidence of growth benefit or
+error propagation. Keep its historical outputs for inspection; do not use them as acceptance evidence.
 
 ## Review saved evidence without rerunning vision
 

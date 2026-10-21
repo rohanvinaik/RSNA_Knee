@@ -84,6 +84,24 @@ above, which he set before showing them:
 - «AI and "intelligence" is downstream.»
 - AI only for the edge cases, «with AI to handle near-miss variation», and «that's waaaaaay later».
 
+**Later author specification, 2026-10-19–21.** Those quotations describe the original tool-building
+phase, before Rohan articulated the AI layer. They do not require full-resolution reconstruction in
+every production study. His subsequent complete exact-HDC and classical-AI conversations in
+`docs/conversations/` specify paired full/cheap descriptions, joint object recognition, signed normal
+and diagnosed precedents, and active classical memory. High-resolution tools bootstrap the corpus;
+production squints, reasons from anatomy, recalls cases and procedures, and refines only a named
+unsettled question. K-lines enable corpus construction and remain part of the reasoning system.
+Building their initial store is not the entire classical learning process.
+
+The engineering binding is [CLASSICAL_AI_BUILD_DESIGN.md](CLASSICAL_AI_BUILD_DESIGN.md), especially
+§§5–11. It distinguishes independent visual teaching, recognition-derived growth, agency learning
+from appropriately checked experiences, and runtime action. Unknown evidence never becomes a
+negative; unknown-only anatomy also does not warrant automatic new admission. Affirmative applicable
+support can be partial and need not establish every relation or all three planes. These bindings do
+not alter Part I's original words or authorize a new learning policy where Rohan has not supplied one.
+The pending integration requirements live in the
+[OpenSpec change](../openspec/changes/complete-signed-bootstrap-loop/); live state remains in plan §13's packet.
+
 ## Part IV — The Laws
 1. The architecture is classical AI, NOT ML (AI = genus, ML = one avoidable species).
 2. A model is never the default; at most a bounded, founder-placed tail utility.

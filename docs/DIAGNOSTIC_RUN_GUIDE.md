@@ -2,6 +2,14 @@
 > [SQUINT_RUN_GUIDE.md](SQUINT_RUN_GUIDE.md). The full-product, recipe and generated
 > routes below remain explicit reference tools. Their legacy hard-endpoint readout
 > is not the squint production policy. Live acceptance results are in the current task packet.
+>
+> This guide is a reference interface manual, not the current bootstrap/training workflow. Start with
+> [CLASSICAL_AI_BUILD_DESIGN.md](CLASSICAL_AI_BUILD_DESIGN.md),
+> [OBJECT_BOOTSTRAP_GUIDE.md](OBJECT_BOOTSTRAP_GUIDE.md), and the
+> [squint guide's implementation boundary](SQUINT_RUN_GUIDE.md#implementation-boundary-and-next-integration).
+> Those distinguish visual teaching, supported recognition-derived identity growth, clinical calls
+> and actual classical agency learning. The reference store and hard-endpoint policy below do not
+> override the squint route's memory schema, admission contract or readout.
 
 # Diagnostic runs: setup, teaching, inference, readout and submission
 
@@ -872,9 +880,11 @@ The command contracts here do not declare a healthy quantitative MRI atlas, cons
 independent trust declarations, or execute targeted full measurement fallback. The built-in
 readout is an explicit MVP HDC confidence policy over recalled symbolic case evidence; it is
 not calibrated clinical risk and does not turn missingness into normality. A caller plugin
-can replace that policy but does not change the evidence contract. Mass training is a
-separate operation over the declared case-store format; it does not change the per-case
-sparse evidence contract.
+can replace that policy but does not change the evidence contract. This guide provides teaching and
+recall interfaces, not a complete mass-training command. Bucket growth supplies a recognition corpus;
+the classical learning mechanisms and their actual decision consumers are specified in
+[CLASSICAL_AI_BUILD_DESIGN.md](CLASSICAL_AI_BUILD_DESIGN.md). Preserve the exact per-case sparse
+evidence contract when implementing those mechanisms.
 
 ## 10. Build the offline Kaggle bundle
 

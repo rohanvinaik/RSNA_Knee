@@ -753,3 +753,112 @@ Warranted whole-condition configuration recall remains independently able to dec
 Rohan appointed the Codex root lead after reviewing drift toward mandatory native outlines. The implementation correction is `SQUINT_TRAINING_BUILD.md` §11, subordinate to FULL_BUILD_PLAN §17 and the founder's AI/squint conversations. Production first recalls normal and diagnosed presentations from cheap observations. Exact support recovery is an available residual tool, not a prerequisite for a sufficiently informative cheap reading. Preserve measurement/source compatibility; do not confuse reconstructive resemblance with literal patient-to-teacher pixel matching.
 
 A relevant normal comparison can be counterevidence without proving absence at every alternative site. Categorical all-sites rule-out still requires that complete coverage, and a normal different site does not itself contradict a localized positive. Explicit authority restrictions must reach BOTH object and configuration decisions; normalization must not erase them. The numerical grade already hears negative terms, so repair categorical eligibility rather than claiming all normal evidence was discarded. Keep separate empirical findings separate until a controlled replay supports a causal claim. Wrongly named teaching cases need explicit pinned curation, not all-study boundary perfection. The §13 packet alone holds current jobs and measured verification.
+
+
+## Correct bootstrap calls are admitted, 2026-10-21
+
+Rohan corrected leaving visibly recognizable candidates uncalled: «Why leave uncalled? Is this not the goal--to bootstrap with REAL correct (if messy) calls?» Then: «Precisely. We fill everything we can with ALL correct candidates. That is HOW we can get good recognition post-bootstrap».
+
+Make the common-sense visual calls and record the actual reviewer. Rough borders are acceptable for categorization. Do not convert a thin starting point into a small fixed quota or an unnecessary per-case approval dependency. If a particular view names the wrong tissue, exclude that facet from identity teaching while retaining the correct views and the original source record. Only genuine ambiguity remains unresolved. FULL_BUILD_PLAN §18 owns this operation; §13 points to its current packet.
+
+## K-lines bootstrap recognition and remain classical memory; corpus construction is not the whole learning process, 2026-10-21
+
+Rohan required negative K-lines while the agents were merely rejecting bad proposals. Codex found that
+its publisher retained rejection notes but removed the corresponding bundles from the speaking
+identity memory. It then made a second error, calling bucket population the training itself. Rohan:
+«K-lines are how we recognize, how we bootstrap the classical AI system, it's part of the AI process,
+but...it's not LITERALLY training?» He then requested the full design so the other agent would preserve
+both roles: initial recognition corpus/training-data construction and the continuing classical
+Minsky-style stack. His complete words are in the latest conversation; the engineering binding is
+[CLASSICAL_AI_BUILD_DESIGN.md](CLASSICAL_AI_BUILD_DESIGN.md), required through FULL_BUILD_PLAN §0.
+
+Keep acquisition/encoding, signed case admission, recognition-derived corpus growth, task-specific
+agency learning and runtime recall/procedure activation distinct and connected. A K-line is a cue to
+remembered interpretation and useful activity, not merely an example row to discard after training.
+The training material includes expectations, context, procedures and appropriately sourced outcomes;
+confirmed departures can teach censors or splits through the named-difference machinery. Appending
+cases alone does not complete that learner. Early results on a tiny initial store do not replace the
+immediate work of supplying its teaching cases.
+
+A confirmed “not this object” is a usable negative case at its actual scope. An unresolved view, absent
+match or refusal is not. One case can teach different signed facts on different questions/views; an
+identity negative supplies no diagnostic negative. Ordinary negative memory needs no special near-miss
+rule before it can be remembered, and is not automatically an absolute veto. Preserve actual source
+bundles and ensure the real consumer reads their negative calls, rather than only testing an audit enum.
+
+Rohan has authorized high-confidence identity recognition plus anatomical common sense to grow the
+corpus. Preserve its seed lineage and distinguish it from independent clinical/oracle evidence; do not
+use independence language to prohibit that operation or promote its predictions into independent
+diagnoses. This is a categorization task. Valid rough/partial observations may teach; perfect borders
+and full three-view recovery are not prerequisites. Genuine unspecified custom learning mechanisms
+must be returned as a concrete operation with its inputs and missing decision, not supplied by an ML
+default, a fitted cutoff, or another unrelated policy.
+
+## Signed growth, admission support and active consumers — 2026-10-21
+
+Rohan requested a unified theory, build/run account, model context and small OpenSpec contract after
+relaying the builder's response to the worked-example review. The relayed response remains agent
+analysis, not words attributed to Rohan. The complete design binding is
+[CLASSICAL_AI_BUILD_DESIGN.md](CLASSICAL_AI_BUILD_DESIGN.md); the pending acceptance contract is
+[complete-signed-bootstrap-loop](../openspec/changes/complete-signed-bootstrap-loop/).
+
+The corrections that must survive re-grounding are:
+
+- The old second-round example removed negatives and alternatives and reused already-confirmed
+  teachers. It proves neither growth benefit nor causal error propagation. Keep it withdrawn as
+  evidence; a genuine next round must retain the same signed mechanism and source exclusions.
+- A rejected view is not an uninspected view. Adapt reject `negative_views` to the reject's own
+  `views` exactly; do not drop it and broaden the negative to every drawn view.
+- Unknown is neutral for answering. Automatic **new** memory admission additionally needs confident
+  joint identity and affirmative applicable anatomical support, with no known contradiction. If no
+  support is established, keep a proposal, not a negative. This does not require all checks, all
+  three planes or perfect outlines. A direct warranted visual call teaches independently.
+- Partial planes already inform candidate placement; extend the sanity consumer to use their
+  known directions. A window is not anatomical occupancy, and two rival names are not two objects.
+- Keep negative and alternative records, paired descriptions and lineage in every child. Exclude
+  a study from all teaching kinds and preparation, including when it has only negative records.
+- A corrected negative teaches immediately. Several changed banks can describe one anatomical
+  difference. A specialized censor/split follows the thesis's contrast against recalled successes
+  and failures; it is not selected by counting banks or by two failures sharing a brightness value.
+- Identity recall must change actual condition inputs or bounded requests. Saving it in the study
+  report alone is unfinished. Unknown identity is never clinical absence.
+- Corpus growth is not the entire learning algorithm. Concrete independently checked expectations,
+  actions and outcomes teach contextual memory that remains active in production. Do not delay the
+  thin working loop for a new universal episode framework.
+
+Two-sign intent tests pin implemented boundaries. Unimplemented joins stay visibly pending in
+OpenSpec until a real entry-point run exercises signed recall, warranted growth, portable publication
+and the next round. A spec validation or green isolated suite is not acceptance of the whole build.
+
+## The anatomy check is one lossy view, not a second recognizer — 2026-10-21
+
+Rohan relayed an agent review (agent text, verbatim at
+`data/readings/ai-bootstrap-loop-20261021/relayed-review-anatomy-check-20261021.md`) of the lead's
+readiness review, and on the lead's agreement replied «Good! Record this properly in the full project
+specs and documentation». Complete exchange: the latest conversation record.
+
+What the agent had done: noticed that a femur candidate's two applicable anatomical relations (above the
+tibia, behind the patella) are also passed by posterior thigh tissue and by #8's soft tissue beside the
+condyle, and made the first growth round wait for an anatomy check able to tell a femur from the tissue
+beside it, possibly from the map's distances. It called the negative cases "the only thing" standing
+between those mistakes and the memory, as if that were a defect.
+
+That was the fibula lapse again (§3: «It's not SUPPOSED to be isolateed by ANYTHING alone»): one lossy
+check tested on its own, its limit called a gap. What prevents it:
+
+- The anatomy check is a law check (thesis §§1.14, 11.5). A failure rules a candidate out; a pass
+  settles nothing alone, because a wrong answer that breaks no law passes it. A pass records location,
+  not tissue, and the admission record keeps exactly that.
+- Plausible but wrong tissue is the negative K-lines' job: confirmed negatives speak against resembling
+  candidates in joint recall. That is why Rohan asked for them. Do not make a standalone anatomy
+  classifier for each object a prerequisite of growth.
+- The map's distances aim the search; its sites are expectations and its spans search allowances, not
+  admission limits («A map is a guide»).
+- What stands: a candidate the check could not judge stays a proposal. Inspect the first growth
+  round's admissions before its child becomes the next parent, then spot-check later rounds without
+  holding them (§1: no per-case approval at scale); a wrong admission returns as a scoped negative
+  and its named difference goes through the near-miss test. Only a failure that keeps recurring calls
+  for more structure (thesis §11.4), drafted from the pictures through FULL_BUILD_PLAN §7's review.
+
+A side note Rohan relayed caught the first draft of this record applying the picture check to every
+round, wider than the lead had said in chat (the first round); every copy was corrected the same turn.

@@ -8,6 +8,11 @@ packet named by FULL_BUILD_PLAN §13. The later supplied AI/diagnostic design an
 production binding are now in AI_DIAGNOSTIC_DESIGN.md and SQUINT_PRODUCTION_CONTRACT.md;
 the older construction-stage waiting statements below describe the full encoding's original phase.
 
+For the complete bootstrap/corpus/classical-learning/runtime mechanism, read
+[CLASSICAL_AI_BUILD_DESIGN.md](CLASSICAL_AI_BUILD_DESIGN.md). This document owns representation
+and compatibility; it does not redefine signed admission, certify current integration, or replace
+the pending [signed-loop contract](../openspec/changes/complete-signed-bootstrap-loop/).
+
 ## Full and cheap profiles of the same object
 
 Rohan's latest clarification and supplied cell figure explicitly retain both descriptions.

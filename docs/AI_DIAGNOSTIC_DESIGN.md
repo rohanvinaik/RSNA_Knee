@@ -1,5 +1,14 @@
 # Final design for the diagnostic layer and the competition run (2026-10-21)
 
+**Later full-stack clarification:** [CLASSICAL_AI_BUILD_DESIGN.md](CLASSICAL_AI_BUILD_DESIGN.md)
+connects this production contract to bootstrap, recognition-derived corpus growth, task-specific
+training and continuing K-line/censor memory. Read it whole before implementing those stages.
+“Bootstrap, done” below refers to the existing anatomical products, not a claim that their signed
+recognition memory or the complete agency-learning process is finished. The canonical admission
+policy is CLASSICAL_AI_BUILD_DESIGN §§7.1–7.2: unknown stays neutral when answering, but
+unknown-only anatomy cannot justify automated new-memory admission. Live state remains only
+in [the current packet](work/current/README.md), reached from FULL_BUILD_PLAN §13.
+
 Governing words: `docs/conversations/2026-10-21-ternary-buckets-and-squint-orchestration.md` (both of Rohan's messages),
 the thesis conversations, *What an <Object> Is* (§§1.3, 1.11–1.12, 1.14, 7, 8, 9, 11, 12.2–12.4, 13.6, 14) and
 SIGNIFICANCE_WEIGHTING (§§1–7, 10–14). Second readings: Codex, three turns (`codex/answer*.out`), and a relayed agent
@@ -15,7 +24,7 @@ route as the inference path).
   studies, with report calls, to grow the buckets.
 - Kaggle competition notebook: squint and recall only. The high-resolution tools run there only as a rare, bounded zoom.
 
-## 1. Representation, as built
+## 1. Shared representation
 
 Every reading is balanced ternary with its polarity from the scan's own data: dark, bright, or the measured third,
 "not significant on this measure". An unread bank is silence, a different fact (§7.3). One object, one profile across
@@ -31,18 +40,26 @@ OBJECTS_AND_CONDITIONS §5):
   never "healthy in every respect");
 - a blank label gives no call.
 Cases stay individual (§8.1). The buckets are precedents for recall, never a reference band for the encoding.
+The automatic anatomical products are identity proposals until an actual scoped call or authorized
+recognition-derived admission establishes them. Positive, negative and alternative-identity cases
+remain usable with their original full/cheap bundles; adapting an existing reject must preserve its
+exact negative-view scope. CLASSICAL_AI_BUILD_DESIGN §§5–7 owns that signed teaching contract.
 
 ## 3. One study in production
 
 1. Read every series once, many files at a time, and squint every slice (10 mm tiles).
-2. Locate objects: the bones first, then their neighbours through the anatomical relations. Candidate windows are
-   scored by the cosine of the stored squint presentations against the study's squint vector (§11.1, §12.2).
-   Resemblance proposes a location; anatomy and exclusion constrain it. Nothing is carried from another patient.
+2. Locate objects: establish useful current-study bone anchors structurally, then generate a small useful set of
+   neighbour candidates through anatomical relations before computing their case scores (§11.1, §12.2). Partial
+   native planes constrain whichever directions they actually establish; a complete three-plane reference and
+   perfect outline are not prerequisites. Resemblance selects among anatomically meaningful candidates. Nothing
+   copies another patient's coordinates, and overlapping windows alone establish no tissue-occupancy contradiction.
 3. Recall each object's state: cosine against that object's normal and presentation cases over the condition's
    readings. A case speaks only above chance resemblance (the trust radius, §8.4, set on real data before the run it
    judges); near-miss censors veto their own answer (§8.5); competing answers stay a disagreement, never a nearest-case
    win (§11.2). Distinct coexisting conditions are not competing answers.
-4. Combine per condition by its written contract (§1.11), drawn from anatomy and medical practice and fixed before any
+4. Let recognized identity govern which tissue can answer a condition question. A region known not to be the
+   proposed tissue cannot remain evidence for that tissue; unresolved identity does not mean disease absent.
+   Combine per condition by its written contract (§1.11), drawn from anatomy and medical practice and fixed before any
    run. Each contract states: the condition, its anatomical scope and its alternative presentations; which findings are
    necessary, which combinations are sufficient, which only support; which reading may exclude or assign, and why; what
    counts as an observed negative, unknown, unmeasured or a disagreement; how shared-source evidence counts once; and,
@@ -70,11 +87,26 @@ condition: stated present +1; stated absent or normal −1, only for what the re
 equivocal, no call. The sentence is kept verbatim, with its anatomical attribution, negation, uncertainty and scope.
 Unclear readings go to Rohan and the lead. A proposal may organise that review; it never supplies a missing assertion.
 
-A located object becomes a case only with its report call, under the SOP mapping that ties the condition to that object.
-The memory's own answers stay findings under their own source and can never enter the teaching store; duplicate sources
-count once; conflicting calls stand side by side; abstentions create neither cases nor censors (§1.14, §9.4, §11.3;
-SIGNIFICANCE_WEIGHTING §14). Each round enlarges the buckets. The memory is judged by identified, abstained and wrong per
-condition on studies it was not taught on, with no same-study leakage (§11.4).
+A clinical case needs its appropriately sourced report/label call under the SOP mapping and at the
+scope that source actually establishes. A memory's own diagnosis is not an independent clinical
+teaching call. Separately, Rohan explicitly authorizes high-confidence object-identity recognition
+with anatomical common sense to grow the identity corpus. Automatic new-case admission needs
+high-confidence joint identity, affirmative applicable current-study anatomical support and no
+known contradiction or unresolved signed identity conflict. If all applicable anatomy is unknown,
+keep a proposal without admission or a negative. This does not demand all rules, all three planes
+or exact outlines, and does not block independently warranted visual teaching. Those admitted
+cases retain recognition-derived seed lineage and cannot be laundered as independent clinical or
+visual confirmation. This authorized growth supplies material for the larger classical learning process; it does not replace that process.
+Duplicate sources count once; conflicting calls stand side by side; abstentions create neither cases
+nor censors (§1.14, §9.4, §11.3; SIGNIFICANCE_WEIGHTING §14). Confirmed positive AND negative calls
+must remain usable in the appropriate memory, not merely audit notes. See the full-stack clarification
+above for frozen-round admission, task-specific learning and runtime use. A child memory keeps
+all signed cases and paired full/cheap payloads; study exclusion covers positive, negative and
+alternative-identity sources. No new case speaks in its generating round. Ordinary corrected
+negatives teach immediately; a specialized near-miss censor requires the thesis's named-difference
+test against the recalled K-line's successes, not a count of changed banks or failures. The memory's
+trajectory is read as identified, abstained and wrong per question on studies it was not taught on, with no same-study
+leakage (§11.4); early thin-memory results do not block supplying the teaching corpus.
 
 ## 5. Kaggle notebook
 
@@ -90,13 +122,18 @@ about 113 CPU-seconds per study on Kaggle, bootstrap only (`../kaggle-hardware-2
 
 ## 7. Build lanes (parallel; one integrator)
 
-1. Bucket compiler (object-level teaching by the SOP mapping).
-2. Shared squint-profile writer, with the calibration pairs for the 58.
-3. Locator (bones first, then neighbours; squint search under anatomical relations).
-4. Coordinator (trust-radius recall, censors, concurrence, the condition contracts, the value mapping, the bounded zoom).
-5. Report reader (4,349 reports into ternary calls, with flags).
-6. Kaggle notebooks (competition and scaling).
-7. The held-out check on the 58, as information.
+[CLASSICAL_AI_BUILD_DESIGN §13](CLASSICAL_AI_BUILD_DESIGN.md#13-concrete-build-order-and-parallel-ownership)
+owns the detailed integration order and lane contracts: signed teaching and exact call adaptation;
+frozen-parent growth preserving every signed record; partial-geometry anatomical support; identity
+consumers in condition reasoning; visual calls and report reading; task-specific learning and verification.
+One integrator owns the shared coordinator and real entry point. The next demonstration is one
+actual signed growth round and its next-round consumer, not a new universal episode framework.
+The earlier worked-example round two is withdrawn because it changed the signed comparison; it
+proves neither improvement through growth nor a causal propagation error.
+
+Held-out recognition and diagnosis checks report identified, abstained and wrong by question.
+The private Kaggle run verifies the full integrated offline deployment, not an inference drawn
+from isolated squint timings. Report reading and remaining visual calls proceed in parallel.
 
 The 12 condition contracts are domain content: the lead drafts them from the SOP sources, Codex and Fable check them
 (FULL_BUILD_PLAN §7's rule review), and only disagreements go to Rohan.

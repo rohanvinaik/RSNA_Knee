@@ -1,10 +1,25 @@
 # Squint to training: execution appendix
 
-This is the execution detail for [FULL_BUILD_PLAN §17](FULL_BUILD_PLAN.md#17-approved-squint-first-production-build--2026-10-21), not another master plan or live queue. [Its §13](FULL_BUILD_PLAN.md#13-context-stable-continuation-and-stop-points) points to the sole current task packet. The founder requested a Fable consultation through Claude Max, then a wide build that makes the specified AI trainable. New modules, interfaces and checks below are **planned**, not claims of implemented capability.
+This is the execution appendix for [FULL_BUILD_PLAN §17](FULL_BUILD_PLAN.md#17-approved-squint-first-production-build--2026-10-21), not another master plan or live queue. [Its §13](FULL_BUILD_PLAN.md#13-context-stable-continuation-and-stop-points) points to the sole current task packet. The founder requested a Fable consultation through Claude Max, then a wide build that makes the specified AI trainable. The dated worker schedules below record that earlier upgrade; their presence is not evidence that a module is missing or complete today. **§12 owns the current completion order in this appendix.** Existing commands and their implementation boundary are in [SQUINT_RUN_GUIDE.md](SQUINT_RUN_GUIDE.md).
+
+Before dispatching bootstrap, training or memory work, read
+[CLASSICAL_AI_BUILD_DESIGN.md](CLASSICAL_AI_BUILD_DESIGN.md) whole. It binds the complete sequence:
+initial positive/negative K-lines -> recognition -> expanded corpus/training material -> task-specific
+classical agency learning -> continuing runtime memory. Corpus population is not the entire learning
+algorithm. Later author clarification permits recognition-derived identity admission with anatomical
+common sense; retain its lineage separately from independent clinical/oracle calls. Earlier blanket
+independent-call wording here must not prohibit that authorized identity-growth loop. Confirmed
+negatives need actual bundles and consumers, not only rejection notes. The existing exact arithmetic,
+clinical scope, bounded production work and resource contracts remain in force.
 
 ## 1. What this upgrade must accomplish
 
-The high-resolution bootstrap has already supplied object definitions, supports and individual full profiles. Production must find useful current-study anatomical territories cheaply, read the relevant raw-scan signals there, and recall independently called individual precedents. A question that remains unsettled requests one bounded additional reading. Teaching adds independently called cases to an immutable memory revision; it does not promote the system's predictions into facts.
+The high-resolution bootstrap has already supplied object definitions, candidate supports and
+individual full profiles. Production must find useful current-study anatomical territories cheaply,
+read the relevant raw-scan signals there, and recall individual signed precedents. A question that
+remains unsettled requests one bounded additional reading. Independent visual/clinical teaching and
+supported recognition-derived identity admission publish immutable revisions with distinct lineage.
+A prediction never becomes independent confirmation of itself.
 
 An object remains one identity across its views, scales and lenses. Its three key planes establish its physical reference; directional and scale facets belong to that object. Cheap and full profiles coexist, with their actual meanings, provenance and unwritten banks preserved. A cheap measurement is not an inferior vote that must always be replaced by a full reconstruction. Use the cheapest sufficient information for the current question.
 
@@ -54,6 +69,11 @@ Bank identity must state a reproducible measurement definition. Actual per-scan 
 Version any changed calibration/support/bank interpretation and rebuild affected cheap profiles from the saved native data and teacher supports. Do not alter raw lens kernels or rebuild all anatomical recognition merely to recompile case profiles. Full payloads remain exact. Old memory stays readable and is not mixed silently with a new writer.
 
 ## 4. Literal implementation work, in parallel
+
+**Historical upgrade allocation.** This table records the earlier territory/recall build, not today's
+dispatch queue. Use §12, the canonical design and the current packet for the remaining signed bootstrap
+and active-learning integration. Preserve useful interfaces and tools below; do not rebuild existing
+modules merely because this old schedule says “proposed”.
 
 Seven worker lanes plus the integrating lead provide eight useful engineering roles. At most three native helpers run alongside root in this session; use up to four authenticated Max CLI workers for the remaining independent candidates, bounded by actual RAM/CPU pressure. This is a proposed execution schedule, not a claim those builders have been launched.
 
@@ -106,6 +126,9 @@ The command may invoke observation and evaluation stages or consume their pinned
 
 ## 5. Dependency waves and the critical path
 
+This is the earlier upgrade's dependency order. §12 supersedes it for the current thin bootstrap loop;
+the large cohort/release batch below is not a serial prerequisite to publishing useful signed cases.
+
 1. **Freeze interfaces and pin the source.** Root supplies the contracts in §3, fixture examples and ownership. L7 builds teacher-location control against today's writer; L1–L6 start simultaneously. L0 prepares integration/packaging tests while the workers write. Do not wait for one worker to finish before another gets a meaningful task.
 2. **Integrate attribution.** L1's writer and L3's paired teacher data join L2's structural anchors at L0's locator. Run a small representative real-study smoke and inspect the actual regions immediately. In parallel L4/L5 finish question/view hooks and L6/L7 finish their loop/report fixtures.
 3. **Integrate question recall and teaching.** Root connects L4/L5 to raw object/configuration recall; L6 publishes one small independently taught revision and L7 reads it through the same production path. Run teacher-location control and raw-location control on matched source/memory/writer identities, with the same study excluded in both.
@@ -129,7 +152,7 @@ Pin these intentions before implementation, using the project's Detective protoc
 | Questions select their information | Perturbing an unselected bank changes neither selected cosine nor envelope nor verdict; perturbing a selected bank can. Empty selection is named, never all-bank fallback. Full-prefix/cheap-descriptor mismatches cannot pass by string coincidence. A sourced bounded native request invokes only its named producer/dependencies and writes compatible canonical banks; an unavailable procedure never silently becomes another 2 mm histogram. |
 | Study exclusion reaches every consumer | Without exclusion the case is reachable; with it, no attributed case, censor, location precedent or prepared comparison from that UID is reachable. Direct API, raw/cached locator and real CLI agree. Stale prepared identity is rejected/rebuilt. |
 | Configuration authority follows scope | Covered warranted configurations can decide independently; context-only configurations cannot. Localized evidence and unlocalized positive bone presentations remain distinct. Opposed evidence and multi-site negatives retain existing contracts. |
-| Teaching is independent and immutable | A sourced eligible independent call changes the child store; an inference verdict alone cannot. Duplicate/conflicting/malformed/unsupported calls retain existing named remedies. Publication failure leaves parent and consumed inputs intact. Public readback and next-run recall see the published child. |
+| Teaching has its actual source and remains immutable | A sourced eligible independent call changes the child store. A recognition-derived identity case requires confident joint identity plus affirmative applicable anatomy, no known contradiction, and retained lineage; an unsupported verdict or unknown-only check cannot admit it. Neither path fabricates independent clinical confirmation. Duplicate/conflicting/malformed/unsupported calls retain named remedies. Publication failure leaves parent and consumed inputs intact. Public readback and next-run recall see the complete signed child. |
 | Evidence reaches the competition output | The real entrypoint produces twelve correctly ordered columns and finite values through the existing readout; evidence traces each result to its case/question/territory. Null/missing series, deadline exhaustion and storage failure remain named. Serial/parallel operation preserves results. |
 
 L7 must expose actual source images, query territory and anchor overlays, nearest normal-for-question and diagnosed **presentation** precedents, selected banks and named count/HDC differences. Show full versus cheap versus the bounded finer rung with unread banks visible. A study-level positive image is not a manually localized lesion annotation. Keep that distinction in captions and decoded evidence. Do not reuse the cell figure as knee proof.
@@ -141,7 +164,13 @@ Separate two claims in the output, rather than treating a green gate as diagnost
 - **Engineering ready:** the real command can observe, recall, ingest independent calls, publish/read a complete prepared child memory and evaluate it with study exclusion; all twelve questions have a declared compatible evidence route and inspectable output. No orphan helper, disconnected teaching script or fabricated clinical zero remains on that path.
 - **Visual capacity:** for each question show the normal/presentation pair, whether the actual defining tissue was read, which named banks discriminate, the warranted/unknown/conflict result and any missing evidence. Run the held-out raw and teacher controls and report identified / abstained / wrong separately by condition, plus ordering and abstention causes. Missing discrimination stays explicitly unresolved; it is not hidden by a combined score or an arbitrary pass threshold.
 
-This is not a requirement for perfect contours, every-study coverage or a chosen AUC. Valid independently labelled cases and functioning teaching can already support training. The baseline visual check must make it possible for Rohan to reason about the next AI changes, rather than present incorrect tissue as a completed capacity proof. Where the existing custom design is silent about a new learning/negative-example policy, return the concrete case and governing readings to him; do not substitute a heuristic.
+This is not a requirement for perfect contours, every-study coverage or a chosen AUC. Valid called
+cases and functioning teaching can already support the next learning step; the complete twelve-question
+release is a separate end-to-end goal. The baseline visual check must make it possible for Rohan to
+reason about the next AI changes, rather than present incorrect tissue as a completed capacity proof.
+Ordinary signed teaching and the authorized supported identity-growth loop are already specified;
+do not reopen those as questions. Where a genuinely new custom learning policy is silent, return the
+concrete case and governing readings to him rather than substitute a heuristic.
 
 ## 8. Efficiency and release obligations
 
@@ -154,6 +183,11 @@ Refresh changed production recordings; write records and documentation **before*
 Private Kaggle deployment must verify the uploaded dataset's current manifest and both independent code/memory pins after READY, then launch the private kernel. Inspect returned pins, output schema, resources and work counts. No competition submission follows from this plan. Current jobs, completed checks, remaining checks and the next operation belong only in the active task packet.
 
 ## 9. Launch revision, 2026-10-21: routes, dependencies and the first working slice
+
+**Dated execution record.** The route ownership and jobs in this section describe that launch. They
+are not the current worker roster, permission policy or remaining-work list; those belong in the current
+packet and §12. In particular, use the currently authorized native helpers and Claude Max CLI for bounded
+mechanical work rather than copying an old lead's ownership assumption.
 
 Rohan: «How can this be built massively parallel with codex over the CLI and your own sub-agents?» Then, with a relayed review: «Some feedback. Take what is appropriate, then please launch a full parallel build». The relayed review and a later relayed side note are agent text. What the lead adopted from them is listed here as the lead's decision, with the reason checked.
 
@@ -211,3 +245,74 @@ Rohan appointed the Codex root in this conversation lead: «Congrats--you're the
 - **Correct teaching identity at the case boundary.** Clearly misassigned teacher sources can be explicitly retired with pinned identity, evidence and preserved original data. A rough valid support is not a reason to reject a case or rewrite its object definition. Curation is independently authored data admission, not a prediction-based filter or an every-study contour requirement.
 
 The integrated raw query and memory writers must use compatible actual v2 measurements. Teacher-location controls are diagnostic, retain source exclusion, and must not double a refinement that is already held. Production success is verified through the one runner, its actual object/configuration consumers, immutable teaching/publication/readback and private offline deployment. Nothing in this correction turns a green isolated test into diagnostic capacity.
+
+## 12. Current completion contract: signed bootstrap into active classical learning
+
+The controlling design is [CLASSICAL_AI_BUILD_DESIGN.md](CLASSICAL_AI_BUILD_DESIGN.md), grounded in
+Rohan's conversations. The remaining integration is specified in
+[the signed bootstrap OpenSpec change](../openspec/changes/complete-signed-bootstrap-loop/proposal.md).
+This section replaces obsolete operative schedules above without rewriting their historical evidence.
+Finish the small coherent operation using the existing exact HDC, source records, anatomy map, tools
+and public memory reader. Live ownership and status remain only in the current packet.
+
+### Parallel work with concrete consumers
+
+| Lane | Deliverable | Consumer and completion evidence |
+|---|---|---|
+| Signed seed and call adaptation | Integrate the signed publisher/recall candidate; adapt the original calls without widening their positive, negative or alternative-view scope. Retain all warranted cases and original evidence. | The public loader and identity recall consume the signed child. Negative-only teaching remains useful; unknown creates no negative. Offline full/cheap readback is preserved. Finish remaining calls in parallel. |
+| Applicable anatomy | Reuse established current-study anatomy and let the sanity consumer use whichever physical directions the available partial planes actually constrain. | Admission records affirmative applicable support or a named contradiction/unknown. It does not certify volume from a window, require all three planes, or reject rival names merely because they describe the same candidate. |
+| Immutable identity growth | Extend the existing growth prototype to preserve signed/alternative records and all their source-study exclusions, scope and lineage. | A new case needs confident joint identity, affirmative applicable anatomical support and no known contradiction. Unknown-only checks keep a proposal. All candidates in a round read one frozen parent; the next round reads the complete child. |
+| Identity-to-action integration | Consume recognized identity when choosing the tissue that may answer a condition and any bounded follow-up procedure. | A stored identity record changes the actual downstream evidence/action appropriately. Wrong or unavailable identity never becomes a clinical negative. A diagnostic consumer may not keep using a contradicted proposed name silently. |
+| Independent clinical teaching | Continue reading reports and joining sourced calls to actual same-study observations. | Normal/condition precedents retain the independent call's scope. A study-level fracture does not assign fracture to each bone, and an identity correction does not assert a diagnosis. |
+| Learning and verification | Pin unambiguous intent at each seam; use real corrected experiences for the canonical case/censor/split/procedure mechanisms. | Detective two-sign checks and the real entry point demonstrate the consumers. Custom policy not specified by the design remains an explicit small contract, not a guessed threshold or framework. |
+
+Root owns integration of shared files. Native helpers and authenticated Claude Max CLI workers can
+write disjoint mechanical changes, test fixtures, call adapters and report records simultaneously.
+Give each the governing complete units, source pins, allowed files, exact producer/consumer seam and
+intent. Helpers return facts and patches; they do not redefine the user's meaning. Integrate one coherent
+batch and run the full exact-tree gate once, rather than leaving useful workers idle behind serial gates.
+
+### First actual growth demonstration
+
+Use the real entry point and a pinned signed parent to produce candidates, hear both signed sides,
+apply the applicable anatomy and consume identity in the condition path. Publish warranted admissions
+to a child, read it back, then run the next round with the same comparison mechanism. Retain negatives,
+alternatives, exclusions and scope throughout; report what changed and why. An isolated helper test
+or a saved identity field with no consumer does not establish this operation.
+
+The worked-example round two is withdrawn as growth evidence: it omitted negative comparisons and
+changed the teaching population, while its apparent new correct cases already existed as teachers.
+Its outputs remain historical observations only. An unasserted coronal facet must not acquire a
+negative call from a sagittal rejection. Do not infer error propagation from that changed experiment.
+
+### From a corpus to actual training
+
+The corpus gives the agencies something to recognize and work with. Then exercise the relevant
+problems: identity, object state, condition/configuration, and which useful observation/procedure to
+invoke. Preserve the cues, expectation, action, result, independently established outcome and explanatory
+difference needed by that mechanism. These are logical contents of an experience, not a mandated new
+universal episode file or an invented fixed agency roster.
+
+Ordinary confirmed negatives can teach immediately at their scope. A wrong admission also identifies
+the memory's own failure and the K-line that spoke. Before installing a specialized near-miss censor,
+establish the significant named difference against that K-line's successful precedents and retain its
+applicability. Several bank changes may encode one anatomical distinction; a count of changed banks or
+two failures sharing one numerical feature is not the decision rule. Where successes vary instead,
+the appropriate result may be a split or narrower claim; where no difference is established, retain the
+experience without manufacturing a censor. The canonical design owns the detailed mechanism.
+
+The trained memory must remain active in production: a case recalls an interpretation or useful
+procedure, censors constrain their scoped answer, and the result changes the agency's next action.
+Filling buckets is part of this apparatus and supplies training material; it is not the whole training
+algorithm. No finished root command currently claims to implement that full process. Document and
+verify each concrete learning consumer as it is integrated.
+
+### Release without changing the thesis
+
+Once the working loop is connected, inspect actual normal/diagnosed pairs and named HDC differences,
+run the appropriate study-excluded check, and complete the private offline Kaggle dry run. Preserve
+per-condition identified/abstained/wrong reports. Scale the corpus and learning tasks with fixed lineage;
+do not require manual review of every future recognition-derived admission as an undeclared permanent
+gate. Share immutable preparations and study-local measurements, bound workers, retain final useful
+outputs, and release consumed intermediates. The full W8b/W10 resource contract remains in force.
+Write final records before the exact-tree gate, then checkpoint/push under the normal gate procedure.

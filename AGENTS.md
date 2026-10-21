@@ -5,6 +5,30 @@ said, ask where there is a gap, answer the question he asked first, and trust th
 fucking TRUST me»). What you broke, you fix. Every correction he had to make, and what would have prevented
 it, is in `docs/HOW_TO_BUILD.md`.
 
+**Current AI mechanism.** Read `docs/CLASSICAL_AI_BUILD_DESIGN.md` whole for bootstrap, corpus
+construction, classical learning and runtime memory; `docs/FULL_BUILD_PLAN.md` §13 names the sole live
+packet. The anatomy-definition loop below builds teaching tools. Production is squint-first joint HDC
+recall, anatomical reasoning and question-directed bounded refinement, not a mandatory reconstruction
+of every object's outline. K-lines enable corpus construction AND remain active memory of contextual
+interpretations and useful procedures; filling buckets is not the entire learning algorithm.
+
+Calls retain their actual positive/negative/unknown question and view scopes. Unknown is not a negative.
+For **automated new memory admission**, however, unknown-only anatomy is insufficient: require confident
+joint recognition and affirmative applicable anatomical support with no known contradiction. An
+anatomical pass is a law check that records location, never tissue: plausible but wrong tissue is
+stopped by negative cases in joint recall, and map distances are search allowances, not admission
+limits. Inspect the first growth round's admissions before its child becomes the next parent; later
+rounds are spot-checked, not held for a picture check. Missing other directions or views does not
+require perfect geometry. Independently warranted visual calls can teach directly. Preserve signed
+cases, all-source study exclusion and frozen-parent lineage in every child. A wrong identity must affect
+the real condition consumer, never only a report. Corrected negatives teach now; specialized
+censors/splits need the thesis's named difference, not a bank-count cutoff.
+
+The small pending integration contract is
+`openspec/changes/complete-signed-bootstrap-loop/`; validation is not implementation completion.
+Use README and the linked run guides for verified commands; do not invent a generic training CLI or
+universal episode framework. Read the exact-HDC and classical-AI conversations named by plan §0.
+
 **Read the thesis first.** Everything in RSNA_Knee serves one thesis: `docs/THEORY_OF_THE_CASE.md`, Part I.
 Read it before anything else, and do not overcomplicate it. Rohan, 2026-10-13: «This is basically the whole
 thing. That's it.» At every session start and after every compaction, before anything else, follow the

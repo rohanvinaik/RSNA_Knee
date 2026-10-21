@@ -1,0 +1,51 @@
+schema: spec-driven
+context: |
+  RSNA_Knee implements Rohan's classical-AI computer-vision thesis, not ML.
+  Read AGENTS.md, FULL_BUILD_PLAN.md section 0, the complete named conversations,
+  and docs/CLASSICAL_AI_BUILD_DESIGN.md before changing meanings.
+  FULL_BUILD_PLAN section 13 names the sole live task packet. OpenSpec describes
+  acceptance requirements; a valid spec is not working software.
+  Preserve exact HDC, individual signed cases, joint complementary views,
+  anatomical scope, source lineage and squint-first bounded production work.
+  Unknown is not negative. Unknown-only anatomy cannot warrant automated new
+  memory admission; answering an identity question and publishing an independent
+  visual call are separate operations.
+rules:
+  proposal:
+    - Bind the existing thesis and user exchanges; introduce no new architecture.
+  specs:
+    - State observable positive and must-not behavior with concrete scenarios.
+  tasks:
+    - Name the existing production consumer and separate parallel ownership.
+    - Keep unimplemented acceptance unchecked; a mock is not a production run.
+
+# Project context (optional)
+# Add only constraints that should guide OpenSpec artifacts and workflows.
+# Include constraints an agent cannot infer by reading the code.
+# Keep general project documentation and discoverable codebase facts out.
+# Example:
+#   context: |
+#     Designs and tasks must cover Windows, macOS, and Linux
+#     Write all artifacts in Spanish
+
+# Per-artifact rules (optional)
+# Add custom rules for specific artifacts.
+# Example:
+#   rules:
+#     proposal:
+#       - Keep proposals under 500 words
+#       - Always state what is out of scope
+#     tasks:
+#       - Break tasks into chunks of max 2 hours
+
+# Per-operation guidance (optional)
+# Add advisory guidance for how apply and archive work should be conducted.
+# This is separate from artifact rules above.
+# Example:
+#   operations:
+#     apply:
+#       guidance:
+#         - Keep test summaries concise
+#     archive:
+#       guidance:
+#         - Summarize the archive outcome before finishing

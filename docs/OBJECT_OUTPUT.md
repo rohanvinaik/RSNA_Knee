@@ -2,6 +2,13 @@
 
 This note follows the receipt schema in `src/knee/collapse/observations.py` and the production storage APIs. An observation is a typed reference to retained arrays; it does not carry pixels itself. The study’s object table says what was observed, how it was placed, and what remains unresolved. It is the entry point for finding the corresponding per-series artifact.
 
+These retained high-resolution products supply teaching evidence and full-profile readback. They
+are not a required reconstruction prefix for every diagnostic study. The active squint/recall path,
+its retained cheap descriptions and the distinction between proposed and called identities are in
+[SQUINT_RUN_GUIDE.md](SQUINT_RUN_GUIDE.md) and
+[CLASSICAL_AI_BUILD_DESIGN.md](CLASSICAL_AI_BUILD_DESIGN.md). A stored proposed name does not by
+itself establish identity or a clinical finding.
+
 ## Distinguish the three provenances
 
 `native` records what the slice’s own rule resolved (`kind=resolved`) or what a native reader measured (`kind=reading`). A reading such as `source_contacted_enclosed_darkness` is a native measurement pointer and code, not a resolved boundary claim.

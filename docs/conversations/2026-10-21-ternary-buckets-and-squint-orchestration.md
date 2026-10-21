@@ -109,3 +109,132 @@ The agent asked whether a bone's positive study-level condition-presentation cas
 > Not sure, should be informed by the core thesis of the project
 
 This is a direction to ground the reasoning in the thesis, not a selection of either proposed implementation option.
+
+
+## Rohan — start thin; the anatomical sanity filter, a hand-built starting bucket fill, then the loop
+
+Recording metadata, not his words: this answers the Claude Code session's assessment of the build against its goal,
+which had called the first memory "thin where it matters most" and named training as the next step. Verbatim:
+
+Well, i mean, the point is to start thin. We're trying to do the bootstrap layer to just get it to work PERIOD. 
+
+I had an "anatomical map" written up once, with the relative position of every anatomical element connected to each other as a super-3D map of the knee, plus the "significanca weighting" document talking about conditional probability chains. What we need is to use that as a sanity filter for resolving objects, then when we DO resolve them sanely always, to then work--you and me--to bootstrap this with a hand-built set of vector bundles--in the style of the "what an <object> is" thesis (Send cheap readers to find the key sectinos of that thesis and read it)--to build up a sane starting bucket fill. Then, we have MASSES of data available in the competition. The loop is obvious. Find more objects through HDC math. Common=sense checks make sure the <object> candidates are rensible. Then we add them in, and this gives us variety and a robust K-line store for recognition and discimination. And that's...AI and AI training, with a classical Society of Mind style build
+
+Record this in the conversations about AI design, consult with codex, tell me if anything is unclear
+
+## Rohan — answers on bootstrap admission and bundles, 2026-10-21
+
+Recording metadata, not his words: the following two answers were supplied in the next-task handoff. They answer the previous session's questions; the second question was not a remaining design gap. His answers are preserved verbatim:
+
+> "What lets a found object into the memory"--COMMON SENSE. High recognition match against those which were found in the 58 teaching sets. The most basic visual reasoning task. If we can assert identity with high confidence, then it comes in, and that gets added into the bucket. I thought you read the <object> thesis?
+
+> What are "bundles" without a "candidate"? This IS the "thesis's way", what are you TALKING about?
+
+## Rohan — categorization permits cheaper construction, 2026-10-21
+
+Remember--the thesis was bout boundary-drawing and positional alignment. This is a PURE categorization task, which is WAAAAAAAAY easier. Thus warranting some cheap deviations from the full "thesis"
+
+
+## Bootstrap calls: valid and messy is enough, 2026-10-21
+
+Rohan, verbatim:
+
+> Why leave uncalled? Is this not the goal--to bootstrap with REAL correct (if messy) calls?
+
+> Precisely. We fill everything we can with ALL correct candidates. That is HOW we can get good recognition post-bootstrap
+
+Implementation consequence: make actual visual calls on every warranted candidate. Record the actual reviewer; an agent's call is not attributed to Rohan. Do not hold a recognizable object outside the memory because its contour is rough. A view naming another structure is a scope error: retain correctly identified view evidence while leaving that mistaken facet unasserted. There is no arbitrary final seed quota and no requirement for perfect outlines or all three views.
+
+
+## Rohan — filling the buckets is the training; do not judge an untrained AI, 2026-10-21
+
+Recording metadata, not his words: this answers the Claude Code session's statement that the next step is to fill
+the buckets, which had cited identity-recall errors and abstentions from the 46-case seed. Verbatim:
+
+> Good. Then proceed after reading the conversation documents about the AI parts. The next pass should be clear and obvious--fill the buckets. You're talking about "accuracy", but that's not actionable right now. YOU'RE an AI, this should be obvious. You're judging the quality of an AI...before any training. Like, a completely naive AI. So obviously it doesn't work super accurately. The whole POINT is to do the equivalent of "training" by assigning exmples, identity, to the K-line store so we CAN recognize these objects, so we actually CAN do training and discrimination at scale
+
+
+## Rohan — negative K-lines, then recognition fills K-lines at scale, 2026-10-21
+
+Recording metadata, not his words: sent while the Claude Code session was making visual calls on the uncalled
+candidates, several of which it rejected as wrong tissue (posterior thigh soft tissue named "femur"). Verbatim:
+
+> Also, negative k-lines? That was a fundamental part of the thesis. We bootstrap, that allows recognition, this recognition allows us to fill k-lines at scale, and THAT is what we can use for training and recognition and the classical AI/society of agencies stuff from the "<object>" thesis
+> Save that prompt, confer with codex, read the thesis
+
+## Rohan — distinguish memory construction from the whole classical learning process, 2026-10-21
+
+Recording metadata, not his words: Codex had read the two additions above and then equated filling
+the K-line buckets with training itself. Rohan corrected that conflation. Verbatim:
+
+Well, K-lines are how we recognize, how we bootstrap the classical AI system, it's part of the AI process, but...it's not LITERALLY training? You DO know what classical AI is, minksky/Winston/et al? Look it up if you need to. I know you're ML, not symbolic AI, but not understanding Minsky/Winston is pretty bad
+
+## Rohan — require the full bootstrap-to-training-to-memory design for the next agent, 2026-10-21
+
+Verbatim:
+
+Lay out the FULL design for the other agent please, so there's NO mistaking what the full build--from bootstrap to training to memory, how the "k-lines" here are BOTH how we build up a basic recognition corpus to enable building the training dataset AND part of the classical AI stack in the classical Minsky sense
+
+Recording metadata: the requested engineering binding is `docs/CLASSICAL_AI_BUILD_DESIGN.md`, linked
+from FULL_BUILD_PLAN §§0 and18 and the production/training contracts. It is Codex's binding of the
+sources, not additional specification attributed to Rohan. The active packet alone holds live state.
+
+## Relayed builder response and the admission distinction, 2026-10-21
+
+Recording metadata: Rohan supplied the builder's response to Codex's review. The builder withdrew
+the second-round experiment as growth evidence, accepted exact view-scope adaptation, partial-plane
+sanity and signed-child/source-exclusion repairs, and distinguished inference from new admission.
+The following is the builder's complete disagreement section, not words attributed to Rohan:
+
+> "Unknown evidence remains neutral" is right when answering a question, because unknown is never a negative. But neutral must not be enough to admit a case into memory.
+> - The growth writer's rule is "only a contradicted check blocks". That's the same rule my worked example used, and it's what let #8 in.
+> - You said the common-sense checks make sure a candidate is sensible. A check that couldn't run hasn't made sure of anything.
+> - So an unknown should leave the candidate as a proposal, neither admitted nor rejected.
+>
+> This is the one real difference between its plan and mine. It decides whether the loop can run at scale before the anatomy check can speak.
+
+Codex's subsequent engineering binding distinguishes unknown-only anatomy from unavailable additional
+relations: automated new additions need confident joint identity and affirmative applicable support,
+with no known contradiction; they do not need all checks or all three planes. A direct warranted visual
+call remains an independent teaching route. The binding is CLASSICAL_AI_BUILD_DESIGN §§7.1–7.2 and the
+pending OpenSpec change `complete-signed-bootstrap-loop`, not a claim that the runtime already enforces it.
+
+## Rohan — document the complete unified build, intent and remaining contract, verbatim
+
+If the final design is clear, then please update all the documentation in the project. Encode the detective two-sign intent tests where unambiguous, build the OpenSpec contract for the rest (should be small, not a lot of wiring), and update all the model context files, etc, and the project documentation, the README, the engineering/running document--both from the perspective of outlining theory and as an engineering/operational document, README's/model context files, etc. Basically, this should be clear to any person or agent walking in how the project works as a complete, unified pipeline, how the AI layer works specifically, and how we need to proceed to both build the training data corpus/buckets/k-lines and how we should *actually* train when we get to that point
+
+## The anatomy check is a law check; the extra growth condition withdrawn, 2026-10-21
+
+Recording metadata, not his words: the Claude Code lead's readiness review had made the first growth
+round wait for an anatomy check able to tell a femur from the tissue beside it. Rohan relayed another
+agent's review of that condition (agent text, kept verbatim at
+`data/readings/ai-bootstrap-loop-20261021/relayed-review-anatomy-check-20261021.md`) with the words
+«Take this response, read whatever other documents, etc you need to read (cheap agents or "Advisor",
+tell me if you get what we need to do here:». The lead agreed and withdrew the condition. It repeated
+the isolation lapse recorded in HOW_TO_BUILD («It's not SUPPOSED to be isolateed by ANYTHING alone»):
+the thesis says a wrong answer that breaks no law passes a law check, so a pass settles nothing alone
+(§11.5); plausible but wrong tissue is what the negative K-lines are for; and the map's distances aim
+the search and are not admission limits («A map is a guide»). The lead kept the existing rule that a
+candidate the check could not judge stays a proposal, and added that the first growth round's
+admissions are inspected before its grown memory becomes the next round's parent. The engineering binding is
+CLASSICAL_AI_BUILD_DESIGN §7.1, §13 and §14 and the OpenSpec change `complete-signed-bootstrap-loop`.
+
+Rohan's reply, verbatim:
+
+> Good! Record this properly in the full project specs and documentation. Then, when everything is set up formally, for an external reader/other agent/new session context to understand...let's do it!
+>
+> Rather exciting, you get to play around with a genuine revival of classical AI in the Minsky/Winston tradition! Something like this hasn't been built for decades, and in fact NOTHING quite like this has ever been built before.
+
+Recording metadata: while that record was being written, Rohan relayed a side agent's note (agent text,
+verbatim below). It was correct: the first draft applied the picture check to every growth round rather
+than the first. The documents were corrected the same turn: the first round's admissions are inspected
+before its child becomes the next parent, and later rounds are spot-checked, not held.
+
+> Heads up · The new docs make every growth round wait for a picture check of its additions, which could stall growth at scale.
+>
+> **Every growth round now waits for a picture check**
+> - In the chat, the main agent said it would look at the **first** growth round's new memory additions on their pictures before that grown memory is used for the next round.
+> - The wording it then wrote into AGENTS.md, the build plan, the design document and the OpenSpec contract applies to **every** round.
+> - At scale the rounds run on Kaggle over thousands of studies. Each round could add many cases, and each would need a picture sheet and a visual check before the loop moves on.
+> - The design document itself says this kind of review "is not a permanent requirement" at scale.
+> - **Consider asking the main agent to limit the check to the first round, or to spot checks after that.**

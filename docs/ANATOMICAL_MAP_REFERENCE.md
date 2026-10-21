@@ -4,6 +4,13 @@ Built 2026-10-17 under Rohan's instruction, «Fix the documentation, then build 
 The governing mechanism remains `RELATIVE_POSITION_MAP.md` §0 and §8.8: three key planes construct
 each study object's position; the anatomy map guides searches from the objects already found.
 
+For current bootstrap admission, use the distinction in
+[CLASSICAL_AI_BUILD_DESIGN.md §§7.1–7.2](CLASSICAL_AI_BUILD_DESIGN.md#71-answering-and-admitting-are-different-decisions):
+available native planes can constrain particular directions without a complete point or occupied
+volume. Unknown directions stay unknown. Unreviewed cohort ranges are descriptive outputs, not
+anatomical admission tolerances. A map guides current-study observations; it does not transplant
+another patient's coordinates or make overlapping search windows into a physical contradiction.
+
 ## Where the reference comes from
 
 The numerical teaching reference is the [SPL MRI-based Atlas of the Knee](https://www.openanatomy.org/atlas-pages/atlas-spl-knee.html),

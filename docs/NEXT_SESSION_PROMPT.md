@@ -1,3 +1,11 @@
 # Continue the squint-first knee production build
 
-Follow FULL_BUILD_PLAN §0, then its §13 current packet. The latest approved execution is §17; docs/AI_DIAGNOSTIC_DESIGN.md owns the design and docs/SQUINT_PRODUCTION_CONTRACT.md owns frozen worker interfaces. High resolution is bootstrap tooling. Production is squint, anatomical localization, individual-case recall and only bounded unresolved-question zoom. Do not restore the cohort healthy-band prerequisite, unconditional full reconstruction or legacy hard-endpoint output. Native and Claude Max workers build independent units concurrently; verify actual handles before resuming. The current request includes a private Kaggle dry run, not a competition submission.
+Follow FULL_BUILD_PLAN §0, then its §13 current packet for the actual request and jobs.
+Read CLASSICAL_AI_BUILD_DESIGN.md whole for bootstrap -> corpus -> classical learning -> active
+production memory, and SQUINT_PRODUCTION_CONTRACT.md for interfaces. The pending acceptance change is
+`openspec/changes/complete-signed-bootstrap-loop/`; its artifact validation is not runtime completion.
+High resolution builds teaching tools; production uses joint squint recall, anatomy and bounded
+unsettled-question work. Keep signed scopes and lineage. Unknown is neutral in answering, but cannot
+alone warrant automatic new admission; independently warranted visual calls teach directly. Use the
+existing run guides, native helpers and authenticated local Claude Max CLI. Verify source/job state
+before resuming. No private dry run authorizes competition submission.
