@@ -74,9 +74,11 @@ normal.
 3. Integrate, gate, commit, push.
 4. Local loop demonstration through the real entry point (only the 58 teaching and 3 public studies have
    images locally): parent, admissions, child, next round reading the child with negatives intact.
-5. Real first round in the private Kaggle scaling notebook (`kaggle/squint-scaling/`) over training
-   studies, writing a picture sheet per admission; inspect them; promote the child; later rounds
-   spot-checked.
+5. Real first round, locally: pull a bounded set of training studies from the competition data to
+   `data/raw/train_series/`, run the real entry point over them, grow, draw a picture sheet per admission,
+   inspect them, promote the child; later rounds spot-checked. No growth runs on Kaggle (Rohan: «we do not
+   waste kaggle compute on nonsense. We will pull as much data as we need locally when it's time to scale
+   the AI part»); Kaggle runs only the competition notebook and its timed private dry run.
 6. Timed private dry run of the competition notebook. No submission without Rohan's word.
 
 Report reading is the lowest priority: `train.csv` already carries the twelve study-level labels for all

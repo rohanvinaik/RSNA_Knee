@@ -100,6 +100,17 @@ Recalled contextual knowledge SHALL reach interpretation, condition reasoning or
 - **WHEN** a task's independently confirmed experience establishes a contextual interpretation and useful procedure
 - **THEN** subsequent matching context can reactivate that knowledge in an actual decision or tool request, with the source visible.
 
+### Requirement: A diagnosis carries across the views of its object
+A diagnosis clear in one view of an object SHALL make every other view in which the same object's identity is established a positive presentation of that diagnosis, sourced to the view where it was clear. A view whose support is other tissue SHALL carry no condition evidence. The carry SHALL be positive only.
+
+#### Scenario: Diagnosis clear in sagittal, object present coronally
+- **WHEN** a condition is established for an object in its sagittal view and the object's identity is established in its coronal view
+- **THEN** the coronal view alone recalls that object's case as a positive presentation of the condition.
+
+#### Scenario: A wrongly named facet
+- **WHEN** a case's sagittal support was called other tissue
+- **THEN** none of that case's condition calls speak through its sagittal banks.
+
 ### Requirement: Identity growth does not manufacture clinical truth
 Normal and diagnosed memories SHALL use the actual scope of visual, label and report evidence. Identity-only calls SHALL NOT create diagnoses. Whole-condition recall SHALL hear both sides and decide only with warranted condition-relevant tissue and no necessary contradiction.
 

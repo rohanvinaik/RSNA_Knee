@@ -116,6 +116,25 @@ Keep three operations separate:
 
 In the cell drawing example positive/negative cases act as attractors/repulsors. Knee categorization does not need that boundary-drawing stage. Its relevant mechanism is signed recognition and reasoning, with the thesis's scoped near-miss veto semantics. Do not turn every ordinary negative into an unconditional veto everywhere.
 
+### 5.1 A diagnosis belongs to its object, in every view where the object is present
+
+Rohan: «if a diagnosis is clear in one of the three views (coronal/saggittal/axial), then IF the object
+is also present in another view, that is an IMMEDIATE positive k-line». One leg, one set of objects
+(THEORY Law 9): a diagnosis clear in one view of an object is a diagnosis of that object. Every other
+view in which the same object is present, its identity established there, is at once a positive case of
+that diagnosis at that view's scope, sourced to the view where it was clear. That view need not show the
+diagnosis clearly itself; teaching the subtle view is exactly what it adds. The condition is the object's
+presence: a view whose support is other tissue (a negative identity facet) carries nothing, and an
+unasserted facet carries nothing until the object's identity is established there. The carry is
+positive only: a view in which the object looks normal does not make the object normal.
+
+In teaching this means a positive label, report call or visual call for a condition implicating one
+object makes every view in which that object is recognized a positive presentation. For a multi-site
+condition such as fracture or contusion, a study label does not say which bone; the view in which the
+diagnosis is clear names the object, and that object's other views follow. Identity scope therefore
+decides diagnosis scope: a case's condition evidence speaks only through the views where its identity
+holds, for positive and normal presentations alike.
+
 ## 6. Bootstrap: establish the initial recognition corpus
 
 Use the existing teaching studies and their already retained products. Their automatic object names are proposals, not visual calls. Make teaching sheets from actual native images and the actual addressed readings. Do not rerun every anatomical measurement just to recreate the evidence.
@@ -305,7 +324,7 @@ The next integration completes one thin working loop. This is its dependency ord
 2. **Repair frozen-parent growth.** Preserve every signed case table and paired full/cheap payload in the child. Derive study exclusions from every relevant record, including negative-only studies, and apply them to cases, precedents, censors and preparation. Apply §7.1: unknown-only anatomy leaves a proposal. A recognition result and successful immutable publication are separate outcomes.
 3. **Expose available anatomical support.** Let sanity checks consume partial bone-plane constraints by their actual axes. Use affirmative applicable relations and named contradictions, without demanding a complete point or applying a window-overlap veto.
 4. **Connect identity to the real condition consumer.** Verify which observations may answer each tissue question after recognition, preserve unknown/conflict, and let a recalled procedure cause only its justified bounded work. A serialized identity result or procedure name that nothing consumes is unfinished.
-5. **Demonstrate the first actual growth round.** Run the real entry point through candidate production, signed recall, identity-dependent condition reasoning, warranted admission, child publication and the next round reading that child. Both rounds must preserve the same signed mechanism and applicable exclusions. Before the first round's child becomes the next round's parent, inspect all its admissions on their pictures (the development review §7.1 allows). Once they hold up, later rounds run without waiting for a picture check; spot-check their admissions instead, since per-case approval at scale is not required. A wrong admission found either way receives a scoped corrected negative call, which teaches immediately, and its named difference from the case it recalled then goes through §5's near-miss test. A failure that keeps recurring calls for more structure (thesis §11.4): an anatomical rule drafted from the pictures through FULL_BUILD_PLAN §7's review, not a tolerance taken from the map. Locally only the 58 teaching studies and 3 public test studies have images, so a local round demonstrates the mechanism; the real round runs where the training images are mounted, the private Kaggle scaling notebook, which must write picture sheets for the first round's admissions and for the spot checks.
+5. **Demonstrate the first actual growth round.** Run the real entry point through candidate production, signed recall, identity-dependent condition reasoning, warranted admission, child publication and the next round reading that child. Both rounds must preserve the same signed mechanism and applicable exclusions. Before the first round's child becomes the next round's parent, inspect all its admissions on their pictures (the development review §7.1 allows). Once they hold up, later rounds run without waiting for a picture check; spot-check their admissions instead, since per-case approval at scale is not required. A wrong admission found either way receives a scoped corrected negative call, which teaches immediately, and its named difference from the case it recalled then goes through §5's near-miss test. A failure that keeps recurring calls for more structure (thesis §11.4): an anatomical rule drafted from the pictures through FULL_BUILD_PLAN §7's review, not a tolerance taken from the map. Locally only the 58 teaching studies and 3 public test studies have images today, so a first local round demonstrates the mechanism. To scale, pull the training studies a round needs from the competition data to this machine and run the rounds here, drawing the picture sheets here; Kaggle compute is kept for the competition notebook and its timed private dry run (Rohan: «we do not waste kaggle compute on nonsense. We will pull as much data as we need locally when it's time to scale the AI part»).
 6. **Teach the next task-specific residuals.** Retain actual expectations, recalled precedents, actions, appropriately sourced outcomes and named differences. Use the existing case/censor/split and procedure mechanisms where specified. No universal episode framework or generic agency rewrite is a prerequisite for steps 1–5. A genuinely unspecified update operation is returned as the concrete gap in §15.
 7. **Expand and deploy.** Grow the corpus and alternate task-specific teaching with replay over training data. Verify the integrated gate and source-pinned private Kaggle run, including the complete resource envelope. No competition submission is implied.
 

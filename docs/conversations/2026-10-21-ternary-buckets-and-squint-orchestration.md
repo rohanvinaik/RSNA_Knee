@@ -238,3 +238,17 @@ before its child becomes the next parent, and later rounds are spot-checked, not
 > - At scale the rounds run on Kaggle over thousands of studies. Each round could add many cases, and each would need a picture sheet and a visual check before the loop moves on.
 > - The design document itself says this kind of review "is not a permanent requirement" at scale.
 > - **Consider asking the main agent to limit the check to the first round, or to spot checks after that.**
+
+## Rohan — a diagnosis clear in one view is a positive K-line in every view of the same object, 2026-10-21
+
+Recording metadata, not his words: sent after the lead's status report on the signed memory and the
+growth lanes. Verbatim:
+
+> Note one obvious connection--if a diagnosis is clear in one of the three views (coronal/saggittal/axial), then IF the object is also present in another view, that is an IMMEDIATE positive k-line
+
+## Rohan — no Kaggle compute for growth; pull the data locally to scale, 2026-10-21
+
+Recording metadata, not his words: sent while the lead's plan put the first real growth round in the
+private Kaggle scaling notebook. Verbatim:
+
+> Also, we do not waste kaggle compute on nonsense. We will pull as much data as  we need locally when it's time to scale the AI part
