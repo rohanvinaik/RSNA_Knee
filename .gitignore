@@ -4,6 +4,9 @@
 data/
 submission/*.csv
 
+# Rohan's own words stay local: the conversation records are never committed.
+docs/conversations/
+
 # Python
 .venv/
 __pycache__/
