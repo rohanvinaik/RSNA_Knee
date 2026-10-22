@@ -34,14 +34,21 @@ import pytest
 
 from knee.diagnosis.declarations import QUESTIONS, question_for
 from knee.diagnosis.squint_bootstrap import _rebuilt_configurations
-from knee.diagnosis.squint_configurations import with_configuration_cases
+from knee.diagnosis.squint_configurations import (
+    CONFIGURATION_TEACHING_SCHEMA,
+    SEED_CALL_KIND,
+    ConfigurationProfileError,
+    apply_rebuilt_configurations,
+    rebuild_study_configurations,
+    with_configuration_cases,
+)
 from knee.diagnosis.squint_contracts import combine_condition
 from knee.diagnosis.squint_identity import SANITY_SCHEMA, TEACHING_SCHEMA
 from knee.diagnosis.squint_identity_growth import (
     CHILD_DIRECTORY,
     CONDITION_TEACHING_SCHEMA,
-    CONFIGURATION_TEACHING_SCHEMA,
     DECISIONS_FILE,
+    GROWTH_ROUND_KIND,
     GROWTH_SCHEMA,
     HELD_OUT_SCHEMA,
     LABEL_SOURCE,
@@ -886,17 +893,21 @@ def canonical(value) -> bytes:
     return json.dumps(value, sort_keys=True, separators=(",", ":")).encode("utf-8")
 
 
-def configured_parent_memory() -> dict:
+def configured_parent_memory(rows: dict | None = None) -> dict:
     """The parent as a seed publishes it: its two labelled studies' configuration
     cases, built by the seed's own scoped builder, with their ledger rows."""
+    if rows is None:
+        rows = {"study-b": SEED_ROW, "study-c": SEED_ROW}
     memory = parent_memory()
     for case in memory["cases"]:
-        if case["study_uid"] in ("study-b", "study-c"):
-            calls, scopes = _condition_calls("femur", label_row(SEED_ROW))
+        if case["study_uid"] in rows:
+            calls, scopes = _condition_calls(
+                "femur", label_row(rows[case["study_uid"]])
+            )
             case.update(condition_calls=calls, presentation_scope=scopes)
-    ledger = {study: label_row(SEED_ROW) for study in ("study-b", "study-c")}
-    built, rows, revision = _rebuilt_configurations({"label_ledger": ledger}, memory)
-    memory.update(cases=[*memory["cases"], *built], label_ledger=rows)
+    ledger = {study: label_row(row) for study, row in rows.items()}
+    built, kept, revision = _rebuilt_configurations({"label_ledger": ledger}, memory)
+    memory.update(cases=[*memory["cases"], *built], label_ledger=kept)
     memory["revision"] = revision
     return memory
 
@@ -997,7 +1008,7 @@ def test_a_labelled_admission_teaches_its_studys_configurations_on_its_views(
         assert case["configuration_teaching"] == {
             "schema": CONFIGURATION_TEACHING_SCHEMA,
             "labels": {**record_["labels"], "study_uid": "study-x"},
-            "round": record_["round"],
+            "built_by": record_["built_by"],
             "roles": {
                 "femur": {
                     "case_id": X,
@@ -1035,7 +1046,8 @@ def test_a_labelled_admission_teaches_its_studys_configurations_on_its_views(
     assert record_ == {
         "schema": CONFIGURATION_TEACHING_SCHEMA,
         "labels": receipt["condition_teaching"]["labels"],
-        "round": {
+        "built_by": {
+            "kind": GROWTH_ROUND_KIND,
             "ordinal": 1,
             "parent_manifest_sha256": configured.sha256,
             "decisions_sha256": receipt["decisions_sha256"],
@@ -1171,10 +1183,10 @@ def test_a_later_admission_rebuilds_its_studys_configurations_with_every_role(
     prior = versions[configuration_id("study-x", "Fracture")]
     assert fracture["configuration_teaching"]["supersedes"] == {
         "case_sha256": _json_sha256(prior),
-        "round": prior["configuration_teaching"]["round"],
+        "built_by": prior["configuration_teaching"]["built_by"],
     }
-    assert prior["configuration_teaching"]["round"]["ordinal"] == 1
-    assert fracture["configuration_teaching"]["round"]["ordinal"] == 2
+    assert prior["configuration_teaching"]["built_by"]["ordinal"] == 1
+    assert fracture["configuration_teaching"]["built_by"]["ordinal"] == 2
     assert second["configuration_teaching"]["superseded"] == {
         case_id: _json_sha256(case) for case_id, case in versions.items()
     }
@@ -1192,9 +1204,11 @@ def test_a_later_admission_rebuilds_its_studys_configurations_with_every_role(
     assert fracture["condition_calls"] == {"Fracture": 1}
     assert fracture["configuration_teaching"]["labels"] == {
         "source": "label_ledger",
-        "parent_manifest_sha256": first.sha256,
         "study_uid": "study-x",
     }
+    assert fracture["configuration_teaching"]["built_by"]["parent_manifest_sha256"] == (
+        first.sha256
+    )
     assert plain["configuration_teaching"]["labels"] is None
     assert (
         case_of(unlabelled, located_of("study-x", "patella"))["condition_calls"] == {}
@@ -1232,7 +1246,7 @@ def test_a_teaching_study_is_rebuilt_only_when_an_object_of_it_is_admitted(
             "case_id": seed_id,
             "identity_views": None,
             "identity": {
-                "kind": "seed_visual_call",
+                "kind": SEED_CALL_KIND,
                 "reader": "fixture reviewer",
                 "call_sha256": _json_sha256(seed_call),
             },
@@ -1246,7 +1260,7 @@ def test_a_teaching_study_is_rebuilt_only_when_an_object_of_it_is_admitted(
     prior = versions[configuration_id("study-b", "Fracture")]
     assert fracture["configuration_teaching"]["supersedes"] == {
         "case_sha256": _json_sha256(prior),
-        "round": None,
+        "built_by": None,
     }
     # The other teaching study, nothing of it admitted, keeps its cases.
     for case in configurations_of(configured.memory, "study-c"):
@@ -1436,3 +1450,143 @@ def test_a_label_row_or_configuration_the_parent_holds_otherwise_is_refused(
         taught(tmp_path, load_memory_snapshot(tmp_path / "misfiled"), "misfiled-round")
     assert (info.value.code, info.value.detail) == ("configuration_case_conflict", acl)
     assert not (tmp_path / "misfiled-round").exists()
+
+
+# ------------------------------------- the same rebuild for any publication
+
+DIRECT_VISUAL_KIND = "independent_direct_visual_teaching"
+VISUAL_READER = "fixture visual reviewer"
+ACL_SAG, ACL_COR = "object/acl/" + SAG_BANK, "object/acl/" + COR_BANK
+
+
+def with_direct_visual_case(memory: dict, study: str, subject: str, views) -> dict:
+    """``memory`` plus one direct visual teaching case, added as the visual
+    publisher adds it: the case with its provenance, its explicit confirm call."""
+    case_id = f"direct-visual:{study}:{subject}:native-r1"
+    call = {
+        "candidate_id": case_id,
+        "call": "confirm",
+        "reader": VISUAL_READER,
+        "views": views,
+        "notes": "pictured on its native image",
+    }
+    provenance = {
+        "schema": "knee.direct-visual-teaching/v1",
+        "kind": DIRECT_VISUAL_KIND,
+        "reader": VISUAL_READER,
+        "additions_sha256": "1" * 64,
+        "case_ids": [case_id],
+        "calls": [call],
+    }
+    child = copy.deepcopy(memory)
+    child["cases"].append(
+        {
+            "case_id": case_id,
+            "study_uid": study,
+            "subject": subject,
+            "condition_calls": {},
+            "profile": profile(subject, {SAG_BANK: (0, 0, 3), COR_BANK: (0, 3, 0)}),
+            "regions": [],
+            "teaching_source": {"kind": DIRECT_VISUAL_KIND, "reader": VISUAL_READER},
+            "direct_visual_teaching": {**provenance, "call": call},
+        }
+    )
+    child["object_identity_teaching"]["confirmed_case_ids"].append(case_id)
+    child["object_identity_teaching"]["calls"].append(call)
+    return child
+
+
+def test_a_direct_visual_case_gives_its_studys_acl_configuration_an_acl_role():
+    memory = configured_parent_memory(
+        {"study-b": {**SEED_ROW, "ACL": 1}, "study-c": SEED_ROW}
+    )
+    acl_id = configuration_id("study-b", "ACL")
+    before = case_of(memory, acl_id)
+    # The teaching set's ACL configuration of study-b hears its femur alone.
+    assert before["condition_calls"] == {"ACL": 1}
+    assert sorted(before["profile"]["source"]["roles"]) == ["femur"]
+    visual = with_direct_visual_case(memory, "study-b", "acl", [SAG])
+    untouched = canonical(visual)
+    case_id = "direct-visual:study-b:acl:native-r1"
+    [call] = [
+        row
+        for row in visual["object_identity_teaching"]["calls"]
+        if row["candidate_id"] == case_id
+    ]
+    published = {"kind": "direct_visual_teaching", "additions_sha256": "1" * 64}
+    rebuilt = rebuild_study_configurations(visual, ["study-b"], built_by=published)
+    acl = rebuilt["replaces"][acl_id]
+    # The ACL is a role, on its identity view alone, beside the seed's femur.
+    assert acl["profile"]["banks"] == {ACL_SAG: [0, 0, 3], FEMUR_SAG: [1, 2, 0]}
+    roles = acl["configuration_teaching"]["roles"]
+    assert roles["acl"] == {
+        "case_id": case_id,
+        "identity_views": [SAG],
+        "identity": {
+            "kind": DIRECT_VISUAL_KIND,
+            "reader": VISUAL_READER,
+            "call_sha256": _json_sha256(call),
+            "provenance_sha256": _json_sha256(
+                case_of(visual, case_id)["direct_visual_teaching"]
+            ),
+        },
+    }
+    assert roles["femur"]["identity"]["kind"] == SEED_CALL_KIND
+    # The call stays the official study label; the teaching set's version is recorded.
+    assert acl["condition_calls"] == {"ACL": 1}
+    assert acl["presentation_scope"] == {"ACL": "study_condition_configuration"}
+    assert acl["configuration_teaching"]["labels"] == {
+        "source": "label_ledger",
+        "study_uid": "study-b",
+    }
+    assert acl["configuration_teaching"]["built_by"] == published
+    assert acl["configuration_teaching"]["supersedes"] == {
+        "case_sha256": _json_sha256(before),
+        "built_by": None,
+    }
+    assert sorted(rebuilt["replaces"]) == sorted(
+        case["case_id"] for case in configurations_of(memory, "study-b")
+    )
+    assert (rebuilt["new"], rebuilt["label_ledger"]) == ([], {})
+    # Placed, each replaces its version in place; study-c's stay byte for byte.
+    child = apply_rebuilt_configurations(visual, rebuilt)
+    ids = [case["case_id"] for case in child["cases"]]
+    assert ids == [case["case_id"] for case in visual["cases"]]
+    for case in configurations_of(visual, "study-c"):
+        assert canonical(case_of(child, case["case_id"])) == canonical(case)
+    assert canonical(visual) == untouched
+    # The production preparation now hears the ACL role for ACL; before, only
+    # the femur.
+    index = ids.index(acl_id)
+    for memory_, heard in ((child, {ACL_SAG, FEMUR_SAG}), (visual, {FEMUR_SAG})):
+        prepared = prepare_recall(memory_)
+        assert set(prepared["question_case_profile_banks"]["ACL"][index]) == heard
+    # A study with no configuration yet gets new cases from the row supplied.
+    fresh = with_direct_visual_case(memory, "study-v", "acl", [SAG])
+    source = {"source": "train.csv", "source_sha256": "2" * 64}
+    rebuilt = rebuild_study_configurations(
+        fresh,
+        ["study-v"],
+        built_by=published,
+        labels={"study-v": label_row({"ACL": 1})},
+        label_source=source,
+    )
+    [new] = rebuilt["new"]
+    assert new["case_id"] == configuration_id("study-v", "ACL")
+    assert new["profile"]["banks"] == {ACL_SAG: [0, 0, 3]}
+    assert new["configuration_teaching"]["labels"] == {**source, "study_uid": "study-v"}
+    assert rebuilt["label_ledger"] == {"study-v": label_row({"ACL": 1})}
+    assert apply_rebuilt_configurations(fresh, rebuilt)["cases"][-1] == new
+    # Supplied labels need their source named, and the builder a kind.
+    for options, code in (
+        (
+            {"labels": {"study-v": label_row({"ACL": 1})}},
+            "labels_or_label_source_invalid",
+        ),
+        ({"built_by": {"additions_sha256": "1" * 64}}, "built_by_invalid"),
+    ):
+        with pytest.raises(ConfigurationProfileError) as info:
+            rebuild_study_configurations(
+                fresh, ["study-v"], **{"built_by": published, **options}
+            )
+        assert info.value.code == code

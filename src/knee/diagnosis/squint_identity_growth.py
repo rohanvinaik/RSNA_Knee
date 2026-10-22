@@ -48,26 +48,24 @@ name. Labels never reach harvesting, recall, admission or query construction, so
 the decisions file is the same bytes with or without them. A memory candidate
 enters as its source memory holds it, its calls included.
 
-Configuration teaching (CLASSICAL_AI_BUILD_DESIGN §§5.1, 11): a study in which a
-round admits an object gets its whole-condition configuration cases built by the
-seed's own scoped builder (``squint_bootstrap._rebuilt_configurations``) when the
-round carried its ``train.csv`` row, and rebuilt when the parent already holds
-configuration cases for it (an earlier round's or the teaching set's): one
+Configuration teaching (CLASSICAL_AI_BUILD_DESIGN §§5.1, 11): the studies in which
+a round admits an object go to ``squint_configurations.rebuild_study_configurations``,
+the one rebuild every publication adding warranted objects uses. A study whose
+row the round carried, or whose row the parent's ledger holds, gets its
+whole-condition configuration cases from the seed's own scoped builder: one
 ``diagnosis/<condition>`` case per labelled question, composed from every object
-case of that study in the child, the parent's and this round's, each role on
-the views where its identity holds, with missing roles explicit. The call is
-the official label alone, the carried row's or else the parent's ledger row's,
-at ``study_condition_configuration`` scope; a blank label makes no case and the
-labels never enter the composition, so a Fracture or Contusion positive stays a
-study-level configuration call and relabels no object. Every role keeps its own
-provenance: the recognition-derived lineage of an admission, or the visual call
-of a seed. Only the clinical call is official. A rebuilt case keeps its id and
-replaces the parent's version in the child only, recording that version's
-digest and round, so one configuration case per study and condition is ever
-live. A study in which nothing was admitted keeps its configuration cases byte
-for byte, and the parent memory is never changed. A carried row joins the
-child's ``label_ledger``; one differing from the parent's row is refused by
-name.
+case of that study in the child, the parent's and this round's, each role on the
+views where its identity holds and with its own provenance (recognition-derived
+lineage, direct visual call or seed call), missing roles explicit. The call is the
+official label alone, at ``study_condition_configuration`` scope; a blank label
+makes no case and the labels never enter the composition, so a Fracture or
+Contusion positive stays a study-level configuration call and relabels no object.
+Only the clinical call is official. A rebuilt case keeps its id and replaces the
+parent's version in the child only, recording that version's digest and builder,
+so one configuration case per study and condition is ever live. A study in which
+nothing was admitted keeps its configuration cases byte for byte, and the parent
+memory is never changed. A carried row joins the child's ``label_ledger``; one
+differing from the parent's row is refused by name.
 
 Held-out studies: a candidate from a held-out study is never scored or admitted
 (state ``held_out``) and its labels are never read. The held-out set is the
@@ -101,13 +99,14 @@ from collections.abc import Iterable, Iterator, Mapping, Sequence
 from pathlib import Path
 from typing import Any
 
-from knee.diagnosis.squint_bootstrap import (
-    SquintBootstrapError,
-    _rebuilt_configurations,
+from knee.diagnosis.squint_configurations import (
+    CONFIGURATION_TEACHING_SCHEMA,
+    ConfigurationProfileError,
+    apply_rebuilt_configurations,
+    rebuild_study_configurations,
 )
 from knee.diagnosis.squint_identity import (
     SANITY_SCHEMA,
-    identity_condition_views,
     prepare_identity,
     recall_identity,
 )
@@ -118,7 +117,6 @@ from knee.diagnosis.squint_memory import (
     MemorySnapshot,
     SquintMemoryError,
     _json_sha256,
-    _link_configuration_full_profiles,
     _validate_memory,
     carry_condition_calls,
     load_memory_snapshot,
@@ -134,8 +132,8 @@ STUDY_SCHEMA = "knee.squint-study/v1"
 INFERENCE_SOURCE = "squint-inference"
 MEMORY_SOURCE = "candidate-memory"
 RECOGNITION_KIND = "recognition_derived_identity"
-# A configuration role's identity confirmed by the seed's visual call.
-SEED_CALL_KIND = "seed_visual_call"
+# The publication kind a growth round records on the configuration cases it builds.
+GROWTH_ROUND_KIND = "identity_growth_round"
 RECOGNIZER = "knee.diagnosis.squint_identity.recall_identity"
 READER = (
     "knee.diagnosis.squint_identity_growth (recognition-derived; not a visual call)"
@@ -144,7 +142,6 @@ DECISIONS_FILE = "admission-decisions.json"
 CHILD_DIRECTORY = "memory"
 HELD_OUT_SCHEMA = "knee.identity-growth-held-out/v1"
 CONDITION_TEACHING_SCHEMA = "knee.identity-growth-condition-teaching/v1"
-CONFIGURATION_TEACHING_SCHEMA = "knee.identity-growth-configuration-teaching/v1"
 LABEL_SOURCE = "train.csv"
 STATES = (
     "admitted",
@@ -1031,250 +1028,54 @@ def _carry_labels(
     return record, rows
 
 
-def _role_links(staged: Mapping[str, Any]) -> dict[str, dict[str, Any]]:
-    """Each role's link to its object case and that case's own identity provenance.
-
-    ``identity_views`` are the views the role was composed on, its confirm
-    call's as ``identity_condition_views`` reads them (None: a whole-case
-    confirm, every view). A recognition-derived case is pinned by the digest of
-    its lineage (``identity_growth``); a seed case, confirmed by a visual call,
-    by its call row's digest and reader. Neither is copied.
-    """
-    scope = identity_condition_views(staged)
-    if scope.get("outcome") != "scoped":
-        raise IdentityGrowthError(
-            "configuration_identity_teaching_invalid", str(scope.get("reason"))
-        )
-    reader = staged["object_identity_teaching"].get("reader")
-    links: dict[str, dict[str, Any]] = {}
-    for case in staged["cases"]:
-        case_id = case["case_id"]
-        if case_id not in scope["views"]:
-            raise IdentityGrowthError("configuration_role_unconfirmed", case_id)
-        views = scope["views"][case_id]
-        [row] = scope["calls"][case_id]
-        lineage = case.get("identity_growth")
-        if isinstance(lineage, Mapping) and lineage.get("kind") == RECOGNITION_KIND:
-            identity = {
-                "kind": RECOGNITION_KIND,
-                "independent_confirmation": lineage["independent_confirmation"],
-                "parent_manifest_sha256": lineage["parent_manifest_sha256"],
-                "lineage_sha256": _json_sha256(lineage),
-            }
-        else:
-            identity = {
-                "kind": SEED_CALL_KIND,
-                "reader": row.get("reader", reader),
-                "call_sha256": _json_sha256(row),
-            }
-        links[case["subject"]] = {
-            "case_id": case_id,
-            "identity_views": None
-            if views is None
-            else [list(view) for view in sorted(views)],
-            "identity": identity,
-        }
-    return links
-
-
-def _superseded(prior: Mapping[str, Any]) -> dict[str, Any]:
-    """The parent version a rebuilt case replaces in the child: digest and round.
-
-    ``round`` is the growth round that built that version, or None when no
-    growth round did (the teaching set's own publication).
-    """
-    teaching = prior.get("configuration_teaching")
-    built_in = teaching.get("round") if isinstance(teaching, Mapping) else None
-    return {"case_sha256": _json_sha256(prior), "round": copy.deepcopy(built_in)}
-
-
-def _configuration_row(
-    study: str,
-    carried: Mapping[str, int | None] | None,
-    kept: Mapping[str, int | None] | None,
-    configured: bool,
-    reference: Mapping[str, Any] | None,
-    parent_sha256: str,
-) -> tuple[Mapping[str, int | None], dict[str, Any]] | None:
-    """The official row a changed study's configurations are built from, and its source.
-
-    The row this round carried (``carried``), named by the label file; else, for a
-    study the parent holds configuration cases for (``configured``), the parent's
-    ledger row (``kept``). None: no configuration is built. A carried row
-    differing from the parent's is refused (``label_ledger_row_conflict``), as is
-    a configured study the parent holds no row for
-    (``configuration_label_row_missing``): it cannot be rebuilt.
-    """
-    if carried is not None and kept is not None and dict(kept) != dict(carried):
-        raise IdentityGrowthError("label_ledger_row_conflict", study)
-    if carried is not None:
-        return carried, {**(reference or {}), "study_uid": study}
-    if not configured:
-        return None
-    if kept is None:
-        raise IdentityGrowthError("configuration_label_row_missing", study)
-    labels = {
-        "source": "label_ledger",
-        "parent_manifest_sha256": parent_sha256,
-        "study_uid": study,
-    }
-    return kept, labels
-
-
 def _configuration_record(
     reference: Mapping[str, Any] | None,
-    round_identity: Mapping[str, Any],
-    studies: Iterable[str],
-    cases: Sequence[Mapping[str, Any]],
-    superseded: Mapping[str, str],
-    added: Iterable[str],
+    built_by: Mapping[str, Any],
+    rebuilt: Mapping[str, Any],
 ) -> dict[str, Any]:
     """The round's record of its configuration teaching, binding the cases' content."""
     return {
         "schema": CONFIGURATION_TEACHING_SCHEMA,
         "labels": None if reference is None else dict(reference),
-        "round": dict(round_identity),
-        "study_uids": sorted(studies),
-        "case_ids": [case["case_id"] for case in cases],
-        "superseded": dict(sorted(superseded.items())),
-        "cases_sha256": _json_sha256(list(cases)),
-        "label_ledger_added": sorted(added),
+        "built_by": dict(built_by),
+        "study_uids": list(rebuilt["study_uids"]),
+        "case_ids": [case["case_id"] for case in rebuilt["cases"]],
+        "superseded": dict(sorted(rebuilt["superseded"].items())),
+        "cases_sha256": _json_sha256(list(rebuilt["cases"])),
+        "label_ledger_added": sorted(rebuilt["label_ledger"]),
     }
 
 
 def _teach_configurations(
-    parent: Mapping[str, Any],
-    parent_sha256: str,
-    parent_case_ids: frozenset[str],
-    teaching: Mapping[str, Any],
+    base: Mapping[str, Any],
     admissions: Sequence[Mapping[str, Any]],
     rows: Mapping[str, Mapping[str, int | None]] | None,
     reference: Mapping[str, Any] | None,
-    round_identity: Mapping[str, Any],
+    built_by: Mapping[str, Any],
 ) -> dict[str, Any] | None:
-    """Each changed study's whole-condition cases, built as the seed builds them.
+    """Each admitted study's whole-condition cases, rebuilt for the child.
 
-    A study in which this round admitted an object is (re)built when this round
-    carried its row (``rows``, ``_carry_labels``'s) or the parent already holds
-    configuration cases for it, whose labels are then the parent's ledger row
-    (``_configuration_row``, which refuses a row the parent holds differently).
-    The seed's own scoped builder (``squint_bootstrap._rebuilt_configurations``)
-    composes one case per labelled question from every object case of that study
-    in the child, the parent's and this round's, each on the views where its
-    identity holds in the child's ``teaching`` (the scoping preparation reads),
-    with missing roles explicit, the official label as the call at
-    ``study_condition_configuration`` scope and no case for a blank label.
-    Proposals, held-out and non-admitted candidates never reach it. Apart from
-    the builder's fields each case keeps its label source, this round and each
-    role's own provenance (``_role_links``), and a role's full profile is linked
-    on the new cases alone. A case whose id the parent holds for that study
-    replaces the parent's version in the child only, recording it
-    (``_superseded``); a parent case of that study the rebuild does not write
-    (``configuration_rebuild_incomplete``), or a new id the parent holds outside
-    that study (``configuration_case_conflict``), is refused by name, so one
-    case per study and condition is ever live. Studies with no admission are not
-    touched. Returns None when no label file was given and no study was built;
-    otherwise the new cases, the replacements by id, the ledger rows they add and
-    the round's record.
+    ``base`` is the child before them (``_child_base``): every parent record and
+    this round's admissions with their confirm calls. The studies with an
+    admission go to ``squint_configurations.rebuild_study_configurations``, the
+    one rebuild every publication adding warranted objects uses: every object
+    case of the study, each role on its identity views with its own provenance,
+    the row this round carried (``rows``, named by the label file) or else the
+    ledger's, the same ids and every replaced version recorded. A study with no
+    row and no configuration case gets none. Its refusals keep their codes and
+    details as ``IdentityGrowthError``. Returns None when no label file was given
+    and no study was rebuilt; otherwise the rebuild with the round's record.
     """
-    ledger = parent.get("label_ledger")
-    if ledger is None:
-        ledger = {}
-    elif not isinstance(ledger, Mapping):
-        raise IdentityGrowthError("parent_label_ledger_invalid")
-    carried_rows = {} if rows is None else rows
-    objects: dict[str, list[Mapping[str, Any]]] = {}
-    held: dict[str, dict[str, Mapping[str, Any]]] = {}
-    for case in parent["cases"]:
-        if case["subject"].startswith("diagnosis/"):
-            held.setdefault(case["study_uid"], {})[case["case_id"]] = case
-        else:
-            objects.setdefault(case["study_uid"], []).append(case)
-    admitted: dict[str, list[Mapping[str, Any]]] = {}
-    for entry in admissions:
-        admitted.setdefault(entry["case"]["study_uid"], []).append(entry["case"])
-    # The teaching is indexed once; each study is scoped by its own cases' rows,
-    # the same views the whole block gives them, without rereading every call.
-    calls_by_id: dict[str, list[Mapping[str, Any]]] = {}
-    for call in teaching.get("calls", ()):
-        if isinstance(call, Mapping) and isinstance(call.get("candidate_id"), str):
-            calls_by_id.setdefault(call["candidate_id"], []).append(call)
-    confirmed = set(teaching.get("confirmed_case_ids", ()))
-    cases: list[dict[str, Any]] = []
-    new: list[dict[str, Any]] = []
-    replaces: dict[str, dict[str, Any]] = {}
-    superseded: dict[str, str] = {}
-    added: dict[str, dict[str, int | None]] = {}
-    studies: list[str] = []
-    for study in sorted(admitted):
-        carried, kept = carried_rows.get(study), ledger.get(study)
-        chosen = _configuration_row(
-            study, carried, kept, study in held, reference, parent_sha256
+    studies = sorted({entry["case"]["study_uid"] for entry in admissions})
+    try:
+        rebuilt = rebuild_study_configurations(
+            base, studies, built_by=built_by, labels=rows, label_source=reference
         )
-        if chosen is None:
-            continue
-        row, labels = chosen
-        studies.append(study)
-        roles = [*objects.get(study, ()), *admitted[study]]
-        ids = [case["case_id"] for case in roles]
-        staged = {
-            "schema": parent["schema"],
-            "revision": parent["revision"],
-            "cases": roles,
-            "object_identity_teaching": {
-                **teaching,
-                "confirmed_case_ids": [i for i in ids if i in confirmed],
-                "calls": [call for i in ids for call in calls_by_id.get(i, ())],
-            },
-        }
-        try:
-            built, _ledger, _revision = _rebuilt_configurations(
-                {"label_ledger": {study: dict(row)}}, staged
-            )
-        except SquintBootstrapError as error:
-            raise IdentityGrowthError(
-                "configuration_rebuild_invalid", f"{study}:{error.code}"
-            ) from error
-        _link_configuration_full_profiles({"cases": [*staged["cases"], *built]})
-        links = _role_links(staged)
-        previous = dict(held.get(study, {}))
-        for case in built:
-            prior = previous.pop(case["case_id"], None)
-            if prior is None and case["case_id"] in parent_case_ids:
-                raise IdentityGrowthError(
-                    "configuration_case_conflict", case["case_id"]
-                )
-            supersedes = None if prior is None else _superseded(prior)
-            case["configuration_teaching"] = {
-                "schema": CONFIGURATION_TEACHING_SCHEMA,
-                "labels": dict(labels),
-                "round": dict(round_identity),
-                "roles": {
-                    subject: copy.deepcopy(links[subject])
-                    for subject in sorted(case["profile"]["source"]["roles"])
-                },
-                "supersedes": supersedes,
-            }
-            cases.append(case)
-            if supersedes is None:
-                new.append(case)
-            else:
-                replaces[case["case_id"]] = case
-                superseded[case["case_id"]] = supersedes["case_sha256"]
-        if previous:
-            raise IdentityGrowthError("configuration_rebuild_incomplete", min(previous))
-        if carried is not None and kept is None:
-            added[study] = dict(carried)
-    if reference is None and not studies:
+    except ConfigurationProfileError as error:
+        raise IdentityGrowthError(error.code, error.detail) from error
+    if reference is None and not rebuilt["study_uids"]:
         return None
-    return {
-        "new": new,
-        "replaces": replaces,
-        "label_ledger": added,
-        "record": _configuration_record(
-            reference, round_identity, studies, cases, superseded, added
-        ),
-    }
+    return {**rebuilt, "record": _configuration_record(reference, built_by, rebuilt)}
 
 
 # ---------------------------------------------------------------- the round
@@ -1502,15 +1303,16 @@ def _merge_retained(child: dict[str, Any], retained_rows: Sequence[Mapping]) -> 
         child["source_identities"] = merged_identities
 
 
-def _child_teaching(
+def _child_base(
     parent: Mapping[str, Any], admissions: Sequence[Mapping[str, Any]]
 ) -> dict[str, Any]:
-    """The parent's identity teaching plus each admission's case id and confirm call.
+    """Every parent record plus the admissions, before configuration teaching.
 
-    A new block; the parent's lists are not mutated. Configuration teaching
-    scopes its roles by this block, the one the child keeps, read for each
-    study's own cases.
+    The identity teaching is a new block holding each admission's case id and
+    confirm call; the parent's runtime keys are dropped and none of its parts is
+    mutated. Configuration teaching reads exactly this child.
     """
+    child = {key: value for key, value in parent.items() if key not in _RUNTIME_KEYS}
     teaching = dict(parent["object_identity_teaching"])
     teaching["confirmed_case_ids"] = [
         *teaching.get("confirmed_case_ids", []),
@@ -1520,45 +1322,37 @@ def _child_teaching(
         *teaching.get("calls", []),
         *(entry["call"] for entry in admissions),
     ]
-    return teaching
+    child["object_identity_teaching"] = teaching
+    child["cases"] = [*parent["cases"], *(entry["case"] for entry in admissions)]
+    return child
 
 
 def _child_memory(
+    base: Mapping[str, Any],
     parent: Mapping[str, Any],
     parent_sha256: str,
     admissions: Sequence[Mapping[str, Any]],
     round_record: dict[str, Any],
-    teaching: Mapping[str, Any],
     configurations: Mapping[str, Any] | None = None,
 ) -> dict[str, Any]:
-    """Every parent record, plus the admissions; shared parent parts are not mutated.
+    """The published child: ``base`` with its configurations, rows and growth block.
 
-    ``teaching`` is ``_child_teaching``'s block. ``configurations`` is
-    ``_teach_configurations``'s: a rebuilt case takes its parent version's place
-    in the child's list (the parent is not changed), a new one follows the
-    admitted object cases, and its label rows join the parent's
-    ``label_ledger``, whose rows stay as they are. The growth block keeps the
-    round's held-out record, the parent's held-out studies included, so the next
-    round keeps honouring them. The revision binds the parent, the decisions and
-    what labels and configurations taught, the configuration cases' content
-    included: a child carrying labels never shares a revision with one that does
-    not, nor with one whose configuration cases differ.
+    ``base`` is ``_child_base``'s. ``configurations``, ``_teach_configurations``'s,
+    are placed by ``apply_rebuilt_configurations``: a rebuilt case takes its
+    parent version's place (the parent is not changed), a new one follows the
+    admitted object cases, and its label rows join the ``label_ledger``, whose
+    rows stay as they are. The growth block keeps the round's held-out record,
+    the parent's held-out studies included, so the next round keeps honouring
+    them. The revision binds the parent, the decisions and what labels and
+    configurations taught, the configuration cases' content included: a child
+    carrying labels never shares a revision with one that does not, nor with one
+    whose configuration cases differ.
     """
-    child = {key: value for key, value in parent.items() if key not in _RUNTIME_KEYS}
-    cases = [entry["case"] for entry in admissions]
-    replaces = {} if configurations is None else configurations["replaces"]
-    grown = [] if configurations is None else list(configurations["new"])
-    child["object_identity_teaching"] = teaching
-    child["cases"] = [
-        *(replaces.get(case["case_id"], case) for case in parent["cases"]),
-        *cases,
-        *grown,
-    ]
-    if configurations is not None and configurations["label_ledger"]:
-        child["label_ledger"] = {
-            **(parent.get("label_ledger") or {}),
-            **configurations["label_ledger"],
-        }
+    child = (
+        dict(base)
+        if configurations is None
+        else apply_rebuilt_configurations(base, configurations)
+    )
     _merge_retained(
         child,
         [entry["retained"] for entry in admissions if entry["retained"] is not None],
@@ -1654,15 +1448,14 @@ def grow_identity_memory(
     competition's ``train.csv``: its bytes and header
     are read before the round, and after every decision only the rows of studies
     with an admitted inference case are parsed and carried (``_carry_labels``).
-    Each such study with a row gets its whole-condition configuration cases, and
-    a study the parent already holds configuration cases for has them rebuilt
-    whenever an object of it is admitted, with or without a label file
-    (``_teach_configurations``). Either is recorded beside
-    ``condition_teaching`` as ``configuration_teaching`` in the round record and
-    the receipt; without a label file and with nothing rebuilt, both stay as
-    before. A label row the parent holds differently is refused by name before
-    anything is written. A label file with ``decisions_only`` is refused: no
-    child would hear it.
+    Every study with an admission whose row this round carried, or whose row the
+    parent's ledger holds, has its whole-condition configuration cases (re)built,
+    with or without a label file (``_teach_configurations``). That is recorded
+    beside ``condition_teaching`` as ``configuration_teaching`` in the round
+    record and the receipt; without a label file and with nothing rebuilt, both
+    stay as before. A label row the parent holds differently is refused by name
+    before anything is written. A label file with ``decisions_only`` is refused:
+    no child would hear it.
     """
     parent = _snapshot_memory(parent_snapshot, "invalid_parent_snapshot")
     if not isinstance(parent.get("object_identity_teaching"), Mapping):
@@ -1749,6 +1542,7 @@ def grow_identity_memory(
     data = _decisions_bytes(document)
     decisions_sha256 = hashlib.sha256(data).hexdigest()
     round_identity = {
+        "kind": GROWTH_ROUND_KIND,
         "ordinal": ordinal,
         "parent_manifest_sha256": parent_snapshot.sha256,
         "decisions_sha256": decisions_sha256,
@@ -1780,8 +1574,14 @@ def grow_identity_memory(
                 "read_study_uids": [],
                 "cases": {},
             }
+            nothing = {
+                "study_uids": [],
+                "cases": [],
+                "superseded": {},
+                "label_ledger": {},
+            }
             receipt["configuration_teaching"] = _configuration_record(
-                reference, round_identity, (), (), {}, ()
+                reference, round_identity, nothing
             )
         return receipt
     condition_teaching = label_rows = reference = None
@@ -1789,16 +1589,9 @@ def grow_identity_memory(
         condition_teaching, label_rows = _carry_labels(admissions, label_source)
         reference = label_source["reference"]
     label_source = None  # the label file's text is not held past its carry
-    teaching = _child_teaching(parent, admissions)
+    base = _child_base(parent, admissions)
     configurations = _teach_configurations(
-        parent,
-        parent_snapshot.sha256,
-        represented["case_ids"],
-        teaching,
-        admissions,
-        label_rows,
-        reference,
-        round_identity,
+        base, admissions, label_rows, reference, round_identity
     )
     round_record = {
         "parent_manifest_sha256": parent_snapshot.sha256,
@@ -1823,12 +1616,7 @@ def grow_identity_memory(
         round_record["configuration_teaching"] = configurations["record"]
         receipt["configuration_teaching"] = copy.deepcopy(configurations["record"])
     child = _child_memory(
-        parent,
-        parent_snapshot.sha256,
-        admissions,
-        round_record,
-        teaching,
-        configurations,
+        base, parent, parent_snapshot.sha256, admissions, round_record, configurations
     )
     _verify_child(child)
     output.mkdir(parents=True)
@@ -1858,9 +1646,9 @@ def grow_identity_memory(
 __all__ = [
     "CHILD_DIRECTORY",
     "CONDITION_TEACHING_SCHEMA",
-    "CONFIGURATION_TEACHING_SCHEMA",
     "DECISIONS_FILE",
     "DECISIONS_SCHEMA",
+    "GROWTH_ROUND_KIND",
     "GROWTH_SCHEMA",
     "HELD_OUT_SCHEMA",
     "LABEL_SOURCE",
