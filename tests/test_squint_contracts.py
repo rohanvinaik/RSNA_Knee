@@ -1674,7 +1674,9 @@ def test_warranted_configuration_decides_without_overriding_necessary_negative()
 def _configuration_row(case_id: str, call: int, subjects: tuple[str, ...]) -> dict:
     row = _ratio(case_id, call, 1, 1, trust="trusted")
     row["common_speaking_banks"] = [
-        f"object/{subject}/measured-bank" for subject in subjects
+        f'object/{subject}/squint/v2/view=["Coronal","1","1"]/'
+        "role=object/metric=signal_median/direction=overview/scale=10mm"
+        for subject in subjects
     ]
     return row
 

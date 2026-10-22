@@ -6,6 +6,83 @@ and [FULL_BUILD_PLAN §18](FULL_BUILD_PLAN.md#18-thin-object-bootstrap--rohans-e
 It is not another master plan or current-state queue. FULL_BUILD_PLAN §13 names the sole live packet.
 The contracts here specify required behavior; a contract is not a claim that the behavior is built.
 
+## Controlling author clarification — three-stage navigation, 2026-10-22
+
+Rohan explicitly selected **the paper's three-stage learned navigation layer over
+HDC signals**. The literal question and answer are in
+[the navigation conversation](conversations/2026-10-22-three-stage-navigation-training.md).
+This supersedes this appendix's earlier agent-written restriction to memory records
+only and its blanket optimizer prohibition for this layer. Numerical specialist and
+orchestrator parameters are authorized; exact HDC, anatomy definitions and signed
+memory remain fixed inputs/evidence, not tunable proxies. Do not restart the old
+ambiguity or silently reinterpret his answer as memory growth alone.
+
+The actual implementation and verified commands are in
+[SOM_NAVIGATION_RUN_GUIDE](SOM_NAVIGATION_RUN_GUIDE.md); experiment004 records actual
+training and its limits. FULL_BUILD_PLAN §13's packet remains the sole live queue.
+
+## Dated implementation checkpoint — 2026-10-22 wind-down
+
+This records completed artifacts and explicit limits, not another live queue. The older source
+reviews and lane inventories below remain historical. The selected three-stage parameter learning
+has been implemented and run; filling recognition buckets is still not the entire learning
+algorithm. Signed K-lines, conditional reasoning and learned navigation remain parts of one system.
+
+**Data and training.** The source-pinned `dataset-r2` has 118 studies: 106 training and the same
+12 validation studies used by `dataset-r1`. Its 1,074 known training targets include all 696
+official condition answers from the 58 teaching studies. The other targets come from independently
+reviewed report calls. Validation retains 82 known targets; unknown truth remains masked. The
+58 teacher rows are explicitly training-only teacher readback, bound to their actual generating
+memory `97e7aede…`, while the original 60 rows retain their own generating-memory freshness proofs.
+They are not relabelled independent transfer examples.
+
+The train-fitted schema has 63,502 numerical features and 16 specialists covering all twelve
+conditions. Inputs retain typed measured banks, both sides of HDC recall and observed law/context
+states; labels, report text and study IDs are not numerical input channels. The HDC feature writer
+was unchanged. `train-r2` has **10,566,320 parameters**. It completed specialist training,
+orchestrator training with specialists frozen, and lower-rate joint training at **20/20/10 epoch caps**, using
+seed `20261022`. These are completed optimizer stages, not a claim of PAB convergence.
+
+| Artifact | SHA-256 |
+|---|---|
+| [Dataset arrays](../data/readings/som-navigation-20261022/dataset-r2/dataset.npz) | `8bb3b45eaf0ef0d3dc505e3432b2c24cbc385034feb0bbb3af321fb9b347b1d4` |
+| [Dataset schema](../data/readings/som-navigation-20261022/dataset-r2/schema.json) | `7095f05d4ac6afd799512046e8a7a4533b77c31e7195aecd0c18b9ef4567b996` |
+| [Model manifest](../data/readings/som-navigation-20261022/train-r2/navigation.json) | `ea487781d8b0653b3045f17ec7218137d0e9da699bc56e0a89e93e257353b39b` |
+| [Model weights](../data/readings/som-navigation-20261022/train-r2/weights.npz) | `a5c9c4cef5ef0511c275f67730af8e0e13f900df0c030e4dfba908f9b6121be7` |
+| [Serialized model schema](../data/readings/som-navigation-20261022/train-r2/schema.json) | `a796198aeeb2473a5656bc3f866e0b9f7d61507bdade2e943928b80ad95de438` |
+
+The [dataset audit](../data/readings/som-navigation-20261022/gold58-data-plan-r1/dataset-r2-audit.json)
+and [training receipt](../data/readings/som-navigation-20261022/train-r2/training-receipt.json)
+retain coverage, source bindings and stage results. The different dataset/model schema hashes
+identify their actual serialized artifacts; neither substitutes for the other.
+
+**What was evaluated.** Two completed saved-record replays are separate:
+
+- [58-study teacher readback](../data/readings/som-navigation-20261022/teacher-readback-r2/SUMMARY.md):
+  all 696 targets, on rows used in gradient training. Rounded raw numerical AUC is 0.994–1.000 per condition;
+  this measures fitting on the teaching rows, not independent diagnostic transfer.
+- [12-study validation](../data/readings/som-navigation-20261022/validation-r2/SUMMARY.md):
+  the unchanged validation population with 82 known targets. It influenced epoch retention/PAB,
+  so it is not an untouched final test. Several conditions lack both truth signs at this size.
+
+Each report keeps per-condition ordering pairs and positive/negative identified, abstained and
+wrong counts. Categorical counts come only from the **original saved symbolic findings**. No
+threshold converts a model value into a categorical diagnosis. Raw numerical rankings and the
+final mixed readout are reported separately: `serialize_condition_value` emits exactly **1** for
+`assigned`, exactly **0** for `defeated`, and grades only `open`. Thus old wrong definite findings
+still affect these replays; fitting navigation does not rewrite their recorded premises or verdicts.
+
+**What was not completed.** The new real-entry MRI check of the repaired anatomical/conditional
+reasoning stopped at Rohan's wind-down: [interruption receipt](../data/readings/som-navigation-20261022/gold58-current-check-r2/root-interruption-receipt.json),
+exit 130 after the root's SIGINT, four completed twelve-question study records, and no complete
+58-study cohort receipt. Its 134 pinned source files were unchanged. The initial `-r1` launch
+refused an already-created output directory before reading MRI; its launch pins were retained.
+Root-owned training/inference has stopped; other clients’ jobs were not audited or stopped. Source-consumer repairs, intent tests,
+serialization checks and saved-record ranking results do not establish that the repaired source
+now clinically resolves all 58. Keep that unanswered check distinct from the completed training.
+The sole current packet records the exact interruption and continuation state; the
+[navigation run guide](SOM_NAVIGATION_RUN_GUIDE.md) owns verified running commands.
+
 ## 1. Read the actual request before doing anything
 
 The latest literal requests and corrections are in the final sections of
@@ -61,13 +138,14 @@ this work, in addition to the foundational conversation and theory, are:
    conversation. These inform the mechanism; they do not override the later knee specification.
 
 The source papers have different running implementations. Law-as-architecture includes continuous
-coefficient recall in geosteering; the older chess/legal notes include differentiable specialists,
-losses and optimizers. Transport the justified principles: domain-shaped composition, contextual
-memory, specialist responsibilities, staged teaching, saved-signal replay and residual-directed work.
-Do not import their coefficients, network sizes, loss weights, gates or update equations into the knee.
-The knee's currently specified learned records are individual cases, signed corrections, warranted
-censors/splits and contextual procedure memories. Any additional custom trainable quantity needs its
-named meaning and actual update operation, not an invented generic optimizer.
+coefficient recall in geosteering; the chess/legal work includes differentiable specialists and an
+orchestrator. Rohan selected the paper's three-stage learned navigation over the knee's fixed HDC
+signals. Its implemented specialists/orchestrator parameters are learned state alongside individual
+cases, signed corrections, warranted censors/splits and contextual procedure memories. Train those
+parameters through specialist training, orchestrator training with specialists frozen, and lower-rate
+joint training, using the source-pinned knee implementation and run guide. Do not blindly copy another
+domain's fitted coefficients or replace this selected operation with a capacity sweep. Any additional
+custom trainable quantity still needs its named meaning and actual update operation.
 
 ## 3. One society, one evolving account of this knee
 
@@ -159,8 +237,10 @@ signal that can replace the individual questions' evidence boundaries.
 
 K-lines have both roles: they make corpus construction possible and remain active memories of
 interpretations and useful activity. Populating buckets is an enabling operation, not the whole
-learning algorithm. Corrected negative cases teach immediately. A specialized censor/split needs the
-thesis's significant named difference against the recalled K-line's successes. When the distinction
+learning algorithm. The approved parameterized agencies learn over the measured HDC, signed-recall
+and observed-context channels; three-stage fitting and memory updates are distinct learning
+operations within the same society. Corrected negative cases teach immediately. A specialized
+censor/split needs the thesis's significant named difference against the recalled K-line's successes. When the distinction
 is not established, retain the ordinary correction without manufacturing a generalized veto.
 
 ## 7. Establish the teaching basis without demanding an already trained system
@@ -334,6 +414,8 @@ current definitions/run guides before use, and use the active packet's actual pa
 | `scripts/squint_training_round.py` | Teach source-backed report calls from saved observations, publish and optionally evaluate | This is a report-teaching operation, not every agency's learner |
 | `scripts/prepare_squint_training.py --run …` | Export object buckets and experiences from saved runs without image inference | Repeated `--run` accepts separate completed run roots; keep generating-memory/source pins |
 | `scripts/prepare_squint_training.py --run-round` | Local pinned inference, staged identity growth, reviewed continuation, clinical/configuration carry, procedure retention and child export | First admissions require actual review; this is not a parallel fleet coordinator |
+| `scripts/prepare_som_navigation.py` | Export fixed measured/HDC/recall/context features and independently scoped diagnosis targets with whole-study splits | Teacher readback is explicitly training-only; targets, report text and study IDs are not numerical features |
+| `scripts/train_som_navigation.py` | Fit the author-approved specialists and orchestrator in three stages and export a source/schema-bound NumPy runtime artifact | Use the selected mechanism and verified run guide; no fitted cutoff creates categorical warrant |
 | `scripts/check_squint_learning_transfer.py` | Real parent/child/action comparison, with a declared procedure-only child ablation and pinned raw study cues | A neutral recall annotation is not a changed action or demonstrated clinical benefit |
 | `scripts/near_miss_report.py` | Retain actual corrections/expectations and named differences | No fabricated expectation, automatic censor or new chance rule |
 | `scripts/replay_squint_findings.py` and existing recall APIs | Reconsider saved evidence under declared semantics | State exactly whether replay recombines findings or recomputes recall; neither silently relocates pixels |
@@ -382,7 +464,7 @@ format. It does not relabel recognition-derived candidates as independent calls 
 The command's `training/` is parent material; `child-training/` is exported against the published
 child. Keep each receipt's true identity. Resume only with identical pinned inputs.
 
-## 10. The training round, mechanically
+## 10. The memory/corpus round and parameter training, mechanically
 
 1. **Choose the round's learning questions.** Use actual teaching gaps and observed residuals. The
    objective remains the twelve-condition diagnostic task. Select useful missing distinctions, not
@@ -413,6 +495,10 @@ child. Keep each receipt's true identity. Resume only with identical pinned inpu
    confirmed failure against the precedent it recalled. Use a significant named difference for a
    justified censor/split; otherwise retain the correction without inventing a rule. Learn procedure
    usefulness only from attributed, applicable evidence checked against the appropriate outcome.
+   For the selected parameter learning, export the fixed HDC/recall/context inputs and independent
+   masked targets under whole-study train/validation splits, then run the approved specialist,
+   frozen-specialist orchestrator and lower-rate joint stages. Preserve the resulting model's
+   dataset/schema/source pins. This parameter fit is not the memory admission/publication operation.
 9. **Refresh dependencies.** Rebuild configurations for changed objects/views/clinical calls. Update
    compatible recall preparation. A corrected identity must change clinical evidence eligibility;
    a new memory entry that no decision consumes is unfinished.
@@ -471,10 +557,12 @@ Begin useful training with a thin competent basis; continue genuine missing teac
 Do not claim all 58 are resolved because a command exported records. Do not delay training until an
 untrained automatic locator perfectly resolves all 58. These are different errors.
 
-The final trained system consumes a frozen memory and emits the official twelve values per study
-through the existing submission adapter/schema. It may support several conditions, decline a
-confident categorical assignment or retain disagreement. Keep the categorical finding and evidence
-beside the graded output. Property-deviation digits are not submission probabilities. Preserve the
+The trained system consumes a frozen memory and the compatible trained navigation artifact, then
+emits the official twelve values per study through the existing submission adapter/schema. It may
+support several conditions, decline a confident categorical assignment or retain disagreement.
+Warranted assigned/defeated findings emit exact1/0; only open questions receive a
+graded numerical value. Keep the categorical finding, raw model opinion and final
+serialized value with their evidence. Property-deviation digits are not submission probabilities. Preserve the
 currently approved readout; this handoff supplies no replacement probability formula or covert
 score-tuning policy.
 
@@ -486,6 +574,8 @@ nor the compute envelope. Submission remains subject to Rohan's instruction.
 
 ## 13. Dispatch text for the implementing agent
 
+Template for later explicitly authorized work. Rohan’s current pause and the sole packet control whether anything runs.
+
 > Build the existing knee design as ONE society with ONE shared object account. Support, anatomical
 > role, physiological state and diagnosis condition one another; do not create separate generative
 > and diagnostic models or freeze identity before diagnostic reasoning can act. Anatomy supplies
@@ -494,15 +584,16 @@ nor the compute envelope. Submission remains subject to Rohan's instruction.
 > balanced-ternary departures, signed teaching and unread states. The endpoint is the twelve Kaggle
 > condition questions with warranted assignments and honest uncertainty. Use the hand-grounded 58
 > and correctly identified unimplicated normal objects to teach; do not demand perfect pre-AI
-> recognition. Implement R1–R7 here against whole current functions and real consumers, respecting
-> the current packet's ownership. In particular, fix applicable procedural opposition, finish
-> action attribution for identity looks, replace the borrowed-teacher-cue demonstration with real
-> next-study action evidence, pin actual source/study inputs and compose the existing growth and
-> experience paths into one frozen-parent round. Preserve every signed store and one publication
+> recognition. Use the current packet to identify outstanding R1–R7 work rather than restarting
+> completed repairs. Run the selected three-stage parameter learning over the fixed HDC substrate,
+> alongside warranted memory learning, respecting current ownership. Consumer obligations include
+> applicable procedural opposition, action attribution for identity looks, real next-study action
+> evidence rather than borrowed teacher cues, actual source/study pins and composition of growth
+> and experience paths into one frozen-parent round. Preserve every signed store and one publication
 > chain. Parallel workers produce disjoint observations/patches; one integrator publishes. Show a
 > real learned consequence, then repeat the same operation locally at scale. Do not substitute a
-> fitted cutoff, prototype average, generic optimizer, perfect-boundary campaign or Kaggle
-> packaging exercise. Return a genuinely unspecified update as one concrete operation with its
+> fitted cutoff, prototype average, unapproved replacement optimizer/mechanism, perfect-boundary
+> campaign or Kaggle packaging exercise. Return a genuinely unspecified update as one concrete operation with its
 > actual inputs and missing transformation while continuing the specified work.
 
 ## 14. Literal request and mid-turn corrections

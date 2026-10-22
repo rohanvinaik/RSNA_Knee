@@ -18,6 +18,9 @@ jit = [
 hdc = [
     "h5py>=3.16.0",
 ]
+som-training = [
+    "torch>=2.8",
+]
 
 [build-system]
 requires = ["setuptools>=68"]
@@ -95,7 +98,7 @@ exclude = ["archive", "archive2"]
 # pytest is the dev group's.
 extend_exclude = ["archive", "archive2", "benchmarks"]
 # The drawing scripts are the run's neighbouring scripts, not external distributions.
-known_first_party = ["knee", "object_interiors", "object_assignments", "object_bones", "object_patella", "object_joint", "object_recess"]
+known_first_party = ["knee", "object_interiors", "object_assignments", "object_bones", "object_patella", "object_joint", "object_recess", "squint_visual_capacity", "squint_round_composition"]
 
 [tool.deptry.per_rule_ignores]
 # Detective/Wesker are development readers; Hamilton is the development observation graph; and

@@ -1,5 +1,29 @@
 # The society of agencies: design binding, build spec and training plan
 
+**Output authority, Rohan's explicit correction2026-10-22:** a warranted categorical diagnosis emits exactly1, a warranted categorical absence exactly0; only unresolved cases receive graded numerical values. Learned navigation/probabilities never overwrite decisive symbolic findings. Preserve raw model opinion separately. No fitted probability cutoff creates warrant. The first universal-float adapter and its first release bundle were withdrawn for this error.
+
+**Author's controlling clarification, 2026-10-22:** «Use the paper’s three-stage learned navigation
+layer over HDC signals». See [the literal exchange](conversations/2026-10-22-three-stage-navigation-training.md).
+The supplied SoM training paper's small parameterized specialists/orchestrator, trained in three
+stages over the fixed measured substrate, are explicitly authorized. Earlier records-only learning
+restrictions and the blanket fitted-weight prohibition were agent restrictions, not this selected
+mechanism. Bootstrap and signed memory
+remain active inputs and evidence. Current build/training results are only in the active packet
+and experimental notebook; this clarification does not predeclare implementation success.
+
+**Dated implementation checkpoint — 2026-10-22 wind-down.** The authorized parameterized
+navigation has now been trained: `dataset-r2` contains 106 training studies and the unchanged
+12 validation studies; `train-r2` has 10,566,320 parameters and completed the three stages at
+20/20/10 epoch caps. All 696 official answers from the 58 teaching studies are included in
+training. This parameter learning is additional to signed-memory/corpus construction; bucket
+growth is not the entire learning algorithm. Exact artifact pins, the separate saved-record
+teacher/validation measurements and their limits are in the
+[execution checkpoint](CLASSICAL_AI_TRAINING_EXECUTION.md#dated-implementation-checkpoint--2026-10-22-wind-down).
+The fresh MRI check of the repaired reasoning was interrupted at Rohan's wind-down after four
+studies, not completed on all 58. The older measured inventories below retain their historical
+dates; use the implemented mechanism and that checkpoint. FULL_BUILD_PLAN §13's
+packet remains the sole live state.
+
 **Latest contextual execution binding:**
 [CLASSICAL_AI_TRAINING_EXECUTION.md](CLASSICAL_AI_TRAINING_EXECUTION.md) carries Rohan's complete
 2026-10-22 corrections and the current implementation contracts. ONE society connects support,
@@ -57,11 +81,14 @@ experience. Anatomy supplies the structure, lenses supply observations, HDC make
 relations and differences computable, K-lines recall interpretations and the procedures they warrant,
 and confirmed departures refine the memory.
 
-**Training changes that structured memory and the behaviour that reads it.** The learned state is
-individual cases (positive and negative), near-miss censors and splits, and procedure records. There
-are no fitted weights and no model-size sweep. HDC width is representational structure, not a learned
-quantity. Any new trainable quantity would need its own concrete meaning and update operation, brought
-to Rohan before it is built (CLASSICAL_AI_BUILD_DESIGN §15).
+**Training changes both structured memory and the authorized parameters that interpret its signals.**
+Learned state includes individual signed cases, warranted censors/splits and contextual procedure
+memories, together with the author-approved specialists and orchestrator over fixed HDC features.
+The parameter training has three stages: specialists first, the orchestrator with specialists frozen,
+then joint training at a lower learning rate. Signed memory remains active evidence; the learned
+numerical opinion does not manufacture categorical warrant. HDC encoding is fixed representation,
+not a fitted proxy. This authorizes the specified parameter learning, not a general model-capacity
+sweep or an additional trainable quantity without its own meaning and update operation.
 
 Each of these has its own section in CLASSICAL_AI_BUILD_DESIGN; this file does not repeat them:
 
@@ -78,10 +105,11 @@ Each of these has its own section in CLASSICAL_AI_BUILD_DESIGN; this file does n
 | Concurrence and censors | §11 |
 | Efficiency | §12 |
 
-## 2. What already works and what is missing
+## 2. Earlier implementation inventory (2026-10-22)
 
-Code facts are from READINESS (source HEAD `252ce28` plus the root's uncommitted integration) and were
-spot-checked this session.
+These historical code facts are from READINESS (source HEAD `252ce28` plus the then-uncommitted
+integration). They are not the current implementation inventory; the dated checkpoint above and
+the sole packet retain the later evidence.
 
 | Operation | Producer → real consumer | State |
 |---|---|---|
@@ -153,19 +181,22 @@ The cell project implements the near-miss learner (`engine/nearmiss.py`, CLI-wir
      comparison at the finer scale (worked example, "Measured before implementing").
    - It stays recorded as Rohan's decision and is held unbuilt.
 
-**Consequence:** the critical path is structural (L0), then learning lanes A and C, while the corpus
-grows. More cases cannot substitute for anchors the structure fails to establish.
+**Consequence at that measured source:** structural evidence was being lost before its consumers,
+and lanes A and C still needed work. That finding does not make complete automatic anchoring a
+prerequisite for hand-built teaching or the authorized parameter training.
 
 ## 4. The agencies: one row each
 
-Order follows dependencies (thesis §11.3): structure, then identity, then state, then orchestration.
+These responsibilities share one evolving account (thesis §11.3). New observations and diagnostic
+interpretations can revise support and role; the rows are not mandatory serial stages.
 
 | Agency | Question | Oracle (what may teach it) | Learned record and format | Producer | Consumer that reads it before acting | First demonstration, on excluded studies |
 |---|---|---|---|---|---|---|
 | Placement (structure, not learned yet) | Where are femur and tibia; which is up? | Pictures; known scan directions | none; anchors are structure | `find_anchors` → `study_anchors` (exists) | locator, identity context, sanity checks | L0: the trace, then a picture-checked rule (§5) |
 | Identity | What object does this observation support here? | Scoped visual calls; independent report statements bound to a measured identity. Recognition-derived admissions carry lineage and are **not** an oracle. | Positive and negative identity cases (exist). Near-miss records (Lane A). Censors (consumer exists; producer waits). | `publish_*`, `grow_identity_memory` (exist) | `_identity_readings`, `_resolve_identity_contests`, admission | A corrected admission's scoped negative opposes a resembling candidate on another excluded study through the real entry point (milestone, §7) |
 | State and diagnosis | Normal, presentation or configuration of condition X at the views where identity holds? | Official labels; report statements at their scope; warranted visual or clinical calls | Normal and presentation cases, role-qualified configurations (exist); exceptions later | `carry_condition_calls`, `rebuild_study_configurations`, report teaching (exist) | `recall_object` → `combine_condition` | Replay on excluded studies: identified / abstained / wrong per question |
-| Residual orchestration | Which bounded observation settles this open question here? | The open question's own oracle after the observation, never the completion code | Procedure records under the case: request kind, subject, question, context (anchors, planes, knee side), outcome, settled or not (Lane C) | inference records hold the raw facts (exist); retention to build | `route_observation_request` (exists); a proposer from recalled records (to build, root wiring) | Excluded studies: requests issued, avoided and settled; full-anatomy runs stay zero |
+| Residual orchestration | Which bounded observation settles this open question here? | The open question's own oracle after the observation, never the completion code | Contextual procedure records: request, subject, question, pre-action cue, attributed result and independent check | inference observations → `retain_procedure_experiences` | `recall_procedure_experiences` → `select_observation_requests` → `route_observation_request` | Distinguish a saved selector replay from a real next-study action effect |
+| Learned navigation within this society | What do the fixed HDC, signed-recall and observed-context signals imply for open condition questions and ordering available looks? | Official numeric labels and reviewed report calls at study-condition scope, with whole-study splits | Specialist/orchestrator parameters plus their fixed feature schema and source pins | `prepare_som_navigation.py` → `train_som_navigation.py` | `som_runtime.apply_navigation_record`, `order_navigation_requests` | `train-r2` and separate saved teacher/validation measurements are complete; the repaired full MRI check was interrupted (see dated checkpoint above) |
 
 ## 5. Build spec: the lanes
 
@@ -223,7 +254,7 @@ Tests:
 
 ## 6. Training plan
 
-**One round, the same on every machine:**
+**One memory/corpus round, with independent observation shards:**
 
 1. **Freeze.** Pin the parent memory (sha), the source commit and a batch of new SSD studies. Split
    the batch into shards, one per machine.
@@ -251,11 +282,20 @@ Tests:
 8. **Checkpoint.** A round directory holds its frozen inputs and one completion receipt per study. An
    interrupted round restarts from its frozen parent and pinned inputs and skips completed studies.
 
+**Parameter training is a distinct operation within this society.** Export the fixed measured HDC,
+recall and observed-context channels with independently scoped targets and whole-study splits, then
+run the approved specialist → frozen-specialist orchestrator → lower-rate joint stages. The model
+artifact retains its dataset/schema/source identity. This fits the interpretation and navigation
+parameters; it does not replace signed memory, alter what a lens measures or turn memory publication
+into an optimizer epoch. Verified commands and the completed `train-r2` run are in
+[SOM_NAVIGATION_RUN_GUIDE](SOM_NAVIGATION_RUN_GUIDE.md) and the execution checkpoint above.
+
 **Enough, not everything.** Rohan, 2026-10-22: «Doesn't need to be every bit of data, it just need to be able to
 score and perform well. Classical AI doesn't have the cost/data requirement of ML, we don't need to train on
 everything. just enough».
-- **Teaching studies** are chosen by their official labels (the teaching source) to fill the thin buckets. ACL,
-  MCL, Baker's and Synovitis have only one to three cases on their defining tissue.
+- **Teaching studies** are chosen by their official labels (the teaching source) to fill actual thin buckets.
+  The earlier bootstrap inventory had only one to three defining-tissue cases for ACL, MCL, Baker's and
+  Synovitis; use the current inventory rather than treating those old counts as today's coverage.
 - **The held-out set** is a fixed set of studies chosen independently and excluded from every source.
 - **Stop and freeze** when identified / abstained / wrong per condition on that set stops improving from one
   round to the next. Coverage of the corpus is not the criterion.
@@ -265,7 +305,7 @@ everything. just enough».
 - State: labels and reports.
 - Orchestration: procedure records, once Lane C's measurement shows something to learn.
 
-**Fleet, measured read-only 2026-10-22.**
+**Earlier fleet snapshot, measured read-only 2026-10-22.**
 
 | Node | State | Notes |
 |---|---|---|
@@ -282,7 +322,10 @@ everything. just enough».
   the next shard's transfer overlaps the current shard's compute. This is planning, not a measured
   speed-up.
 
-## 7. First milestone: the launch check for full-scale training
+## 7. Retained-memory transfer milestone
+
+This checks a learned memory consequence. It is separate from the three-stage parameter-training
+checkpoint and does not prohibit that training while further useful teaching is gathered.
 
 1. **Retain a real teaching experience with authority.** A reviewer-corrected admission: its superseded
    proposal, its call and its source.
@@ -313,6 +356,7 @@ other studies.
 
 ## 9. Out of scope here
 
-Kaggle packaging, uploads and runs. Fitted weights, model-size or capacity sweeps. New cosine or
-chance thresholds. A universal episode framework. A cross-node orchestrator. A perfect-boundary
-campaign. A second memory chain.
+Kaggle packaging, uploads and runs. Unapproved additional trainable quantities or model-capacity
+sweeps; the selected three-stage specialist/orchestrator training is in scope. New cosine or chance
+thresholds. A universal episode framework. A cross-node orchestrator. A perfect-boundary campaign.
+A second memory chain.

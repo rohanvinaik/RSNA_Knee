@@ -1,5 +1,16 @@
 # Bootstrap, training and the living K-line memory
 
+**Output authority, Rohan's explicit correction2026-10-22:** a warranted categorical diagnosis emits exactly1, a warranted categorical absence exactly0; only unresolved cases receive graded numerical values. Learned navigation/probabilities never overwrite decisive symbolic findings. Preserve raw model opinion separately. No fitted probability cutoff creates warrant. The first universal-float adapter and its first release bundle were withdrawn for this error.
+
+**Author's controlling clarification, 2026-10-22:** «Use the paper’s three-stage learned navigation
+layer over HDC signals». [Literal question and answer](conversations/2026-10-22-three-stage-navigation-training.md).
+Small parameterized specialists and an orchestrator train over fixed precomputed numerical/HDC
+signals: specialists, then a frozen-specialist orchestrator, then joint refinement. Prior agent
+prohibitions on every fitted weight or treating memory append as the whole training mechanism
+are superseded for this explicitly selected layer. This does not change anatomical definitions,
+measurement meanings, signed cases, label scope or the exact HDC carrier. Learned opinions must
+be distinguished from independent teaching and from warranted categorical findings.
+
 Execution-design appendix to [FULL_BUILD_PLAN §§17–18](FULL_BUILD_PLAN.md#17-approved-squint-first-production-build--2026-10-21), written at Rohan's request on 2026-10-21 for the next implementing agent. It explains the complete data flow and the meaning of its parts. It is not another live work queue. [The active packet](work/current/README.md) alone records source pins, completed checks, jobs and the next operation.
 
 **Authority:** Rohan's literal conversations, then the project theory and the *What an \<Object> Is* thesis. This document is Codex's engineering binding of those sources, not additional words attributed to Rohan. Existing source-specific contracts remain applicable. Proposed interfaces below describe required meanings, not claims that a corresponding implementation already exists. The admission, signed-scope and worked-example corrections in §§5–7 and §14 bind the next integration. Where the custom design genuinely leaves an operation unspecified, follow §15 rather than supply an unrelated learning method.
@@ -14,12 +25,61 @@ with warranted assignments and retained uncertainty. Local preparation serves th
 The appendix incorporates his literal mid-turn corrections and the bounded consumer repairs;
 the active packet alone records their implementation state.
 
+## Implementation checkpoint — 2026-10-22
+
+This is a dated evidence checkpoint, not a second live queue. The packet named by
+FULL_BUILD_PLAN §13 owns the next action and any later accepted artifacts.
+
+- **Accepted case memory:** `reviewed-category-learning-r3`, manifest SHA256
+  `ccd01612d36eae5a25a73c03a6937fc44ad9317e8390a71d13beac5c55d23da8`.
+  Its saved directory is
+  `data/readings/grounded-teaching-20261022/growth-batch-20/next-wave-run-r1/category-review-r3/published-learning-child-r1/memory`.
+  This signed memory and its provenance remain distinct from learned navigation weights.
+- **Training is implemented and has run:**
+  [dataset-r2 receipt](../data/readings/som-navigation-20261022/dataset-r2/receipt.json)
+  records 118 saved-study rows: 106 training and 12 validation, with 63,502 numerical/HDC
+  features. The training rows include the 58 official teaching studies and 48 fresh studies.
+  [train-r2 receipt](../data/readings/som-navigation-20261022/train-r2/training-receipt.json)
+  records 1,074 known training targets, 82 known validation targets and 10,566,320 parameters.
+  The three stages completed 20/20/10 epochs: specialists first, then the gate with specialists
+  frozen, then joint refinement at one tenth of the earlier maximum learning rate. Each stopped
+  at its epoch cap; this is not a claim of convergence. The saved NumPy artifact is
+  [train-r2/navigation.json](../data/readings/som-navigation-20261022/train-r2/navigation.json),
+  SHA256 `ea487781d8b0653b3045f17ec7218137d0e9da699bc56e0a89e93e257353b39b`.
+- **The representation stays fixed.** `som_features` reads retained measured profiles and
+  signed recall evidence; `som_training` trains the expressly authorized navigation layer;
+  `som_navigation` evaluates its saved weights with NumPy. Learned per-question trust can
+  order existing discretionary observation requests and grade an open condition. It does not
+  redefine anatomy, change exact HDC rows, invent a procedure or turn a study label into a
+  localized lesion. Warranted symbolic assignments still emit 1, warranted defeats 0; open
+  findings use their retained grade under `knee.warranted-endpoints-open-grade/v1`.
+- **The latest consumer repairs are implemented.** A changed object's observation refreshes
+  the condition questions that consume it, rather than leaving another question's earlier
+  finding stale. Configuration defining-tissue coverage requires actual `role=object` banks;
+  surroundings can contribute comparison evidence without certifying tissue. A study-positive,
+  unlocalized fracture/contusion comparison on only one bone receives the typed
+  `unlocalized_single_bone_presentation` coverage result: configuration wrapping adds no authority.
+  Localized positives, actual joint configurations and warranted whole-normal configurations
+  retain their existing authority. See the source-pinned
+  [consumer replay](../data/readings/som-navigation-20261022/reasoning-repair-r1/repaired-consumer-checks.json).
+- **Three different checks must remain separate.** The
+  [58-study teacher replay](../data/readings/som-navigation-20261022/teacher-readback-r2/SUMMARY.md)
+  evaluates trained navigation on saved teaching profiles; its categorical findings are the
+  saved symbolic findings, not new image reasoning. The
+  [12-study validation replay](../data/readings/som-navigation-20261022/validation-r2/SUMMARY.md)
+  is separate from gradient training but was used for epoch retention/PAB, so it is not an
+  untouched final test. The repaired raw-image 58-study check was
+  [interrupted at the user's request](../data/readings/som-navigation-20261022/gold58-current-check-r2/root-interruption-receipt.json):
+  four complete 12-question records remain, exit code 130, with no complete cohort receipt.
+  It establishes no full-58 result. Earlier saved replays do not certify the repaired pipeline's
+  full-cohort behavior.
+
 ## 1. The complete objective
 
-**Current phase: local bootstrap and preparation for classical AI training.** Read FULL_BUILD_PLAN
-§18.1 before choosing the next operation. The immediate loop is visual teaching -> contextual
+**Development objective when work is authorized: local bootstrap, corpus teaching and agency training.** Rohan has paused execution; FULL_BUILD_PLAN §13’s packet owns that state. Read §18.1 before choosing any later operation. The immediate loop is visual teaching -> contextual
 recognition -> warranted corpus growth -> reviewed child memory -> recall with that child.
-The corpus then supports the designed Minsky/Winston agency training. It is not necessary to
+The corpus supports the designed Minsky/Winston agency training; the dated checkpoint above
+records the implemented trained navigation layer. It is not necessary to
 package or run this bootstrap apparatus on Kaggle. Three computers are available for the math;
 the SSD corpus is being extracted. Deployment is a later use of the trained system, not the
 completion criterion for the current phase. The full objective below remains the eventual goal.
@@ -32,7 +92,7 @@ The complete sequence is:
 2. Make positive and negative visual calls and store their bundles as initial recognition memories.
 3. Use those memories, HDC comparisons and anatomical reasoning to find and admit further examples at scale under Rohan's stated admission policy.
 4. Build task-specific training material from those observations, calls, independent clinical evidence and the system's recorded expectations and outcomes.
-5. Teach and improve the classical agencies: what interpretations hold in which contexts, what failures to prevent, and which existing procedure a situation calls for.
+5. Teach and improve the agencies through scoped case/procedure learning and the author-approved three-stage specialist/orchestrator training over fixed HDC signals: what interpretations hold in which contexts, what failures to prevent, and which existing procedure a situation calls for.
 6. Keep the K-lines, censors and other learned records active during recognition, reasoning and orchestration in production.
 
 **K-lines have both roles:** they enable the initial recognition needed to assemble the larger corpus, and they remain part of the classical AI's working memory. They are not disposable dataset scaffolding. Equally, writing more bundles into buckets does not by itself implement the complete learning and reasoning process.
@@ -41,7 +101,7 @@ Rohan's latest clarification governs the terminology:
 
 > Well, K-lines are how we recognize, how we bootstrap the classical AI system, it's part of the AI process, but...it's not LITERALLY training?
 
-Earlier references to filling buckets as the equivalent of training identify its enabling role. Do not turn that analogy into a claim that corpus construction exhausts classical learning. Classical AI can learn; its learning here concerns structured expectations, differences, exceptions and procedures in context, rather than fitting a generic image classifier.
+Earlier references to filling buckets as the equivalent of training identify its enabling role. Do not turn that analogy into a claim that corpus construction exhausts learning. The signed memories retain structured expectations, differences, exceptions and procedures in context. The separately trained specialist/orchestrator layer learns navigation over the fixed representation, as Rohan explicitly authorized; its fitting does not replace those memories or the measurements.
 
 ## 2. Terms and the two roles of K-lines
 
@@ -286,7 +346,7 @@ The thesis's cell instance has counting, cell identity, position and division ag
 | Object state and condition reasoning | Normal for this question, a diagnosed presentation, or unresolved? Which relations matter? | Official labels, source-backed report calls and appropriately scoped visual/clinical interpretation | Normal/presentation precedents, role-qualified configurations, exceptions and named differences |
 | Residual orchestration | What additional available observation could settle this open question? | Actual paired observations and recorded procedure outcomes checked against the task's appropriate oracle | Reactivate the relevant procedure and its preconditions; remember contexts where it fails or is unnecessary |
 
-For a concrete teaching experience in an existing responsibility:
+For case-memory teaching in an existing responsibility:
 
 1. State its question, context and actual available information.
 2. Record what the current structure/memory expected and which existing procedure it selected.
@@ -295,7 +355,9 @@ For a concrete teaching experience in an existing responsibility:
 5. Where no meaningful difference or confirmed outcome is available, keep the question open. Do not invent an exception or a negative from a refusal.
 6. Replay with the next memory snapshot and inspect identified/abstained/wrong per question/context, together with the actual tools and compute used. Use the trajectory to discuss remaining structure; do not optimize one combined score.
 
-This is how experience improves recognition, discrimination and orchestration. K-lines are active during the process: they recall interpretations, recruit procedures, and make relevant learned exceptions available. Training does not end with a static table that an otherwise memoryless pipeline subsequently consults.
+These steps describe case/procedure teaching; they do not prohibit or exhaust the implemented parameter training. `prepare_som_navigation.py` exports retained measured profiles and signed recall evidence with independently sourced, masked study-condition targets. `train_som_navigation.py` trains specialists, then their per-question orchestrator with specialists frozen, then refines both at the lower learning rate. The frozen HDC vocabulary, measurement meanings and signed memories remain inputs. Each specialist gives a study-condition opinion from its applicable domain and context, not a localized lesion annotation. Study-group splits, train-only conditioning and missing-target masks remain explicit in the saved schema and receipt.
+
+Both mechanisms improve recognition, discrimination and orchestration. K-lines stay active: they recall interpretations, recruit procedures and make applicable exceptions available. The saved navigation weights additionally provide per-question trust and graded opinions. Neither parameter training nor case publication turns the pipeline into a memoryless consumer of a static table.
 
 The structure continues doing the work it already knows. Agencies learn what the current context leaves unresolved; they do not relearn anatomy from scratch or turn each lens into a feature tuned for one diagnosis. Shared-source observations remain one information source, not multiple independent votes.
 
@@ -317,14 +379,14 @@ The required route remains the single existing entry point: `scripts/run_interio
 
 For a new study:
 
-1. Load the frozen compatible case memories and invariant preparation once at the appropriate process/operation scope.
+1. Load the frozen compatible case memories, invariant preparation and selected learned-navigation artifact once at the appropriate process/operation scope. Verify the model's schema, feature-writer identity and artifact pins; preserve a named unavailable result if it cannot apply.
 2. Read series with bounded I/O concurrency. Establish a useful leg/background prior and cheap multi-view observations once.
 3. Use current-study anchors and anatomy to target the evidence. Cross-patient precedents guide resemblance and relative expectations; they do not transfer patient pixel locations.
 4. Ask the relevant identity/state/configuration questions through their predeclared compatible banks. Hear positive and negative cases and apply applicable censors.
 5. Make recognized identity govern what condition reasoning may read: a region established as the wrong identity must not remain evidence of the originally proposed tissue. An unresolved identity does not establish disease absence. Preserve the raw observations and reasons, and route any justified next question through the existing bounded tool. Propagate anatomical relationships and clinical condition contracts; an already settled question does not schedule another measurement.
 6. Where evidence is sufficient and uncontradicted, decide. Where it conflicts, preserve the conflict. Where unavailable, preserve the named open result.
-7. Only a still-open question with a justified available procedure requests a bounded additional reading. Reuse what is already held, encode the new observation in its own actual banks and reconsider the affected question.
-8. Write the twelve official outputs through the existing readout adapter and retain their findings and evidence. Finish and release the study's working data.
+7. Only a still-open question with a justified available procedure requests a bounded additional reading. Learned trust may order existing discretionary requests without dropping mandatory work or inventing a procedure. Reuse what is already held, encode the new observation in its own actual banks and refresh every condition question that consumes the changed object.
+8. Write the twelve official outputs through the existing readout adapter: warranted assigned is 1, warranted defeated is 0, and an open finding receives its retained numerical grade. Preserve the symbolic finding, raw navigation opinion and serialized value separately. Finish and release the study's working data.
 
 Production need not identify every anatomical object, draw every border or run every tool to answer a condition question. Bootstrap's broad recognition capacity supplies the tools and precedents that make selective operation possible. Cheap recognition and useful priors are allowed to settle questions; the system does not earn authority by spending more compute.
 
@@ -340,7 +402,7 @@ This handoff changes no probability/readout formula. Preserve the currently appr
 - Apply the condition's own necessary, sufficient, alternative and supporting relations to local findings. One normal site does not establish that every site is normal. **Later author decision, 2026-10-22:** «Let warranted whole-normal configuration recall decide». An independently diagnosed whole-normal precedent can therefore decide absence when its actual comparison includes condition-defining tissue and has no applicable contradictory finding; it does not need separate negative calls at every site. This recalls an already taught whole-condition meaning, rather than inferring whole-condition absence from one local negative. Context-only, unwarranted or conflicting comparisons cannot decide. Opposing warranted whole-condition configurations stay open, including when they compare different defining sites.
 - Clinical calls stay clinical; identity calls stay identity calls. A source-labelled presentation can be valuable even when it is not a localized lesion annotation.
 
-`SIGNIFICANCE_WEIGHTING.md` explains why resolving a fact can constrain a cluster of connected questions and why confirmed exclusions can sharply reduce the remaining search. It is not permission to multiply dependent evidence as independent probabilities or invent per-condition weights. `law_as_architecture.md` supplies the principle of composing specialists according to the domain and recalling contextually appropriate experience; its drilling coefficients and continuous-coefficient blends are not knee parameters or permission to average contradictory categorical verdicts.
+`SIGNIFICANCE_WEIGHTING.md` explains why resolving a fact can constrain a cluster of connected questions and why confirmed exclusions can sharply reduce the remaining search. Shared evidence must retain its dependence; do not invent hand-set per-condition weights from that paper. The explicitly authorized navigation model learns its own per-question trust under the recorded training contract. `law_as_architecture.md` supplies the principle of composing specialists according to the domain and recalling contextually appropriate experience; its drilling coefficients are not knee parameters. Learned blending of numerical specialist opinions does not average away contradictory warranted categorical findings.
 
 ## 12. Efficiency, retained information and deployment
 
@@ -359,14 +421,14 @@ Use existing profiling, ledger, Vulture and CodSpeed leads to find repeated or u
 
 ## 13. Concrete build order and parallel ownership
 
-The next integration completes one thin working loop. This is its dependency order, not a requirement to finish every lane before starting another. It does not replace FULL_BUILD_PLAN or populate live jobs here.
+This is the dependency order for maintaining and extending the working loop, not a declaration that every stage remains unbuilt or a requirement to finish every lane before starting another. The checkpoint records completed implementation; FULL_BUILD_PLAN §13's packet owns current work.
 
 1. **Publish all warranted signed teaching.** Adapt the current calls without widening their views. Integrate the existing signed builder, retain positive, negative and alternative-identity bundles, and verify ordinary readback and recall. Useful negative-only teaching is valid. Continue the remaining visual calls and independent report reading alongside this work.
 2. **Repair frozen-parent growth.** Preserve every signed case table and paired full/cheap payload in the child. Derive study exclusions from every relevant record, including negative-only studies, and apply them to cases, precedents, censors and preparation. Apply §7.1: unknown-only anatomy leaves a proposal. A recognition result and successful immutable publication are separate outcomes.
 3. **Expose available anatomical support.** Let sanity checks consume partial bone-plane constraints by their actual axes. Use affirmative applicable relations and named contradictions, without demanding a complete point or applying a window-overlap veto.
 4. **Connect identity to the real condition consumer.** Verify which observations may answer each tissue question after recognition, preserve unknown/conflict, and let a recalled procedure cause only its justified bounded work. A serialized identity result or procedure name that nothing consumes is unfinished.
-5. **Demonstrate the first actual growth round.** Run the real entry point through candidate production, signed recall, identity-dependent condition reasoning, warranted admission, child publication and the next round reading that child. Both rounds must preserve the same signed mechanism and applicable exclusions. Before the first round's child becomes the next round's parent, inspect all its admissions on their pictures (the development review §7.1 allows). Once they hold up, later rounds run without waiting for a picture check; spot-check their admissions instead, since per-case approval at scale is not required. A wrong admission found either way receives a scoped corrected negative call, which teaches immediately, and its named difference from the case it recalled then goes through §5's near-miss test. A failure that keeps recurring calls for more structure (thesis §11.4): an anatomical rule drafted from the pictures through FULL_BUILD_PLAN §7's review, not a tolerance taken from the map. Locally only the 58 teaching studies and 3 public test studies have images today, so a first local round demonstrates the mechanism. To scale, pull the training studies a round needs from the competition data to this machine and run the rounds here, drawing the picture sheets here; Kaggle compute is kept for the competition notebook and its timed private dry run (Rohan: «we do not waste kaggle compute on nonsense. We will pull as much data as we need locally when it's time to scale the AI part»).
-6. **Teach the next task-specific residuals.** Retain actual expectations, recalled precedents, actions, appropriately sourced outcomes and named differences. Use the existing case/censor/split and procedure mechanisms where specified. No universal episode framework or generic agency rewrite is a prerequisite for steps 1–5. A genuinely unspecified update operation is returned as the concrete gap in §15.
+5. **Preserve the demonstrated growth-round contract.** Run the real entry point through candidate production, signed recall, identity-dependent condition reasoning, warranted admission, child publication and the next round reading that child. Both rounds must preserve the same signed mechanism and applicable exclusions. Before the first round's child becomes the next round's parent, inspect all its admissions on their pictures (the development review §7.1 allows). Once they hold up, later rounds run without waiting for a picture check; spot-check their admissions instead, since per-case approval at scale is not required. A wrong admission found either way receives a scoped corrected negative call, which teaches immediately, and its named difference from the case it recalled then goes through §5's near-miss test. A failure that keeps recurring calls for more structure (thesis §11.4): an anatomical rule drafted from the pictures through FULL_BUILD_PLAN §7's review, not a tolerance taken from the map. Use the local SSD corpus and existing complete-study inventory/readiness receipts; a partially extracted corpus can supply complete studies without waiting for all extraction or downloading those studies again. Local growth and picture review do not require a Kaggle run.
+6. **Teach residuals and train the approved navigation layer.** Retain actual expectations, recalled precedents, actions, appropriately sourced outcomes and named differences. Use the existing case/censor/split and procedure mechanisms where specified, and the implemented fixed-HDC dataset exporter and three-stage trainer for parameter learning. Preserve masked independent targets, study-group splits, schema/source pins and exact NumPy export checks. No universal episode framework or generic agency rewrite is a prerequisite for useful teaching or retraining. A genuinely unspecified operation beyond these existing mechanisms is returned as the concrete gap in §15.
 7. **Expand and deploy.** Grow the corpus and alternate task-specific teaching with replay over training data. Verify the integrated gate and source-pinned private Kaggle run, including the complete resource envelope. No competition submission is implied.
 
 Independent lanes can write simultaneously after their shared meanings are fixed:
@@ -379,6 +441,7 @@ Independent lanes can write simultaneously after their shared meanings are fixed
 | Production integration | Identity-dependent condition inputs, conflict/unknown and bounded follow-up | Existing coordinator and official output path; one integrator owns shared files |
 | Visual corpus and reports | Actual picture calls and independent clinical calls in isolated packets | Signed teaching and condition memories; no shared source edits |
 | Task-specific learning and verification | Worked expectations/corrections, source-backed named differences, unambiguous intent tests | Existing memory/procedure consumers; unresolved custom induction policy remains explicit |
+| Approved navigation training | Existing saved-profile exporter, scoped targets, three-stage specialist/gate training and NumPy artifact | Runtime trust orders discretionary requests and grades open questions; categorical authority remains with the symbolic evidence |
 
 Use native helpers and authenticated local Claude Max subscription CLI for separable mechanical work, as Rohan requested. Supply workers the applicable literal words, whole governing units, exact input/output meanings, pinned source and exclusive allowed files. Source text must accompany a model-only worker; a file path it cannot open is not context. Worker facts and patches never redefine Rohan's intent.
 
@@ -418,7 +481,7 @@ For a remaining knee-specific operation:
 3. Reuse an already specified mechanism where it supplies that transformation. Document its actual domain binding.
 4. If no source or implementation supplies it, bring Rohan one concrete episode and the unresolved choice. Continue independent corpus/build work meanwhile.
 
-Examples of choices that cannot be silently invented: a new numerical trust calibration, a new rule for automatically synthesizing or generalizing a censor/split, an unspecified agency's update rule, or a new probability construction. The thesis states the roles and constraints of these operations; a missing concrete implementation is not permission to fill them with a gradient-fit model, an arbitrary cosine cutoff, an AUC target or an assumed generic policy. Conversely, do not call an already implemented operation unspecified simply because its name was forgotten; trace the actual code first.
+Examples of choices that cannot be silently invented are a new numerical trust calibration, a rule for automatically generalizing a censor/split, an unspecified agency update rule or a new probability construction. Reuse the implemented three-stage learned navigation that Rohan expressly authorized; no fresh permission for its existing parameter training is required. Its authorization replaces the earlier blanket memory-only interpretation for this layer. It does not supply an arbitrary cosine cutoff, an AUC target or authority to replace the fixed representation, clinical scope or symbolic warrant with an unrelated model. Conversely, do not call an already implemented operation unspecified because its name was forgotten; trace the actual code first.
 
 The current publisher and identity reader must be audited against this complete contract. Retaining `reject` in an audit list while removing its bundle from all speaking cases does not implement negative K-lines. A green test suite on that positive-only path cannot establish the full signed-learning capability.
 
@@ -438,4 +501,6 @@ Historical foundations: [Minsky, K-Lines: A Theory of Memory](https://dspace.mit
 
 ## 17. Short dispatch text
 
-> Implement Rohan's existing classical-AI design. Read CLASSICAL_AI_BUILD_DESIGN.md whole and the governing source units applicable to your packet. K-lines are both the bootstrap recognition memory that enables corpus/training-data construction and the continuing memory of interpretations/procedures in the Minsky-style stack. Filling buckets is an enabling operation, not the whole agency-learning algorithm. Preserve individual full/cheap bundles, scoped positive AND negative calls, expectations/corrections and source lineage. Confirmed negatives teach immediately; near-miss specialization needs a named difference tested against the recalled K-line's successes, not a bank count. Missing matches and refusals do not teach negatives. Admit all warranted visually called examples, including useful messy/partial ones. Automatic recognition-derived growth requires high-confidence joint identity, affirmative applicable current-study anatomical support and no known contradiction/conflict; unknown-only anatomy leaves a proposal, not a negative. Available partial axes suffice where they establish the relevant relation; all three planes and perfect outlines are not required. Keep recognition-derived lineage distinct from independent clinical calls. Build the actual producer-to-consumer path, including the appropriate task-specific learning/replay and runtime use, rather than a disconnected case database. Complete the thin signed recognition-to-child-memory loop without making a universal episode framework a prerequisite. Production starts cheap and recruits a bounded tool only for a named unresolved question. Reuse the exact carrier/comparison and existing contracts; do not invent missing custom policies. Return any genuine gap as a concrete unresolved operation while continuing independent mechanical work. Root owns semantics and shared integration; the active packet owns live state.
+Template for explicitly authorized future work, not an active dispatch. The current packet’s pause controls execution.
+
+> Implement Rohan's existing design. Read CLASSICAL_AI_BUILD_DESIGN.md whole and the governing source units applicable to your packet. K-lines are both the bootstrap recognition memory that enables corpus/training-data construction and the continuing memory of interpretations/procedures in the Minsky-style stack. Filling buckets is an enabling operation, not the whole agency-learning algorithm. Use the implemented, author-approved three-stage specialist/orchestrator training over fixed HDC signals; the older blanket memory-only prohibition does not apply to that layer. Preserve individual full/cheap bundles, scoped positive AND negative calls, expectations/corrections and source lineage. Confirmed negatives teach immediately; near-miss specialization needs a named difference tested against the recalled K-line's successes, not a bank count. Missing matches and refusals do not teach negatives. Admit all warranted visually called examples, including useful messy/partial ones. Automatic recognition-derived growth requires high-confidence joint identity, affirmative applicable current-study anatomical support and no known contradiction/conflict; unknown-only anatomy leaves a proposal, not a negative. Available partial axes suffice where they establish the relevant relation; all three planes and perfect outlines are not required. Keep recognition-derived lineage distinct from independent clinical calls. Maintain the actual producer-to-consumer path, including case/procedure learning, parameter training, replay and runtime use. Production starts cheap; learned trust orders existing discretionary looks and grades open questions, while warranted assigned/defeated findings emit 1/0. A changed object refreshes every dependent question. Configuration names do not increase a partial presentation's scope, and context banks do not certify defining tissue. Reuse the exact carrier/comparison and existing contracts; do not invent missing custom policies. Return a genuine gap as a concrete unresolved operation while continuing independent mechanical work. Root owns semantics and shared integration; the active packet owns live state.

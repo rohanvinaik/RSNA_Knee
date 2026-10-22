@@ -42,10 +42,13 @@ JSON-compatible values (plain ints stay exact, however large).
 
 from __future__ import annotations
 
+import math
 from collections.abc import Mapping
 from dataclasses import dataclass
 from fractions import Fraction
 from typing import Any
+
+from knee.diagnosis.squint_interfaces import parse_territory_bank_name
 
 __all__ = [
     "CONTRACTS",
@@ -1201,19 +1204,33 @@ def _configuration_case_disposition(
     covered_subjects: list[str],
     positive_branches: list[list[str]],
     required_negative: list[str],
+    *,
+    question: str | None = None,
+    call_scope: str | None = None,
 ) -> str:
     """Classify a whole-condition case by sign and compared defining tissue.
 
     This is not the rule for an isolated normal tissue finding. The negative
     case already carries an independently established whole-condition call;
     recall must compare relevant tissue but need not re-establish every site.
-    Trust, provenance and contradictory findings are checked by the caller.
+    A study-positive fracture/contusion configuration compared through just one
+    bone retains that bone's unlocalized presentation scope: qualifying the same
+    measurements as a configuration adds no evidence. Localized findings and
+    genuinely joint comparisons retain their authority. Trust, provenance and
+    contradictory findings are checked by the caller.
     """
     defining_subjects = set(required_negative)
     for branch in positive_branches:
         defining_subjects.update(branch)
     covered = set(covered_subjects) & defining_subjects
     if call == 1:
+        if (
+            question in {"Fracture", "Contusion"}
+            and call_scope == "study_condition_configuration"
+            and len(covered) == 1
+            and covered <= {"femur", "tibia", "patella", "fibula"}
+        ):
+            return "unlocalized_single_bone_presentation"
         if any(branch and set(branch) <= covered for branch in positive_branches):
             return "positive_configuration"
         return "positive_coverage_incomplete"
@@ -1239,7 +1256,10 @@ def _configuration_decision(
     """Let covered, independently taught configuration cases speak.
 
     Each decisive sign needs case-level common-bank provenance for the
-    condition's own declared roles. Warranted whole-normal recall may decide
+    condition's own declared object tissue; surroundings remain comparison
+    evidence, never defining-tissue coverage. A single unlocalized bone's
+    study-positive presentation does not gain authority by configuration
+    wrapping. Warranted whole-normal recall may decide
     without separate normal findings at every alternative site (Rohan,
     2026-10-22). Opposing whole-condition calls remain a conflict even when
     their compared roles differ. A clean necessary negative remains decisive,
@@ -1274,7 +1294,13 @@ def _configuration_decision(
             for subject in subjects
             if any(
                 bank.startswith(f"object/{subject}/")
-                and len(bank) > len(f"object/{subject}/")
+                and (
+                    fields := parse_territory_bank_name(
+                        bank[len(f"object/{subject}/") :]
+                    )
+                )
+                is not None
+                and fields["role"] == "object"
                 for bank in banks
             )
         }
@@ -1350,6 +1376,8 @@ def _configuration_decision(
                 sorted(covered),
                 [sorted(branch) for branch in positive_branches],
                 sorted(negative_required),
+                question=contract.question,
+                call_scope=row.get("call_scope"),
             )
             if disposition in {"positive_configuration", "negative_configuration"}:
                 label = (
@@ -1368,9 +1396,12 @@ def _configuration_decision(
                 excluded: dict[str, Any] = {
                     "case_id": case_id,
                     "call": call,
-                    "reason": "defining_tissue_coverage_incomplete",
+                    "reason": disposition
+                    if disposition == "unlocalized_single_bone_presentation"
+                    else "defining_tissue_coverage_incomplete",
                     "covered_subjects": sorted(covered),
                     "case_coverage_disposition": disposition,
+                    "call_scope": row.get("call_scope"),
                 }
                 coverage["excluded_cases"].append(excluded)
 
@@ -1617,6 +1648,39 @@ def _record_terms(
             raw_terms["left_norm_sq"] * raw_terms["right_norm_sq"],
         )
         terms.append((subject, normalized["case_id"], normalized["call"], similarity))
+
+
+READOUT_POLICY_ID = "knee.warranted-endpoints-open-grade/v1"
+
+
+def serialize_condition_value(finding: Mapping, graded_value: float) -> float:
+    """Keep warranted ternary decisions exact; grade only the unresolved state.
+
+    The combiner owns warrant. This readout never promotes resemblance or a
+    learned numerical opinion into a new categorical decision.
+    """
+    if not isinstance(finding, Mapping):
+        raise ContractError("finding_not_object")
+    outcome = finding.get("outcome")
+    if outcome not in ("assigned", "defeated", "open"):
+        raise ContractError("finding_outcome_invalid")
+    if (
+        isinstance(graded_value, bool)
+        or not isinstance(graded_value, (int, float))
+        or not math.isfinite(graded_value)
+        or not 0.0 <= graded_value <= 1.0
+    ):
+        raise ContractError("condition_graded_value_invalid")
+    if outcome == "assigned":
+        return 1.0
+    if outcome == "defeated":
+        return 0.0
+    # The validated closed range makes these exact endpoint tests, not tolerances.
+    if graded_value <= 0.0:
+        return math.nextafter(0.0, 1.0)
+    if graded_value >= 1.0:
+        return math.nextafter(1.0, 0.0)
+    return float(graded_value)
 
 
 def rank_condition(finding: dict) -> dict:

@@ -24,6 +24,7 @@ from pathlib import Path
 from typing import Any
 
 from knee.diagnosis.squint_anatomy_locator import BONES as READER_BONES
+from knee.diagnosis.squint_contracts import READOUT_POLICY_ID, contract_for
 from knee.diagnosis.squint_identity import (
     CONDITIONING,
     CONTESTED_AFTER_FINER_READING,
@@ -331,6 +332,7 @@ def _budget_unexamined_study(
         }
     return {
         "schema": "knee.squint-study/v1",
+        "readout_policy_id": READOUT_POLICY_ID,
         "study_uid": uid,
         "memory_revision": memory.get("revision", ""),
         "study_status": "not_examined_budget",
@@ -1782,6 +1784,61 @@ def _subject_cue_snapshot(located: object) -> dict[str, Any] | None:
     }
 
 
+def _serialize_condition_finding(question_id: str, finding: dict) -> tuple[dict, float]:
+    """The shared final readout, retaining the existing exact internal rank."""
+    from knee.diagnosis.squint_contracts import (
+        rank_condition,
+        serialize_condition_value,
+    )
+
+    ranking = finding.get("rank")
+    if not isinstance(ranking, dict):
+        ranking = rank_condition(finding)
+    value = ranking.get("value")
+    if (
+        isinstance(value, bool)
+        or not isinstance(value, (int, float))
+        or not math.isfinite(value)
+    ):
+        raise SquintRunError("ranking_value_invalid:" + question_id)
+    if not 0.0 < value < 1.0:
+        raise SquintRunError("ranking_endpoint_or_out_of_range:" + question_id)
+    return ranking, serialize_condition_value(finding, value)
+
+
+def _condition_changed_subjects(
+    before_profiles: Mapping,
+    after_profiles: Mapping,
+    before_contexts: Mapping,
+    after_contexts: Mapping,
+    before_not_read: Mapping,
+    after_not_read: Mapping,
+) -> dict[str, list[str]]:
+    """Identify changed shared inputs; producers replace their plain measured profiles."""
+    changed = {}
+    subjects = set().union(
+        before_profiles,
+        after_profiles,
+        before_contexts,
+        after_contexts,
+        before_not_read,
+        after_not_read,
+    )
+    for subject in sorted(subjects):
+        reasons = []
+        before = before_profiles.get(subject)
+        after = after_profiles.get(subject)
+        if before is not after and before != after:
+            reasons.append("profile_changed")
+        if before_contexts.get(subject) != after_contexts.get(subject):
+            reasons.append("identity_context_changed")
+        if before_not_read.get(subject) != after_not_read.get(subject):
+            reasons.append("condition_eligibility_changed")
+        if reasons:
+            changed[subject] = reasons
+    return changed
+
+
 def infer_study(
     root: Path,
     uid: str,
@@ -1792,6 +1849,7 @@ def infer_study(
     exclude_same_study: bool = False,
     prepared_identity: Mapping | None = None,
     prepared_identity_resolved: Mapping | None = None,
+    navigation_runtime: Any | None = None,
 ) -> dict:
     """Consume current-study cheap observations; never read teaching calls as features.
 
@@ -1811,7 +1869,9 @@ def infer_study(
     the identity views at the squint and the finer scale, made from this ``memory``.
     """
     from knee.diagnosis.declarations import QUESTIONS
-    from knee.diagnosis.squint_contracts import combine_condition, rank_condition
+    from knee.diagnosis.squint_contracts import (
+        combine_condition,
+    )
     from knee.diagnosis.squint_identity import prepare_identity
     from knee.diagnosis.squint_locator import locate_objects
     from knee.diagnosis.squint_procedures import (
@@ -1881,13 +1941,25 @@ def infer_study(
         objects, identity_readings, identity_contexts, contests
     )
     not_read = _regions_not_read(identity_consumption)
-    questions = {}
-    values = {}
+    questions: dict[str, dict[str, Any]] = {}
+    values: dict[str, float] = {}
+    question_declarations = {question.question_id: question for question in QUESTIONS}
+    dependencies = {
+        question.question_id: set(question.objects)
+        | set(contract_for(question.question_id).subjects)
+        for question in QUESTIONS
+    }
+    condition_revision = 0
+    condition_updates = []
+    condition_recall_calls = 0
+    navigation_request_orderings = []
     for question in QUESTIONS:
         object_evidence = _recall_question(
             question, objects, memory, uid, exclude_same_study, not_read_as=not_read
         )
+        condition_recall_calls += 1
         finding = combine_condition(question.question_id, object_evidence)
+        finding_revision = condition_revision
         requests = (
             finding.get("observation_requests", [])
             if finding.get("outcome") == "open"
@@ -1902,6 +1974,25 @@ def infer_study(
                 study_uid=uid,
                 exclude_same_study=exclude_same_study,
             )
+            if navigation_runtime is not None:
+                from knee.diagnosis.som_runtime import order_navigation_requests
+
+                partial_record = {
+                    "objects": objects,
+                    "questions": {
+                        **questions,
+                        question.question_id: {
+                            "finding": finding,
+                            "objects": object_evidence,
+                        },
+                    },
+                    "identity_recall": identity_readings,
+                    "identity_consumption": identity_consumption,
+                }
+                requests, order_receipt = order_navigation_requests(
+                    navigation_runtime, partial_record, question.question_id, requests
+                )
+                navigation_request_orderings.append(order_receipt)
             has_confirmed_recalled = any(
                 isinstance(r, Mapping)
                 and isinstance(r.get("recalled_procedure"), Mapping)
@@ -1923,6 +2014,8 @@ def infer_study(
                 ):
                     break
                 before_finding = finding
+                before_contexts = copy.deepcopy(identity_contexts)
+                before_not_read = copy.deepcopy(not_read)
                 subject_name = (
                     request.get("object", request.get("subject"))
                     if isinstance(request, Mapping)
@@ -1962,6 +2055,7 @@ def infer_study(
                     before_finding, subject_name
                 )
                 observations.append(obs)
+                first_observation_index = len(observations) - 1
                 prepared_identity_resolved = _refresh_identity_after_observations(
                     objects,
                     study,
@@ -1977,44 +2071,99 @@ def infer_study(
                     prepared_identity,
                     prepared_identity_resolved,
                 )
-                previous_profiles = {
-                    subject: row.get("profile")
-                    for subject, row in objects.items()
-                    if isinstance(row, Mapping)
-                }
                 identity_consumption = _identity_consumption(
                     objects, identity_readings, identity_contexts, contests
                 )
                 not_read = _regions_not_read(identity_consumption)
-                object_evidence = _recall_question(
-                    question,
-                    objects,
-                    memory,
-                    uid,
-                    exclude_same_study,
-                    not_read_as=not_read,
+                next_profiles = {
+                    subject: row.get("profile")
+                    for subject, row in objects.items()
+                    if isinstance(row, Mapping)
+                }
+                changed = _condition_changed_subjects(
+                    previous_profiles,
+                    next_profiles,
+                    before_contexts,
+                    identity_contexts,
+                    before_not_read,
+                    not_read,
                 )
-                finding = combine_condition(question.question_id, object_evidence)
+                previous_profiles = next_profiles
+                refreshed = []
+                if changed:
+                    condition_revision += 1
+                    for prior_id, cached in tuple(questions.items()):
+                        affected = dependencies[prior_id].intersection(changed)
+                        if not affected:
+                            continue
+                        evidence = _recall_question(
+                            question_declarations[prior_id],
+                            objects,
+                            memory,
+                            uid,
+                            exclude_same_study,
+                            not_read_as=not_read,
+                        )
+                        condition_recall_calls += 1
+                        updated = combine_condition(prior_id, evidence)
+                        updated_rank, updated_value = _serialize_condition_finding(
+                            prior_id, updated
+                        )
+                        refreshed.append(
+                            {
+                                "question": prior_id,
+                                "changed_dependencies": sorted(affected),
+                                "previous_outcome": cached["finding"]["outcome"],
+                                "current_outcome": updated["outcome"],
+                                "previous_value": values[prior_id],
+                                "current_value": updated_value,
+                            }
+                        )
+                        questions[prior_id] = {
+                            "finding": updated,
+                            "ranking": updated_rank,
+                            "objects": evidence,
+                            "shared_state_revision": condition_revision,
+                        }
+                        values[prior_id] = updated_value
+                current_changed = bool(
+                    dependencies[question.question_id].intersection(changed)
+                )
+                current_recalled = current_changed or obs.get("code") == "recall_ready"
+                if current_recalled:
+                    object_evidence = _recall_question(
+                        question,
+                        objects,
+                        memory,
+                        uid,
+                        exclude_same_study,
+                        not_read_as=not_read,
+                    )
+                    condition_recall_calls += 1
+                    finding = combine_condition(question.question_id, object_evidence)
+                    finding_revision = condition_revision
+                if changed:
+                    condition_updates.append(
+                        {
+                            "revision": condition_revision,
+                            "trigger_question": question.question_id,
+                            "observation_indices": list(
+                                range(first_observation_index, len(observations))
+                            ),
+                            "changed_subjects": changed,
+                            "refreshed_questions": refreshed,
+                            "current_question_recalled": current_recalled,
+                            "consumer": "_recall_question -> combine_condition -> serialize_condition_value",
+                        }
+                    )
                 obs["after_state"] = _condition_state_snapshot(finding, subject_name)
-        ranking = finding.get("rank")
-        if not isinstance(ranking, dict):
-            ranking = rank_condition(finding)
-        value = ranking.get("value")
-        if (
-            isinstance(value, bool)
-            or not isinstance(value, (int, float))
-            or not math.isfinite(value)
-        ):
-            raise SquintRunError("ranking_value_invalid:" + question.question_id)
-        if not 0.0 < value < 1.0:
-            raise SquintRunError(
-                "ranking_endpoint_or_out_of_range:" + question.question_id
-            )
+        ranking, value = _serialize_condition_finding(question.question_id, finding)
         values[question.question_id] = value
         questions[question.question_id] = {
             "finding": finding,
             "ranking": ranking,
             "objects": object_evidence,
+            "shared_state_revision": finding_revision,
         }
     work = {
         **study.get("work", {}),
@@ -2049,11 +2198,13 @@ def infer_study(
             for row in observations
         ),
         "source_mode": "raw_squint_case_recall",
+        "condition_recall_calls": condition_recall_calls,
     }
     # Neither Series nor SquintStack escapes this operation. Retained profiles
     # and addresses suffice to inspect why recall reached each finding.
     result = {
         "schema": "knee.squint-study/v1",
+        "readout_policy_id": READOUT_POLICY_ID,
         "study_uid": uid,
         "memory_revision": memory.get("revision", ""),
         "study_status": "examined",
@@ -2063,6 +2214,14 @@ def infer_study(
         "identity_recall": identity_readings,
         "identity_consumption": identity_consumption,
         "observations": observations,
+        "condition_propagation": {
+            "schema": "knee.condition-dependency-refresh/v1",
+            "revision": condition_revision,
+            "dependencies": {
+                name: sorted(subjects) for name, subjects in dependencies.items()
+            },
+            "updates": condition_updates,
+        },
         "work": work,
         "unresolved_observation_requests": [
             {"question": q, **request}
@@ -2070,6 +2229,8 @@ def infer_study(
             for request in record["finding"].get("observation_requests", [])
         ],
     }
+    if navigation_runtime is not None:
+        result["navigation_request_orderings"] = navigation_request_orderings
     return result
 
 
@@ -2182,6 +2343,9 @@ def run_squint_cli(args, *, prepared_memory_snapshot=None) -> dict:
     from knee.diagnosis.submission import write_submission
 
     mode = getattr(args, "diagnostic_mode", None)
+    navigation_path = getattr(args, "diagnostic_navigation", None)
+    if navigation_path is not None and mode != "infer":
+        raise SquintRunError("navigation_requires_infer")
     if getattr(args, "draw", False):
         raise SquintRunError("squint_production_disallows_draw")
     if args.diagnostic_memory is None or args.diagnostic_output is None:
@@ -2247,6 +2411,11 @@ def run_squint_cli(args, *, prepared_memory_snapshot=None) -> dict:
         raise SquintRunError("squint_memory_snapshot_digest_missing")
     memory_digest = snapshot.sha256
     memory = snapshot.memory
+    navigation_runtime = None
+    if navigation_path is not None:
+        from knee.diagnosis.som_runtime import load_navigation_runtime
+
+        navigation_runtime = load_navigation_runtime(navigation_path)
     if mode == "capacity":
         memory = {**memory, "memory_manifest_sha256": memory_digest}
     from knee.diagnosis.squint_locator import prepare_recall
@@ -2389,6 +2558,12 @@ def run_squint_cli(args, *, prepared_memory_snapshot=None) -> dict:
         preparation_artifact_source = "not_written"
         preparation_identity = None
 
+    navigation_options: dict[str, Any] = (
+        {"navigation_runtime": navigation_runtime}
+        if navigation_runtime is not None
+        else {}
+    )
+
     def infer_admitted_study(uid: str, deadline: float, budget_seconds: float) -> dict:
         study_memory: dict = memory
         excluded = None
@@ -2467,6 +2642,7 @@ def run_squint_cli(args, *, prepared_memory_snapshot=None) -> dict:
             prepared_identity_resolved=(
                 identity_resolved_shared if mode != "capacity" else None
             ),
+            **navigation_options,
         )
         record["work"].update(
             {
@@ -2520,6 +2696,10 @@ def run_squint_cli(args, *, prepared_memory_snapshot=None) -> dict:
                 pending[uid] = submit_study(pool, uid, len(uids))
         for completed, uid in enumerate(uids, start=1):
             record = pending.pop(uid).result()
+            if navigation_runtime is not None:
+                from knee.diagnosis.som_runtime import apply_navigation_record
+
+                record = apply_navigation_record(navigation_runtime, record)
             evidence_path = dump_json_atomic(
                 output / "studies" / (uid + ".json"),
                 record,
@@ -2535,6 +2715,11 @@ def run_squint_cli(args, *, prepared_memory_snapshot=None) -> dict:
                     "evidence_bytes": evidence_path.stat().st_size,
                 }
             )
+            if navigation_runtime is not None:
+                studies[-1]["navigation_outcome"] = record["navigation"]["outcome"]
+                studies[-1]["navigation_request_orderings"] = len(
+                    record.get("navigation_request_orderings", [])
+                )
             for label, evidence in record["questions"].items():
                 tally = (
                     "not_examined_budget"
@@ -2549,19 +2734,27 @@ def run_squint_cli(args, *, prepared_memory_snapshot=None) -> dict:
     submission = None
     template = getattr(args, "diagnostic_submission_template", None)
     if template is not None:
+        submission_source = {
+            "readout_policy_id": READOUT_POLICY_ID,
+            "source_mode": "raw_squint_case_recall",
+            "memory_revision": memory.get("revision", ""),
+            "memory_manifest_sha256": memory_digest,
+        }
+        if navigation_runtime is not None:
+            submission_source["navigation"] = {
+                "scope": "study_condition_model_opinion_not_localized_tissue",
+                "artifact_pins": dict(navigation_runtime.artifact_pins),
+            }
         submission = write_submission(
             Path(template),
             output / "submission.csv",
             rows,
-            source_provenance={
-                "source_mode": "raw_squint_case_recall",
-                "memory_revision": memory.get("revision", ""),
-                "memory_manifest_sha256": memory_digest,
-            },
+            source_provenance=submission_source,
         )
     result = {
         "schema": SCHEMA,
         "action": mode,
+        "readout_policy_id": READOUT_POLICY_ID,
         "source_mode": "raw_squint_case_recall",
         "studies": len(studies),
         "memory_revision": memory.get("revision", ""),
@@ -2612,5 +2805,15 @@ def run_squint_cli(args, *, prepared_memory_snapshot=None) -> dict:
             "studies": studies,
         },
     }
+    if navigation_runtime is not None:
+        from knee.diagnosis.som_runtime import navigation_provenance
+
+        result["navigation"] = {
+            **navigation_provenance(navigation_runtime),
+            "loaded_once": True,
+            "study_outcomes": dict(
+                Counter(row["navigation_outcome"] for row in studies)
+            ),
+        }
     _save(output / "receipt.json", result)
     return result

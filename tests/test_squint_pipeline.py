@@ -61,6 +61,8 @@ def test_selector_rejects_duplicate_or_path_uid():
 
 
 def _wire(monkeypatch):
+    from knee.diagnosis.squint_contracts import serialize_condition_value
+
     calls = []
 
     def reader(root, uid, *, io_workers):
@@ -92,6 +94,7 @@ def _wire(monkeypatch):
             "observation_requests": [],
         },
         rank_condition=lambda f: {"value": 0.5, "policy_id": "test"},
+        serialize_condition_value=serialize_condition_value,
     )
     return calls
 

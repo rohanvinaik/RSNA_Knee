@@ -1270,10 +1270,13 @@ def test_the_finer_look_is_read_once_and_shared_with_later_questions(monkeypatch
     question_ = record["identity_consumption"]["objects"]["femur"][
         "identity_open_question"
     ]
-    assert question_ is not None and question_["why"] == "appearance_unconfirmed"
-    assert "paired_finer_reading" not in [
-        row["procedure"] for row in question_["next_observations"]
-    ]
+    # The shared finer reading supports identity and resolves this contest;
+    # no unchanged procedure may manufacture another unconfirmed-appearance question.
+    assert question_ is None
+    contest = record["identity_consumption"]["objects"]["femur"]["squint_scale_contest"]
+    assert contest["status"] == "resolved_by_finer_reading"
+    assert contest["resolved_outcome"] == "appearance_supports"
+    assert contest["negatives"] == {"n1": "compared_not_applying"}
 
 
 def test_a_negative_heard_only_through_the_surroundings_changes_nothing(monkeypatch):
@@ -1416,7 +1419,9 @@ def test_a_bone_the_reader_names_carries_its_arrangement_and_support():
 # The old digest was reproduced before adjudicating the changed OA calls and
 # evidence in normal-policy-golden-adjudication.json.
 # Updated for per-action observation attribution (R3).
-NO_TEACHING_RECORD_SHA256 = "09132f96299c50d2e25f41aa9cf001feb1174d781a93d5b347660f82a506a07b"  # pragma: allowlist secret
+# Updated for the authored endpoint policy and shared-dependency provenance.
+# The assertions below pin their meanings before this complete-record receipt.
+NO_TEACHING_RECORD_SHA256 = "92dc0218f7d7dfa643e5b9ed4d9877685b3f0f4917578059206ce79e9c439d37"  # pragma: allowlist secret
 
 
 def _record_digest(record: dict) -> str:
@@ -1465,4 +1470,17 @@ def test_a_memory_without_identity_teaching_gives_todays_study_record(monkeypatc
         # The context is the locator's own record, read whether or not the memory is
         # taught.
         assert entry["identity_context"]["basis"] == PRIOR_ONLY
+    assert record["readout_policy_id"] == "knee.warranted-endpoints-open-grade/v1"
+    assert record["condition_propagation"]["revision"] == 0
+    assert record["condition_propagation"]["updates"] == []
+    assert record["work"]["condition_recall_calls"] == len(record["questions"])
+    for name, entry in record["questions"].items():
+        outcome = entry["finding"]["outcome"]
+        value = record["values"][name]
+        if outcome == "assigned":
+            assert value == 1.0
+        elif outcome == "defeated":
+            assert value == 0.0
+        else:
+            assert outcome == "open" and 0.0 < value < 1.0
     assert _record_digest(record) == NO_TEACHING_RECORD_SHA256

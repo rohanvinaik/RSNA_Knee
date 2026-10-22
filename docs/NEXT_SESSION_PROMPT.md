@@ -1,14 +1,19 @@
-# Continue the squint-first knee production build
+# Re-ground before continuing RSNA_Knee
 
-Follow FULL_BUILD_PLAN §0, then its §13 current packet for the actual request and jobs.
-Read CLASSICAL_AI_TRAINING_EXECUTION.md for the latest author corrections and executable round
-contracts: ONE society connects support, role, physiological state and the twelve diagnostic
-questions. Its remaining repairs require actual consumer evidence, not completion prose.
-Read CLASSICAL_AI_BUILD_DESIGN.md whole for bootstrap -> corpus -> classical learning -> active
-production memory, and SQUINT_PRODUCTION_CONTRACT.md for interfaces. The pending acceptance change is
-`openspec/changes/complete-signed-bootstrap-loop/`; its artifact validation is not runtime completion.
-High resolution builds teaching tools; production uses joint squint recall, anatomy and bounded
-unsettled-question work. Keep signed scopes and lineage. Unknown is neutral in answering, but cannot
-alone warrant automatic new admission; independently warranted visual calls teach directly. Use the
-existing run guides, native helpers and authenticated local Claude Max CLI. Verify source/job state
-before resuming. No private dry run authorizes competition submission.
+**The project was paused at Rohan’s request on2026-10-22.** Do not launch build,
+training, corpus growth, packaging, Kaggle runs or submission from this pointer.
+The subsequent quality/full-CI/commit/push request is authorized as recorded in the packet; after that publication, wait for an explicit new application request.
+
+Follow FULL_BUILD_PLAN §0, then §13’s sole current packet. That packet owns accepted
+source/memory/model pins, completed versus interrupted checks and any next operation.
+Read the three foundational conversations and the literal three-stage/categorical/
+wind-down exchange in `conversations/2026-10-22-three-stage-navigation-training.md`.
+The current implementation/run commands are in SOM_NAVIGATION_RUN_GUIDE.md; exact
+representation and connected agency meanings remain in HDC_ENCODING.md and
+CLASSICAL_AI_BUILD_DESIGN.md. Do not turn memory growth into the entire learner or
+reintroduce the superseded blanket fitted-weight prohibition.
+
+Warranted assigned/defeated findings emit1/0; only open questions get numerical grades.
+Source scope and actual shared premises govern warrant; the model does not override
+it. Preserve signed evidence, unknowns, lineage and whole-study exclusions.
+No formal competition submission without Rohan’s explicit permission.

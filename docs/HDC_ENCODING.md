@@ -13,6 +13,36 @@ For the complete bootstrap/corpus/classical-learning/runtime mechanism, read
 and compatibility; it does not redefine signed admission, certify current integration, or replace
 the pending [signed-loop contract](../openspec/changes/complete-signed-bootstrap-loop/).
 
+## Current AI consumer checkpoint — 2026-10-22
+
+The exact count/carrier, named bank meanings, measured-neutral versus unread distinction and
+full/cheap pairing below remain the representation contract. Rohan explicitly authorized the
+[paper's three-stage learned navigation layer](conversations/2026-10-22-three-stage-navigation-training.md)
+over these fixed signals. The earlier memory-only prohibition is superseded for that layer
+alone: learned specialist/gate weights do not alter the HDC encoder, anatomical definitions,
+independent teaching calls or exact symbolic comparisons.
+
+The accepted signed memory is `reviewed-category-learning-r3` (`ccd01612…`). The dated
+[implementation checkpoint](CLASSICAL_AI_BUILD_DESIGN.md#implementation-checkpoint--2026-10-22)
+records its full pin and path, [dataset-r2](../data/readings/som-navigation-20261022/dataset-r2/receipt.json)
+and the completed [train-r2](../data/readings/som-navigation-20261022/train-r2/training-receipt.json).
+That model is saved for NumPy inference; Torch is a training dependency. Its trust weights order
+existing discretionary looks, while numerical opinions grade open conditions. They do not create
+categorical warrant: assigned and defeated findings serialize as exactly 1 and 0 under the
+explicit readout policy, with the raw model opinion retained separately.
+
+The condition consumer now refreshes questions dependent on a changed observation. It counts
+only an object's own measurement-role banks as defining-tissue coverage; a context bank remains
+context even inside `object/<subject>/…`. A single unlocalized bone presentation also keeps its
+scope when qualified as a whole-condition configuration. These repairs change interpretation
+consumption, not the stored HDC measurements, and do not require perfect geometry or all views.
+
+Completed saved-profile teaching replay, separate validation replay and the interrupted repaired
+raw-58 check are different evidence. The last retained four complete study records and no cohort
+receipt; it supplies no full-58 result. See the checkpoint and its linked receipts rather than
+reading an earlier construction-stage statement below as the current work queue. Live state
+continues to belong only to the packet named by FULL_BUILD_PLAN §13.
+
 ## Full and cheap profiles of the same object
 
 Rohan's latest clarification and supplied cell figure explicitly retain both descriptions.
@@ -68,8 +98,10 @@ absence are different records. Opposite deviations never cancel into normality.
 For counts c and d, the vectors have dot product `512 * sum(c_i*d_i)` and squared norms
 `512 * sum(c_i*c_i)`. Counts therefore implement exactly the same comparison. Bundles add,
 are independent of order, and subtract exactly when the subtracted counts are present. The
-bundle has an exact Hadamard decode. Count comparisons use whole integers and rational levels,
-without floating-point cosine or square-root decisions. A question selects its banks before
+bundle has an exact Hadamard decode. Symbolic count comparisons use whole integers and rational
+levels, without floating-point cosine or square-root decisions. The separately authorized learned
+navigation uses numerical features and floating-point weights; it does not replace or weaken
+that exact symbolic comparison contract. A question selects its banks before
 the run; the comparison jointly reads all selected banks spoken by both sides. A silent bank
 is omitted from the dot and both norms. Different carrier, layout or reference identities
 are not silently compared.
@@ -286,7 +318,12 @@ All versions keep the same public array names, dtype, shape and exact decoded by
 production route has focused exactness and refusal checks; integrated workload measurements
 and the full competition storage/compute envelope remain separate acceptance obligations.
 
-## Construction order and acceptance
+## Full-encoding construction order and acceptance
+
+These are the full retained-encoding obligations. They do not postpone the implemented
+fixed-HDC navigation training until every MRI reference or support adapter is complete.
+Useful available profiles already supply training input at their actual scope; unavailable
+readings remain explicit and cannot be manufactured to fill a model input.
 
 1. Exact count/carrier/layout mechanics, with orthogonality, inverse, superposition, silence,
    distinct signed rows, overflow, compatible identities and exact rational comparison checks.
@@ -387,7 +424,7 @@ readback. Fresh owned output directories prevent replacing historical receipts; 
 current intermediates. This contract is not itself a claim that its implementation or capacity
 verification is already complete; the active packet records measured status.
 
-## Efficiency at the later AI boundary
+## Efficiency at the AI boundary
 
 Rohan's 2026-10-20 direction makes the complete recognition/encoding/AI/diagnostic operation the
 efficiency scope. Thesis §7 writes the representation from measurements already available; §§13.1–13.2
@@ -397,13 +434,16 @@ place/value lineage reusable. Future consumers must not need a new recognition p
 bundling, and a count-only operation need not materialize dense per-pixel vectors. File compression
 is assessed with writer cost, relevant downstream reads and retained information in the same account.
 
-Current `encode_study` owns live emitted arrays and the composed result before the common writer;
-its public return supplies saved-product metadata, not a specified AI implementation. Preserve that
-lifetime as the integration seam so a later consumer can read the actual exact representation before
-compression/release, without a forced disk round trip. H5 remains the durable pre-AI output/teaching
-interface under the current retention contract. The approved decision, teaching, query-bank and
-ranking mechanisms are in AI_DIAGNOSTIC_DESIGN.md and SQUINT_PRODUCTION_CONTRACT.md. Do not transplant the cell instance's AI policies,
-temporal dynamics, thresholds or normalization as MRI defaults.
+`encode_study` owns live emitted arrays and the composed result before the common writer;
+its public return supplies saved-product metadata. Preserve that lifetime as the full-encoding
+integration seam so consumers can read the exact representation before compression/release,
+without a forced disk round trip. The implemented squint/navigation path already reuses retained
+cheap object profiles and recall evidence through `som_features`; its three-stage trainer fits
+only the approved specialist/orchestrator layer, and its NumPy runtime reuses the saved schema
+and weights. H5 remains the durable full-profile teaching interface under the retention contract.
+The decision, teaching, query-bank and readout mechanisms are in AI_DIAGNOSTIC_DESIGN.md and
+SQUINT_PRODUCTION_CONTRACT.md. Cell-specific temporal policies, thresholds and normalization
+are not MRI defaults; use the author's actual knee and navigation contracts.
 
 Competition scheduling must cover the entire study operation. Independent study workers perform
 recognition, exact encoding and one complete readback using worker-local invariant preparation. The

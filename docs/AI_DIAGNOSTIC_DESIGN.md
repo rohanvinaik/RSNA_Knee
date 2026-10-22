@@ -72,10 +72,7 @@ exact negative-view scope. CLASSICAL_AI_BUILD_DESIGN §§5–7 owns that signed 
    - The standing to defeat or assign comes from the contract's domain warrant, never from how cleanly remembered cases
      happened to separate.
    A warranted independently diagnosed whole-condition configuration may itself decide when no necessary anatomical finding contradicts it (Rohan: “Let warranted configuration recall decide”). Clean necessary negatives retain their force; opposing warranted descriptions remain a disagreement. The configuration preserves object-qualified banks and independent label attribution.
-5. Value per condition, by one fixed, written mapping from the evidence: defeated below open, open below assigned, and
-   within each band ordered by the cosine evidence itself. No hard 0 or 1, no averaging that lets partial matches erase
-   a clean negative, no artificial tie-breaking. The score ranks studies within each condition, so only that ordering
-   matters. The categorical finding and its evidence are kept beside the submitted value.
+5. Value per condition follows Rohan’s2026-10-22 correction: warranted assigned emits exact1; warranted defeated emits exact0. Only open questions receive a graded HDC/navigation opinion. Keep the categorical finding, raw numerical opinion and signed evidence separately. The legacy internal ranking is evidence, not final output authority; no numerical threshold manufactures warrant and no partial match erases a clean necessary negative.
 6. Zoom: only for a question still open whose contract names a bounded, higher-fidelity look at one region in one view,
    and only within the time budget. Recall then runs again.
 7. Nothing is taught at run time (§13.6).
@@ -140,4 +137,20 @@ The 12 condition contracts are domain content: the lead drafts them from the SOP
 
 ## Approved execution and implementation
 
-Rohan explicitly approved and ordered the wide build and private Kaggle dry run. The frozen worker interfaces, production integration and verification contracts are in [SQUINT_PRODUCTION_CONTRACT.md](SQUINT_PRODUCTION_CONTRACT.md). FULL_BUILD_PLAN §17 governs this execution. Earlier hard-endpoint output, cohort healthy-band requirements, and unconditional full-reference inference are superseded for production. Historical interfaces and checks remain in docs/history/AI_DIAGNOSTIC_DESIGN.before-squint-20261021.md. The current packet owns live state.
+Rohan explicitly approved and ordered the wide build and private Kaggle dry run. The frozen worker interfaces, production integration and verification contracts are in [SQUINT_PRODUCTION_CONTRACT.md](SQUINT_PRODUCTION_CONTRACT.md). FULL_BUILD_PLAN §17 governs this execution. Rohan’s2026-10-22 categorical correction reinstates exact1/0 for warranted findings; prior agent-written band-only output text is superseded. Cohort healthy-band requirements and unconditional full-reference inference remain superseded. The three-stage learned navigation layer is expressly authorized over fixed HDC signals; it does not overrule warranted symbolic findings. Historical interfaces and checks remain in docs/history/AI_DIAGNOSTIC_DESIGN.before-squint-20261021.md. The current packet owns live state.
+
+## Shared evidence and actual diagnostic scope — 2026-10-22 repair
+
+A later observation that changes an object profile, its identity context or its clinical
+eligibility invalidates earlier condition findings depending on that object. Reuse
+the changed shared measurement, recall and combine only affected questions, and keep
+the old/new finding trace. A stale categorical answer cannot survive withdrawal of
+its premise. Newly open requests remain explicit; no automatic full-study rerun follows.
+
+Object-qualified context banks remain valid contextual evidence, but do not count
+as observing a condition’s defining tissue. Likewise, wrapping a study-level positive
+Fracture/Contusion presentation in a configuration cannot localize it: when the actual
+comparison reads only one unlocalized bone, retain it as graded/routing evidence.
+Actual joint configurations, localized positives and warranted whole-normal cases
+retain their existing authority. No all-views, exact-outline or arbitrary cosine
+cutoff is added. These are preservation of source scope, not new anatomy definitions.

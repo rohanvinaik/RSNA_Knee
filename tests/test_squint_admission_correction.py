@@ -724,9 +724,10 @@ def test_correction_publisher_records_its_actual_parent_without_changing_call_sc
         assert call_row(child, grown.x)["views"] == [COR]
         expected_views = frozenset({tuple(COR)})
     else:
-        assert child["object_identity_teaching"]["calls"] == source_before[
-            "object_identity_teaching"
-        ]["calls"]
+        assert (
+            child["object_identity_teaching"]["calls"]
+            == source_before["object_identity_teaching"]["calls"]
+        )
         assert child["object_identity_cases"] == source_before["object_identity_cases"]
         expected_views = identity_condition_views(source_before)["views"][grown.x]
     assert identity_condition_views(child)["views"][grown.x] == expected_views

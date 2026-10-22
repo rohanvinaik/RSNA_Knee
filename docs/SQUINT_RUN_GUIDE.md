@@ -1,6 +1,6 @@
 # Squint-first operation
 
-The competition operation reads raw MRI series, locates anatomy in their cheap physical squints, recalls individual normal and condition-presentation cases, and writes twelve ranked values. Full anatomical reconstruction supplies bootstrap examples. It is not a required inference prefix.
+The competition operation reads raw MRI series, locates anatomy in their cheap physical squints, recalls individual normal and condition-presentation cases, and writes twelve condition values. Full anatomical reconstruction supplies bootstrap examples. It is not a required inference prefix.
 
 The complete mechanism is [CLASSICAL_AI_BUILD_DESIGN.md](CLASSICAL_AI_BUILD_DESIGN.md): bootstrap,
 signed recognition, corpus construction, classical agency learning and continuing runtime memory.
@@ -9,23 +9,31 @@ signed recognition, corpus construction, classical agency learning and continuin
 interfaces. Current acceptance evidence and pending work live only in
 [the current packet](work/current/README.md).
 
-## Implementation boundary and next integration
+## Implementation boundary at the 2026-10-22 wind-down
 
-The commands below operate on the implementation in this checkout. Their existence is not a claim
-that the complete learning system is integrated:
+Work stopped at Rohan's request. Signed teaching, contextual procedure consumption
+and the authorized three-stage learned navigation are implemented. `dataset-r2` /
+`train-r2` completed; the current-source 58-study MRI check was interrupted after four
+complete study records, with no completed cohort receipt. See
+[SOM_NAVIGATION_RUN_GUIDE.md](SOM_NAVIGATION_RUN_GUIDE.md) for exact artifacts,
+commands, output authority and evidence boundaries. Commands below are operational
+reference, not an execution queue. Existing navigation packages predate current
+source/model and are held. Formal submission needs fresh permission.
 
-| Boundary | What runs here | Required completion |
+| Boundary | What runs here | Evidence boundary |
 |---|---|---|
 | Candidate compilation | The compiler pairs saved high-resolution products with cheap scan readings and retains attributed labels. | The automatic catalogue is not a visually approved identity seed. Use actual pictures and scoped calls. |
-| Reviewed seed | `squint_object_bootstrap.py export`, `adapt` and `admit` publish signed identity teaching: confirmed positives, ordinary negative cases and alternative identities at their called views. Identity recall hears both signs; held-out exclusion covers every record kind. | Finish the remaining visual calls and publish them. See [the bootstrap guide](OBJECT_BOOTSTRAP_GUIDE.md). |
-| Recognition | The real inference path retains `identity_recall` beside located objects. | Condition reasoning must consume those identity results; serializing them alone does not change its tissue evidence. |
-| Identity growth | A separate prototype proposes immutable child publication. | Preserve every signed record and source-study exclusion, require affirmative applicable anatomical support (a law check: it records location, never tissue), inspect the first round's admissions before promotion, and verify the next round reads that child. No root growth CLI is documented as complete. |
-| Clinical teaching | `squint_training_round.py` joins independently sourced report calls to observations and publishes a prepared child. | This is one teaching operation, not the complete custom classical-AI training algorithm. |
-| Active learning | Case recall and bounded observation tools exist. | Cases, corrections, warranted censors/splits and useful procedure associations must reach the decisions they serve, as the canonical design specifies. |
+| Reviewed seed | Existing bootstrap and direct visual publishers retain confirmed positives, ordinary negatives and supported alternative identities at their called views. Identity recall hears both signs; held-out exclusion covers every record kind. | The accepted 1,061-case memory includes published visual teaching. Future new cases still need their actual independent calls; no historical outstanding-call list is an automatic prerequisite. See [the bootstrap guide](OBJECT_BOOTSTRAP_GUIDE.md) and current packet. |
+| Recognition | The real inference path consumes contextual identity before condition reasoning and retains the attribution beside located objects. | A proposed name is not independent identity evidence; an applicable negative must affect the actual tissue consumer. |
+| Identity growth | `prepare_squint_training.py --run-round` composes existing growth, admission review, clinical carry and checked procedure retention. | Preserve signed records and source-study exclusion, require affirmative applicable anatomical support for automated admission, inspect first-round admissions, then consume the reviewed child. Direct visual teaching remains a separate warranted route. |
+| Clinical teaching | Independent calls join actual object support, canonical configurations rebuild, and checked procedure experiences are retained in immutable children. | Study-level labels do not certify a proposed tissue box or localize injury to every implicated object. Corpus teaching is distinct from fitting the authorized navigation layer. |
+| Contextual agency memory | Signed case/censor recall and checked procedure recall reach condition consumers and existing observation-request selection. | Preserve each remembered interpretation's question, context, view and source. Specialized censor/split induction is not implied merely by retaining ordinary negative cases. |
+| Learned navigation | `prepare_som_navigation.py` exports fixed-HDC features; `train_som_navigation.py` trains specialists, then frozen-specialist orchestration, then joint refinement. `--diagnostic-navigation` consumes the NumPy artifact through real inference. | Training revision 2 completed. Its numerical opinion grades open findings and orders existing requests; it does not override warranted symbolic calls. The interrupted MRI check is not a complete 58-study result. |
 
-The integration sequence is signed seed publication, supported recognition/admission, complete child
-readback, then the next round through the real production consumer. Remaining visual calls and report
-reading run in parallel. Do not replace that small working loop with another general framework.
+The corpus loop remains signed publication, supported recognition/admission, ordinary
+child readback and the next round using that child. The navigation layer learns over
+the retained fixed representation; it does not replace this memory or its sources.
+Current work and later authorizations are recorded only in the current packet.
 
 Unknown is neutral when answering a question. Automated admission of a **new recognition-derived
 teacher** additionally requires confident joint identity and affirmative applicable anatomical support,
@@ -35,13 +43,20 @@ remain usable at their actual scope. See [the canonical admission contract](CLAS
 
 ## Commands and what they exchange
 
+For each bootstrap/training iteration, retain the measured cohort, frozen memory, independent
+truth, twelve-condition discrimination profile, actual teaching and procedural changes in the
+[experimental notebook](TRAINING_EXPERIMENTAL_NOTEBOOK.md). Its first entries distinguish teaching
+readback from fresh-study transfer and link exact per-study results. This recording is research
+evidence; FULL_BUILD_PLAN §13's packet remains the sole current job queue.
+
 A published memory and a completed run are read-only inputs to every later step. Each command writes to a fresh path of its own; only a teaching round rerun on the same inputs resumes its own root.
 
 | Step | Command | Reads | Writes |
 |---|---|---|---|
 | Compile candidate catalogue | `scripts/run_interiors.py --diagnostic-mode teach`, or `scripts/compile_squint_memory.py` to choose the profile writer | `train.csv` and the raw studies under `--root`; the full H5 products | the memory directory (`manifest.json` and `recall-preparation.json.xz`) and a bootstrap receipt; not visual approval of its identities |
-| Review and publish seed | `scripts/squint_object_bootstrap.py export`, then `admit` | exact source catalogue, exported native pictures, pinned scoped calls | reviewed seed; the root publisher currently retains positive identities only |
+| Review and publish seed | `scripts/squint_object_bootstrap.py export`, then `admit` | exact source catalogue, exported native pictures, pinned scoped calls | reviewed positive, negative and alternative identity cases at their actual called views |
 | Raw inference | `scripts/run_interiors.py --diagnostic-mode infer` | the memory, the raw studies and the official submission template | the diagnostics directory: `receipt.json`, `studies/<UID>.json.xz`, `recall-preparation.json.xz`, `submission.csv` |
+| Train and consume navigation | `scripts/prepare_som_navigation.py`, `scripts/train_som_navigation.py`; inference adds `--diagnostic-navigation ARTIFACT_DIR` | pinned saved observations, independently scoped teaching and a study-level split; runtime loads the fixed schema and weights | dataset/three-stage training artifacts; runtime request ordering, retained numerical opinions and policy-tagged values. See [the navigation guide](SOM_NAVIGATION_RUN_GUIDE.md). |
 | Held-out check | `scripts/run_interiors.py --diagnostic-mode capacity`, then `scripts/evaluate_squint_capacity.py` | a prepared memory, labelled raw studies and a template of exactly those UIDs; the labels only in the reporter | a run directory, then the capacity report (JSON and Markdown) |
 | Reports for independent readers | `scripts/squint_report_teaching.py export` | `train.csv` | a reader batch of report text without label values |
 | Teaching round | `scripts/squint_training_round.py` | a parent memory, a completed run, the report text of `train.csv` and independent call documents | a round root: `round.json`, the child `memory/` with its recall preparation, and `evaluation/` when asked |
@@ -138,13 +153,33 @@ Output contains:
 
 Each located object's complete recalled `profile` remains directly available. Search candidates retain every tie and native address. Their `profile_ref` refers to that object's `evidence.candidate_profile_catalog`, which in turn shares exact bank and series-context payloads through `candidate_bank_catalog` and `candidate_series_context_catalog`. Use `knee.diagnosis.squint_locator.resolve_candidate_profile(located_object, profile_ref)` to reconstruct the complete original profile. Publication checks that reconstruction before releasing the candidate payload. Sharing data does not merge locations or turn a tie into a decision.
 
-The continuous ranking keeps defeated below open below assigned and uses exact case resemblance within those bands. It emits neither hard zero nor hard one and makes no calibrated-risk claim. Categorical findings remain separate. Silence, conflict and unsupported recall radii remain explicit.
+The internal legacy ranking keeps defeated below open below assigned and uses exact
+case resemblance within those bands. Final serialization follows
+`knee.warranted-endpoints-open-grade/v1`: warranted `assigned` findings emit exact 1,
+`defeated` findings exact 0, and `open` findings retain a graded value. With navigation
+enabled, only open findings use its numerical opinion. Open grades at exact endpoints
+serialize to the adjacent interior float; raw opinions and legacy rankings remain
+retained. No numerical threshold creates a categorical diagnosis. Silence, conflict
+and unsupported recall radii remain explicit.
 
-A configuration voice can decide only when that individual case's actually compared banks cover the condition's defining tissue. Supporting-only comparisons may grade an open result. For a negative multi-site condition, every alternative site must be covered in the same comparison; separate partial negative cases do not supply that coverage.
+A configuration voice can decide only when its actual query comparison and scoped
+precedent evidence cover the condition's defining tissue. Supporting-only comparisons
+may grade an open result. Warranted independently taught whole-normal configuration
+recall can decide absence without separately observing every possible site as normal.
+A site-specific normal finding retains its local scope; it does not become a
+whole-condition negative. A single unlocalized bone-positive presentation cannot
+supply a localized finding or decisive whole-condition configuration.
 
 A warranted partial normal comparison remains counterevidence at its observed defining site. If a positive configuration compared that same site, their competition keeps an otherwise open question open. This also applies to a warranted object-normal reading. It does not erase a separately warranted localized positive at another site. An explicit caller restriction of `grade_only` survives both object and configuration consumers; it is not imposed merely because a cheap reading lacks a native outline.
 
 Recall terms retain each case's per-question `call_scope`. For Fracture and Contusion, `positive_condition_presentation` means the object was observed in a diagnosed study; it does not localize injury to that bone. Those terms remain available for retrieval and ranking, but alone do not supply a local positive bone predicate. Independently covered whole-condition recall can still decide. Source-scope uncertainty stays named and does not trigger an image zoom that cannot repair the label's attribution.
+
+Conditions share current object state. A bounded look or identity refresh that changes
+a consumed subject refreshes previously computed dependent questions through recall,
+combination and serialization. Unrelated questions and no-op looks reuse their work.
+The `condition_propagation` trace retains changed subjects and old/new outcomes; the
+final unresolved-request list retains newly open questions without automatically
+launching more MRI work. See the navigation guide for the shared-state boundary.
 
 `--diagnostic-mode capacity` excludes the queried study before location examples, direct recall, censors and opposing-envelope preparation. Cached comparison rows are projected onto the remaining population; exact maxima and counts are recomputed without repeating pairwise measurements. Context-only objects remain available for location without requiring a diagnostic envelope. This is an information check, not a tuning objective.
 
@@ -181,11 +216,22 @@ with Path("/absolute/new/heldout-template.csv").open("x", newline="") as stream:
   --markdown /absolute/new/capacity-report.md
 ```
 
-The reporter checks the run and per-study memory identities, own-study exclusion, exact ranking fractions and exported CSV. It refuses budget-unexamined studies as an incomplete evaluation. It reports identified, abstained and wrong per condition, split by positive/negative truth, plus exact ordering/AUC and ties. Missing labels remain unavailable. Do not collapse these into one success percentage or tune anatomy toward them.
+The reporter checks run/per-study memory identities, own-study exclusion, retained
+ranking evidence and exported CSV under the declared readout policy. Older records
+without the policy tag retain their legacy interpretation. It refuses budget-unexamined
+studies as an incomplete evaluation. It reports identified, abstained and wrong per
+condition, split by positive/negative truth, plus ordering/AUC and ties. Missing labels
+remain unavailable. Do not collapse these into one success percentage or tune anatomy
+toward them. The learned adapter currently refuses capacity/teaching modes: excluding
+K-lines does not exclude a study from trained weights.
 
 ## Package the runtime offline
 
-`scripts/package_squint_kaggle.py` stages the private runtime dataset from the integrated source and a fixed memory. It uses only the standard library and never touches the network, uploads, submits, runs the pipeline or edits its inputs.
+`scripts/package_squint_kaggle.py` stages the private runtime dataset from integrated
+source and a fixed memory, optionally with explicit `--navigation ARTIFACT_DIR`.
+It uses only the standard library and never touches the network, uploads, submits,
+runs the pipeline or edits its inputs. At wind-down, existing navigation packages
+are stale and held; this section does not queue a new release.
 
 ```sh
 .venv/bin/python scripts/package_squint_kaggle.py \
@@ -204,7 +250,12 @@ A build needs an `--output` that does not exist yet and lies outside both the so
   --memory /absolute/existing/memory-r1 --root-source .
 ```
 
-It refuses a memory without the exact top-level `knee.squint-memory/v1` schema, and any symlink, pickle or model artifact, object-dtype array, credential-like name, DICOM pixel data, teaching label file or secret-like string. Two source checks catch at packaging time what Kaggle would otherwise show late, or not at all:
+It refuses a memory without the exact top-level `knee.squint-memory/v1` schema, and
+symlinks, pickle, object-dtype arrays, credential-like names, DICOM pixel data,
+teaching labels or secret-like strings. The optional declared navigation input is
+limited to verified `navigation.json`, `schema.json` and numeric `weights.npz`;
+checkpoints and training data are not runtime artifacts. Two source checks catch
+at packaging time what Kaggle would otherwise show late, or not at all:
 
 - Every shipped Python file must parse as the offline runtime's Python, 3.13 (the cp313 wheels). This is a best-effort grammar check, `ast.parse(..., feature_version=(3, 13))`: it refuses the newer syntax CPython's parser version-gates (template strings and an unparenthesised `except A, B:` are tested), it is not a compatibility proof, shipped code is parsed, never imported or run, and library behaviour is not checked.
 - No shipped file may import a `knee` module, or a name a `knee` package's `__init__` binds, that the bundle does not hold. Every import counts, including those inside functions and behind `except ImportError`: the production code reaches several modules lazily, a missing one there is a quiet degrade to open results after hours of work, and the wrappers' import check cannot see it. Attributes of a plain module, other packages and the standard library are not checked, and a package that star-imports or defines a module `__getattr__` is not guessed at.
@@ -261,8 +312,9 @@ Keep the dataset and kernel private. A dry run is not a competition submission. 
 There are two distinct operations. Recognition-derived **identity corpus growth** uses the supported
 admission contract above and retains its inference lineage. Independently sourced **clinical teaching**
 uses labels/reports at the scope they assert. Neither converts a recalled answer into independent
-confirmation of itself. The commands in this section implement the latter operation; they are not the
-pending signed identity-growth integration or the whole classical training process.
+confirmation of itself. The commands in this section implement clinical teaching;
+the composed round provides the separate signed identity-growth operation. Neither
+is the whole classical training process or the authorized three-stage numerical training.
 
 Independent report calls retain their exact source sentences, question, anatomical attribution, uncertainty and reader identity. Unmentioned or equivocal findings provide no signed call. The report import/admission interface validates those records and publishes a new memory revision; it never modifies a running inference memory. Predictions do not supply missing teaching calls. Conflicts remain attributed; duplicate sources count once.
 
@@ -303,11 +355,17 @@ interpretation or reactivate a useful procedure; an independently corrected fail
 negative evidence, a justified scoped censor, or a split of an overbroad claim. These are different
 operations, not synonyms for adding more images.
 
-Use [CLASSICAL_AI_BUILD_DESIGN.md](CLASSICAL_AI_BUILD_DESIGN.md) for their governing meanings and
-the small remaining contracts. There is no complete root `train` CLI to invoke here. Implement the
-specific producer/consumer seam and its two-sign intent checks rather than inventing a universal episode
-schema, a fitted cosine cutoff, or a replacement learner. Clinical truth, identity and routing success
-retain their separate sources and scopes.
+Use [CLASSICAL_AI_BUILD_DESIGN.md](CLASSICAL_AI_BUILD_DESIGN.md) for their governing
+meanings. The expressly authorized learned navigation now has a concrete trainer:
+`scripts/train_som_navigation.py` consumes a pinned dataset from
+`scripts/prepare_som_navigation.py`, trains specialists, then orchestration with
+specialists frozen, then joint refinement. `train-r2` completed; the runtime consumes
+its NumPy export through `--diagnostic-navigation`. See
+[SOM_NAVIGATION_RUN_GUIDE.md](SOM_NAVIGATION_RUN_GUIDE.md) for current artifacts,
+the actual reproducible CLI and the interrupted MRI-check boundary. This bounded
+trainer does not replace signed teaching, contextual procedure memory or the exact
+encoder. Clinical truth, identity and routing success keep their separate sources
+and scopes; no universal episode schema or fitted cosine cutoff is introduced.
 
 The first actual growth demonstration must hold the mechanism fixed: both signed sides remain present,
 the parent is frozen, and the next run loads the published child with the same comparison policy. The
@@ -347,6 +405,12 @@ experiences into a fresh child; the ordinary contextual recall and request selec
 them. Report-backed normal/diagnosed object cases use the separate clinical-teaching operation
 above, with independently established object support. Reports never certify a proposed box's
 tissue identity or manufacture a lesion location.
+
+When a reviewed call fills a previously unknown configuration-ledger entry, the existing C2
+builder retains the prior row and the new per-question source. A missing or unknown new call
+cannot erase a known one. Opposite known calls remain a named conflict; filling `None` is not
+such a conflict. Configuration rebuilding still uses original confirmed object supports and
+their actual identity views, rather than counting a clinical alias as another anatomical role.
 
 ## Review saved evidence without rerunning vision
 

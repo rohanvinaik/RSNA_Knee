@@ -995,12 +995,10 @@ def read_template(path: Path) -> dict:
         raise SetupError(
             f"{path} is not a StudyInstanceUID + {CONDITION_COUNT} condition template"
         )
+    if any(len(row) != len(rows[0]) for row in rows[1:]):
+        raise SetupError(f"{path} has no studies, duplicate studies or ragged rows")
     uids = [row[0] for row in rows[1:]]
-    if (
-        not uids
-        or len(set(uids)) != len(uids)
-        or any(len(row) != len(rows[0]) for row in rows[1:])
-    ):
+    if not uids or len(set(uids)) != len(uids):
         raise SetupError(f"{path} has no studies, duplicate studies or ragged rows")
     return {"header": rows[0], "uids": uids, "sha256": hashlib.sha256(raw).hexdigest()}
 
@@ -1133,14 +1131,15 @@ def validate_csv(template: dict, produced: Path) -> dict:
     rows, raw = read_rows(produced)
     if not rows or rows[0] != template["header"]:
         raise SetupError("the produced CSV header differs from the template's")
+    for row in rows[1:]:
+        if len(row) != len(rows[0]):
+            raise SetupError(f"a produced row has {len(row)} cells, not {len(rows[0])}")
     uids = [row[0] for row in rows[1:]]
     if uids != template["uids"]:
         raise SetupError(
             "the produced CSV study UIDs differ from the run's studies, or are out of order"
         )
     for row in rows[1:]:
-        if len(row) != len(rows[0]):
-            raise SetupError(f"a produced row has {len(row)} cells, not {len(rows[0])}")
         for cell in row[1:]:
             try:
                 value = Decimal(cell)

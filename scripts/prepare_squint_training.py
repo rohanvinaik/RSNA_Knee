@@ -272,7 +272,11 @@ def _verified_report_calls(
             for entry in entries:
                 status = entry["status"]
                 if status not in (
-                    "signed", "contradictory", "duplicate", "abstention", "needs_review"
+                    "signed",
+                    "contradictory",
+                    "duplicate",
+                    "abstention",
+                    "needs_review",
                 ):
                     raise PrepareError("report_call_refused:" + str(status))
                 if status not in ("signed", "contradictory"):
@@ -1283,7 +1287,10 @@ def _parser() -> argparse.ArgumentParser:
     parser.add_argument("--child-revision")
     parser.add_argument("--labels", type=Path, required=True)
     parser.add_argument(
-        "--report-calls", type=Path, action="append", default=[],
+        "--report-calls",
+        type=Path,
+        action="append",
+        default=[],
         help="reviewed report-call document; repeat for additional independent sources",
     )
     parser.add_argument("--output", type=Path, required=True)

@@ -37,6 +37,7 @@ from pathlib import Path
 import pytest
 
 from knee.diagnosis.squint_contracts import combine_condition
+from knee.diagnosis.squint_interfaces import territory_bank_name
 from knee.diagnosis.submission import (
     SUBMISSION_COLUMNS,
     validate_submission,
@@ -123,7 +124,18 @@ def _covering(
     case_id: str, call: int, subjects: tuple[str, ...], *, k: int = 1, m: int = 2
 ) -> dict:
     """A whole-case row that compared exactly the named object roles."""
-    banks = tuple(f"object/{subject}/measured-bank" for subject in subjects)
+    measured_bank = territory_bank_name(
+        {
+            "orientation": "Sagittal",
+            "fluid_sensitive": "0",
+            "fat_suppression": "0",
+        },
+        "object",
+        "signal_median",
+        "overview",
+        10.0,
+    )
+    banks = tuple(f"object/{subject}/{measured_bank}" for subject in subjects)
     return _row(case_id, call, banks, k=k, m=m)
 
 

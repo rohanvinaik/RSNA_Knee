@@ -9,6 +9,12 @@ import json
 from pathlib import Path
 
 import pytest
+from test_prepare_squint_training import (
+    SOURCE_MEMORY_SHA,
+    TEACHING_MEMORY_SHA,
+    UID,
+    inputs,
+)
 
 import scripts.prepare_squint_training as cli
 from knee.diagnosis.squint_memory_view import memory_view
@@ -19,12 +25,6 @@ from knee.diagnosis.squint_procedure_memory import (
 )
 from knee.diagnosis.squint_reports import report_sha256, validate_report_calls
 from knee.study.tables import LABELS
-from test_prepare_squint_training import (
-    SOURCE_MEMORY_SHA,
-    TEACHING_MEMORY_SHA,
-    UID,
-    inputs,
-)
 
 REPORT = "ACL is torn. MCL is intact. The ACL tear is uncertain."
 
@@ -76,7 +76,9 @@ def condition_record(record):
                 "subject": "acl",
                 "banks": {
                     'squint/v2/view=["Sagittal","FS","0"]/role=object/metric=signal/direction=si/scale=10mm': [
-                        1, 0, 1
+                        1,
+                        0,
+                        1,
                     ]
                 },
             },
@@ -98,7 +100,9 @@ def export_inputs(tmp_path, monkeypatch):
     study = run / "studies/study.json"
     study.write_text(json.dumps(condition_record(json.loads(study.read_text()))))
     with labels.open("w", newline="", encoding="utf-8") as stream:
-        writer = csv.DictWriter(stream, fieldnames=["StudyInstanceUID", "Report", *LABELS])
+        writer = csv.DictWriter(
+            stream, fieldnames=["StudyInstanceUID", "Report", *LABELS]
+        )
         writer.writeheader()
         writer.writerow({"StudyInstanceUID": UID, "Report": REPORT, "ACL": ""})
     monkeypatch.setattr(cli, "load_memory_snapshot", lambda _path: snapshot)
@@ -113,7 +117,10 @@ def test_signed_report_checks_its_question_with_exact_quote(question, digit):
     assert result["source"] == "independent_report"
     assert result["call"] == digit
     assert result["scope"] == "study_condition"
-    assert result["report_calls"][0]["sentence"] == labels["report_calls"][UID][question][0]["sentence"]
+    assert (
+        result["report_calls"][0]["sentence"]
+        == labels["report_calls"][UID][question][0]["sentence"]
+    )
     assert result["report_calls"][0]["report_sha"] == report_sha256(REPORT)
 
 
@@ -141,14 +148,20 @@ def test_matching_report_and_numeric_label_keep_both_sources():
     "changes",
     [
         {"digit": 0, "assertion": "not_mentioned", "sentence": ""},
-        {"digit": 0, "assertion": "uncertain", "sentence": "The ACL tear is uncertain."},
+        {
+            "digit": 0,
+            "assertion": "uncertain",
+            "sentence": "The ACL tear is uncertain.",
+        },
         {"needs_review": True},
     ],
 )
 def test_unknown_or_held_report_never_erases_a_numeric_call(changes):
     result = condition_outcome(
         labels_with(report_call(**changes), numeric={"ACL": -1}),
-        UID, "ACL", "measured",
+        UID,
+        "ACL",
+        "measured",
     )
     assert result["status"] == "checked"
     assert result["source"] == "official_label"
@@ -159,7 +172,11 @@ def test_unknown_or_held_report_never_erases_a_numeric_call(changes):
     "changes",
     [
         {"digit": 0, "assertion": "not_mentioned", "sentence": ""},
-        {"digit": 0, "assertion": "uncertain", "sentence": "The ACL tear is uncertain."},
+        {
+            "digit": 0,
+            "assertion": "uncertain",
+            "sentence": "The ACL tear is uncertain.",
+        },
         {"needs_review": True},
     ],
 )
@@ -190,13 +207,21 @@ def test_opposing_report_calls_stay_a_disagreement():
 def test_real_export_reads_saved_record_and_pins_report_calls(tmp_path, monkeypatch):
     memory, run, labels, output = export_inputs(tmp_path, monkeypatch)
     report_path = call_file(tmp_path / "calls.json", report_call())
-    monkeypatch.setattr(cli, "infer_study", lambda *_a, **_k: pytest.fail("new inference"))
+    monkeypatch.setattr(
+        cli, "infer_study", lambda *_a, **_k: pytest.fail("new inference")
+    )
     receipt = cli.prepare(
-        memory_path=memory, expected_memory_sha256=TEACHING_MEMORY_SHA,
-        run_paths=[run], labels_path=labels, output_path=output,
+        memory_path=memory,
+        expected_memory_sha256=TEACHING_MEMORY_SHA,
+        run_paths=[run],
+        labels_path=labels,
+        output_path=output,
         report_call_paths=[report_path],
     )
-    rows = [json.loads(line) for line in (output / "procedure-experiences.jsonl").read_text().splitlines()]
+    rows = [
+        json.loads(line)
+        for line in (output / "procedure-experiences.jsonl").read_text().splitlines()
+    ]
     assert len(rows) == 1
     row = rows[0]
     assert row["independent_outcome"]["source"] == "independent_report"
@@ -204,7 +229,10 @@ def test_real_export_reads_saved_record_and_pins_report_calls(tmp_path, monkeypa
     assert row["state"]["attribution_scope"] == "single_procedure"
     assert row["source"]["memory_sha256"] == SOURCE_MEMORY_SHA
     pin = receipt["inputs"]["labels"]["report_calls"][0]
-    assert pin == {"path": str(report_path.resolve()), "sha256": hashlib.sha256(report_path.read_bytes()).hexdigest()}
+    assert pin == {
+        "path": str(report_path.resolve()),
+        "sha256": hashlib.sha256(report_path.read_bytes()).hexdigest(),
+    }
     assert row["independent_outcome"]["report_calls"][0]["call_document"] == pin
     assert receipt["outputs"]["checked"] == 1
 
@@ -213,26 +241,37 @@ def test_changed_report_document_refuses_export_resume(tmp_path, monkeypatch):
     memory, run, labels, output = export_inputs(tmp_path, monkeypatch)
     report_path = call_file(tmp_path / "calls.json", report_call())
     cli.prepare(
-        memory_path=memory, expected_memory_sha256=TEACHING_MEMORY_SHA,
-        run_paths=[run], labels_path=labels, output_path=output,
+        memory_path=memory,
+        expected_memory_sha256=TEACHING_MEMORY_SHA,
+        run_paths=[run],
+        labels_path=labels,
+        output_path=output,
         report_call_paths=[report_path],
     )
     call_file(report_path, report_call(needs_review=True))
     with pytest.raises(cli.PrepareError, match="training_checkpoint_mismatch"):
         cli._training_export(
-            memory_path=memory, expected_memory_sha256=TEACHING_MEMORY_SHA,
-            inference_dir=run, labels_path=labels, output_path=output,
+            memory_path=memory,
+            expected_memory_sha256=TEACHING_MEMORY_SHA,
+            inference_dir=run,
+            labels_path=labels,
+            output_path=output,
             report_call_paths=[report_path],
         )
 
 
 def test_invalid_quote_cannot_enter_export(tmp_path, monkeypatch):
     memory, run, labels, output = export_inputs(tmp_path, monkeypatch)
-    report_path = call_file(tmp_path / "calls.json", report_call(sentence="Invented finding."))
+    report_path = call_file(
+        tmp_path / "calls.json", report_call(sentence="Invented finding.")
+    )
     with pytest.raises(cli.PrepareError, match="report_call_refused:"):
         cli.prepare(
-            memory_path=memory, expected_memory_sha256=TEACHING_MEMORY_SHA,
-            run_paths=[run], labels_path=labels, output_path=output,
+            memory_path=memory,
+            expected_memory_sha256=TEACHING_MEMORY_SHA,
+            run_paths=[run],
+            labels_path=labels,
+            output_path=output,
             report_call_paths=[report_path],
         )
     assert not output.exists()
@@ -251,8 +290,11 @@ def test_call_document_changed_during_validation_is_refused(tmp_path, monkeypatc
     monkeypatch.setattr(cli, "import_report_calls", changing_import)
     with pytest.raises(cli.PrepareError, match="report_calls_changed_during_read"):
         cli.prepare(
-            memory_path=memory, expected_memory_sha256=TEACHING_MEMORY_SHA,
-            run_paths=[run], labels_path=labels, output_path=output,
+            memory_path=memory,
+            expected_memory_sha256=TEACHING_MEMORY_SHA,
+            run_paths=[run],
+            labels_path=labels,
+            output_path=output,
             report_call_paths=[report_path],
         )
     assert not output.exists()
@@ -262,12 +304,17 @@ def test_report_checked_experience_keeps_whole_study_exclusion():
     from test_prepare_squint_training import record
 
     source = {
-        "run": "saved-run", "record_file": "study.json", "record_sha256": "a" * 64,
-        "memory_sha256": "b" * 64, "memory_revision": "parent",
+        "run": "saved-run",
+        "record_file": "study.json",
+        "record_sha256": "a" * 64,
+        "memory_sha256": "b" * 64,
+        "memory_revision": "parent",
     }
     rows = experience_rows(
-        condition_record(record()), source,
-        labels=labels_with(report_call()), call_index={},
+        condition_record(record()),
+        source,
+        labels=labels_with(report_call()),
+        call_index={},
     )
     child = retain_procedure_experiences({"revision": "parent", "cases": []}, rows)
     assert child["procedure_experiences"]["rows"][0]["source"]["study_uid"] == UID
@@ -279,11 +326,27 @@ def test_cli_repeated_report_inputs_reach_real_export(tmp_path, monkeypatch):
     memory, run, labels, output = export_inputs(tmp_path, monkeypatch)
     first = call_file(tmp_path / "acl.json", report_call())
     second = call_file(tmp_path / "mcl.json", report_call("MCL", -1))
-    status = cli.main([
-        "--memory", str(memory), "--memory-sha256", TEACHING_MEMORY_SHA,
-        "--run", str(run), "--labels", str(labels), "--output", str(output),
-        "--report-calls", str(first), "--report-calls", str(second),
-    ])
+    status = cli.main(
+        [
+            "--memory",
+            str(memory),
+            "--memory-sha256",
+            TEACHING_MEMORY_SHA,
+            "--run",
+            str(run),
+            "--labels",
+            str(labels),
+            "--output",
+            str(output),
+            "--report-calls",
+            str(first),
+            "--report-calls",
+            str(second),
+        ]
+    )
     assert status == 0
     receipt = json.loads((output / "receipt.json").read_text())
-    assert [row["path"] for row in receipt["inputs"]["labels"]["report_calls"]] == [str(first), str(second)]
+    assert [row["path"] for row in receipt["inputs"]["labels"]["report_calls"]] == [
+        str(first),
+        str(second),
+    ]

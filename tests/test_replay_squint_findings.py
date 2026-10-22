@@ -38,6 +38,7 @@ from knee.diagnosis.squint_contracts import (
     combine_condition,
     rank_condition,
 )
+from knee.diagnosis.squint_interfaces import territory_bank_name
 from knee.json_store import dump_json_atomic
 from knee.study.tables import LABELS, TRAIN_COLUMNS
 
@@ -419,7 +420,14 @@ def _anatomy_against_configuration(*, femur_reads_normal: bool) -> dict[str, dic
     The whole-question case speaks over the femur and tibia banks, so it is covered
     on the femur; a femur the anatomy reads as normal competes with it there.
     """
-    banks = ["object/femur/bank", "object/tibia/bank"]
+    bank = territory_bank_name(
+        {"orientation": "coronal", "fluid_sensitive": "1", "fat_suppression": "1"},
+        "object",
+        "range",
+        "centre",
+        10.0,
+    )
+    banks = [f"object/femur/{bank}", f"object/tibia/{bank}"]
     case = {**_row("config-pos", 1), "common_speaking_banks": banks}
     objects = {"diagnosis/Medial OA": _voice("present", case)}
     if femur_reads_normal:

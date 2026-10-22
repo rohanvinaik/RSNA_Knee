@@ -984,9 +984,7 @@ def condition_outcome(
         return {
             "status": "checked",
             "source": (
-                "official_label_and_report"
-                if call in (-1, 1)
-                else "independent_report"
+                "official_label_and_report" if call in (-1, 1) else "independent_report"
             ),
             "call": next(iter(digits)),
             "scope": "study_condition",

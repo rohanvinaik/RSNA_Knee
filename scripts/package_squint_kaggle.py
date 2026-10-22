@@ -107,7 +107,9 @@ REQUIRED_PATHS = (
     "source/src/knee/diagnosis/squint_locator.py",
     "source/src/knee/diagnosis/squint_pipeline.py",
 )
-ROLES = frozenset({"source", "runtime_script", "memory", "config"})
+ROLES = frozenset({"source", "runtime_script", "memory", "config", "navigation"})
+NAVIGATION_FILES = ("navigation.json", "schema.json", "weights.npz")
+NAVIGATION_SCHEMA = "knee.som-navigation-artifact/v1"
 PYTHON_ROLES = frozenset({"source", "runtime_script"})
 SELECTION_KEYS = frozenset({"schema", "study_uids", "partition", "source", "note"})
 DEFAULT_PARTITION = "scaling"
@@ -669,6 +671,9 @@ def check_name(dest: str, role: str) -> None:
     elif role == "config":
         if dest != SELECTION_DEST:
             raise PackagingError(f"{dest}: unknown config file")
+    elif role == "navigation":
+        if dest not in {"navigation/" + name for name in NAVIGATION_FILES}:
+            raise PackagingError(f"{dest}: unknown navigation file")
     else:
         raise PackagingError(f"{dest}: unknown role {role!r}")
 
@@ -687,7 +692,7 @@ def inspect_payload(
         assert kept is not None
         facts = inspect_python(dest, kept)
         warnings = list(facts.warnings)
-    elif role == "memory":
+    elif role in ("memory", "navigation"):
         check_container(PurePosixPath(dest).suffix.lower(), opener, dest)
     elif role == "config":
         assert kept is not None
@@ -806,6 +811,37 @@ def plan_memory(memory: Path) -> tuple[list[tuple[Path, str, str]], str, str]:
     return [(path, dest, "memory") for path, dest in found], layout, entry
 
 
+def plan_navigation(
+    navigation: Path,
+) -> tuple[list[tuple[Path, str, str]], dict[str, Any]]:
+    """Ship exactly one validated numerical artifact, never training payloads."""
+    from knee.diagnosis.som_navigation import load_navigation
+
+    if navigation.is_symlink() or not navigation.is_dir():
+        raise PackagingError("navigation must be a plain artifact directory")
+    paths = [navigation / name for name in NAVIGATION_FILES]
+    before = {path.name: sha256_file(path) for path in paths}
+    try:
+        model = load_navigation(navigation)
+    except (ValueError, OSError, KeyError, TypeError) as error:
+        raise PackagingError(f"invalid navigation artifact: {error}") from error
+    if {path.name: sha256_file(path) for path in paths} != before:
+        raise PackagingError("navigation changed during validation")
+    metadata = {
+        "schema": NAVIGATION_SCHEMA,
+        "entry": "navigation",
+        "files": {
+            name: {"sha256": before[name][0], "bytes": before[name][1]}
+            for name in NAVIGATION_FILES
+        },
+        "labels": list(model.architecture["labels"]),
+        "specialists": [group["name"] for group in model.architecture["groups"]],
+        "feature_count": model.architecture["feature_count"],
+        "parameter_count": model.manifest["parameter_count"],
+    }
+    return [(path, "navigation/" + path.name, "navigation") for path in paths], metadata
+
+
 def _object_without_duplicate_keys(pairs: list[tuple[str, Any]]) -> dict[str, Any]:
     """A JSON object that repeats a key is ambiguous (which `schema` counts?), so it is refused."""
     result: dict[str, Any] = {}
@@ -913,12 +949,14 @@ def plan_all(
     selection: Path | None,
     *,
     roles: frozenset[str] = ROLES,
+    navigation: Path | None = None,
 ) -> dict[str, Any]:
     """Plan and inspect every file of the requested roles; the same path serves build and comparison."""
     items: list[tuple[Path, str, str]] = []
     excluded: list[dict[str, str]] = []
     scripts: list[str] = []
     layout = entry = schema_file = None
+    navigation_metadata = None
     if root is not None and roles & PYTHON_ROLES:
         found, excluded, scripts = scan_source(root, extra_scripts)
         items += found
@@ -928,6 +966,9 @@ def plan_all(
         items += found_memory
     if selection is not None and "config" in roles:
         items.append((selection, SELECTION_DEST, "config"))
+    if navigation is not None and "navigation" in roles:
+        found_navigation, navigation_metadata = plan_navigation(navigation)
+        items += found_navigation
     check_collisions(items)
     payloads: list[Planned] = []
     warnings: set[str] = set()
@@ -949,6 +990,7 @@ def plan_all(
         "entry": entry,
         "schema_file": schema_file,
         "warnings": sorted(warnings),
+        "navigation": navigation_metadata,
     }
 
 
@@ -1048,6 +1090,7 @@ def build_staging(
     root: Path,
     extra_scripts: Sequence[str] = (),
     selection: Path | None = None,
+    navigation: Path | None = None,
 ) -> dict[str, Any]:
     """Build the staging into a fresh `output`; on any failure nothing is left behind."""
     root = Path(os.path.realpath(root))
@@ -1064,7 +1107,7 @@ def build_staging(
     )
     if selection is not None:
         selection = Path(os.path.abspath(selection))
-    plan = plan_all(memory_abs, root, extra_scripts, selection)
+    plan = plan_all(memory_abs, root, extra_scripts, selection, navigation=navigation)
     payloads: list[Planned] = plan["payloads"]
     paths = {item.dest for item in payloads}
     for required in REQUIRED_PATHS:
@@ -1093,12 +1136,14 @@ def build_staging(
             "excluded": plan["excluded"],
         },
         "scope": (
-            "src/knee/**/*.py, the runtime scripts, the supplied memory and an optional scaling "
-            "selection only; nothing else of the checkout"
+            "src/knee/**/*.py, the runtime scripts, the supplied memory, an optional scaling "
+            "selection and optional three-file numerical navigation artifact only; nothing else of the checkout"
         ),
         "warnings": plan["warnings"],
         "files": entries,
     }
+    if plan["navigation"] is not None:
+        inner["navigation"] = plan["navigation"]
     output_real.mkdir(parents=True, exist_ok=False)
     try:
         tar_part = output_real / (TAR_NAME + ".part")
@@ -1292,6 +1337,31 @@ def _check_manifest(
         or selection.get("sha256") != config[0]["sha256"]
     ):
         problems.append("manifest scaling_selection does not match its config file")
+    navigation_entries = {
+        PurePosixPath(row["path"]).name: row
+        for row in clean
+        if row["role"] == "navigation"
+    }
+    navigation = outer.get("navigation")
+    if bool(navigation_entries) != (navigation is not None):
+        problems.append("manifest navigation does not match its files")
+    elif navigation is not None:
+        expected_files = {
+            name: {"sha256": row["sha256"], "bytes": row["bytes"]}
+            for name, row in navigation_entries.items()
+        }
+        if (
+            not isinstance(navigation, dict)
+            or navigation.get("schema") != NAVIGATION_SCHEMA
+            or navigation.get("entry") != "navigation"
+            or set(navigation_entries) != set(NAVIGATION_FILES)
+            or any(
+                row["path"] != "navigation/" + name
+                for name, row in navigation_entries.items()
+            )
+            or navigation.get("files") != expected_files
+        ):
+            problems.append("manifest navigation block is invalid or unpinned")
 
 
 def _compare_sources(
@@ -1301,6 +1371,7 @@ def _compare_sources(
     extra_scripts: Sequence[str],
     selection: Path | None,
     problems: list[str],
+    navigation: Path | None = None,
 ) -> list[str]:
     compared: list[str] = []
     wanted: set[str] = set()
@@ -1310,6 +1381,8 @@ def _compare_sources(
         wanted.add("memory")
     if selection is not None:
         wanted.add("config")
+    if navigation is not None:
+        wanted.add("navigation")
     if not wanted:
         return compared
     plan = plan_all(
@@ -1318,6 +1391,7 @@ def _compare_sources(
         extra_scripts,
         selection,
         roles=frozenset(wanted),
+        navigation=navigation,
     )
     fresh = {item.dest: (item.sha256, item.bytes) for item in plan["payloads"]}
     stored = {
@@ -1339,6 +1413,7 @@ def verify_staging(
     root: Path | None = None,
     extra_scripts: Sequence[str] = (),
     selection: Path | None = None,
+    navigation: Path | None = None,
 ) -> dict[str, Any]:
     """Re-read a staging: file set, metadata, tar, hashes, secrets, pickle; optionally against its sources."""
     output = Path(os.path.abspath(output_dir))
@@ -1380,7 +1455,9 @@ def verify_staging(
     )
     if inner is not None and inner != {k: v for k, v in outer.items() if k != "tar"}:
         problems.append("inner manifest differs from the outer manifest")
-    compared = _compare_sources(clean, memory, root, extra_scripts, selection, problems)
+    compared = _compare_sources(
+        clean, memory, root, extra_scripts, selection, problems, navigation
+    )
     if problems:
         raise PackagingError("staging does not verify:\n- " + "\n- ".join(problems))
     return {
@@ -1440,6 +1517,12 @@ def _parser() -> argparse.ArgumentParser:
         help="another scripts/<name>.py the runner needs",
     )
     parser.add_argument(
+        "--navigation",
+        type=Path,
+        default=None,
+        help="optional numerical learned-navigation artifact directory (three files only)",
+    )
+    parser.add_argument(
         "--scaling-selection",
         type=Path,
         default=None,
@@ -1459,6 +1542,7 @@ def main(argv: Sequence[str] | None = None) -> int:
                 root=args.root_source,
                 extra_scripts=tuple(args.extra_scripts),
                 selection=args.scaling_selection,
+                navigation=args.navigation,
             )
         else:
             if args.memory is None:
@@ -1470,6 +1554,7 @@ def main(argv: Sequence[str] | None = None) -> int:
                 root,
                 tuple(args.extra_scripts),
                 args.scaling_selection,
+                args.navigation,
             )
             if args.verify:
                 result["verified"] = verify_staging(
@@ -1478,6 +1563,7 @@ def main(argv: Sequence[str] | None = None) -> int:
                     root=root,
                     extra_scripts=tuple(args.extra_scripts),
                     selection=args.scaling_selection,
+                    navigation=args.navigation,
                 )
     except PackagingError as exc:
         print(f"package_squint_kaggle: refused: {exc}", file=sys.stderr)

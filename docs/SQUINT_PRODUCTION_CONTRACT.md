@@ -2,7 +2,7 @@
 
 Approved by Rohan: “Good. Save this in the build plan and agent context, then launch the build wide with native agents and Claude Max. Get the squint-first production pipeline working and run the private Kaggle dry run.”
 
-Authoritative semantics: docs/conversations/2026-10-21-ternary-buckets-and-squint-orchestration.md; the original three foundational conversations; docs/AI_DIAGNOSTIC_DESIGN.md; FULL_BUILD_PLAN §17. High-resolution recognition is bootstrap tooling. Production starts with input-available squints, located anatomy and individual case recall. Unresolved questions request bounded existing measurements, never an unconditional full-study reconstruction. No cohort healthy bands, class prototypes, fitted diagnostic thresholds, ML, circular claims of independent confirmation, or silent unknown-to-normal conversions.
+Authoritative semantics: docs/conversations/2026-10-21-ternary-buckets-and-squint-orchestration.md; the original three foundational conversations; docs/AI_DIAGNOSTIC_DESIGN.md; FULL_BUILD_PLAN §17. High-resolution recognition is bootstrap tooling. Production starts with input-available squints, located anatomy and individual case recall. Unresolved questions request bounded existing measurements, never an unconditional full-study reconstruction. No cohort healthy bands, class prototypes, fitted diagnostic thresholds, unapproved replacement of the structural encoder, circular claims of independent confirmation, or silent unknown-to-normal conversions. Rohan’s2026-10-22 selection expressly authorizes three-stage learned navigation over fixed HDC signals; its runtime boundary is specified below and in SOM_NAVIGATION_RUN_GUIDE.md.
 
 The full bootstrap -> corpus -> training -> continuing-memory binding is
 [CLASSICAL_AI_BUILD_DESIGN.md](CLASSICAL_AI_BUILD_DESIGN.md). It clarifies both roles of K-lines,
@@ -47,7 +47,7 @@ An ordinary corrected negative is immediately useful teaching. A specialized nea
 squint_pipeline.py owns run_squint_cli(args), output, bounded study workers, shared memory, source retention and real-entrypoint wiring in scripts/run_interiors.py. Identity recall must reach the condition consumer: tissue established as a different identity cannot silently continue answering for the original proposal; unresolved identity is not a clinical negative. Keep observations and reasons, and invoke only a justified bounded next observation. Merely serializing identity recall does not complete this connection. Existing explicit full-product/reference routes remain explicit reference tools. Production inference with new memory selects squint route. No drawing. Deadline stops discretionary zoom first and preserves open outcomes. Completed study state is released.
 
 ### Claude Max-owned candidate lanes
-squint_contracts.py: twelve typed domain-contract declarations plus pure combination and continuous ranking. No generic rule DSL. Necessary/sufficient/supporting/alternative presentations are distinct; normal context tissue is not a false required finding. Unmeasured != observed negative. Conflicting assignments remain conflict. Proposed approved serialization p=(3*r+1+e)/9, r=0 defeated/1 open/2 assigned, e in [0,1] from exact signed whole-case cosine evidence. No endpoints, fit or artificial tie breaks. Existing 1/0 policy remains legacy and is not production default for squint memory.
+squint_contracts.py: twelve typed domain-contract declarations plus pure combination and continuous ranking. No generic rule DSL. Necessary/sufficient/supporting/alternative presentations are distinct; normal context tissue is not a false required finding. Unmeasured != observed negative. Conflicting assignments remain conflict. Final serialization follows Rohan’s2026-10-22 correction: assigned emits exact1, defeated exact0, open a graded evidence/navigation value. The older p=(3*r+1+e)/9 banded rank remains retained internal evidence, not final output authority. Preserve raw numerical opinion separately; no fitted cutoff creates categorical warrant or artificial tie-breaking. Both the default and learned runtime paths use the same named readout policy.
 squint_reports.py: independent report-to-call input/output and admission/deduplication, exact supporting sentences, scope/negation/uncertainty; no runtime teaching or predictions as labels. Reader can author report calls in batches; ambiguous calls are retained for human review.
 kaggle/squint-production/: thin private notebook/script deployment and private dry run, offline CP313 wheels, local code, four study workers, official UID order and twelve columns, no competition submission.
 
@@ -81,3 +81,30 @@ A configuration can decide only through its actually speaking cases whose common
 For Fracture and Contusion, the compiler's `positive_condition_presentation` scope records a study-level association, without locating the affected bone. Recall carries that exact per-question scope into each case term. A local bone positive supported only by those explicitly unlocalized presentations remains unknown in the anatomical combiner; the cases and numerical terms remain available for retrieval and grading. Existing explicit local-finding inputs retain their meaning, as does independently covered whole-configuration recall. One normal bone still cannot rule out another site. Missing teaching-label localization does not schedule a finer image read, because more pixels cannot change the scope of that source claim. The derivation and intent tests are recorded in HOW_TO_BUILD, "Preserve study-label scope through bone recall".
 
 Capacity evaluation excludes each held-out study before location, case matching, censor evaluation and warrant preparation. Its own cases cannot determine candidate location or the opposing envelope. Exact stored comparison rows may be filtered by source study and their maxima recomputed without repeating the measurements. Verify equality with fresh preparation on the filtered memory. Report identified, abstained and wrong separately for every condition, together with positive/negative ordering and missing-label states. A short guarded smoke or a valid CSV is not this test. These checks inform teaching and diagnose residuals; they do not forbid the first authorized thin identity-growth round until the corpus is complete. Claim competition-scale production readiness only after the integrated route and its full offline resource envelope are verified. The active packet records what has actually passed; the intent, OpenSpec and operational documentation work requested now does not by itself establish implementation readiness.
+
+## Authorized learned navigation and shared-condition consumption — 2026-10-22
+
+Rohan selected specialist training → frozen-specialist orchestrator training → joint
+refinement over fixed HDC/recall/law/availability signals. The actual trainer, artifact
+loader and NumPy runtime are documented in SOM_NAVIGATION_RUN_GUIDE.md. This is
+additional to signed-case/censor/procedure memory. No gradient update changes the
+exact encoder, anatomical definitions, source calls or their clinical scopes. Mandatory
+observations remain mandatory; learned routing orders applicable requests, and numerical
+opinions grade open questions without replacing warranted symbolic findings.
+
+A changed object profile, identity context or clinical eligibility invalidates prior
+condition questions consuming that object. The coordinator recomputes those consumers
+on shared current observations and records old/new outcomes and dependency reasons.
+It does not rerun unrelated queries or MRI producers merely to refresh a conclusion.
+
+Only actual `role=object` banks count as defining-tissue coverage. Context banks may
+contribute resemblance but do not certify the tissue. A positive study-level unlocalized
+Fracture/Contusion configuration compared through only one bone retains its limited
+presentation scope; wrapping adds no evidence. This does not remove localized-positive,
+actual joint-configuration or warranted whole-normal authority. The actual own-object
+role is still sampled support, not independent tissue certification.
+
+These are contracts and implemented consumer boundaries, not diagnostic validation.
+The sole packet records completed versus interrupted checks. Rohan’s latest request
+pauses new work; no historical approval in this document restarts a run or authorizes
+formal submission. No submission without his explicit permission.

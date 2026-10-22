@@ -1,5 +1,7 @@
 # Complete the knee-recognition pipeline — execution and handoff plan
 
+**Execution is paused at Rohan’s2026-10-22 request.** Section13’s sole packet owns current artifacts and measured status. The approved construction contracts below preserve design intent and history; they do not automatically dispatch work, repeat training or authorize deployment/submission. Read the latest literal exchange in `conversations/2026-10-22-three-stage-navigation-training.md` before proposing continuation.
+
 **Recorded 2026-10-18 at Rohan's request after his supplied build audit.** This is the canonical
 remaining-work order. It supersedes the scheduling in COHERENT_BUILD_ROADMAP and
 THREE_VIEW_PRODUCTION_EXECUTION; their dated acceptance records remain history. Human words,
@@ -1048,7 +1050,7 @@ milestone before that dependency; do not label the whole competition solution co
 
 ## 13. Context-stable continuation and stop points
 
-**Active task ID:** `HAND-GROUNDED-CORPUS-20261022`.
+**Active task ID:** `QUALITY-COMMIT-PUSH-20261022`.
 **Active packet:** [docs/work/current/README.md](work/current/README.md).
 
 This section is the only active-task index. The named packet is the only populated current-state

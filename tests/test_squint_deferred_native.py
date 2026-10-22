@@ -539,6 +539,8 @@ def _stub_module(monkeypatch, name: str, **members) -> types.ModuleType:
 def test_infer_study_defers_a_native_bone_and_reads_it_once_for_the_question_that_asks(
     tmp_path, monkeypatch
 ):
+    from knee.diagnosis.squint_contracts import serialize_condition_value
+
     study, memory, _series, _leg, territory, mask, _coarse = _native_femur(tmp_path)
     uid = study["study_uid"]
     questions = tuple(
@@ -570,6 +572,7 @@ def test_infer_study_defers_a_native_bone_and_reads_it_once_for_the_question_tha
             "observation_requests": [{"question": question_id, "object": "femur"}],
         },
         rank_condition=lambda finding: {"value": 0.5},
+        serialize_condition_value=serialize_condition_value,
     )
     recalls: list = []
 

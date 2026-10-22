@@ -1,316 +1,111 @@
-# Active task packet
+# Active task packet — paused after documentation closeout
 
-Sole populated current-state record; FULL_BUILD_PLAN §13 owns this pointer. Revision **161**.
-Previous packet: `docs/work/history/active-task-packet-revision-158-before-bootstrap-admission-repairs.md`.
+Sole populated current-state record; [FULL_BUILD_PLAN §13](../../FULL_BUILD_PLAN.md#13-context-stable-continuation-and-stop-points) owns this pointer. **Revision169; task `QUALITY-COMMIT-PUSH-20261022`. Application work is paused; the subsequent wide quality/full-CI/fix/commit/push pass is expressly authorized.** No new AI training, corpus growth, Kaggle run or submission is queued.
 
-## TASK / AUTHOR'S OBJECTIVE / CORRECTION
+Previous packet is retained in [revision167](../history/active-task-packet-revision-167-before-20261022-wind-down.md), with one explicitly marked publication annotation on a verified manifest digest. Original bytes are retained locally in `quality-pass-r1/history167-original.md`. It contains earlier evidence, not current jobs or instructions.
 
-`HAND-GROUNDED-CORPUS-20261022` / **Hand-build the corpus that bootstraps classical AI.**
+## Quality publication checkpoint — latest request
 
-**RESUMED by Rohan:** «While that's churning, please also push to git, skip the local CI gate. Everything new that's not private data, just shove it onto git please».
-The clarification is bootstrap triage: review uncertain proposals too; retain warranted positives,
-scoped remembered-negative censors, identified partial/third-kind knowledge and genuine abstentions
-without collapsing them. Local CI gate skipped per Rohan's explicit instruction.
+Rohan requested the full declared gate, repairs, commit and push, then remote shutdown
+on SquishHub and Sanjay’s laptop with caffeinate off. The [quality record](../reviews/QUALITY_PASS_20261022.md)
+describes actual fixes, independent reviews and retained advisory leads. The local
+all-extras/all-groups lock audit is clean after Pillow13.0.0. Remote process
+inventories confirmed no project jobs and no caffeinate; only Sanjay’s verified
+caffeinate PID75258 needed stopping.
 
-**Completed Multi-Machine Batch (Round 4, 2026-10-22):**
-- **Promoted C2 visual memory published:** `r3-bootstrap-refusals-review/promoted-visual-c2-child/memory`,
-  manifest SHA `bd82df1a89d24b474e5aa35eeece91e914da82380c94d9aeee83d5d626ead18e`,
-  parent manifest SHA `4bc4794c839633f2592f6a07552c5994be690e7da1d6d3e2f5d0d4209fe35cd5`,
-  913 cases, 24 configurations rebuilt for the two studies. Synced to Sanjay's machine.
-- **Parallel study inference across 20 SSD studies:**
-  - Local Mac: 10 studies (`local-shard4-run`) completed in 218.7s.
-  - Sanjay's MacBook Pro: 10 studies (`sanjay-shard2-run`) completed in 149.4s.
-- **Identity Growth & Admission Evaluation across 20 studies:**
-  - 673 total candidates: 4 admitted, 410 proposals, 210 opposed, 49 conflict.
-  - 4 admitted cases: `tibia` in `...2382...`, `patella` in `...1031...`, `lateral_gastrocnemius` in `...1052...`, `tibia` in `...8924...`.
-  - Negative censor activation confirmed: remembered negative meniscus cases actively opposed 18 false medial meniscus proposals across unseen SSD studies (`reason: applicable_negative_case_speaks`).
-- **Published Round 4 Child Memory:** `train-growth-round-r4/memory`,
-  manifest SHA `8ceb8289e73a5f92dea49a5ba4ddd39ac842f9f0eb9c590075f70d47fe7b3877`,
-  parent manifest SHA `bd82df1a89d24b474e5aa35eeece91e914da82380c94d9aeee83d5d626ead18e`,
-  917 cases, 338 negative cases.
-- **Procedure Experience Export:** `train-growth-round-r4/training-export`,
-  755 procedure experience rows recorded across 20 studies; 242 object cases categorized.
+Ruff’s feature-writer formatting changed its byte fingerprint with identical AST.
+Use `data/readings/som-navigation-20261022/navigation-r2-quality-r1` with current
+source, manifest `13991b30579c61ffc6c7a3bb11aa89c13d108c883a886f511314f1ded49ff017`,
+compatible schema `f83b8256f6bed551a3143d12d74e0c4228830ed6c9da09d4383c4f3292cb882c`.
+The weights and all118 predictions/routing arrays are bit-identical to original
+train-r2. Original training artifacts and results stay immutable. Future training
+on the same arrays can use `dataset-r2-quality-r1`; its metadata is compatible,
+its numeric data unchanged. These exports are not retraining or new MRI inference.
 
+Final publication is conditioned on `scripts/ci_local.sh` passing exactly the tree
+committed, followed by the normal pre-push secret/audit checks. The automatically
+recorded `.git/gate-passed/<tree>` and GitHub gate for that revision own the actual
+verification result. Do not substitute the failed exploratory gate or a predicted
+result in prose. No bypass or force push is authorized.
 
+After publication return to the application pause. Quality authorization does not
+authorize a formal competition submission, new remote compute or resumed training.
 
-**Latest bootstrap corrections, literal author words:**
-> Check why nothing new was admitted. Re-read my prompts about the AI layer and bootstrapping,
-> seems like that is an issue, you should be able to add in at least SOME of those
->
-> Just refusal? Or negative censor?
->
-> Re-read my prompts about the AI layer. You're missing a lot of subtlety if you (1) didn't try
-> adding in more candidates that weren't certain, you missed the fact we're doing the bootstrap
-> part right now, and (2) you missed the whole concept of negative censors in a minsky/Winston-style
-> pipeline
->
-> Abstention and negative censors are both different things. Like in the "<object>" thesis,
-> when there were buckets for "not cell", "cell" and "not not cell, but not cell either"
+## Current request and authority
 
-Uncertain candidates are bootstrap teaching work, not a reason to end the loop. Inspect their
-images, supply warranted signed calls and retain corrections. Thesis §§1.7/8.5 calls a confirmed
-negative case a remembered censor; it can act now. Do not reserve the word censor only for the
-further near-miss specialization in §8.6. An identified third kind with its own question-specific
-digits is not abstention. An unread or unsettled question supplies no teaching call.
+Rohan first asked to wind down and ground the documentation, then expressly authorized the bounded quality/publication pass above. Literal latest prompts and the three-stage selection are in [the conversation](../../conversations/2026-10-22-three-stage-navigation-training.md). His object/HDC/anatomical theory remains governing; parameter learning over fixed HDC was explicitly authorized. Corpus growth is not the whole learning algorithm.
 
-**Latest steering:** Rohan: «Skip the gate for now, we'll do that at the end, in a full project
-cleanup pass» and «Also, check in on what Gemini has been doing/has started». Continue the local
-pilot and integration; do not start another full gate or cleanup pass during this work.
+**No formal competition submission without Rohan’s explicit permission.** No submission was made. No new private notebook was launched during this work. The incomplete private runtime upload was interrupted earlier; previous private Kaggle results concern older source/artifacts. Do not treat an old COMPLETE notebook status as current-release validation.
 
-**Latest request and grounding:** Rohan asked for a complete contextual/implementation handoff
-incorporating every mid-turn correction. It is now
-[CLASSICAL_AI_TRAINING_EXECUTION.md](../../CLASSICAL_AI_TRAINING_EXECUTION.md). Read it before
-continuing learning work. ONE society connects support/pixel assignment, anatomical role,
-physiological state and diagnosis. Anatomy and physiology have related but distinct warrants;
-cheap scan calibration is not a definition of healthy function. Local training serves the
-ultimate twelve-condition Kaggle diagnostic endpoint, including uncertain answers. His literal
-clarifications are in the conversation and the execution appendix's final section.
+## Source and immutable artifacts
 
-Rohan explicitly corrected the lead: recognition is a way to isolate individual anatomical
-objects, normal and diseased, so their measured bundles can become K-lines and bootstrap the AI.
-We are NOT required to deliver perfect or complete automatic recognition across the 58 before
-training. The prior packet and GROUNDED_RECOGNITION imposed that gate incorrectly. That was the
-agent's substitution, not Rohan's specification. The latest literal clarification is appended to
-`docs/conversations/2026-10-21-ternary-buckets-and-squint-orchestration.md`.
+Source HEAD at the pre-publication checkpoint: `8a4b3c774a5aebf2fcb7e88698e5f7c2999beca6`. The implementation/documentation changes are the proposed publication tree; use actual git status and HEAD for its committed state. The working tree is shared; preserve Gemini’s independent files, including `docs/THESIS_AND_DEMONSTRATION.md` and existing configuration changes. No commit or push had been made at the initial pause; the latest request now authorizes publication after the gate.
 
-Use actual native images, anatomical reasoning and independently scoped labels/reports to make
-visual calls. Useful rough supports and partial views suffice. Select an example directly when
-the automatic tool misses it. Preserve normal/diseased meanings, signed identity calls, sources,
-available scales/views and the original expectation. Do not manufacture a localized lesion from
-a study-wide positive label. All correct examples are useful; no arbitrary seed quota is imposed.
-Bucket filling enables the custom Society of Mind training; it is not all of that training.
+Accepted signed memory (unchanged):
 
-Rohan's latest explicit rule: the labelled teaching studies give diagnosed conditions; correctly
-identified anatomical objects not implicated by their positive conditions form a valid normal
-object set. No separate normality annotation or automatic-recognition pass is required. The
-official label row and confirmed identity views supply that teaching. Unlabelled studies remain
-unlabelled; an implicated multi-site condition retains its actual study/site scope.
+```text
+data/readings/grounded-teaching-20261022/growth-batch-20/next-wave-run-r1/category-review-r3/published-learning-child-r1/memory
+manifest ccd01612d36eae5a25a73c03a6937fc44ad9317e8390a71d13beac5c55d23da8
+```
 
-## SOURCE / ACTIVE MEMORY CHAIN
+Its publication/readback records establish1,061 cases,270 confirmed identity IDs,364 negative identity IDs and650 checked procedure experiences. Do not fork or silently replace this continuation.
 
-1. **Parent memory:** `data/readings/grounded-teaching-20261022/integrated-r4-identity/memory`, **909 cases**.
-   - Manifest sha: `a9b632aa06436a6ed00e0976973abd94cf9ad908841ed31d64a3735a7f280298`.
-   - Preparation sha: `a25e66b6b8f7c8c15bbdd24c8f6a386030dd2db0df33996b0115a9bb283a81fa`.
-   - Earlier chain: 852 -> 876 -> 900 -> 904 -> 909.
-   - The two pilot round receipts both name the 909-case parent. The fresh child explicitly pins
-     `a9b632aa...`; it does NOT extend `demo-round-r1-child`. Preserve both and reconcile any
-     unique teaching before representing a single accepted continuation. Do not invent a linear
-     history or duplicate the same episode under a new run ID.
+Current completed training artifacts:
 
-2. **Published child memory (Fresh round under updated code):**
-   - Path: `data/readings/grounded-teaching-20261022/train-ready-round-r2/memory`
-   - Revision: `train-ready-round-r2-child`
-   - Manifest sha: `e0fbd5f1d768af617182824f9e262edfb4d3c82e6dfe5116169c7cb26689f89f`.
-   - Parent lineage: `parent_revision: "local-bootstrap-report-scope-repair-r1+..."`, `parent_manifest_sha256: "a9b632aa06436a6ed00e0976973abd94cf9ad908841ed31d64a3735a7f280298"`.
-   - Child training export: `data/readings/grounded-teaching-20261022/train-ready-round-r2/child-training` (receipt `1e9fae26d9e182fb27a342608619fff781ff34f33b0707f335cfdaaab4a981a3`).
-   - Retained procedure experiences: 27 rows (all with `single_procedure` attribution and pre-action coarse 10mm cues).
-   - Resumption verified: re-running on `train-ready-round-r2` executed 0 studies (`resumed: ["...1839..."]`, `executed: []`), preserving published child memory and training export.
+| Artifact | Path beneath `data/readings/som-navigation-20261022/` | SHA256 |
+|---|---|---|
+| Training dataset | `dataset-r2/` (dataset receipt identity) | `8bb3b45eaf0ef0d3dc505e3432b2c24cbc385034feb0bbb3af321fb9b347b1d4` |
+| Dataset feature schema | `dataset-r2/` (schema identity in receipt) | `7095f05d4ac6afd799512046e8a7a4533b77c31e7195aecd0c18b9ef4567b996` |
+| Runtime model manifest | `train-r2/navigation.json` | `ea487781d8b0653b3045f17ec7218137d0e9da699bc56e0a89e93e257353b39b` |
+| Runtime schema bytes | `train-r2/schema.json` | `a796198aeeb2473a5656bc3f866e0b9f7d61507bdade2e943928b80ad95de438` |
+| Runtime weights | `train-r2/weights.npz` | `a5c9c4cef5ef0511c275f67730af8e0e13f900df0c030e4dfba908f9b6121be7` |
 
-3. **Historical pilot child (Preserved as artifact):**
-   - Path: `data/readings/grounded-teaching-20261022/demo-round-r1/memory`, revision `demo-round-r1-child`.
-   - Manifest sha: `79628aa83345d19fda95972d34bedf153ea6c7c1487e4a3b796f962eee20c501`.
+The dataset schema identity and exported runtime-schema file digest name different serialized artifacts; do not interchange them. Keep r1 unchanged as historical evidence.
 
-4. **Isolated verification continuation, not promoted:**
-   `/tmp/rsna-integrated-training-round-r4/memory` extends item 2 and retains 909 cases / 54
-   procedure experiences. Exact pins/limits are below. Coordinate adoption on the single chain.
+## What is implemented and consumed
 
-5. **Gemini's completed round-three continuation:**
-   `data/readings/grounded-teaching-20261022/train-ready-round-r3/memory`, SHA
-   `eade13931766fe1db7817ad5f6d2db0e8f133c05aaa5655ef50d446ff05b0655`.
-   The actual round receipt pins item 2 as its parent: 909 cases / 108 retained procedure
-   experiences. Five already-taught studies were read with whole-study exclusion, not five
-   untouched studies. Their export has 187 experiences (81 checked, 106 unchecked); 78 checked
-   looks stayed open and three resolved their actual questions correctly against official labels.
+Raw series → shared squints/current-study anatomy → located object profiles and contextual signed identity recall → clinical object/configuration recall → condition contracts → bounded observations where needed. Full/cheap HDC facets coexist; unread banks are distinct from observed-neutral ones. A profile/window is sampled support, not certified tissue. Femur/tibia share bone appearance; their roles follow current-study anatomy.
 
-6. **New signed visual child, publication finished; integration still pending:**
-   `data/readings/grounded-teaching-20261022/r3-bootstrap-refusals-review/signed-visual-child/memory`,
-   SHA `4bc4794c839633f2592f6a07552c5994be690e7da1d6d3e2f5d0d4209fe35cd5`.
-   It was explicitly built against item 5, retaining the parent stores, and adds four positive
-   cases plus three scoped remembered-negative cases. Positive case count is 913; negatives live
-   in the separate signed identity table. Receipt: sibling `publication.json`.
-   Root inspected all six original candidate sheets and all four final polygon contact sheets.
-   The additions are in `r3-bootstrap-refusals-review/measured-visual-additions/`, SHA
-   `83e4d5cbe418ffc648a8f088bda883d7229bb57ba5a76777377a93c3d7d0d256`.
-   Four new study/object pairs sample joint fluid and anterior recess in two studies; official
-   labels give normal Effusion/Synovitis presentations. Their shared physical pockets remain
-   linked, not independent corroboration. Three rejected meniscus proposals retain their exact
-   original mixed-tissue profiles, eight actual view reasons and no clinical calls.
-   **Before promotion:** rebuild the two studies' configurations via the existing C2 operation,
-   check immediate-parent fields against the explicit visual provenance, and retain the new
-   source epoch. Do not fork another publication from item 2 or silently amend this immutable child.
+Learned specialists and the orchestrator consume fixed HDC/recall/law/availability signals. Actual stages are specialists → frozen-specialist orchestrator → joint refinement. Runtime uses NumPy; training uses PyTorch. The live gate orders applicable requests with mandatory work first. The numerical opinion grades open questions, never overrides an established symbolic answer.
 
-## ADMISSION REPAIRS AT THIS PAUSE
+Final output policy: `knee.warranted-endpoints-open-grade/v1`: assigned→exact1, defeated→exact0, open→graded. Raw numerical opinions, internal historical ranks, signed evidence and final output remain separately attributed. No numerical cutoff establishes clinical warrant.
 
-- Fixed `represented_objects`: a negative-only case no longer reserves a positive (study, object)
-  slot. Exact case-ID collision protection, all-source exclusion and signed cases remain. The old
-  test explicitly pinned the wrong authority. 35 focused tests passed. This does not itself prove
-  any previously blocked real candidate is correct.
-- Extended the existing direct visual publisher to retain confirm AND reject calls in their
-  existing signed stores. The real training-round consumer uses that same helper; a reject never
-  becomes a positive or clinical feature. 25 focused tests passed, including actual negative
-  recall and study exclusion. Source: `squint_visual_teaching.py`; consumer:
-  `prepare_squint_training._compose_round_teaching`.
-- The six inspected automatic sheets show real placement errors: meniscus windows on tibial
-  marrow, femur and posterior calf; broad fluid windows mainly on condyles. These particular
-  supports must not be confirmed merely to increase admissions. Correct regions were taught
-  directly as item 6, while wrong proposals teach scoped negative expertise.
-- Missing authored `between` consumer repaired in `squint_sanity.py`: shared observed plane normals
-  can supply support-only projected betweenness, with measured bands/precision. Outside, missing,
-  overlapping or touching evidence stays neutral; there is no new hard exclusion or tolerance.
-  102 focused/neighbor tests passed. **Pending:** root must review the final helpers and propagate
-  `axis_lps`, both source-plane records, `anchor_bands`, `gap_interval` and qualifier through
-  growth `location_support`. Actual replay `/tmp/rsna-r3-between-support-replay.json` predates final
-  numerical safeguards; it is not a final-source replay. Location support is not tissue identity.
-- A separate empty-alternative recall issue is identified but unchanged: a mapped meniscus with
-  `open_alternatives=[]` gets no comparison envelope and `placement_only`. Do not invent a cosine
-  cutoff, force look-alike roles apart or claim this is solved. Direct teaching remains usable.
+Actual reasoning repairs now integrated:
 
+1. Later changed profiles, identity context or eligibility refresh already-computed dependent questions from shared current evidence. Earlier stale decisions retract or resolve; unrelated/no-op work stays cached. Newly open requests stay visible; no automatic MRI rerun is added. `squint_pipeline.py` SHA `43c14420e98e8e9504e1d9eea8f36e1bfdba6d91a5a07c123be8b0eb9344ddff`.
+2. Configuration defining-tissue coverage requires actual object-role banks. Context remains comparison evidence. A single unlocalized bone-positive Fracture/Contusion presentation cannot gain categorical authority merely through configuration wrapping. Localized, actual joint and warranted whole-normal cases retain authority. `squint_contracts.py` SHA `7eea6be4a159fd4a5a45a3620b4b5d08ad7e350ca480670894cdf6d2aa445f1f`.
 
-## RECONCILED 58-STUDY TEACHING READBACK (696 ROWS)
+The second repair changes one reproduced old Contusion false positive to open; the other eight traced errors remain unchanged in that consumer-only replay. That is a bounded repair, not a claim that diagnosis is solved.
 
-Audited via `scripts/build_question_ledger_696.py` against `data/readings/grounded-teaching-20261022/teaching-question-ledger-696.json`.
-Exact row counts: **245 identified, 451 unresolved, 0 contradicted** (total: 696 rows):
+## Completed measurements and their populations
 
-| Condition | Identified | Unresolved | Contradicted |
-| :--- | :---: | :---: | :---: |
-| **ACL** | 2 | 56 | 0 |
-| **MCL** | 5 | 53 | 0 |
-| **Medial Meniscus** | 9 | 49 | 0 |
-| **Lateral Meniscus** | 9 | 49 | 0 |
-| **Medial OA** | 40 | 18 | 0 |
-| **Lateral OA** | 41 | 17 | 0 |
-| **PF OA** | 30 | 28 | 0 |
-| **Effusion** | 21 | 37 | 0 |
-| **Synovitis** | 9 | 49 | 0 |
-| **Baker's Cyst** | 3 | 55 | 0 |
-| **Contusion** | 37 | 21 | 0 |
-| **Fracture** | 39 | 19 | 0 |
-| **Total** | **245** | **451** | **0** |
+- Dataset-r2:118 studies,106 training and the SAME12 validation studies. All58 fully labelled teaching studies contribute696 official answers. Known targets:1,074 train,82 validation.63,502 features,16 specialists. No labels/report text/patient IDs become query features. Teacher-readback studies are explicitly identified; original60 records retain their actual generating-memory freshness proofs.
+- Training-r2:20/20/10 completed epochs,140/140/70 optimizer updates,10,566,320 parameters. Stage2 specialists unchanged while the gate changed. NumPy/Torch maximum prediction difference1.19e-7. Epoch caps are not convergence proof.
+- [58-study saved teacher replay](../../../data/readings/som-navigation-20261022/teacher-readback-r2/SUMMARY.md): raw numerical per-condition AUC0.994–1.000 on GRADIENT-TRAINING examples. Existing saved categorical errors degrade the combined readout. These saved symbolic states precede the reasoning repair. This is neither untouched transfer nor a completed new raw-image check.
+- [12-study development validation](../../../data/readings/som-navigation-20261022/validation-r2/SUMMARY.md): separate per-condition positive/negative identified/abstained/wrong and raw/final ordering. Mixed performance; four conditions lack both truth signs. Validation participates in epoch retention, so it is not an untouched final test.
+- [Experiment004](../../experiments/training/004-three-stage-navigation-pilot.md) preserves the original r1 optimization, smoke, readout mistake/correction, subsequent r2 learning and current limits. No comparative superiority or clinical-validation claim is established.
 
-This is an addressed inventory of teaching readback linking ternary answers to speaking cases,
-pictured supports, and memory/run pins. It is not an AUC target or an automatic-recognition benchmark.
+## Interrupted real58-study check
 
-## SELECTOR PROBE; REAL TRANSFER STILL UNPROVED
+The actual repaired raw-image run was stopped at Rohan’s wind-down request (exit130). Four complete12-question study records survive; there is NO complete cohort receipt, complete58-study metric or final CSV from this run. All134 production-source pins remained unchanged during it.
 
-The current `docs/work/reviews/learning_to_action_trace.json` and generator identify the artifact
-as a selector probe. Gemini did run `infer_study` on real study `...647035...`, but then sampled
-its POST-inference object profile and supplied an invented competing `other_tissue` request.
-There is no actual parent/child action comparison in that generator. It demonstrates selector
-wiring, not R3's executed transfer. Do not restore the prior complete/causal claim.
+```text
+data/readings/som-navigation-20261022/gold58-current-check-r2/root-interruption-receipt.json
+/tmp/rsna-gold58-current-check-r2.log
+```
 
-The new `scripts/check_squint_learning_transfer.py` uses the real capacity entry point under
-parent, child and a declared procedure-only child ablation. It consumes each study's own recorded
-pre-action cues, checks whole-study exclusion and links compact results to complete source records.
-The first run is `/tmp/rsna-real-learning-transfer-one-study-r2/transfer-compact.json`: 37 actions
-in each branch, 20 neutral open-reading recalls in the child, zero confirmed-resolution recalls,
-and no changed action sequence. Its source changed during the run, so the verdict is `stale_input`.
-Teacher-study exclusion removed the teacher's rows. No successful transfer is claimed.
+The first launch, `gold58-current-check-r1`, refused before study work because root had pre-created its output directory for pins. Preserve its failure and pin document; do not label it an inference result. The real CLI requires a NEW output directory. Do not resume the interrupted inference output unless the CLI’s actual resume support is independently checked; default safe continuation is a fresh output root.
 
-The existing memory's only checked confirmed procedure outcome is Baker's/bursa episode 037;
-its other 26 checked episodes end open. That condition has one defining tissue, and this query
-already answered it without another bursa look. Do not invent a competing request to manufacture
-an effect. Retain genuine applicable episodes while pilot learning proceeds. Perfect recognition
-and a scalar score target are not prerequisites.
+## Verification and release boundary
 
-## CORPUS EXPANSION CONNECTION
+- Root reran36 scope/conditional-propagation/readout-analysis tests: PASS. Worker contract suite311 and dependency suite67 passed separately; these overlap and must not be summed into one unique test total. Ruff/type checks for bounded repairs passed as reported.
+- Detective completed the `som_features.condition_indices_for_subject` scope:11/12 mutants killed, one undistinguished candidate-equivalent and four crash-only value gaps. Its bounded COMPLETE is not a certificate for the entire pipeline, clinical rules or new reasoning repairs. Serializer diagnose had no static routed tests and offered decomposition; none was performed during wind-down.
+- The latest request authorizes the full final-tree gate and publication. Its actual tree stamp and matching GitHub gate are authoritative. The earlier5,950-test changing-tree run and failed exploratory quality run do not certify this tree.
+- The old offline package with train-r1 is stale after train-r2/reasoning changes. Rebuild/re-pin and verify offline closure if deployment is later requested; no current release is certified.
+- Training fit, executable wiring and scoped tests are distinct from warranted clinical discrimination. Complete58 raw inference, independent transfer, optimal action routing and hidden-scale resource capacity remain unverified on this final source.
 
-The actual `prepare_squint_training.py --run-round` now composes:
-1. Source/runtime and selected-study content pins against the trusted source ZIP; excluded-study
-   inference; checkpoints only when source and input stayed unchanged.
-2. Parent export and authoritative identity growth from receipt-listed study records, never nearby
-   pin documents. Original generating-parent provenance stays intact.
-3. Default `--growth-review-mode first-round`: actual calls on first admissions via existing
-   `export-admissions`/`admit`, then resume with `--reviewed-growth-memory`. Later use explicit
-   `--growth-review-mode spot-check`; partial corrections preserve their scope and derived lineage.
-4. Clinical/configuration carry and attributed procedure retention on that actual continuation,
-   final child publication, and `child-training/` exported against the correct child.
+## Operators, jobs and next action
 
-A zero-admission round can retain checked procedure experience. A selected picture is not a review.
-`--visual-additions` stays the separate independently reviewed measured-input route. Full/cheap
-profiles, signed cases, uncertainty and all-source study exclusion remain operative.
+No root-owned inference/training job remains active. The local documentation check examined19 documents and179 local link targets with none missing; `git diff --check` passed. These are documentation checks, not a full CI gate. Native documentation lanes completed; no further root-owned work is queued. Claude Max returned a weekly-limit refusal; no paid fallback was launched. Other clients’ jobs were not stopped.
 
-## STATUS OF REPAIRS (R1–R7)
-
-Do not collapse implemented mechanisms, fixture verification, real round mechanics and learned
-transfer into one completion claim. The shared code includes Gemini's and Codex's integrated work.
-
-| Repair | Current evidence and limit |
-|---|---|
-| R1 | Open outcomes do not become opposition. Opposition is scoped to both the precedent AND actual query; partial context remains usable. Both signs pass. |
-| R2 | Actual identity actions retain compact own before/after snapshots, cue and consumption. No final-aggregate fallback. Withheld disputed support stays unresolved. Existing procedure recall now orders identity looks while all required looks still run. Actual resolver/selector/retention integration tests pass. |
-| R3 | Genuine patient checker built; old selector probe relabelled correctly. A real applicable learned action-change demonstration is still unproved. Continue collecting appropriate episodes; do not claim the synthetic request pair satisfies it. |
-| R4 | Real source/SSD input pins and identical resume verified. Reader/inventory consistently exclude AppleDouble metadata. First source-changing attempt refused stale input rather than saving a mixed checkpoint. |
-| R5 | Existing growth, first review/later spot checks, clinical carry/configurations and procedure retention compose through the real command. First admission review counts actual calls, not sheet selections. A real zero-admission round completed and resumed. |
-| R6 | Object-qualified normal/condition HDC precedents reach categorical combine_condition before ranking. Raw scan terciles, signed condition calls and physiological departures retain distinct meanings. No separate integrity-deficit/tissue-excess operator is claimed; compare_named_profiles remains test-only. Do not invent a universal MRI catalogue as a new training gate. |
-| R7 | Parent/child pins and frozen lineage verified for the isolated round below. Historical pilot child is preserved, not rewritten into a false linear chain. Full final-tree CI/Detective completion is not predeclared. |
-
-**202 targeted tests passed in 5.81 s**, including actual producer/consumer wiring, input durability,
-review modes, signed preservation and identity procedure recruitment. Whole-tree Ruff check and
-formatting passed. No final Detective certificate is claimed: source changed during exploratory
-audits; mutant counts without a final verdict do not certify the integrated source.
-
-The complete integrated gate log is `/tmp/rsna-parallel-training-gate.log`; read its actual result.
-That already-running gate finished: 5,950 tests passed, Sonar reported zero open bugs or
-vulnerabilities, and the script reported `GATE: PASSED`. It explicitly did NOT stamp the tree,
-because the tree changed during the gate. This is not a final-tree push check. Rohan has deferred
-the next full gate/cleanup to the end. No commit or push was made by Codex.
-
-## NEXT ACTION / OWNERSHIP / PILOT TO SCALE
-
-Codex's three native lanes completed: input pins/real round, growth composition, real transfer
-checker/identity recruitment tests. Their code is integrated into the shared tree. Gemini's live
-changes were independently checked; the false R3 completion claim above was corrected.
-
-**Gemini's current batch, independently checked 2026-10-22:**
-- Actual command: `prepare_squint_training.py --run-round`, parent `train-ready-round-r2/memory`,
-  pinned SHA `e0fbd5f1d768af617182824f9e262edfb4d3c82e6dfe5116169c7cb26689f89f`.
-- Output: `data/readings/grounded-teaching-20261022/train-ready-round-r3`; selected UIDs are in
-  `data/readings/grounded-teaching-20261022/cohort-round-r3-uids.txt`. Its inference receipt names
-  five executed studies against that parent. Raw inputs were checked against the SSD ZIP.
-- Its completed `growth/receipt.json` reports 170 candidates: 21 duplicates, 98 proposals,
-  47 opposed, 4 conflicts, and zero admitted case IDs. Procedure publication was still running
-  when checked; do not call this new identity growth. Inspect representative actual reasons and
-  pictures before choosing a remedy, rather than assuming every refusal means insufficient seeds.
-- This is Gemini's active publication lane. Do not publish a competing child from the same parent
-  or edit source while this frozen run finishes. Codex's `/tmp` child remains verification only.
-- Gemini selected `--growth-review-mode spot-check`. That flag does not itself establish that a
-  first genuinely new admission round was inspected. If this batch admits new identity cases,
-  inspect those admissions before adopting its child as the next parent. Keep useful procedure
-  learning and proposals; a zero-admission round does not require invented negative calls.
-- Gemini checked both SSH hosts successfully. Sanjay's existing `~/knee-work/src-c796d77` and
-  memory are older than this integrated tree/current parent. Reachability is not deployment of
-  current training code: ship a pinned current source/memory and trusted shard inventory before
-  accepting remote training outputs. One integrator publishes the combined continuation.
-- The checked training, composition, pinning and procedure-consumer files remain byte-identical
-  to the integrated versions tested above. No new source drift was found in this check.
-
-1. Keep ONE accepted continuation with Gemini. The isolated verification child below is NOT an
-   automatic replacement; reconcile any newly published teaching before selecting a batch parent.
-2. Continue useful pilot corpus/agency learning on ready SSD studies. Save actual expectations,
-   actions, their own results and correctly scoped independent outcomes. Review the first genuinely
-   new admissions, then use later spot checks. Do not require automatic perfection over all 58.
-3. Obtain an actual applicable learned action effect on another study, plus an incompatible context
-   and self-study exclusion, using the real checker. No synthetic competing tissue or borrowed cue.
-4. Shard inference over the three available machines against a frozen accepted parent; one integrator
-   composes reviewed corrections, clinical teaching and attributed experience into the next child.
-   Do not run independent competing publishers on every machine.
-
-**Real isolated SSD round, before the later explicit mode flag was added:**
-- Source epoch: `a567086085061a87f5e3a52b7fa96a6815d863c8b076f4b3dc5f72686f80606d`.
-- Study `1.2.826.0.1.3680043.8.498.18392509497170616983977319528036573378`: 144 images,
-  5 series rows; content pin `360ef664831c49a2a79067d1ed65735337dd235923c629296b02f6eee2ea7114`.
-- Completed actual round: 176.52 s, peak RSS 9.82 GiB. Growth: 34 candidates, 12 duplicates,
-  19 proposals, 2 opposed, 1 conflict; no new admissions. No refusal was converted into a negative.
-- Staging child `/tmp/rsna-integrated-training-round-r4/memory`, revision
-  `integrated-verification-r4-child`, SHA `17363b581a41e87ef0a076c2adf067efebdeff955d7f36234385826bdd5633d3`:
-  909 cases, 54 retained procedure experiences. True parent is accepted `train-ready-round-r2`.
-- Its child export pins the child correctly: 234 presentations (88 normal, 131 condition,
-  15 unlabelled); 45 experience rows (27 checked, 18 unchecked). Child-export receipt SHA
-  `72700a647830bc00cfa343989bc614c4a8fb9536fe5c929dfbdd25b4abfeeddd`.
-- Identical resume: zero study re-execution, same child SHA/inode and child-export receipt;
-  41.68 s, peak RSS 4.39 GiB. Logs `/tmp/rsna-integrated-training-round-r4.log` and
-  `/tmp/rsna-integrated-training-round-r4-resume.log`.
-
-This proves real round/publication/resume mechanics, not new identity growth or diagnostic transfer.
-The explicit first/later review-mode extension was tested after the frozen run. Preserve that run's
-source epoch; do not resume its output under changed code or portray it as a run of later edits.
+**Next authorized action: finish the exact-tree full gate, commit and push through the normal hook, then wait for Rohan.** Do not restart training, corpus growth, Kaggle runs, packaging or submission from historical plans. On an explicit resume, read the governing conversations and this packet, recheck source/artifact identities, then address the chosen residual. Existing commands and setup are in [SOM_NAVIGATION_RUN_GUIDE](../../SOM_NAVIGATION_RUN_GUIDE.md) and [SQUINT_RUN_GUIDE](../../SQUINT_RUN_GUIDE.md).

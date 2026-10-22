@@ -492,7 +492,7 @@ def _replayed_side(
 ) -> tuple[dict[str, Any] | None, Mapping[str, Any] | None, bool | None]:
     """Run the current contracts: (projection, finding, embedded rank == standalone)."""
     try:
-        finding = combine_condition(question, objects)
+        finding = combine_condition(question, dict(objects))
     except ContractError as error:
         problems.append((f"combine_condition_refused:{error.code}", error.detail))
         return None, None, None

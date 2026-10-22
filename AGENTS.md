@@ -1,9 +1,15 @@
 # For agents (and humans) arriving fresh — read before proposing anything
 
+**APPLICATION WORK PAUSED by Rohan, 2026-10-22:** his later request expressly authorizes a wide quality pass, full CI, fixes, commit and push; it does not restart AI training or deployment. `docs/FULL_BUILD_PLAN.md` §13 points to the sole current packet. Do not restart historical tasks automatically. Accepted artifacts, completed versus interrupted checks and residuals are pinned there. No formal submission without his explicit permission.
+
+**Output authority, Rohan's explicit correction2026-10-22:** a warranted categorical diagnosis emits exactly1, a warranted categorical absence exactly0; only unresolved cases receive graded numerical values. Learned navigation/probabilities never overwrite decisive symbolic findings. Preserve raw model opinion separately. No fitted probability cutoff creates warrant. The first universal-float adapter and its first release bundle were withdrawn for this error.
+
 **Listen.** Rohan's words are the specification: do exactly what he asks and no more, restate only what he
 said, ask where there is a gap, answer the question he asked first, and trust the thesis («You just don't
 fucking TRUST me»). What you broke, you fix. Every correction he had to make, and what would have prevented
 it, is in `docs/HOW_TO_BUILD.md`.
+
+**Formal submission is forbidden without a fresh explicit instruction from Rohan.** He stated on2026-10-22 that only two shots remain. Private dataset uploads, private notebook/container runs and local tests are authorized; they are NOT competition submissions. Never call a competition submission API/CLI or press Submit without his permission. A local function writing `submission.csv` does not grant it.
 
 **Current AI mechanism.** Read `docs/CLASSICAL_AI_BUILD_DESIGN.md` whole for bootstrap, corpus
 construction, classical learning and runtime memory; `docs/FULL_BUILD_PLAN.md` §13 names the sole live
@@ -12,7 +18,17 @@ recall, anatomical reasoning and question-directed bounded refinement, not a man
 of every object's outline. K-lines enable corpus construction AND remain active memory of contextual
 interpretations and useful procedures; filling buckets is not the entire learning algorithm.
 
-**Current objective: LOCAL bootstrap and readiness for classical AI training.** Rohan's latest
+**Author-selected parameter training, 2026-10-22.** Rohan explicitly selected «Use the paper’s
+three-stage learned navigation layer over HDC signals». Read
+`docs/conversations/2026-10-22-three-stage-navigation-training.md`. The supplied SoM training paper's
+specialist training → frozen-specialist orchestrator → joint refinement is authorized over the
+fixed numerical/HDC substrate. Earlier agent claims that training may only append records and
+must contain no fitted weights are superseded for this layer. The encoder, anatomical laws and
+signed K-line evidence are not replaced. The trained local artifact exists. The subsequent wind-down request pauses further
+building, training and deployment; actual state remains only in §13’s packet. The earlier local-only paragraph below describes the bootstrap phase, not a ban on this
+newly requested training/integration work.
+
+**Bootstrap-phase objective (historical scope; current activity is paused): LOCAL bootstrap and readiness for classical AI training.** Rohan's latest
 clarification is in FULL_BUILD_PLAN §18.1 and the latest conversation. Find recognizable objects,
 inspect their actual images, retain warranted signed cases, recall them to find more, and use the
 growing corpus for the designed Minsky/Winston Society of Mind. Three computers are available for
@@ -35,7 +51,7 @@ cases, all-source study exclusion and frozen-parent lineage in every child. A wr
 the real condition consumer, never only a report. Corrected negatives teach now; specialized
 censors/splits need the thesis's named difference, not a bank-count cutoff.
 
-The small pending integration contract is
+The signed-loop integration contract is
 `openspec/changes/complete-signed-bootstrap-loop/`; validation is not implementation completion.
 Use README and the linked run guides for verified commands; do not invent a generic training CLI or
 universal episode framework. Read the exact-HDC and classical-AI conversations named by plan §0.

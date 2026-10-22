@@ -30908,6 +30908,11 @@ def main() -> None:
         help="explicit Python module:callable returning condition probability values",
     )
     parser.add_argument(
+        "--diagnostic-navigation",
+        type=Path,
+        help="optional fixed-HDC learned-navigation artifact; inference only",
+    )
+    parser.add_argument(
         "--squint-bootstrap-products",
         type=Path,
         help="existing full H5 bootstrap products to pair with raw squints during teaching",

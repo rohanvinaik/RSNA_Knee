@@ -1378,7 +1378,8 @@ def test_the_next_rounds_consumer_decides_only_through_defining_tissue(
     _receipt, child, _labels = taught(tmp_path, configured)
     grow(tmp_path, "plain", configured, [record("study-x")])
     plain = child_of(tmp_path, "plain")
-    # Fracture: the femur is a defining site, so the grown configuration decides.
+    # Fracture: comparing the femur retains the study's unlocalized positive
+    # presentation; naming that same support a configuration adds no authority.
     grown = configuration_id("study-x", "Fracture")
     evidence, finding = next_round(child, "Fracture")
     joint = evidence["diagnosis/Fracture"]
@@ -1388,10 +1389,16 @@ def test_the_next_rounds_consumer_decides_only_through_defining_tissue(
     assert term["common_speaking_banks"] == [FEMUR_SAG]
     assert term["call_scope"] == "study_condition_configuration"
     assert (finding["outcome"], finding["reason"]) == (
-        "assigned",
-        "warranted_condition_configuration",
+        "open",
+        "configuration_defining_tissue_coverage_missing",
     )
-    assert finding["evidence"]["decided_by"] == ["diagnosis/Fracture"]
+    assert finding["evidence"]["decided_by"] == []
+    coverage = finding["evidence"]["joint_configuration_coverage"]
+    excluded = {row["case_id"]: row for row in coverage["excluded_cases"]}
+    assert excluded[grown]["reason"] == "unlocalized_single_bone_presentation"
+    assert excluded[grown]["call_scope"] == "study_condition_configuration"
+    assert excluded[grown]["covered_subjects"] == ["femur"]
+    assert grown in finding["rank"]["positive_case_ids"]
     # Without that case (an unlabelled round) nothing decides.
     _evidence, unlabelled = next_round(plain, "Fracture")
     assert unlabelled["outcome"] == "open"
@@ -1431,14 +1438,22 @@ def test_a_bone_positive_configuration_stays_at_study_scope(tmp_path: Path, conf
         assert femur["presentation_scope"][question] == (
             "positive_condition_presentation"
         )
-        _evidence, finding = next_round(child, question)
+        evidence, finding = next_round(child, question)
         reading = finding["evidence"]["readings"]["femur"]
         assert (reading["state"], reading["code"]) == (
             "unknown",
             "study_positive_presentation_not_localized",
         )
-        assert finding["outcome"] == "assigned"
-        assert finding["evidence"]["decided_by"] == [f"diagnosis/{question}"]
+        assert finding["outcome"] == "open"
+        assert finding["evidence"]["decided_by"] == []
+        coverage = finding["evidence"]["joint_configuration_coverage"]
+        excluded = {row["case_id"]: row for row in coverage["excluded_cases"]}
+        case_id = configuration_id("study-x", question)
+        assert excluded[case_id]["reason"] == "unlocalized_single_bone_presentation"
+        assert excluded[case_id]["call_scope"] == "study_condition_configuration"
+        assert excluded[case_id]["covered_subjects"] == ["femur"]
+        assert case_id in evidence[f"diagnosis/{question}"]["speaking_case_ids"]
+        assert case_id in finding["rank"]["positive_case_ids"]
     scopes = {
         scope
         for case in child["cases"]

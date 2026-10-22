@@ -54,8 +54,6 @@ import math
 from collections.abc import Mapping, Sequence
 from typing import Any
 
-import numpy as np
-
 LEG_MAP_SCHEMA = "knee.squint-leg-map/v1"
 TERRITORY_SCHEMA = "knee.squint-territory/v1"
 ANCHOR_SCHEMA = "knee.squint-anchor/v1"
@@ -181,6 +179,8 @@ def parse_territory_bank_name(name: object) -> dict[str, Any] | None:
 
 def leg_map_code(value: object, *, grid_shape: tuple[int, ...] | None = None) -> str:
     """``valid`` or the first named defect of a leg map."""
+    import numpy as np
+
     if not isinstance(value, Mapping) or value.get("schema") != LEG_MAP_SCHEMA:
         return "leg_map_schema_invalid"
     if not _text(value.get("series_uid")) or not _text(value.get("rule")):
@@ -212,6 +212,8 @@ def leg_map_code(value: object, *, grid_shape: tuple[int, ...] | None = None) ->
 
 def territory_code(value: object, *, grid_shape: tuple[int, ...] | None = None) -> str:
     """``valid`` or the first named defect of a territory."""
+    import numpy as np
+
     if not isinstance(value, Mapping) or value.get("schema") != TERRITORY_SCHEMA:
         return "territory_schema_invalid"
     for key in ("study_uid", "series_uid", "subject"):

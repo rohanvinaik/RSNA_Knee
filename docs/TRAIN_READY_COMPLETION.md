@@ -1,5 +1,7 @@
 # Finish the local bootstrap and make the classical system train-ready
 
+**Dated gap inventory, not the current work queue.** The expressly selected three-stage parameter learner is implemented and has run; some old source-gap descriptions below were subsequently repaired. Read the current packet named by FULL_BUILD_PLAN §13 and SOM_NAVIGATION_RUN_GUIDE.md for exact accepted artifacts, demonstrated consumers and unfinished checks. Rohan paused further work on2026-10-22; the dispatch instructions below do not restart it.
+
 **Latest unified grounding and execution:**
 [CLASSICAL_AI_TRAINING_EXECUTION.md](CLASSICAL_AI_TRAINING_EXECUTION.md) incorporates the author's
 single-society, anatomy/physiology and twelve-condition endpoint clarifications, the later source

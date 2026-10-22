@@ -86,14 +86,16 @@ COMPETITION_HINT = "rsna-knee-abnormality-detection"
 WHEEL_TAG = "cp313"
 MANIFEST_SCHEMA = "knee.squint-runtime-manifest/v1"
 MEMORY_SCHEMA = "knee.squint-memory/v1"
+NAVIGATION_SCHEMA = "knee.som-navigation-artifact/v1"
+NAVIGATION_FILES = {"navigation.json", "schema.json", "weights.npz"}
 MANIFEST_NAME = "RUNTIME_MANIFEST.json"
 # Release pins come from verified staging. The uploaded dataset must match both
 # before launching; unpinned or stale mounts refuse before inference.
 EXPECTED_RUNTIME_BUNDLE_ID: str | None = (
-    "104bed22a71e99a898e8f6b23315771e2f2ea7e52b7718877de303f5da6b44b4"
+    "9fb5550eb7bfeaa72dd0a696b5aa34803df15ba7d16f40e5ee373d1da8231a5a"
 )
 EXPECTED_MEMORY_MANIFEST_SHA256: str | None = (
-    "06d28478242441d6e80a2fce113951e1e0330f04ad379f8030f37e8538b6e648"
+    "ccd01612d36eae5a25a73c03a6937fc44ad9317e8390a71d13beac5c55d23da8"
 )
 CONDITION_COUNT = 12
 WORKERS = 4
@@ -118,6 +120,7 @@ ALLOWED_FLAGS = {
     "--workers",
     "--diagnostic-mode",
     "--diagnostic-memory",
+    "--diagnostic-navigation",
     "--diagnostic-submission-template",
     "--diagnostic-output",
     "--squint-time-limit",
@@ -134,6 +137,13 @@ IMPORT_CHECK = (
     " numba.__version__, h5py.__version__)\n"
     "print(knee.__file__)\n"
     "print(pipeline.__file__)\n"
+)
+NAVIGATION_CHECK = (
+    "import json, sys\n"
+    "from knee.diagnosis.som_runtime import load_navigation_runtime, navigation_provenance\n"
+    "runtime = load_navigation_runtime(sys.argv[1])\n"
+    "assert 'torch' not in sys.modules, 'navigation runtime imported torch'\n"
+    "print(json.dumps(navigation_provenance(runtime)))\n"
 )
 
 STARTED = time.time()
@@ -327,7 +337,116 @@ def load_manifest(path: Path) -> dict:
         raise SetupError(
             "runtime manifest entrypoint or memory entry is not in the bundle"
         )
+    navigation_metadata(manifest)
     return manifest
+
+
+def navigation_metadata(manifest: dict) -> dict | None:
+    """Optional artifact identity must name exactly the three shipped model files."""
+    rows = [
+        row
+        for row in manifest["files"]
+        if row.get("role") == "navigation" or row["path"].startswith("navigation/")
+    ]
+    metadata = manifest.get("navigation")
+    if metadata is None and not rows:
+        return None
+    expected = {
+        PurePosixPath(row["path"]).name: {
+            "sha256": row["sha256"],
+            "bytes": row["bytes"],
+        }
+        for row in rows
+    }
+    if (
+        not isinstance(metadata, dict)
+        or metadata.get("schema") != NAVIGATION_SCHEMA
+        or metadata.get("entry") != "navigation"
+        or set(expected) != NAVIGATION_FILES
+        or len(rows) != len(NAVIGATION_FILES)
+        or any(
+            row["path"] != "navigation/" + PurePosixPath(row["path"]).name
+            for row in rows
+        )
+        or metadata.get("files") != expected
+        or not isinstance(metadata.get("labels"), list)
+        or len(metadata["labels"]) != CONDITION_COUNT
+        or len(set(metadata["labels"])) != CONDITION_COUNT
+        or not isinstance(metadata.get("specialists"), list)
+        or not metadata["specialists"]
+        or any(
+            not isinstance(name, str) or not name for name in metadata["specialists"]
+        )
+        or len(set(metadata["specialists"])) != len(metadata["specialists"])
+        or type(metadata.get("feature_count")) is not int
+        or metadata["feature_count"] <= 0
+        or type(metadata.get("parameter_count")) is not int
+        or metadata["parameter_count"] <= 0
+    ):
+        raise SetupError(
+            "navigation artifact metadata is malformed or does not pin its three files"
+        )
+    return metadata
+
+
+def validate_navigation(
+    bundle: Path, manifest: dict, env: dict, python: str, template: dict
+) -> Path | None:
+    """Use the bundled NumPy runtime to validate the optional artifact before inference."""
+    metadata = navigation_metadata(manifest)
+    if metadata is None:
+        return None
+    if metadata["labels"] != template["header"][1:]:
+        raise SetupError("navigation labels differ from the official submission order")
+    path = bundle / metadata["entry"]
+    for name, pinned in metadata["files"].items():
+        candidate = path / name
+        if (
+            candidate.is_symlink()
+            or not candidate.is_file()
+            or candidate.stat().st_size != pinned["bytes"]
+            or sha256_file(candidate) != pinned["sha256"]
+        ):
+            raise SetupError(f"navigation artifact file changed: {name}")
+    command = [python, "-c", NAVIGATION_CHECK, str(path)]
+    checked = subprocess.run(
+        command,
+        env=env,
+        cwd=str(LOCAL / "cwd"),
+        capture_output=True,
+        text=True,
+        check=False,
+        timeout=900,
+    )
+    append_setup_log(
+        "navigation artifact check",
+        command,
+        checked.returncode,
+        checked.stdout,
+        checked.stderr,
+    )
+    if checked.returncode != 0:
+        raise SetupError("bundled numerical navigation artifact did not validate")
+    try:
+        observed = json.loads(checked.stdout)
+    except ValueError as error:
+        raise SetupError(
+            "navigation artifact check returned malformed provenance"
+        ) from error
+    expected_pins = {name: row["sha256"] for name, row in metadata["files"].items()}
+    if (
+        not isinstance(observed, dict)
+        or observed.get("artifact_pins") != expected_pins
+        or any(
+            observed.get(key) != metadata[key]
+            for key in ("labels", "specialists", "feature_count", "parameter_count")
+        )
+    ):
+        raise SetupError(
+            "bundled navigation identity disagrees with its runtime manifest"
+        )
+    REPORT["navigation"] = observed
+    return path
 
 
 def extract_tar(tar_path: Path, manifest: dict, dest: Path) -> dict:
@@ -1040,12 +1159,10 @@ def read_template(path: Path) -> dict:
         raise SetupError(
             f"{path} is not a StudyInstanceUID + {CONDITION_COUNT} condition template"
         )
+    if any(len(row) != len(rows[0]) for row in rows[1:]):
+        raise SetupError(f"{path} has no studies, duplicate studies or ragged rows")
     uids = [row[0] for row in rows[1:]]
-    if (
-        not uids
-        or len(set(uids)) != len(uids)
-        or any(len(row) != len(rows[0]) for row in rows[1:])
-    ):
+    if not uids or len(set(uids)) != len(uids):
         raise SetupError(f"{path} has no studies, duplicate studies or ragged rows")
     return {"header": rows[0], "uids": uids, "sha256": hashlib.sha256(raw).hexdigest()}
 
@@ -1054,14 +1171,15 @@ def validate_csv(template: dict, produced: Path) -> dict:
     rows, raw = read_rows(produced)
     if not rows or rows[0] != template["header"]:
         raise SetupError("the produced CSV header differs from the official template's")
+    for row in rows[1:]:
+        if len(row) != len(rows[0]):
+            raise SetupError(f"a produced row has {len(row)} cells, not {len(rows[0])}")
     uids = [row[0] for row in rows[1:]]
     if uids != template["uids"]:
         raise SetupError(
             "the produced CSV study UIDs differ from the official template's, or are out of order"
         )
     for row in rows[1:]:
-        if len(row) != len(rows[0]):
-            raise SetupError(f"a produced row has {len(row)} cells, not {len(rows[0])}")
         for cell in row[1:]:
             try:
                 value = Decimal(cell)
@@ -1312,6 +1430,9 @@ def run() -> int:
         if helped.returncode != 0:
             raise SetupError("scripts/run_interiors.py --help failed")
 
+    with Step("navigation_artifact_check"):
+        navigation_path = validate_navigation(bundle, manifest, env, python, template)
+
     if OUT_DIR.exists():
         raise SetupError(f"refusing to reuse an existing output directory: {OUT_DIR}")
     OUT_PARENT.mkdir(parents=True, exist_ok=True)
@@ -1339,6 +1460,8 @@ def run() -> int:
         "--squint-time-limit",
         str(limit),
     ]
+    if navigation_path is not None:
+        argv.extend(["--diagnostic-navigation", str(navigation_path)])
     check_argv(argv)
     with Step("run_squint_inference"):
         info = run_logged(argv, env, LOCAL / "cwd", limit, OUT_PARENT)

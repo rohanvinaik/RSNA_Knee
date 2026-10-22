@@ -228,6 +228,27 @@
       ]
     }
   ],
+  "src/knee/diagnosis/som_features.py::condition_indices_for_subject::de1832d82377eaea": [
+    {
+      "assertion_code": "result = condition_indices_for_subject(subject='femur')\nassert result == [4, 5, 6, 10, 11]",
+      "category": "VALUE",
+      "confidence": 0.9,
+      "function_key": "",
+      "golden_case": [
+        "('femur',)",
+        "[4, 5, 6, 10, 11]"
+      ],
+      "mutant_id": "",
+      "needs_oracle": false,
+      "preconditions": [
+        "golden capture (pure + deterministic)"
+      ],
+      "setup_code": "from knee.diagnosis.som_features import condition_indices_for_subject",
+      "source_lenses": [
+        "golden_capture"
+      ]
+    }
+  ],
   "src/knee/diagnosis/squint_anatomy_locator.py::_anchor_territories::7d0bd07156efa832": [
     {
       "assertion_code": "result = _anchor_territories(bone='abc', anchor={'x': None}, study_uid=1, series_by_uid={'x': None})\nassert result == ([], {})",

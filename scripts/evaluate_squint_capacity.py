@@ -87,6 +87,139 @@ def _exact_score(ranking: dict[str, Any], uid: str, condition: str) -> Fraction:
     return score
 
 
+def _readout_policy(receipt: dict[str, Any]) -> str | None:
+    """Keep historical runs historical; accept only the explicitly authored new policy."""
+    policy = receipt.get("readout_policy_id")
+    if policy is None:
+        return None
+    from knee.diagnosis.squint_contracts import READOUT_POLICY_ID
+
+    if policy != READOUT_POLICY_ID:
+        raise CapacityReportError("readout_policy_unknown")
+    return policy
+
+
+def _navigation_identity(receipt: dict[str, Any]) -> dict[str, Any] | None:
+    """Validate known navigation identity fields instead of allowing arbitrary provenance."""
+    from knee.diagnosis.som_runtime import ARTIFACT_FILES, SCHEMA, SCOPE
+
+    navigation = receipt.get("navigation")
+    if navigation is None:
+        return None
+    if not isinstance(navigation, dict):
+        raise CapacityReportError("navigation_provenance_invalid")
+    pins = navigation.get("artifact_pins")
+    if (
+        navigation.get("schema") != SCHEMA
+        or navigation.get("scope") != SCOPE
+        or navigation.get("labels") != list(LABELS)
+        or navigation.get("readout_policy_id") != _readout_policy(receipt)
+        or not isinstance(pins, dict)
+        or set(pins) != set(ARTIFACT_FILES)
+        or any(
+            not isinstance(value, str)
+            or len(value) != 64
+            or any(c not in "0123456789abcdef" for c in value)
+            for value in pins.values()
+        )
+    ):
+        raise CapacityReportError("navigation_provenance_invalid")
+    return {"scope": SCOPE, "artifact_pins": pins}
+
+
+def _submission_provenance(receipt: dict[str, Any]) -> dict[str, Any]:
+    """Version the new numerical readout without relaxing legacy source agreement."""
+    result = {
+        "source_mode": receipt.get("source_mode"),
+        "memory_revision": receipt.get("memory_revision"),
+        "memory_manifest_sha256": receipt.get("memory_manifest_sha256"),
+    }
+    policy = _readout_policy(receipt)
+    if policy is not None:
+        result["readout_policy_id"] = policy
+        navigation = _navigation_identity(receipt)
+        if navigation is not None:
+            result["navigation"] = navigation
+    return result
+
+
+def _record_policy(
+    record: dict[str, Any], receipt: dict[str, Any], uid: str
+) -> str | None:
+    policy = _readout_policy(receipt)
+    if record.get("readout_policy_id") != policy:
+        raise CapacityReportError("study_readout_policy_mismatch:" + uid)
+    return policy
+
+
+def _new_readout_score(
+    record: dict[str, Any],
+    receipt: dict[str, Any],
+    ranking: dict[str, Any],
+    finding: dict[str, Any],
+    submitted: str,
+    uid: str,
+    condition: str,
+) -> Fraction:
+    """Validate actual decimals against warrant, retaining raw learned grades separately."""
+    from knee.diagnosis.som_runtime import SCHEMA
+    from knee.diagnosis.squint_contracts import serialize_condition_value
+
+    policy = _record_policy(record, receipt, uid)
+    if policy is None:
+        raise CapacityReportError("new_readout_policy_missing")
+    graded = ranking["value"]
+    identity = _navigation_identity(receipt)
+    navigation = record.get("navigation")
+    if identity is not None:
+        if (
+            not isinstance(navigation, dict)
+            or navigation.get("schema") != SCHEMA
+            or navigation.get("scope") != identity["scope"]
+            or navigation.get("artifact_pins") != identity["artifact_pins"]
+            or navigation.get("readout_policy_id") != policy
+        ):
+            raise CapacityReportError("study_navigation_provenance_mismatch:" + uid)
+        if navigation.get("outcome") == "applied":
+            raw = navigation.get("numerical_values")
+            readout = navigation.get("readout_values")
+            if (
+                not isinstance(raw, dict)
+                or set(raw) != set(LABELS)
+                or not isinstance(readout, dict)
+                or set(readout) != set(LABELS)
+                or readout != record.get("values")
+            ):
+                raise CapacityReportError("navigation_readout_values_invalid:" + uid)
+            graded = raw[condition]
+        elif navigation.get("outcome") != "navigation_numerical_failure":
+            raise CapacityReportError("navigation_outcome_invalid:" + uid)
+    elif navigation is not None:
+        raise CapacityReportError("study_navigation_without_run_identity:" + uid)
+    try:
+        expected = serialize_condition_value(finding, graded)
+        actual = Decimal(submitted)
+        retained_value = record["values"][condition]
+        if isinstance(retained_value, bool) or not isinstance(
+            retained_value, (int, float)
+        ):
+            raise TypeError("retained value is not numeric")
+        retained = Decimal(str(retained_value))
+        if (
+            not actual.is_finite()
+            or not retained.is_finite()
+            or not Decimal(0) <= actual <= Decimal(1)
+            or actual != retained
+            or actual != Decimal(str(expected))
+        ):
+            raise ValueError("serialized value disagrees with its independent warrant")
+    except (InvalidOperation, KeyError, TypeError, ValueError) as error:
+        raise CapacityReportError(
+            f"submission_readout_mismatch:{uid}:{condition}"
+        ) from error
+    return Fraction(actual)
+
+
 def _safe_evidence_path(run: Path, relative: Any) -> Path:
     if type(relative) is not str or not relative:
         raise CapacityReportError("evidence_path_invalid")
@@ -179,11 +312,7 @@ def _read_submission(
         raise CapacityReportError("submission_sha256_mismatch")
     if metadata.get("columns") != list(SUBMISSION_COLUMNS):
         raise CapacityReportError("submission_receipt_columns_mismatch")
-    if metadata.get("source_provenance") != {
-        "source_mode": receipt.get("source_mode"),
-        "memory_revision": receipt.get("memory_revision"),
-        "memory_manifest_sha256": receipt.get("memory_manifest_sha256"),
-    }:
+    if metadata.get("source_provenance") != _submission_provenance(receipt):
         raise CapacityReportError("submission_source_provenance_mismatch")
     try:
         rows = list(
@@ -444,6 +573,7 @@ def evaluate_capacity(run_dir: Path, labels_path: Path) -> dict[str, Any]:
     validated: dict[str, dict[str, tuple[Fraction, str]]] = {}
     for uid in receipt_uids:
         record = records[uid]
+        policy = _record_policy(record, receipt, uid)
         questions = record.get("questions")
         if not isinstance(questions, dict):
             raise CapacityReportError("study_questions_missing:" + uid)
@@ -463,20 +593,31 @@ def evaluate_capacity(run_dir: Path, labels_path: Path) -> dict[str, Any]:
                 or condition not in retained_values
             ):
                 raise CapacityReportError(f"study_value_missing:{uid}:{condition}")
-            try:
-                agrees = Decimal(submitted[uid][condition]) == Decimal(
-                    str(ranking["value"])
+            if policy is not None:
+                score = _new_readout_score(
+                    record,
+                    receipt,
+                    ranking,
+                    finding,
+                    submitted[uid][condition],
+                    uid,
+                    condition,
                 )
-                value_agrees = Decimal(str(retained_values[condition])) == Decimal(
-                    str(ranking["value"])
-                )
-            except InvalidOperation:
-                agrees = False
-                value_agrees = False
-            if not agrees or not value_agrees:
-                raise CapacityReportError(
-                    f"submission_ranking_mismatch:{uid}:{condition}"
-                )
+            else:
+                try:
+                    agrees = Decimal(submitted[uid][condition]) == Decimal(
+                        str(ranking["value"])
+                    )
+                    value_agrees = Decimal(str(retained_values[condition])) == Decimal(
+                        str(ranking["value"])
+                    )
+                except InvalidOperation:
+                    agrees = False
+                    value_agrees = False
+                if not agrees or not value_agrees:
+                    raise CapacityReportError(
+                        f"submission_ranking_mismatch:{uid}:{condition}"
+                    )
             outcome = finding.get("outcome")
             if ranking.get("tier") != outcome:
                 raise CapacityReportError(
@@ -534,6 +675,7 @@ def evaluate_capacity(run_dir: Path, labels_path: Path) -> dict[str, Any]:
             "study_count": len(receipt_uids),
             "study_uids": receipt_uids,
             "submission": submission_meta,
+            "readout_policy_id": receipt.get("readout_policy_id"),
         },
         "labels": {
             "path": str(labels_path.resolve()),

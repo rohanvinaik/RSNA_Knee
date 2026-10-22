@@ -12,3 +12,5 @@
 @docs/AI_DIAGNOSTIC_DESIGN.md
 @docs/SQUINT_PRODUCTION_CONTRACT.md
 @docs/CLASSICAL_AI_BUILD_DESIGN.md
+
+@docs/conversations/2026-10-22-three-stage-navigation-training.md

@@ -19,6 +19,7 @@ from knee.diagnosis import (
     squint_profiles,
     squint_residual,
 )
+from knee.diagnosis.squint_contracts import serialize_condition_value
 from knee.diagnosis.squint_interfaces import (
     ROLE_CONTEXT,
     ROLE_OBJECT,
@@ -302,13 +303,13 @@ def test_infer_study_reuses_fine_profile_for_later_question_without_full_rebuild
     question_module = types.ModuleType("knee.diagnosis.declarations")
     question_module.QUESTIONS = (
         types.SimpleNamespace(
-            question_id="question-one",
-            subject="diagnosis/question-one",
+            question_id="Fracture",
+            subject="diagnosis/Fracture",
             objects=("femur",),
         ),
         types.SimpleNamespace(
-            question_id="question-two",
-            subject="diagnosis/question-two",
+            question_id="Contusion",
+            subject="diagnosis/Contusion",
             objects=("femur",),
         ),
     )
@@ -333,6 +334,7 @@ def test_infer_study_reuses_fine_profile_for_later_question_without_full_rebuild
 
     contracts.combine_condition = combine
     contracts.rank_condition = lambda finding: {"value": 0.5}
+    contracts.serialize_condition_value = serialize_condition_value
     monkeypatch.setitem(sys.modules, contracts.__name__, contracts)
     monkeypatch.setattr(diagnosis_package, "squint_contracts", contracts)
 
@@ -922,6 +924,7 @@ def test_an_open_question_on_a_small_part_reads_the_paired_finer_lens_not_its_ou
             ],
         },
         rank_condition=lambda finding: {"value": 0.5},
+        serialize_condition_value=serialize_condition_value,
     )
     monkeypatch.setattr(squint_residual, "own_outline", _boom)
     monkeypatch.setattr(squint_residual, "run_residual", _boom)
@@ -976,11 +979,15 @@ def _squint_first_run(monkeypatch, tmp_path, study, memory, subject, *, locate=N
         monkeypatch.setattr(
             squint_locator, "locate_objects", locate(squint_locator.locate_objects)
         )
+    question_ids = {
+        "femur": ("Fracture", "Contusion"),
+        "medial_meniscus": ("Medial Meniscus", "Medial OA"),
+    }[subject]
     questions = tuple(
         types.SimpleNamespace(
             question_id=name, subject=f"diagnosis/{name}", objects=(subject,)
         )
-        for name in ("question-one", "question-two")
+        for name in question_ids
     )
     by_id = {question.question_id: question for question in questions}
     _stub_module(
@@ -1000,6 +1007,7 @@ def _squint_first_run(monkeypatch, tmp_path, study, memory, subject, *, locate=N
         "knee.diagnosis.squint_contracts",
         combine_condition=combine,
         rank_condition=lambda finding: {"value": 0.5},
+        serialize_condition_value=serialize_condition_value,
     )
     record = squint_pipeline.infer_study(tmp_path, study["study_uid"], memory)
     return record, events
@@ -1043,7 +1051,7 @@ def test_production_locates_on_the_10mm_reading_and_a_question_earns_the_2mm_onc
     after = _recalls_of(events[reads[0] :], "femur")
     assert before and not any(event[3] for event in before)
     assert after and all(event[3] for event in after)
-    assert before[0][2] == "question-one"
+    assert before[0][2] == "Fracture"
     # The second question asks for the same bone: its reading is shared, not repeated.
     assert [item["code"] for item in record["observations"]] == [
         "measured",
@@ -1055,7 +1063,7 @@ def test_production_locates_on_the_10mm_reading_and_a_question_earns_the_2mm_onc
             "window": [0, 1, 3, 5, 3, 5],
         }
     ]
-    assert _recalls_of(events[reads[0] :], "femur")[-1][2] == "question-two"
+    assert _recalls_of(events[reads[0] :], "femur")[-1][2] == "Contusion"
     # Exactly the pair the legacy location wrote, with its 2 mm counts added once.
     profile = record["objects"]["femur"]["profile"]
     assert profile["banks"] == paired["banks"]

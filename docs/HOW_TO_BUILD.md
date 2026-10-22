@@ -1,5 +1,44 @@
 # How RSNA_Knee is built: every correction, and what would have prevented it
 
+## Learned navigation, output authority and shared premises — 2026-10-22
+
+Rohan expressly selected «Use the paper’s three-stage learned navigation layer over HDC
+signals». Memory growth remains part of learning, but is not the entire selected learner.
+Older agent-written universal prohibitions on fitted parameters do not override this
+choice. Exact measurements, anatomy and signed K-lines remain fixed; the authorized
+specialist/orchestrator layer consumes them. The literal decision and subsequent
+corrections are in [the conversation](conversations/2026-10-22-three-stage-navigation-training.md).
+
+The first adapter replaced even decisive symbolic findings with model floats. The
+legacy internal rank also avoided endpoints. Rohan corrected this: warranted assigned
+means exact1; warranted defeated exact0; graded opinions belong only to open questions.
+Keep raw model opinions separate. Formatting cannot repair a wrong premise or scope,
+and a probability threshold cannot manufacture symbolic warrant.
+
+Actual consumer tracing exposed two further mistakes. A later finer reading could
+withdraw an object while an earlier diagnosis retained its old categorical finding.
+When shared profiles, identity context or eligibility change, invalidate and recompute
+only affected dependent questions from the current shared observations. Preserve signed
+opposition and action-specific attribution; no new MRI pass is needed to recombine.
+
+The configuration consumer also treated any object-name prefix as defining tissue,
+even for context banks, and allowed the same single unlocalized bone presentation to
+gain diagnostic authority by configuration wrapping. Preserve actual measurement
+role and clinical source scope. Context stays useful context; a study-positive
+Fracture/Contusion comparison on one unlocalized bone stays a presentation. Actual
+joint configurations, localized positives and warranted whole-normal recall keep
+their authority. Sampled object-role support is not certified tissue identity.
+
+The58 official studies contain696 complete targets. Include them explicitly as
+teaching when training on them, but distinguish training fit, saved-evidence replay,
+whole-study exclusion and fresh raw-image checks. One does not establish another.
+Do not copy labels into query features or restate an interrupted cohort as complete.
+
+Operational commands are in SOM_NAVIGATION_RUN_GUIDE.md. Dated evidence is in
+experiment004; current state and the author’s pause are only in FULL_BUILD_PLAN §13’s
+packet. A passing fixture, a stopped runtime or old release pin is not completion.
+
+
 ## One society, anatomy and physiology, and the diagnostic endpoint — 2026-10-22
 
 Rohan: «these aren't different *societies*, they're different agencies/sets of "agencies" in the

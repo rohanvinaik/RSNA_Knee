@@ -455,14 +455,41 @@ def _configuration_row(
 ) -> tuple[Mapping[str, int | None], dict[str, Any]] | None:
     """The official row a study's configurations are built from, and its source.
 
-    The supplied row (``given``), named by ``label_source``; else the memory's
-    ledger row (``kept``). None: the study has no row and no configuration
-    case, so none is built. A supplied row differing from the ledger's
-    (``label_ledger_row_conflict``) and a configured study with no row
-    (``configuration_label_row_missing``) are refused.
+    Supplied known calls fill unknown ledger entries; missing/None supplied
+    calls never erase known ledger calls. Only opposite known calls conflict
+    (``label_ledger_row_conflict``). A merged row records its supplied source,
+    prior ledger and each question's source separately. A configured study
+    with no row is refused (``configuration_label_row_missing``).
     """
-    if given is not None and kept is not None and dict(kept) != dict(given):
-        raise ConfigurationProfileError("label_ledger_row_conflict", study)
+    if given is not None and kept is not None:
+        merged = dict(kept)
+        filled = []
+        for question, value in given.items():
+            prior = kept.get(question)
+            if value is None:
+                continue
+            if prior is not None and prior != value:
+                raise ConfigurationProfileError("label_ledger_row_conflict", study)
+            merged[question] = value
+            if prior is None:
+                filled.append(question)
+        supplied_source = {**(label_source or {}), "study_uid": study}
+        return merged, {
+            **supplied_source,
+            "filled_questions": sorted(filled),
+            "prior_label_ledger": {
+                "source": "label_ledger",
+                "study_uid": study,
+                "row": copy.deepcopy(dict(kept)),
+            },
+            "question_sources": {
+                question: copy.deepcopy(supplied_source)
+                if given.get(question) is not None
+                else {"source": "label_ledger", "study_uid": study}
+                for question, value in merged.items()
+                if value is not None
+            },
+        }
     if given is not None:
         return given, {**(label_source or {}), "study_uid": study}
     if kept is not None:
@@ -612,8 +639,8 @@ def rebuild_study_configurations(
             raise ConfigurationProfileError(
                 "configuration_rebuild_incomplete", min(previous)
             )
-        if study in given and study not in ledger:
-            result["label_ledger"][study] = dict(given[study])
+        if study in given and row != ledger.get(study):
+            result["label_ledger"][study] = dict(row)
         result["study_uids"].append(study)
     return result
 
