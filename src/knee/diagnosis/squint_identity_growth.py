@@ -61,8 +61,10 @@ official label alone, at ``study_condition_configuration`` scope; a blank label
 makes no case and the labels never enter the composition, so a Fracture or
 Contusion positive stays a study-level configuration call and relabels no object.
 Only the clinical call is official. A rebuilt case keeps its id and replaces the
-parent's version in the child only, recording that version's digest and builder,
-so one configuration case per study and condition is ever live. A study in which
+parent's version among the child's speaking cases, recording that version's
+digest and builder; the version itself stays in the child as a record that never
+speaks, so no configuration is dropped and one case per study and condition is
+ever live. A study in which
 nothing was admitted keeps its configuration cases byte for byte, and the parent
 memory is never changed. A carried row joins the child's ``label_ledger``; one
 differing from the parent's row is refused by name.
@@ -1339,9 +1341,10 @@ def _child_memory(
 
     ``base`` is ``_child_base``'s. ``configurations``, ``_teach_configurations``'s,
     are placed by ``apply_rebuilt_configurations``: a rebuilt case takes its
-    parent version's place (the parent is not changed), a new one follows the
-    admitted object cases, and its label rows join the ``label_ledger``, whose
-    rows stay as they are. The growth block keeps the round's held-out record,
+    parent version's place among the speaking cases and that version is kept in
+    the child's superseded-configuration record (the parent is not changed), a
+    new one follows the admitted object cases, and its label rows join the
+    ``label_ledger``, whose rows stay as they are. The growth block keeps the round's held-out record,
     the parent's held-out studies included, so the next round keeps honouring
     them. The revision binds the parent, the decisions and what labels and
     configurations taught, the configuration cases' content included: a child

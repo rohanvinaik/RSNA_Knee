@@ -37,13 +37,19 @@ from knee.diagnosis.squint_bootstrap import _rebuilt_configurations
 from knee.diagnosis.squint_configurations import (
     CONFIGURATION_TEACHING_SCHEMA,
     SEED_CALL_KIND,
+    SUPERSEDED_CONFIGURATIONS_KEY,
+    SUPERSEDED_CONFIGURATIONS_SCHEMA,
     ConfigurationProfileError,
     apply_rebuilt_configurations,
     rebuild_study_configurations,
     with_configuration_cases,
 )
 from knee.diagnosis.squint_contracts import combine_condition
-from knee.diagnosis.squint_identity import SANITY_SCHEMA, TEACHING_SCHEMA
+from knee.diagnosis.squint_identity import (
+    SANITY_SCHEMA,
+    TEACHING_SCHEMA,
+    prepare_identity,
+)
 from knee.diagnosis.squint_identity_growth import (
     CHILD_DIRECTORY,
     CONDITION_TEACHING_SCHEMA,
@@ -1124,10 +1130,14 @@ def test_parent_configurations_stay_byte_identical_where_nothing_was_admitted(
     labels = write_labels(tmp_path / "round-2.csv", {"study-y": STUDY_X})
     second = grow(tmp_path, "round-2", first, [record("study-y")], labels=labels)
     assert first.path.read_bytes() == first_bytes
-    later = {case["case_id"]: case for case in child_of(tmp_path, "round-2")["cases"]}
+    grandchild = child_of(tmp_path, "round-2")
+    later = {case["case_id"]: case for case in grandchild["cases"]}
     for case in child["cases"]:
         assert canonical(later[case["case_id"]]) == canonical(case)
     assert second["configuration_teaching"]["superseded"] == {}
+    # Nothing was replaced, so neither child keeps a superseded record.
+    assert SUPERSEDED_CONFIGURATIONS_KEY not in child
+    assert SUPERSEDED_CONFIGURATIONS_KEY not in grandchild
     assert second["configuration_teaching"]["case_ids"] == [
         configuration_id("study-y", question)
         for question in QUESTION_ORDER
@@ -1193,6 +1203,14 @@ def test_a_later_admission_rebuilds_its_studys_configurations_with_every_role(
     on_disk = load_memory_snapshot(first.path)
     assert on_disk.sha256 == first.sha256
     assert canonical(case_of(on_disk.memory, prior["case_id"])) == canonical(prior)
+    # In the child each replaced version stops speaking and stays as a record.
+    records = grandchild[SUPERSEDED_CONFIGURATIONS_KEY]["cases"]
+    assert [canonical(r["case"]) for r in records] == [
+        canonical(case) for case in versions.values()
+    ]
+    built = fracture["configuration_teaching"]["built_by"]
+    assert all(record["superseded_by"] == built for record in records)
+    assert all(record["case"] not in grandchild["cases"] for record in records)
     # A condition the patella has no role in keeps round one's composition.
     acl = case_of(grandchild, configuration_id("study-x", "ACL"))
     assert acl["profile"] == versions[configuration_id("study-x", "ACL")]["profile"]
@@ -1262,7 +1280,12 @@ def test_a_teaching_study_is_rebuilt_only_when_an_object_of_it_is_admitted(
         "case_sha256": _json_sha256(prior),
         "built_by": None,
     }
-    # The other teaching study, nothing of it admitted, keeps its cases.
+    # The teaching set's versions are kept whole as records, study-b's alone; the
+    # other teaching study, nothing of it admitted, keeps its cases speaking.
+    records = child[SUPERSEDED_CONFIGURATIONS_KEY]["cases"]
+    assert [canonical(r["case"]) for r in records] == [
+        canonical(case) for case in versions.values()
+    ]
     for case in configurations_of(configured.memory, "study-c"):
         assert canonical(case_of(child, case["case_id"])) == canonical(case)
     # A round admitting nothing of study-b leaves its cases byte for byte too.
@@ -1456,43 +1479,58 @@ def test_a_label_row_or_configuration_the_parent_holds_otherwise_is_refused(
 
 DIRECT_VISUAL_KIND = "independent_direct_visual_teaching"
 VISUAL_READER = "fixture visual reviewer"
-ACL_SAG, ACL_COR = "object/acl/" + SAG_BANK, "object/acl/" + COR_BANK
+PUBLISHED = {"kind": "direct_visual_teaching", "additions_sha256": "1" * 64}
+ACL_SAG = "object/acl/" + SAG_BANK
+BURSA = "gastrocnemius_semimembranosus_bursa"
 
 
-def with_direct_visual_case(memory: dict, study: str, subject: str, views) -> dict:
-    """``memory`` plus one direct visual teaching case, added as the visual
-    publisher adds it: the case with its provenance, its explicit confirm call."""
-    case_id = f"direct-visual:{study}:{subject}:native-r1"
-    call = {
-        "candidate_id": case_id,
-        "call": "confirm",
-        "reader": VISUAL_READER,
-        "views": views,
-        "notes": "pictured on its native image",
-    }
+def visual_id(study: str, subject: str) -> str:
+    return f"direct-visual:{study}:{subject}:native-r1"
+
+
+def with_direct_visual_cases(memory: dict, study: str, additions) -> dict:
+    """``memory`` plus direct visual teaching cases of ``(subject, views)``, added as
+    the visual publisher adds them: each case with its publication's provenance and
+    an explicit confirm call, and no full profile."""
+    calls = [
+        {
+            "candidate_id": visual_id(study, subject),
+            "call": "confirm",
+            "reader": VISUAL_READER,
+            "views": views,
+            "notes": "pictured on its native image",
+        }
+        for subject, views in additions
+    ]
     provenance = {
         "schema": "knee.direct-visual-teaching/v1",
         "kind": DIRECT_VISUAL_KIND,
         "reader": VISUAL_READER,
         "additions_sha256": "1" * 64,
-        "case_ids": [case_id],
-        "calls": [call],
+        "case_ids": [call["candidate_id"] for call in calls],
+        "calls": calls,
+        "configuration_extension": "pending_C2",
     }
     child = copy.deepcopy(memory)
-    child["cases"].append(
-        {
-            "case_id": case_id,
-            "study_uid": study,
-            "subject": subject,
-            "condition_calls": {},
-            "profile": profile(subject, {SAG_BANK: (0, 0, 3), COR_BANK: (0, 3, 0)}),
-            "regions": [],
-            "teaching_source": {"kind": DIRECT_VISUAL_KIND, "reader": VISUAL_READER},
-            "direct_visual_teaching": {**provenance, "call": call},
-        }
-    )
-    child["object_identity_teaching"]["confirmed_case_ids"].append(case_id)
-    child["object_identity_teaching"]["calls"].append(call)
+    for (subject, _views), call in zip(additions, calls, strict=True):
+        child["cases"].append(
+            {
+                "case_id": call["candidate_id"],
+                "study_uid": study,
+                "subject": subject,
+                "condition_calls": {},
+                "profile": profile(subject, {SAG_BANK: (0, 0, 3), COR_BANK: (0, 3, 0)}),
+                "regions": [],
+                "teaching_source": {
+                    "kind": DIRECT_VISUAL_KIND,
+                    "reader": VISUAL_READER,
+                },
+                "direct_visual_teaching": {**provenance, "call": call},
+            }
+        )
+        teaching = child["object_identity_teaching"]
+        teaching["confirmed_case_ids"].append(call["candidate_id"])
+        teaching["calls"].append(call)
     return child
 
 
@@ -1505,15 +1543,15 @@ def test_a_direct_visual_case_gives_its_studys_acl_configuration_an_acl_role():
     # The teaching set's ACL configuration of study-b hears its femur alone.
     assert before["condition_calls"] == {"ACL": 1}
     assert sorted(before["profile"]["source"]["roles"]) == ["femur"]
-    visual = with_direct_visual_case(memory, "study-b", "acl", [SAG])
+    visual = with_direct_visual_cases(memory, "study-b", [("acl", [SAG])])
     untouched = canonical(visual)
-    case_id = "direct-visual:study-b:acl:native-r1"
+    case_id = visual_id("study-b", "acl")
     [call] = [
         row
         for row in visual["object_identity_teaching"]["calls"]
         if row["candidate_id"] == case_id
     ]
-    published = {"kind": "direct_visual_teaching", "additions_sha256": "1" * 64}
+    published = PUBLISHED
     rebuilt = rebuild_study_configurations(visual, ["study-b"], built_by=published)
     acl = rebuilt["replaces"][acl_id]
     # The ACL is a role, on its identity view alone, beside the seed's femur.
@@ -1555,6 +1593,23 @@ def test_a_direct_visual_case_gives_its_studys_acl_configuration_an_acl_role():
     for case in configurations_of(visual, "study-c"):
         assert canonical(case_of(child, case["case_id"])) == canonical(case)
     assert canonical(visual) == untouched
+    # Each replaced version left the speaking cases and stays, whole, as a record.
+    assert child[SUPERSEDED_CONFIGURATIONS_KEY] == {
+        "schema": SUPERSEDED_CONFIGURATIONS_SCHEMA,
+        "cases": [
+            {
+                "case_sha256": _json_sha256(case),
+                "superseded_by": published,
+                "case": case,
+            }
+            for case in configurations_of(visual, "study-b")
+        ],
+    }
+    # A rebuild is never applied twice, nor onto a memory it was not made from.
+    for target in (child, memory):
+        with pytest.raises(ConfigurationProfileError) as info:
+            apply_rebuilt_configurations(target, rebuilt)
+        assert info.value.code == "rebuilt_configurations_stale"
     # The production preparation now hears the ACL role for ACL; before, only
     # the femur.
     index = ids.index(acl_id)
@@ -1562,7 +1617,7 @@ def test_a_direct_visual_case_gives_its_studys_acl_configuration_an_acl_role():
         prepared = prepare_recall(memory_)
         assert set(prepared["question_case_profile_banks"]["ACL"][index]) == heard
     # A study with no configuration yet gets new cases from the row supplied.
-    fresh = with_direct_visual_case(memory, "study-v", "acl", [SAG])
+    fresh = with_direct_visual_cases(memory, "study-v", [("acl", [SAG])])
     source = {"source": "train.csv", "source_sha256": "2" * 64}
     rebuilt = rebuild_study_configurations(
         fresh,
@@ -1590,3 +1645,79 @@ def test_a_direct_visual_case_gives_its_studys_acl_configuration_an_acl_role():
                 fresh, ["study-v"], **{"built_by": published, **options}
             )
         assert info.value.code == code
+
+
+def test_a_direct_visual_child_extends_its_studys_configurations_dropping_none(
+    tmp_path: Path,
+):
+    """The shape of the five-case visual child: in one taught study an ACL and an
+    MCL with positive labels, a bursa normal for Baker's, and two identity-only
+    objects, all direct visual cases with no full profile."""
+    row = {**SEED_ROW, "ACL": 1, "MCL": 1, "Baker's": 0}
+    memory = configured_parent_memory({"study-b": row, "study-c": SEED_ROW})
+    additions = [
+        ("acl", [SAG]),
+        ("mcl", [COR]),
+        (BURSA, [SAG]),
+        ("iliotibial_band", [COR]),
+        ("lcl", [COR]),
+    ]
+    visual = with_direct_visual_cases(memory, "study-b", additions)
+    for subject, _views in additions:
+        case = case_of(visual, visual_id("study-b", subject))
+        assert "direct_visual_teaching" in case and "full_profile" not in case
+    held = configurations_of(visual, "study-b")
+    others = {
+        case["case_id"]: canonical(case)
+        for case in visual["cases"]
+        if case["study_uid"] != "study-b"
+    }
+    rebuilt = rebuild_study_configurations(visual, ["study-b"], built_by=PUBLISHED)
+    save_memory(apply_rebuilt_configurations(visual, rebuilt), tmp_path / "visual")
+    child = load_memory_snapshot(tmp_path / "visual").memory
+    ids = [case["case_id"] for case in child["cases"]]
+    live = {case["case_id"]: case for case in configurations_of(child, "study-b")}
+    # Every configuration of the study is rebuilt under its own id: none dropped,
+    # none speaking twice, every replaced version kept whole as a record.
+    assert len(ids) == len(set(ids))
+    assert list(live) == [case["case_id"] for case in held]
+    records = child[SUPERSEDED_CONFIGURATIONS_KEY]["cases"]
+    assert [record["case"] for record in records] == held
+    assert all(record["case"] != live[record["case"]["case_id"]] for record in records)
+    # The new roles, each on its own identity view with its visual provenance.
+    banks = {
+        question: live[configuration_id("study-b", question)]["profile"]["banks"]
+        for question in ("ACL", "MCL", "Baker's")
+    }
+    assert banks == {
+        "ACL": {ACL_SAG: [0, 0, 3], FEMUR_SAG: [1, 2, 0]},
+        "MCL": {"object/mcl/" + COR_BANK: [0, 3, 0], FEMUR_SAG: [1, 2, 0]},
+        "Baker's": {f"object/{BURSA}/" + SAG_BANK: [0, 0, 3]},
+    }
+    for question, subject in (("ACL", "acl"), ("MCL", "mcl"), ("Baker's", BURSA)):
+        case = live[configuration_id("study-b", question)]
+        role = case["configuration_teaching"]["roles"][subject]
+        assert (role["case_id"], role["identity"]["kind"]) == (
+            visual_id("study-b", subject),
+            DIRECT_VISUAL_KIND,
+        )
+        assert case["condition_calls"] == {question: 1 if row[question] else -1}
+    # Identity-only objects are no condition's role.
+    for case in live.values():
+        assert not {"iliotibial_band", "lcl"} & set(case["profile"]["source"]["roles"])
+    # Conditions whose objects gained nothing keep round one's composition.
+    for question in ("Medial OA", "Contusion", "Fracture"):
+        case_id = configuration_id("study-b", question)
+        [prior] = [r["case"] for r in records if r["case"]["case_id"] == case_id]
+        assert live[case_id]["profile"] == prior["profile"]
+    # Every other study's cases stay byte for byte.
+    for case in child["cases"]:
+        if case["study_uid"] != "study-b":
+            assert canonical(case) == others[case["case_id"]]
+    # The production consumers read the published child.
+    assert prepare_identity(child)["outcome"] == "prepared"
+    prepared = prepare_recall(child)
+    index = ids.index(configuration_id("study-b", "Baker's"))
+    assert set(prepared["question_case_profile_banks"]["Baker's"][index]) == {
+        f"object/{BURSA}/" + SAG_BANK
+    }

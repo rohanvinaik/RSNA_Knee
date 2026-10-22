@@ -8,7 +8,8 @@ admissions, a direct visual teaching publication) rebuilds that study's
 whole-condition cases with ``rebuild_study_configurations`` and places them with
 ``apply_rebuilt_configurations``: the seed's own scoped builder, every role on the
 views where its identity holds and with its own provenance, the same case ids,
-and each replaced version recorded (CLASSICAL_AI_BUILD_DESIGN §§5.1, 11).
+and each replaced version moved out of the speaking cases into a kept record
+(CLASSICAL_AI_BUILD_DESIGN §§5.1, 11).
 """
 
 from __future__ import annotations
@@ -34,6 +35,11 @@ _CONFIGURATION_REVISION = "question-configurations-v1"
 CONFIGURATION_TEACHING_SCHEMA = "knee.squint-configuration-teaching/v1"
 #: A role whose identity a seed's visual review call confirmed.
 SEED_CALL_KIND = "seed_visual_call"
+#: Where a replaced configuration case is kept once it stops speaking: its exact
+#: record, its digest and the ``built_by`` of the case that replaced it. Recall
+#: and preparation read ``cases`` only, so a record here never speaks.
+SUPERSEDED_CONFIGURATIONS_KEY = "superseded_configuration_cases"
+SUPERSEDED_CONFIGURATIONS_SCHEMA = "knee.squint-superseded-configurations/v1"
 
 
 class ConfigurationProfileError(ValueError):
@@ -422,8 +428,10 @@ def rebuild_study_configurations(
     label source, ``built_by`` (the caller's record of this publication, with a
     ``kind``), each role's case id, identity views and own provenance
     (``_role_identity``), and ``supersedes``. A case whose id the memory already
-    holds for that study keeps the id and records the replaced version
-    (``_superseded``); a held case the rebuild does not write
+    holds for that study keeps the id and records the replaced version's digest
+    and builder (``_superseded``); ``apply_rebuilt_configurations`` then moves
+    that version out of the speaking cases into the kept record. A held case the
+    rebuild does not write
     (``configuration_rebuild_incomplete``) and a new id held outside that study
     (``configuration_case_conflict``) are refused, so one case per study and
     condition is ever live. A role's full profile is linked on the new cases.
@@ -544,17 +552,74 @@ def apply_rebuilt_configurations(
 ) -> dict[str, Any]:
     """A new memory dict holding ``rebuild_study_configurations``'s cases.
 
-    Each replacing case takes its predecessor's place in ``cases``, new ones
-    follow every other case, and the supplied rows join the ``label_ledger``,
-    whose rows stay as they are. Nothing else changes, the revision included;
-    ``memory`` and its records are not mutated.
+    Each replacing case takes its predecessor's place in ``cases``, the speaking
+    cases, and the predecessor leaves them for ``SUPERSEDED_CONFIGURATIONS_KEY``,
+    kept byte for byte with its digest and the ``built_by`` that replaced it, so
+    no configuration is dropped and no id speaks twice. New cases follow every
+    other case, and the supplied rows join the ``label_ledger``, whose rows stay
+    as they are. ``rebuilt`` must come from this very memory: a replaced case
+    whose digest is not the one its rebuild recorded, a new id already held, or
+    a role whose object case the memory does not hold is refused
+    (``rebuilt_configurations_stale``), so a rebuild is never applied twice or
+    onto another memory. Nothing else changes, the revision included; ``memory``
+    and its records are not mutated.
     """
-    result = dict(memory)
     replaces = rebuilt["replaces"]
-    result["cases"] = [
-        *(replaces.get(case["case_id"], case) for case in memory["cases"]),
-        *rebuilt["new"],
-    ]
+    held = {case["case_id"]: case for case in memory["cases"]}
+    if any(case["case_id"] in held for case in rebuilt["new"]):
+        raise ConfigurationProfileError("rebuilt_configurations_stale", "new_id_held")
+    for case in [*replaces.values(), *rebuilt["new"]]:
+        for subject, link in case["configuration_teaching"]["roles"].items():
+            role = held.get(link["case_id"])
+            if role is None or (role["study_uid"], role["subject"]) != (
+                case["study_uid"],
+                subject,
+            ):
+                raise ConfigurationProfileError(
+                    "rebuilt_configurations_stale", link["case_id"]
+                )
+    speaking: list[Mapping[str, Any]] = []
+    retired: list[dict[str, Any]] = []
+    for case in memory["cases"]:
+        replacement = replaces.get(case["case_id"])
+        if replacement is None:
+            speaking.append(case)
+            continue
+        supersedes = replacement["configuration_teaching"]["supersedes"]
+        if supersedes is None or supersedes["case_sha256"] != _json_sha256(case):
+            raise ConfigurationProfileError(
+                "rebuilt_configurations_stale", case["case_id"]
+            )
+        speaking.append(replacement)
+        retired.append(
+            {
+                "case_sha256": supersedes["case_sha256"],
+                "superseded_by": copy.deepcopy(
+                    replacement["configuration_teaching"]["built_by"]
+                ),
+                "case": case,
+            }
+        )
+    if len(retired) != len(replaces):
+        raise ConfigurationProfileError(
+            "rebuilt_configurations_stale", "replaced_case_not_held"
+        )
+    result = dict(memory)
+    result["cases"] = [*speaking, *rebuilt["new"]]
+    if retired:
+        table = memory.get(SUPERSEDED_CONFIGURATIONS_KEY)
+        if table is None:
+            table = {"schema": SUPERSEDED_CONFIGURATIONS_SCHEMA, "cases": []}
+        if (
+            not isinstance(table, Mapping)
+            or table.get("schema") != SUPERSEDED_CONFIGURATIONS_SCHEMA
+            or not isinstance(table.get("cases"), list)
+        ):
+            raise ConfigurationProfileError("superseded_configurations_invalid")
+        result[SUPERSEDED_CONFIGURATIONS_KEY] = {
+            **table,
+            "cases": [*table["cases"], *retired],
+        }
     if rebuilt["label_ledger"]:
         result["label_ledger"] = {
             **(memory.get("label_ledger") or {}),
