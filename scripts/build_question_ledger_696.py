@@ -100,7 +100,9 @@ def build_ledger(
                     q_objects_support[subj] = {
                         "status": obj_data.get("status"),
                         "regions_count": len(obj_data.get("regions", [])),
-                        "first_region": obj_data["regions"][0] if obj_data["regions"] else None,
+                        "first_region": obj_data["regions"][0]
+                        if obj_data["regions"]
+                        else None,
                     }
 
             row_record = {
@@ -141,13 +143,20 @@ def build_ledger(
         json.dump(ledger_doc, f, indent=2)
     return ledger_doc
 
+
 if __name__ == "__main__":
     mem = Path("data/readings/grounded-teaching-20261022/integrated-r4-identity/memory")
-    replayed = Path("data/readings/grounded-teaching-20261022/reviewed-teacher-operation-r4")
+    replayed = Path(
+        "data/readings/grounded-teaching-20261022/reviewed-teacher-operation-r4"
+    )
     train_csv = Path("data/raw/train.csv")
-    out = Path("data/readings/grounded-teaching-20261022/teaching-question-ledger-696.json")
+    out = Path(
+        "data/readings/grounded-teaching-20261022/teaching-question-ledger-696.json"
+    )
     doc = build_ledger(mem, replayed, train_csv, out)
     print(f"Successfully generated {doc['total_rows']} rows in {out}")
     print("Summary by condition:")
     for q, s in doc["summary"].items():
-        print(f"  {q}: identified={s['identified']}, unresolved={s['unresolved']}, contradicted={s['contradicted']}")
+        print(
+            f"  {q}: identified={s['identified']}, unresolved={s['unresolved']}, contradicted={s['contradicted']}"
+        )

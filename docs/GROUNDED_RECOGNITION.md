@@ -1,5 +1,10 @@
 # Hand-build the corpus that bootstraps classical AI
 
+For the connected Society of Mind training operation and the twelve-condition diagnostic endpoint,
+read [CLASSICAL_AI_TRAINING_EXECUTION](CLASSICAL_AI_TRAINING_EXECUTION.md). It incorporates Rohan's
+latest distinction between anatomical organization and physiological meaning, and the fact that
+support, role and diagnosis are activities of ONE society rather than separate models.
+
 Rohan's current task is to hand-build the corpus from the 58 labeled teaching studies: isolate
 recognizable anatomical examples on their actual images, establish identity and independently
 sourced normal/diagnosed meanings, and retain their measured bundles as K-lines. The existing

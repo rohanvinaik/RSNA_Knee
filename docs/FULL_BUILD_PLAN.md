@@ -59,6 +59,9 @@ CLASSICAL_AI_BUILD_DESIGN. Imports establish availability, not proof of comprehe
    [CLASSICAL_AI_BUILD_DESIGN.md](CLASSICAL_AI_BUILD_DESIGN.md) whole. K-lines enable corpus
    construction and remain active classical memory; corpus population is not the whole learning
    process. Confirmed negative examples must reach the actual memory consumer.
+   Also read [CLASSICAL_AI_TRAINING_EXECUTION.md](CLASSICAL_AI_TRAINING_EXECUTION.md) for the latest
+   single-society, anatomy/physiology and twelve-condition endpoint binding, concrete repair
+   contracts and the scale-round operation. It is an execution appendix, not a second live queue.
    Before changing bootstrap/learning integration, read the pending acceptance contract at
    `openspec/changes/complete-signed-bootstrap-loop/` (proposal, design, capability spec and tasks).
    It declares unfinished behavior; artifact validation does not certify runtime completion.
@@ -1770,6 +1773,14 @@ and the local Claude Max CLI. Root owns meaning, visual inspection and integrati
 alone holds the active jobs, source pins and measured outcomes.
 
 ### 18.1 Current phase: local bootstrap and classical AI training
+
+**Latest contextual and execution binding:**
+[CLASSICAL_AI_TRAINING_EXECUTION.md](CLASSICAL_AI_TRAINING_EXECUTION.md) incorporates Rohan's
+2026-10-22 corrections: ONE society jointly resolves support, anatomical role, physiological
+state and diagnosis; spatial calibration and functional interpretation have distinct warrants;
+balanced-ternary signs retain their named meanings. Its training-round and repair contracts
+serve the twelve-condition Kaggle diagnostic endpoint with uncertainty. Local training remains
+the immediate operation; this clarification does not itself dispatch a competition run.
 
 **Concrete completion requirements:** [TRAIN_READY_COMPLETION.md](TRAIN_READY_COMPLETION.md) is
 this section's implementation appendix. It records the pinned gap findings, balanced-ternary and

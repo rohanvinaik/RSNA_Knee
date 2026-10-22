@@ -1514,6 +1514,10 @@ def _resolve_identity_contests(
     and nothing is recorded.
     """
     from knee.diagnosis.squint_identity import prepare_identity, recall_identity
+    from knee.diagnosis.squint_procedure_memory import (
+        _recall_entry,
+        select_observation_requests,
+    )
 
     if identity_readings.get("outcome") != "examined":
         return {}
@@ -1533,15 +1537,30 @@ def _resolve_identity_contests(
     prepared = prepared_resolved
     finer: dict[str, dict] = {}
     states: dict[str, dict] = {}
-    for subject in contested:
-        located = objects[subject]
-        request = {
+    requests = [
+        {
             "object": subject,
             "question": "identity",
             "reason": CONTESTED_AT_SQUINT_SCALE,
+            "kind": "bounded_zoom",
+            "scope": "object_window",
+            "request_id": f"identity:{subject}:{CONTESTED_AT_SQUINT_SCALE}",
         }
+        for subject in contested
+    ]
+    requests = select_observation_requests(
+        requests,
+        memory,
+        objects=objects,
+        study_uid=excluded_uid or str(study.get("study_uid", "")),
+        exclude_same_study=excluded_uid is not None,
+    )
+    for request in requests:
+        subject = request["object"]
+        located = objects[subject]
+        before_state = _recall_entry(readings[subject])
+        before_cue = _subject_cue_snapshot(located)
         look = _bounded_observation(request, study, objects, attempted, deadline)
-        observations.append({**look, "requested_by": "identity_question"})
         resolved = None
         if holds_scale(located.get("profile"), FINE_SCALE):
             if prepared is None:
@@ -1566,6 +1585,31 @@ def _resolve_identity_contests(
             "resolved": resolved,
             "resolution": squint_contest_resolution(readings[subject], resolved),
         }
+        observation = {
+            **look,
+            "requested_by": "identity_question",
+            "question": "identity",
+            "request_id": request["request_id"],
+            "request_kind": "bounded_zoom",
+            "request_reason": CONTESTED_AT_SQUINT_SCALE,
+            "request_scope": "object_window",
+            "attribution_scope": "single_procedure",
+            "before_state": before_state,
+            "after_state": _recall_entry(resolved),
+            "after_identity_consumption": _object_consumption(
+                subject,
+                readings[subject],
+                "examined",
+                known.get(subject),
+                states[subject],
+                holds_scale(located.get("profile"), FINE_SCALE),
+            ),
+        }
+        if before_cue is not None:
+            observation["before_cue"] = before_cue
+        if "recalled_procedure" in request:
+            observation["recalled_procedure"] = request["recalled_procedure"]
+        observations.append(observation)
     identity_readings["resolved_scale"] = {
         "scale": JOINT_SCALE,
         "contested_at_squint_scale": contested,
@@ -1885,9 +1929,7 @@ def infer_study(
                     else None
                 )
                 before_cue = _subject_cue_snapshot(
-                    objects.get(subject_name)
-                    if isinstance(subject_name, str)
-                    else None
+                    objects.get(subject_name) if isinstance(subject_name, str) else None
                 )
                 obs = route_observation_request(
                     request,
@@ -1953,9 +1995,7 @@ def infer_study(
                     not_read_as=not_read,
                 )
                 finding = combine_condition(question.question_id, object_evidence)
-                obs["after_state"] = _condition_state_snapshot(
-                    finding, subject_name
-                )
+                obs["after_state"] = _condition_state_snapshot(finding, subject_name)
         ranking = finding.get("rank")
         if not isinstance(ranking, dict):
             ranking = rank_condition(finding)

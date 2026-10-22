@@ -1,5 +1,14 @@
 # The society of agencies: design binding, build spec and training plan
 
+**Latest contextual execution binding:**
+[CLASSICAL_AI_TRAINING_EXECUTION.md](CLASSICAL_AI_TRAINING_EXECUTION.md) carries Rohan's complete
+2026-10-22 corrections and the current implementation contracts. ONE society connects support,
+anatomical role, physiological state, diagnosis and useful observation choices. Spatial anatomy
+and functional physiology are related but distinct; a scan-calibrated reading does not assign
+healthy function by itself. The end product diagnoses the twelve competition conditions with
+appropriate uncertainty. Read that appendix with the active packet before using the dated
+inventories, fleet state or lane schedules below.
+
 **Implementation completion appendix:** [TRAIN_READY_COMPLETION.md](TRAIN_READY_COMPLETION.md)
 pins the reviewed source gaps and the bounded repairs/tests required for a real local training
 round. Read it with the current packet before using the dated lane tables below. In particular,

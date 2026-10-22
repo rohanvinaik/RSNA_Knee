@@ -2,6 +2,15 @@
 
 A classical-AI computer-vision pipeline grounded in **What an \<Object> Is**. Complementary measurements describe anatomical objects; their physical relations constrain recognition. Each object has one HDC representation across its available lenses, views, directions and scales. Independent normal and condition-presentation cases remain individual precedents.
 
+**The endpoint is diagnosis of the twelve competition conditions, with uncertainty where needed.**
+ONE society connects anatomical support/role assignment, physiological interpretation and condition
+discrimination over the same object representation. Anatomy supplies spatial organization;
+physiology supplies functional meaning. Cheap calibrated readings describe what was measured;
+grounded definitions and contextual cases warrant what those readings mean.
+[The contextual grounding and training execution guide](docs/CLASSICAL_AI_TRAINING_EXECUTION.md)
+gives the full mechanism, remaining repair contracts, existing command boundaries and scale-round
+workflow. It incorporates Rohan's latest literal corrections.
+
 **Current development objective: local bootstrap, corpus growth and classical AI training.**
 We are **hand-building the corpus**: recognition tools help isolate anatomical examples,
 normal and diseased, whose reviewed bundles become K-lines. A perfect or complete automatic

@@ -1,5 +1,11 @@
 # Finish the local bootstrap and make the classical system train-ready
 
+**Latest unified grounding and execution:**
+[CLASSICAL_AI_TRAINING_EXECUTION.md](CLASSICAL_AI_TRAINING_EXECUTION.md) incorporates the author's
+single-society, anatomy/physiology and twelve-condition endpoint clarifications, the later source
+review's remaining consumer repairs, and the actual scale-round operation. Read it before using
+this dated gap inventory. Implementation status remains only in the current packet.
+
 **Bounded repairs applied after the review:** [TRAIN_READY_REPAIRS_20261022](work/reviews/TRAIN_READY_REPAIRS_20261022.md)
 records the action-attribution, pre-action-cue, child-lineage/recovery and post-publication export fixes.
 Read that record before treating the dated source findings below as still-open bugs. The current

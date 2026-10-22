@@ -68,6 +68,7 @@ from knee.diagnosis.squint_memory import (
     _full_profile_from_validated_case,
     load_memory,
     load_memory_snapshot,
+    save_memory,
 )
 from knee.diagnosis.squint_memory_view import memory_view
 from tests.test_squint_admission_sheets import series_record
@@ -684,6 +685,53 @@ def test_a_confirm_only_review_publishes_the_same_identity_teaching(grown):
 
 
 # ------------------------------------------------- what the child keeps
+
+
+@pytest.mark.parametrize("call", ["confirm", "reject"])
+def test_correction_publisher_records_its_actual_parent_without_changing_call_scope(
+    tmp_path, grown, call
+):
+    original = copy.deepcopy(grown.child.memory)
+    original["parent_revision"] = "grandparent-revision"
+    original["parent_manifest_sha256"] = "d" * 64
+    parent_directory = tmp_path / "parent-with-historical-lineage"
+    save_memory(original, parent_directory)
+    source = load_memory_snapshot(parent_directory)
+    source_bytes = source.path.read_bytes()
+    source_before = copy.deepcopy(source.memory)
+    review, pin = review_of(source, [grown.x])
+    called = row(grown.x, call, **({"views": [SAG]} if call == "reject" else {}))
+    result = publish_admission_corrections(
+        source,
+        review,
+        calls_of(pin, called),
+        pin,
+        tmp_path / "lineage-corrected-child",
+    )
+
+    restored = load_memory_snapshot(tmp_path / "lineage-corrected-child")
+    child = restored.memory
+    assert restored.sha256 == result["sha256"]
+    assert child["parent_revision"] == source_before["revision"]
+    assert child["parent_manifest_sha256"] == source.sha256
+    assert child["parent_manifest_sha256"] != source_before["parent_manifest_sha256"]
+    record = child["object_identity_teaching"]["admission_reviews"][-1]
+    assert record["reviewed_revision"] == child["parent_revision"]
+    assert record["reviewed_manifest_sha256"] == child["parent_manifest_sha256"]
+    assert child["cases"] == source_before["cases"]
+    if call == "reject":
+        assert child["object_identity_teaching"]["negative_views"][grown.x] == [SAG]
+        assert call_row(child, grown.x)["views"] == [COR]
+        expected_views = frozenset({tuple(COR)})
+    else:
+        assert child["object_identity_teaching"]["calls"] == source_before[
+            "object_identity_teaching"
+        ]["calls"]
+        assert child["object_identity_cases"] == source_before["object_identity_cases"]
+        expected_views = identity_condition_views(source_before)["views"][grown.x]
+    assert identity_condition_views(child)["views"][grown.x] == expected_views
+    assert source.memory == source_before
+    assert source.path.read_bytes() == source_bytes
 
 
 def test_every_other_record_of_the_reviewed_memory_survives_unchanged(grown):

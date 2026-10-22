@@ -1,6 +1,9 @@
 # Continue the squint-first knee production build
 
 Follow FULL_BUILD_PLAN §0, then its §13 current packet for the actual request and jobs.
+Read CLASSICAL_AI_TRAINING_EXECUTION.md for the latest author corrections and executable round
+contracts: ONE society connects support, role, physiological state and the twelve diagnostic
+questions. Its remaining repairs require actual consumer evidence, not completion prose.
 Read CLASSICAL_AI_BUILD_DESIGN.md whole for bootstrap -> corpus -> classical learning -> active
 production memory, and SQUINT_PRODUCTION_CONTRACT.md for interfaces. The pending acceptance change is
 `openspec/changes/complete-signed-bootstrap-loop/`; its artifact validation is not runtime completion.

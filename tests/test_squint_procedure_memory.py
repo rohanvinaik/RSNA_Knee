@@ -894,9 +894,7 @@ def test_per_action_after_state_is_preserved_not_overwritten_by_final_question_f
         "request_id": "Baker's/gastrocnemius_semimembranosus_bursa/bounded_zoom",
         "request_kind": "bounded_zoom",
         "request_reason": "proposal_without_sourced_trust",
-        "before_cue": _cue_profile(
-            "gastrocnemius_semimembranosus_bursa", [2, 2, 1]
-        ),
+        "before_cue": _cue_profile("gastrocnemius_semimembranosus_bursa", [2, 2, 1]),
         "before_state": {
             "outcome": "open",
             "reason": "capsule_checked_bursa_still_unknown",
@@ -953,7 +951,7 @@ def test_per_action_after_state_is_preserved_not_overwritten_by_final_question_f
 
 def test_changed_wrong_answer_is_not_prioritized_and_open_reading_is_not_a_veto():
     from knee.diagnosis.squint_procedures import (
-         route_observation_request,
+        route_observation_request,
         select_observation_requests,
     )
 
@@ -1260,7 +1258,11 @@ def test_fuzzy_joint_hdc_resemblance_recalls_near_equal_tercile_bins_above_oppos
         },
     }
     rec = make_record(
-        observations=[taught_obs, other_object_identical_obs, same_subject_opposing_obs],
+        observations=[
+            taught_obs,
+            other_object_identical_obs,
+            same_subject_opposing_obs,
+        ],
         unresolved=[],
         questions={
             "Baker's": question_body(
@@ -1292,9 +1294,7 @@ def test_fuzzy_joint_hdc_resemblance_recalls_near_equal_tercile_bins_above_oppos
             },
         ],
     }
-    memory = pe.retain_procedure_experiences(
-        base_memory, rows, revision="child-fuzzy"
-    )
+    memory = pe.retain_procedure_experiences(base_memory, rows, revision="child-fuzzy")
 
     # Sign 1: [51,49,0] vs [49,51,0] (cosine ~ 0.9992) reaches empirical envelope and recalls,
     # even when differently named objects (bursa, femur) have identical [51,49,0] encodings.

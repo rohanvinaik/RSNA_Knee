@@ -662,15 +662,22 @@ def subject_context(
 def _recall_entry(entry: object) -> dict[str, Any] | None:
     if not isinstance(entry, Mapping):
         return None
+    negatives = entry.get("applicable_negative_case_ids")
+    if isinstance(negatives, (list, tuple)):
+        neg_count = len(negatives)
+    elif "applicable_negative_cases" in entry and isinstance(
+        entry["applicable_negative_cases"], int
+    ):
+        neg_count = entry["applicable_negative_cases"]
+    else:
+        neg_count = 0
     return {
         "scale": entry.get("scale"),
         "outcome": entry.get("outcome"),
         "identity_state": entry.get("identity_state"),
         "appearance": entry.get("appearance"),
         "reason": entry.get("reason"),
-        "applicable_negative_cases": len(
-            _sequence(entry.get("applicable_negative_case_ids"))
-        ),
+        "applicable_negative_cases": neg_count,
     }
 
 
@@ -693,13 +700,38 @@ def _open_question(question: object) -> dict[str, Any] | None:
     }
 
 
-def identity_state(record: Mapping[str, Any], subject: object) -> dict[str, Any]:
+def identity_state(
+    record: Mapping[str, Any],
+    subject: object,
+    obs: Mapping[str, Any] | None = None,
+) -> dict[str, Any]:
     """Identity at 10 mm, after the finer look, and as the condition consumer finally read it.
 
     ``before`` is ``identity_recall.objects`` (10 mm; the reading that opened the contest);
     ``after`` is ``identity_recall.resolved_scale.objects`` (the joint 10 mm + 2 mm recall);
     ``changed`` says only that the recall outcome category differs between the two.
+    A directly recorded observation instead retains that action's own snapshots;
+    the final aggregate is never attributed to an earlier identity look.
     """
+    if (
+        isinstance(obs, Mapping)
+        and obs.get("attribution_scope") == "single_procedure"
+        and isinstance(obs.get("before_state"), Mapping)
+        and isinstance(obs.get("after_state"), Mapping)
+        and isinstance(obs.get("after_identity_consumption"), Mapping)
+    ):
+        before = _recall_entry(obs["before_state"])
+        after = _recall_entry(obs["after_state"])
+        return {
+            "scope": "identity",
+            "attribution_scope": "single_procedure",
+            "before": before,
+            "after": after,
+            "consumed": dict(obs["after_identity_consumption"]),
+            "changed": None
+            if before is None or after is None
+            else before["outcome"] != after["outcome"],
+        }
     recall = _mapping(record.get("identity_recall"))
     before = _recall_entry(_mapping(recall.get("objects")).get(subject))
     joint = _mapping(recall.get("resolved_scale"))
@@ -710,6 +742,7 @@ def identity_state(record: Mapping[str, Any], subject: object) -> dict[str, Any]
     contest = _mapping(consumption.get("squint_scale_contest"))
     return {
         "scope": "identity",
+        "attribution_scope": "question_final_finding",
         "before": before,
         "after": after,
         "consumed": {
@@ -1100,23 +1133,32 @@ def _identity_request(
     contested = _sequence(
         _get(record, "identity_recall", "resolved_scale", "contested_at_squint_scale")
     )
+    kind = row.get("request_kind") or ZOOM_KIND
+    reason = row.get("request_reason") or CONTEST_REASON
+    scope = row.get("request_scope") or "object_window"
+    request_id = row.get("request_id")
     return {
-        "kind": ZOOM_KIND,
+        "kind": kind,
         "procedure": PAIRED_PROCEDURE,
         "subject": subject,
-        "question": IDENTITY_QUESTION,
-        "reason": CONTEST_REASON,
-        "scope": "object_window",
+        "question": row.get("question") or IDENTITY_QUESTION,
+        "reason": reason,
+        "scope": scope,
         "bounded": True,
-        "requested_by": row.get("requested_by"),
+        "requested_by": row.get("requested_by") or IDENTITY_REQUESTER,
         "listed_after_the_look": None,
+        "request_id": request_id,
         "provenance": {
             "question": "recorded",
-            "reason": "derived_from_code_path"
-            if subject in contested
-            else "derived_from_code_path_but_subject_not_in_the_contest_list",
-            "kind": "derived_from_code_path",
-            "scope": "derived_from_code_path",
+            "reason": "recorded"
+            if "request_reason" in row
+            else (
+                "derived_from_code_path"
+                if subject in contested
+                else "derived_from_code_path_but_subject_not_in_the_contest_list"
+            ),
+            "kind": "recorded" if "request_kind" in row else "derived_from_code_path",
+            "scope": "recorded" if "request_scope" in row else "derived_from_code_path",
         },
     }
 
@@ -1295,6 +1337,12 @@ def independent_agreement(
             if isinstance(c, Mapping)
         }
         read_as = _get(state, "consumed", "region_read_as_subject")
+        if state.get("attribution_scope") == "single_procedure" and _get(
+            state, "consumed", "identity_effect"
+        ) not in ("answers", "appearance_opposed"):
+            # Withholding a disputed support from diagnosis does not assert
+            # that its identity is false. Only a decided effect can be checked.
+            read_as = None
         if "confirm" in calls and "reject" not in calls:
             status = (
                 "matches_independent_call"
@@ -1376,15 +1424,19 @@ def _identity_rows(
                         "subject": subject_context(record, subject, obs=obs),
                     },
                     "request": _identity_request(record, obs),
-                    "question_attribution": {
-                        "status": "recorded",
-                        "kind": "recorded",
-                        "basis": "requested_by=identity_question",
-                        "candidates": None,
-                        "rests_on": ROUTING_BASIS,
-                    },
+                    "question_attribution": (
+                        _attribution_block({}, obs)
+                        if _has_direct_attribution(obs)
+                        else {
+                            "status": "recorded",
+                            "kind": "recorded",
+                            "basis": "requested_by=identity_question",
+                            "candidates": None,
+                            "rests_on": ROUTING_BASIS,
+                        }
+                    ),
                     "execution": execution,
-                    "state": _credited(identity_state(record, subject), execution),
+                    "state": _credited(identity_state(record, subject, obs), execution),
                     "independent_outcome": identity_outcome(
                         call_index, uid, subject, source, execution["status"]
                     ),
@@ -1688,6 +1740,47 @@ def retain_procedure_experiences(
     return child
 
 
+def _is_context_compatible(
+    reason1: object,
+    loc_status1: object,
+    reason2: object,
+    loc_status2: object,
+) -> bool:
+    """True if two observation or query contexts are mutually compatible.
+
+    Does not require mandatory presence of all metadata fields. Only when both
+    contexts assert a non-empty string for the same field and differ does it mismatch.
+    """
+    if (
+        isinstance(reason1, str)
+        and reason1
+        and isinstance(reason2, str)
+        and reason2
+        and reason1 != reason2
+    ):
+        return False
+    return not (
+        isinstance(loc_status1, str)
+        and loc_status1
+        and isinstance(loc_status2, str)
+        and loc_status2
+        and loc_status1 != loc_status2
+    )
+
+
+def _is_opposing_category(category: str, other_cat: str) -> bool:
+    """True if other_cat asserts an actual contrary outcome to category.
+
+    Open or unattributed outcomes are unresolved evidence, not established
+    procedural opposition.
+    """
+    if category == "confirmed_resolution":
+        return other_cat in ("contradicted_outcome", "no_reading_available")
+    if category in ("contradicted_outcome", "no_reading_available"):
+        return other_cat == "confirmed_resolution"
+    return False
+
+
 def _empirical_opposition_floor(
     raw: Mapping[str, Any],
     row_banks: Mapping[str, Sequence[int]],
@@ -1697,13 +1790,15 @@ def _empirical_opposition_floor(
     memory: Mapping[str, Any] | None,
     question_envelopes: Mapping[str, Any],
     excluded: str | None,
+    query_context: Mapping[str, Any] | None = None,
 ) -> tuple[int, int] | None:
     """Finite empirical opposition floor over ``common_banks`` using ``_exact_bank_terms``.
 
     Opposition is scoped to this procedure's applicability in context:
     other attributed experiences for the same ``(subject, kind)`` (and
-    ``question`` when present) with an opposing outcome category. Clinical or
-    identity calls alone do not establish whether a procedure helped.
+    ``question`` when present) with an opposing outcome category and compatible
+    request reason/location context. An open outcome or an inapplicable failure
+    cannot define this precedent's opposition floor.
     """
     from knee.diagnosis.squint_locator import _exact_bank_terms
 
@@ -1715,6 +1810,11 @@ def _empirical_opposition_floor(
     subject = req.get("subject")
     question = req.get("question")
     req_kind = str(req.get("kind") or ZOOM_KIND)
+    req_reason = req.get("reason")
+    loc_status = _get(raw, "context", "subject", "location_status")
+    query = _mapping(query_context)
+    query_reason = query.get("request_reason", query.get("reason"))
+    query_location = query.get("location_status")
     row_id = raw.get("row_id")
     opposing_ratios: list[tuple[int, int]] = []
 
@@ -1738,10 +1838,20 @@ def _empirical_opposition_floor(
         if other_kind != req_kind:
             continue
         other_q = other_req.get("question")
-        if question is not None and other_q is not None and other_q != question:
+        if other_q != question:
+            continue
+        other_reason = other_req.get("reason")
+        other_loc_status = _get(other, "context", "subject", "location_status")
+        if not _is_context_compatible(
+            req_reason, loc_status, other_reason, other_loc_status
+        ):
+            continue
+        if not _is_context_compatible(
+            query_reason, query_location, other_reason, other_loc_status
+        ):
             continue
         other_cat, _info, _agree = _row_category(other, other_kind)
-        if other_cat in (category, "outcome_unattributed"):
+        if not _is_opposing_category(category, other_cat):
             continue
         other_banks = _row_cue_banks(
             other,
@@ -1913,23 +2023,8 @@ def recall_procedure_experiences(
             unattributed_ids.append(row_id)
             continue
         r_reason = req.get("reason")
-        if (
-            isinstance(q_reason, str)
-            and q_reason
-            and isinstance(r_reason, str)
-            and r_reason
-            and q_reason != r_reason
-        ):
-            context_mismatch_ids.append(row_id)
-            continue
         r_loc_status = _get(raw, "context", "subject", "location_status")
-        if (
-            isinstance(q_loc_status, str)
-            and q_loc_status
-            and isinstance(r_loc_status, str)
-            and r_loc_status
-            and q_loc_status != r_loc_status
-        ):
+        if not _is_context_compatible(q_reason, q_loc_status, r_reason, r_loc_status):
             context_mismatch_ids.append(row_id)
             continue
         row_banks = _row_cue_banks(
@@ -1956,6 +2051,7 @@ def recall_procedure_experiences(
             memory,
             question_envelopes,
             excluded,
+            q_ctx,
         )
         reaches_envelope = None
         if floor is not None:
@@ -1996,16 +2092,13 @@ def recall_procedure_experiences(
         )
     best_confirmed = _max_ratio(confirmed_ratios)
     best_opposing = _max_ratio(opposing_ratios)
-    if (
-        (confirmed_ids and not contradicted_ids and not no_reading_ids)
-        or (
-            confirmed_ids
-            and best_confirmed is not None
-            and (
-                best_opposing is None
-                or best_confirmed[0] * best_opposing[1]
-                > best_opposing[0] * best_confirmed[1]
-            )
+    if (confirmed_ids and not contradicted_ids and not no_reading_ids) or (
+        confirmed_ids
+        and best_confirmed is not None
+        and (
+            best_opposing is None
+            or best_confirmed[0] * best_opposing[1]
+            > best_opposing[0] * best_confirmed[1]
         )
     ):
         status = "recalled_confirmed_resolution"

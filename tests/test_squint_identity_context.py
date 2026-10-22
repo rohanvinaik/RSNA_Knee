@@ -265,26 +265,29 @@ def test_an_applicable_negative_with_no_own_case_speaking_opposes_and_never_rena
 
 
 @pytest.mark.parametrize(
-    ("basis", "alternatives", "applies"),
+    ("basis", "alternatives", "removed", "applies"),
     [
-        (MAP_RELATION, ["patella"], True),
-        (MAP_RELATION, [], False),
-        (STRUCTURAL_READER, [], False),
-        (PRIOR_ONLY, [], True),
+        (MAP_RELATION, ["patella"], [], True),
+        (MAP_RELATION, [], [], True),
+        (MAP_RELATION, [], ["patella"], False),
+        (STRUCTURAL_READER, [], [], False),
+        (PRIOR_ONLY, [], [], True),
     ],
 )
-def test_a_negative_asserting_an_alternative_applies_only_while_it_is_open(
-    basis, alternatives, applies
+def test_a_negative_asserting_an_alternative_applies_unless_structure_excludes_it(
+    basis, alternatives, removed, applies
 ):
     asserting = {
         **NOT_FEMUR,
         "also_positive": [{"identity": "patella", "views": [SAG]}],
     }
     taught = memory(PLAIN_SEEDS, [asserting])
+    observed_context = context("femur", basis, alternatives)
+    observed_context["removed_by_structure"].extend(removed)
     result = recall(
         profile("femur", [(SAG, (1, 2, 0))]),
         taught,
-        context("femur", basis, alternatives),
+        observed_context,
     )
     row = negative_row(result, "n1")
     assert row["asserted_alternatives"] == ["patella"]
@@ -303,7 +306,7 @@ def test_a_negative_asserting_an_alternative_applies_only_while_it_is_open(
     result = recall(
         profile("femur", [(SAG, (1, 2, 0))]),
         memory(PLAIN_SEEDS, [elsewhere]),
-        context("femur", basis, alternatives),
+        observed_context,
     )
     row = negative_row(result, "n1")
     assert (row["asserted_alternatives"], row["applies"]) == ([], True)

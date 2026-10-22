@@ -321,12 +321,19 @@ def test_no_distance_rule_for_attach_cover_between(monkeypatch):
         assert not rules & {
             "attaches_to",
             "covers",
-            "between",
             "lines",
             "bounds",
             "encloses",
             "deep_to",
         }
+        for check in out[0]["checks"]:
+            if check["relation"] == "between":
+                # A point is not either anchor's measured plane band. No
+                # distance allowance fills in that missing observation.
+                assert check["result"] == "unknown_between_shared_planes_unavailable"
+                assert check["anchor_bands"] == {}
+                assert check["gap_interval"] is None
+        assert out[0]["eligible"] is True
 
 
 def test_aggregate_contradicted_plausible_unknown(monkeypatch):

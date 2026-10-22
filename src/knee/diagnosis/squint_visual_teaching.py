@@ -13,6 +13,8 @@ import sys
 from pathlib import Path
 
 from knee.diagnosis.squint_identity import (
+    IDENTITY_CASES_SCHEMA,
+    _view_set,
     confirm_call_views,
     identity_condition_views,
     prepare_identity,
@@ -41,7 +43,7 @@ class VisualTeachingError(ValueError):
 
 
 def validate_additions(parent: dict, additions: object) -> tuple[list, list]:
-    """Require one affirmative, explicitly scoped visual call per new object case."""
+    """Require one explicitly scoped confirm or reject per measured object case."""
     if not isinstance(additions, dict) or additions.get("schema") != SCHEMA:
         raise VisualTeachingError("additions_schema_invalid")
     reader = additions.get("reader")
@@ -70,9 +72,6 @@ def validate_additions(parent: dict, additions: object) -> tuple[list, list]:
             raise VisualTeachingError("visual_case_id_duplicate")
         if subject.startswith("diagnosis/"):
             raise VisualTeachingError("visual_case_must_be_object")
-        if (uid, subject) in pairs:
-            raise VisualTeachingError("visual_study_subject_duplicate")
-        pairs.add((uid, subject))
         if case.get("full_profile") is not None or "full_profile_refs" in case:
             raise VisualTeachingError(
                 "visual_case_full_evidence_not_supplied_by_this_route"
@@ -102,8 +101,8 @@ def validate_additions(parent: dict, additions: object) -> tuple[list, list]:
         cid = row["candidate_id"]
         if cid in rows:
             raise VisualTeachingError("visual_call_duplicate")
-        if row.get("call") != "confirm":
-            raise VisualTeachingError("visual_call_must_confirm")
+        if row.get("call") not in ("confirm", "reject"):
+            raise VisualTeachingError("visual_call_must_confirm_or_reject")
         if row.get("negative_views") or row.get("also_positive"):
             raise VisualTeachingError("visual_call_must_assert_one_identity")
         if not isinstance(row.get("notes"), str) or not row["notes"].strip():
@@ -111,8 +110,19 @@ def validate_additions(parent: dict, additions: object) -> tuple[list, list]:
         actual_reader = row.get("reader", reader)
         if not isinstance(actual_reader, str) or not actual_reader.strip():
             raise VisualTeachingError("visual_reader_required")
-        result = confirm_call_views(row)
-        if result["outcome"] != "views" or not result["views"]:
+        case = by_id[cid]
+        if row["call"] == "confirm":
+            pair = (case["study_uid"], case["subject"])
+            if pair in pairs:
+                raise VisualTeachingError("visual_study_subject_duplicate")
+            pairs.add(pair)
+            result = confirm_call_views(row)
+            selected = result.get("views") if result["outcome"] == "views" else None
+        else:
+            if case.get("condition_calls"):
+                raise VisualTeachingError("visual_reject_cannot_assert_conditions")
+            selected = _view_set(row.get("views"))
+        if not selected:
             raise VisualTeachingError("visual_call_explicit_views_required")
         profile = by_id[cid].get("profile")
         banks = profile.get("banks") if isinstance(profile, dict) else None
@@ -130,12 +140,66 @@ def validate_additions(parent: dict, additions: object) -> tuple[list, list]:
             for name, counts in banks.items()
             if isinstance(name, str) and sum(counts) > 0
         }
-        if not result["views"].issubset(available):
+        if not selected.issubset(available):
             raise VisualTeachingError("visual_call_view_not_observed")
         rows[cid] = {**row, "reader": actual_reader}
     if set(rows) != set(by_id):
         raise VisualTeachingError("visual_case_without_call")
     return copy.deepcopy(cases), [copy.deepcopy(rows[c["case_id"]]) for c in cases]
+
+
+def apply_validated_additions(
+    parent: dict, cases: list, calls: list, provenance: dict
+) -> dict:
+    """Apply ``validate_additions``' signed rows without publishing or relabelling.
+
+    Confirmed measured cases enter the existing positive store. Rejected support
+    enters the existing signed identity table, carrying its actual call scope;
+    it supplies no condition feature. Every parent store is retained. The caller
+    owns revision, configuration refresh and immutable publication.
+    """
+    confirmed, rejected = [], []
+    for source_case, call in zip(cases, calls, strict=True):
+        case = copy.deepcopy(source_case)
+        case["direct_visual_teaching"] = {**provenance, "call": copy.deepcopy(call)}
+        if call["call"] == "confirm":
+            confirmed.append(case)
+        elif call["call"] == "reject":
+            rejected.append(case)
+        else:
+            raise VisualTeachingError("visual_call_must_confirm_or_reject")
+    child = {key: value for key, value in parent.items() if key not in RUNTIME_KEYS}
+    child["cases"] = [*parent["cases"], *confirmed]
+    teaching = copy.deepcopy(parent["object_identity_teaching"])
+    teaching["confirmed_case_ids"].extend(case["case_id"] for case in confirmed)
+    teaching["calls"].extend(copy.deepcopy(calls))
+    if rejected:
+        teaching["negative_case_ids"] = [
+            *teaching.get("negative_case_ids", []),
+            *(case["case_id"] for case in rejected),
+        ]
+        teaching["negative_views"] = {
+            **teaching.get("negative_views", {}),
+            **{
+                call["candidate_id"]: copy.deepcopy(call["views"])
+                for call in calls
+                if call["call"] == "reject"
+            },
+        }
+        table = parent.get("object_identity_cases") or {
+            "schema": IDENTITY_CASES_SCHEMA,
+            "cases": [],
+        }
+        child["object_identity_cases"] = {
+            **table,
+            "cases": [*table["cases"], *rejected],
+        }
+    child["object_identity_teaching"] = teaching
+    child["direct_visual_teaching"] = [
+        *parent.get("direct_visual_teaching", []),
+        copy.deepcopy(provenance),
+    ]
+    return child
 
 
 def publish_visual_cases(
@@ -178,6 +242,7 @@ def publish_visual_cases(
         "schema": SCHEMA,
         "kind": "independent_direct_visual_teaching",
         "reader": additions["reader"],
+        "parent_revision": parent["revision"],
         "parent_manifest_sha256": parent_sha256,
         "additions_sha256": digest,
         "additions_source": str(additions_path.resolve()),
@@ -186,19 +251,10 @@ def publish_visual_cases(
         "calls": calls,
         "configuration_extension": "pending_C2",
     }
-    for case, call in zip(cases, calls, strict=True):
-        case["direct_visual_teaching"] = {**provenance, "call": call}
-    child = {k: v for k, v in parent.items() if k not in RUNTIME_KEYS}
-    child["cases"] = [*parent["cases"], *cases]
-    teaching = copy.deepcopy(parent["object_identity_teaching"])
-    teaching["confirmed_case_ids"].extend(c["case_id"] for c in cases)
-    teaching["calls"].extend(calls)
-    child["object_identity_teaching"] = teaching
-    child["direct_visual_teaching"] = [
-        *parent.get("direct_visual_teaching", []),
-        provenance,
-    ]
+    child = apply_validated_additions(parent, cases, calls, provenance)
     child["revision"] = f"{parent['revision']}+direct-visual-{digest[:16]}"
+    child["parent_revision"] = parent["revision"]
+    child["parent_manifest_sha256"] = parent_sha256
     try:
         _validate_memory(child)
     except SquintMemoryError as error:
@@ -207,7 +263,8 @@ def publish_visual_cases(
         raise VisualTeachingError("child_identity_preparation_failed")
     scope = identity_condition_views(child)
     if scope.get("outcome") != "scoped" or any(
-        case["case_id"] not in scope["views"] for case in cases
+        (call["candidate_id"] in scope["views"]) != (call["call"] == "confirm")
+        for call in calls
     ):
         raise VisualTeachingError("child_diagnosis_scope_failed")
     prepared = prepare_recall(child) if build_recall_cache else None
@@ -226,10 +283,13 @@ def publish_visual_cases(
     if not isinstance(restored, dict) or restored["cases"] != child["cases"]:
         raise VisualTeachingError("child_cases_readback_failed")
     for key in (
+        "parent_revision",
+        "parent_manifest_sha256",
         "object_identity_teaching",
         "object_identity_cases",
         "full_profile_contexts",
         "full_profile_payloads",
+        "procedure_experiences",
     ):
         if restored.get(key) != child.get(key):
             raise VisualTeachingError(f"child_preservation_failed:{key}")
@@ -243,6 +303,12 @@ def publish_visual_cases(
         **publication,
         "outcome": "visual_child_published",
         "case_ids": provenance["case_ids"],
+        "confirmed_case_ids": [
+            call["candidate_id"] for call in calls if call["call"] == "confirm"
+        ],
+        "negative_case_ids": [
+            call["candidate_id"] for call in calls if call["call"] == "reject"
+        ],
         "configuration_extension": "pending_C2",
         "parent_integrity": "unchanged_verified",
         "parent_records": "retained_verified",

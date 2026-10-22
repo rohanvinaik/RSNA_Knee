@@ -806,8 +806,8 @@ def test_a_squint_scale_negative_opens_the_question_and_the_finer_look_decides()
         "10mm",
     )
     assert decision["recognized_identity"] is None and decision["views"] == []
-    # Read at both scales: placed with nothing left open, so its own cases are
-    # uncalibrated and the reject opposes it at 10 mm.
+    # Read at both scales: with no role alternatives, the confirmed reject
+    # calibrates its own identity question over the actual object support.
     memory = identity_memory(JOINT_SEEDS, [JOINT_NEGATIVE])
     alone = placed("femur")
     opposed = decide(
@@ -828,8 +828,9 @@ def test_a_squint_scale_negative_opens_the_question_and_the_finer_look_decides()
         JOINT_SCALE,
     )
     assert opposed["recognized_identity"] is None
-    # Bone with its 2 mm tiles: the reject was squint-scale resemblance only, and
-    # with nothing open to calibrate against, the placement alone stays a proposal.
+    # Bone with its 2 mm tiles: the reject was squint-scale resemblance only.
+    # Its own positive now clears that actual signed countercase envelope; the
+    # recorded anatomical support supplies the separate growth warrant.
     settled = decide(
         candidate(
             "sq", "femur", LIKE_THE_REJECT, plausible("femur"), alone, fine=BONE_2MM
@@ -837,10 +838,12 @@ def test_a_squint_scale_negative_opens_the_question_and_the_finer_look_decides()
         memory,
     )
     assert (settled["state"], settled["reason"], settled["identity_scale"]) == (
-        "proposal",
-        "placement_only",
+        "admitted",
+        "appearance_supports_with_location_support",
         JOINT_SCALE,
     )
+    assert settled["recognized_identity"] == "femur"
+    assert settled["views"] == [SAG]
 
 
 def test_admission_waits_for_the_identity_settled_after_the_finer_look(tmp_path: Path):
@@ -992,29 +995,32 @@ def test_a_study_known_only_through_a_negative_record_is_excluded():
     )
 
 
-def test_an_object_the_parent_already_holds_in_either_sign_is_a_duplicate():
+def test_a_positive_object_remains_a_duplicate_but_a_negative_does_not_fill_its_slot():
     memory = identity_memory(TWO_SEEDS, [NEGATIVE])
     assert represented_objects(memory)["objects"] == {
         ("sa", "femur"),
         ("sb", "patella"),
-        ("sn", "femur"),
     }
-    for uid in ("sa", "sn"):
-        decision = decide(
-            candidate(
-                uid,
-                "femur",
-                [(SAG, (3, 0, 0))],
-                plausible("femur"),
-                established("femur"),
-            ),
-            memory,
-        )
-        assert (decision["state"], decision["reason"]) == (
-            "duplicate",
-            "object_already_in_parent",
-        )
-        assert decision["identity_context"] == established("femur")
+    held = candidate(
+        "sa", "femur", [(SAG, (3, 0, 0))], plausible("femur"), established("femur")
+    )
+    scored = admission_decision(held, memory)
+    assert (scored["decision"]["state"], scored["decision"]["reason"]) == (
+        "duplicate",
+        "object_already_in_parent",
+    )
+    assert scored["recall"] is None
+    assert scored["decision"]["identity_context"] == established("femur")
+    replacement = candidate(
+        "sn", "femur", [(SAG, (3, 0, 0))], plausible("femur"), established("femur")
+    )
+    before = copy.deepcopy(memory)
+    rescored = admission_decision(replacement, memory)
+    assert rescored["decision"]["state"] != "duplicate"
+    assert rescored["recall"] is not None
+    assert rescored["excluded_study_uid"] == "sn"
+    assert rescored["recall"]["negative_cases_compared"] == 0
+    assert memory == before
     other = decide(
         candidate(
             "sa", "tibia", [(SAG, (0, 0, 3))], plausible("tibia"), established("tibia")
@@ -1033,6 +1039,76 @@ def test_an_object_the_parent_already_holds_in_either_sign_is_a_duplicate():
         "duplicate",
         "case_id_already_in_parent",
     )
+
+
+def test_every_negative_case_id_still_collides_before_recall():
+    memory = identity_memory(TWO_SEEDS, [NEGATIVE])
+    assert represented_objects(memory)["case_ids"] == {"a1", "b1", "n1"}
+    item = candidate(
+        "sn", "femur", [(SAG, (3, 0, 0))], plausible("femur"), established("femur")
+    )
+    item["case_id"] = "n1"
+    scored = admission_decision(item, memory)
+    assert (scored["decision"]["state"], scored["decision"]["reason"]) == (
+        "duplicate",
+        "case_id_already_in_parent",
+    )
+    assert scored["recall"] is None
+
+
+def test_an_explicit_alternative_positive_still_represents_its_asserted_identity():
+    memory = identity_memory(TWO_SEEDS, [NEGATIVE])
+    entry_id = "n1::also_positive::tibia"
+    teaching = memory["object_identity_teaching"]
+    teaching["alternative_positives"] = [
+        {"entry_id": entry_id, "case_id": "n1", "identity": "tibia", "views": [SAG]}
+    ]
+    teaching["calls"][-1]["also_positive"] = [{"identity": "tibia", "views": [SAG]}]
+    represented = represented_objects(memory)
+    assert ("sn", "tibia") in represented["objects"]
+    assert ("sn", "femur") not in represented["objects"]
+    assert {"n1", entry_id}.issubset(represented["case_ids"])
+    item = candidate(
+        "sn", "tibia", [(SAG, (1, 2, 0))], plausible("tibia"), established("tibia")
+    )
+    scored = admission_decision(item, memory)
+    assert (scored["decision"]["state"], scored["decision"]["reason"]) == (
+        "duplicate",
+        "object_already_in_parent",
+    )
+    assert scored["recall"] is None
+
+
+def test_a_new_support_after_a_negative_keeps_that_negative_and_whole_study_exclusion(
+    tmp_path,
+):
+    parent = saved(
+        tmp_path, "parent", identity_memory((*TWO_SEEDS, MUSCLE), [NEGATIVE])
+    )
+    before = copy.deepcopy(parent.memory)
+    assert ("sn", "femur") not in represented_objects(parent.memory)["objects"]
+    item = candidate(
+        "sn", "femur", [(SAG, (3, 0, 0))], plausible("femur"), established("femur")
+    )
+    result = grow_identity_memory(parent, [item], tmp_path / "round")
+    assert result["admitted_case_ids"] == [item["case_id"]]
+    child = load_memory_snapshot(tmp_path / "round" / CHILD_DIRECTORY)
+    assert child.memory is not None
+    assert child.memory["object_identity_cases"] == before["object_identity_cases"]
+    for field in ("negative_case_ids", "negative_views"):
+        assert (
+            child.memory["object_identity_teaching"][field]
+            == before["object_identity_teaching"][field]
+        )
+    admitted = next(
+        case for case in child.memory["cases"] if case["case_id"] == item["case_id"]
+    )
+    assert admitted["identity_growth"]["excluded_study_uid"] == "sn"
+    assert admitted["identity_growth"]["parent_manifest_sha256"] == parent.sha256
+    assert parent.memory == before
+    assert load_memory_snapshot(parent.path).sha256 == parent.sha256
+    excluded = memory_view(child.memory, exclude_study_uids=("sn",))
+    assert "sn" not in exclusion_studies(excluded)
 
 
 def _row(identity: str, speaks: bool, *views: list[str]) -> dict:

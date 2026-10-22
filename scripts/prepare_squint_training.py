@@ -16,15 +16,8 @@ from typing import Any
 
 from knee.diagnosis import (
     squint_configurations,
-    squint_contracts,
     squint_corpus,
-    squint_identity,
-    squint_locator,
-    squint_memory,
-    squint_memory_view,
-    squint_pipeline,
     squint_procedure_memory,
-    squint_procedures,
     squint_visual_teaching,
 )
 from knee.diagnosis.squint_identity import (
@@ -33,6 +26,7 @@ from knee.diagnosis.squint_identity import (
 )
 from knee.diagnosis.squint_locator import prepare_recall
 from knee.diagnosis.squint_memory import (
+    MemorySnapshot,
     SquintMemoryError,
     carry_condition_calls,
     load_memory_snapshot,
@@ -40,8 +34,21 @@ from knee.diagnosis.squint_memory import (
 )
 from knee.diagnosis.squint_memory_view import memory_view
 from knee.diagnosis.squint_pipeline import infer_study
+from knee.diagnosis.squint_training_pins import (
+    archive_study_inventory,
+    checkpoint_identity_code,
+    training_source_identity,
+    verified_study_input,
+)
 from knee.json_store import dump_json_atomic, load_json, resolve_json_path
 from knee.study.tables import LABELS
+
+try:
+    from scripts.squint_round_composition import stage_identity_growth
+except ModuleNotFoundError as error:
+    if error.name != "scripts":
+        raise
+    from squint_round_composition import stage_identity_growth
 
 RECEIPT_SCHEMA = "knee.squint-procedure-experiences/v1"
 ROUND_RECEIPT_SCHEMA = "knee.squint-training-round/v1"
@@ -283,28 +290,8 @@ def _index_all_runs(
     return run_identities, indexed_runs
 
 
-def _code_identity() -> dict[str, dict[str, str]]:
-    code_files = {
-        "script": Path(__file__).resolve(),
-        "procedure_memory_module": Path(squint_procedure_memory.__file__).resolve(),
-        "object_corpus_module": Path(squint_corpus.__file__).resolve(),
-        "pipeline_module": Path(squint_pipeline.__file__).resolve(),
-        "procedures_module": Path(squint_procedures.__file__).resolve(),
-        "memory_view_module": Path(squint_memory_view.__file__).resolve(),
-        "memory_module": Path(squint_memory.__file__).resolve(),
-        "identity_module": Path(squint_identity.__file__).resolve(),
-        "locator_module": Path(squint_locator.__file__).resolve(),
-        "configurations_module": Path(squint_configurations.__file__).resolve(),
-        "visual_teaching_module": Path(squint_visual_teaching.__file__).resolve(),
-        "contracts_module": Path(squint_contracts.__file__).resolve(),
-    }
-    return {
-        name: {
-            "path": str(path),
-            "sha256": _sha256_file(path, "code_unreadable:" + name),
-        }
-        for name, path in sorted(code_files.items())
-    }
+def _code_identity() -> dict[str, Any]:
+    return training_source_identity(Path(__file__).resolve().parents[1])
 
 
 def _load_study_record(
@@ -562,6 +549,7 @@ def _study_pin_payload(
     memory_manifest_sha256: str,
     memory_revision: str,
     code_identity: Mapping[str, Any],
+    study_input: Mapping[str, Any],
 ) -> dict[str, Any]:
     return {
         "schema": STUDY_PIN_SCHEMA,
@@ -570,6 +558,7 @@ def _study_pin_payload(
         "memory_revision": memory_revision,
         "exclude_same_study": True,
         "code": dict(code_identity),
+        "study_input": dict(study_input),
     }
 
 
@@ -600,8 +589,9 @@ def _try_resume_study_record(
         "record_file": str(actual.relative_to(inference_dir)),
         "record_sha256": record_sha,
     }
-    if dict(pin_doc) != expected_with_record:
-        raise PrepareError("study_checkpoint_pin_mismatch:" + uid)
+    disposition = checkpoint_identity_code(expected_with_record, dict(pin_doc))
+    if disposition != "checkpoint_pin_identical":
+        raise PrepareError(disposition + ":" + uid)
     return {
         "study_uid": uid,
         "evidence_path": str(actual.relative_to(inference_dir)),
@@ -612,6 +602,13 @@ def _pin_round_inputs(output: Path, round_inputs: Mapping[str, Any]) -> None:
     inputs_path = output / "round-inputs.json"
     if inputs_path.exists():
         existing, _actual, _sha = _stable_json(inputs_path, "round_inputs")
+        if isinstance(existing, Mapping):
+            if existing.get("study_uids") != round_inputs.get("study_uids"):
+                raise PrepareError("round_inputs_mismatch")
+            if existing.get("code") != round_inputs.get("code"):
+                raise PrepareError("round_source_changed_use_fresh_output")
+            if existing.get("study_inputs") != round_inputs.get("study_inputs"):
+                raise PrepareError("round_study_input_changed")
         if not isinstance(existing, Mapping) or dict(existing) != dict(round_inputs):
             raise PrepareError("round_inputs_mismatch")
         return
@@ -666,19 +663,13 @@ def _compose_round_teaching(
             "calls": new_calls,
             "configuration_extension": "rebuilt_in_round",
         }
+        working = squint_visual_teaching.apply_validated_additions(
+            working, new_cases, new_calls, provenance
+        )
         for case, call in zip(new_cases, new_calls, strict=True):
-            case["direct_visual_teaching"] = {**provenance, "call": call}
             added_visual_case_ids.append(str(case["case_id"]))
-            touched_studies.add(str(case["study_uid"]))
-        working["cases"] = [*working.get("cases", []), *new_cases]
-        teaching = copy.deepcopy(working["object_identity_teaching"])
-        teaching["confirmed_case_ids"].extend(case["case_id"] for case in new_cases)
-        teaching["calls"].extend(new_calls)
-        working["object_identity_teaching"] = teaching
-        working["direct_visual_teaching"] = [
-            *working.get("direct_visual_teaching", []),
-            provenance,
-        ]
+            if call["call"] == "confirm":
+                touched_studies.add(str(case["study_uid"]))
         if prepare_identity(working).get("outcome") != "prepared":
             raise PrepareError("visual_additions_identity_preparation_failed")
 
@@ -796,9 +787,15 @@ def run_round(
     output_path: Path,
     child_revision: str | None = None,
     visual_additions_path: Path | None = None,
+    reviewed_growth_memory_path: Path | None = None,
+    growth_review_mode: str = "first-round",
     infer_fn: Callable[..., Mapping[str, Any]] | None = None,
+    source_archive_path: Path | None = None,
+    study_inventories: Mapping[str, Mapping[str, Mapping[str, Any]]] | None = None,
 ) -> dict[str, Any]:
     """Run one resumable local round: checkpoint studies, export experiences, and publish child memory."""
+    if growth_review_mode not in ("first-round", "spot-check"):
+        raise PrepareError("growth_review_mode_invalid")
     if output_path.is_symlink():
         raise PrepareError("output_symlink_refused")
     output = output_path.resolve()
@@ -817,6 +814,27 @@ def run_round(
         if uid not in seen_uids:
             seen_uids.add(uid)
             ordered_uids.append(str(uid))
+
+    # A directory's current subset cannot certify extraction completeness.
+    # The ZIP central directory supplies expected files without reading its images.
+    if study_inventories is None:
+        source_archive = source_archive_path or root_path.with_suffix(".zip")
+        if not source_archive.is_file():
+            raise PrepareError("study_readiness_unknown_supply_source_archive")
+        study_inventories = archive_study_inventory(source_archive, ordered_uids)
+    cache_directory = output.parent / ".squint-study-input-digests"
+    study_inputs = {}
+    for uid in ordered_uids:
+        measured_input = verified_study_input(
+            root_path,
+            uid,
+            expected_files=study_inventories.get(uid),
+            cache_directory=cache_directory,
+        )
+        study_inputs[uid] = {
+            key: measured_input[key]
+            for key in ("schema", "study_uid", "split", "sha256")
+        }
 
     memory, teaching_identity = _load_verified_teaching_memory(
         memory_path, expected_memory_sha256
@@ -838,9 +856,11 @@ def run_round(
         "parent_memory": teaching_identity,
         "root_path": str(root_path.resolve()),
         "study_uids": ordered_uids,
+        "study_inputs": study_inputs,
         "labels": labels_identity,
         "visual_additions": visual_pin,
         "child_revision": next_revision,
+        "growth_review_mode": growth_review_mode,
         "exclude_same_study": True,
         "code": code_identity,
     }
@@ -862,12 +882,40 @@ def run_round(
             or saved_round.get("schema") != ROUND_RECEIPT_SCHEMA
         ):
             raise PrepareError("round_receipt_invalid")
+        saved_composition = saved_round.get("composition_parent")
+        if not isinstance(saved_composition, Mapping):
+            raise PrepareError("composition_parent_checkpoint_missing")
+        composition_path = saved_composition.get("path")
+        if not isinstance(composition_path, str):
+            raise PrepareError("composition_parent_checkpoint_invalid")
+        expected_composition_sha = saved_composition.get("manifest_sha256")
+        if (
+            _sha256_file(
+                Path(composition_path) / "manifest.json",
+                "composition_parent_unreadable",
+            )
+            != expected_composition_sha
+        ):
+            raise PrepareError("composition_parent_changed_on_resume")
+        if reviewed_growth_memory_path is not None:
+            requested_review = reviewed_growth_memory_path.resolve()
+            requested_manifest = (
+                requested_review / "manifest.json"
+                if requested_review.is_dir()
+                else requested_review
+            )
+            if (
+                _sha256_file(requested_manifest, "reviewed_growth_memory_unreadable")
+                != expected_composition_sha
+            ):
+                raise PrepareError("reviewed_growth_memory_changed_on_resume")
         for uid in ordered_uids:
             expected_pin = _study_pin_payload(
                 uid=uid,
                 memory_manifest_sha256=str(teaching_identity["manifest_sha256"]),
                 memory_revision=str(memory["revision"]),
                 code_identity=code_identity,
+                study_input=study_inputs[uid],
             )
             if (
                 _try_resume_study_record(studies_dir, inference_dir, uid, expected_pin)
@@ -924,6 +972,7 @@ def run_round(
             memory_manifest_sha256=str(teaching_identity["manifest_sha256"]),
             memory_revision=str(memory["revision"]),
             code_identity=code_identity,
+            study_input=study_inputs[uid],
         )
         resumed = _try_resume_study_record(
             studies_dir,
@@ -942,6 +991,16 @@ def run_round(
             study_memory,
             exclude_same_study=True,
         )
+        after_input = verified_study_input(
+            root_path,
+            uid,
+            expected_files=study_inventories.get(uid),
+            cache_directory=cache_directory,
+        )
+        if after_input["sha256"] != study_inputs[uid]["sha256"]:
+            raise PrepareError("study_changed_during_inference:" + uid)
+        if _code_identity() != code_identity:
+            raise PrepareError("round_source_changed_during_inference")
         written = dump_json_atomic(studies_dir / f"{uid}.json.xz", dict(record))
         written_sha = _sha256_file(written, "study_record_unreadable:" + uid)
         pin_doc = {
@@ -1008,9 +1067,31 @@ def run_round(
         .splitlines()
         if line.strip()
     ]
+    frozen_parent = MemorySnapshot(
+        path=Path(teaching_identity["path"]) / "manifest.json",
+        sha256=expected_memory_sha256,
+        status="squint",
+        declared_schema=str(memory["schema"]),
+        memory=memory,
+    )
+    growth_stage = stage_identity_growth(
+        frozen_parent,
+        [inference_dir],
+        output / "growth",
+        reviewed_memory=reviewed_growth_memory_path,
+        require_admission_review=growth_review_mode == "first-round",
+    )
+    if growth_stage.status != "ready_to_compose":
+        raise PrepareError(
+            "identity_growth_admission_review_required:" + str(output / "growth")
+        )
+    composition_parent = growth_stage.snapshot
+    assert composition_parent is not None
+    assert composition_parent.memory is not None
+    assert composition_parent.sha256 is not None
     taught_memory, teaching_summary = _compose_round_teaching(
-        memory,
-        expected_memory_sha256,
+        composition_parent.memory,
+        composition_parent.sha256,
         labels=labels,
         labels_identity=labels_identity,
         visual_additions_path=visual_additions_path,
@@ -1021,8 +1102,8 @@ def run_round(
         exported_rows,
         revision=next_revision,
     )
-    child_memory["parent_revision"] = memory["revision"]
-    child_memory["parent_manifest_sha256"] = expected_memory_sha256
+    child_memory["parent_revision"] = composition_parent.memory["revision"]
+    child_memory["parent_manifest_sha256"] = composition_parent.sha256
 
     if child_dir.exists() or child_dir.is_symlink():
         if child_dir.is_symlink() or not child_dir.is_dir():
@@ -1060,6 +1141,7 @@ def run_round(
     round_receipt = {
         "schema": ROUND_RECEIPT_SCHEMA,
         "parent_memory": teaching_identity,
+        "growth_review_mode": growth_review_mode,
         "child_memory": {
             "path": str(child_dir),
             "revision": str(child_snapshot.memory["revision"]),
@@ -1068,6 +1150,12 @@ def run_round(
             "retained_procedure_experiences": len(retained_rows),
         },
         "teaching": teaching_summary,
+        "identity_growth": dict(growth_stage.receipt),
+        "composition_parent": {
+            "path": str(composition_parent.path.parent),
+            "revision": composition_parent.memory["revision"],
+            "manifest_sha256": composition_parent.sha256,
+        },
         "child_training": {
             "path": str(child_training_dir),
             "teaching_memory": child_training_receipt["inputs"]["teaching_memory"],
@@ -1109,9 +1197,21 @@ def _parser() -> argparse.ArgumentParser:
     parser.add_argument("--run", type=Path, action="append")
     parser.add_argument("--run-round", action="store_true")
     parser.add_argument("--root", type=Path)
+    parser.add_argument(
+        "--source-archive",
+        type=Path,
+        help="Trusted competition ZIP expected inventory; defaults to <root>.zip.",
+    )
     parser.add_argument("--study-uid", action="append", default=[])
     parser.add_argument("--study-uids-file", type=Path)
     parser.add_argument("--visual-additions", type=Path)
+    parser.add_argument("--reviewed-growth-memory", type=Path)
+    parser.add_argument(
+        "--growth-review-mode",
+        choices=("first-round", "spot-check"),
+        default="first-round",
+        help="Use spot-check only after the first fully inspected round.",
+    )
     parser.add_argument("--child-revision")
     parser.add_argument("--labels", type=Path, required=True)
     parser.add_argument("--output", type=Path, required=True)
@@ -1136,11 +1236,14 @@ def main(argv: Sequence[str] | None = None) -> int:
                 memory_path=args.memory,
                 expected_memory_sha256=args.memory_sha256,
                 root_path=args.root,
+                source_archive_path=args.source_archive,
                 study_uids=_collect_study_uids(args),
                 labels_path=args.labels,
                 output_path=args.output,
                 child_revision=args.child_revision,
                 visual_additions_path=args.visual_additions,
+                reviewed_growth_memory_path=args.reviewed_growth_memory,
+                growth_review_mode=args.growth_review_mode,
             )
             print(
                 json.dumps(

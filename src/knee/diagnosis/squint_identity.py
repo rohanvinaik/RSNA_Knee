@@ -1396,6 +1396,26 @@ def _without_lineage(row: Mapping[str, Any] | None) -> dict[str, Any] | None:
     return {key: value for key, value in row.items() if key != "lineage"}
 
 
+def _negative_alternative_status(
+    case: Mapping[str, Any], context: Mapping[str, Any]
+) -> str:
+    """A signed countercase's asserted alternative needs actual exclusion.
+
+    No overlapping proposal for that alternative is absence of an observation,
+    not evidence against it. Only the context's recorded structural exclusions
+    can set it aside; an unproposed or otherwise unknown alternative stays
+    eligible for the signed support comparison.
+    """
+    alternatives = case["asserted_alternatives"]
+    if not alternatives:
+        return "no_alternative_asserted"
+    excluded = set(context["removed_by_structure"])
+    excluded.update(_names_list(context.get("law_excluded_alternatives", [])) or ())
+    if any(identity not in excluded for identity in alternatives):
+        return "asserted_alternative_not_excluded"
+    return "asserted_alternative_removed_by_structure"
+
+
 def _negatives_in_context(
     profile: object,
     query_banks: Mapping[str, Sequence[int]],
@@ -1409,7 +1429,8 @@ def _negatives_in_context(
     object tiles, above its envelope over the same banks. Speaking only when the
     surroundings (the context ring) are read too, it is ``surroundings_only``. A negative
     of another identity concerns another question. One whose call asserts an alternative
-    identity applies only while that alternative is still open (``identity_is_open``).
+    identity applies unless actual structural exclusions remove that alternative
+    (``_negative_alternative_status``). An absent role proposal is not exclusion.
     A negative that applies takes part as an ordinary signed case; one that does not is
     recorded with its reason and changes nothing. Returns the rows, how many negative
     cases were compared at all, and every comparison over the asserted region by case.
@@ -1435,8 +1456,8 @@ def _negatives_in_context(
             applies, reason = False, "concerns_another_identity"
         elif not speaks_region:
             applies, reason = False, "surroundings_only"
-        elif alternatives and not any(
-            identity_is_open(context, identity) for identity in alternatives
+        elif _negative_alternative_status(case, context) == (
+            "asserted_alternative_removed_by_structure"
         ):
             applies, reason = False, "asserted_alternative_removed_by_structure"
         else:
@@ -1504,6 +1525,72 @@ def _unconditioned_speakers(
     return sorted(speakers)
 
 
+def _signed_positive_rows(
+    profile: object,
+    query_banks: Mapping[str, tuple[int, ...]],
+    prepared: _Prepared,
+    context: Mapping[str, Any],
+) -> list[dict[str, Any]]:
+    """Own positives against confirmed negatives on the asserted object support.
+
+    A placement with no overlapping alternative role still needs affirmative
+    recognition. Reuse the signed-case empirical envelope over the object-role
+    banks of both sides. Only this identity's negatives whose stated alternative
+    was not actually excluded can calibrate it. No compatible countercase means no
+    envelope, never a fabricated zero. Exclusion, called views and scale have
+    already been applied by preparation; procedure compatibility is checked here
+    and by the existing envelope builder.
+    """
+    subject = context["subject"]
+    query = _signal_banks(query_banks, roles=_OBJECT_ROLE, scale=prepared._scale)
+    negatives = [
+        case
+        for case in prepared._negatives
+        if case["subject"] == subject
+        and _negative_alternative_status(case, context)
+        != "asserted_alternative_removed_by_structure"
+    ]
+    negative_banks = [case["object_banks"] for case in negatives]
+    rows = []
+    for seed in prepared._seeds:
+        if seed["subject"] != subject or not _same_procedure(
+            profile, seed["procedure_view"]
+        ):
+            continue
+        banks = _signal_banks(seed["banks"], roles=_OBJECT_ROLE, scale=prepared._scale)
+        term = _exact_bank_terms(query, banks)
+        if term["code"] != "ok":
+            continue
+        envelopes = _opposing_envelope(
+            seed,
+            negatives,
+            lambda _other: True,
+            case_banks=banks,
+            population_banks=negative_banks,
+        )
+        envelope = envelopes.get(tuple(term["common_speaking_banks"]))
+        row = _seed_row(seed, term, envelope, "no_open_alternative")
+        row["calibration_basis"] = "signed_identity_countercases_on_object_support"
+        row["calibration_status"] = (
+            "measured_identity_negative_case_envelope"
+            if envelope is not None
+            else "no_compatible_identity_negative_case"
+        )
+        opponent_ids = set(envelope["opponents"]) if envelope is not None else set()
+        row["negative_case_sources"] = [
+            {
+                "case_id": case["case_id"],
+                "study_uid": case["study_uid"],
+                "views": [list(view) for view in case["views"]],
+                "lineage": copy.deepcopy(case["lineage"]),
+            }
+            for case in negatives
+            if case["case_id"] in opponent_ids
+        ]
+        rows.append(row)
+    return rows
+
+
 def _recall_in_context(
     profile: object,
     query_banks_all: Mapping[str, tuple[int, ...]],
@@ -1520,7 +1607,10 @@ def _recall_in_context(
     which it tells apart by their observed arrangement, found in this study or not; for
     a placement, the alternatives whose own proposals overlap it; for the prior, every
     other identity. One speaking is the appearance supporting the identity; with no
-    comparable opposing case it is uncalibrated.
+    comparable opposing case it is uncalibrated. When the map leaves no
+    competing role proposals, its own positives instead use their confirmed
+    negative identity cases over the asserted object support
+    (``_signed_positive_rows``). Absence of role alternatives supplies no trust.
 
     Negative cases apply where their reason holds for the candidate's actual support
     (``_negatives_in_context``). An applicable negative speaking with no own case is
@@ -1576,7 +1666,12 @@ def _recall_in_context(
             rows.append(_seed_row(seed, term, envelope, missing))
         return rows
 
-    own = heard(subject, lambda table: _opposing_set(table, context))
+    signed_positive = basis == MAP_RELATION and not open_set
+    own = (
+        _signed_positive_rows(profile, query_banks, prepared, context)
+        if signed_positive
+        else heard(subject, lambda table: _opposing_set(table, context))
+    )
     if not own:
         appearance = "silent"
     elif any(row["speaks"] for row in own):
@@ -1611,8 +1706,16 @@ def _recall_in_context(
             "uncalibrated": PLACEMENT_ONLY,
         }[appearance]
         reason = {
-            "supports": "own_case_above_the_open_identities",
-            "silent": "no_own_case_above_the_open_identities" if own else presentation,
+            "supports": "own_case_above_its_signed_identity_countercases"
+            if signed_positive
+            else "own_case_above_the_open_identities",
+            "silent": (
+                "no_own_case_above_its_signed_identity_countercases"
+                if signed_positive
+                else "no_own_case_above_the_open_identities"
+            )
+            if own
+            else presentation,
             "uncalibrated": "no_open_alternative"
             if basis == MAP_RELATION and not open_set
             else "no_comparable_opposing_case",

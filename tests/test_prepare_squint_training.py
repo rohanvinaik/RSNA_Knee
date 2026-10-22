@@ -343,6 +343,9 @@ def test_run_round_publishes_immutable_child_memory_and_resumes_pinned_checkpoin
 
     uid_a = UID
     uid_b = "1.2.826.0.1.3680043.8.498.2000"
+    from squint_training_fixture import make_training_raw_fixture
+
+    make_training_raw_fixture(tmp_path / "raw", [uid_a, uid_b])
     parent_dir = tmp_path / "parent-memory"
     parent_memory = reviewed_memory("r" * 64)
     parent_memory["schema"] = "knee.squint-memory/v1"
@@ -359,10 +362,17 @@ def test_run_round_publishes_immutable_child_memory_and_resumes_pinned_checkpoin
 
     labels = tmp_path / "train.csv"
     with labels.open("w", newline="", encoding="utf-8") as stream:
-        writer = csv.DictWriter(stream, fieldnames=["StudyInstanceUID", "Report", *LABELS])
+        writer = csv.DictWriter(
+            stream, fieldnames=["StudyInstanceUID", "Report", *LABELS]
+        )
         writer.writeheader()
         writer.writerow(
-            {"StudyInstanceUID": uid_a, "Report": "report", **dict.fromkeys(LABELS, 0), "ACL": 1}
+            {
+                "StudyInstanceUID": uid_a,
+                "Report": "report",
+                **dict.fromkeys(LABELS, 0),
+                "ACL": 1,
+            }
         )
         writer.writerow(
             {"StudyInstanceUID": uid_b, "Report": "report", **dict.fromkeys(LABELS, 0)}
@@ -512,5 +522,8 @@ def test_run_round_publishes_immutable_child_memory_and_resumes_pinned_checkpoin
         child_revision="round-2-child",
         infer_fn=fake_infer,
     )
-    assert round2["parent_memory"]["manifest_sha256"] == completed["child_memory"]["manifest_sha256"]
+    assert (
+        round2["parent_memory"]["manifest_sha256"]
+        == completed["child_memory"]["manifest_sha256"]
+    )
     assert round2["child_memory"]["retained_procedure_experiences"] >= 2

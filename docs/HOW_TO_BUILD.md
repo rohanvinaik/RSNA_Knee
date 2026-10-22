@@ -1,5 +1,31 @@
 # How RSNA_Knee is built: every correction, and what would have prevented it
 
+## One society, anatomy and physiology, and the diagnostic endpoint — 2026-10-22
+
+Rohan: «these aren't different *societies*, they're different agencies/sets of "agencies" in the
+single model» · «Assignment of object pixels and assignment of role ID is inherently connected
+to diagnosis of conditions» · «anatomy--the physical location of objects--and physiology--how
+their physical presentation and anatomy inform function--are related but different».
+His full prompts, including the twelve-condition competition endpoint and acceptable uncertainty,
+are preserved in the latest conversation and in
+[CLASSICAL_AI_TRAINING_EXECUTION §14](CLASSICAL_AI_TRAINING_EXECUTION.md#14-literal-request-and-mid-turn-corrections).
+
+The agent's mistake was to call generative anatomical assignment and diagnostic discrimination
+two societies, and risk describing them as independent sequential models. The corrected binding:
+ONE society reasons over ONE shared object account. Support, role, functional state and diagnosis
+condition one another. A departure from normal presentation does not erase warranted identity.
+Anatomy supplies spatial structure; physiology supplies functional meaning. Cheap calibrated
+readings remain useful observations; their numerical middle does not define healthy function.
+Balanced-ternary signs retain their named measurement/call/departure meanings, and unread remains
+distinct from measured neutral. Local teaching and training serve the twelve-condition Kaggle
+diagnostic task; honest uncertainty is a valid result. Corpus export and notebook packaging are
+not substitutes for the actual diagnostic/learning consumers.
+
+The complete execution and remaining repair contracts are
+[CLASSICAL_AI_TRAINING_EXECUTION](CLASSICAL_AI_TRAINING_EXECUTION.md). FULL_BUILD_PLAN §13 still
+names the sole current packet. Read the literal corrections before implementing; do not replace
+them with an agent's short paraphrase or turn this note into another master plan.
+
 ## Ternary encoding, the buckets as the reference, production by squint — 2026-10-21
 
 Rohan: «Balanced ternary. It's not "not dark". We ALREADY encode it as "bright". Inherent polarity

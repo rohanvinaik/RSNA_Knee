@@ -1444,6 +1444,8 @@ def _corrected_child(
         ]
     )
     child["revision"] = f"{memory['revision']}+admission-review-{digest[:16]}"
+    child["parent_revision"] = memory["revision"]
+    child["parent_manifest_sha256"] = provenance["reviewed_manifest_sha256"]
     return child, records
 
 

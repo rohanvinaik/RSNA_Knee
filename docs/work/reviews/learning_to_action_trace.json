@@ -1,6 +1,6 @@
 {
   "schema": "knee.learning-to-action-trace/v1",
-  "description": "Demonstration trace of contextual procedure learning altering action selection on a held-out study",
+  "description": "Selector probe using a patient's post-inference profile and synthetic competing requests; not an executed learning-to-action transfer",
   "teaching_source": {
     "study_uid": "1.2.826.0.1.3680043.8.498.18392509497170616983977319528036573378",
     "retained_row_id": "/Users/rohanvinaik/Projects/Kaggle_Killer/competitions/RSNA_Knee/data/readings/grounded-teaching-20261022/train-ready-round-r2/inference|1.2.826.0.1.3680043.8.498.18392509497170616983977319528036573378|037",
@@ -22,7 +22,9 @@
     }
   },
   "held_out_study": {
-    "study_uid": "1.2.826.0.1.3680043.8.498.77363493132791851253018255959820549448",
+    "study_uid": "1.2.826.0.1.3680043.8.498.64703506772167798469048460791472465039",
+    "inference_status": "examined",
+    "observed_cue_banks_count": 192,
     "same_study_exclusion_verified": true
   },
   "memories": {
@@ -71,9 +73,15 @@
     "incompatible_cue_promoted": false
   },
   "causal_mechanism_summary": {
-    "learning_outcome": "Child memory recalled confirmed procedure and promoted action to Tier 0",
-    "parent_outcome": "Parent memory without procedure experience left default contract order unchanged",
-    "control_outcome": "Incompatible HDC cue did not match and left default contract order unchanged",
-    "exclusion_outcome": "Self-study experience is strictly excluded under exclude_same_study=True"
+    "learning_outcome": "recalled_confirmed_resolution",
+    "parent_outcome": "no_precedent",
+    "control_outcome": "no_contextual_cue",
+    "exclusion_outcome": "see held_out_study.same_study_exclusion_verified; this is a selector probe"
+  },
+  "evidence_scope": {
+    "query_cue": "post_inference_object_profile_not_recorded_pre_action",
+    "request_competition": "synthetic_other_tissue_request",
+    "executed_parent_child_action_comparison": false,
+    "real_transfer_checker": "scripts/check_squint_learning_transfer.py"
   }
 }

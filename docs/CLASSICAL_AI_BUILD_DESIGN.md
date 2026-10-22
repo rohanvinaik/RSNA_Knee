@@ -4,6 +4,16 @@ Execution-design appendix to [FULL_BUILD_PLAN §§17–18](FULL_BUILD_PLAN.md#17
 
 **Authority:** Rohan's literal conversations, then the project theory and the *What an \<Object> Is* thesis. This document is Codex's engineering binding of those sources, not additional words attributed to Rohan. Existing source-specific contracts remain applicable. Proposed interfaces below describe required meanings, not claims that a corresponding implementation already exists. The admission, signed-scope and worked-example corrections in §§5–7 and §14 bind the next integration. Where the custom design genuinely leaves an operation unspecified, follow §15 rather than supply an unrelated learning method.
 
+**Latest author clarification and execution binding (2026-10-22):** read
+[CLASSICAL_AI_TRAINING_EXECUTION.md](CLASSICAL_AI_TRAINING_EXECUTION.md) before implementing learning
+or launching scale rounds. There is one society: support/pixel assignment, anatomical role,
+physiological state and diagnosis are connected activities over the same object representation.
+Anatomy and physiology have related but different roles; a cheap scan-calibrated middle is not
+a definition of healthy function. The endpoint remains the twelve Kaggle diagnostic questions,
+with warranted assignments and retained uncertainty. Local preparation serves that endpoint.
+The appendix incorporates his literal mid-turn corrections and the bounded consumer repairs;
+the active packet alone records their implementation state.
+
 ## 1. The complete objective
 
 **Current phase: local bootstrap and preparation for classical AI training.** Read FULL_BUILD_PLAN

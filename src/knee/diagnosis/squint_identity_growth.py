@@ -605,16 +605,25 @@ def exclusion_studies(memory: Mapping[str, Any]) -> frozenset[str]:
 
 
 def represented_objects(memory: Mapping[str, Any]) -> dict[str, frozenset]:
-    """Case ids and (study, object) pairs the parent already holds, of either sign."""
+    """Every held case id, and the parent's positive (study, object) pairs.
+
+    A negative record says its sampled support is not that object. It keeps its
+    case-id collision protection, but does not claim the object's positive slot.
+    Explicit alternative positives still represent their asserted identities.
+    """
     case_ids: set[str] = set()
     objects: set[tuple[str, str]] = set()
     table = memory.get("object_identity_cases")
     records = _rows(table.get("cases") if isinstance(table, Mapping) else None) or []
-    for row in [*(_rows(memory.get("cases")) or ()), *records]:
+    positives = _rows(memory.get("cases")) or ()
+    for row in [*positives, *records]:
         if not isinstance(row, Mapping):
             continue
         if _text(row.get("case_id")):
             case_ids.add(row["case_id"])
+    for row in positives:
+        if not isinstance(row, Mapping):
+            continue
         subject, study = row.get("subject"), row.get("study_uid")
         if _text(subject) and _text(study) and not subject.startswith("diagnosis/"):
             objects.add((study, subject))
@@ -645,10 +654,12 @@ def location_support(sanity: object, subject: str) -> dict[str, Any]:
     """What a recorded sanity establishes about location for ``subject``.
 
     ``support`` lists each recorded ``supported_*`` check of this subject: the
-    relation it checked, its axis and both intervals. It says where the candidate
-    lies, never what tissue it is. ``reversed`` lists each recorded ``reversed_*``
-    check the same way: a genuine contradiction of that location. ``status`` None
-    means the record is invalid.
+    relation it checked, its axis and both intervals. Observed-direction checks
+    retain their normal, both named anchor bands, plane sources and precisions,
+    gap, qualifier and construction. This says where the candidate lies, never
+    what tissue it is. ``reversed`` lists each recorded ``reversed_*`` check the
+    same way: a genuine contradiction of that location. ``status`` None means
+    the record is invalid.
     """
     if sanity is None:
         return {
@@ -694,6 +705,29 @@ def location_support(sanity: object, subject: str) -> dict[str, Any]:
                     "target_interval": copy.deepcopy(check.get("target_interval")),
                     "series_uid": row.get("series_uid"),
                     "window": _window(row.get("window")),
+                    **{
+                        key: copy.deepcopy(check[key])
+                        for key in (
+                            "source",
+                            "subject",
+                            "target",
+                            "candidate_subject",
+                            "candidate_role",
+                            "relation",
+                            "qualifier",
+                            "expected_relation",
+                            "axis_lps",
+                            "reference_subject",
+                            "reference_status",
+                            "reference_construction",
+                            "reference_planes",
+                            "reference_windows",
+                            "reference_fallbacks",
+                            "anchor_bands",
+                            "gap_interval",
+                        )
+                        if key in check
+                    },
                 }
             )
     return {
@@ -727,7 +761,8 @@ def _warranted(recall: Mapping[str, Any]) -> bool:
 
     A bone the structural reader established whose own cases rise above every identity
     structure did not remove; or a placement whose own cases speak against the
-    alternatives it leaves open. A contested identity is never warranted.
+    alternatives it leaves open, or against applicable signed identity countercases
+    when no competing role remains. A contested identity is never warranted.
     """
     basis, outcome = recall.get("identity_basis"), recall.get("outcome")
     if basis == STRUCTURAL_READER:
@@ -835,7 +870,8 @@ def admission_from_recall(
     Its identity is warranted in context (``_warranted``) when the structural reader
     established the bone and its own cases rise above every identity structure did not
     remove, or when the anatomy map placed it and its own cases speak against the
-    alternatives that placement leaves open; never when the prior alone placed it. An
+    alternatives that placement leaves open, or its applicable signed identity countercases
+    when no competing role remains; never when the prior alone placed it. An
     applicable negative case speaking over its asserted region opposes it
     (``opposed``), or, with its own cases speaking too, is a signed conflict
     (``conflict``): not admitted, never renamed. Resemblance to another object decides
@@ -1652,6 +1688,8 @@ def _child_memory(
         if round_record.get(key) is not None:
             parts.append(_json_sha256(round_record[key]))
     digest = _json_sha256(parts)
+    child["parent_revision"] = parent["revision"]
+    child["parent_manifest_sha256"] = parent_sha256
     child["revision"] = f"{parent['revision']}+identity-growth-{digest[:16]}"
     return child
 

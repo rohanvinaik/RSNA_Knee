@@ -134,6 +134,329 @@ def test_final_object_profile_is_not_silently_used_as_a_pre_action_cue():
     assert _row_cue_banks(row, None, UID, "acl") == {BANK: [1, 0, 2]}
 
 
+def test_procedure_opposition_requires_compatible_context_and_contrary_outcome():
+    import copy
+
+    # Baseline: a successful attributed experience
+    succ = experience(direct=True)
+    base_memory = retain_procedure_experiences(
+        {"revision": "parent", "cases": []}, [succ]
+    )
+    recalled_base = recall_procedure_experiences(
+        base_memory,
+        question="ACL",
+        subject="acl",
+        kind="bounded_zoom",
+        query_profile={"banks": {BANK: [2, 0, 1]}},
+        query_context={"request_reason": "proposal_without_sourced_trust"},
+        study_uid=OTHER_UID,
+        exclude_same_study=True,
+    )
+    assert recalled_base["status"] == "recalled_confirmed_resolution"
+
+    # Sign 1A: An otherwise identical attributed experience ending open does NOT oppose usefulness
+    open_exp = copy.deepcopy(succ)
+    open_exp["row_id"] = "open-action"
+    open_exp["state"]["after"] = {"outcome": "open"}
+    open_exp["study_uid"] = "1.2.826.0.1.3680043.8.498.9999"
+    memory_with_open = retain_procedure_experiences(
+        {"revision": "parent", "cases": []}, [succ, open_exp]
+    )
+    recalled_open = recall_procedure_experiences(
+        memory_with_open,
+        question="ACL",
+        subject="acl",
+        kind="bounded_zoom",
+        query_profile={"banks": {BANK: [2, 0, 1]}},
+        query_context={"request_reason": "proposal_without_sourced_trust"},
+        study_uid=OTHER_UID,
+        exclude_same_study=True,
+    )
+    assert recalled_open["status"] == "recalled_confirmed_resolution"
+
+    # Sign 1B: An otherwise identical failed experience with a different request reason
+    # cannot define this precedent's opposition floor
+    fail_diff_reason = copy.deepcopy(succ)
+    fail_diff_reason["row_id"] = "fail-diff-reason"
+    fail_diff_reason["state"]["after"] = {"outcome": "assigned"}
+    fail_diff_reason["independent_outcome"] = {"status": "checked", "call": -1}
+    fail_diff_reason["request"]["reason"] = "different_reason"
+    fail_diff_reason["study_uid"] = "1.2.826.0.1.3680043.8.498.8888"
+    memory_with_inapplicable_failure = retain_procedure_experiences(
+        {"revision": "parent", "cases": []}, [succ, fail_diff_reason]
+    )
+    recalled_diff_reason = recall_procedure_experiences(
+        memory_with_inapplicable_failure,
+        question="ACL",
+        subject="acl",
+        kind="bounded_zoom",
+        query_profile={"banks": {BANK: [2, 0, 1]}},
+        query_context={"request_reason": "proposal_without_sourced_trust"},
+        study_uid=OTHER_UID,
+        exclude_same_study=True,
+    )
+    assert recalled_diff_reason["status"] == "recalled_confirmed_resolution"
+
+    # Sign 2A: An otherwise identical failed experience WITH compatible request reason
+    # DOES oppose and prevent promotion (neither strictly dominates, so neither reaches envelope)
+    fail_same_reason = copy.deepcopy(succ)
+    fail_same_reason["row_id"] = "fail-same-reason"
+    fail_same_reason["state"]["after"] = {"outcome": "assigned"}
+    fail_same_reason["independent_outcome"] = {"status": "checked", "call": -1}
+    fail_same_reason["study_uid"] = "1.2.826.0.1.3680043.8.498.7777"
+    memory_with_applicable_failure = retain_procedure_experiences(
+        {"revision": "parent", "cases": []}, [succ, fail_same_reason]
+    )
+    recalled_same_reason = recall_procedure_experiences(
+        memory_with_applicable_failure,
+        question="ACL",
+        subject="acl",
+        kind="bounded_zoom",
+        query_profile={"banks": {BANK: [2, 0, 1]}},
+        query_context={"request_reason": "proposal_without_sourced_trust"},
+        study_uid=OTHER_UID,
+        exclude_same_study=True,
+    )
+    assert recalled_same_reason["status"] == "no_context_compatible_experience"
+    assert recalled_same_reason["confirmed_resolution_row_ids"] == []
+    assert "synthetic-action" in recalled_same_reason["incompatible_cue_row_ids"]
+    assert "fail-same-reason" in recalled_same_reason["incompatible_cue_row_ids"]
+
+    # Sign 2B: When query is closer to the applicable failure than to the success,
+    # the failure's envelope is reached and outcome is contradicted
+    fail_closer = copy.deepcopy(succ)
+    fail_closer["row_id"] = "fail-closer"
+    fail_closer["state"]["after"] = {"outcome": "assigned"}
+    fail_closer["independent_outcome"] = {"status": "checked", "call": -1}
+    fail_closer["study_uid"] = "1.2.826.0.1.3680043.8.498.7778"
+    fail_closer["context"]["subject"]["observed_cue"]["banks"][BANK] = [3, 0, 1]
+    memory_with_closer_failure = retain_procedure_experiences(
+        {"revision": "parent", "cases": []}, [succ, fail_closer]
+    )
+    recalled_closer = recall_procedure_experiences(
+        memory_with_closer_failure,
+        question="ACL",
+        subject="acl",
+        kind="bounded_zoom",
+        query_profile={"banks": {BANK: [4, 0, 1]}},
+        query_context={"request_reason": "proposal_without_sourced_trust"},
+        study_uid=OTHER_UID,
+        exclude_same_study=True,
+    )
+    assert recalled_closer["status"] == "recalled_outcome_contradicted"
+    assert recalled_closer["confirmed_resolution_row_ids"] == []
+    assert "fail-closer" in recalled_closer["contradicted_outcome_row_ids"]
+
+
+def test_attributed_identity_look_with_independent_review_and_agreement():
+    from knee.diagnosis.squint_procedure_memory import (
+        experience_rows,
+    )
+
+    source = {
+        "run": "synthetic-run",
+        "record_file": "synthetic-record.json",
+        "record_sha256": "a" * 64,
+        "memory_sha256": "b" * 64,
+        "memory_revision": "parent",
+    }
+    study_record = {
+        "schema": "knee.squint-study/v1",
+        "study_uid": UID,
+        "memory_revision": "parent",
+        "study_status": "examined",
+        "questions": {},
+        "values": {},
+        "objects": {
+            "femur": {
+                "status": "located",
+                "profile": {"banks": {BANK: [2, 0, 1]}},
+                "evidence": {"location_route": "structural_anchor"},
+            }
+        },
+        "identity_recall": {
+            "objects": {
+                "femur": {
+                    "scale": "10mm",
+                    "outcome": "appearance_opposed",
+                    "applicable_negative_case_ids": ["neg-1"],
+                }
+            },
+            "resolved_scale": {
+                "contested_at_squint_scale": ["femur"],
+                "objects": {
+                    "femur": {
+                        "scale": "joint",
+                        "outcome": "appearance_supported",
+                        "applicable_negative_case_ids": [],
+                    }
+                },
+            },
+        },
+        "identity_consumption": {
+            "objects": {
+                "femur": {
+                    "region_read_as_subject": True,
+                    "identity_effect": "answers",
+                    "squint_scale_contest": {
+                        "status": "resolved_by_finer_reading",
+                        "finer_look": {"code": "measured"},
+                    },
+                }
+            }
+        },
+        "observations": [
+            {
+                "requested_by": "identity_question",
+                "question": "identity",
+                "subject": "femur",
+                "code": "measured",
+                "request_id": "identity:femur:contested_at_squint_scale",
+                "request_kind": "bounded_zoom",
+                "request_reason": "contested_at_squint_scale",
+                "request_scope": "object_window",
+                "attribution_scope": "single_procedure",
+                "before_cue": {
+                    "subject": "femur",
+                    "banks": {BANK: [2, 0, 1]},
+                    "procedure": "paired_finer_reading",
+                },
+                "before_state": {
+                    "scale": "10mm",
+                    "outcome": "appearance_opposed",
+                    "applicable_negative_cases": 1,
+                },
+                "after_state": {
+                    "scale": "joint",
+                    "outcome": "appearance_supported",
+                    "applicable_negative_cases": 0,
+                },
+                "after_identity_consumption": {
+                    "region_read_as_subject": True,
+                    "identity_effect": "answers",
+                },
+            }
+        ],
+        "work": {},
+    }
+
+    def make_call_index(call_str: str) -> dict:
+        return {
+            "reviewer_calls": {
+                (UID, "femur"): [
+                    {
+                        "call": call_str,
+                        "concerns": "located_candidate",
+                        "record_sha256": source["record_sha256"],
+                        "candidate_revision": source["memory_revision"],
+                        "views": [VIEW],
+                        "reader": "reviewer",
+                        "notes": "reviewer note",
+                        "candidate_id": f"located:{UID}:femur:rev",
+                    }
+                ]
+            }
+        }
+
+    # Case 1: Attributed identity look with matching reviewer confirm -> confirmed_resolution
+    rows = experience_rows(
+        study_record,
+        source,
+        labels={"calls": {}, "table_uids": {UID}},
+        call_index=make_call_index("confirm"),
+    )
+    assert len(rows) == 1
+    row = rows[0]
+    assert row["question_attribution"]["status"] == "recorded"
+    assert row["question_attribution"]["basis"] == "recorded_on_observation_row"
+    assert row["request"]["reason"] == "contested_at_squint_scale"
+    assert row["request"]["provenance"]["reason"] == "recorded"
+    assert row["state"]["attribution_scope"] == "single_procedure"
+    assert row["state"]["before"]["outcome"] == "appearance_opposed"
+    assert row["state"]["after"]["outcome"] == "appearance_supported"
+    assert row["state"]["changed"] is True
+    assert row["independent_agreement"]["status"] == "matches_independent_call"
+    cat, info, agree = _row_category(row, "bounded_zoom")
+    assert cat == "confirmed_resolution"
+    assert info["status"] == "new_reading_obtained"
+    assert agree["status"] == "matches_independent_call"
+
+    # Retain into memory and recall from another study
+    memory = retain_procedure_experiences({"revision": "parent", "cases": []}, [row])
+    recalled = recall_procedure_experiences(
+        memory,
+        question="identity",
+        subject="femur",
+        kind="bounded_zoom",
+        query_profile={"banks": {BANK: [2, 0, 1]}},
+        query_context={"request_reason": "contested_at_squint_scale"},
+        study_uid=OTHER_UID,
+        exclude_same_study=True,
+    )
+    assert recalled["status"] == "recalled_confirmed_resolution"
+    assert recalled["confirmed_resolution_row_ids"] == [row["row_id"]]
+
+    # Same-study exclusion works
+    recalled_same = recall_procedure_experiences(
+        memory,
+        question="identity",
+        subject="femur",
+        kind="bounded_zoom",
+        query_profile={"banks": {BANK: [2, 0, 1]}},
+        query_context={"request_reason": "contested_at_squint_scale"},
+        study_uid=UID,
+        exclude_same_study=True,
+    )
+    assert recalled_same["status"] == "no_precedent"
+    assert recalled_same["confirmed_resolution_row_ids"] == []
+
+    # Case 2: Reviewer rejected the candidate -> contradicts_independent_call
+    rows_reject = experience_rows(
+        study_record,
+        source,
+        labels={"calls": {}, "table_uids": {UID}},
+        call_index=make_call_index("reject"),
+    )
+    cat_reject, _, agree_reject = _row_category(rows_reject[0], "bounded_zoom")
+    assert agree_reject["status"] == "contradicts_independent_call"
+    assert cat_reject == "contradicted_outcome"
+
+    # Case 3: Identity remains unresolved after action -> obtained_reading_open
+    study_unresolved = json.loads(json.dumps(study_record))
+    study_unresolved["observations"][0]["after_identity_consumption"][
+        "region_read_as_subject"
+    ] = None
+    study_unresolved["identity_consumption"]["objects"]["femur"][
+        "region_read_as_subject"
+    ] = None
+    rows_open = experience_rows(
+        study_unresolved,
+        source,
+        labels={"calls": {}, "table_uids": {UID}},
+        call_index=make_call_index("confirm"),
+    )
+    cat_open, _, agree_open = _row_category(rows_open[0], "bounded_zoom")
+    assert agree_open["status"] == "unresolved_after_action"
+    assert cat_open == "obtained_reading_open"
+
+    # Case 4: Unattributed identity look (lacks single_procedure attribution) -> outcome_unattributed
+    study_unattributed = json.loads(json.dumps(study_record))
+    study_unattributed["observations"][0]["attribution_scope"] = (
+        "question_final_finding"
+    )
+    del study_unattributed["observations"][0]["before_state"]
+    del study_unattributed["observations"][0]["after_state"]
+    del study_unattributed["observations"][0]["request_id"]
+    rows_unattr = experience_rows(
+        study_unattributed,
+        source,
+        labels={"calls": {}, "table_uids": {UID}},
+        call_index=make_call_index("confirm"),
+    )
+    cat_unattr, _, _ = _row_category(rows_unattr[0], "bounded_zoom")
+    assert cat_unattr == "outcome_unattributed"
+
+
 def object_case(uid: str, case_id: str) -> dict:
     return {
         "case_id": case_id,
@@ -153,6 +476,9 @@ def object_case(uid: str, case_id: str) -> dict:
 
 @pytest.fixture
 def round_inputs(tmp_path):
+    from squint_training_fixture import make_training_raw_fixture
+
+    make_training_raw_fixture(tmp_path / "raw", [UID, OTHER_UID])
     case = object_case(UID, "teacher-acl")
     parent = {
         "schema": "knee.squint-memory/v1",

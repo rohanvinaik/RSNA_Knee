@@ -103,7 +103,11 @@ def read_series(directory: Path, row: SeriesRow) -> Series:
     if not directory.is_dir():
         codes = stack_codes(False, 0, 0, [], 0, 0, 0, 0)
         return Series(row=row, slices=(), stack=codes, volume=None, geometry=None)
-    slices = [read_slice(path) for path in sorted(directory.glob("*.dcm"))]
+    slices = [
+        read_slice(path)
+        for path in sorted(directory.glob("*.dcm"))
+        if not path.name.startswith("._")
+    ]
     readings = {
         tag: [reader(s.header) for s in slices] for tag, reader in GEOMETRY_TAGS
     }

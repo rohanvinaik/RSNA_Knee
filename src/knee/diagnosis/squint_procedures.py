@@ -108,11 +108,13 @@ def route_observation_request(
         elif "procedure_experiences" in memory:
             subj = request.get("object", request.get("subject"))
             quest = request.get("question")
-            if isinstance(subj, str) and isinstance(quest, str) and isinstance(kind, str):
+            if (
+                isinstance(subj, str)
+                and isinstance(quest, str)
+                and isinstance(kind, str)
+            ):
                 located_obj = (
-                    objects.get(subj)
-                    if isinstance(objects, Mapping)
-                    else None
+                    objects.get(subj) if isinstance(objects, Mapping) else None
                 )
                 query_profile = (
                     request.get("query_profile")

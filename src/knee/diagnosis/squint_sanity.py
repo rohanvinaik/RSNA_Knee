@@ -36,6 +36,14 @@ weights (``reference_planes``) or which series' windows with their projected
 intervals (``reference_windows``), and why each earlier step supplied nothing
 (``reference_fallbacks``). No tolerance or map distance enters. A pass remains a
 location statement only.
+
+An authored ``between`` relation can also use two anchors' selected planes
+sharing a measured normal. Their offset +/- precision bands and the candidate's
+tile projection are compared in that observed direction, without solving a
+complete reference or substituting a body axis for an oblique normal. A whole
+candidate interval strictly inside the gap supplies location support only;
+missing, overlapping or outside evidence stays neutral. This does not certify
+tissue or the facing surfaces of the objects.
 """
 
 from __future__ import annotations
@@ -139,6 +147,28 @@ def interval_relation_code(candidate_interval, target_interval, relation):
     if actual == relation:
         return "supported_" + relation
     return "reversed_" + relation
+
+
+def between_interval_code(candidate_interval, first_interval, second_interval):
+    """Support strict projected betweenness; every other outcome is neutral.
+
+    All three intervals are closed finite bounds. The anchor bands must have
+    a nonempty strict gap, and the complete candidate interval must lie inside
+    it. Touching either band, overlap and missing bounds never imply exclusion.
+    """
+    candidate = _valid_interval(candidate_interval)
+    first = _valid_interval(first_interval)
+    second = _valid_interval(second_interval)
+    if first is None or second is None:
+        return "unknown_between_anchor_interval"
+    lower, upper = sorted((first, second))
+    if lower[1] >= upper[0]:
+        return "unknown_between_anchor_overlap"
+    if candidate is None:
+        return "unknown_between_candidate_interval"
+    if lower[1] < candidate[0] and candidate[1] < upper[0]:
+        return "supported_between"
+    return "unknown_between_candidate_outside_or_touching"
 
 
 def _side(knee_side: object) -> str | None:
@@ -259,6 +289,137 @@ def _rank(rows: np.ndarray) -> int:
     if not singular.size or not float(singular[0]) > 0:
         return 0
     return int(np.sum(singular > float(singular[0]) * max(rows.shape) * relative.EPS))
+
+
+def _between_planes(anchors, subject):
+    """Usable selected planes of one established complete or partial anchor."""
+    record = anchors.get(subject) if isinstance(anchors, Mapping) else None
+    if not isinstance(record, Mapping):
+        return []
+    reference = record.get("reference")
+    if not isinstance(reference, Mapping) or reference.get("status") not in (
+        relative.COMPLETE,
+        relative.PARTIAL,
+    ):
+        return []
+    planes = record.get("planes")
+    if not isinstance(planes, Mapping):
+        return []
+    rows = []
+    for orientation in relative.ORIENTATIONS:
+        address = planes.get(orientation)
+        if isinstance(address, Mapping) and address.get("outcome") == relative.SELECTED:
+            row = _plane_row(orientation, address)
+            if row is not None:
+                rows.append({"subject": subject, "status": reference["status"], **row})
+    return rows
+
+
+def _between_plane_evidence(row, weight):
+    return {
+        **row,
+        "normal": row["normal"].tolist(),
+        "weight": weight,
+    }
+
+
+def _between_reference_checks(candidate_subject, anchors):
+    """Authored subject-only relations on shared observed plane directions.
+
+    Floating rank is the existing geometric dependence test, not an angular
+    tolerance. Anti-parallel normals carry their signed offsets into the first
+    plane's direction. No relation is inferred for either target of ``between``.
+    """
+    checks: list[dict[str, Any]] = []
+    for subject, predicate, targets, qualifier, source in RELATIONSHIPS:
+        if subject != candidate_subject or predicate != "between" or len(targets) != 2:
+            continue
+        base: dict[str, Any] = {
+            "rule_id": f"relationship:{subject}:between:{','.join(targets)}",
+            "source": source,
+            "subject": subject,
+            "target": list(targets),
+            "candidate_subject": subject,
+            "candidate_role": "subject",
+            "axis": "observed_plane_normal",
+            "axis_lps": None,
+            "relation": "between",
+            "qualifier": qualifier,
+            "expected_relation": "strictly_between_selected_plane_bands",
+            "reference_construction": "shared_selected_plane_direction",
+            "reference_planes": [],
+            "anchor_bands": {},
+            "gap_interval": None,
+            "target_interval": None,
+            "candidate_interval": None,
+            "establishes": "location_only",
+            "result": "unknown_between_shared_planes_unavailable",
+        }
+        paired = []
+        for first, second in itertools.product(
+            _between_planes(anchors, targets[0]),
+            _between_planes(anchors, targets[1]),
+        ):
+            normals = np.asarray([first["normal"], second["normal"]])
+            if _rank(normals) != 1:
+                continue
+            # Solve n_first = weight * n_second in their rank-one row space,
+            # as the selected-plane coordinate solver does. Even normalized
+            # floating vectors need their measured squared length here.
+            weight = float(
+                (first["normal"] @ second["normal"])
+                / (second["normal"] @ second["normal"])
+            )
+            item = copy.deepcopy(base)
+            item["axis_lps"] = first["normal"].tolist()
+            item["reference_planes"] = [
+                _between_plane_evidence(first, 1.0),
+                _between_plane_evidence(second, weight),
+            ]
+            if first["precision_mm"] is None or second["precision_mm"] is None:
+                item["result"] = "unknown_between_plane_precision"
+            else:
+                for row, coefficient in ((first, 1.0), (second, weight)):
+                    centre = coefficient * row["offset_mm"]
+                    reach = abs(coefficient) * row["precision_mm"]
+                    band = _valid_interval((centre - reach, centre + reach))
+                    if band is None:
+                        item["result"] = "unknown_between_anchor_interval"
+                        break
+                    item["anchor_bands"][row["subject"]] = list(band)
+                else:
+                    lower, upper = sorted(item["anchor_bands"].values())
+                    if lower[1] < upper[0]:
+                        item["gap_interval"] = [lower[1], upper[0]]
+                        item["target_interval"] = list(item["gap_interval"])
+                    item["result"] = between_interval_code(
+                        None, *item["anchor_bands"].values()
+                    )
+            paired.append(item)
+        checks.extend(paired or [base])
+    return checks
+
+
+def _between_window_checks(series, window, references):
+    checks = copy.deepcopy(references)
+    for check in checks:
+        if check["gap_interval"] is None:
+            continue
+        candidate = None
+        if window is not None and isinstance(series, dict):
+            try:
+                candidate = _valid_interval(
+                    squint_geometry._candidate_interval(
+                        series, window, np.asarray(check["axis_lps"], dtype=np.float64)
+                    )
+                )
+            except (TypeError, ValueError, IndexError):
+                pass
+        check["candidate_interval"] = None if candidate is None else list(candidate)
+        check["result"] = between_interval_code(
+            candidate, *check["anchor_bands"].values()
+        )
+    return checks
 
 
 def _planes_interval(record: Mapping, axis: str, prefix: str):
@@ -600,6 +761,7 @@ def window_sanity_checks(
     if not isinstance(windows, Sequence) or isinstance(windows, (str, bytes)):
         return []
     rules = _rules()
+    between = _between_reference_checks(subject, anchors)
     supplies: dict[tuple[str, str], dict[str, Any]] = {}
     results = []
     for index, item in enumerate(windows):
@@ -614,6 +776,7 @@ def window_sanity_checks(
             supplies,
             series_by_uid,
         )
+        checks.extend(_between_window_checks(series, window, between))
         address = (
             item.get("address", item.get("window"))
             if isinstance(item, Mapping)
@@ -637,6 +800,7 @@ __all__ = [
     "COMPLETE_PLANES_CONSTRUCTION",
     "PARTIAL_CONSTRUCTION",
     "WINDOW_CONSTRUCTION",
+    "between_interval_code",
     "interval_relation_code",
     "window_sanity_checks",
 ]
