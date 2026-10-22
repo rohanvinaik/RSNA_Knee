@@ -961,6 +961,14 @@ def with_patella(base: dict, anatomy: str = "plausible") -> dict:
         sanity=sanity("patella", anatomy, outcome),
     )
     result["objects"]["patella"] = located
+    # Placed by the anatomy map beside the femur, as infer_study records it.
+    result["identity_consumption"]["objects"]["patella"] = {
+        "identity_context": {
+            **placed_femur(),
+            "subject": "patella",
+            "open_alternatives": ["femur"],
+        }
+    }
     return result
 
 
@@ -1335,7 +1343,10 @@ def test_a_proposal_or_held_out_candidate_contributes_no_role(
         for row in decisions_of(tmp_path, "grown")["decisions"]
     }
     assert decided == {
-        ("study-x", "femur"): ("admitted", "identified_with_location_support"),
+        ("study-x", "femur"): (
+            "admitted",
+            "appearance_supports_with_location_support",
+        ),
         ("study-x", "patella"): ("proposal", "anatomy_unknown"),
         ("study-h", "femur"): ("held_out", "study_held_out"),
     }
