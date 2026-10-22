@@ -111,6 +111,23 @@ are covered: ACL and MCL lack a diagnosed presentation of their own tissue, Bake
 Synovitis are thin. Every one of the catalogue's 493 candidates was called (43 unsure), so the gaps are filled by
 direct visual teaching (lane V), not by more calls on old candidates.
 
+## ROHAN'S OTHER AGENT (outside this session; keep in mind)
+
+Rohan, 2026-10-22: «I have another agent pulling some weight, note what it's doing and keep it in mind». It is a
+Codex agent working in `data/readings/ai-bootstrap-loop-20261021/` (it does not commit; the relayed reviews come
+from it). Seen at about 01:12 UTC:
+- `codex-clinical-seeds-r1/`: direct visual teaching, a published child of M1b at `codex-clinical-seeds-r1/memory`
+  (manifest `4bcc2c29de1290c7…`, 794 cases = M1b's 792 plus direct-visual ACL and MCL cases from study
+  `…12606657226568558340797193167488111973`); parent verified unchanged; configuration extension "pending_C2";
+  scripts `build_cases.py`, `publish_visual_cases.py`, `test_publish_visual_cases.py` beside it.
+- `codex-normal-bursa-r1/`: the normal gastrocnemius–semimembranosus bursa.
+- `codex-lateral-seeds-r1/`: lateral structures.
+Coordination: lane V takes the other objects (anterior tendons and fat pads, retinacula, patellar cartilage, medial
+gastrocnemius, popliteal vessels, sartorius, gracilis, semitendinosus), matches the other agent's case form and
+publishes onto the latest visual child, so there is one lineage. C2's configuration rebuild is made callable by any
+publication that adds objects to a study; root applies it to the visual children. The demonstration's parent is the
+latest visual child, not M1b.
+
 ## WORKERS
 
 | Task | State | Evidence |
