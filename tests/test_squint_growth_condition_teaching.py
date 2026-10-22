@@ -698,6 +698,74 @@ def test_every_child_keeps_its_parents_held_out_studies(tmp_path: Path, parent):
     assert open_round["admitted_case_ids"] == [located_id("study-h")]
 
 
+def test_a_held_out_study_that_already_teaches_the_parent_is_refused(
+    tmp_path: Path, parent
+):
+    # study-s is a femur seed of the parent. Holding it out would only skip its
+    # candidates: the child would keep the seed and it would speak for study-x.
+    with pytest.raises(IdentityGrowthError) as info:
+        grow(tmp_path, "tainted", parent, [record("study-x")], held_out=["study-s"])
+    assert (info.value.code, info.value.detail) == (
+        "held_out_study_teaches_parent",
+        "study-s",
+    )
+    assert not (tmp_path / "tainted").exists()
+    # Every teaching study named is listed; an untaught one beside them is not.
+    with pytest.raises(IdentityGrowthError) as info:
+        grow(
+            tmp_path,
+            "tainted-2",
+            parent,
+            [record("study-x")],
+            held_out=["study-p", "study-k", "study-b"],
+        )
+    assert (info.value.code, info.value.detail) == (
+        "held_out_study_teaches_parent",
+        "study-b,study-p",
+    )
+    assert not (tmp_path / "tainted-2").exists()
+    # A study the parent never learned from is held out and the round goes on; the
+    # admission's speaking cases are all from studies the parent learned from.
+    clean = grow(
+        tmp_path,
+        "round-1",
+        parent,
+        [record("study-k"), record("study-x")],
+        held_out=["study-k"],
+    )
+    assert clean["state_counts"] == {"admitted": 1, "held_out": 1}
+    child = child_of(tmp_path, "round-1")
+    studies = {case["case_id"]: case["study_uid"] for case in child["cases"]}
+    speaking = case_of(child, X)["identity_growth"]["speaking_case_ids"]
+    assert speaking and all(studies[case_id] != "study-k" for case_id in speaking)
+    # A study admitted in an earlier round now teaches: it cannot be held out next.
+    grown = load_memory_snapshot(tmp_path / "round-1" / CHILD_DIRECTORY)
+    with pytest.raises(IdentityGrowthError) as info:
+        grow(tmp_path, "round-2", grown, [record("study-w")], held_out=["study-x"])
+    assert (info.value.code, info.value.detail) == (
+        "held_out_study_teaches_parent",
+        "study-x",
+    )
+    assert not (tmp_path / "round-2").exists()
+    # An inherited held-out record naming a teaching study is refused the same way.
+    inherited = copy.deepcopy(child)
+    uids = ["study-k", "study-s"]
+    inherited["object_identity_growth"]["held_out"] = held_out_record(uids)
+    save_memory(inherited, tmp_path / "inherited")
+    with pytest.raises(IdentityGrowthError) as info:
+        grow(
+            tmp_path,
+            "round-3",
+            load_memory_snapshot(tmp_path / "inherited"),
+            [record("study-w")],
+        )
+    assert (info.value.code, info.value.detail) == (
+        "held_out_study_teaches_parent",
+        "study-s",
+    )
+    assert not (tmp_path / "round-3").exists()
+
+
 def test_a_malformed_held_out_record_or_list_is_refused_by_name(tmp_path: Path, parent):
     grow(
         tmp_path,

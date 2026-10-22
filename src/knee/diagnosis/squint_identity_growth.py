@@ -1333,9 +1333,14 @@ def grow_identity_memory(
 
     ``held_out`` names studies whose candidates are never scored or admitted
     (state ``held_out``); the parent's recorded held-out studies are added to
-    them. When any study is held out, ``held_out_record`` of the union is written
-    in the decisions file and the child's growth block; with none, both are as
-    before. ``labels`` is the competition's ``train.csv``: its bytes and header
+    them. A held-out study the parent already holds a record of, of any kind
+    ``exclusion_studies`` counts (object, configuration, negative or
+    alternative-identity), is refused by name before the round
+    (``held_out_study_teaches_parent``): it would go on teaching the child, and
+    the round's lineage would cite it. When any study is held out,
+    ``held_out_record`` of the union is written in the decisions file and the
+    child's growth block; with none, both are as before. ``labels`` is the
+    competition's ``train.csv``: its bytes and header
     are read before the round, and after every decision only the rows of studies
     with an admitted inference case are parsed and carried (``_carry_labels``). A
     label file with ``decisions_only`` is refused: no child would hear it.
@@ -1347,10 +1352,19 @@ def grow_identity_memory(
     if decisions_only and labels is not None:
         raise IdentityGrowthError("labels_with_decisions_only")
     held = _held_out_input(held_out) | inherited_held_out(parent)
+    record_studies = exclusion_studies(parent)
+    # A study the parent already learns from stays in every child and keeps
+    # speaking for later admissions, so holding it out would not keep it out of
+    # teaching. The declaration is refused before anything is read or written;
+    # no parent record is ever dropped to make it hold.
+    taught = held & record_studies
+    if taught:
+        raise IdentityGrowthError(
+            "held_out_study_teaches_parent", ",".join(sorted(taught))
+        )
     held_record = held_out_record(held) if held else None
     output = _check_output(output, parent_snapshot)
     label_source = None if labels is None else _label_source(labels)
-    record_studies = exclusion_studies(parent)
     represented = represented_objects(parent)
     seen: set[str] = set()
     sources: set[tuple[str, str]] = set()
