@@ -59,7 +59,6 @@ from knee.diagnosis.squint_identity_growth import (
     DECISIONS_FILE,
     READER,
     admission_decision,
-    candidates_from_memory,
     exclusion_studies,
     grow_identity_memory,
     harvest_candidates,
@@ -78,8 +77,10 @@ from tests.test_squint_identity_growth import (
     SAG,
     WINDOW,
     _labels_csv,
+    _memory_items,
     bank,
     identity_memory,
+    placed,
     plausible,
     profile,
     saved,
@@ -159,8 +160,13 @@ def located(subject: str, by_view) -> dict:
 
 
 def records(*studies: tuple[str, list]) -> list[dict]:
+    """Inference records, each femur placed by the anatomy map with the tibia open."""
     return [
-        study_record(uid, {"femur": located("femur", by_view)})
+        study_record(
+            uid,
+            {"femur": located("femur", by_view)},
+            contexts={"femur": placed("femur", "tibia")},
+        )
         for uid, by_view in studies
     ]
 
@@ -796,7 +802,7 @@ def test_held_out_exclusion_and_the_next_round_hear_the_correction(grown):
     decision = admission_decision(like_x, corrected)["decision"]
     assert (decision["state"], decision["reason"]) == (
         "conflict",
-        "identity_spoken_for_and_against",
+        "own_case_and_applicable_negative_case_speak",
     )
     # On the reviewed child, before the correction, the same candidate is admitted.
     assert admission_decision(like_x, grown.child.memory)["decision"]["state"] == (
@@ -1021,9 +1027,10 @@ def test_a_memory_candidate_admission_keeps_its_full_profile_through_correction(
     signed = request.getfixturevalue("catalogue_parent")
     receipt = grow_identity_memory(
         signed.parent,
-        candidates_from_memory(
+        _memory_items(
             signed.catalogue,
-            candidate_ids=[FE],
+            [FE],
+            {FE: placed("femur", "patella")},
             sanity_by_case_id={FE: plausible("femur")},
         ),
         signed.root / "from-memory",
