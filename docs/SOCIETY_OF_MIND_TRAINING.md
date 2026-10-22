@@ -162,6 +162,27 @@ packet uses GROUNDING_AND_WORKER_GUIDE §5's template.
 - unknown, disputed and unavailable stay distinct;
 - placement, contextual identity and admission must actually consume the result.
 
+**Measured and NOT integrated (2026-10-22).** Patch `l0-r2/attempt-2/l0-r2b.patch` (both readings, switchable).
+
+On the 58 labelled studies, with each study's own records excluded:
+
+| Variant | Mean AUC | Cross-band reversals | Tied pairs |
+|---|---|---|---|
+| Current code (HEAD) | 0.5192 | 829 | 772 |
+| Strict (i) | 0.4717 | 1125 | 313 |
+| Middle (ii) | 0.4678 | 1117 | 383 |
+
+- 3 of the 10 extra sections that (ii) keeps sit on wrong tissue.
+- Production stays on HEAD. More anchors produced more confidently wrong evidence.
+
+**Earlier build** (`society-training-r1/l0-r2/attempt-1/`).
+- Usable femurs went from 15 to 85 and tibias from 23 to 80 across the 86 studies; the proof study is
+  byte-identical.
+- But on `…339` the good coronal sections are disputed, because the wrong sagittal ones contradict them,
+  while coronal slice 31 (thigh muscle) agrees only with those wrong sections and so is never disputed. The
+  femur is then established partly on muscle.
+- A refinement decision is needed before integration.
+
 Tests:
 - a disputed section cannot erase an unrelated established one;
 - removing a disputed key plane removes any reference that depended on it;
@@ -204,6 +225,15 @@ Tests:
    failure is examined for missing structure before more cases are added.
 8. **Checkpoint.** A round directory holds its frozen inputs and one completion receipt per study. An
    interrupted round restarts from its frozen parent and pinned inputs and skips completed studies.
+
+**Enough, not everything.** Rohan, 2026-10-22: «Doesn't need to be every bit of data, it just need to be able to
+score and perform well. Classical AI doesn't have the cost/data requirement of ML, we don't need to train on
+everything. just enough».
+- **Teaching studies** are chosen by their official labels (the teaching source) to fill the thin buckets. ACL,
+  MCL, Baker's and Synovitis have only one to three cases on their defining tissue.
+- **The held-out set** is a fixed set of studies chosen independently and excluded from every source.
+- **Stop and freeze** when identified / abstained / wrong per condition on that set stops improving from one
+  round to the next. Coverage of the corpus is not the criterion.
 
 **Curricula** grow as their inputs arrive; none waits for a full corpus (CLASSICAL_AI_BUILD_DESIGN §8).
 - Identity: visual calls first, then recognition-derived growth.
