@@ -911,13 +911,15 @@ def test_a_region_not_read_as_its_object_reaches_both_voices_as_unlocated(monkey
     kept = squint_pipeline._recall_question(
         declared, objects, memory, "q", False, not_read_as={"femur": reason}
     )
-    # Not read as the femur: both voices hear it as unlocated, so it stays open.
+    # Neither voice reads this region as femur. Whole-normal configuration
+    # recall may still decide on other defining tissue (author, 2026-10-22).
     assert all(banks == () for banks in reads_of(calls, "femur"))
     assert not any(b.startswith("object/femur/") for b in configuration_banks(calls))
     assert kept["femur"]["region_not_read_as_subject"] == reason
     assert kept["femur"]["location_status"] == "unavailable"
     finding = combine_condition("Fracture", kept)
-    assert finding["outcome"] == "open"
+    assert finding["outcome"] == "defeated"
+    assert finding["reason"] == "warranted_condition_configuration"
     assert finding["evidence"]["readings"]["femur"]["state"] == "unknown"
     unlocated = squint_pipeline._recall_question(
         declared,
@@ -930,6 +932,18 @@ def test_a_region_not_read_as_its_object_reaches_both_voices_as_unlocated(monkey
         k: v for k, v in kept["femur"].items() if k != "region_not_read_as_subject"
     } == (unlocated["femur"])
     assert objects == before
+
+    calls.clear()
+    unread = squint_pipeline._recall_question(
+        declared,
+        objects,
+        memory,
+        "q",
+        False,
+        not_read_as={subject: reason for subject in objects},
+    )
+    assert all(banks == () for _, _, banks in calls)
+    assert combine_condition("Fracture", unread)["outcome"] == "open"
 
 
 @pytest.mark.parametrize(
@@ -1060,8 +1074,16 @@ def test_a_located_femur_gives_its_own_findings_not_an_unlocated_ones(monkeypatc
     missing, _ = run_study(monkeypatch, taught_memory(), absent)
     # Answering as itself, the normal femur completes the all-normal defeat.
     assert present["questions"]["Fracture"]["finding"]["outcome"] == "defeated"
-    assert missing["questions"]["Fracture"]["finding"]["outcome"] == "open"
-    assert decided(present) != decided(missing)
+    finding = missing["questions"]["Fracture"]["finding"]
+    assert finding["outcome"] == "defeated"
+    assert finding["reason"] == "warranted_condition_configuration"
+    assert finding["evidence"]["readings"]["femur"]["state"] == "unknown"
+    assert (
+        present["questions"]["Fracture"]["finding"]["evidence"]["readings"]["femur"][
+            "state"
+        ]
+        == "negative"
+    )
 
 
 def test_a_squint_scale_negative_is_not_applied_after_a_finer_reading_it_does_not_speak_in(
@@ -1124,7 +1146,10 @@ def test_a_negative_still_applying_with_the_finer_reading_is_applied(monkeypatch
             "reason": APPEARANCE_OPPOSED,
             "applicable_negative_case_ids": ["n1"],
         }
-    assert record["questions"]["Fracture"]["finding"]["outcome"] == "open"
+    finding = record["questions"]["Fracture"]["finding"]
+    assert finding["outcome"] == "defeated"
+    assert finding["reason"] == "warranted_condition_configuration"
+    assert finding["evidence"]["readings"]["femur"]["state"] == "unknown"
 
 
 def test_a_structural_bone_stands_while_its_finer_look_is_pending(monkeypatch):
@@ -1156,14 +1181,18 @@ def test_a_structural_bone_stands_while_its_finer_look_is_pending(monkeypatch):
     assert [row["procedure"] for row in question_["next_observations"]] == [
         "paired_finer_reading"
     ]
-    # A placement in the same state has no structure's word: it stays open.
+    # This placement's identity stays open; other defining tissue can still
+    # support independently warranted whole-normal configuration recall.
     placement, _ = run_study(
         monkeypatch, joint_memory(), bones(placed("femur", NOT_FEMUR_10))
     )
     entry = placement["identity_consumption"]["objects"]["femur"]
     assert entry["identity_effect"] == CONTESTED_AT_SQUINT_SCALE
     assert placement["identity_consumption"]["not_read_as_subject"] == ["femur"]
-    assert placement["questions"]["Fracture"]["finding"]["outcome"] == "open"
+    finding = placement["questions"]["Fracture"]["finding"]
+    assert finding["outcome"] == "defeated"
+    assert finding["reason"] == "warranted_condition_configuration"
+    assert finding["evidence"]["readings"]["femur"]["state"] == "unknown"
 
 
 def test_a_disagreement_after_the_finer_look_returns_to_the_structures_word(
@@ -1383,7 +1412,10 @@ def test_a_bone_the_reader_names_carries_its_arrangement_and_support():
 #: sha256 of the study record below, computed by the code before identity was wired into
 #: the condition consumer (1804e00), with timing, RSS and the identity_consumption key set
 #: aside.
-NO_TEACHING_RECORD_SHA256 = "12b717097f7466528a178452ec81ac867b4b2dc8d4be8e46887a352043d24222"  # pragma: allowlist secret
+# Updated for the author's whole-normal configuration decision, 2026-10-22.
+# The old digest was reproduced before adjudicating the changed OA calls and
+# evidence in normal-policy-golden-adjudication.json.
+NO_TEACHING_RECORD_SHA256 = "d629ac8f2946ee5b61b8f18eccc1832cb91e671aa9749614ea95a24c1fa16d0e"  # pragma: allowlist secret
 
 
 def _record_digest(record: dict) -> str:

@@ -118,6 +118,18 @@ Normal and diagnosed memories SHALL use the actual scope of visual, label and re
 - **WHEN** recognition adds a femur identity case without a localized clinical finding
 - **THEN** it creates no fracture or contusion label for that bone.
 
+#### Scenario: Warranted whole-normal configuration
+- **WHEN** recall of an independently diagnosed normal whole-condition case is warranted, compares condition-defining tissue, and has no applicable contradictory finding
+- **THEN** it may decide the condition absent without separate negative findings at every possible site (Rohan's decision, 2026-10-22).
+
+#### Scenario: Local normal is not whole-normal recall
+- **WHEN** only one site has a normal finding and no warranted whole-normal configuration answers the question
+- **THEN** other possible sites remain unresolved and the local finding alone does not rule out the condition.
+
+#### Scenario: Conflicting whole-condition configurations
+- **WHEN** warranted normal and diagnosed whole-condition configurations both speak
+- **THEN** the condition remains open even if their comparisons used different defining sites; neither nearest-case priority nor averaging resolves the disagreement.
+
 ### Requirement: Production remains one bounded offline operation
 The existing production entry point SHALL run squint-first with shared preparation, bounded study lifetimes and question-directed finer work. It SHALL write the twelve values in the competition schema using the existing readout, retain required outputs, and verify the complete offline CPU, RAM, storage and time envelope.
 

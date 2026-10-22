@@ -258,8 +258,10 @@ def _scoped_cases(cases: Sequence, scope: Mapping[str, Any] | None) -> Sequence:
         return cases
     views: Mapping[str, frozenset | None] = scope["views"]
     identity_sources = scope.get("identity_sources", {})
+    from knee.diagnosis.squint_configurations import configuration_role_cases
+
     role_cases: dict[tuple[str, str], str | None] = {}
-    for case in cases:
+    for case in configuration_role_cases(list(cases)):
         if not isinstance(case, Mapping):
             continue
         subject, study, case_id = (
@@ -281,6 +283,7 @@ def _scoped_cases(cases: Sequence, scope: Mapping[str, Any] | None) -> Sequence:
             else:
                 role_cases[key] = identity_id
     scoped: list = []
+    source_cases = {c.get("case_id"): c for c in cases if isinstance(c, Mapping)}
     for case in cases:
         profile = case.get("profile") if isinstance(case, Mapping) else None
         subject = case.get("subject") if isinstance(case, Mapping) else None
@@ -289,8 +292,34 @@ def _scoped_cases(cases: Sequence, scope: Mapping[str, Any] | None) -> Sequence:
             scoped.append(case)
             continue
         if subject.startswith("diagnosis/"):
+            configuration_teaching = case.get("configuration_teaching")
+            links = (
+                configuration_teaching.get("roles")
+                if isinstance(configuration_teaching, Mapping)
+                else None
+            )
+            own_roles = role_cases
+            if isinstance(links, Mapping):
+                # Explicit configurations are bound to the actual measured
+                # presentations they composed, not another same-named object.
+                own_roles = {}
+                for role, link in links.items():
+                    source_id = (
+                        link.get("case_id") if isinstance(link, Mapping) else None
+                    )
+                    source_case = (
+                        source_cases.get(source_id)
+                        if isinstance(source_id, str)
+                        else None
+                    )
+                    if (
+                        isinstance(source_case, Mapping)
+                        and source_case.get("study_uid") == case.get("study_uid")
+                        and source_case.get("subject") == role
+                    ):
+                        own_roles[(case.get("study_uid"), role)] = source_id
             kept = _configuration_identity_banks(
-                banks, case.get("study_uid"), views, role_cases
+                banks, case.get("study_uid"), views, own_roles
             )
         else:
             case_id = case.get("case_id")
@@ -306,6 +335,50 @@ def _scoped_cases(cases: Sequence, scope: Mapping[str, Any] | None) -> Sequence:
         else:
             scoped.append({**case, "profile": {**profile, "banks": kept}})
     return scoped
+
+
+def _location_cases(memory: Mapping[str, Any]) -> list[Mapping[str, Any]]:
+    """Return location precedents whose identity and addressed views are confirmed.
+
+    Memories without identity teaching retain the historical location catalog.
+    Once teaching is present, the shared identity scope decides which profile
+    banks can speak; region addresses are restricted to those same confirmed
+    views so a withheld address cannot win location-source priority.
+    """
+    cases = memory.get("cases", ())
+    if not isinstance(cases, Sequence) or isinstance(cases, (str, bytes)):
+        return []
+    scope = _identity_condition_scope(memory)
+    scoped = _scoped_cases(cases, scope)
+    eligible: list[Mapping[str, Any]] = []
+    views: Mapping[str, frozenset | None] = scope["views"] if scope is not None else {}
+    for original, case in zip(cases, scoped, strict=True):
+        if not isinstance(case, Mapping) or not isinstance(case.get("subject"), str):
+            continue
+        if case["subject"].startswith("diagnosis/"):
+            continue
+        if scope is not None:
+            case_id = original.get("case_id") if isinstance(original, Mapping) else None
+            if not isinstance(case_id, str) or case_id not in views:
+                continue
+            allowed_views = views[case_id]
+            if allowed_views is not None:
+                regions = _case_regions(case, case["subject"])
+                kept_regions = [
+                    region
+                    for region in regions
+                    if _view_key(region.get("view")) in allowed_views
+                ]
+                # A withheld address is not a legacy case without an address.
+                # Keep genuine address-free legacy profiles, but never turn a
+                # case whose only measured views were withheld into one.
+                if regions and not kept_regions:
+                    continue
+                case = {**case, "regions": kept_regions}
+        banks = _banks(case.get("profile"))
+        if banks:
+            eligible.append(case)
+    return eligible
 
 
 def _condition_cases(memory: Mapping[str, Any]) -> Sequence:
@@ -354,7 +427,17 @@ def _identity_scope_projection(
             ],
             "speaking_views": speaking,
         }
-    return {"schema": _IDENTITY_SCOPE_SCHEMA, "cases": entries}
+    result = {"schema": _IDENTITY_SCOPE_SCHEMA, "cases": entries}
+    references = sorted(
+        case["case_id"]
+        for case in cases
+        if isinstance(case, Mapping) and case.get("question_reference") is not None
+    )
+    if references:
+        # This distinction decides configuration-role eligibility too; a cache
+        # prepared before regional references were distinguished must expire.
+        result["question_reference_case_ids"] = references
+    return result
 
 
 def recall_source_fingerprint(
@@ -378,6 +461,12 @@ def recall_source_fingerprint(
                 "profile": case.get("profile"),
             }
         )
+        links = (case.get("configuration_teaching") or {}).get("roles")
+        if isinstance(links, Mapping):
+            source_cases[-1]["configuration_role_sources"] = {
+                role: link.get("case_id") if isinstance(link, Mapping) else None
+                for role, link in links.items()
+            }
     censors = memory.get("censors", ())
     payload = {
         "schema": "knee.squint-recall-input/v1",
@@ -1428,12 +1517,31 @@ def _location_scope(
             if _view_key(region.get("view")) != view:
                 continue
             extent = region.get("extent_source")
+            territory = region.get("territory")
+            support = (
+                territory.get("native_support")
+                if isinstance(territory, Mapping)
+                else None
+            )
+            retained_native_support = (
+                isinstance(support, Mapping)
+                and type(support.get("pixel_count")) is int
+                and support["pixel_count"] > 0
+                and isinstance(support.get("mask_sha256"), str)
+                and bool(support["mask_sha256"])
+                and isinstance(support.get("slices"), Sequence)
+                and not isinstance(support.get("slices"), (str, bytes))
+                and bool(support["slices"])
+            )
             if extent == "retained_object_support":
                 native.append((case, region))
             elif extent == "retained_physical_location":
                 markers.append((case, region))
             elif extent is None:
-                legacy.append((case, region))
+                if retained_native_support:
+                    native.append((case, region))
+                else:
+                    legacy.append((case, region))
 
     selected = native or markers or legacy
     source = (
@@ -2603,15 +2711,16 @@ def _locate_cached_objects(
 ) -> dict:
     """Compare only caller-supplied candidate profiles when no raw stack is present."""
     cases = memory.get("cases", ())
-    case_rows = (
+    original_case_rows = (
         list(cases)
         if isinstance(cases, Sequence) and not isinstance(cases, (str, bytes))
         else []
     )
+    case_rows = _location_cases(memory)
     known = sorted(
         {
             row.get("subject")
-            for row in case_rows
+            for row in original_case_rows
             if isinstance(row, Mapping)
             and isinstance(row.get("subject"), str)
             and not row["subject"].startswith("diagnosis/")

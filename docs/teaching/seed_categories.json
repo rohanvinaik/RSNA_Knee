@@ -1,0 +1,1110 @@
+{
+  "schema": "knee.grounded-teaching/v1",
+  "purpose": "Hand-established identity and condition references before scaling. These polygons are teaching annotations on named source images, never locator rules for new patients.",
+  "reader": "Codex native-image review, 2026-10-22",
+  "source_memory": "data/readings/ai-bootstrap-loop-20261021/handfill-r1/configurations-r2/memory",
+  "source_memory_sha256": "326f36be63aaf432aadd2b164ede6518df5e15632a940712aca38fd12d95b026",
+  "clinical_reference": "https://doi.org/10.5114/pjr.2020.99415",
+  "limits": [
+    "Regional source-labeled presentations are not pixelwise lesion annotations.",
+    "Study label 0 is negative for its own condition, not universally healthy tissue.",
+    "The 10 mm/2 mm writer calibrations are scan-local measurement codes, not clinical normality.",
+    "Teaching replay is a capacity/wiring test, not held-out diagnostic performance.",
+    "This reference workset is not a published child or a replacement for the signed parent memory."
+  ],
+  "categories": [
+    {
+      "question": "ACL",
+      "subject": "acl",
+      "identity": "Ligament course in the notch, joining anterior tibial and femoral attachments, anterior to the PCL. Bone identity alone does not establish a ligament.",
+      "normal_reference": "Coherent ligament course.",
+      "altered_reference": "Interrupted or disorganized course.",
+      "relevant_readings": [
+        "local_range",
+        "gradient_row",
+        "gradient_column",
+        "signal_median"
+      ],
+      "normal": {
+        "study_uid": "1.2.826.0.1.3680043.8.498.10095687747295410396510538520594649149",
+        "series_uid": "1.2.826.0.1.3680043.8.498.37372672584387115708078590109474719429",
+        "slice": 17,
+        "polygon_xy": [
+          [
+            123,
+            176
+          ],
+          [
+            139,
+            161
+          ],
+          [
+            160,
+            145
+          ],
+          [
+            174,
+            143
+          ],
+          [
+            174,
+            152
+          ],
+          [
+            154,
+            166
+          ],
+          [
+            134,
+            183
+          ]
+        ],
+        "visual_reading": "Oblique striated ACL course anterior to the dark curved PCL; report says cruciates normal.",
+        "reviewer": "Codex, native-image inspection, 2026-10-22",
+        "scope": "pictured question-bearing region; rough support, not pure tissue or a complete segmentation"
+      },
+      "diagnosed": {
+        "study_uid": "1.2.826.0.1.3680043.8.498.12606657226568558340797193167488111973",
+        "series_uid": "1.2.826.0.1.3680043.8.498.12346063444250771269882141920568607762",
+        "slice": 13,
+        "polygon_xy": [
+          [
+            350,
+            419
+          ],
+          [
+            361,
+            397
+          ],
+          [
+            378,
+            376
+          ],
+          [
+            397,
+            360
+          ],
+          [
+            421,
+            351
+          ],
+          [
+            437,
+            358
+          ],
+          [
+            434,
+            375
+          ],
+          [
+            409,
+            391
+          ],
+          [
+            384,
+            408
+          ],
+          [
+            365,
+            429
+          ]
+        ],
+        "visual_reading": "Disorganized ACL course in the notch; this is the previously independently reviewed teaching support. Report localizes a complete midsubstance rupture.",
+        "reviewer": "Codex, native-image inspection, 2026-10-22",
+        "scope": "pictured question-bearing region; rough support, not pure tissue or a complete segmentation"
+      }
+    },
+    {
+      "question": "MCL",
+      "subject": "mcl",
+      "identity": "Medial femoral-to-tibial collateral band outside the medial joint margin, identified relative to the bones and fibular side.",
+      "normal_reference": "Continuous slim collateral band.",
+      "altered_reference": "Altered band with surrounding injury signal.",
+      "relevant_readings": [
+        "signal_median",
+        "local_range",
+        "gradient_column"
+      ],
+      "normal": {
+        "study_uid": "1.2.826.0.1.3680043.8.498.10095687747295410396510538520594649149",
+        "series_uid": "1.2.826.0.1.3680043.8.498.21497837050858589852101556928971904198",
+        "slice": 18,
+        "polygon_xy": [
+          [
+            247,
+            135
+          ],
+          [
+            254,
+            135
+          ],
+          [
+            260,
+            218
+          ],
+          [
+            253,
+            270
+          ],
+          [
+            246,
+            269
+          ],
+          [
+            251,
+            219
+          ]
+        ],
+        "visual_reading": "Slim dark band along the medial condyle and proximal tibia, opposite the fibula. Official report calls collateral ligaments normal.",
+        "reviewer": "Codex, native-image inspection, 2026-10-22",
+        "scope": "pictured question-bearing region; rough support, not pure tissue or a complete segmentation"
+      },
+      "diagnosed": {
+        "study_uid": "1.2.826.0.1.3680043.8.498.12606657226568558340797193167488111973",
+        "series_uid": "1.2.826.0.1.3680043.8.498.48596041693374046380061484793643395950",
+        "slice": 14,
+        "polygon_xy": [
+          [
+            147,
+            279
+          ],
+          [
+            157,
+            281
+          ],
+          [
+            165,
+            321
+          ],
+          [
+            177,
+            354
+          ],
+          [
+            191,
+            387
+          ],
+          [
+            211,
+            430
+          ],
+          [
+            233,
+            469
+          ],
+          [
+            247,
+            492
+          ],
+          [
+            236,
+            498
+          ],
+          [
+            220,
+            475
+          ],
+          [
+            198,
+            436
+          ],
+          [
+            179,
+            393
+          ],
+          [
+            165,
+            359
+          ],
+          [
+            153,
+            325
+          ]
+        ],
+        "visual_reading": "Medial collateral course with local surrounding bright injury signal. Previously reviewed support; report names grade-II proximal partial MCL tear.",
+        "reviewer": "Codex, native-image inspection, 2026-10-22",
+        "scope": "pictured question-bearing region; rough support, not pure tissue or a complete segmentation"
+      }
+    },
+    {
+      "question": "Medial Meniscus",
+      "subject": "medial_meniscus",
+      "identity": "Fibrocartilage at the medial femorotibial joint margin; the compartment is established from knee side and fibular side.",
+      "normal_reference": "Preserved meniscal wedge.",
+      "altered_reference": "Cleft, loss or displacement of meniscal tissue.",
+      "relevant_readings": [
+        "signal_maximum",
+        "local_range",
+        "gradient_row"
+      ],
+      "normal": {
+        "study_uid": "1.2.826.0.1.3680043.8.498.10095687747295410396510538520594649149",
+        "series_uid": "1.2.826.0.1.3680043.8.498.21497837050858589852101556928971904198",
+        "slice": 18,
+        "polygon_xy": [
+          [
+            221,
+            188
+          ],
+          [
+            247,
+            188
+          ],
+          [
+            247,
+            207
+          ],
+          [
+            221,
+            207
+          ]
+        ],
+        "visual_reading": "Dark medial joint-margin wedge between the femur and tibia. Report says preserved morphology and signal without tear.",
+        "reviewer": "Codex, native-image inspection, 2026-10-22",
+        "scope": "pictured question-bearing region; rough support, not pure tissue or a complete segmentation"
+      },
+      "diagnosed": {
+        "study_uid": "1.2.826.0.1.3680043.8.498.65708905118633339771181857781063784327",
+        "series_uid": "1.2.826.0.1.3680043.8.498.49386996151147572908458775202466876717",
+        "slice": 17,
+        "polygon_xy": [
+          [
+            147,
+            295
+          ],
+          [
+            205,
+            295
+          ],
+          [
+            205,
+            329
+          ],
+          [
+            147,
+            329
+          ]
+        ],
+        "visual_reading": "Medial meniscal margin is displaced toward the gutter with abnormal surrounding fluid/interface. The report independently establishes tear and displaced/extruded meniscal tissue; this is its presentation, not a traced root tear.",
+        "reviewer": "Codex, native-image inspection, 2026-10-22",
+        "scope": "pictured question-bearing region; rough support, not pure tissue or a complete segmentation"
+      }
+    },
+    {
+      "question": "Lateral Meniscus",
+      "subject": "lateral_meniscus",
+      "identity": "Meniscal horn between lateral femoral condyle and tibial plateau, with its horn and compartment retained.",
+      "normal_reference": "Preserved meniscal wedge.",
+      "altered_reference": "Cleft, loss or displacement of meniscal tissue.",
+      "relevant_readings": [
+        "signal_maximum",
+        "local_range",
+        "gradient_row"
+      ],
+      "normal": {
+        "study_uid": "1.2.826.0.1.3680043.8.498.11382021393803389951964005983002209238",
+        "series_uid": "1.2.826.0.1.3680043.8.498.93215173970625947969112669628390847443",
+        "slice": 15,
+        "polygon_xy": [
+          [
+            455,
+            369
+          ],
+          [
+            488,
+            370
+          ],
+          [
+            499,
+            380
+          ],
+          [
+            486,
+            392
+          ],
+          [
+            452,
+            385
+          ]
+        ],
+        "visual_reading": "Preserved dark lateral meniscal wedge at the lateral femorotibial margin. The report explicitly says the lateral meniscus is not torn; this replaces the initial anterior-region support, which did not isolate meniscus.",
+        "reviewer": "Codex, native-image inspection, 2026-10-22",
+        "scope": "pictured question-bearing region; rough support, not pure tissue or a complete segmentation"
+      },
+      "diagnosed": {
+        "study_uid": "1.2.826.0.1.3680043.8.498.39500553372517290823815606829518305500",
+        "series_uid": "1.2.826.0.1.3680043.8.498.12798253935401276011357924521785184170",
+        "slice": 17,
+        "polygon_xy": [
+          [
+            69,
+            165
+          ],
+          [
+            84,
+            163
+          ],
+          [
+            99,
+            176
+          ],
+          [
+            117,
+            182
+          ],
+          [
+            116,
+            194
+          ],
+          [
+            92,
+            193
+          ],
+          [
+            72,
+            187
+          ],
+          [
+            67,
+            177
+          ]
+        ],
+        "visual_reading": "Irregular, displaced lateral meniscal margin and associated interface, on the fibular side. The independent report names complex degenerative lateral meniscal tearing with extrusion; the contour is not a pixelwise tear boundary.",
+        "reviewer": "Codex, native-image inspection, 2026-10-22",
+        "scope": "pictured question-bearing region; rough support, not pure tissue or a complete segmentation"
+      }
+    },
+    {
+      "question": "Medial OA",
+      "subject": "femoral_cartilage",
+      "identity": "Medial weight-bearing articular surface and its opposing tibial surface; compartment identity precedes the state question.",
+      "normal_reference": "Preserved articular covering.",
+      "altered_reference": "Loss or irregularity of articular covering.",
+      "relevant_readings": [
+        "local_range",
+        "gradient_row",
+        "signal_maximum"
+      ],
+      "normal": {
+        "study_uid": "1.2.826.0.1.3680043.8.498.11382021393803389951964005983002209238",
+        "series_uid": "1.2.826.0.1.3680043.8.498.93215173970625947969112669628390847443",
+        "slice": 15,
+        "polygon_xy": [
+          [
+            190,
+            373
+          ],
+          [
+            223,
+            386
+          ],
+          [
+            260,
+            384
+          ],
+          [
+            287,
+            371
+          ],
+          [
+            299,
+            365
+          ],
+          [
+            305,
+            376
+          ],
+          [
+            271,
+            397
+          ],
+          [
+            224,
+            402
+          ],
+          [
+            185,
+            388
+          ]
+        ],
+        "visual_reading": "Medial articular interface. The report explicitly states no medial focal chondrosis or chondral injury.",
+        "reviewer": "Codex, native-image inspection, 2026-10-22",
+        "scope": "pictured question-bearing region; rough support, not pure tissue or a complete segmentation"
+      },
+      "diagnosed": {
+        "study_uid": "1.2.826.0.1.3680043.8.498.65708905118633339771181857781063784327",
+        "series_uid": "1.2.826.0.1.3680043.8.498.49386996151147572908458775202466876717",
+        "slice": 17,
+        "polygon_xy": [
+          [
+            161,
+            294
+          ],
+          [
+            191,
+            301
+          ],
+          [
+            224,
+            297
+          ],
+          [
+            243,
+            285
+          ],
+          [
+            251,
+            295
+          ],
+          [
+            227,
+            314
+          ],
+          [
+            189,
+            319
+          ],
+          [
+            155,
+            311
+          ]
+        ],
+        "visual_reading": "Medial weight-bearing interface with irregular reduced covering and displaced meniscal context. Report establishes medial cartilage loss; the region is scoped to this compartment.",
+        "reviewer": "Codex, native-image inspection, 2026-10-22",
+        "scope": "pictured question-bearing region; rough support, not pure tissue or a complete segmentation"
+      }
+    },
+    {
+      "question": "Lateral OA",
+      "subject": "tibial_cartilage",
+      "identity": "Lateral tibial articular surface beneath the lateral femoral condyle, not all cartilage from an OA-positive knee.",
+      "normal_reference": "Preserved articular covering.",
+      "altered_reference": "Focal loss or irregularity of covering.",
+      "relevant_readings": [
+        "local_range",
+        "gradient_row",
+        "signal_maximum"
+      ],
+      "normal": {
+        "study_uid": "1.2.826.0.1.3680043.8.498.11382021393803389951964005983002209238",
+        "series_uid": "1.2.826.0.1.3680043.8.498.93215173970625947969112669628390847443",
+        "slice": 15,
+        "polygon_xy": [
+          [
+            366,
+            355
+          ],
+          [
+            410,
+            362
+          ],
+          [
+            450,
+            369
+          ],
+          [
+            480,
+            366
+          ],
+          [
+            488,
+            377
+          ],
+          [
+            450,
+            385
+          ],
+          [
+            405,
+            377
+          ],
+          [
+            362,
+            367
+          ]
+        ],
+        "visual_reading": "Lateral articular interface with preserved covering; report explicitly states no focal lateral chondrosis or injury.",
+        "reviewer": "Codex, native-image inspection, 2026-10-22",
+        "scope": "pictured question-bearing region; rough support, not pure tissue or a complete segmentation"
+      },
+      "diagnosed": {
+        "study_uid": "1.2.826.0.1.3680043.8.498.65708905118633339771181857781063784327",
+        "series_uid": "1.2.826.0.1.3680043.8.498.49386996151147572908458775202466876717",
+        "slice": 17,
+        "polygon_xy": [
+          [
+            287,
+            300
+          ],
+          [
+            319,
+            305
+          ],
+          [
+            350,
+            307
+          ],
+          [
+            369,
+            301
+          ],
+          [
+            377,
+            311
+          ],
+          [
+            353,
+            323
+          ],
+          [
+            318,
+            320
+          ],
+          [
+            287,
+            312
+          ]
+        ],
+        "visual_reading": "Lateral tibial surface and adjacent joint interface; report localizes a high-grade lateral tibial plateau defect. This is the compartment presentation; the exact defect boundary is not claimed.",
+        "reviewer": "Codex, native-image inspection, 2026-10-22",
+        "scope": "pictured question-bearing region; rough support, not pure tissue or a complete segmentation"
+      }
+    },
+    {
+      "question": "PF OA",
+      "subject": "trochlear_cartilage",
+      "identity": "Opposed patellar and trochlear articular surfaces in the anterior knee.",
+      "normal_reference": "Preserved patellofemoral covering.",
+      "altered_reference": "Thinned or disrupted patellofemoral covering.",
+      "relevant_readings": [
+        "local_range",
+        "gradient_row",
+        "gradient_column"
+      ],
+      "normal": {
+        "study_uid": "1.2.826.0.1.3680043.8.498.11382021393803389951964005983002209238",
+        "series_uid": "1.2.826.0.1.3680043.8.498.14985374264812063212398702944383827602",
+        "slice": 18,
+        "polygon_xy": [
+          [
+            230,
+            163
+          ],
+          [
+            267,
+            177
+          ],
+          [
+            310,
+            179
+          ],
+          [
+            352,
+            169
+          ],
+          [
+            397,
+            151
+          ],
+          [
+            419,
+            162
+          ],
+          [
+            359,
+            190
+          ],
+          [
+            309,
+            198
+          ],
+          [
+            263,
+            192
+          ],
+          [
+            222,
+            179
+          ]
+        ],
+        "visual_reading": "Congruent patellofemoral surfaces with covering visible; report explicitly says no chondral lesion.",
+        "reviewer": "Codex, native-image inspection, 2026-10-22",
+        "scope": "pictured question-bearing region; rough support, not pure tissue or a complete segmentation"
+      },
+      "diagnosed": {
+        "study_uid": "1.2.826.0.1.3680043.8.498.65708905118633339771181857781063784327",
+        "series_uid": "1.2.826.0.1.3680043.8.498.71557939123642455232655031941705135396",
+        "slice": 25,
+        "polygon_xy": [
+          [
+            190,
+            136
+          ],
+          [
+            226,
+            148
+          ],
+          [
+            255,
+            156
+          ],
+          [
+            278,
+            144
+          ],
+          [
+            310,
+            131
+          ],
+          [
+            337,
+            133
+          ],
+          [
+            345,
+            147
+          ],
+          [
+            312,
+            148
+          ],
+          [
+            280,
+            160
+          ],
+          [
+            252,
+            174
+          ],
+          [
+            220,
+            166
+          ],
+          [
+            184,
+            151
+          ]
+        ],
+        "visual_reading": "Irregular patellofemoral interface beneath the patella. Report independently establishes diffuse patellar/trochlear chondrosis; this is a joint-surface presentation, not a claim every covered pixel is diseased.",
+        "reviewer": "Codex, native-image inspection, 2026-10-22",
+        "scope": "pictured question-bearing region; rough support, not pure tissue or a complete segmentation"
+      }
+    },
+    {
+      "question": "Effusion",
+      "subject": "anterior_synovial_recess",
+      "identity": "Fluid-bearing joint recess bounded by the femur and extensor mechanism; normal fluid is not itself effusion.",
+      "normal_reference": "Nondistended recess.",
+      "altered_reference": "Expanded fluid-filled recess.",
+      "relevant_readings": [
+        "signal_median",
+        "signal_maximum",
+        "gradient_column"
+      ],
+      "normal": {
+        "study_uid": "1.2.826.0.1.3680043.8.498.11382021393803389951964005983002209238",
+        "series_uid": "1.2.826.0.1.3680043.8.498.91903627435354016135777336404933338336",
+        "slice": 10,
+        "polygon_xy": [
+          [
+            179,
+            75
+          ],
+          [
+            240,
+            75
+          ],
+          [
+            240,
+            210
+          ],
+          [
+            179,
+            210
+          ]
+        ],
+        "visual_reading": "Anterior suprapatellar recess contains a thin fluid cleft; report states no knee effusion. Normal here means condition-negative, not zero fluid.",
+        "reviewer": "Codex, native-image inspection, 2026-10-22",
+        "scope": "pictured question-bearing region; rough support, not pure tissue or a complete segmentation"
+      },
+      "diagnosed": {
+        "study_uid": "1.2.826.0.1.3680043.8.498.65708905118633339771181857781063784327",
+        "series_uid": "1.2.826.0.1.3680043.8.498.10112084932780945304334720849038611105",
+        "slice": 8,
+        "polygon_xy": [
+          [
+            119,
+            64
+          ],
+          [
+            146,
+            73
+          ],
+          [
+            144,
+            123
+          ],
+          [
+            155,
+            151
+          ],
+          [
+            142,
+            177
+          ],
+          [
+            123,
+            181
+          ],
+          [
+            112,
+            145
+          ],
+          [
+            119,
+            116
+          ]
+        ],
+        "visual_reading": "Expanded bright suprapatellar fluid pocket; the report independently calls effusion. The support contains the pocket and its limiting interfaces.",
+        "reviewer": "Codex, native-image inspection, 2026-10-22",
+        "scope": "pictured question-bearing region; rough support, not pure tissue or a complete segmentation"
+      }
+    },
+    {
+      "question": "Synovitis",
+      "subject": "synovium",
+      "identity": "Synovial lining/recess interface, distinct from fluid alone. Noncontrast regional appearance is interpreted with the independent call.",
+      "normal_reference": "No conspicuously thickened lining in this presentation.",
+      "altered_reference": "Irregular or thickened lining in the recess configuration.",
+      "relevant_readings": [
+        "local_range",
+        "gradient_row",
+        "gradient_column"
+      ],
+      "normal": {
+        "study_uid": "1.2.826.0.1.3680043.8.498.11382021393803389951964005983002209238",
+        "series_uid": "1.2.826.0.1.3680043.8.498.91903627435354016135777336404933338336",
+        "slice": 10,
+        "polygon_xy": [
+          [
+            163,
+            166
+          ],
+          [
+            242,
+            166
+          ],
+          [
+            242,
+            302
+          ],
+          [
+            163,
+            302
+          ]
+        ],
+        "visual_reading": "Anterior synovial recess interface with little distension and no conspicuous thickened lining at this address. Official Synovitis=0 supplies the condition call; absence is not inferred merely from absence of effusion.",
+        "reviewer": "Codex, native-image inspection, 2026-10-22",
+        "scope": "pictured question-bearing region; rough support, not pure tissue or a complete segmentation"
+      },
+      "diagnosed": {
+        "study_uid": "1.2.826.0.1.3680043.8.498.10170898615867673028696505248839028269",
+        "series_uid": "1.2.826.0.1.3680043.8.498.55642842745139279565158267708282328638",
+        "slice": 17,
+        "polygon_xy": [
+          [
+            187,
+            155
+          ],
+          [
+            201,
+            168
+          ],
+          [
+            195,
+            190
+          ],
+          [
+            188,
+            210
+          ],
+          [
+            190,
+            230
+          ],
+          [
+            201,
+            245
+          ],
+          [
+            193,
+            263
+          ],
+          [
+            181,
+            279
+          ],
+          [
+            169,
+            293
+          ],
+          [
+            159,
+            289
+          ],
+          [
+            171,
+            265
+          ],
+          [
+            180,
+            242
+          ],
+          [
+            181,
+            218
+          ],
+          [
+            176,
+            199
+          ],
+          [
+            185,
+            178
+          ]
+        ],
+        "visual_reading": "Synovial recess/lining margin alongside bright suprapatellar fluid. The report establishes thickened synovial tissue and chronic reactive synovitis. The support is a rough lining-bearing interface, not pure synovium; the first bone-dominated rectangle was withdrawn.",
+        "reviewer": "Codex, native-image inspection, 2026-10-22",
+        "scope": "pictured question-bearing region; rough support, not pure tissue or a complete segmentation"
+      }
+    },
+    {
+      "question": "Baker's",
+      "subject": "gastrocnemius_semimembranosus_bursa",
+      "identity": "Posteromedial gastrocnemius-semimembranosus bursal site, distinguished from vessels and other posterior fluid.",
+      "normal_reference": "Nondistended bursal site.",
+      "altered_reference": "Distended bursal fluid structure.",
+      "relevant_readings": [
+        "signal_median",
+        "local_range",
+        "gradient_column"
+      ],
+      "normal": {
+        "study_uid": "1.2.826.0.1.3680043.8.498.11382021393803389951964005983002209238",
+        "series_uid": "1.2.826.0.1.3680043.8.498.91903627435354016135777336404933338336",
+        "slice": 22,
+        "polygon_xy": [
+          [
+            340,
+            240
+          ],
+          [
+            425,
+            240
+          ],
+          [
+            425,
+            372
+          ],
+          [
+            340,
+            372
+          ]
+        ],
+        "visual_reading": "Posteromedial bursal-site context without the lobulated fluid expansion shown by the positive. Official Baker label is 0. This is an absence-bearing site, not a mask claiming an expanded bursa exists.",
+        "reviewer": "Codex, native-image inspection, 2026-10-22",
+        "scope": "pictured question-bearing region; rough support, not pure tissue or a complete segmentation"
+      },
+      "diagnosed": {
+        "study_uid": "1.2.826.0.1.3680043.8.498.65708905118633339771181857781063784327",
+        "series_uid": "1.2.826.0.1.3680043.8.498.10112084932780945304334720849038611105",
+        "slice": 20,
+        "polygon_xy": [
+          [
+            288,
+            135
+          ],
+          [
+            307,
+            132
+          ],
+          [
+            321,
+            151
+          ],
+          [
+            326,
+            177
+          ],
+          [
+            340,
+            195
+          ],
+          [
+            358,
+            205
+          ],
+          [
+            361,
+            229
+          ],
+          [
+            348,
+            248
+          ],
+          [
+            325,
+            249
+          ],
+          [
+            315,
+            231
+          ],
+          [
+            307,
+            208
+          ],
+          [
+            294,
+            184
+          ],
+          [
+            286,
+            159
+          ]
+        ],
+        "visual_reading": "Conspicuous lobulated fluid-bright posteromedial structure, separate from the vessel course; report explicitly calls a Baker cyst at this site.",
+        "reviewer": "Codex, native-image inspection, 2026-10-22",
+        "scope": "pictured question-bearing region; rough support, not pure tissue or a complete segmentation"
+      }
+    },
+    {
+      "question": "Contusion",
+      "subject": "femur",
+      "identity": "Marrow within an established bone; marrow change is a state question, not a different bone identity.",
+      "normal_reference": "Usual marrow appearance.",
+      "altered_reference": "Localized marrow oedema presentation.",
+      "relevant_readings": [
+        "signal_median",
+        "signal_maximum",
+        "local_range"
+      ],
+      "normal": {
+        "study_uid": "1.2.826.0.1.3680043.8.498.10095687747295410396510538520594649149",
+        "series_uid": "1.2.826.0.1.3680043.8.498.21497837050858589852101556928971904198",
+        "slice": 18,
+        "polygon_xy": [
+          [
+            210,
+            151
+          ],
+          [
+            245,
+            151
+          ],
+          [
+            245,
+            184
+          ],
+          [
+            210,
+            184
+          ]
+        ],
+        "visual_reading": "Medial femoral marrow inside the cortex, away from joint fluid. Report states no significant marrow signal alteration.",
+        "reviewer": "Codex, native-image inspection, 2026-10-22",
+        "scope": "pictured question-bearing region; rough support, not pure tissue or a complete segmentation"
+      },
+      "diagnosed": {
+        "study_uid": "1.2.826.0.1.3680043.8.498.64703506772167798469048460791472465039",
+        "series_uid": "1.2.826.0.1.3680043.8.498.61714171918691444339892175338123390353",
+        "slice": 18,
+        "polygon_xy": [
+          [
+            347,
+            245
+          ],
+          [
+            376,
+            245
+          ],
+          [
+            376,
+            295
+          ],
+          [
+            347,
+            295
+          ]
+        ],
+        "visual_reading": "Peripheral medial femoral marrow high-signal focus inside the bone. The report separately localizes medial-condyle marrow oedema without associated fracture; do not import the lateral fracture into this site.",
+        "reviewer": "Codex, native-image inspection, 2026-10-22",
+        "scope": "pictured question-bearing region; rough support, not pure tissue or a complete segmentation"
+      }
+    },
+    {
+      "question": "Fracture",
+      "subject": "tibia",
+      "identity": "Tibial articular bone/spine and continuity, with the joint and femur providing context.",
+      "normal_reference": "Preserved bone continuity at the pictured site.",
+      "altered_reference": "Disrupted or displaced bone continuity.",
+      "relevant_readings": [
+        "gradient_row",
+        "gradient_column",
+        "local_range"
+      ],
+      "normal": {
+        "study_uid": "1.2.826.0.1.3680043.8.498.10095687747295410396510538520594649149",
+        "series_uid": "1.2.826.0.1.3680043.8.498.21497837050858589852101556928971904198",
+        "slice": 18,
+        "polygon_xy": [
+          [
+            142,
+            158
+          ],
+          [
+            192,
+            158
+          ],
+          [
+            192,
+            218
+          ],
+          [
+            142,
+            218
+          ]
+        ],
+        "visual_reading": "Intact central tibial plateau/spine interface. Official Fracture=0 and report without marrow alteration teach this condition-negative presentation.",
+        "reviewer": "Codex, native-image inspection, 2026-10-22",
+        "scope": "pictured question-bearing region; rough support, not pure tissue or a complete segmentation"
+      },
+      "diagnosed": {
+        "study_uid": "1.2.826.0.1.3680043.8.498.64703506772167798469048460791472465039",
+        "series_uid": "1.2.826.0.1.3680043.8.498.61714171918691444339892175338123390353",
+        "slice": 18,
+        "polygon_xy": [
+          [
+            201,
+            286
+          ],
+          [
+            307,
+            286
+          ],
+          [
+            307,
+            349
+          ],
+          [
+            201,
+            349
+          ]
+        ],
+        "visual_reading": "Abnormal tibial spine/articular interface with displaced/irregular bone structure. Report localizes comminuted tibial spine/plateau fracture; edema alone is not the defining fracture distinction.",
+        "reviewer": "Codex, native-image inspection, 2026-10-22",
+        "scope": "pictured question-bearing region; rough support, not pure tissue or a complete segmentation"
+      }
+    }
+  ]
+}

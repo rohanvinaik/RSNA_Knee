@@ -1,0 +1,170 @@
+{
+  "schema": "knee.grounded-teaching/v1",
+  "purpose": "Incremental, directly inspected coronal non-FS MCL teaching contrasts for the 58-study reference operation; annotations are not new-patient locator rules.",
+  "reader": "Codex native-image review, 2026-10-22",
+  "source_memory": "data/readings/grounded-teaching-20261022/integrated-r2/memory",
+  "source_memory_sha256": "319b125f77e427dbfea0dc4ed18c51b0522077b3d40378cf50775970f4b36a38",
+  "clinical_reference": "https://doi.org/10.5114/pjr.2020.99415",
+  "limits": [
+    "Regional source-labeled presentations are not pixelwise lesion annotations.",
+    "Study label 0 is negative for its own condition, not universally healthy tissue.",
+    "The 10 mm/2 mm writer calibrations are scan-local measurement codes, not clinical normality.",
+    "Teaching replay is a capacity/wiring test, not held-out diagnostic performance.",
+    "This reference workset is not a published child or a replacement for the signed parent memory."
+  ],
+  "case_namespace": "cohort-r1-coronal",
+  "categories": [
+    {
+      "question": "MCL",
+      "subject": "mcl",
+      "identity": "Medial femoral-to-tibial collateral band outside the medial joint margin, identified relative to the bones and fibular side.",
+      "normal_reference": "Continuous slim collateral band.",
+      "altered_reference": "Altered band with surrounding injury signal.",
+      "relevant_readings": [
+        "signal_median",
+        "local_range",
+        "gradient_column"
+      ],
+      "normal": {
+        "study_uid": "1.2.826.0.1.3680043.8.498.11548045715264151632153040089882701935",
+        "series_uid": "1.2.826.0.1.3680043.8.498.53355900447142549760284049936407928123",
+        "slice": 16,
+        "polygon_xy": [
+          [
+            468,
+            214
+          ],
+          [
+            478,
+            218
+          ],
+          [
+            483,
+            248
+          ],
+          [
+            476,
+            285
+          ],
+          [
+            468,
+            328
+          ],
+          [
+            465,
+            366
+          ],
+          [
+            453,
+            413
+          ],
+          [
+            439,
+            458
+          ],
+          [
+            427,
+            487
+          ],
+          [
+            419,
+            482
+          ],
+          [
+            432,
+            452
+          ],
+          [
+            444,
+            407
+          ],
+          [
+            455,
+            362
+          ],
+          [
+            458,
+            324
+          ],
+          [
+            466,
+            282
+          ],
+          [
+            474,
+            248
+          ]
+        ],
+        "visual_reading": "A continuous slim low-signal band outside the medial femoral condyle and tibial margin, opposite the fibula. The official report explicitly says the medial collateral ligament complexes are intact. The annotation follows the pictured course; the study has other injuries and is not globally normal.",
+        "reviewer": "Codex, native-image inspection of slices 14/16/18, 2026-10-22",
+        "scope": "pictured medial collateral course; rough regional support, not a complete segmentation"
+      },
+      "diagnosed": {
+        "study_uid": "1.2.826.0.1.3680043.8.498.62465595376489211274225312453216559395",
+        "series_uid": "1.2.826.0.1.3680043.8.498.12524480704368639096451209748649813465",
+        "slice": 10,
+        "polygon_xy": [
+          [
+            301,
+            139
+          ],
+          [
+            317,
+            143
+          ],
+          [
+            322,
+            163
+          ],
+          [
+            311,
+            183
+          ],
+          [
+            306,
+            201
+          ],
+          [
+            307,
+            224
+          ],
+          [
+            302,
+            260
+          ],
+          [
+            293,
+            283
+          ],
+          [
+            284,
+            280
+          ],
+          [
+            293,
+            255
+          ],
+          [
+            296,
+            222
+          ],
+          [
+            295,
+            198
+          ],
+          [
+            300,
+            178
+          ],
+          [
+            308,
+            160
+          ]
+        ],
+        "visual_reading": "The medial femoral-to-tibial collateral course is irregular and wavy near its proximal portion, with disrupted appearance around the medial joint margin, on the side opposite the fibula. The independent report establishes complete MCL rupture at the medial joint line and squiggly proximal fibers. The annotation is the injured ligament course and immediate interface, not an assertion that every selected pixel is ligament.",
+        "reviewer": "Codex, native-image inspection of full coronal series and slices 8/10/12, 2026-10-22",
+        "scope": "pictured medial collateral course and its injury interface; no whole-support tissue certificate"
+      }
+    }
+  ]
+}

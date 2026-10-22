@@ -659,8 +659,9 @@ def test_conflicting_anchor_is_observed_as_a_hypothesis_but_never_anchors(monkey
     state = anatomy_locator.study_anchors(study, {CORONAL: series})
     assert set(state["usable"]) == {"tibia"}
     assert set(state["geometry"]) == {"tibia"}
-    assert state["hypotheses"]["femur"][0]["territory"] is (
-        study["anchors"]["femur"]["territories"][0]
+    assert (
+        state["hypotheses"]["femur"][0]["territory"]
+        is (study["anchors"]["femur"]["territories"][0])
     )
 
     result = locator.locate_objects(study, memory)

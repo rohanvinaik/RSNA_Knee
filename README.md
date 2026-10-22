@@ -3,12 +3,20 @@
 A classical-AI computer-vision pipeline grounded in **What an \<Object> Is**. Complementary measurements describe anatomical objects; their physical relations constrain recognition. Each object has one HDC representation across its available lenses, views, directions and scales. Independent normal and condition-presentation cases remain individual precedents.
 
 **Current development objective: local bootstrap, corpus growth and classical AI training.**
+We are **hand-building the corpus**: recognition tools help isolate anatomical examples,
+normal and diseased, whose reviewed bundles become K-lines. A perfect or complete automatic
+recognition solution on the 58 teaching studies is not a prerequisite for training the AI.
 Visually confirm or correct recognizable examples, add their signed HDC cases to the K-line memory,
 use that memory and anatomy to find more, then train the designed Minsky/Winston agencies from
 the growing corpus and sourced experiences. This preparation is not a Kaggle deployment task.
 The full corpus is on an SSD being extracted, and three computers are available for training math.
 [FULL_BUILD_PLAN §18.1](docs/FULL_BUILD_PLAN.md#181-current-phase-local-bootstrap-and-classical-ai-training)
 defines the phase boundary; [the active packet](docs/work/current/README.md) records actual progress.
+
+**Hand-defined teaching references:** [normal/diagnosed picture pairs for all twelve questions](docs/GROUNDED_TEACHING.md),
+with [authored categories, measured cases and replay instructions](docs/teaching/README.md).
+These establish the explicit starting reference before scaling; teaching replay is distinct from
+held-out diagnostic performance. The existing signed parent memory is preserved.
 
 The high-resolution anatomical pipeline supplies bootstrap examples. **Production starts with raw-image squints and case recall.** It locates current-study anatomy, reasons over the recalled object states, and requests a bounded higher-fidelity reading only for a question still open. It does not reconstruct the whole knee before deciding whether reconstruction was needed.
 
@@ -148,3 +156,9 @@ The gate includes intent tests, import contracts, Sonar correctness checks, Vult
   existing interfaces. Future admission/growth/consumer scenarios remain in OpenSpec until integrated.
 
 `archive/` and `archive2/` are outside the active project and remain unread unless Rohan requests them.
+
+For the current hand-built corpus task, see [the teaching workflow](docs/GROUNDED_RECOGNITION.md):
+actual images → reviewed anatomical and normal/diagnosed examples → measured bundles and signed
+K-lines → bootstrap and train the Society of Mind. Automatic cohort recognition is not a gate
+on this teaching operation.
+The [current packet](docs/work/current/README.md) names the memory and verified state.

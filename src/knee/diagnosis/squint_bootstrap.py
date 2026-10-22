@@ -45,6 +45,7 @@ from typing import Any
 
 from knee.diagnosis.squint_configurations import (
     ConfigurationProfileError,
+    configuration_role_cases,
     with_configuration_cases,
 )
 from knee.diagnosis.squint_interfaces import parse_territory_bank_name
@@ -962,7 +963,9 @@ def _rebuilt_configurations(
     # A clinical case on an exact identity source is another condition teacher
     # for the same measured role, not a second anatomical object to compose.
     identity_sources = scope.get("identity_sources", {})
-    cases = [case for case in cases if case["case_id"] not in identity_sources]
+    cases = configuration_role_cases(
+        [case for case in cases if case["case_id"] not in identity_sources]
+    )
     roles = list(_scoped_cases(cases, scope))
     for case, role in zip(cases, roles, strict=True):
         if case["profile"]["banks"] and not role["profile"]["banks"]:

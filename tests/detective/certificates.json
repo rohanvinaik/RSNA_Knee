@@ -5,6 +5,12 @@
     "refusal": "",
     "standing": "incomplete"
   },
+  "scripts/grounded_recognition.py::outcome_against_call": {
+    "cut_reasons": [],
+    "function_digest": "ad7199211438c89e",
+    "refusal": "",
+    "standing": "unverified"
+  },
   "src/knee/collapse/observations.py::address_frame_status": {
     "cut_reasons": [],
     "function_digest": "0225b451cc1a941e",
@@ -40,9 +46,9 @@
   },
   "src/knee/diagnosis/squint_contracts.py::_configuration_case_disposition": {
     "cut_reasons": [],
-    "function_digest": "20eb4bf9dcf9092f",
+    "function_digest": "1cd45239800b15c9",
     "refusal": "",
-    "standing": "complete"
+    "standing": "unverified"
   },
   "src/knee/diagnosis/squint_contracts.py::_kleene_or": {
     "cut_reasons": [],

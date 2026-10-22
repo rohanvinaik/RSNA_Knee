@@ -272,7 +272,7 @@ def test_verified_clinical_alias_preserves_configuration_and_rebuilds_one_role()
     assert links["femur"]["identity"]["reader"] == "visual-reviewer"
 
 
-def test_unbound_clinical_duplicate_remains_ambiguous_for_configuration():
+def test_unbound_clinical_duplicate_cannot_replace_an_explicit_configuration_source():
     memory, finding, call = inputs()
     memory["label_ledger"] = {UID: {"Fracture": 0}}
     built = rebuild_study_configurations(memory, [UID], built_by={"kind": "fixture"})
@@ -288,6 +288,9 @@ def test_unbound_clinical_duplicate_remains_ambiguous_for_configuration():
         for c in _scoped_cases(child["cases"], scope)
         if c["subject"] == "diagnosis/Fracture"
     )
-    assert config["profile"]["banks"] == {}
+    # The existing configuration explicitly names the original measured
+    # identity. An unrelated, unbound report presentation cannot silence it.
+    # Rebuilding without a unique new role remains ambiguous below.
+    assert set(config["profile"]["banks"]) == {"object/femur/" + COR_BANK}
     with pytest.raises(ConfigurationProfileError):
         rebuild_study_configurations(child, [UID], built_by={"kind": "fixture"})

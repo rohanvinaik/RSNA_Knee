@@ -1045,7 +1045,7 @@ milestone before that dependency; do not label the whole competition solution co
 
 ## 13. Context-stable continuation and stop points
 
-**Active task ID:** `THIN-OBJECT-BOOTSTRAP-20261021`.
+**Active task ID:** `HAND-GROUNDED-CORPUS-20261022`.
 **Active packet:** [docs/work/current/README.md](work/current/README.md).
 
 This section is the only active-task index. The named packet is the only populated current-state
@@ -1770,6 +1770,13 @@ and the local Claude Max CLI. Root owns meaning, visual inspection and integrati
 alone holds the active jobs, source pins and measured outcomes.
 
 ### 18.1 Current phase: local bootstrap and classical AI training
+
+**Author correction, 2026-10-22:** We are hand-building the corpus. Recognition is a tool for
+isolating individual anatomical objects and their normal/diseased presentations; their reviewed
+bundles become K-lines that bootstrap the AI. Do not require a perfect or complete automatic
+recognition solution on the 58 teaching studies before training. Direct visual selection is valid
+when an automatic proposal fails. The earlier competence-first interpretation in
+GROUNDED_RECOGNITION and the live packet was the agent's mistake, not an added author requirement.
 
 Rohan's literal clarification is recorded in the latest conversation. He has three computers
 waiting to do the math. The full competition corpus is on the SSD and is being extracted; preserve

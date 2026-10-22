@@ -1679,6 +1679,51 @@ def _configuration_row(case_id: str, call: int, subjects: tuple[str, ...]) -> di
     return row
 
 
+@pytest.mark.parametrize("question", QUESTION_IDS)
+def test_whole_normal_configuration_decides_with_relevant_tissue(question) -> None:
+    contract = contract_for(question)
+    defining = contract.necessary or contract.alternatives
+    row = _configuration_row("whole-normal", -1, (defining[0],))
+    result = combine_condition(question, {f"diagnosis/{question}": _absent([row])})
+
+    assert result["outcome"] == "defeated"
+    assert result["reason"] == "warranted_condition_configuration"
+    assert result["evidence"]["readings"][defining[0]]["state"] == "unknown"
+    assert result["evidence"]["joint_configuration_coverage"]["eligible_case_ids"] == {
+        "positive": [],
+        "negative": ["whole-normal"],
+    }
+
+
+@pytest.mark.parametrize("question", QUESTION_IDS)
+def test_whole_normal_without_defining_tissue_cannot_decide(question) -> None:
+    row = _configuration_row("context-normal", -1, ("unrelated-tissue",))
+    result = combine_condition(question, {f"diagnosis/{question}": _absent([row])})
+
+    assert result["outcome"] == "open"
+    assert result["evidence"]["joint_configuration_coverage"]["eligible_case_ids"] == {
+        "positive": [],
+        "negative": [],
+    }
+
+
+@pytest.mark.parametrize("scope", ("grade_only", "untrusted"))
+def test_whole_normal_requires_a_warrant_not_just_a_sign(scope) -> None:
+    row = _configuration_row("unwarranted-normal", -1, ("femur",))
+    if scope == "grade_only":
+        recall = _rec("absent", [row], decision_scope="grade_only")
+    else:
+        row["reaches_trust"] = False
+        recall = _absent([row])
+    result = combine_condition("Fracture", {"diagnosis/Fracture": recall})
+
+    assert result["outcome"] == "open"
+    assert result["evidence"]["joint_configuration_coverage"]["eligible_case_ids"] == {
+        "positive": [],
+        "negative": [],
+    }
+
+
 def test_supporting_only_configuration_cases_grade_but_cannot_decide() -> None:
     positive = _configuration_row("context-pos", 1, ("femur", "tibia", "pcl"))
     negative = _configuration_row("context-neg", -1, ("femur", "tibia", "pcl"))
@@ -1715,7 +1760,7 @@ def test_context_only_opposition_does_not_cancel_a_covered_configuration_case() 
     }
 
 
-def test_configuration_negative_requires_each_alternative_in_each_case() -> None:
+def test_warranted_whole_normal_configuration_does_not_need_every_site() -> None:
     alternatives = (
         "femur",
         "tibia",
@@ -1725,10 +1770,10 @@ def test_configuration_negative_requires_each_alternative_in_each_case() -> None
     )
     partial = _configuration_row("partial-neg", -1, alternatives[:3])
     result = combine_condition("Medial OA", {"diagnosis/Medial OA": _absent([partial])})
-    assert result["outcome"] == "open"
+    assert result["outcome"] == "defeated"
     assert result["rank"]["negative_case_ids"] == ["partial-neg"]
     assert result["evidence"]["joint_configuration_coverage"][
-        "required_negative_subjects"
+        "negative_defining_subjects"
     ] == sorted(alternatives)
 
     split = [
@@ -1738,7 +1783,7 @@ def test_configuration_negative_requires_each_alternative_in_each_case() -> None
     split_result = combine_condition(
         "Medial OA", {"diagnosis/Medial OA": _absent(split)}
     )
-    assert split_result["outcome"] == "open"
+    assert split_result["outcome"] == "defeated"
     assert split_result["rank"]["negative_case_ids"] == [
         row["case_id"] for row in split
     ]
@@ -1820,7 +1865,7 @@ def test_malformed_decision_scope_is_rejected(scope) -> None:
     assert result["evidence"]["readings"]["acl"]["code"] == "evidence_malformed"
 
 
-def test_partial_normal_configuration_counters_only_on_its_own_site() -> None:
+def test_opposing_whole_configurations_conflict_even_on_different_sites() -> None:
     positive = _configuration_row("positive-femur", 1, ("femur",))
     same_site_normal = _configuration_row("normal-femur", -1, ("femur",))
     same_site = combine_condition(
@@ -1831,26 +1876,10 @@ def test_partial_normal_configuration_counters_only_on_its_own_site() -> None:
     )
 
     assert same_site["outcome"] == "open"
-    assert same_site["reason"] == "configuration_partial_presentations_compete"
-    assert same_site["evidence"]["joint_configuration_coverage"][
-        "counterevidence_case_ids"
-    ] == ["normal-femur"]
+    assert same_site["reason"] == "configuration_anatomy_conflict"
     assert same_site["evidence"]["joint_configuration_coverage"][
         "eligible_case_ids"
-    ] == {"positive": ["positive-femur"], "negative": []}
-    excluded_normal = next(
-        row
-        for row in same_site["evidence"]["joint_configuration_coverage"][
-            "excluded_cases"
-        ]
-        if row["case_id"] == "normal-femur"
-    )
-    assert excluded_normal["excluded_from"] == "categorical_defeat"
-    assert excluded_normal["disposition"] == "retained_as_counterevidence"
-    assert excluded_normal["reason"] == "defining_tissue_coverage_incomplete"
-    assert excluded_normal["case_coverage_disposition"] == (
-        "partial_normal_counterevidence"
-    )
+    ] == {"positive": ["positive-femur"], "negative": ["normal-femur"]}
 
     other_site_normal = _configuration_row("normal-tibia", -1, ("tibia",))
     different_site = combine_condition(
@@ -1859,13 +1888,14 @@ def test_partial_normal_configuration_counters_only_on_its_own_site() -> None:
             "diagnosis/Medial OA": _conflict([positive, other_site_normal]),
         },
     )
-    assert different_site["outcome"] == "assigned"
+    assert different_site["outcome"] == "open"
+    assert different_site["reason"] == "configuration_anatomy_conflict"
     assert different_site["evidence"]["joint_configuration_coverage"][
-        "counterevidence_case_ids"
-    ] == ["normal-tibia"]
+        "eligible_case_ids"
+    ] == {"positive": ["positive-femur"], "negative": ["normal-tibia"]}
 
 
-def test_partial_normal_at_other_site_does_not_revoke_anatomical_assignment() -> None:
+def test_whole_normal_configuration_conflicts_with_a_local_positive() -> None:
     positive = _configuration_row("positive-femur-tibia", 1, ("femur", "tibia"))
     normal = _configuration_row("normal-tibia", -1, ("tibia",))
     result = combine_condition(
@@ -1876,11 +1906,12 @@ def test_partial_normal_at_other_site_does_not_revoke_anatomical_assignment() ->
         },
     )
 
-    assert result["outcome"] == "assigned"
-    assert result["evidence"]["decided_by"] == ["femur"]
-    assert result["evidence"]["joint_configuration_coverage"][
-        "competing_partial_counterevidence"
-    ] == {"normal-tibia": ["tibia"]}
+    assert result["outcome"] == "open"
+    assert result["reason"] == "configuration_anatomy_conflict"
+    assert result["evidence"]["joint_configuration_coverage"]["eligible_case_ids"] == {
+        "positive": ["positive-femur-tibia"],
+        "negative": ["normal-tibia"],
+    }
 
 
 PARTIAL_OBJECT_NORMALS = [
@@ -2003,19 +2034,6 @@ def test_context_and_grade_only_normals_do_not_compete_with_a_configuration() ->
     )
 
 
-def test_partial_configuration_relation_names_shared_and_distinct_sites() -> None:
-    relation = squint_contracts._partial_configuration_relation
-
-    assert relation(["femur", "tibia"], ["tibia"]) == (
-        "competing_partial_presentations",
-        ["tibia"],
-    )
-    assert relation(["femur"], ["tibia"]) == (
-        "counterevidence_on_other_sites",
-        [],
-    )
-
-
 def test_repeated_case_coverage_is_record_order_invariant() -> None:
     rows = [
         _present([_configuration_row("repeat-positive", 1, ("femur",))]),
@@ -2035,11 +2053,7 @@ def test_repeated_case_coverage_is_record_order_invariant() -> None:
         coverage = result["evidence"]["joint_configuration_coverage"]
         assert coverage["eligible_case_ids"] == {
             "positive": ["repeat-positive"],
-            "negative": [],
-        }
-        assert coverage["counterevidence_case_ids"] == ["repeat-normal"]
-        assert coverage["competing_partial_counterevidence"] == {
-            "repeat-normal": ["femur", "tibia"]
+            "negative": ["repeat-normal"],
         }
 
 
@@ -2049,10 +2063,8 @@ def test_configuration_case_disposition_names_sign_and_coverage() -> None:
     complete = ["femur", "tibia", "patella"]
 
     assert classify(1, ["patella"], branches, complete) == "positive_configuration"
-    assert classify(-1, complete, branches, complete) == "complete_negative"
-    assert classify(-1, ["tibia"], branches, complete) == (
-        "partial_normal_counterevidence"
-    )
+    assert classify(-1, complete, branches, complete) == "negative_configuration"
+    assert classify(-1, ["tibia"], branches, complete) == ("negative_configuration")
     assert classify(-1, ["joint"], branches, complete) == "context_only"
     assert classify(0, complete, branches, complete) == "invalid_call"
 

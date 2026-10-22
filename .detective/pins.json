@@ -1,5 +1,6 @@
 {
   "../../../../../../private/tmp/rsna-codex-build-20261019/p8-patellofemoral-max/current-rebase/src/knee/collapse/patellofemoral.py::patellofemoral_surface_reading::dbef412f0d951ea3": [],
+  "scripts/grounded_recognition.py::outcome_against_call::ad7199211438c89e": [],
   "src/knee/collapse/observations.py::address_frame_status::0225b451cc1a941e": [
     {
       "assertion_code": "result = address_frame_status(frame=None)\nassert result == 'frame_invalid'",
@@ -284,6 +285,24 @@
     }
   ],
   "src/knee/diagnosis/squint_bootstrap.py::validate_calls::3d822e898625a5e3": [],
+  "src/knee/diagnosis/squint_contracts.py::_configuration_case_disposition::1cd45239800b15c9": [
+    {
+      "assertion_code": "result = _configuration_case_disposition(call=1, covered_subjects=['x'], positive_branches=[['x'], ['x']], required_negative=[])\nassert result == 'positive_configuration'",
+      "category": "VALUE",
+      "confidence": 0.95,
+      "function_key": "",
+      "golden_case": null,
+      "mutant_id": "",
+      "needs_oracle": false,
+      "preconditions": [
+        "distinguishing witness (equivalence search)"
+      ],
+      "setup_code": "from knee.diagnosis.squint_contracts import _configuration_case_disposition",
+      "source_lenses": [
+        "witness"
+      ]
+    }
+  ],
   "src/knee/diagnosis/squint_contracts.py::_kleene_or::e63a2d3431aefa2e": [],
   "src/knee/diagnosis/squint_identity.py::_sanity_status::30256d1213817dbe": [],
   "src/knee/diagnosis/squint_pipeline.py::is_squint_memory::cd52010b02cfbdfb": [

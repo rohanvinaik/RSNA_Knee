@@ -18,7 +18,9 @@ What this module is, and is not (Rohan, 2026-10-21 and the squint contract):
 * All necessary predicates holding is not treated as sufficiency. Literal
   clinical branches remain distinct from independently diagnosed whole-case
   configurations. Rohan explicitly authorizes warranted configuration recall
-  to decide when no necessary anatomical finding contradicts it.
+  to decide for either sign when its comparison includes defining tissue and
+  no applicable anatomical finding contradicts it. Whole-normal configuration
+  recall does not require a separate negative finding at every possible site.
 * Unknown is not negative. Missing, silent, unregistered, malformed, censored
   or proposal-only evidence is unknown; only a warranted ``absent`` recall
   outcome is a negative reading. Strong Kleene logic carries readings through
@@ -1194,23 +1196,19 @@ def _requests(
     return found
 
 
-def _partial_configuration_relation(
-    positive_subjects: list[str], negative_subjects: list[str]
-) -> tuple[str, list[str]]:
-    """Name whether partial configuration comparisons share a defining site."""
-    overlap = sorted(set(positive_subjects) & set(negative_subjects))
-    if overlap:
-        return "competing_partial_presentations", overlap
-    return "counterevidence_on_other_sites", []
-
-
 def _configuration_case_disposition(
     call: int,
     covered_subjects: list[str],
     positive_branches: list[list[str]],
     required_negative: list[str],
 ) -> str:
-    """Classify one trusted case by sign and its actual defining-site coverage."""
+    """Classify a whole-condition case by sign and compared defining tissue.
+
+    This is not the rule for an isolated normal tissue finding. The negative
+    case already carries an independently established whole-condition call;
+    recall must compare relevant tissue but need not re-establish every site.
+    Trust, provenance and contradictory findings are checked by the caller.
+    """
     defining_subjects = set(required_negative)
     for branch in positive_branches:
         defining_subjects.update(branch)
@@ -1220,10 +1218,8 @@ def _configuration_case_disposition(
             return "positive_configuration"
         return "positive_coverage_incomplete"
     if call == -1:
-        if required_negative and set(required_negative) <= covered:
-            return "complete_negative"
         if covered:
-            return "partial_normal_counterevidence"
+            return "negative_configuration"
         return "context_only"
     return "invalid_call"
 
@@ -1243,11 +1239,11 @@ def _configuration_decision(
     """Let covered, independently taught configuration cases speak.
 
     Each decisive sign needs case-level common-bank provenance for the
-    condition's own declared roles. Negative alternative cases cover every
-    alternative themselves; partial normal cases remain counterevidence on
-    their covered sites. Opposing partial presentations compete only where
-    their defining-site coverage overlaps. A clean necessary negative remains
-    decisive, and complete conflicts with anatomical readings stay visible.
+    condition's own declared roles. Warranted whole-normal recall may decide
+    without separate normal findings at every alternative site (Rohan,
+    2026-10-22). Opposing whole-condition calls remain a conflict even when
+    their compared roles differ. A clean necessary negative remains decisive,
+    and contradictions with anatomical readings stay visible.
     """
     coverage: dict[str, Any] = {
         "status": "not_present",
@@ -1264,7 +1260,6 @@ def _configuration_decision(
     eligible_signs: set[str] = set()
     eligible_ids: dict[str, set[str]] = {"positive": set(), "negative": set()}
     positive_covered_by_case: dict[str, set[str]] = {}
-    partial_negative_covered_by_case: dict[str, set[str]] = {}
     grade_only_seen = False
     subjects = set(diagnostic)
 
@@ -1356,7 +1351,7 @@ def _configuration_decision(
                 [sorted(branch) for branch in positive_branches],
                 sorted(negative_required),
             )
-            if disposition in {"positive_configuration", "complete_negative"}:
+            if disposition in {"positive_configuration", "negative_configuration"}:
                 label = (
                     "positive"
                     if disposition == "positive_configuration"
@@ -1377,22 +1372,11 @@ def _configuration_decision(
                     "covered_subjects": sorted(covered),
                     "case_coverage_disposition": disposition,
                 }
-                if disposition == "partial_normal_counterevidence":
-                    # A warranted normal comparison on a defining site is
-                    # counterevidence there, even when it cannot establish
-                    # that every alternative site is normal.
-                    partial_negative_covered_by_case.setdefault(case_id, set()).update(
-                        covered
-                    )
-                    excluded["excluded_from"] = "categorical_defeat"
-                    excluded["disposition"] = "retained_as_counterevidence"
                 coverage["excluded_cases"].append(excluded)
 
     coverage["eligible_case_ids"] = {
         label: sorted(values) for label, values in eligible_ids.items()
     }
-    coverage["counterevidence_case_ids"] = sorted(partial_negative_covered_by_case)
-    competing_partial: dict[str, list[str]] = {}
     positive_subjects = sorted(
         set().union(*positive_covered_by_case.values())
         if positive_covered_by_case
@@ -1403,17 +1387,11 @@ def _configuration_decision(
     }
     anatomical_overlap = sorted(set(positive_subjects) & normal_subjects)
     coverage["competing_anatomical_counterevidence"] = anatomical_overlap
-    for negative_id, negative_subjects in partial_negative_covered_by_case.items():
-        relation, overlap = _partial_configuration_relation(
-            positive_subjects, sorted(negative_subjects)
-        )
-        if relation == "competing_partial_presentations":
-            competing_partial[negative_id] = overlap
-    coverage["competing_partial_counterevidence"] = competing_partial
     coverage["required_positive_branches"] = [
         sorted(branch) for branch in positive_branches
     ]
-    coverage["required_negative_subjects"] = sorted(negative_required)
+    coverage["negative_defining_subjects"] = sorted(negative_required)
+    coverage["negative_coverage_rule"] = "warranted_configuration_with_defining_tissue"
     if not eligible_signs:
         coverage["status"] = (
             "query_grade_only"
@@ -1452,12 +1430,6 @@ def _configuration_decision(
         return _decision(
             _OPEN,
             "configuration_anatomy_counterevidence",
-            unresolved=diagnostic,
-        ), coverage
-    if competing_partial and decision["outcome"] == _OPEN:
-        return _decision(
-            _OPEN,
-            "configuration_partial_presentations_compete",
             unresolved=diagnostic,
         ), coverage
     if state == _POSITIVE and decision["outcome"] == _ASSIGNED:

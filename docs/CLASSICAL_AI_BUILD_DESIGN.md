@@ -145,6 +145,12 @@ holds, for positive and normal presentations alike.
 
 ## 6. Bootstrap: establish the initial recognition corpus
 
+**Hand-building is the current operation.** Rohan's 2026-10-22 correction explicitly rejects
+perfect or complete automatic recognition as a pre-AI prerequisite. Use recognition to help
+isolate useful objects, and select them directly on the image when needed. Establish their
+anatomical and normal/diseased meanings, retain their bundles as K-lines, and use that corpus to
+bootstrap the AI. An automatic refusal does not withhold an independently warranted visual call.
+
 Use the existing teaching studies and their already retained products. Their automatic object names are proposals, not visual calls. Make teaching sheets from actual native images and the actual addressed readings. Do not rerun every anatomical measurement just to recreate the evidence.
 
 For every candidate that can be called:
@@ -315,7 +321,7 @@ This handoff changes no probability/readout formula. Preserve the currently appr
 - Recall assigns an interpretation by the existing concurrence contract. Do not settle opposing warranted answers by nearest-case priority, majority vote or an average. Coexisting diagnoses are not automatically competing answers.
 - Hear normal and diagnosed precedents on the tissue actually observed. Partial normal evidence may reduce support for an overlapping claim without proving every possible site normal. A sufficient localized positive is not cancelled by an unrelated normal site.
 - Rohan's instruction “Let warranted configuration recall decide” remains in force. A whole-condition case may decide when its actual comparison includes the defining tissue and no necessary anatomical finding contradicts it. Supporting context cannot impersonate unread defining tissue.
-- Apply the condition's own necessary, sufficient, alternative and supporting relations. A whole-condition multi-site negative needs the coverage its contract requires. Do not silently union incomplete negatives into an independently covered whole-case assertion.
+- Apply the condition's own necessary, sufficient, alternative and supporting relations to local findings. One normal site does not establish that every site is normal. **Later author decision, 2026-10-22:** «Let warranted whole-normal configuration recall decide». An independently diagnosed whole-normal precedent can therefore decide absence when its actual comparison includes condition-defining tissue and has no applicable contradictory finding; it does not need separate negative calls at every site. This recalls an already taught whole-condition meaning, rather than inferring whole-condition absence from one local negative. Context-only, unwarranted or conflicting comparisons cannot decide. Opposing warranted whole-condition configurations stay open, including when they compare different defining sites.
 - Clinical calls stay clinical; identity calls stay identity calls. A source-labelled presentation can be valuable even when it is not a localized lesion annotation.
 
 `SIGNIFICANCE_WEIGHTING.md` explains why resolving a fact can constrain a cluster of connected questions and why confirmed exclusions can sharply reduce the remaining search. It is not permission to multiply dependent evidence as independent probabilities or invent per-condition weights. `law_as_architecture.md` supplies the principle of composing specialists according to the domain and recalling contextually appropriate experience; its drilling coefficients and continuous-coefficient blends are not knee parameters or permission to average contradictory categorical verdicts.

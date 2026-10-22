@@ -1594,15 +1594,16 @@ def locate_anatomy_first(
         study.pop(NATIVE_SUPPORT_RETAINED, None)
         study.pop(LOCATION_RUNTIME_CONTEXT, None)
     cases = memory.get("cases", ())
-    case_rows = (
+    original_case_rows = (
         list(cases)
         if isinstance(cases, Sequence) and not isinstance(cases, (str, bytes))
         else []
     )
+    case_rows = shared._location_cases(memory)
     territory_v2 = memory.get("procedure") == TERRITORY_PROCEDURE or any(
         isinstance(row, Mapping)
         and shared._source(row.get("profile")).get("procedure") == TERRITORY_PROCEDURE
-        for row in case_rows
+        for row in original_case_rows
     )
     procedure = (
         TERRITORY_PROCEDURE if territory_v2 else "knee.squint-profile/scan-tercile-v1"
@@ -1610,7 +1611,7 @@ def locate_anatomy_first(
     known = sorted(
         {
             row.get("subject")
-            for row in case_rows
+            for row in original_case_rows
             if isinstance(row, Mapping)
             and isinstance(row.get("subject"), str)
             and not row["subject"].startswith("diagnosis/")
