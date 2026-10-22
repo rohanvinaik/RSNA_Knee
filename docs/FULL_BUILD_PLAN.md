@@ -1692,6 +1692,10 @@ The upgrade connects current-study structural bone evidence to the locator, addr
 
 ## 18. Thin object bootstrap — Rohan's execution order, 2026-10-21
 
+**The current phase is local bootstrap and readiness for classical AI training.** §18.1 below
+governs what to do next. Earlier competition deployment schedules and resource acceptance tasks
+remain eventual deployment requirements; they do not dispatch Kaggle work during this phase.
+
 The complete human clarification and admission answers are in
 `docs/conversations/2026-10-21-ternary-buckets-and-squint-orchestration.md`.
 This is the next application of the existing representation, not another anatomy-definition campaign.
@@ -1764,3 +1768,49 @@ mandatory high-resolution production prefix follows. Use the already implemented
 publication and production entry point; parallelize bounded mechanical work through native helpers
 and the local Claude Max CLI. Root owns meaning, visual inspection and integration. §13's packet
 alone holds the active jobs, source pins and measured outcomes.
+
+### 18.1 Current phase: local bootstrap and classical AI training
+
+Rohan's literal clarification is recorded in the latest conversation. He has three computers
+waiting to do the math. The full competition corpus is on the SSD and is being extracted; preserve
+the extraction and consume studies only when their required inputs are complete. Do not invent a
+mount path, claim extraction is finished, or alter the extraction process to run a demonstration.
+
+The work, in order, with independent lanes proceeding together:
+
+1. **Teach from the actual images.** Find recognizable candidates in the available corpus. Rohan
+   and the reviewing agent inspect the images to confirm or correct identity. Retain every warranted
+   signed call with its actual views, sampled support and provenance. Useful partial or messy
+   boundaries suffice; an identity call does not invent normality or a localized lesion.
+2. **Recall to find more.** The individual K-line cases and current-study anatomy jointly resolve
+   new candidates. Carry already established information forward. Inspect actual refusal reasons:
+   a missing precedent calls for teaching; a negative may correctly identify wrong tissue; a
+   conflict may expose missing context or incorrect applicability. Do not assume all refusals mean
+   too few seeds, add votes until a conflict disappears, or weaken the admission contract.
+3. **Demonstrate the local circular operation.** On a frozen parent, recognize new objects; retain
+   warranted admissions; inspect every first-round admission on its picture; correct mistakes;
+   publish the signed child; and run the next round using that child through the ordinary local
+   entry point. Verify the cases actually reach recall and the relevant condition consumers. Keep
+   all signed cases, their clinical scopes and lineage. A published but unconsumed bundle is not
+   this demonstration. Later rounds use spot checks rather than permanent per-case approval.
+4. **Grow the corpus and prepare training.** Expand over completed extracted studies locally.
+   Collect clean identities and independently sourced normal/diagnosed presentations at their
+   warranted scopes. Retain the actual expectations, recalled precedents, procedures, corrections
+   and outcomes needed by the agency learning already designed. No arbitrary seed quota or perfect
+   reconstruction of every object is required before useful work can proceed.
+5. **Train the designed classical system.** Use that material for the Minsky/Winston Society of
+   Mind: contextual interpretations, significant differences, warranted censors/splits, and recall
+   of useful procedures. K-lines remain active memory. Bucket filling enables this training; it is
+   not the entire learning algorithm. Return a genuinely unspecified update operation as one
+   concrete worked example for Rohan, while continuing specified independent work. Do not replace
+   his design with a generic learner or a new universal episode framework.
+
+**Phase boundary.** Kaggle packaging, uploads, private runs and submission do not belong to this
+task. Reuse the existing inference/teaching tools locally; a function or command named production
+does not make its local use a deployment. Competition limits apply when deployment resumes, not
+as a reason to postpone teaching or optimize this bootstrap tooling for a nine-hour notebook.
+Structural efficiency still governs the design: share observations, preserve their meanings and
+lineage, target useful residual questions, and release consumed study data. Arrange portable,
+source-pinned memory and run inputs for the available computers; do not invent host details or a
+distributed training algorithm. §13's packet alone records the live machines, paths and jobs once
+they have actually been checked.

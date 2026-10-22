@@ -12,6 +12,17 @@ recall, anatomical reasoning and question-directed bounded refinement, not a man
 of every object's outline. K-lines enable corpus construction AND remain active memory of contextual
 interpretations and useful procedures; filling buckets is not the entire learning algorithm.
 
+**Current objective: LOCAL bootstrap and readiness for classical AI training.** Rohan's latest
+clarification is in FULL_BUILD_PLAN §18.1 and the latest conversation. Find recognizable objects,
+inspect their actual images, retain warranted signed cases, recall them to find more, and use the
+growing corpus for the designed Minsky/Winston Society of Mind. Three computers are available for
+the math; the full competition corpus is on an SSD and is being extracted. Kaggle packaging,
+uploads, dry runs and submission are outside this current task. Do not substitute deployment
+readiness for training readiness, or call bucket growth the whole training algorithm. The existing
+entry point also runs locally; its name does not authorize a remote run. A zero-admission round
+needs its actual reasons and pictures examined, not an assumption that every refusal needs more
+seeds. Current jobs and completed evidence belong only in §13's packet.
+
 Calls retain their actual positive/negative/unknown question and view scopes. Unknown is not a negative.
 For **automated new memory admission**, however, unknown-only anatomy is insufficient: require confident
 joint recognition and affirmative applicable anatomical support with no known contradiction. An

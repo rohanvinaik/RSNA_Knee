@@ -2,6 +2,14 @@
 
 A classical-AI computer-vision pipeline grounded in **What an \<Object> Is**. Complementary measurements describe anatomical objects; their physical relations constrain recognition. Each object has one HDC representation across its available lenses, views, directions and scales. Independent normal and condition-presentation cases remain individual precedents.
 
+**Current development objective: local bootstrap, corpus growth and classical AI training.**
+Visually confirm or correct recognizable examples, add their signed HDC cases to the K-line memory,
+use that memory and anatomy to find more, then train the designed Minsky/Winston agencies from
+the growing corpus and sourced experiences. This preparation is not a Kaggle deployment task.
+The full corpus is on an SSD being extracted, and three computers are available for training math.
+[FULL_BUILD_PLAN §18.1](docs/FULL_BUILD_PLAN.md#181-current-phase-local-bootstrap-and-classical-ai-training)
+defines the phase boundary; [the active packet](docs/work/current/README.md) records actual progress.
+
 The high-resolution anatomical pipeline supplies bootstrap examples. **Production starts with raw-image squints and case recall.** It locates current-study anatomy, reasons over the recalled object states, and requests a bounded higher-fidelity reading only for a question still open. It does not reconstruct the whole knee before deciding whether reconstruction was needed.
 
 Read [Rohan's latest production explanation](docs/conversations/2026-10-21-ternary-buckets-and-squint-orchestration.md), [the original conversation](docs/conversations/2026-10-13-the-thesis.md), and [the theory](docs/THEORY_OF_THE_CASE.md). [FULL_BUILD_PLAN §0](docs/FULL_BUILD_PLAN.md#0-grounding-every-session-start-and-every-compaction) gives the grounding sequence; §13 points to the sole current task packet. The approved production design and interfaces are [AI_DIAGNOSTIC_DESIGN.md](docs/AI_DIAGNOSTIC_DESIGN.md) and [SQUINT_PRODUCTION_CONTRACT.md](docs/SQUINT_PRODUCTION_CONTRACT.md).

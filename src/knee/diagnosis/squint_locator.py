@@ -257,6 +257,7 @@ def _scoped_cases(cases: Sequence, scope: Mapping[str, Any] | None) -> Sequence:
     if scope is None:
         return cases
     views: Mapping[str, frozenset | None] = scope["views"]
+    identity_sources = scope.get("identity_sources", {})
     role_cases: dict[tuple[str, str], str | None] = {}
     for case in cases:
         if not isinstance(case, Mapping):
@@ -273,7 +274,12 @@ def _scoped_cases(cases: Sequence, scope: Mapping[str, Any] | None) -> Sequence:
             and isinstance(case_id, str)
         ):
             key = (study, subject)
-            role_cases[key] = None if key in role_cases else case_id
+            identity_id = identity_sources.get(case_id, case_id)
+            if key in role_cases:
+                if role_cases[key] != identity_id:
+                    role_cases[key] = None
+            else:
+                role_cases[key] = identity_id
     scoped: list = []
     for case in cases:
         profile = case.get("profile") if isinstance(case, Mapping) else None
@@ -878,7 +884,29 @@ def _call(case: Mapping[str, Any], question: str) -> int | None:
 
 
 def _case_call_scope(case: Mapping[str, Any], question: str) -> str | None:
-    """Return the exact nonempty per-question presentation scope, if present."""
+    """Adapt the source's scope to the existing per-question presentation scope.
+
+    A report's study-level positive is a condition presentation, not a finding
+    localizing that condition to this object. Keep the original condition scope
+    on the case; the existing bone-scope guard consumes its presentation meaning.
+    Negative and whole-configuration calls retain their original source scope.
+    """
+    condition_scopes = case.get("condition_scopes")
+    scope = (
+        condition_scopes.get(question)
+        if isinstance(condition_scopes, Mapping)
+        else None
+    )
+    if isinstance(scope, str) and scope:
+        subject = case.get("subject")
+        if (
+            scope == "study_condition"
+            and _call(case, question) == 1
+            and isinstance(subject, str)
+            and not subject.startswith("diagnosis/")
+        ):
+            return "positive_condition_presentation"
+        return scope
     scopes = case.get("presentation_scope")
     if not isinstance(scopes, Mapping):
         return None

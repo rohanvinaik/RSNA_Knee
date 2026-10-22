@@ -965,7 +965,10 @@ def admit_report_cases(
     calls naming that exact study and subject; any call-like field the finding
     itself carries (a recall outcome, say) is ignored. Contradictions, duplicates,
     review flags and abstentions are retained in the receipt and teach nothing;
-    no trust or censor record is created. The supplied memory is never mutated.
+    no trust or censor record is created. When the same complete measured profile
+    and actual region places already have one confirmed identity source, the new
+    condition case references it; the report never adds identity teaching. The
+    supplied memory is never mutated.
     """
     if not isinstance(memory, Mapping):
         raise ReportCallError("memory_mapping_required")
@@ -994,6 +997,21 @@ def admit_report_cases(
         raise ReportCallError("reports_mapping_required")
 
     existing = list(cases.values()) if isinstance(cases, Mapping) else list(cases)
+    from knee.diagnosis.squint_identity import (
+        identity_condition_views,
+        measured_identity_support_code,
+    )
+
+    identity_scope = identity_condition_views(memory)
+    identity_views = (
+        identity_scope["views"] if identity_scope.get("outcome") == "scoped" else {}
+    )
+    identity_teaching = memory.get("object_identity_teaching")
+    confirmed_identity_ids = (
+        set(identity_teaching.get("confirmed_case_ids", ()))
+        if isinstance(identity_teaching, Mapping)
+        else set()
+    )
     existing_ids = {_field(c, "case_id") for c in existing} - {None}
     existing_questions: dict[tuple[object, object], set[str]] = {}
     prior_entries: list[dict[str, Any]] = []
@@ -1323,6 +1341,16 @@ def admit_report_cases(
                 ],
             },
         }
+        identity_sources = [
+            prior["case_id"]
+            for prior in existing
+            if isinstance(prior, Mapping)
+            and prior.get("case_id") in confirmed_identity_ids
+            and prior.get("case_id") in identity_views
+            and measured_identity_support_code(case, prior) == "same_measured_support"
+        ]
+        if len(identity_sources) == 1:
+            case["identity_source_case_id"] = identity_sources[0]
         new_cases.append(case)
         ref_outcome[ref] = "admitted"
         admitted.append(

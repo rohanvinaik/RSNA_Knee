@@ -959,6 +959,10 @@ def _rebuilt_configurations(
     scope = identity_condition_views(child)
     if scope.get("outcome") != "scoped":
         raise _fail("child_identity_teaching_invalid")
+    # A clinical case on an exact identity source is another condition teacher
+    # for the same measured role, not a second anatomical object to compose.
+    identity_sources = scope.get("identity_sources", {})
+    cases = [case for case in cases if case["case_id"] not in identity_sources]
     roles = list(_scoped_cases(cases, scope))
     for case, role in zip(cases, roles, strict=True):
         if case["profile"]["banks"] and not role["profile"]["banks"]:

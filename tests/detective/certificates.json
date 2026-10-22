@@ -26,6 +26,12 @@
     "refusal": "",
     "standing": "ungateable"
   },
+  "src/knee/diagnosis/squint_anatomy_locator.py::_anchor_territories": {
+    "cut_reasons": [],
+    "function_digest": "7d0bd07156efa832",
+    "refusal": "",
+    "standing": "incomplete"
+  },
   "src/knee/diagnosis/squint_bootstrap.py::validate_calls": {
     "cut_reasons": [],
     "function_digest": "3d822e898625a5e3",

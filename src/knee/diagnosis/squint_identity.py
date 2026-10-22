@@ -393,6 +393,58 @@ def confirm_call_views(row: object) -> dict[str, Any]:
     }
 
 
+def measured_identity_support_code(first: object, second: object) -> str:
+    """Whether two records describe exactly the same measured object support.
+
+    Equal counts alone, or a matching study and object name, do not bind a
+    clinical case to an identity finding. The complete profile includes its
+    writer and source; the regions must also name the same actual series and
+    windows. Region annotations may differ without moving those places.
+    """
+    if not isinstance(first, Mapping) or not isinstance(second, Mapping):
+        return "support_unavailable"
+    for key in ("study_uid", "subject"):
+        if not isinstance(first.get(key), str) or not first[key]:
+            return "support_unavailable"
+        if first[key] != second.get(key):
+            return "different_support"
+    profile = first.get("profile")
+    if (
+        not isinstance(profile, Mapping)
+        or not isinstance(profile.get("source"), Mapping)
+        or not profile.get("banks")
+    ):
+        return "support_unavailable"
+    if profile != second.get("profile"):
+        return "different_support"
+
+    def places(record: Mapping) -> frozenset | None:
+        regions = record.get("regions")
+        if not isinstance(regions, (list, tuple)) or not regions:
+            return None
+        result = []
+        for region in regions:
+            if not isinstance(region, Mapping):
+                return None
+            series, window = region.get("series_uid"), region.get("window")
+            if (
+                not isinstance(series, str)
+                or not series
+                or not isinstance(window, (list, tuple))
+                or len(window) != 6
+                or any(type(value) is not int for value in window)
+                or any(window[i] < 0 or window[i] >= window[i + 1] for i in (0, 2, 4))
+            ):
+                return None
+            result.append((series, tuple(window)))
+        return frozenset(result)
+
+    left, right = places(first), places(second)
+    if left is None or right is None:
+        return "support_unavailable"
+    return "same_measured_support" if left == right else "different_support"
+
+
 def identity_condition_views(memory: object) -> dict[str, Any]:
     """Where each object case's identity holds, found as identity recall finds it.
 
@@ -400,7 +452,10 @@ def identity_condition_views(memory: object) -> dict[str, Any]:
     through the views where its identity holds. A case's identity record is
     the one ``prepare_identity`` makes a seed of: its id is in
     ``confirmed_case_ids`` and exactly one call row names it, a confirm. A case
-    without one has its identity established in no view. Returns
+    without one has its identity established in no view. A report-derived
+    condition case may reference a confirmed identity case on the exact same
+    measured support; it then speaks through that source's valid views without
+    becoming an identity seed itself. Returns
     ``{"outcome": "scoped", "views": {case_id: frozenset | None}, "calls":
     {candidate_id: (row, ...)}}``, None meaning every view, or the named
     invalid_input ``prepare_identity`` gives for the same teaching. Negative and
@@ -458,10 +513,38 @@ def identity_condition_views(memory: object) -> dict[str, Any]:
         if resolved["outcome"] != "views":
             return resolved
         views[case_id] = resolved["views"]
+    # Independent clinical teaching adds condition evidence, never an identity
+    # seed. It may use an existing identity only on that very same measured
+    # support, and only through the source's currently valid views.
+    sources = {
+        case["case_id"]: case
+        for case in cases
+        if isinstance(case, Mapping) and case.get("case_id") in views
+    }
+    identity_sources: dict[str, str] = {}
+    for case in cases:
+        if not isinstance(case, Mapping):
+            continue
+        teaching_record = case.get("teaching")
+        if (
+            not isinstance(teaching_record, Mapping)
+            or teaching_record.get("kind") != "independent_report_calls"
+        ):
+            continue
+        case_id, source_id = case.get("case_id"), case.get("identity_source_case_id")
+        source = sources.get(source_id) if isinstance(source_id, str) else None
+        if (
+            isinstance(case_id, str)
+            and case_id not in confirmed_set
+            and measured_identity_support_code(case, source) == "same_measured_support"
+        ):
+            views[case_id] = views[source_id]
+            identity_sources[case_id] = source_id
     return {
         "outcome": "scoped",
         "views": views,
         "calls": {candidate: tuple(rows) for candidate, rows in rows_by_id.items()},
+        **({"identity_sources": identity_sources} if identity_sources else {}),
     }
 
 

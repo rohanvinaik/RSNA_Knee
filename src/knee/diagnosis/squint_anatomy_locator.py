@@ -603,7 +603,13 @@ def _anchor_territories(
 ) -> tuple[list[Mapping[str, Any]], dict[str, int]]:
     kept: list[Mapping[str, Any]] = []
     refused: Counter = Counter()
-    for territory in anchor.get("territories", ()):
+    candidates = anchor.get("territories", ())
+    if not isinstance(candidates, (list, tuple)):
+        return [], {"territory_list_invalid": 1}
+    for territory in candidates:
+        if not isinstance(territory, Mapping):
+            refused["territory_schema_invalid"] += 1
+            continue
         record = series_by_uid.get(territory.get("series_uid"))
         stack = record.get("stack") if isinstance(record, Mapping) else None
         grid = getattr(getattr(stack, "median", None), "shape", None)
@@ -665,6 +671,25 @@ def _anchor_summary(
     )
 
 
+def _retain_anchor_hypotheses(
+    state: dict[str, Any],
+    subject: str,
+    territories: Sequence[Mapping[str, Any]],
+    reason: str,
+) -> None:
+    """Keep source supports available as candidates, never as established geometry.
+
+    A support's original origin, native mask and coordinates are observations. Its
+    withheld standing is retained separately; originating in the bone reader does
+    not give the proposed identity structural authority.
+    """
+    rows = state.setdefault("hypotheses", {}).setdefault(subject, [])
+    for territory in territories:
+        if any(item["territory"] is territory for item in rows):
+            continue
+        rows.append({"territory": territory, "reason": reason})
+
+
 def study_anchors(
     study: Mapping[str, Any],
     series_by_uid: Mapping[str, Any],
@@ -689,6 +714,7 @@ def study_anchors(
         "bones": {},
         "usable": {},
         "geometry": {},
+        "hypotheses": {},
         "knee": None,
     }
     study_uid = study.get("study_uid") if isinstance(study, Mapping) else None
@@ -736,6 +762,7 @@ def study_anchors(
             anchor.get("subject") != name or anchor.get("study_uid") != study_uid
         ):
             code = "anchor_identity_mismatch"
+        original = anchor
         if code == "valid":
             header_knee = relative.knee_side(anchor.get("knee"))
             if header_knee is not None:
@@ -747,6 +774,34 @@ def study_anchors(
             else ([], {})
         )
         state["bones"][name] = _anchor_summary(anchor, code, territories, refused)
+        if code == "valid":
+            held, held_refused = _anchor_territories(
+                name,
+                {"territories": original.get("evidence_territories", ())},
+                study_uid,
+                series_by_uid,
+            )
+            _retain_anchor_hypotheses(state, name, held, "withheld_by_anchor_producer")
+            if anchor["status"] not in USABLE_ANCHOR_STATUSES:
+                _retain_anchor_hypotheses(
+                    state, name, territories, "anchor_not_established"
+                )
+            else:
+                original_territories, original_refused = _anchor_territories(
+                    name, original, study_uid, series_by_uid
+                )
+                kept_ids = {id(item) for item in territories}
+                _retain_anchor_hypotheses(
+                    state,
+                    name,
+                    [item for item in original_territories if id(item) not in kept_ids],
+                    "view_resolution_withheld",
+                )
+                held_refused.update(original_refused)
+            state["bones"][name]["hypothesis_territories"] = len(
+                state["hypotheses"].get(name, ())
+            )
+            state["bones"][name]["refused_hypothesis_territories"] = held_refused
         if code == "valid" and anchor["status"] in USABLE_ANCHOR_STATUSES:
             state["usable"][name] = {"anchor": anchor, "territories": territories}
             state["geometry"][name] = _anchor_geometry(
@@ -1405,7 +1460,11 @@ def _check_anchor_sanity(
                 "code": "anatomical_relation_conflict",
                 "anatomical_sanity": checked[name],
             }
-            state["usable"].pop(name, None)
+            entry = state["usable"].pop(name, None)
+            if entry is not None:
+                _retain_anchor_hypotheses(
+                    state, name, entry["territories"], "anatomical_relation_conflict"
+                )
             state["geometry"].pop(name, None)
         conflicts |= aside
     state["sanity"] = every
@@ -1464,12 +1523,40 @@ def knee_side_from_position(series_by_uid: Mapping[str, Any]) -> dict[str, Any]:
     }
 
 
+LOCATION_RUNTIME_CONTEXT = "_squint_anatomical_location_runtime"
+
+
+def location_context_code(study, memory, *, refine_finalists=False) -> str:
+    """Name whether the same study operation can extend its bounded location work."""
+    context = (
+        study.get(LOCATION_RUNTIME_CONTEXT) if isinstance(study, Mapping) else None
+    )
+    if not isinstance(context, Mapping):
+        return "location_runtime_unavailable"
+    if context.get("memory") is not memory or context.get("study_uid") != study.get(
+        "study_uid"
+    ):
+        return "location_runtime_identity_mismatch"
+    if context.get("refine_finalists") != refine_finalists:
+        return "location_runtime_refinement_policy_mismatch"
+    current, _uids = shared._profile_candidates(study)
+    previous = context.get("series")
+    if (
+        not isinstance(previous, tuple)
+        or len(previous) != len(current)
+        or any(left is not right for left, right in zip(previous, current, strict=True))
+    ):
+        return "location_runtime_series_changed"
+    return "valid"
+
+
 def locate_anatomy_first(
     study: dict,
     memory: dict,
     deadline: float | None = None,
     *,
     refine_finalists: bool = True,
+    subjects: Sequence[str] | None = None,
 ) -> dict:
     """Locate bones by their structural anchors and place the rest from them.
 
@@ -1484,9 +1571,28 @@ def locate_anatomy_first(
     places an object changes: candidates, ties, territories, key planes and source
     addresses are the same either way.
     """
-    # A new location owns only the mask-bearing territories it reads and leaves
-    # to its questions. Clear a previous invocation before any early return.
-    study.pop(NATIVE_SUPPORT_RETAINED, None)
+    # A bounded request extends this same study operation. It may reuse only the
+    # exact initial run's runtime values; it never reconstructs or weakens anchors.
+    resumed = None
+    if subjects is not None:
+        code = location_context_code(study, memory, refine_finalists=refine_finalists)
+        if code != "valid":
+            return {
+                "outcome": "unresolved_location_context",
+                "reason": code,
+                "objects": {},
+            }
+        if (
+            isinstance(subjects, (str, bytes))
+            or not isinstance(subjects, Sequence)
+            or not subjects
+            or any(not isinstance(x, str) or not x for x in subjects)
+        ):
+            return {"outcome": "invalid_subject_selection", "objects": {}}
+        resumed = study[LOCATION_RUNTIME_CONTEXT]
+    else:
+        study.pop(NATIVE_SUPPORT_RETAINED, None)
+        study.pop(LOCATION_RUNTIME_CONTEXT, None)
     cases = memory.get("cases", ())
     case_rows = (
         list(cases)
@@ -1519,6 +1625,11 @@ def locate_anatomy_first(
             and not name.startswith("diagnosis/")
             and name not in known
         )
+    if subjects is not None:
+        requested = set(subjects)
+        if not requested.issubset(known):
+            return {"outcome": "requested_subject_not_in_memory", "objects": {}}
+        known = [subject for subject in known if subject in requested]
     objects: dict[str, dict[str, Any]] = {
         name: {
             "status": "unresolved_missing_reading",
@@ -1538,10 +1649,16 @@ def locate_anatomy_first(
             "objects": objects,
             "evidence": {"series_uids": series_uids, "candidate_profiles_compared": 0},
         }
-    bounds_by_series: dict[int, tuple[Any, Any, np.ndarray]] = {}
-    foreground_by_series: dict[int, np.ndarray] = {}
-    leg_bounds_lps = None
-    foreground_prepared = False
+    bounds_by_series: dict[int, tuple[Any, Any, np.ndarray]] = (
+        resumed["bounds_by_series"] if resumed is not None else {}
+    )
+    foreground_by_series: dict[int, np.ndarray] = (
+        resumed["foreground_by_series"] if resumed is not None else {}
+    )
+    leg_bounds_lps = resumed["leg_bounds_lps"] if resumed is not None else None
+    foreground_prepared = (
+        resumed["foreground_prepared"] if resumed is not None else False
+    )
     from knee.diagnosis.squint_profiles import profile_window
 
     raw_side = study.get("knee_side")
@@ -1562,10 +1679,16 @@ def locate_anatomy_first(
         if isinstance(row.get("series_uid"), str)
     }
     coarse_indexes = (
-        {} if territory_v2 else {id(row): shared._coarse_index(row) for row in series}
+        resumed["coarse_indexes"]
+        if resumed is not None
+        else {}
+        if territory_v2
+        else {id(row): shared._coarse_index(row) for row in series}
     )
-    calibrations: dict[str, Any] = {}
-    if territory_v2:
+    calibrations: dict[str, Any] = (
+        resumed["calibrations"] if resumed is not None else {}
+    )
+    if territory_v2 and resumed is None:
         from knee.diagnosis.squint_profiles import leg_calibration
 
         for uid, row in series_by_uid.items():
@@ -1580,31 +1703,42 @@ def locate_anatomy_first(
                 calibrations[uid] = leg_calibration(row, leg)
             except (TypeError, ValueError) as error:
                 calibrations[uid] = f"leg_calibration_unavailable:{error}"
-    geometry_by_subject: dict[str, dict[str, Any]] = {}
+    geometry_by_subject: dict[str, dict[str, Any]] = (
+        resumed["geometry_by_subject"] if resumed is not None else {}
+    )
     exact_refinements = 0
     # What the runtime study keeps is what this location reads and leaves to a question
     # (module note): nothing from an earlier location, and nothing when it pairs now.
-    retained_support: list[Mapping[str, Any]] | None = None if refine_finalists else []
-    anchor_state = study_anchors(study, series_by_uid, deadline=deadline)
-    knee_position = knee_side_from_position(series_by_uid)
-    if knee_side is None:
-        # The knee the series headers name, as the anchors recorded it, beside the
-        # knee its position names; different knees choose neither (module note).
-        header_side = HEADER_KNEE_SIDE.get(anchor_state["knee"])
-        position_side = knee_position["side"]
-        if header_side and position_side and header_side != position_side:
-            knee_position["conflict"] = {
-                "header": header_side,
-                "position": position_side,
-            }
-        elif header_side:
-            knee_side, knee_side_source = header_side, "series_header_laterality"
-        elif position_side:
-            knee_side, knee_side_source = (
-                position_side,
-                "knee_position_in_patient_frame",
-            )
-    _check_anchor_sanity(anchor_state, series_by_uid, knee_side)
+    if resumed is not None:
+        retained_support = resumed["retained_support"]
+        anchor_state = resumed["anchor_state"]
+        knee_position = resumed["knee_position"]
+        knee_side = resumed["knee_side"]
+        knee_side_source = resumed["knee_side_source"]
+    else:
+        retained_support: list[Mapping[str, Any]] | None = (
+            None if refine_finalists else []
+        )
+        anchor_state = study_anchors(study, series_by_uid, deadline=deadline)
+        knee_position = knee_side_from_position(series_by_uid)
+        if knee_side is None:
+            # The knee the series headers name, as the anchors recorded it, beside the
+            # knee its position names; different knees choose neither (module note).
+            header_side = HEADER_KNEE_SIDE.get(anchor_state["knee"])
+            position_side = knee_position["side"]
+            if header_side and position_side and header_side != position_side:
+                knee_position["conflict"] = {
+                    "header": header_side,
+                    "position": position_side,
+                }
+            elif header_side:
+                knee_side, knee_side_source = header_side, "series_header_laterality"
+            elif position_side:
+                knee_side, knee_side_source = (
+                    position_side,
+                    "knee_position_in_patient_frame",
+                )
+        _check_anchor_sanity(anchor_state, series_by_uid, knee_side)
     structural = anchor_state["route"] == STRUCTURAL_ROUTE
     structural_geometry: dict[str, dict[str, Any]] = anchor_state["geometry"]
     if structural:
@@ -1686,7 +1820,7 @@ def locate_anatomy_first(
         coarse_by_view: dict[tuple[str, str, str] | None, list[dict[str, Any]]] = {}
         has_compatible_precedent = False
         candidate_territories: dict[str, dict[str, Any]] = {}
-        territory_by_key: dict[tuple[Any, ...], dict[str, Any]] = {}
+        hypothesis_rows = anchor_state.get("hypotheses", {}).get(subject, ())
         coarse_readings: list[dict[str, Any]] = []
         reading_refusals: list[dict[str, Any]] = []
         finalists_paired = finalists_deferred = 0
@@ -1762,18 +1896,33 @@ def locate_anatomy_first(
                 )
                 proposal = built["proposal"]
                 windows = []
-                for territory in built["territories"]:
+                held = [
+                    row["territory"]
+                    for row in hypothesis_rows
+                    if row["territory"]["series_uid"] == series_record.get("series_uid")
+                ]
+                held_ids = {id(territory) for territory in held}
+                paired_inputs = []
+                for territory in list(built["territories"]) + held:
                     window = _object_window(territory)
-                    assert window is not None
-                    territory_by_key[(series_record.get("series_uid"), window)] = (
-                        territory
-                    )
-                    windows.append(window)
+                    if window is None:
+                        reading_refusals.append(
+                            {
+                                "series_uid": series_record.get("series_uid"),
+                                "origin": territory.get("origin"),
+                                "reason": "candidate_territory_without_object_tiles",
+                            }
+                        )
+                        continue
+                    paired_inputs.append((window, territory))
+                windows = [window for window, _territory in paired_inputs]
+                input_territories = [territory for _window, territory in paired_inputs]
                 candidate_territories[str(series_record.get("series_uid"))] = {
                     "origin": built["origin"],
                     "proposal_status": _json_safe(built["status"]),
                     "proposed_windows": built["proposed_window_count"],
                     "territories": len(windows),
+                    "withheld_support_candidates": len(held),
                     "candidate_object_windows": [list(window) for window in windows],
                     "refusals": built["refusals"],
                     "leg_prior": built["leg_prior"],
@@ -1835,14 +1984,28 @@ def locate_anatomy_first(
             scope_codes = [row["status"] for row in sanity_rows]
             for code in scope_codes:
                 scope_code_counts[code] = scope_code_counts.get(code, 0) + 1
-            eligible = [
-                window
-                for window, code in zip(windows, scope_codes, strict=True)
-                if code != "contradicted"
+            eligible_indices = [
+                index
+                for index, (window, code) in enumerate(
+                    zip(windows, scope_codes, strict=True)
+                )
+                if (
+                    code != "contradicted"
+                    or (
+                        (structural or territory_v2)
+                        and id(input_territories[index]) in held_ids
+                    )
+                )
                 and foreground[
                     window[0] : window[1], window[2] : window[3], window[4] : window[5]
                 ].any()
             ]
+            eligible = [windows[index] for index in eligible_indices]
+            eligible_territories = (
+                [input_territories[index] for index in eligible_indices]
+                if structural or territory_v2
+                else []
+            )
             if not eligible:
                 continue
             cost["windows_scored"] += len(eligible)
@@ -1854,16 +2017,16 @@ def locate_anatomy_first(
                 ]
                 matrix = shared._case_matrix(precedent_banks)
                 scores = []
-                for window in eligible:
+                for candidate_index, window in enumerate(eligible):
                     if deadline is not None and time.monotonic() >= deadline:
                         break
-                    territory = territory_by_key[(series_record["series_uid"], window)]
+                    territory = eligible_territories[candidate_index]
                     profile = _territory_profile(
                         series_record,
                         territory,
                         calibrations[series_record["series_uid"]],
                     )
-                    profiles_by_window[window] = profile
+                    profiles_by_window[candidate_index] = profile
                     coarse_readings.append(
                         {
                             "series_uid": series_record["series_uid"],
@@ -1876,7 +2039,7 @@ def locate_anatomy_first(
                         precedent_banks,
                         matrix_cache=matrix,
                     )
-                    terms_by_window[window] = terms
+                    terms_by_window[candidate_index] = terms
                     scores.append(
                         [
                             term["cosine_squared"]
@@ -1903,7 +2066,9 @@ def locate_anatomy_first(
                     query_vectors, query_masks, case_vectors, case_masks
                 )
             rows = coarse_by_view.setdefault(view, [])
-            for window, row_scores in zip(eligible, scores, strict=True):
+            for candidate_index, (window, row_scores) in enumerate(
+                zip(eligible, scores, strict=True)
+            ):
                 scored = [
                     (index, score)
                     for index, score in enumerate(row_scores)
@@ -1931,10 +2096,15 @@ def locate_anatomy_first(
                         "case_ids": case_ids,
                         "centre_lps": shared._window_centre_lps(series_record, window),
                         **(
+                            {"territory": eligible_territories[candidate_index]}
+                            if structural or territory_v2
+                            else {}
+                        ),
+                        **(
                             {
-                                "coarse_profile": profiles_by_window[window],
+                                "coarse_profile": profiles_by_window[candidate_index],
                                 "location_cases": compatible,
-                                "location_terms": terms_by_window[window],
+                                "location_terms": terms_by_window[candidate_index],
                             }
                             if territory_v2
                             else {}
@@ -1997,9 +2167,7 @@ def locate_anatomy_first(
                 series_record = candidate["series"]
                 full = True  # a v1 candidate is always written in full
                 if territory_v2:
-                    territory = territory_by_key[
-                        (series_record["series_uid"], candidate["window"])
-                    ]
+                    territory = candidate["territory"]
                     full = refine_finalists
                     profile = _territory_profile(
                         series_record,
@@ -2086,6 +2254,11 @@ def locate_anatomy_first(
                             "window": candidate["window"],
                             "centre_lps": candidate["centre_lps"],
                             "profile": profile,
+                            **(
+                                {"territory": candidate["territory"]}
+                                if structural or territory_v2
+                                else {}
+                            ),
                         },
                         series_record,
                         exact_best,
@@ -2165,6 +2338,7 @@ def locate_anatomy_first(
             continue
         candidate_profiles = []
         geometry_regions = []
+        selected_territories = []
         chosen_profiles = []
         for group in exact_by_view.values():
             for candidate, series_record in group["items"]:
@@ -2185,12 +2359,25 @@ def locate_anatomy_first(
                         "series_uid": series_record.get("series_uid"),
                         "view": series_record.get("view"),
                         "window": candidate.get("window"),
+                        **(
+                            {"territory": territory_record(candidate["territory"])}
+                            if structural or territory_v2
+                            else {}
+                        ),
                     }
                 )
+                if structural or territory_v2:
+                    selected_territories.append(candidate["territory"])
             if len(group["items"]) == 1:
                 chosen_profiles.append(group["items"][0][0]["profile"])
         spatial = object_geometry(subject, geometry_regions, series_by_uid)
-        geometry_by_subject[subject] = spatial
+        selected_hypothesis_rows = [
+            row
+            for row in hypothesis_rows
+            if any(row["territory"] is item for item in selected_territories)
+        ]
+        if not selected_hypothesis_rows:
+            geometry_by_subject[subject] = spatial
         merged = None
         if chosen_profiles:
             try:
@@ -2225,6 +2412,20 @@ def locate_anatomy_first(
             "regions": geometry_regions,
             "evidence": {
                 "source": "current_study_anatomy_first_finite_windows",
+                "withheld_support_hypotheses": [
+                    {
+                        "reason": row["reason"],
+                        "territory": territory_record(row["territory"]),
+                    }
+                    for row in hypothesis_rows
+                ],
+                "selected_withheld_support_hypotheses": [
+                    {
+                        "reason": row["reason"],
+                        "territory": territory_record(row["territory"]),
+                    }
+                    for row in selected_hypothesis_rows
+                ],
                 "candidate_view_count": len(exact_by_view),
                 "selected_view_regions": len(chosen_profiles),
                 "candidate_profiles_compared": exact_refinements
@@ -2260,18 +2461,41 @@ def locate_anatomy_first(
         if structural or territory_v2:
             # One territory per region, in the same order: what was read where.
             objects[subject]["territories"] = [
-                territory_record(
-                    territory_by_key[(region["series_uid"], tuple(region["window"]))]
-                )
-                for region in geometry_regions
+                region["territory"] for region in geometry_regions
             ]
             if territory_v2:
-                for region, record in zip(
-                    geometry_regions, objects[subject]["territories"], strict=True
+                for region, record, territory in zip(
+                    geometry_regions,
+                    objects[subject]["territories"],
+                    selected_territories,
+                    strict=True,
                 ):
                     region["territory"] = record
+                    if (
+                        retained_support is not None
+                        and territory.get("native_support") is not None
+                    ):
+                        retained_support.append(territory)
     if retained_support:
         study[NATIVE_SUPPORT_RETAINED] = retained_support
+    study[LOCATION_RUNTIME_CONTEXT] = {
+        "study_uid": study.get("study_uid"),
+        "memory": memory,
+        "refine_finalists": refine_finalists,
+        "series": tuple(series),
+        "anchor_state": anchor_state,
+        "geometry_by_subject": geometry_by_subject,
+        "calibrations": calibrations,
+        "coarse_indexes": coarse_indexes,
+        "bounds_by_series": bounds_by_series,
+        "foreground_by_series": foreground_by_series,
+        "leg_bounds_lps": leg_bounds_lps,
+        "foreground_prepared": foreground_prepared,
+        "retained_support": retained_support,
+        "knee_position": knee_position,
+        "knee_side": knee_side,
+        "knee_side_source": knee_side_source,
+    }
     study_evidence = {
         "series_uids": series_uids,
         "candidate_profiles_compared": exact_refinements,

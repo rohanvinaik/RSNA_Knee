@@ -6,6 +6,14 @@ Execution-design appendix to [FULL_BUILD_PLAN §§17–18](FULL_BUILD_PLAN.md#17
 
 ## 1. The complete objective
 
+**Current phase: local bootstrap and preparation for classical AI training.** Read FULL_BUILD_PLAN
+§18.1 before choosing the next operation. The immediate loop is visual teaching -> contextual
+recognition -> warranted corpus growth -> reviewed child memory -> recall with that child.
+The corpus then supports the designed Minsky/Winston agency training. It is not necessary to
+package or run this bootstrap apparatus on Kaggle. Three computers are available for the math;
+the SSD corpus is being extracted. Deployment is a later use of the trained system, not the
+completion criterion for the current phase. The full objective below remains the eventual goal.
+
 Build one classical-AI operation that takes a knee study, uses cheap observations and remembered experience to recognize diagnostically relevant anatomy and its states, reasons about the twelve competition conditions, and returns the required values with traceable evidence. It should usually settle its questions without reconstructing precise anatomical borders. Existing detailed measurements remain available as tools for a bounded question that cannot otherwise be settled.
 
 The complete sequence is:

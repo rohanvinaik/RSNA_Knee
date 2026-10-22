@@ -347,19 +347,23 @@ def _role_links(staged: Mapping[str, Any]) -> dict[str, dict[str, Any]]:
             "configuration_identity_teaching_invalid", str(scope.get("reason"))
         )
     reader = staged["object_identity_teaching"].get("reader")
+    cases_by_id = {case["case_id"]: case for case in staged["cases"]}
+    identity_sources = scope.get("identity_sources", {})
     links: dict[str, dict[str, Any]] = {}
     for case in staged["cases"]:
         case_id = case["case_id"]
         if case_id not in scope["views"]:
             raise ConfigurationProfileError("configuration_role_unconfirmed", case_id)
         views = scope["views"][case_id]
-        [row] = scope["calls"][case_id]
+        source_id = identity_sources.get(case_id, case_id)
+        identity_case = cases_by_id[source_id]
+        [row] = scope["calls"][source_id]
         links[case["subject"]] = {
-            "case_id": case_id,
+            "case_id": source_id,
             "identity_views": None
             if views is None
             else [list(view) for view in sorted(views)],
-            "identity": _role_identity(case, row, reader),
+            "identity": _role_identity(identity_case, row, reader),
         }
     return links
 

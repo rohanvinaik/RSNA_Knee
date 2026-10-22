@@ -1574,6 +1574,94 @@ def _resolve_identity_contests(
     return states
 
 
+def _refresh_identity_after_observations(
+    objects: dict,
+    study: dict,
+    memory: dict,
+    excluded_uid: str | None,
+    previous_profiles: Mapping,
+    contexts: dict,
+    identity_readings: dict,
+    contests: dict,
+    attempted: set,
+    observations: list,
+    deadline: float | None,
+    prepared_identity: Mapping | None,
+    prepared_resolved: Mapping | None,
+) -> Mapping | None:
+    """Hear changed observations in their current anatomical context before diagnosis.
+
+    The request consumer only locates or writes. This coordinator shares the same
+    identity preparation and the same finer-look mechanism as the initial pass.
+    Unchanged profiles in unchanged contexts are not compared again. Prior joint
+    evidence for unaffected objects remains present in the final study record.
+    """
+    next_contexts = _identity_contexts(objects)
+    changed = {
+        subject: located
+        for subject, located in objects.items()
+        if isinstance(located, Mapping)
+        and (
+            previous_profiles.get(subject) is not located.get("profile")
+            or contexts.get(subject) != next_contexts.get(subject)
+        )
+    }
+    if not changed:
+        return prepared_resolved
+    heard = _identity_readings(
+        changed,
+        memory,
+        excluded_uid,
+        prepared_identity=prepared_identity,
+        contexts=next_contexts,
+    )
+    if prepared_resolved is None and any(
+        isinstance(row, Mapping) and row.get("outcome") in CONTESTED_OUTCOMES
+        for row in heard.get("objects", {}).values()
+    ):
+        from knee.diagnosis.squint_identity import prepare_identity
+
+        prepared_resolved = prepare_identity(
+            memory, exclude_study_uid=excluded_uid, scale=JOINT_SCALE
+        )
+    updated_contests = _resolve_identity_contests(
+        changed,
+        study,
+        memory,
+        excluded_uid,
+        heard,
+        next_contexts,
+        attempted,
+        observations,
+        deadline,
+        prepared_resolved,
+    )
+    for subject in changed:
+        contests.pop(subject, None)
+    contests.update(updated_contests)
+    contexts.clear()
+    contexts.update(next_contexts)
+    identity_readings.setdefault("objects", {}).update(heard.get("objects", {}))
+    previous_joint = identity_readings.get("resolved_scale")
+    previous_joint = previous_joint if isinstance(previous_joint, Mapping) else {}
+    joint_objects = {
+        subject: reading
+        for subject, reading in previous_joint.get("objects", {}).items()
+        if subject not in changed
+    }
+    next_joint = heard.get("resolved_scale")
+    next_joint = next_joint if isinstance(next_joint, Mapping) else {}
+    joint_objects.update(next_joint.get("objects", {}))
+    if previous_joint or next_joint:
+        identity_readings["resolved_scale"] = {
+            **previous_joint,
+            **next_joint,
+            "objects": joint_objects,
+            "contested_at_squint_scale": sorted(contests),
+        }
+    return prepared_resolved
+
+
 def infer_study(
     root: Path,
     uid: str,
@@ -1604,7 +1692,9 @@ def infer_study(
     """
     from knee.diagnosis.declarations import QUESTIONS
     from knee.diagnosis.squint_contracts import combine_condition, rank_condition
+    from knee.diagnosis.squint_identity import prepare_identity
     from knee.diagnosis.squint_locator import locate_objects
+    from knee.diagnosis.squint_procedures import route_observation_request
     from knee.diagnosis.squint_profiles import read_study_squints
 
     started = time.perf_counter()
@@ -1630,6 +1720,8 @@ def infer_study(
     objects = locations.get("objects", {})
     excluded_uid = uid if exclude_same_study else None
     identity_contexts = _identity_contexts(objects)
+    if prepared_identity is None and "object_identity_teaching" in memory:
+        prepared_identity = prepare_identity(memory, exclude_study_uid=excluded_uid)
     identity_readings = _identity_readings(
         objects,
         memory,
@@ -1643,6 +1735,13 @@ def infer_study(
     attempted: set = set()
     # Identity is settled before any condition question reads a region, and the one
     # finer reading an identity question earns is the one every later question reuses.
+    if prepared_identity_resolved is None and any(
+        isinstance(row, Mapping) and row.get("outcome") in CONTESTED_OUTCOMES
+        for row in identity_readings.get("objects", {}).values()
+    ):
+        prepared_identity_resolved = prepare_identity(
+            memory, exclude_study_uid=excluded_uid, scale=JOINT_SCALE
+        )
     contests = _resolve_identity_contests(
         objects,
         study,
@@ -1672,10 +1771,44 @@ def infer_study(
             else []
         )
         if requests:
+            previous_profiles = {
+                subject: row.get("profile")
+                for subject, row in objects.items()
+                if isinstance(row, Mapping)
+            }
             for request in requests:
                 observations.append(
-                    _bounded_observation(request, study, objects, attempted, deadline)
+                    route_observation_request(
+                        request,
+                        study,
+                        objects,
+                        attempted,
+                        deadline,
+                        memory=memory,
+                        study_uid=uid,
+                        exclude_same_study=exclude_same_study,
+                        location_evidence=locations.get("evidence"),
+                    )
                 )
+            prepared_identity_resolved = _refresh_identity_after_observations(
+                objects,
+                study,
+                memory,
+                excluded_uid,
+                previous_profiles,
+                identity_contexts,
+                identity_readings,
+                contests,
+                attempted,
+                observations,
+                deadline,
+                prepared_identity,
+                prepared_identity_resolved,
+            )
+            identity_consumption = _identity_consumption(
+                objects, identity_readings, identity_contexts, contests
+            )
+            not_read = _regions_not_read(identity_consumption)
             object_evidence = _recall_question(
                 question, objects, memory, uid, exclude_same_study, not_read_as=not_read
             )

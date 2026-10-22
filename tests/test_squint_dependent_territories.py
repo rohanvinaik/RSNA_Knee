@@ -21,7 +21,9 @@ import knee.diagnosis.squint_locator as locator
 from knee.collapse.anatomy_map import ideal_vector
 from knee.collapse.physical import PlaneFrame
 from knee.collapse.squint_stack import SquintStack, tile_centres_lps
+from knee.diagnosis import squint_pipeline
 from knee.diagnosis import squint_profiles as writer
+from knee.diagnosis.squint_identity import PRIOR_ONLY
 from knee.diagnosis.squint_interfaces import (
     ANCHOR_SCHEMA,
     LEG_INSIDE,
@@ -629,7 +631,7 @@ def test_unavailable_anchors_keep_the_existing_route_by_name(monkeypatch):
     assert comparable(without) == comparable(supplied)
 
 
-def test_conflicting_anchor_neither_locates_its_bone_nor_anchors(monkeypatch):
+def test_conflicting_anchor_is_observed_as_a_hypothesis_but_never_anchors(monkeypatch):
     _no_producer(monkeypatch)
     series = _series()
     tibia_point = series["stack"].centres_lps[4, 11, 12] - _lps(
@@ -654,6 +656,13 @@ def test_conflicting_anchor_neither_locates_its_bone_nor_anchors(monkeypatch):
         series,
         {"femur": (2, 3, 6, 10, 13, 20), "medial_meniscus": (4, 5, 11, 12, 10, 15)},
     )
+    state = anatomy_locator.study_anchors(study, {CORONAL: series})
+    assert set(state["usable"]) == {"tibia"}
+    assert set(state["geometry"]) == {"tibia"}
+    assert state["hypotheses"]["femur"][0]["territory"] is (
+        study["anchors"]["femur"]["territories"][0]
+    )
+
     result = locator.locate_objects(study, memory)
     femur = result["objects"]["femur"]
     assert result["evidence"]["anchors"]["bones"]["femur"]["status"] == "conflict"
@@ -661,10 +670,20 @@ def test_conflicting_anchor_neither_locates_its_bone_nor_anchors(monkeypatch):
         "anatomical_relation_from_structural_anchors"
     )
     assert femur["evidence"]["structural_anchors"] == {"tibia": "complete"}
-    assert femur["territories"]
-    for territory in femur["territories"]:
-        assert territory["origin"] == "anatomical_relation"
-        assert [row["anchor"] for row in territory["anchors"]] == ["tibia"]
+    assert femur["profile"] is not None
+    [held] = femur["evidence"]["selected_withheld_support_hypotheses"]
+    assert held["reason"] == "anchor_not_established"
+    assert held["territory"] == anatomy_locator.territory_record(
+        study["anchors"]["femur"]["territories"][0]
+    )
+    # Retaining the reader's original source does not establish its proposed identity.
+    assert femur["territories"] == [held["territory"]]
+    context = squint_pipeline._identity_contexts(result["objects"])["femur"]
+    assert context["basis"] == PRIOR_ONLY
+    assert context["removed_by_structure"] == []
+    assert "arrangement" not in context["supporting_observations"]
+
+    # The conflict's support is observable, but only the tibia places the meniscus.
     meniscus = result["objects"]["medial_meniscus"]
     assert meniscus["territories"]
     for territory in meniscus["territories"]:

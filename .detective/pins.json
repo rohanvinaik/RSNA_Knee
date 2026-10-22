@@ -227,6 +227,62 @@
       ]
     }
   ],
+  "src/knee/diagnosis/squint_anatomy_locator.py::_anchor_territories::7d0bd07156efa832": [
+    {
+      "assertion_code": "result = _anchor_territories(bone='abc', anchor={'x': None}, study_uid=1, series_by_uid={'x': None})\nassert result == ([], {})",
+      "category": "VALUE",
+      "confidence": 0.9,
+      "function_key": "",
+      "golden_case": [
+        "('abc', {'x': None}, 1, {'x': None})",
+        "([], {})"
+      ],
+      "mutant_id": "",
+      "needs_oracle": false,
+      "preconditions": [
+        "golden capture (pure + deterministic)"
+      ],
+      "setup_code": "from knee.diagnosis.squint_anatomy_locator import _anchor_territories",
+      "source_lenses": [
+        "golden_capture"
+      ]
+    },
+    {
+      "assertion_code": "result = _anchor_territories(bone='', anchor={'territories': 'x'}, study_uid=0, series_by_uid={'territories': 'x'})\nassert result == ([], {'territory_list_invalid': 1})",
+      "category": "VALUE",
+      "confidence": 0.95,
+      "function_key": "",
+      "golden_case": null,
+      "mutant_id": "",
+      "needs_oracle": false,
+      "preconditions": [
+        "distinguishing witness (equivalence search)"
+      ],
+      "setup_code": "from knee.diagnosis.squint_anatomy_locator import _anchor_territories",
+      "source_lenses": [
+        "witness"
+      ]
+    },
+    {
+      "assertion_code": "result = _anchor_territories(bone='femur', anchor={'territories': [{'series_uid': 's'}]}, study_uid='u', series_by_uid={'s': {}})\nassert result == ([], {'territory_series_without_squint': 1})",
+      "category": "VALUE",
+      "confidence": 0.9,
+      "function_key": "",
+      "golden_case": [
+        "('femur', {'territories': [{'series_uid': 's'}]}, 'u', {'s': {}})",
+        "([], {'territory_series_without_squint': 1})"
+      ],
+      "mutant_id": "",
+      "needs_oracle": false,
+      "preconditions": [
+        "golden capture (pure + deterministic)"
+      ],
+      "setup_code": "from knee.diagnosis.squint_anatomy_locator import _anchor_territories",
+      "source_lenses": [
+        "golden_capture"
+      ]
+    }
+  ],
   "src/knee/diagnosis/squint_bootstrap.py::validate_calls::3d822e898625a5e3": [],
   "src/knee/diagnosis/squint_contracts.py::_kleene_or::e63a2d3431aefa2e": [],
   "src/knee/diagnosis/squint_identity.py::_sanity_status::30256d1213817dbe": [],
