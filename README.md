@@ -6,6 +6,8 @@ A classical-AI computer-vision pipeline grounded in **What an \<Object> Is**. Co
 We are **hand-building the corpus**: recognition tools help isolate anatomical examples,
 normal and diseased, whose reviewed bundles become K-lines. A perfect or complete automatic
 recognition solution on the 58 teaching studies is not a prerequisite for training the AI.
+The teaching labels supply normal examples too: correctly identified objects not implicated by
+a study's positive conditions belong in the normal corpus, even when that knee has other injuries.
 Visually confirm or correct recognizable examples, add their signed HDC cases to the K-line memory,
 use that memory and anatomy to find more, then train the designed Minsky/Winston agencies from
 the growing corpus and sourced experiences. This preparation is not a Kaggle deployment task.
@@ -161,4 +163,7 @@ For the current hand-built corpus task, see [the teaching workflow](docs/GROUNDE
 actual images → reviewed anatomical and normal/diagnosed examples → measured bundles and signed
 K-lines → bootstrap and train the Society of Mind. Automatic cohort recognition is not a gate
 on this teaching operation.
+The same guide gives the verified `prepare_squint_training.py` command to export reviewed
+normal/condition object buckets and source-pinned procedure experiences from saved readings,
+and `near_miss_report.py` to retain scoped corrections without inventing missing expectations.
 The [current packet](docs/work/current/README.md) names the memory and verified state.

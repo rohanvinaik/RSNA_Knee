@@ -145,6 +145,12 @@ holds, for positive and normal presentations alike.
 
 ## 6. Bootstrap: establish the initial recognition corpus
 
+**The labelled studies supply the normal objects too.** Rohan's explicit rule: the 58 studies give
+the diagnosed conditions, so correctly identified objects not implicated by a study's positive
+conditions are valid normal examples. Use the existing condition/object relationships and keep
+the official row as provenance. Do not require a new normality annotation for each such object.
+Missing labels are not negative labels; implicated multi-site conditions keep their actual scope.
+
 **Hand-building is the current operation.** Rohan's 2026-10-22 correction explicitly rejects
 perfect or complete automatic recognition as a pre-AI prerequisite. Use recognition to help
 isolate useful objects, and select them directly on the image when needed. Establish their

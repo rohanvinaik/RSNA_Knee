@@ -199,6 +199,67 @@ established answers efficiently. Filling case buckets supplies that process; it 
 learning algorithm. Do not invent gradient weights, a cosine cutoff, a capacity sweep or an
 alternative objective in place of Rohan's custom design.
 
+## Export object buckets and retained experiences
+
+The official twelve-label row supplies the normal set as well as the condition presentations.
+Once identity is confirmed, an object that none of the study's positive conditions implicates
+belongs in its normal bucket. An unrelated injury does not disqualify it. A positive condition
+that does implicate it supplies a condition presentation at that label's actual scope; a
+study-wide fracture does not by itself localize a fracture to that bone. Missing labels do not
+become normal calls. No separate normality annotation is required for unimplicated objects.
+
+Use the newest published memory and its manifest digest from the current packet:
+
+```sh
+PYTHONPATH=src .venv/bin/python scripts/prepare_squint_training.py \
+  --memory path/to/newest-published/memory \
+  --memory-sha256 <manifest-sha256> \
+  --run path/to/completed-raw-squint-run \
+  --labels data/raw/train.csv \
+  --output path/to/fresh-training-material
+```
+
+`--run` may be repeated for distinct completed runs. This command reuses saved readings; it
+does not infer images again or modify the memory. Its fresh output directory contains:
+
+- `object-buckets.json`: confirmed cases grouped by object and normal/condition/unlabelled state,
+  with a per-condition index, their measured profiles restricted to confirmed identity views,
+  original clinical scopes/full-profile references, and the unchanged signed teaching tables.
+  Keep the pinned backing memory with the export so its retained payload references resolve.
+- `procedure-experiences.jsonl`: the actual requests, context, actions, observed changes and
+  independent outcomes available from those saved runs. An unverified outcome stays unchecked.
+  Completing a measurement or changing a status is not itself evidence that a procedure helped.
+- `receipt.json`: code, label-file, teaching-memory and inference-memory pins, source-record
+  digests and the measured output counts. Labels supply teaching outcomes, never image features.
+
+Retain existing scoped corrections and any actual recalled expectation separately:
+
+```sh
+PYTHONPATH=src .venv/bin/python scripts/near_miss_report.py \
+  --memory path/to/newest-published/memory \
+  --inference-root path/to/completed-raw-squint-run \
+  --out path/to/fresh-correction-material --skip-survey
+```
+
+`--inference-root` may also be repeated. A catalogue proposal without a recorded recalled
+precedent remains explicitly expectation-unavailable; the tool does not manufacture a
+near-miss distinction or censor. These exports provide corpus and experience material for
+the specified classical learning operations, not a substitute learning algorithm.
+
+For independently reviewed identity-only additions, the existing measured-additions format can
+be published through the ordinary source-tree command:
+
+```sh
+PYTHONPATH=src .venv/bin/python scripts/publish_visual_cases.py \
+  --parent path/to/newest-published/memory \
+  --parent-sha256 <manifest-sha256> \
+  --additions path/to/reviewed-measured-additions.json \
+  --output path/to/fresh-child/memory --prepare-recall
+```
+
+The publisher preserves the parent and signed scopes; it does not invent a full profile or
+clinical call. Use this child's actual pin for the next publication and training export.
+
 ## What completes this corpus-building step
 
 The earlier version of this section incorrectly made automatic recognition across all 58 studies

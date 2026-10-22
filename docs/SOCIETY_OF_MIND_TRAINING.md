@@ -1,5 +1,13 @@
 # The society of agencies: design binding, build spec and training plan
 
+**Current bootstrap binding, 2026-10-22.** Hand-build the anatomical normal/diagnosed corpus,
+measure its bundles and assign the signed K-lines, then use it for the specified classical
+training. Automatic recognition of every teaching study is not a prerequisite. Correctly
+identified objects not implicated by the study's positive labels are valid normal examples.
+The dated L0 critical-path and score comparisons below are historical findings, not a gate on
+this hand-teaching operation. Current commands and evidence are in GROUNDED_RECOGNITION and
+the sole packet named by FULL_BUILD_PLAN §13.
+
 Written 2026-10-22 at Rohan's request: «Write up a full design document and build spec/training plan
 for it. Then let's do it». "It" is the classical Society of Mind training that comes after the bootstrap:
 FULL_BUILD_PLAN §18.1 step 5, "Train the designed classical system".

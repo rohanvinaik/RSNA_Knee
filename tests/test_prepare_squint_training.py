@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import csv
 import hashlib
 import json
 from pathlib import Path
@@ -8,6 +9,7 @@ from types import SimpleNamespace
 import pytest
 
 import scripts.prepare_squint_training as cli
+from knee.study.tables import LABELS
 
 UID = "1.2.826.0.1.3680043.8.498.1000"
 SOURCE_REVISION = "inference-revision"
@@ -55,10 +57,34 @@ def reviewed_memory(record_sha: str) -> dict:
         "cases": [
             {
                 "case_id": candidate_id,
+                "study_uid": UID,
+                "subject": "femur",
+                "condition_calls": {},
+                "profile": {
+                    "schema": "knee.squint-profile/v1",
+                    "subject": "femur",
+                    "banks": {
+                        'squint/v2/view=["Coronal","0","0"]/role=object/metric=signal/direction=d/scale=10mm': [
+                            2,
+                            0,
+                            1,
+                        ]
+                    },
+                },
                 "identity_growth": {"source": {"record_sha256": record_sha}},
             }
         ],
         "object_identity_teaching": {
+            "schema": "knee.object-identity-teaching/v1",
+            "confirmed_case_ids": [candidate_id],
+            "calls": [
+                {
+                    "candidate_id": candidate_id,
+                    "call": "confirm",
+                    "views": [["Coronal", "0", "0"]],
+                    "identity_growth": {"source": {"record_sha256": record_sha}},
+                }
+            ],
             "admission_reviews": [
                 {
                     "review_sha256": "r" * 64,
@@ -71,7 +97,7 @@ def reviewed_memory(record_sha: str) -> dict:
                         }
                     ],
                 }
-            ]
+            ],
         },
     }
 
@@ -141,6 +167,70 @@ def test_cli_writes_pinned_experience_with_separate_memory_identities(
     assert saved["outputs"]["unchecked"] == 0
     assert saved["outputs"]["question_attribution"] == {"recorded": 1}
     assert receipt["outputs"]["rows"] == 1
+    corpus = json.loads((output / "object-buckets.json").read_text())
+    assert corpus["scoped_records"][0]["state"]["status"] == "condition_presentation"
+    assert corpus["scoped_records"][0]["state"]["unknown_questions"]
+    assert corpus["teaching_memory"]["manifest_sha256"] == TEACHING_MEMORY_SHA
+
+
+def test_official_unrelated_positive_keeps_reviewed_femur_in_normal_bucket(
+    tmp_path, monkeypatch
+):
+    memory_path, run, labels, output, snapshot = inputs(tmp_path)
+    with labels.open("w", newline="", encoding="utf-8") as stream:
+        writer = csv.DictWriter(stream, fieldnames=["StudyInstanceUID", *LABELS])
+        writer.writeheader()
+        writer.writerow(
+            {"StudyInstanceUID": UID, **dict.fromkeys(LABELS, 0), "Synovitis": 1}
+        )
+    monkeypatch.setattr(cli, "load_memory_snapshot", lambda _path: snapshot)
+
+    receipt = cli.prepare(
+        memory_path=memory_path,
+        expected_memory_sha256=TEACHING_MEMORY_SHA,
+        run_paths=[run],
+        labels_path=labels,
+        output_path=output,
+    )
+
+    corpus = json.loads((output / "object-buckets.json").read_text())
+    case_id = snapshot.memory["cases"][0]["case_id"]
+    assert corpus["buckets"] == {"femur": {"normal": [case_id]}}
+    assert corpus["condition_buckets"] == {}
+    [scoped] = corpus["scoped_records"]
+    assert scoped["identity_views"] == [["Coronal", "0", "0"]]
+    assert scoped["case"]["profile"]["banks"]
+    assert scoped["case"]["condition_calls"] == {}
+    assert receipt["outputs"]["object_states"] == {"normal": 1}
+
+
+def test_official_fracture_retains_condition_presentation_without_localizing_it(
+    tmp_path, monkeypatch
+):
+    memory_path, run, labels, output, snapshot = inputs(tmp_path)
+    with labels.open("w", newline="", encoding="utf-8") as stream:
+        writer = csv.DictWriter(stream, fieldnames=["StudyInstanceUID", *LABELS])
+        writer.writeheader()
+        writer.writerow(
+            {"StudyInstanceUID": UID, **dict.fromkeys(LABELS, 0), "Fracture": 1}
+        )
+    monkeypatch.setattr(cli, "load_memory_snapshot", lambda _path: snapshot)
+
+    cli.prepare(
+        memory_path=memory_path,
+        expected_memory_sha256=TEACHING_MEMORY_SHA,
+        run_paths=[run],
+        labels_path=labels,
+        output_path=output,
+    )
+
+    corpus = json.loads((output / "object-buckets.json").read_text())
+    case_id = snapshot.memory["cases"][0]["case_id"]
+    assert corpus["buckets"] == {"femur": {"condition_presentation": [case_id]}}
+    assert corpus["condition_buckets"] == {"femur": {"Fracture": [case_id]}}
+    [scoped] = corpus["scoped_records"]
+    assert scoped["case"]["condition_calls"] == {}
+    assert scoped["state"]["implicated_positive"] == ["Fracture"]
 
 
 def test_evidence_path_outside_run_is_refused_without_partial_output(

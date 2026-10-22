@@ -1,5 +1,12 @@
 # Hand-defined normal and condition teaching references
 
+The labelled studies also supply the normal corpus: once an anatomical object is correctly
+identified, it is a valid normal example when none of that study's positive conditions implicates
+it. The official labels supply this meaning; no additional normality annotation is required.
+Keep the object's confirmed views and the condition/object relationships. A normal object in an
+injured knee is still a useful normal example. The pictures below define starting contrasts;
+they are not the only objects eligible to teach.
+
 These are independently source-labeled, visually addressed teaching presentations. The 24 regions are annotations of these images, not rules for locating new knees. Identity and state stay separate. The existing 852-case signed parent is untouched.
 
 This workset uses the production 10 mm and 2 mm writers, exact Hadamard carrier and ordinary case-recall engine. Labels and written meanings are not feature banks. Teaching replay checks the supplied examples, not held-out transfer. Named bank differences are image measurements, not automatically clinical causes.
