@@ -1290,21 +1290,29 @@ def _sanity_summary(rows: Sequence[Mapping[str, Any]]) -> dict[str, Any]:
     }
 
 
-def _check_anchor_sanity(
-    state: dict[str, Any], series_by_uid: Mapping[str, Any], knee_side: str | None
-) -> None:
-    """A contradicted pair cannot silently anchor dependent objects.
+def _cross_view_warrant(entry: Mapping[str, Any]) -> bool:
+    """Whether a usable anchor has support of its own: a territory whose section the
+    producer's cross-view check found agreeing with another view (``views_agree``).
+    Silence (no carried place) adds none."""
+    for territory in entry.get("territories", ()):
+        provenance = (
+            territory.get("provenance") if isinstance(territory, Mapping) else None
+        )
+        if (
+            isinstance(provenance, Mapping)
+            and provenance.get("cross_view") == "views_agree"
+        ):
+            return True
+    return False
 
-    Preserve both observations and name the conflict; these checks do not choose
-    which of two conflicting bone names was mistaken. Each reference supplies its
-    interval in ``squint_sanity``'s order: a complete point and precision, its
-    exact planes, or the projection of its own observed territory windows, made
-    like the candidate's; an axis none of them determines, and a missing
-    reference, remain neutral and do not prevent their existing useful guide
-    contribution.
-    """
+
+def _anchor_checks(
+    state: Mapping[str, Any], series_by_uid: Mapping[str, Any], knee_side: str | None
+) -> tuple[dict[str, Any], set[tuple[str, str | None]]]:
+    """Every usable anchor's sanity rows against the usable anchors' geometry, and the
+    reversed pairs found (a reference that is not a usable anchor is None)."""
     checked: dict[str, Any] = {}
-    conflicts: set[str] = set()
+    pairs: set[tuple[str, str | None]] = set()
     for name, entry in state["usable"].items():
         rows = []
         for territory in entry["territories"]:
@@ -1324,21 +1332,75 @@ def _check_anchor_sanity(
                 rows.append(row)
                 for check in row["checks"]:
                     if check["result"].startswith("reversed_"):
-                        conflicts.add(name)
                         reference = check.get("reference_subject")
-                        if reference in state["usable"]:
-                            conflicts.add(reference)
+                        pairs.add(
+                            (name, reference if reference in state["usable"] else None)
+                        )
         checked[name] = _sanity_summary(rows)
-    state["sanity"] = checked
-    for name in sorted(conflicts):
-        state["bones"][name] = {
-            **state["bones"][name],
-            "status": "conflict",
-            "code": "anatomical_relation_conflict",
-            "anatomical_sanity": checked[name],
+    return checked, pairs
+
+
+def _check_anchor_sanity(
+    state: dict[str, Any], series_by_uid: Mapping[str, Any], knee_side: str | None
+) -> None:
+    """A contradicted pair cannot silently anchor dependent objects.
+
+    A reversed relation between two usable anchors is a disagreement about that pair,
+    scoped to it. When exactly one of the two has support of its own (a positive
+    cross-view agreement, ``_cross_view_warrant``), only the other is set aside, and
+    the one kept records the overruled relation; when both or neither have it, both
+    are set aside and these checks do not choose which name was mistaken. A reversed
+    relation to a reference that is not a usable anchor sets aside the candidate
+    alone. The anchors kept are checked again against the anchors still usable, until
+    nothing more is reversed. Each reference supplies its interval in
+    ``squint_sanity``'s order: a complete point and precision, its exact planes, or
+    the projection of its own observed territory windows, made like the candidate's;
+    an axis none of them determines, and a missing reference, remain neutral and do
+    not prevent their existing useful guide contribution.
+    """
+    conflicts: set[str] = set()
+    every: dict[str, Any] = {}
+    overruled: dict[str, dict[str, dict[str, Any]]] = {}
+    while True:
+        checked, pairs = _anchor_checks(state, series_by_uid, knee_side)
+        every.update(checked)
+        warrant = {
+            name: _cross_view_warrant(entry) for name, entry in state["usable"].items()
         }
-        state["usable"].pop(name, None)
-        state["geometry"].pop(name, None)
+        aside: set[str] = set()
+        for name, reference in sorted(pairs, key=str):
+            if reference is None:
+                aside.add(name)
+                continue
+            if warrant[name] == warrant[reference]:
+                aside.update((name, reference))
+                continue
+            kept, other = (name, reference) if warrant[name] else (reference, name)
+            aside.add(other)
+            overruled.setdefault(kept, {})[other] = {
+                "set_aside": other,
+                "kept_by": "cross_view_agreement",
+                "checks_when_set_aside": checked[kept],
+            }
+        if not aside:
+            break
+        for name in sorted(aside):
+            state["bones"][name] = {
+                **state["bones"][name],
+                "status": "conflict",
+                "code": "anatomical_relation_conflict",
+                "anatomical_sanity": checked[name],
+            }
+            state["usable"].pop(name, None)
+            state["geometry"].pop(name, None)
+        conflicts |= aside
+    state["sanity"] = every
+    for name, rows in overruled.items():
+        if name in state["usable"]:
+            state["bones"][name] = {
+                **state["bones"][name],
+                "overruled_relation_conflicts": [rows[other] for other in sorted(rows)],
+            }
     if not state["usable"]:
         state["route"] = EXISTING_ROUTE
         if conflicts:

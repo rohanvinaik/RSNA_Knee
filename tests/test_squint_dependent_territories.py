@@ -1047,6 +1047,60 @@ def test_the_headers_knee_reaches_the_anchor_checks_and_the_sided_proposals(
     )
 
 
+def test_a_reversed_pair_sets_aside_only_the_member_no_other_view_confirms(
+    monkeypatch,
+):
+    """A reversed relation is a disagreement about the pair. When exactly one member
+    has support of its own (another view of the same bone agreed with its section),
+    the other is set aside and the confirmed one anchors, keeping the overruled
+    relation; when both or neither have it, both are set aside."""
+    _no_producer(monkeypatch)
+    series = _series()
+    memory = _memory(series, {"medial_meniscus": (4, 5, 11, 12, 10, 15)})
+
+    def locate(confirmed: set[str]):
+        anchors = _sided_anchors("R", "R")
+        for bone in confirmed:
+            anchors[bone]["territories"][0]["provenance"] = {
+                "fixture": True,
+                "cross_view": "views_agree",
+            }
+        return locator.locate_objects(_study(series, anchors=anchors), memory)[
+            "evidence"
+        ]["anchors"]["bones"]
+
+    # The tibia's section agreed with another view; the fibula's agreed with none.
+    bones = locate({"tibia"})
+    assert (bones["fibula"]["status"], bones["fibula"]["code"]) == (
+        "conflict",
+        "anatomical_relation_conflict",
+    )
+    assert bones["tibia"]["status"] == "complete"
+    (overruled,) = bones["tibia"]["overruled_relation_conflicts"]
+    assert overruled["set_aside"] == "fibula"
+    assert overruled["kept_by"] == "cross_view_agreement"
+    assert overruled["checks_when_set_aside"]["status"] in {
+        "contradicted",
+        "plausible",
+        "unknown",
+    }
+    # The other sign: the fibula is the confirmed one, the tibia is set aside.
+    bones = locate({"fibula"})
+    assert bones["tibia"]["status"] == "conflict"
+    assert bones["fibula"]["status"] == "complete"
+    assert [
+        row["set_aside"] for row in bones["fibula"]["overruled_relation_conflicts"]
+    ] == ["tibia"]
+    # Both confirmed, or neither: the checks cannot say which name was mistaken.
+    for confirmed in ({"tibia", "fibula"}, set()):
+        bones = locate(confirmed)
+        assert {bones[bone]["status"] for bone in ("tibia", "fibula")} == {"conflict"}
+        assert all(
+            "overruled_relation_conflicts" not in bones[bone]
+            for bone in ("tibia", "fibula")
+        )
+
+
 def _partial_axial_anchor(bone: str, box: tuple[int, ...], height_mm: float):
     """A partial anchor: one coronal territory and one exactly axial key plane."""
     return {
