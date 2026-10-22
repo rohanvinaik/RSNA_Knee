@@ -129,7 +129,16 @@ def test_public_infer_study_returns_identity_evidence_at_boundary(monkeypatch):
     assert result["study_status"] == "examined"
     assert result["identity_recall"]["schema"] == "knee.study-object-identity/v1"
     assert result["identity_recall"]["outcome"] == "examined"
-    assert result["identity_recall"]["objects"]["proposed-B"]["identity"] == "A"
+    reading = result["identity_recall"]["objects"]["proposed-B"]
+    # Recalled in its context, the located object keeps its own name; the identity its
+    # reading resembles unconditioned is recorded beside it and renames nothing.
+    assert (reading["identity"], reading["identity_basis"]) == (
+        "proposed-B",
+        "prior_only",
+    )
+    assert reading["unconditioned_identity"] == "A"
+    entry = result["identity_consumption"]["objects"]["proposed-B"]
+    assert entry["answers_questions_as"] == "proposed-B"
     assert result["questions"] == {}
     assert result["values"] == {}
     assert result["work"]["raw_read_mocked"] is True

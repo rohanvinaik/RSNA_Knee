@@ -1,15 +1,25 @@
-"""Identity recall governs which located tissue condition reasoning consumes.
+"""Every located object answers its own questions as the object identified in context,
+unless an applicable negative case speaks over the region asserted to be it.
 
-The binding (OpenSpec ``complete-signed-bootstrap-loop``, "Identity recall affects the
-decisions that consume tissue"; CLASSICAL_AI_BUILD_DESIGN §10 step 5): tissue recognized
-as a different object, or spoken against by its own subject's negative cases alone, is
-withheld from that subject's condition questions (object and whole-configuration voices
-alike) and from bounded reads aimed at it. It reaches ``combine_condition`` exactly as an
-unlocated object does: unknown, never normal, never a defeat. It is never reassigned to
-the other identity, and its located record stays retained and unmodified. Identified as
-itself, conflicted, unresolved, missing or untaught, the structure's placement stands.
+Rohan, 2026-10-21: «The operation for finding and naming the bones is already built. Use
+its results and their supporting observations. Do not restart bone recognition because a
+downstream appearance comparison resembles another bone.» And: «A femur resembling a tibia
+is compatible with both being bones.» And: «Diagnosis asks about the state of the
+contextually identified object.» And: «Positive and negative cases are expertise, not
+decorative annotations... Muscle surrounding a bone is different from muscle occupying the
+region asserted to be the bone. A broad mixed window is different from a resolved object.»
 
-Each decision is pinned with both signs. ``recall_object`` is a spy (an empty profile gets
+So resemblance to another object never keeps a region from its own questions or its
+bounded looks. A negative case whose reason holds for the asserted region (it speaks over
+the object's own tiles) keeps that region from being read as the object: its questions
+stay open, nothing renames it, and its bounded looks are still made. A negative heard only
+through the surroundings changes nothing. ``identity_consumption``
+(``knee.study-identity-consumption/v2``) records each object's identity context, its
+recall outcome and effect, a revisable ``identity_question`` for a genuine contradictory
+law observation, and an ``identity_open_question`` naming the existing bounded readings
+that could settle an unsettled identity, run by nothing here.
+
+Each meaning is pinned with both signs. ``recall_object`` is a spy (an empty profile gets
 the real recall, as production gives an unlocated object); identity recall, configuration
 composition and the condition contracts are the real ones.
 """
@@ -18,19 +28,29 @@ from __future__ import annotations
 
 import copy
 import hashlib
+import inspect
 import json
 from pathlib import Path
 
 import pytest
 
-from knee.diagnosis import (
-    squint_locator,
-    squint_pipeline,
-    squint_profiles,
-    squint_residual,
-)
+from knee.diagnosis import squint_locator, squint_pipeline, squint_profiles
 from knee.diagnosis.declarations import QUESTIONS
+from knee.diagnosis.squint_anatomy_locator import BONES
 from knee.diagnosis.squint_contracts import combine_condition
+from knee.diagnosis.squint_identity import (
+    APPEARANCE_OPPOSED,
+    CONDITIONING,
+    CONTEXT_SCHEMA,
+    IDENTITY_CONSUMPTION_SCHEMA,
+    MAP_RELATION,
+    PRIOR_ONLY,
+    PROPOSED_PLACES,
+    RESOLVED_SUPPORT,
+    SIGNED_CONFLICT,
+    STRUCTURAL_READER,
+    SUPPORT_UNRECORDED,
+)
 from knee.diagnosis.squint_interfaces import TERRITORY_PROCEDURE, territory_bank_name
 
 REAL_RECALL = squint_locator.recall_object
@@ -38,58 +58,201 @@ SAG = {"orientation": "sagittal", "fluid_sensitive": "1", "fat_suppression": "1"
 COR = {"orientation": "coronal", "fluid_sensitive": "1", "fat_suppression": "1"}
 SAG_TRIPLE = ["sagittal", "1", "1"]
 SANITY_SCHEMA = "knee.object-anatomical-sanity/v1"
-WITHHELD_AS_TIBIA = {"reason": "identity_recognized_as_other", "recognized_as": "tibia"}
+WINDOW = [0, 1, 0, 2, 0, 2]
+#: The structural reader's provenance for its bone, as the anchor territory records it.
+PROVENANCE = {
+    "producer": "knee.diagnosis.squint_anchors.find_anchors/v1",
+    "derivation": "middle_slice_named_by_the_established_rule",
+    "rule": "knee.objects.assignments.assign_plane, read with its partner (with_partner)",
+    "middle_slice_code": "agreed_with_its_partner",
+    "partner": "read_with_series-sag-fat-dark",
+    "scale": "native",
+    "cross_view_checks": [
+        {
+            "against_series_uid": "series-cor",
+            "against_orientation": "coronal",
+            "against_slice": 15,
+            "outcome": "no_carried_place_on_this_slice",
+        }
+    ],
+}
 
 
-def bank(view=SAG) -> str:
-    return territory_bank_name(view, "object", "m", "d", 10.0)
+def bank(view=SAG, role="object") -> str:
+    return territory_bank_name(view, role, "m", "d", 10.0)
 
 
-def tprofile(subject: str, counts, view=SAG) -> dict:
+def tprofile(subject: str, counts, view=SAG, ring=None) -> dict:
+    banks = {bank(view): list(counts)}
+    if ring is not None:
+        banks[bank(view, "context")] = list(ring)
     return {
         "schema": "knee.squint-profile/v1",
         "subject": subject,
-        "banks": {bank(view): list(counts)},
+        "banks": banks,
         "source": {"procedure": TERRITORY_PROCEDURE},
     }
 
 
-def located(subject: str, counts, view=SAG, sanity=None) -> dict:
-    record = {
+def law_check(subject, target, result, *, candidate_subject=None, reference=None):
+    """One authored law check, shaped as the locator records it."""
+    return {
+        "rule_id": f"authored:{subject}:superior_to:{target}",
+        "subject": subject,
+        "target": target,
+        "candidate_role": "subject"
+        if candidate_subject in (None, subject)
+        else "target",
+        "axis": "z",
+        "relation": "superior_to",
+        "expected_relation": "strictly_after",
+        "candidate_interval": [0.0, 10.0],
+        "target_interval": [20.0, 30.0],
+        "result": result,
+        "candidate_subject": candidate_subject or subject,
+        "reference_subject": reference or target,
+    }
+
+
+def sanity(*checks) -> dict:
+    """A knee.object-anatomical-sanity/v1 record over the one fixture window."""
+    results = [check["result"] for check in checks]
+    status = (
+        "contradicted"
+        if any(result.startswith("reversed_") for result in results)
+        else "plausible"
+        if any(result.startswith("supported_") for result in results)
+        else "unknown"
+    )
+    return {
+        "schema": SANITY_SCHEMA,
+        "status": status,
+        "identity_assertion": None,
+        "windows": [
+            {
+                "index": 0,
+                "window": list(WINDOW),
+                "address": list(WINDOW),
+                "status": status,
+                "eligible": True,
+                "series_uid": "series-sag",
+                "checks": list(checks),
+            }
+        ],
+    }
+
+
+def located(subject: str, counts, view=SAG) -> dict:
+    """An object the locator holds a reading of, with no structural placement recorded."""
+    return {
         "status": "located",
         "profile": tprofile(subject, counts, view),
         "regions": [],
     }
-    if sanity is not None:
-        record["sanity"] = {
-            "schema": SANITY_SCHEMA,
-            "status": sanity,
-            "identity_assertion": None,
-            "windows": [],
-        }
-    return record
 
 
-def seed(case_id: str, subject: str, study_uid: str, counts) -> dict:
+def anchored(subject: str, counts, ring=None) -> dict:
+    """A bone located by its own structural anchor, as ``_anchored_object`` records it.
+
+    Its sanity is the reader's own: an anchor whose law checks reversed is set aside
+    before it can anchor (``_check_anchor_sanity``), so none appear here.
+    """
+    return {
+        "status": "proposal",
+        "profile": tprofile(subject, counts, ring=ring),
+        "regions": [{"series_uid": "series-sag", "view": SAG, "window": list(WINDOW)}],
+        "territories": [
+            {
+                "origin": "anchor_structure",
+                "subject": subject,
+                "provenance": copy.deepcopy(PROVENANCE),
+            }
+        ],
+        "sanity": sanity(),
+        "evidence": {
+            "source": "current_study_structural_anchor",
+            "location_route": "structural_anchor",
+            "anchor": {
+                "status": "partial",
+                "code": "valid",
+                "producer": "fixture-anchor",
+                "key_planes": {
+                    "sagittal": {
+                        "outcome": "selected",
+                        "series_uid": "series-sag",
+                        "slice": 0,
+                    }
+                },
+            },
+            "reading_territories": "territories_on_selected_key_planes",
+        },
+    }
+
+
+def set_aside(subject: str, reference: str) -> dict:
+    """A structural anchor ``_check_anchor_sanity`` set aside for a reversed relation."""
+    return {
+        "status": "conflict",
+        "code": "anatomical_relation_conflict",
+        "anatomical_sanity": sanity(
+            law_check(
+                reference,
+                subject,
+                "reversed_strictly_after",
+                candidate_subject=subject,
+                reference=reference,
+            )
+        ),
+    }
+
+
+def placed(subject: str, counts, *, unanchored=None) -> dict:
+    """An object the anatomy map placed from the established structural anchors."""
+    evidence = {
+        "source": "current_study_anatomy_first_finite_windows",
+        "location_route": "anatomical_relation_from_structural_anchors",
+    }
+    if unanchored is not None:
+        evidence["unanchored_bone"] = unanchored
+    return {
+        "status": "proposal",
+        "profile": tprofile(subject, counts),
+        "regions": [{"series_uid": "series-sag", "view": SAG, "window": list(WINDOW)}],
+        "territories": [
+            {
+                "origin": "anatomical_relation",
+                "subject": subject,
+                "relation": {"kind": "authored_relation"},
+                "anchors": [{"anchor": "femur", "kind": "structural_anchor"}],
+            }
+        ],
+        "sanity": sanity(),
+        "evidence": evidence,
+    }
+
+
+def seed(case_id: str, subject: str, study_uid: str, counts, ring=None) -> dict:
     return {
         "case_id": case_id,
         "subject": subject,
         "study_uid": study_uid,
-        "profile": tprofile(subject, counts),
+        "profile": tprofile(subject, counts, ring=ring),
     }
 
 
-def taught_memory(*, femur_negative: bool = False) -> dict:
+def taught_memory(*, femur_negative: bool = False, ring: bool = False) -> dict:
     """Confirmed femur (3,0,0) and tibia (0,0,3) seeds; optionally a femur reject.
 
-    The reject is a candidate proposed as femur whose sagittal support, (1,2,0), the
-    reviewer called not femur: an ordinary negative identity case on its own view.
+    The reject is a candidate proposed as femur whose sagittal support the reviewer
+    called not femur: an ordinary negative identity case on its own view, with object
+    tiles (1,2,0). With ``ring`` every case also carries context tiles, and the reject's
+    object tiles are (0,3,0) while its context tiles are (1,2,0).
     """
     memory = {
         "revision": "r1",
         "cases": [
-            seed("f1", "femur", "sf", (3, 0, 0)),
-            seed("t1", "tibia", "st", (0, 0, 3)),
+            seed("f1", "femur", "sf", (3, 0, 0), (3, 0, 0) if ring else None),
+            seed("t1", "tibia", "st", (0, 0, 3), (0, 0, 3) if ring else None),
         ],
         "object_identity_teaching": {
             "schema": "knee.object-identity-teaching/v1",
@@ -101,15 +264,25 @@ def taught_memory(*, femur_negative: bool = False) -> dict:
         },
     }
     if femur_negative:
+        negative = (
+            seed("n1", "femur", "sn", (0, 3, 0), (1, 2, 0))
+            if ring
+            else seed("n1", "femur", "sn", (1, 2, 0))
+        )
         memory["object_identity_cases"] = {
             "schema": "knee.object-identity-cases/v1",
-            "cases": [seed("n1", "femur", "sn", (1, 2, 0))],
+            "cases": [negative],
         }
         teaching = memory["object_identity_teaching"]
         teaching["negative_case_ids"] = ["n1"]
         teaching["negative_views"] = {"n1": [SAG_TRIPLE]}
         teaching["calls"].append(
-            {"candidate_id": "n1", "call": "reject", "views": [SAG_TRIPLE]}
+            {
+                "candidate_id": "n1",
+                "call": "reject",
+                "views": [SAG_TRIPLE],
+                "notes": "posterior soft tissue, not femur",
+            }
         )
     return memory
 
@@ -123,11 +296,11 @@ def untaught(memory: dict) -> dict:
     }
 
 
-def bones(femur_counts) -> dict:
+def bones(femur, tibia=None) -> dict:
     """Four located bones; patella and fibula on a view no identity seed speaks on."""
     return {
-        "femur": located("femur", femur_counts),
-        "tibia": located("tibia", (0, 0, 3)),
+        "femur": femur,
+        "tibia": tibia if tibia is not None else located("tibia", (0, 0, 3)),
         "patella": located("patella", (1, 1, 1), COR),
         "fibula": located("fibula", (1, 1, 1), COR),
     }
@@ -174,10 +347,10 @@ def all_normal(question, subject, banks):
     return warranted(subject, -1, banks)
 
 
-def femur_fracture_positive(question, subject, banks):
-    if subject == "femur" and question == "Fracture":
-        return warranted(subject, 1, banks)
-    if subject.startswith("diagnosis/"):
+def femur_left_open(question, subject, banks):
+    """Every other object is normal; the femur's voice and every configuration stay
+    untrusted proposals, so each femur question is left open and asks for a look."""
+    if subject == "femur" or subject.startswith("diagnosis/"):
         return {"outcome": "proposal", "subject": subject, "case_terms": []}
     return warranted(subject, -1, banks)
 
@@ -226,136 +399,313 @@ def decided(record):
     }
 
 
-def without_annotation(record: dict) -> dict:
-    return {key: value for key, value in record.items() if key != "identity_withheld"}
+def question(question_id):
+    return next(q for q in QUESTIONS if q.question_id == question_id)
+
+
+def femur_rows(record):
+    return [row for row in record["observations"] if row.get("subject") == "femur"]
 
 
 # ---------------------------------------------------------------------------
-# the pure decision, both signs of every rule
+# the consumption record: resemblance answers, an applicable negative does not
 # ---------------------------------------------------------------------------
 
 
-def reading(outcome, identity=None, speaking=(), opposed=None, **extra):
-    record = {
-        "outcome": outcome,
-        "identity": identity,
-        "speaking_identities": list(speaking),
+def context(
+    subject: str,
+    basis: str = PRIOR_ONLY,
+    contradictions=(),
+    open_alternatives=(),
+) -> dict:
+    structural = basis == STRUCTURAL_READER
+    return {
+        "schema": CONTEXT_SCHEMA,
+        "subject": subject,
+        "basis": basis,
+        "conditioning": CONDITIONING[basis],
+        "support": RESOLVED_SUPPORT if structural else PROPOSED_PLACES,
+        "open_alternatives": sorted(open_alternatives),
+        "removed_by_structure": sorted(set(BONES) - {subject}) if structural else [],
+        "contradictions": list(contradictions),
+        "supporting_observations": {"reason": "fixture"},
     }
-    if opposed is not None:
-        record["opposed_identities"] = list(opposed)
-    record.update(extra)
-    return record
+
+
+def reading(outcome: str, basis: str, appearance: str, *negatives: str) -> dict:
+    return {
+        "outcome": outcome,
+        "identity": "femur",
+        "identity_basis": basis,
+        "identity_state": "fixture",
+        "appearance": appearance,
+        "applicable_negative_case_ids": list(negatives),
+    }
 
 
 @pytest.mark.parametrize(
-    ("item", "expected"),
+    ("heard", "basis"),
     [
-        # Recognized as a different object: withheld, named, never reassigned.
         (
-            reading("identified", "tibia", ["tibia"]),
-            {"decision": "withheld", **WITHHELD_AS_TIBIA},
+            reading("established_by_structure", STRUCTURAL_READER, "silent"),
+            STRUCTURAL_READER,
         ),
-        # Recognized as itself: kept.
-        (
-            reading("identified", "femur", ["femur"], opposed=[]),
-            {"decision": "kept", "reason": "identified", "recognized_as": "femur"},
-        ),
-        # Spoken against by its own negative cases alone, whatever else is unresolved.
-        *(
-            (
-                reading(outcome, None, speaking, opposed=["femur"], **extra),
-                {
-                    "decision": "withheld",
-                    "reason": "identity_opposed_by_negative_cases",
-                },
-            )
-            for outcome, speaking, extra in (
-                ("unresolved_no_precedent", [], {}),
-                ("proposal", [], {}),
-                ("blocked_by_sanity", ["tibia"], {"blocked_identity": "tibia"}),
-                ("unresolved_conflict", ["patella", "tibia"], {}),
-            )
-        ),
-        # Spoken for and against: a conflict, kept and flagged.
-        (
-            reading("unresolved_conflict", None, ["femur"], opposed=["femur"]),
-            {"decision": "kept", "reason": "unresolved_conflict"},
-        ),
-        (
-            reading("unresolved_conflict", None, ["femur", "tibia"], opposed=[]),
-            {"decision": "kept", "reason": "unresolved_conflict"},
-        ),
-        # Another identity's opposition says nothing against this object.
-        (
-            reading("unresolved_no_precedent", None, [], opposed=["tibia"]),
-            {"decision": "kept", "reason": "unresolved_no_precedent"},
-        ),
-        # A blocked identity, its own or another's, is not a recognition: kept.
-        (
-            reading("blocked_by_sanity", None, ["femur"], blocked_identity="femur"),
-            {"decision": "kept", "reason": "blocked_by_sanity"},
-        ),
-        (
-            reading("blocked_by_sanity", None, ["tibia"], blocked_identity="tibia"),
-            {"decision": "kept", "reason": "blocked_by_sanity"},
-        ),
-        *(
-            (reading(outcome), {"decision": "kept", "reason": outcome})
-            for outcome in (
-                "proposal",
-                "unresolved_no_precedent",
-                "unresolved_missing_reading",
-                "silent",
-                "invalid_input",
-                "invalid_preparation",
-            )
-        ),
+        (reading("appearance_supports", MAP_RELATION, "supports"), MAP_RELATION),
+        (reading("appearance_silent", MAP_RELATION, "silent"), MAP_RELATION),
+        (reading("placement_only", PRIOR_ONLY, "uncalibrated"), PRIOR_ONLY),
     ],
 )
-def test_one_located_objects_identity_decides_what_its_tissue_answers(item, expected):
-    assert squint_pipeline._identity_decision("femur", item, "examined") == expected
+def test_whatever_its_recall_resembles_an_uncontested_object_answers_as_itself(
+    heard, basis
+):
+    record = squint_pipeline._identity_consumption(
+        {"femur": {}},
+        {"outcome": "examined", "objects": {"femur": heard}},
+        {"femur": context("femur", basis)},
+    )
+    assert record["schema"] == IDENTITY_CONSUMPTION_SCHEMA
+    assert record["not_read_as_subject"] == []
+    entry = record["objects"]["femur"]
+    assert (entry["answers_questions_as"], entry["region_read_as_subject"]) == (
+        "femur",
+        True,
+    )
+    assert entry["identity_effect"] == "answers"
+    assert entry["recall_outcome"] == heard["outcome"]
+    assert entry["identity_basis"] == basis
+    assert entry["identity_context"] == context("femur", basis)
+    assert entry["identity_question"] is None
+    assert entry["applicable_negative_case_ids"] == []
+    assert squint_pipeline._regions_not_read(record) == {}
+
+
+@pytest.mark.parametrize("outcome", [APPEARANCE_OPPOSED, SIGNED_CONFLICT])
+@pytest.mark.parametrize("basis", [STRUCTURAL_READER, MAP_RELATION, PRIOR_ONLY])
+def test_an_applicable_negative_keeps_the_region_from_being_read_as_its_object(
+    outcome, basis
+):
+    record = squint_pipeline._identity_consumption(
+        {"femur": {}, "tibia": {}},
+        {
+            "outcome": "examined",
+            "objects": {
+                "femur": reading(outcome, basis, "supports", "n1"),
+                "tibia": reading("appearance_silent", basis, "silent"),
+            },
+        },
+        {"femur": context("femur", basis), "tibia": context("tibia", basis)},
+    )
+    entry = record["objects"]["femur"]
+    # Never renamed: the region is simply not read as the femur.
+    assert (entry["answers_questions_as"], entry["region_read_as_subject"]) == (
+        None,
+        False,
+    )
+    assert entry["identity_effect"] == outcome
+    assert entry["applicable_negative_case_ids"] == ["n1"]
+    assert record["not_read_as_subject"] == ["femur"]
+    assert record["objects"]["tibia"]["region_read_as_subject"] is True
+    assert squint_pipeline._regions_not_read(record) == {
+        "femur": {"reason": outcome, "applicable_negative_case_ids": ["n1"]}
+    }
+    # The contested identity names the bounded readings that could settle it.
+    question_ = entry["identity_open_question"]
+    assert (question_["status"], question_["why"]) == ("open", "contested")
+    assert question_["run"] == "left_to_the_consumer_within_budget"
+    assert [row["procedure"] for row in question_["next_observations"]] == [
+        "paired_finer_reading"
+    ]
+
+
+def test_a_contradiction_is_a_revisable_question_and_a_plain_context_asks_none():
+    reversed_check = {
+        "scope": "set_aside_structural_anchor",
+        "result": "reversed_strictly_after",
+    }
+    asked = squint_pipeline._identity_consumption(
+        {"tibia": {}},
+        {
+            "outcome": "examined",
+            "objects": {
+                "tibia": reading("placement_only", MAP_RELATION, "uncalibrated")
+            },
+        },
+        {"tibia": context("tibia", MAP_RELATION, contradictions=[reversed_check])},
+    )["objects"]["tibia"]
+    assert asked["identity_question"] == {
+        "status": "open",
+        "kind": "reversed_anatomical_relation",
+        "revisable": True,
+        "evidence": [reversed_check],
+    }
+    # A contradiction asks; it keeps nothing from the object's own questions.
+    assert asked["answers_questions_as"] == "tibia"
+    assert asked["region_read_as_subject"] is True
+    plain = squint_pipeline._identity_consumption(
+        {"tibia": {}},
+        {
+            "outcome": "examined",
+            "objects": {
+                "tibia": reading("placement_only", MAP_RELATION, "uncalibrated")
+            },
+        },
+        {"tibia": context("tibia", MAP_RELATION)},
+    )["objects"]["tibia"]
+    assert plain["identity_question"] is None
+
+
+@pytest.mark.parametrize(
+    ("subject", "basis", "appearance", "asks"),
+    [
+        ("femur", STRUCTURAL_READER, "silent", False),
+        ("femur", STRUCTURAL_READER, "uncalibrated", False),
+        ("femur", MAP_RELATION, "supports", False),
+        ("femur", MAP_RELATION, "silent", True),
+        ("femur", PRIOR_ONLY, "uncalibrated", True),
+        ("mcl", MAP_RELATION, "silent", True),
+    ],
+)
+def test_an_unconfirmed_identity_names_its_next_observation_and_runs_nothing(
+    subject, basis, appearance, asks
+):
+    from knee.diagnosis.squint_residual import producer_for
+
+    outcome = (
+        "established_by_structure"
+        if basis == STRUCTURAL_READER
+        else {
+            "supports": "appearance_supports",
+            "silent": "appearance_silent",
+            "uncalibrated": "placement_only",
+        }[appearance]
+    )
+    heard = {**reading(outcome, basis, appearance), "identity": subject}
+    entry = squint_pipeline._identity_consumption(
+        {subject: {}},
+        {"outcome": "examined", "objects": {subject: heard}},
+        {subject: context(subject, basis)},
+    )["objects"][subject]
+    question_ = entry["identity_open_question"]
+    if not asks:
+        assert question_ is None
+        return
+    assert (question_["why"], question_["support"]) == (
+        "appearance_unconfirmed",
+        PROPOSED_PLACES,
+    )
+    procedures = [row["procedure"] for row in question_["next_observations"]]
+    if producer_for(subject) is None:
+        assert procedures == ["paired_finer_reading"]
+    else:
+        # A part with its own native producer names that existing procedure too.
+        assert procedures == ["paired_finer_reading", "residual_native_support"]
+        assert question_["next_observations"][1]["request"]["lens"] == (
+            producer_for(subject).lens
+        )
+    assert all(
+        row["request"] == {**row["request"], "object": subject, "question": "identity"}
+        for row in question_["next_observations"]
+    )
+    # Unconfirmed is not contested: the region is still read as the object.
+    assert entry["region_read_as_subject"] is True
 
 
 @pytest.mark.parametrize(
     "outcome", ["unreviewed_candidate_memory", "invalid_seed_teaching"]
 )
-def test_a_memory_whose_identity_teaching_was_not_heard_keeps_every_placement(outcome):
-    other = reading("identified", "tibia", ["tibia"])
-    assert squint_pipeline._identity_decision("femur", other, outcome) == {
-        "decision": "kept",
-        "reason": outcome,
-    }
-    consumption = squint_pipeline._identity_consumption(
+def test_a_memory_whose_identity_teaching_was_not_heard_is_named(outcome):
+    record = squint_pipeline._identity_consumption(
         {"femur": {}, "tibia": {}}, {"outcome": outcome, "objects": {}}
     )
-    assert consumption == {
-        "femur": {"decision": "kept", "reason": outcome},
-        "tibia": {"decision": "kept", "reason": outcome},
+    assert {
+        name: entry["recall_outcome"] for name, entry in record["objects"].items()
+    } == {
+        "femur": outcome,
+        "tibia": outcome,
     }
-
-
-def test_an_examined_study_without_this_objects_reading_keeps_it_by_name():
-    consumption = squint_pipeline._identity_consumption(
-        {"femur": {}, "tibia": {}},
-        {"outcome": "examined", "objects": {"tibia": reading("identified", "femur")}},
+    assert all(
+        entry["identity_context"] is None
+        and entry["identity_question"] is None
+        and entry["region_read_as_subject"] is True
+        for entry in record["objects"].values()
     )
-    assert consumption == {
-        "femur": {"decision": "kept", "reason": "identity_reading_missing"},
-        "tibia": {
-            "decision": "withheld",
-            "reason": "identity_recognized_as_other",
-            "recognized_as": "femur",
-        },
-    }
+
+
+def test_an_examined_study_without_this_objects_reading_names_it():
+    record = squint_pipeline._identity_consumption(
+        {"femur": {}, "tibia": {}},
+        {"outcome": "examined", "objects": {"tibia": {"outcome": "identified"}}},
+    )
+    assert record["objects"]["femur"]["recall_outcome"] == "identity_reading_missing"
+    assert record["objects"]["tibia"]["recall_outcome"] == "identified"
+    assert record["not_read_as_subject"] == []
 
 
 # ---------------------------------------------------------------------------
-# both voices reach combine_condition exactly as for an unlocated object
+# the consumers: reading takes only the regions not read; looks take no identity
 # ---------------------------------------------------------------------------
 
 
-def question(question_id):
-    return next(q for q in QUESTIONS if q.question_id == question_id)
+def test_bounded_looks_take_no_identity_input_and_reading_takes_only_not_read_as():
+    assert (
+        "not_read_as"
+        not in inspect.signature(squint_pipeline._bounded_observation).parameters
+    )
+    parameters = inspect.signature(squint_pipeline._recall_question).parameters
+    assert parameters["not_read_as"].kind is inspect.Parameter.KEYWORD_ONLY
+    assert parameters["not_read_as"].default is None
+    for name in ("_identity_decision", "_withheld_objects"):
+        assert not hasattr(squint_pipeline, name)
+    for consumer in (
+        squint_pipeline._recall_question,
+        squint_pipeline._bounded_observation,
+    ):
+        assert "withheld" not in inspect.signature(consumer).parameters
+
+
+def test_a_region_not_read_as_its_object_reaches_both_voices_as_unlocated(monkeypatch):
+    declared = question("Fracture")
+    objects = bones(located("femur", (3, 0, 0)))
+    memory = {"revision": "r1", "cases": []}
+    calls = spy(monkeypatch, all_normal)
+    read = squint_pipeline._recall_question(declared, objects, memory, "q", False)
+    # Read as the femur, its normal reading completes the all-normal defeat.
+    assert combine_condition("Fracture", read)["outcome"] == "defeated"
+    assert any(banks for banks in reads_of(calls, "femur"))
+    assert any(b.startswith("object/femur/") for b in configuration_banks(calls))
+    assert "region_not_read_as_subject" not in read["femur"]
+    assert (
+        squint_pipeline._recall_question(
+            declared, objects, memory, "q", False, not_read_as={}
+        )
+        == read
+    )
+
+    calls.clear()
+    reason = {"reason": APPEARANCE_OPPOSED, "applicable_negative_case_ids": ["n1"]}
+    before = copy.deepcopy(objects)
+    kept = squint_pipeline._recall_question(
+        declared, objects, memory, "q", False, not_read_as={"femur": reason}
+    )
+    # Not read as the femur: both voices hear it as unlocated, so it stays open.
+    assert all(banks == () for banks in reads_of(calls, "femur"))
+    assert not any(b.startswith("object/femur/") for b in configuration_banks(calls))
+    assert kept["femur"]["region_not_read_as_subject"] == reason
+    assert kept["femur"]["location_status"] == "unavailable"
+    finding = combine_condition("Fracture", kept)
+    assert finding["outcome"] == "open"
+    assert finding["evidence"]["readings"]["femur"]["state"] == "unknown"
+    unlocated = squint_pipeline._recall_question(
+        declared,
+        {k: v for k, v in objects.items() if k != "femur"},
+        memory,
+        "q",
+        False,
+    )
+    assert {
+        k: v for k, v in kept["femur"].items() if k != "region_not_read_as_subject"
+    } == (unlocated["femur"])
+    assert objects == before
 
 
 @pytest.mark.parametrize(
@@ -366,7 +716,7 @@ def question(question_id):
         ("Fracture", "femur", 1, "assigned"),
     ],
 )
-def test_withheld_tissue_reaches_the_contract_exactly_as_unlocated_tissue(
+def test_located_tissue_reaches_the_contract_and_unlocated_tissue_stays_unknown(
     monkeypatch, question_id, subject, sign, consumed_outcome
 ):
     declared = question(question_id)
@@ -385,267 +735,282 @@ def test_withheld_tissue_reaches_the_contract_exactly_as_unlocated_tissue(
 
     consumed = squint_pipeline._recall_question(declared, objects, memory, "q", False)
     assert combine_condition(question_id, consumed)["outcome"] == consumed_outcome
+    assert any(banks for banks in reads_of(calls, subject))
     assert any(
         object_bank.startswith(f"object/{subject}/")
         for object_bank in configuration_banks(calls)
     )
 
     calls.clear()
-    withheld = squint_pipeline._recall_question(
-        declared, objects, memory, "q", False, withheld={subject: WITHHELD_AS_TIBIA}
-    )
     absent = {name: value for name, value in objects.items() if name != subject}
     unlocated = squint_pipeline._recall_question(declared, absent, memory, "q", False)
-
-    # The subject's own voice heard no tissue, and no configuration composed it.
     assert all(banks == () for banks in reads_of(calls, subject))
-    assert not any(
-        object_bank.startswith(f"object/{subject}/")
-        for object_bank in configuration_banks(calls)
-    )
-    # Exactly the unlocated record, with the named reason beside it.
-    assert withheld[subject]["identity_withheld"] == WITHHELD_AS_TIBIA
-    assert without_annotation(withheld[subject]) == unlocated[subject]
-    assert {k: v for k, v in withheld.items() if k != subject} == {
-        k: v for k, v in unlocated.items() if k != subject
-    }
-    finding = combine_condition(question_id, withheld)
-    assert finding == combine_condition(question_id, unlocated)
-    # Unknown: never a normal reading, never a defeat, never an assignment.
+    finding = combine_condition(question_id, unlocated)
     assert finding["outcome"] == "open"
     assert finding["evidence"]["readings"][subject]["state"] == "unknown"
-    assert subject in finding["evidence"]["unresolved_subjects"]
     assert objects == before
 
 
-def test_a_withheld_alternative_cannot_complete_an_all_normal_defeat(monkeypatch):
-    declared = question("Fracture")
-    objects = bones((3, 0, 0))
-    spy(monkeypatch, all_normal)
-    memory = {"revision": "r1", "cases": []}
-    consumed = squint_pipeline._recall_question(declared, objects, memory, "q", False)
-    assert combine_condition("Fracture", consumed)["outcome"] == "defeated"
-    withheld = squint_pipeline._recall_question(
-        declared, objects, memory, "q", False, withheld={"femur": WITHHELD_AS_TIBIA}
-    )
-    finding = combine_condition("Fracture", withheld)
-    assert finding["outcome"] == "open"
-    assert finding["evidence"]["readings"]["femur"]["state"] == "unknown"
-    # The covered normal configuration cannot cover the withheld site either.
-    coverage = finding["evidence"]["joint_configuration_coverage"]
-    assert coverage["eligible_case_ids"] == {"positive": [], "negative": []}
-
-
 def test_the_unlocated_path_hears_the_real_recall_of_an_empty_reading(monkeypatch):
-    # What "exactly as unlocated" is, in production: the real recall of an empty profile.
     declared = question("Fracture")
     spy(monkeypatch, all_normal)
+    objects = {
+        k: v for k, v in bones(located("femur", (3, 0, 0))).items() if k != "femur"
+    }
     record = squint_pipeline._recall_question(
-        declared,
-        bones((3, 0, 0)),
-        {"revision": "r1", "cases": []},
-        "q",
-        False,
-        withheld={"femur": WITHHELD_AS_TIBIA},
+        declared, objects, {"revision": "r1", "cases": []}, "q", False
     )
     femur = record["femur"]
     assert femur["outcome"] == "proposal"
     assert femur["location_status"] == "unavailable"
     assert femur["regions"] == [] and femur["query_origins"] == []
     assert "decision_scope" not in femur
-    reading_ = combine_condition("Fracture", record)["evidence"]["readings"]["femur"]
-    assert (reading_["state"], reading_["code"]) == (
-        "unknown",
-        "proposal_without_sourced_trust",
-    )
 
 
 # ---------------------------------------------------------------------------
-# bounded reads aimed at withheld tissue are never made
+# the production operation: infer_study with real identity recall in context
 # ---------------------------------------------------------------------------
 
 
-def _boom(*args, **kwargs):
-    raise AssertionError("no reading may be made for withheld tissue")
-
-
-def test_no_bounded_read_generic_or_named_is_aimed_at_withheld_tissue(
-    monkeypatch, tmp_path
+@pytest.mark.parametrize("placement", [STRUCTURAL_READER, PRIOR_ONLY])
+def test_a_femur_resembling_tibia_keeps_every_question_and_bounded_look(
+    monkeypatch, placement
 ):
-    from test_squint_orchestration import _located, _study
-
-    from knee.diagnosis.squint_profiles import profile_window
-
-    _uid, study = _study(tmp_path)
-    series = study["series"][0]
-    coarse = profile_window(series, (0, 1, 0, 1, 0, 1), subject="femur")
-    objects = _located(series, coarse)
-
-    # Kept, the same request earns the paired finer reading.
-    kept = copy.deepcopy(objects)
-    attempted: set = set()
-    measured = squint_pipeline._bounded_observation(
-        {"object": "femur"}, study, kept, attempted, None, withheld={}
+    femur = (
+        anchored("femur", (0, 0, 3))
+        if placement == STRUCTURAL_READER
+        else located("femur", (0, 0, 3))
     )
-    assert measured["code"] == "measured" and attempted == {"femur"}
-
-    for module, name in (
-        (squint_profiles, "refine_window"),
-        (squint_profiles, "refine_territory"),
-        (squint_residual, "own_outline"),
-        (squint_residual, "run_residual"),
-    ):
-        monkeypatch.setattr(module, name, _boom)
-    before = copy.deepcopy(objects)
-    attempted = set()
-    for request in (
-        {"object": "femur"},
-        {"subject": "femur", "kind": "bounded_zoom", "question": "Fracture"},
-        {"object": "femur", "lens": "native_bone"},
-    ):
-        observed = squint_pipeline._bounded_observation(
-            request,
-            study,
-            objects,
-            attempted,
-            None,
-            withheld={"femur": WITHHELD_AS_TIBIA},
-        )
-        assert observed == {
-            "code": "object_region_unavailable",
-            "request": request,
-            "subject": "femur",
-            **WITHHELD_AS_TIBIA,
-        }
-    assert attempted == set()
-    assert objects == before
-
-
-# ---------------------------------------------------------------------------
-# the production operation: infer_study with real identity recall
-# ---------------------------------------------------------------------------
-
-
-def test_a_located_femur_recognized_as_tibia_answers_no_femur_question(monkeypatch):
-    objects = bones((0, 0, 3))
+    objects = bones(femur)
     original = copy.deepcopy(objects)
-    record, calls = run_study(monkeypatch, taught_memory(), objects)
+    record, calls = run_study(monkeypatch, taught_memory(), objects, femur_left_open)
 
-    femur = record["identity_recall"]["objects"]["femur"]
-    assert (femur["outcome"], femur["identity"]) == ("identified", "tibia")
-    assert record["identity_consumption"] == {
-        "femur": {"decision": "withheld", **WITHHELD_AS_TIBIA},
-        "fibula": {"decision": "kept", "reason": "silent"},
-        "patella": {"decision": "kept", "reason": "silent"},
-        "tibia": {"decision": "kept", "reason": "identified", "recognized_as": "tibia"},
+    recall = record["identity_recall"]["objects"]["femur"]
+    entry = record["identity_consumption"]["objects"]["femur"]
+    assert (entry["answers_questions_as"], entry["region_read_as_subject"]) == (
+        "femur",
+        True,
+    )
+    assert entry["identity_basis"] == placement
+    assert recall["identity"] == "femur"
+    assert recall["also_resembles"][0]["identity"] == "tibia"
+    if placement == STRUCTURAL_READER:
+        # The reader established the bone; resembling the tibia renames nothing, and
+        # the reader's other bones never set its own cases' bar.
+        assert recall["outcome"] == "established_by_structure"
+        assert recall["removed_by_structure"] == ["fibula", "patella", "tibia"]
+        assert recall["established_views"] == [SAG_TRIPLE]
+        assert entry["identity_open_question"] is None
+    else:
+        # Nothing known: the unconditioned recall names the tibia, and decides nothing.
+        assert recall["outcome"] == "appearance_silent"
+        assert recall["unconditioned_identity"] == "tibia"
+        assert entry["identity_open_question"]["why"] == "appearance_unconfirmed"
+    assert entry["recall_outcome"] == recall["outcome"]
+    assert record["identity_consumption"]["not_read_as_subject"] == []
+    # Every femur question heard the femur's own reading, in both voices.
+    assert set(reads_of(calls, "femur")) == {(bank(),)}
+    assert any(b.startswith("object/femur/") for b in configuration_banks(calls))
+    for question_id in femur_questions():
+        evidence = record["questions"][question_id]["objects"]["femur"]
+        assert "region_not_read_as_subject" not in evidence
+    # Each open femur question asked for a bounded look, and none was refused for
+    # identity: this fixture's region lies in no series of the mocked study.
+    assert femur_rows(record)
+    assert all(row["code"] != "object_region_unavailable" for row in femur_rows(record))
+    # The identity's open question is named, never run.
+    assert all(
+        (row.get("request") or {}).get("question") != "identity"
+        for row in record["observations"]
+    )
+    assert record["objects"] == original
+
+
+def test_a_located_femur_gives_its_own_findings_not_an_unlocated_ones(monkeypatch):
+    present, _ = run_study(
+        monkeypatch, taught_memory(), bones(anchored("femur", (0, 0, 3)))
+    )
+    absent = {
+        k: v for k, v in bones(anchored("femur", (0, 0, 3))).items() if k != "femur"
     }
-    # Every femur question heard no femur tissue in either voice.
+    missing, _ = run_study(monkeypatch, taught_memory(), absent)
+    # Answering as itself, the normal femur completes the all-normal defeat.
+    assert present["questions"]["Fracture"]["finding"]["outcome"] == "defeated"
+    assert missing["questions"]["Fracture"]["finding"]["outcome"] == "open"
+    assert decided(present) != decided(missing)
+
+
+def test_an_applicable_negative_keeps_the_femur_open_and_its_looks_are_still_made(
+    monkeypatch,
+):
+    record, calls = run_study(
+        monkeypatch,
+        taught_memory(femur_negative=True),
+        bones(anchored("femur", (1, 2, 0))),
+    )
+    recall = record["identity_recall"]["objects"]["femur"]
+    assert (recall["outcome"], recall["identity"]) == (APPEARANCE_OPPOSED, "femur")
+    [negative] = recall["negative_cases"]
+    assert (negative["case_id"], negative["applies"], negative["reason"]) == (
+        "n1",
+        True,
+        "speaks_over_the_asserted_region",
+    )
+    assert negative["call_notes"] == "posterior soft tissue, not femur"
+    assert negative["views"] == [SAG_TRIPLE]
+    consumption = record["identity_consumption"]
+    entry = consumption["objects"]["femur"]
+    assert (entry["answers_questions_as"], entry["region_read_as_subject"]) == (
+        None,
+        False,
+    )
+    assert entry["applicable_negative_case_ids"] == ["n1"]
+    assert consumption["not_read_as_subject"] == ["femur"]
+    assert entry["identity_open_question"]["why"] == "contested"
+    # The region the negative speaks over never reached the femur's questions.
     assert reads_of(calls, "femur") and all(b == () for b in reads_of(calls, "femur"))
     assert not any(b.startswith("object/femur/") for b in configuration_banks(calls))
     for question_id in femur_questions():
         evidence = record["questions"][question_id]["objects"]["femur"]
-        assert evidence["identity_withheld"] == WITHHELD_AS_TIBIA
-        readings = record["questions"][question_id]["finding"]["evidence"]["readings"]
-        assert readings["femur"]["state"] == "unknown"
-    # Three normal bones and a withheld femur cannot rule fracture out.
+        assert evidence["region_not_read_as_subject"] == {
+            "reason": APPEARANCE_OPPOSED,
+            "applicable_negative_case_ids": ["n1"],
+        }
+    # Not a normal femur, so never the all-normal defeat: the question stays open.
     assert record["questions"]["Fracture"]["finding"]["outcome"] == "open"
-    # The tissue is not reassigned: the tibia answers from its own reading alone.
-    assert set(reads_of(calls, "tibia")) == {(bank(),)}
-    # No read was aimed at it; every request for it names why.
-    femur_rows = [
-        row for row in record["observations"] if row.get("subject") == "femur"
-    ]
-    assert femur_rows and all(
-        row["code"] == "object_region_unavailable"
-        and row["reason"] == "identity_recognized_as_other"
-        and row["recognized_as"] == "tibia"
-        for row in femur_rows
+    # Its bounded looks are still made: identity never refuses one.
+    assert femur_rows(record)
+    assert all(row["code"] != "object_region_unavailable" for row in femur_rows(record))
+    # The same memory, a femur its negative does not speak over: read, and defeated.
+    clean, _ = run_study(
+        monkeypatch,
+        taught_memory(femur_negative=True),
+        bones(anchored("femur", (3, 0, 0))),
     )
-    assert record["work"]["bounded_zoom_runs"] == 0
-    # The located record itself is retained, unmodified.
-    assert record["objects"] == original
+    assert clean["identity_consumption"]["not_read_as_subject"] == []
+    assert clean["questions"]["Fracture"]["finding"]["outcome"] == "defeated"
 
 
-def test_withheld_tissue_gives_the_findings_of_an_unlocated_object(monkeypatch):
-    withheld, _ = run_study(monkeypatch, taught_memory(), bones((0, 0, 3)))
-    absent = {k: v for k, v in bones((0, 0, 3)).items() if k != "femur"}
-    unlocated, _ = run_study(monkeypatch, taught_memory(), absent)
-    assert decided(withheld) == decided(unlocated)
-    assert withheld["values"] == unlocated["values"]
+def test_a_negative_heard_only_through_the_surroundings_changes_nothing(monkeypatch):
+    # The reject's context tiles resemble this femur's surroundings; its own object
+    # tiles do not resemble the femur's: muscle around a bone, not occupying it.
+    memory = taught_memory(femur_negative=True, ring=True)
+    around = bones(anchored("femur", (3, 0, 0), ring=(1, 2, 0)))
+    record, _ = run_study(monkeypatch, memory, copy.deepcopy(around))
+    [negative] = record["identity_recall"]["objects"]["femur"]["negative_cases"]
+    assert (negative["applies"], negative["reason"]) == (False, "surroundings_only")
+    assert negative["with_the_surroundings"]["speaks"] is True
+    assert negative["over_the_asserted_region"]["speaks"] is False
+    assert record["identity_consumption"]["not_read_as_subject"] == []
+    plain, _ = run_study(monkeypatch, untaught(memory), copy.deepcopy(around))
+    assert record["questions"] == plain["questions"]
+    assert record["observations"] == plain["observations"]
+    # The same negative over the femur's own tiles applies.
+    occupying = bones(anchored("femur", (0, 3, 0), ring=(1, 2, 0)))
+    opposed, _ = run_study(monkeypatch, memory, occupying)
+    assert opposed["identity_consumption"]["not_read_as_subject"] == ["femur"]
+
+
+@pytest.mark.parametrize(
+    ("femur_counts", "changes"),
+    [((0, 0, 3), False), ((3, 0, 0), False), ((1, 2, 0), True)],
+)
+def test_identity_teaching_changes_condition_reading_only_where_a_negative_applies(
+    monkeypatch, femur_counts, changes
+):
+    objects = bones(anchored("femur", femur_counts))
+    taught, _ = run_study(
+        monkeypatch, taught_memory(femur_negative=True), copy.deepcopy(objects)
+    )
+    plain, _ = run_study(monkeypatch, untaught(taught_memory()), copy.deepcopy(objects))
+    if not changes:
+        assert taught["questions"] == plain["questions"]
+        assert taught["values"] == plain["values"]
+        assert taught["observations"] == plain["observations"]
+        return
+    assert taught["questions"] != plain["questions"]
     for question_id in femur_questions():
         assert (
-            without_annotation(withheld["questions"][question_id]["objects"]["femur"])
-            == unlocated["questions"][question_id]["objects"]["femur"]
+            "region_not_read_as_subject"
+            in (taught["questions"][question_id]["objects"]["femur"])
         )
+        assert (
+            "region_not_read_as_subject"
+            not in (plain["questions"][question_id]["objects"]["femur"])
+        )
+    # Questions that do not ask about the femur are untouched.
+    for question_id, item in taught["questions"].items():
+        if question_id not in femur_questions():
+            assert item == plain["questions"][question_id]
 
 
-def test_a_femur_recognized_as_itself_keeps_exactly_its_evidence(monkeypatch):
-    taught, calls = run_study(monkeypatch, taught_memory(), bones((3, 0, 0)))
-    assert taught["identity_consumption"]["femur"] == {
-        "decision": "kept",
-        "reason": "identified",
-        "recognized_as": "femur",
-    }
-    assert set(reads_of(calls, "femur")) == {(bank(),)}
-    assert taught["questions"]["Fracture"]["finding"]["outcome"] == "defeated"
-    plain, _ = run_study(monkeypatch, untaught(taught_memory()), bones((3, 0, 0)))
-    assert taught["questions"] == plain["questions"]
-    assert taught["values"] == plain["values"]
-    assert taught["observations"] == plain["observations"]
-
-
-def test_a_femur_spoken_against_by_its_negative_cases_alone_is_withheld(monkeypatch):
+def test_a_set_aside_anchor_asks_an_identity_question_and_still_answers(monkeypatch):
+    """Reachable as the locator records it: a bone whose own structural anchor
+    ``_check_anchor_sanity`` set aside for a reversed relation, placed by the map from
+    the anchors that remain."""
+    tibia = placed("tibia", (0, 0, 3), unanchored=set_aside("tibia", "femur"))
     record, calls = run_study(
-        monkeypatch, taught_memory(femur_negative=True), bones((0, 2, 0))
+        monkeypatch, taught_memory(), bones(anchored("femur", (3, 0, 0)), tibia)
     )
-    femur = record["identity_recall"]["objects"]["femur"]
-    assert femur["opposed_identities"] == ["femur"]
-    assert femur["speaking_identities"] == [] and femur["identity"] is None
-    assert record["identity_consumption"]["femur"] == {
-        "decision": "withheld",
-        "reason": "identity_opposed_by_negative_cases",
-    }
-    assert all(b == () for b in reads_of(calls, "femur"))
-    assert record["questions"]["Fracture"]["finding"]["outcome"] == "open"
-    evidence = record["questions"]["Fracture"]["objects"]["femur"]
-    assert evidence["identity_withheld"] == {
-        "reason": "identity_opposed_by_negative_cases"
-    }
-
-
-def test_a_femur_spoken_for_and_against_stays_placed_and_flagged(monkeypatch):
-    record, calls = run_study(
-        monkeypatch, taught_memory(femur_negative=True), bones((1, 2, 0))
+    entry = record["identity_consumption"]["objects"]["tibia"]
+    assert entry["identity_basis"] == MAP_RELATION
+    assert entry["identity_context"]["removed_by_structure"] == ["femur"]
+    question_ = entry["identity_question"]
+    assert (question_["status"], question_["revisable"]) == ("open", True)
+    [evidence] = question_["evidence"]
+    assert (evidence["scope"], evidence["result"], evidence["rule_id"]) == (
+        "set_aside_structural_anchor",
+        "reversed_strictly_after",
+        "authored:femur:superior_to:tibia",
     )
-    femur = record["identity_recall"]["objects"]["femur"]
-    assert (femur["outcome"], femur["reason"]) == (
-        "unresolved_conflict",
-        "identity_spoken_for_and_against",
+    recall = record["identity_recall"]["objects"]["tibia"]
+    assert recall["contradictions"] == question_["evidence"]
+    # A contradiction asks; it keeps nothing from the tibia's own questions.
+    assert (entry["answers_questions_as"], entry["region_read_as_subject"]) == (
+        "tibia",
+        True,
     )
-    assert record["identity_consumption"]["femur"] == {
-        "decision": "kept",
-        "reason": "unresolved_conflict",
-    }
-    # An unresolved identity is no clinical absence: its tissue still answers.
-    assert set(reads_of(calls, "femur")) == {(bank(),)}
-    assert record["questions"]["Fracture"]["finding"]["outcome"] == "defeated"
+    assert set(reads_of(calls, "tibia")) == {(bank(),)}
+    kept = placed("tibia", (0, 0, 3))
+    record, _ = run_study(
+        monkeypatch, taught_memory(), bones(anchored("femur", (3, 0, 0)), kept)
+    )
     assert (
-        "identity_withheld" not in record["questions"]["Fracture"]["objects"]["femur"]
+        record["identity_consumption"]["objects"]["tibia"]["identity_question"] is None
     )
 
 
-def test_a_sanity_blocked_femur_stays_placed_and_flagged(monkeypatch):
-    objects = bones((3, 0, 0))
-    objects["femur"] = located("femur", (3, 0, 0), sanity="contradicted")
-    record, calls = run_study(monkeypatch, taught_memory(), objects)
-    assert (
-        record["identity_recall"]["objects"]["femur"]["outcome"] == "blocked_by_sanity"
+def test_a_bone_the_reader_names_carries_its_arrangement_and_support():
+    contexts = squint_pipeline._identity_contexts(
+        bones(anchored("femur", (3, 0, 0)), placed("tibia", (0, 0, 3)))
     )
-    assert record["identity_consumption"]["femur"] == {
-        "decision": "kept",
-        "reason": "blocked_by_sanity",
-    }
-    assert set(reads_of(calls, "femur")) == {(bank(),)}
+    femur = contexts["femur"]
+    assert (femur["basis"], femur["support"]) == (STRUCTURAL_READER, RESOLVED_SUPPORT)
+    [arrangement] = femur["supporting_observations"]["arrangement"]
+    assert arrangement["establishes"] == (
+        "bone_identity_by_the_readers_observed_arrangement"
+    )
+    for key in (
+        "producer",
+        "derivation",
+        "rule",
+        "middle_slice_code",
+        "partner",
+        "scale",
+    ):
+        assert arrangement[key] == PROVENANCE[key]
+    assert arrangement["cross_view_checks"] == [
+        {
+            "against_series_uid": "series-cor",
+            "against_slice": 15,
+            "outcome": ("no_carried_place_on_this_slice"),
+        }
+    ]
+    tibia = contexts["tibia"]
+    assert (tibia["basis"], tibia["support"]) == (MAP_RELATION, PROPOSED_PLACES)
+    assert "arrangement" not in tibia["supporting_observations"]
+    # The prior-only patella was read over no recorded territory.
+    assert contexts["patella"]["support"] == SUPPORT_UNRECORDED
 
 
 # ---------------------------------------------------------------------------
@@ -653,8 +1018,8 @@ def test_a_sanity_blocked_femur_stays_placed_and_flagged(monkeypatch):
 # ---------------------------------------------------------------------------
 
 #: sha256 of the study record below, computed by the code before identity was wired into
-#: the condition consumer (1804e00), with timing, RSS and the new identity_consumption
-#: key set aside.
+#: the condition consumer (1804e00), with timing, RSS and the identity_consumption key set
+#: aside.
 NO_TEACHING_RECORD_SHA256 = "12b717097f7466528a178452ec81ac867b4b2dc8d4be8e46887a352043d24222"  # pragma: allowlist secret
 
 
@@ -678,9 +1043,9 @@ def _mixed(question_id, subject, banks):
 
 
 def no_teaching_objects() -> dict:
-    """A femur shaped like the tibia seed, which taught memory would withhold."""
+    """A femur shaped like the tibia seed, beside other located parts."""
     return {
-        **bones((0, 0, 3)),
+        **bones(located("femur", (0, 0, 3))),
         "mcl": located("mcl", (1, 0, 1), COR),
         "acl": located("acl", (0, 1, 1), COR),
         "medial_meniscus": located("medial_meniscus", (1, 1, 0), COR),
@@ -694,8 +1059,14 @@ def test_a_memory_without_identity_teaching_gives_todays_study_record(monkeypatc
         "outcome": "unreviewed_candidate_memory",
         "objects": {},
     }
-    assert record["identity_consumption"] == {
-        name: {"decision": "kept", "reason": "unreviewed_candidate_memory"}
-        for name in sorted(objects)
-    }
+    consumption = record["identity_consumption"]
+    assert consumption["schema"] == IDENTITY_CONSUMPTION_SCHEMA
+    assert consumption["not_read_as_subject"] == []
+    assert sorted(consumption["objects"]) == sorted(objects)
+    for name, entry in consumption["objects"].items():
+        assert entry["answers_questions_as"] == name
+        assert entry["recall_outcome"] == "unreviewed_candidate_memory"
+        # The context is the locator's own record, read whether or not the memory is
+        # taught.
+        assert entry["identity_context"]["basis"] == PRIOR_ONLY
     assert _record_digest(record) == NO_TEACHING_RECORD_SHA256

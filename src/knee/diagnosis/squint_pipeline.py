@@ -7,6 +7,7 @@ when its compact findings have been published. Case memory is loaded once.
 
 from __future__ import annotations
 
+import copy
 import csv
 import hashlib
 import inspect
@@ -21,7 +22,24 @@ from collections.abc import Mapping
 from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
 
-from knee.diagnosis.squint_interfaces import MEMORY_VIEW_SCHEMA, TERRITORY_PROCEDURE
+from knee.diagnosis.squint_anatomy_locator import BONES as READER_BONES
+from knee.diagnosis.squint_identity import (
+    CONDITIONING,
+    CONTESTED_OUTCOMES,
+    CONTEXT_SCHEMA,
+    IDENTITY_CONSUMPTION_SCHEMA,
+    MAP_RELATION,
+    PRIOR_ONLY,
+    PROPOSED_PLACES,
+    RESOLVED_SUPPORT,
+    STRUCTURAL_READER,
+    SUPPORT_UNRECORDED,
+)
+from knee.diagnosis.squint_interfaces import (
+    MEASURED_ORIGINS,
+    MEMORY_VIEW_SCHEMA,
+    TERRITORY_PROCEDURE,
+)
 from knee.diagnosis.squint_locator import recall_source_fingerprint
 from knee.diagnosis.squint_memory_view import memory_view
 from knee.study.tables import LABELS
@@ -173,25 +191,25 @@ def _recall_question(
     uid: str,
     excluded: bool,
     *,
-    withheld: Mapping[str, Mapping] | None = None,
+    not_read_as: Mapping[str, Mapping] | None = None,
 ) -> dict:
     """Recall each of a question's objects and its whole configuration.
 
-    ``withheld`` names located objects whose identity recall withheld their tissue from
-    their proposed subject (``_identity_consumption``). Each reaches both voices exactly as
-    an unlocated object does: its own voice hears an empty reading, and no configuration
-    composes it. Its named reason is kept beside its evidence as ``identity_withheld``;
-    the condition contracts never read it, so the withheld object stays unknown, never a
-    normal reading and never a defeat. It is not reassigned to the identity it resembles.
+    Every located object answers as the object identified in context: its own reading
+    is heard, and it composes the configuration. Resemblance to another object never
+    changes that. ``not_read_as`` names the regions an applicable negative case speaks
+    over (``_identity_consumption``): each reaches both voices exactly as an unlocated
+    object does, so its questions stay open, never a normal reading and never a defeat,
+    with its reason kept beside its evidence as ``region_not_read_as_subject``. Nothing
+    renames it.
     """
     from knee.diagnosis.squint_locator import recall_object
 
-    if withheld:
+    not_read = not_read_as if isinstance(not_read_as, Mapping) else {}
+    if not_read:
         objects = {
-            name: value for name, value in objects.items() if name not in withheld
+            name: value for name, value in objects.items() if name not in not_read
         }
-    else:
-        withheld = {}
     try:
         from knee.diagnosis.squint_questions import question_selection
 
@@ -219,8 +237,8 @@ def _recall_question(
         scope = _decision_scope(subject, located.get("profile"))
         if scope != "unavailable":
             record["decision_scope"] = scope
-        if subject in withheld:
-            record["identity_withheld"] = dict(withheld[subject])
+        if subject in not_read:
+            record["region_not_read_as_subject"] = dict(not_read[subject])
         evidence[subject] = record
     from knee.diagnosis.squint_configurations import configuration_profile
 
@@ -558,8 +576,6 @@ def _bounded_observation(
     objects: dict,
     attempted: set,
     deadline: float | None,
-    *,
-    withheld: Mapping[str, Mapping] | None = None,
 ) -> dict:
     """Make the one bounded reading a request asks for, once per object and study.
 
@@ -570,8 +586,7 @@ def _bounded_observation(
     reading the object already holds is neither read nor added again, and every question
     that asks shares the one reading. A ``lens`` naming the object's own native procedure
     runs that existing procedure instead (``_named_procedure``); no part is sent there
-    for what it is. A located object its identity recall withheld (``withheld``) earns no
-    read of either kind and its located record is left as it is. Whatever cannot be read
+    for what it is. Identity never blocks a bounded look. Whatever cannot be read
     returns a named code and reason.
     """
     if not isinstance(request, Mapping):
@@ -586,10 +601,6 @@ def _bounded_observation(
         return {**unlocated, "reason": "request_names_no_object"}
     if subject not in objects:
         return {**unlocated, "reason": "object_not_located"}
-    if withheld and subject in withheld:
-        # Tissue recognized as another object, or opposed by its own negative cases,
-        # is no region of this object to read: the request is named, never read.
-        return {**unlocated, "subject": subject, **withheld[subject]}
     located = objects[subject]
     if not isinstance(located, dict):
         return {**unlocated, "reason": "object_record_invalid"}
@@ -707,18 +718,462 @@ def _fine_readings_held(objects: object) -> int:
     )
 
 
+# The locator's own evidence vocabulary (``squint_anatomy_locator``): how it placed each
+# object. A bone read from its structural anchor names both; a dependent placed by the
+# anatomy map from the established anchors names the relation route, and each of its
+# territories the origin that placed it.
+_ANCHOR_SOURCE = "current_study_structural_anchor"
+_ANCHOR_ROUTE = "structural_anchor"
+_RELATION_ROUTE = "anatomical_relation_from_structural_anchors"
+_EXISTING_ROUTE = "existing_finite_route"
+_RELATION_ORIGIN = "anatomical_relation"
+_FALLBACK_ORIGIN = "fallback_location"
+_ANCHOR_CONFLICT = "anatomical_relation_conflict"
+#: Territory origins (``squint_interfaces.TERRITORY_ORIGINS``) by what the region is: a
+#: support the structure resolved, or places an expectation proposed and nothing measured.
+_RESOLVED_ORIGINS = frozenset({"anchor_structure", *MEASURED_ORIGINS})
+_PROPOSAL_ORIGINS = frozenset({_RELATION_ORIGIN, _FALLBACK_ORIGIN})
+#: The reader's own record of the arrangement it named a bone by (``squint_anchors``: each
+#: territory's provenance carries the established rule, its code and the views it was read
+#: against).
+_ARRANGEMENT_FIELDS = ("derivation", "rule", "middle_slice_code", "partner", "scale")
+
+
+def _six_ints(value: object) -> tuple[int, int, int, int, int, int] | None:
+    if (
+        isinstance(value, (list, tuple))
+        and len(value) == 6
+        and all(type(item) is int for item in value)
+    ):
+        z0, z1, r0, r1, c0, c1 = value
+        return z0, z1, r0, r1, c0, c1
+    return None
+
+
+def _boxes_overlap(left: tuple[int, ...], right: tuple[int, ...]) -> bool:
+    """Whether two half-open tile windows of one series share a tile."""
+    return all(
+        left[2 * axis] < right[2 * axis + 1] and right[2 * axis] < left[2 * axis + 1]
+        for axis in range(3)
+    )
+
+
+def _is_located(located: Mapping) -> bool:
+    regions = located.get("regions")
+    profile = located.get("profile")
+    return (isinstance(regions, list) and bool(regions)) or (
+        isinstance(profile, Mapping) and bool(profile.get("banks"))
+    )
+
+
+def _readings_of(located: Mapping) -> list[dict]:
+    """Each located region's series, object window and the territory it was read over."""
+    regions = located.get("regions")
+    territories = located.get("territories")
+    territories = territories if isinstance(territories, list) else []
+    rows = []
+    for index, region in enumerate(regions if isinstance(regions, list) else ()):
+        if not isinstance(region, Mapping):
+            continue
+        window = _region_window(region)
+        uid = region.get("series_uid")
+        if window is None or not isinstance(uid, str) or not uid:
+            continue
+        territory = (
+            territories[index] if index < len(territories) else region.get("territory")
+        )
+        rows.append(
+            {
+                "series_uid": uid,
+                "window": list(window),
+                "territory": territory if isinstance(territory, Mapping) else {},
+            }
+        )
+    return rows
+
+
+def _identity_basis(located: Mapping, readings: list[dict]) -> tuple[str, str]:
+    """What placed one object, by the locator's own record, and why that basis.
+
+    A located region placed by the anatomy map from the established anchors makes the
+    object ``MAP_RELATION`` even when another of its regions came from the leg-frame seed
+    alone; each region keeps its own origin in the supporting observations.
+    """
+    evidence = located.get("evidence")
+    evidence = evidence if isinstance(evidence, Mapping) else {}
+    route = evidence.get("location_route")
+    if route == _ANCHOR_ROUTE and evidence.get("source") == _ANCHOR_SOURCE:
+        return STRUCTURAL_READER, "located_by_its_structural_anchor"
+    if route == _RELATION_ROUTE:
+        origins = {row["territory"].get("origin") for row in readings}
+        if _RELATION_ORIGIN in origins:
+            return MAP_RELATION, "placed_from_established_structural_anchors"
+        if _FALLBACK_ORIGIN in origins:
+            return PRIOR_ONLY, "leg_frame_prior_only"
+        return PRIOR_ONLY, "no_relation_territory_recorded"
+    if route == _EXISTING_ROUTE:
+        return PRIOR_ONLY, "no_usable_structural_anchor"
+    return PRIOR_ONLY, "no_structural_placement_recorded"
+
+
+def _reversed_checks(sanity: object, subject: str, scope: str) -> list[dict]:
+    """Every recorded ``reversed_*`` law check of ``subject``, with its rule and intervals."""
+    if not isinstance(sanity, Mapping):
+        return []
+    rows = []
+    windows = sanity.get("windows")
+    for window_row in windows if isinstance(windows, list) else ():
+        if not isinstance(window_row, Mapping):
+            continue
+        checks = window_row.get("checks")
+        for check in checks if isinstance(checks, list) else ():
+            if (
+                not isinstance(check, Mapping)
+                or check.get("candidate_subject", subject) != subject
+            ):
+                continue
+            result = check.get("result")
+            if isinstance(result, str) and result.startswith("reversed_"):
+                rows.append(
+                    {
+                        "scope": scope,
+                        "rule_id": check.get("rule_id"),
+                        "relation": check.get("relation"),
+                        "axis": check.get("axis"),
+                        "result": result,
+                        "expected_relation": check.get("expected_relation"),
+                        "candidate_interval": copy.deepcopy(
+                            check.get("candidate_interval")
+                        ),
+                        "target_interval": copy.deepcopy(check.get("target_interval")),
+                        "reference_subject": check.get("reference_subject"),
+                        "series_uid": window_row.get("series_uid"),
+                        "window": copy.deepcopy(window_row.get("window")),
+                    }
+                )
+    return rows
+
+
+def _contradictions(subject: str, located: Mapping) -> list[dict]:
+    """Genuine contradictory observations about this object from its law checks.
+
+    Its located windows' reversed checks and, for a bone whose own structural anchor was
+    set aside for a reversed relation, that anchor's. Unknown and overlap are neither.
+    """
+    rows = _reversed_checks(located.get("sanity"), subject, "located_windows")
+    evidence = located.get("evidence")
+    unanchored = (
+        evidence.get("unanchored_bone") if isinstance(evidence, Mapping) else None
+    )
+    if isinstance(unanchored, Mapping) and unanchored.get("code") == _ANCHOR_CONFLICT:
+        rows.extend(
+            _reversed_checks(
+                unanchored.get("anatomical_sanity"),
+                subject,
+                "set_aside_structural_anchor",
+            )
+        )
+    return rows
+
+
+def _locator_proposals(objects: Mapping) -> dict[str, dict[str, list]]:
+    """Each object's own candidate windows from this study's locator, by series.
+
+    A window whose own law checks the locator recorded as contradicted is kept apart:
+    known structure has already ruled that object out there.
+    """
+    proposals: dict[str, dict[str, list]] = {}
+    for subject, located in objects.items():
+        evidence = located.get("evidence") if isinstance(located, Mapping) else None
+        territories = (
+            evidence.get("candidate_territories")
+            if isinstance(evidence, Mapping)
+            else None
+        )
+        if not isinstance(subject, str) or not isinstance(territories, Mapping):
+            continue
+        ruled_out = set()
+        checks = evidence.get("anatomical_sanity_checks")
+        for row in checks if isinstance(checks, list) else ():
+            if isinstance(row, Mapping) and row.get("status") == "contradicted":
+                window = _six_ints(row.get("window"))
+                if window is not None and isinstance(row.get("series_uid"), str):
+                    ruled_out.add((row["series_uid"], window))
+        found: dict[str, list] = {"eligible": [], "contradicted": []}
+        for uid, row in territories.items():
+            windows = (
+                row.get("candidate_object_windows")
+                if isinstance(row, Mapping)
+                else None
+            )
+            for raw in windows if isinstance(windows, list) else ():
+                window = _six_ints(raw)
+                if window is not None:
+                    key = (str(uid), window)
+                    found["contradicted" if key in ruled_out else "eligible"].append(
+                        key
+                    )
+        proposals[subject] = found
+    return proposals
+
+
+def _open_alternatives(
+    subject: str,
+    readings: list[dict],
+    proposals: Mapping[str, Mapping[str, list]],
+    established: set[str],
+) -> dict:
+    """What the established structure still leaves possible for the located region.
+
+    The other objects whose own candidate windows from this study's locator overlap a
+    located window in the same series. A bone the structural reader established is no
+    alternative name for a window beside it; an object whose only overlapping windows its
+    own law checks contradicted is ruled out by that structure, and named apart.
+    """
+    open_names: set[str] = set()
+    law_names: set[str] = set()
+    overlaps: list[dict] = []
+    law_overlaps: list[dict] = []
+    for reading in readings:
+        uid, window = reading["series_uid"], tuple(reading["window"])
+        for other in sorted(proposals):
+            if other == subject or other in established:
+                continue
+            counts = {
+                kind: sum(
+                    1
+                    for series_uid, candidate in proposals[other][kind]
+                    if series_uid == uid and _boxes_overlap(window, candidate)
+                )
+                for kind in ("eligible", "contradicted")
+            }
+            address = {
+                "subject": other,
+                "series_uid": uid,
+                "region_window": list(window),
+            }
+            if counts["eligible"]:
+                open_names.add(other)
+                overlaps.append(
+                    {**address, "overlapping_candidate_windows": counts["eligible"]}
+                )
+            if counts["contradicted"]:
+                law_names.add(other)
+                law_overlaps.append(
+                    {
+                        **address,
+                        "law_contradicted_candidate_windows": counts["contradicted"],
+                    }
+                )
+    return {
+        "open_alternatives": sorted(open_names),
+        "alternative_overlaps": overlaps,
+        "law_excluded_alternatives": sorted(law_names - open_names),
+        "law_excluded_overlaps": law_overlaps,
+    }
+
+
+def _support_kind(readings: list[dict]) -> str:
+    """What the located region is, by the origin of every territory it was read over."""
+    origins = {row["territory"].get("origin") for row in readings}
+    if readings and origins <= _RESOLVED_ORIGINS:
+        return RESOLVED_SUPPORT
+    if readings and origins <= _PROPOSAL_ORIGINS:
+        return PROPOSED_PLACES
+    return SUPPORT_UNRECORDED
+
+
+def _arrangement(readings: list[dict]) -> list[dict]:
+    """The structural reader's own record of how it named the bone, per territory read.
+
+    The established rule (``assign_plane``: the upper and lower of the two deepest
+    interiors along the leg; the patella in front of the femur's lower end; the fibula's
+    own rule), its code, the partner sequence's agreement and the cross-view checks,
+    exactly as the territory's provenance holds them. Nothing is recomputed.
+    """
+    rows = []
+    for row in readings:
+        territory = row["territory"]
+        provenance = territory.get("provenance")
+        provenance = provenance if isinstance(provenance, Mapping) else {}
+        if territory.get("origin") != "anchor_structure" or not isinstance(
+            provenance.get("derivation"), str
+        ):
+            continue
+        checks = provenance.get("cross_view_checks")
+        rows.append(
+            {
+                "establishes": "bone_identity_by_the_readers_observed_arrangement",
+                "series_uid": row["series_uid"],
+                "window": row["window"],
+                "producer": provenance.get("producer"),
+                **{
+                    key: copy.deepcopy(provenance[key])
+                    for key in _ARRANGEMENT_FIELDS
+                    if key in provenance
+                },
+                "cross_view_checks": [
+                    {
+                        key: check.get(key)
+                        for key in ("against_series_uid", "against_slice", "outcome")
+                    }
+                    for check in (checks if isinstance(checks, list) else ())
+                    if isinstance(check, Mapping)
+                ],
+            }
+        )
+    return rows
+
+
+def _placing_anchors(territory: Mapping) -> list[dict]:
+    rows = territory.get("anchors")
+    found: list[dict] = []
+    for row in rows if isinstance(rows, list) else ():
+        if not isinstance(row, Mapping):
+            continue
+        item = {
+            key: row[key]
+            for key in ("anchor", "kind", "anchor_observation_status", "prior_only")
+            if key in row
+        }
+        if item and item not in found:
+            found.append(item)
+    return found
+
+
+def _supporting_observations(
+    subject: str, located: Mapping, basis: str, reason: str, readings: list[dict]
+) -> dict:
+    """References to the locator records the basis rests on, never a recomputation."""
+    evidence = located.get("evidence")
+    evidence = evidence if isinstance(evidence, Mapping) else {}
+    sanity = located.get("sanity")
+    observations = {
+        "reason": reason,
+        "location_status": located.get("status"),
+        "location_route": evidence.get("location_route"),
+        "sanity_status": sanity.get("status") if isinstance(sanity, Mapping) else None,
+        "regions": [
+            {
+                "series_uid": row["series_uid"],
+                "window": row["window"],
+                "origin": row["territory"].get("origin"),
+            }
+            for row in readings
+        ],
+    }
+    if basis == STRUCTURAL_READER:
+        anchor = evidence.get("anchor")
+        anchor = anchor if isinstance(anchor, Mapping) else {}
+        resolution = anchor.get("view_resolution")
+        observations.update(
+            record=f"objects/{subject}/evidence/anchor",
+            anchor={
+                "status": anchor.get("status"),
+                "code": anchor.get("code"),
+                "producer": anchor.get("producer"),
+                "key_planes": copy.deepcopy(anchor.get("key_planes")),
+                "view_resolution": resolution.get("code")
+                if isinstance(resolution, Mapping)
+                else None,
+            },
+            reading_territories=evidence.get("reading_territories"),
+            arrangement=_arrangement(readings),
+        )
+    elif basis == MAP_RELATION:
+        observations.update(
+            record=f"objects/{subject}/territories",
+            placed_by=[
+                {
+                    "series_uid": row["series_uid"],
+                    "window": row["window"],
+                    "anchors": _placing_anchors(row["territory"]),
+                    "relation": row["territory"]["relation"].get("kind")
+                    if isinstance(row["territory"].get("relation"), Mapping)
+                    else None,
+                }
+                for row in readings
+            ],
+        )
+    else:
+        observations["record"] = f"objects/{subject}/evidence"
+    return observations
+
+
+def _identity_contexts(objects: object) -> dict[str, dict]:
+    """What the current study's own structure already established about each object.
+
+    Read from the locator's records, by reference, once per located object: the basis
+    (the structural reader, the anatomy map from the established anchors, or the prior
+    alone); what the region is by its territories' origin (a resolved support or
+    proposed places); which identities structure removed (for a bone the reader
+    established, every other bone of its own set, which it tells apart by arrangement,
+    found or not; for a placement, the bones it established here); what that leaves open;
+    and any genuine contradictory law observation. Recognition is never repeated to make
+    it. An object the locator did not locate has no context.
+    """
+    if not isinstance(objects, Mapping):
+        return {}
+    placed: dict[str, tuple[str, str, list[dict]]] = {}
+    for subject, located in objects.items():
+        if (
+            isinstance(subject, str)
+            and isinstance(located, Mapping)
+            and _is_located(located)
+        ):
+            readings = _readings_of(located)
+            placed[subject] = (*_identity_basis(located, readings), readings)
+    established = {
+        subject
+        for subject, (basis, _r, _x) in placed.items()
+        if basis == STRUCTURAL_READER
+    }
+    proposals = _locator_proposals(objects)
+    contexts = {}
+    for subject in sorted(placed):
+        basis, reason, readings = placed[subject]
+        if basis == STRUCTURAL_READER:
+            removed = set(READER_BONES) - {subject}
+        elif basis == MAP_RELATION:
+            removed = established - {subject}
+        else:
+            removed = set()
+        context = {
+            "schema": CONTEXT_SCHEMA,
+            "subject": subject,
+            "basis": basis,
+            "conditioning": CONDITIONING[basis],
+            "support": _support_kind(readings),
+            "open_alternatives": [],
+            "removed_by_structure": sorted(removed),
+            "contradictions": _contradictions(subject, objects[subject]),
+            "supporting_observations": _supporting_observations(
+                subject, objects[subject], basis, reason, readings
+            ),
+        }
+        if basis == MAP_RELATION:
+            context.update(
+                _open_alternatives(subject, readings, proposals, established)
+            )
+        contexts[subject] = context
+    return contexts
+
+
 def _identity_readings(
     objects: dict,
     memory: dict,
     excluded_uid: str | None,
     *,
     prepared_identity: Mapping | None = None,
+    contexts: Mapping[str, Mapping] | None = None,
 ) -> dict:
     """Hear called identity seeds once per study view, independently of diagnosis.
 
     An automatic catalogue is not identity teaching. Missing profiles remain unread;
-    neither a proposed anatomical name nor a plausible location supplies a class.
-    This operation returns evidence only: it never publishes a case or a diagnosis.
+    neither a proposed anatomical name nor a plausible location supplies a class. Each
+    object's recall is conditioned on its ``contexts`` entry, what the structure already
+    established about it; one with none is heard unconditioned. This operation returns
+    evidence only: it never publishes a case or a diagnosis.
     """
     if "object_identity_teaching" not in memory:
         return {"outcome": "unreviewed_candidate_memory", "objects": {}}
@@ -735,6 +1190,7 @@ def _identity_readings(
             "preparation": dict(prepared),
             "objects": {},
         }
+    known = contexts if isinstance(contexts, Mapping) else {}
     readings = {}
     for subject, located in sorted(objects.items()):
         profile = located.get("profile")
@@ -745,6 +1201,7 @@ def _identity_readings(
                 exclude_study_uid=excluded_uid,
                 sanity=located.get("sanity"),
                 prepared=prepared,
+                context=known.get(subject),
             )
             if profile is not None
             else {"outcome": "unresolved_missing_reading", "identity": None}
@@ -758,74 +1215,162 @@ def _identity_readings(
     }
 
 
-def _names(value: object) -> frozenset[str]:
-    """The identity names a recall lists, or none when the list is absent or malformed."""
-    if not isinstance(value, (list, tuple)):
-        return frozenset()
-    return frozenset(item for item in value if isinstance(item, str))
+def _identity_open_question(
+    subject: str, context: Mapping | None, reading: Mapping | None, effect: str
+) -> dict | None:
+    """The bounded next observation that could settle an identity left open.
 
-
-def _identity_decision(subject: str, reading: object, examined: object) -> dict:
-    """Whether one located object's tissue may answer its proposed subject's questions.
-
-    ``subject`` is the object the structure placed, ``reading`` its identity recall and
-    ``examined`` the study's identity outcome. Tissue recognized as a different object,
-    or spoken against by negative cases of its own subject with no positive case for it,
-    is ``withheld``: it answers none of that subject's condition questions and earns no
-    bounded read, and it is never reassigned to the identity it resembles. Everything
-    else is ``kept``, the structure's own placement standing, with the outcome that left
-    it standing as its reason. Recognized as itself, conflicted, without precedent,
-    unread, blocked by its anatomical check or heard against a memory with no identity
-    teaching, its tissue still answers: an unresolved identity is no clinical absence.
+    Contested (an applicable negative case speaks), or a placement or prior whose own
+    cases do not support it: the existing residual paths are named, the paired finer
+    reading of the located regions (``refine_territory`` or ``refine_window`` at 2 mm,
+    ``_bounded_observation``'s default) and, where the part has one, its own native
+    producer (``squint_residual.own_outline``). Naming them runs nothing: the consumer
+    decides within its budget. A bone the reader established, uncontested, asks none.
     """
-    if examined != "examined":
-        reason = examined if isinstance(examined, str) and examined else None
-        return {"decision": "kept", "reason": reason or "identity_recall_unavailable"}
-    if not isinstance(reading, Mapping):
-        return {"decision": "kept", "reason": "identity_reading_missing"}
-    outcome = reading.get("outcome")
-    identity = reading.get("identity")
-    if outcome == "identified" and isinstance(identity, str) and identity:
-        if identity != subject:
-            return {
-                "decision": "withheld",
-                "reason": "identity_recognized_as_other",
-                "recognized_as": identity,
+    if context is None or reading is None:
+        return None
+    unconfirmed = context["basis"] != STRUCTURAL_READER and reading.get(
+        "appearance"
+    ) in ("silent", "uncalibrated")
+    if effect == "answers" and not unconfirmed:
+        return None
+    from knee.diagnosis.squint_residual import FINE_TILE_MM, producer_for
+
+    why = "contested" if effect != "answers" else "appearance_unconfirmed"
+    observations = [
+        {
+            "request": {"object": subject, "question": "identity", "reason": why},
+            "procedure": "paired_finer_reading",
+            "reads": f"the located regions at {FINE_TILE_MM:g} mm: refine_territory "
+            "over a territory reading, refine_window over a tile window",
+        }
+    ]
+    producer = producer_for(subject)
+    if producer is not None:
+        observations.append(
+            {
+                "request": {
+                    "object": subject,
+                    "lens": producer.lens,
+                    "question": "identity",
+                    "reason": why,
+                },
+                "procedure": "residual_native_support",
+                "reads": producer.definition,
             }
-        return {"decision": "kept", "reason": "identified", "recognized_as": identity}
-    opposed = _names(reading.get("opposed_identities"))
-    if subject in opposed and subject not in _names(reading.get("speaking_identities")):
-        return {"decision": "withheld", "reason": "identity_opposed_by_negative_cases"}
+        )
     return {
-        "decision": "kept",
-        "reason": outcome
-        if isinstance(outcome, str) and outcome
-        else "identity_outcome_invalid",
+        "status": "open",
+        "why": why,
+        "support": context.get("support"),
+        "next_observations": observations,
+        "run": "left_to_the_consumer_within_budget",
     }
 
 
-def _identity_consumption(objects: object, identity_readings: object) -> dict:
-    """Each located object's identity decision, as condition reasoning consumes it."""
+def _object_consumption(
+    subject: str, reading: object, examined: object, context: object
+) -> dict:
+    """How one object's identity in context reaches its condition questions.
+
+    The object answers its own questions as the object identified in context unless an
+    applicable negative case speaks over its asserted region: then the region is not
+    read as that object (``appearance_opposed``, or a ``signed_conflict`` with its own
+    cases), its questions stay open, and nothing renames it. A genuine contradictory law
+    observation is a revisable ``identity_question``.
+    """
+    if examined != "examined":
+        outcome = examined if isinstance(examined, str) and examined else None
+        outcome = outcome or "identity_recall_unavailable"
+    elif not isinstance(reading, Mapping):
+        outcome = "identity_reading_missing"
+    else:
+        outcome = reading.get("outcome")
+        outcome = (
+            outcome
+            if isinstance(outcome, str) and outcome
+            else "identity_outcome_invalid"
+        )
+    context = context if isinstance(context, Mapping) else None
+    heard = reading if examined == "examined" and isinstance(reading, Mapping) else None
+    effect = (
+        outcome if heard is not None and outcome in CONTESTED_OUTCOMES else "answers"
+    )
+    contradictions = list(context["contradictions"]) if context is not None else []
+    entry = {
+        "answers_questions_as": subject if effect == "answers" else None,
+        "region_read_as_subject": effect == "answers",
+        "identity_effect": effect,
+        "identity_basis": context["basis"] if context is not None else None,
+        "identity_state": heard.get("identity_state") if heard is not None else None,
+        "support": context.get("support") if context is not None else None,
+        "recall_outcome": outcome,
+        "applicable_negative_case_ids": list(
+            heard.get("applicable_negative_case_ids", ()) if heard is not None else ()
+        ),
+        "identity_context": copy.deepcopy(context),
+        "identity_question": None,
+        "identity_open_question": _identity_open_question(
+            subject, context, heard, effect
+        ),
+    }
+    if contradictions:
+        entry["identity_question"] = {
+            "status": "open",
+            "kind": "reversed_anatomical_relation",
+            "revisable": True,
+            "evidence": copy.deepcopy(contradictions),
+        }
+    return entry
+
+
+def _identity_consumption(
+    objects: object, identity_readings: object, contexts: object = None
+) -> dict:
+    """Each located object's identity in context, as condition reasoning consumes it.
+
+    Resemblance to another object never keeps a region from its own questions; an
+    applicable negative case does (``_object_consumption``). ``not_read_as_subject``
+    names those regions; bounded looks are never refused for identity.
+    """
+    record: dict = {
+        "schema": IDENTITY_CONSUMPTION_SCHEMA,
+        "not_read_as_subject": [],
+        "objects": {},
+    }
     if not isinstance(objects, Mapping):
-        return {}
+        return record
     examined = readings = None
     if isinstance(identity_readings, Mapping):
         examined = identity_readings.get("outcome")
         readings = identity_readings.get("objects")
     if not isinstance(readings, Mapping):
         readings = {}
-    return {
-        subject: _identity_decision(subject, readings.get(subject), examined)
+    known = contexts if isinstance(contexts, Mapping) else {}
+    record["objects"] = {
+        subject: _object_consumption(
+            subject, readings.get(subject), examined, known.get(subject)
+        )
         for subject in sorted(objects)
     }
+    record["not_read_as_subject"] = [
+        subject
+        for subject, entry in record["objects"].items()
+        if not entry["region_read_as_subject"]
+    ]
+    return record
 
 
-def _withheld_objects(consumption: Mapping) -> dict:
-    """The withheld objects and the named reason each carries to its evidence."""
+def _regions_not_read(consumption: Mapping) -> dict[str, dict]:
+    """The regions not read as their object, each with the reason its evidence carries."""
+    objects = consumption.get("objects") if isinstance(consumption, Mapping) else None
     return {
-        subject: {key: value for key, value in decision.items() if key != "decision"}
-        for subject, decision in consumption.items()
-        if decision.get("decision") == "withheld"
+        subject: {
+            "reason": entry["identity_effect"],
+            "applicable_negative_case_ids": list(entry["applicable_negative_case_ids"]),
+        }
+        for subject, entry in (objects.items() if isinstance(objects, Mapping) else ())
+        if not entry["region_read_as_subject"]
     }
 
 
@@ -843,9 +1388,14 @@ def infer_study(
 
     Squint first: location keeps the 10 mm reading it holds, and only a question left open
     earns the bounded finer reading of the object it names (``_bounded_observation``).
-    Identity recall decides, once per located object, whether its tissue may answer its
-    proposed subject (``identity_consumption``); a withheld object reaches every condition
-    question and bounded read as an unlocated one, and its located record is retained.
+    What the locator already established about each located object (its structural
+    reader, the anatomy map from the established anchors, or the prior alone) is carried
+    forward once as its identity context (``_identity_contexts``): identity recall is
+    conditioned on it, and every located object answers its own questions as the object
+    identified in context (``identity_consumption``). Resemblance to another object
+    changes nothing; an applicable negative case keeps its region from its object's
+    questions, which stay open. A genuine contradictory law observation is a revisable
+    question, and bounded looks are never refused for identity.
     """
     from knee.diagnosis.declarations import QUESTIONS
     from knee.diagnosis.squint_contracts import combine_condition, rank_condition
@@ -873,14 +1423,18 @@ def infer_study(
         study, memory, deadline=deadline, **_squint_first_location(locate_objects)
     )
     objects = locations.get("objects", {})
+    identity_contexts = _identity_contexts(objects)
     identity_readings = _identity_readings(
         objects,
         memory,
         uid if exclude_same_study else None,
         prepared_identity=prepared_identity,
+        contexts=identity_contexts,
     )
-    identity_consumption = _identity_consumption(objects, identity_readings)
-    withheld = _withheld_objects(identity_consumption)
+    identity_consumption = _identity_consumption(
+        objects, identity_readings, identity_contexts
+    )
+    not_read = _regions_not_read(identity_consumption)
     fine_readings_at_location = _fine_readings_held(objects)
     questions = {}
     values = {}
@@ -888,7 +1442,7 @@ def infer_study(
     attempted = set()
     for question in QUESTIONS:
         object_evidence = _recall_question(
-            question, objects, memory, uid, exclude_same_study, withheld=withheld
+            question, objects, memory, uid, exclude_same_study, not_read_as=not_read
         )
         finding = combine_condition(question.question_id, object_evidence)
         requests = (
@@ -899,12 +1453,10 @@ def infer_study(
         if requests:
             for request in requests:
                 observations.append(
-                    _bounded_observation(
-                        request, study, objects, attempted, deadline, withheld=withheld
-                    )
+                    _bounded_observation(request, study, objects, attempted, deadline)
                 )
             object_evidence = _recall_question(
-                question, objects, memory, uid, exclude_same_study, withheld=withheld
+                question, objects, memory, uid, exclude_same_study, not_read_as=not_read
             )
             finding = combine_condition(question.question_id, object_evidence)
         ranking = finding.get("rank")
@@ -1220,6 +1772,8 @@ def run_squint_cli(args, *, prepared_memory_snapshot=None) -> dict:
         elif mode != "capacity":
             preparation_cache_status = "invalid_recomputed"
     identity_preparation_seconds = 0.0
+    # The shared preparation; capacity runs prepare each study's held-out view instead.
+    prepared: dict | None = None
     if mode != "capacity":
         preparation_started = time.perf_counter()
         prepared = (
@@ -1478,7 +2032,7 @@ def run_squint_cli(args, *, prepared_memory_snapshot=None) -> dict:
             "seconds": preparation_seconds,
             "schema": preparation_artifact_schema,
             "preparation_schema": (
-                prepared.get("schema") if mode != "capacity" else None
+                prepared.get("schema") if prepared is not None else None
             ),
             "artifact_source": preparation_artifact_source,
             "identity": preparation_identity,

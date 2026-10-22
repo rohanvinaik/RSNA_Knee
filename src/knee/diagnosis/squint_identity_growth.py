@@ -16,17 +16,29 @@ holds exactly the same population. Nothing admitted in a round speaks in it. A
 round streams: one inference record is decoded at a time (a real one can decode
 to hundreds of MB), and only decisions and admissions outlive their candidates.
 
-Admission (§§7.1-7.2): signed recall identifies the candidate as its own proposed
-subject and no negative case speaks against it; the recorded sanity is plausible,
-with at least one recorded ``supported_*`` check and no ``reversed_*`` check. A
-pass is a law check on location: it is kept as location support, never as tissue.
-Unknown-only anatomy keeps a proposal: not admitted, not rejected, never a
-negative. The legacy recall field ``admitted`` is not a publication warrant.
+Admission (§§7.1-7.2): the candidate's identity is warranted in its context, what the
+inference run's structure established about it (``identity_context``, carried from
+the record's ``identity_consumption``), with a high recognition match: a bone its
+structural reader established whose own cases rise above every identity structure did
+not remove (the reader's other bones, which it tells apart by arrangement), or an
+object the anatomy map placed whose own cases speak against the alternatives that
+placement leaves open; never one placed by the prior alone. The structural reader's
+recorded arrangement is affirmative support for its bone, so an unavailable law check
+does not block it; a placement needs a plausible sanity with a recorded ``supported_*``
+check. A pass is a law check on location: it is kept as location support, never as
+tissue. A ``reversed_*`` check is a genuine contradiction and blocks it as an
+``identity_question``. A negative case that speaks over the asserted region and whose
+reason still applies opposes the identity (``opposed``; with its own cases speaking
+too, ``conflict``); one that speaks only with the surroundings, concerns another
+identity, or asserts an alternative structure removed is recorded and changes nothing.
+Resemblance to another object never blocks admission. Unknown-only anatomy keeps a
+placement a proposal: not admitted, not rejected, never a negative. A candidate without
+a context keeps a proposal. The legacy recall field ``admitted`` is not a publication
+warrant.
 
-Scope: the views whose banks took part in the comparisons speaking for the
-identity, minus any view through which a negative case of that identity speaks.
-No usable view, or malformed scope, is a named refusal, never a whole-case call.
-Joint recognition does not require each view to recognize on its own.
+Scope: the views whose banks took part in the comparisons speaking for the warranted
+identity. No usable view, or malformed scope, is a named refusal, never a whole-case
+call. Joint recognition does not require each view to recognize on its own.
 
 The child keeps every parent record (signed cases, alternatives, calls, full
 tables, prior growth rounds) and adds each admission to ``cases`` with a confirm
@@ -75,14 +87,15 @@ round's own list joined with the one its parent's growth block records, so every
 child keeps its parent's held-out studies. It is recorded, sorted with the digest
 of that list, in the decisions file and in the child's growth block.
 
-Decision states: ``admitted``; ``proposal`` (identified but anatomy unknown, or
-nothing identified: the reason says which); ``blocked`` (a known anatomical
-contradiction); ``conflict`` (recognized as another identity, which is named, or
-recall's own unresolved conflict); ``opposed`` (a negative case of the proposed
-identity speaks and nothing speaks for any identity); ``duplicate`` (the parent
-already holds this case or a record of this object of this study); ``refused`` (a
-named refusal, including ``admission_scope_unresolved``); ``held_out`` (the
-candidate's study is held out of this round).
+Decision states: ``admitted``; ``proposal`` (warranted but anatomy unknown, or the
+identity not warranted in context: the reason says which); ``blocked`` (a known
+anatomical contradiction, an ``identity_question``); ``conflict`` (its own cases and
+an applicable negative case both speak: a signed conflict, kept open); ``opposed``
+(an applicable negative case speaks and none of its own cases does); ``duplicate``
+(the parent already holds this case or a record of this object of this study);
+``refused`` (a named refusal, including ``admission_scope_unresolved``);
+``held_out`` (the candidate's study is held out of this round). Resemblance to
+another object never makes ``conflict`` or ``opposed``.
 """
 
 from __future__ import annotations
@@ -108,7 +121,17 @@ from knee.diagnosis.squint_configurations import (
     rebuild_study_configurations,
 )
 from knee.diagnosis.squint_identity import (
+    APPEARANCE_OPPOSED,
+    APPEARANCE_SUPPORTS,
+    ESTABLISHED_BY_STRUCTURE,
+    IDENTITY_CONSUMPTION_SCHEMA,
+    MAP_RELATION,
+    PRIOR_ONLY,
+    RECALL_CONTEXT_SCHEMA,
     SANITY_SCHEMA,
+    SIGNED_CONFLICT,
+    STRUCTURAL_READER,
+    identity_context_code,
     prepare_identity,
     recall_identity,
 )
@@ -173,6 +196,8 @@ _DECISION_KEYS = (
     "support",
     "regions",
     "source",
+    "identity_context",
+    "identity_question",
 )
 _SHA = re.compile(r"[0-9a-f]{64}")
 
@@ -245,6 +270,26 @@ def _located_regions(located: Mapping[str, Any], label: str) -> list[dict[str, A
     return result
 
 
+def _recorded_contexts(record: Mapping[str, Any]) -> dict[str, Any]:
+    """Each object's identity context as the inference run recorded it, by subject.
+
+    Read from the record's ``identity_consumption`` (``IDENTITY_CONSUMPTION_SCHEMA``),
+    the structure the run established; a record of another schema carries none.
+    """
+    consumption = record.get("identity_consumption")
+    if (
+        not isinstance(consumption, Mapping)
+        or consumption.get("schema") != IDENTITY_CONSUMPTION_SCHEMA
+        or not isinstance(consumption.get("objects"), Mapping)
+    ):
+        return {}
+    return {
+        subject: entry["identity_context"]
+        for subject, entry in consumption["objects"].items()
+        if isinstance(entry, Mapping) and entry.get("identity_context") is not None
+    }
+
+
 def _harvest(
     pairs: Iterable[tuple[Mapping[str, Any], str | None]],
 ) -> Iterator[dict[str, Any]]:
@@ -267,6 +312,7 @@ def _harvest(
             "record_sha256_scope": "decoded_json" if digest is None else "file_bytes",
             "memory_revision": revision,
         }
+        contexts = _recorded_contexts(record)
         for subject in sorted(objects):
             located = objects[subject]
             if not isinstance(located, Mapping):
@@ -285,6 +331,7 @@ def _harvest(
                 "profile": copy.deepcopy(profile),
                 "regions": _located_regions(located, f"{uid}:{subject}"),
                 "sanity": copy.deepcopy(located.get("sanity")),
+                "identity_context": copy.deepcopy(contexts.get(subject)),
                 "source": dict(source),
             }
 
@@ -313,7 +360,9 @@ def harvest_candidates(
     Each candidate holds ``case_id`` (``located:<study_uid>:<subject>:<memory
     revision>``), ``study_uid``, ``subject`` (the located name, a proposal only),
     ``profile``, ``regions`` (series_uid and half-open tile window), ``sanity``
-    exactly as recorded, and its ``source`` record. ``record_sha256s`` are the
+    exactly as recorded, its ``identity_context`` (what the run's structure
+    established about it, read from the record's ``identity_consumption``; None when
+    the record holds none) and its ``source`` record. ``record_sha256s`` are the
     exact file-byte digests of the records, when the caller read them from disk;
     otherwise each decoded record is digested (``record_sha256``). Recall, values
     and questions already in a record are never read: the round scores afresh.
@@ -584,19 +633,25 @@ def location_support(sanity: object, subject: str) -> dict[str, Any]:
 
     ``support`` lists each recorded ``supported_*`` check of this subject: the
     relation it checked, its axis and both intervals. It says where the candidate
-    lies, never what tissue it is. ``status`` None means the record is invalid.
+    lies, never what tissue it is. ``reversed`` lists each recorded ``reversed_*``
+    check the same way: a genuine contradiction of that location. ``status`` None
+    means the record is invalid.
     """
     if sanity is None:
-        return {"status": "unknown", "support": [], "contradicted": False}
+        return {
+            "status": "unknown",
+            "support": [],
+            "reversed": [],
+            "contradicted": False,
+        }
     if (
         not isinstance(sanity, Mapping)
         or sanity.get("schema") != SANITY_SCHEMA
         or sanity.get("identity_assertion") is not None
         or sanity.get("status") not in _SANITY_STATUSES
     ):
-        return {"status": None, "support": [], "contradicted": False}
-    support: list[dict[str, Any]] = []
-    reversed_check = False
+        return {"status": None, "support": [], "reversed": [], "contradicted": False}
+    found: dict[str, list[dict[str, Any]]] = {"supported_": [], "reversed_": []}
     for row in _rows(sanity.get("windows")) or ():
         if not isinstance(row, Mapping):
             continue
@@ -608,31 +663,31 @@ def location_support(sanity: object, subject: str) -> dict[str, Any]:
             ):
                 continue
             result = check["result"]
-            if result.startswith("reversed_"):
-                reversed_check = True
-            elif (
-                result.startswith("supported_")
-                and _text(check.get("rule_id"))
-                and _text(check.get("axis"))
+            prefix = next((key for key in found if result.startswith(key)), None)
+            if prefix is None or (
+                prefix == "supported_"
+                and not (_text(check.get("rule_id")) and _text(check.get("axis")))
             ):
-                support.append(
-                    {
-                        "establishes": "location_only",
-                        "rule_id": check["rule_id"],
-                        "axis": check["axis"],
-                        "result": result,
-                        "candidate_interval": copy.deepcopy(
-                            check.get("candidate_interval")
-                        ),
-                        "target_interval": copy.deepcopy(check.get("target_interval")),
-                        "series_uid": row.get("series_uid"),
-                        "window": _window(row.get("window")),
-                    }
-                )
+                continue
+            found[prefix].append(
+                {
+                    "establishes": "location_only",
+                    "rule_id": check.get("rule_id"),
+                    "axis": check.get("axis"),
+                    "result": result,
+                    "candidate_interval": copy.deepcopy(
+                        check.get("candidate_interval")
+                    ),
+                    "target_interval": copy.deepcopy(check.get("target_interval")),
+                    "series_uid": row.get("series_uid"),
+                    "window": _window(row.get("window")),
+                }
+            )
     return {
         "status": sanity["status"],
-        "support": support,
-        "contradicted": sanity["status"] == "contradicted" or reversed_check,
+        "support": found["supported_"],
+        "reversed": found["reversed_"],
+        "contradicted": sanity["status"] == "contradicted" or bool(found["reversed_"]),
     }
 
 
@@ -654,39 +709,78 @@ def _bank_views(banks: object) -> set[tuple[str, ...]] | None:
     return views
 
 
+def _warranted(recall: Mapping[str, Any]) -> bool:
+    """Whether a recall in context warrants its identity, by its basis.
+
+    A bone the structural reader established whose own cases rise above every identity
+    structure did not remove; or a placement whose own cases speak against the
+    alternatives it leaves open. A contested identity is never warranted.
+    """
+    basis, outcome = recall.get("identity_basis"), recall.get("outcome")
+    if basis == STRUCTURAL_READER:
+        return outcome == ESTABLISHED_BY_STRUCTURE and recall.get("appearance") == (
+            "supports"
+        )
+    return basis == MAP_RELATION and outcome == APPEARANCE_SUPPORTS
+
+
 def admission_scope(recall: object, identity: str) -> dict[str, Any]:
     """The views an admission may assert, or the named refusal.
 
-    The views whose banks took part in the comparisons speaking for ``identity``
-    (alternative-identity seeds included), minus every view through which a
-    negative case of ``identity`` speaks. Returns ``{"views": [...]}`` or
+    Read from a recall made in context (``RECALL_CONTEXT_SCHEMA``) whose identity is
+    warranted (``_warranted``): the views whose banks took part in the comparisons
+    speaking for ``identity`` (alternative-identity seeds included). A negative case
+    that does not apply is recorded, never subtracted. Returns ``{"views": [...]}`` or
     ``{"refusal": "admission_scope_unresolved", "detail": ...}``.
     """
 
     def refusal(detail: str) -> dict[str, Any]:
         return {"refusal": "admission_scope_unresolved", "detail": detail}
 
-    rows = _rows(recall.get("cases")) if isinstance(recall, Mapping) else None
-    negatives = (
-        _rows(recall.get("negative_cases", [])) if isinstance(recall, Mapping) else None
-    )
-    if rows is None or negatives is None:
+    if not isinstance(recall, Mapping) or recall.get("schema") != RECALL_CONTEXT_SCHEMA:
+        return refusal("recall_not_in_context")
+    if recall.get("identity") != identity:
+        return refusal("recall_identity_mismatch")
+    if not _warranted(recall):
+        return refusal("identity_not_warranted_in_context")
+    rows = _rows(recall.get("cases"))
+    if rows is None:
         return refusal("recall_rows_missing")
-    sides = {"for": set(), "against": set()}
-    for side, entries in (("for", rows), ("against", negatives)):
-        for row in entries:
-            if not isinstance(row, Mapping):
-                return refusal("recall_row_malformed")
-            if row.get("identity") != identity or row.get("speaks") is not True:
-                continue
-            views = _bank_views(row.get("common_speaking_banks"))
-            if views is None:
-                return refusal("speaking_banks_malformed")
-            sides[side] |= views
-    remaining = sides["for"] - sides["against"]
-    if not remaining:
+    views: set[tuple[str, ...]] = set()
+    for row in rows:
+        if not isinstance(row, Mapping):
+            return refusal("recall_row_malformed")
+        if row.get("identity") != identity or row.get("speaks") is not True:
+            continue
+        spoken = _bank_views(row.get("common_speaking_banks"))
+        if spoken is None:
+            return refusal("speaking_banks_malformed")
+        views |= spoken
+    if not views:
         return refusal("no_usable_view")
-    return {"views": [list(view) for view in sorted(remaining)]}
+    return {"views": [list(view) for view in sorted(views)]}
+
+
+def _arrangement_support(context: Mapping[str, Any]) -> list[dict[str, Any]]:
+    """The structural reader's recorded arrangement for its bone, as affirmative support.
+
+    The rows the inference run copied from the reader's own territory provenance
+    (``squint_pipeline._arrangement``); none for any other basis.
+    """
+    if context["basis"] != STRUCTURAL_READER:
+        return []
+    observations = context["supporting_observations"]
+    rows = (
+        observations.get("arrangement") if isinstance(observations, Mapping) else None
+    )
+    return [
+        copy.deepcopy(dict(row))
+        for row in (_rows(rows) or ())
+        if isinstance(row, Mapping)
+        and row.get("establishes")
+        == "bone_identity_by_the_readers_observed_arrangement"
+        and _text(row.get("derivation"))
+    ]
 
 
 def _decision(
@@ -696,6 +790,7 @@ def _decision(
     support: Sequence[Mapping[str, Any]],
     recognized: object = None,
     views: Sequence[Sequence[str]] = (),
+    question: Mapping[str, Any] | None = None,
 ) -> dict[str, Any]:
     return {
         "candidate_id": candidate["case_id"],
@@ -708,17 +803,28 @@ def _decision(
         "support": copy.deepcopy(list(support)),
         "regions": copy.deepcopy(list(candidate["regions"])),
         "source": copy.deepcopy(dict(candidate["source"])),
+        "identity_context": copy.deepcopy(candidate.get("identity_context")),
+        "identity_question": copy.deepcopy(question),
     }
 
 
 def admission_from_recall(
     candidate: Mapping[str, Any], recall: Mapping[str, Any]
 ) -> dict[str, Any]:
-    """Decide one candidate from its signed recall and its recorded anatomy.
+    """Decide one candidate from its recall in context and its recorded anatomy.
 
-    Precedence: invalid input, known contradiction, recall's conflict, another
-    recognized identity, a negative speaking alone, nothing identified, unknown
-    anatomy, unresolved scope, admission.
+    Its identity is warranted in context (``_warranted``) when the structural reader
+    established the bone and its own cases rise above every identity structure did not
+    remove, or when the anatomy map placed it and its own cases speak against the
+    alternatives that placement leaves open; never when the prior alone placed it. An
+    applicable negative case speaking over its asserted region opposes it
+    (``opposed``), or, with its own cases speaking too, is a signed conflict
+    (``conflict``): not admitted, never renamed. Resemblance to another object decides
+    nothing. The structural reader's recorded arrangement is its affirmative support, so
+    an unavailable law check does not block a bone it established; a placement needs a
+    recorded pass. Precedence: invalid input; a known contradiction (``blocked``, an
+    ``identity_question``); no context; a contested identity; the prior alone; an
+    identity not warranted; no affirmative support; unresolved scope; admission.
     """
     subject = candidate["subject"]
     anatomy = location_support(candidate.get("sanity"), subject)
@@ -729,30 +835,67 @@ def admission_from_recall(
         return _decision(candidate, "refused", str(reason or "recall_invalid"), support)
     if anatomy["status"] is None:
         return _decision(candidate, "refused", "sanity_invalid", support)
-    identity = recall.get("identity")
-    if anatomy["contradicted"] or outcome == "blocked_by_sanity":
-        recognized = identity or recall.get("blocked_identity")
-        return _decision(
-            candidate, "blocked", "anatomy_contradicted", support, recognized
-        )
-    if outcome == "unresolved_conflict":
-        return _decision(candidate, "conflict", str(recall.get("reason")), support)
-    if outcome == "identified" and identity != subject:
-        return _decision(
-            candidate, "conflict", "recognized_as_other_identity", support, identity
-        )
-    if subject in (_rows(recall.get("opposed_identities")) or ()):
+    context = candidate.get("identity_context")
+    if context is not None:
+        code = identity_context_code(context, subject=subject)
+        if code != "valid":
+            return _decision(candidate, "refused", code, support)
+        if (
+            recall.get("schema") != RECALL_CONTEXT_SCHEMA
+            or recall.get("identity_basis") != context["basis"]
+        ):
+            return _decision(
+                candidate, "refused", "recall_not_in_this_context", support
+            )
+        support = _arrangement_support(context) + support
+    contradictions = list(context["contradictions"]) if context is not None else []
+    warranted = context is not None and _warranted(recall)
+    recognized = subject if warranted else None
+    if anatomy["contradicted"] or contradictions:
+        question = {
+            "status": "open",
+            "kind": "reversed_anatomical_relation",
+            "revisable": True,
+            "location_checks": copy.deepcopy(anatomy["reversed"]),
+            "context_contradictions": copy.deepcopy(contradictions),
+        }
         return _decision(
             candidate,
-            "opposed",
-            "negative_case_speaks_against_proposed_identity",
+            "blocked",
+            "identity_question",
+            support,
+            recognized,
+            question=question,
+        )
+    if context is None:
+        reason = (
+            "memory_candidate_without_identity_context"
+            if candidate["source"].get("kind") == MEMORY_SOURCE
+            else "identity_context_unavailable"
+        )
+        return _decision(candidate, "proposal", reason, support)
+    if outcome == APPEARANCE_OPPOSED:
+        return _decision(
+            candidate, "opposed", "applicable_negative_case_speaks", support
+        )
+    if outcome == SIGNED_CONFLICT:
+        return _decision(
+            candidate,
+            "conflict",
+            "own_case_and_applicable_negative_case_speak",
             support,
         )
-    if outcome != "identified":
-        return _decision(
-            candidate, "proposal", str(recall.get("reason") or outcome), support
+    if context["basis"] == PRIOR_ONLY:
+        return _decision(candidate, "proposal", "identity_basis_prior_only", support)
+    if not warranted:
+        reason = (
+            f"structural_appearance_{recall.get('appearance')}"
+            if context["basis"] == STRUCTURAL_READER
+            else str(outcome)
         )
-    if anatomy["status"] != "plausible" or not support:
+        return _decision(candidate, "proposal", reason, support)
+    arrangement = _arrangement_support(context)
+    if not arrangement and (anatomy["status"] != "plausible" or not anatomy["support"]):
         reason = (
             "anatomy_support_unrecorded"
             if anatomy["status"] == "plausible"
@@ -765,7 +908,8 @@ def admission_from_recall(
     return _decision(
         candidate,
         "admitted",
-        "identified_with_location_support",
+        f"{outcome}_with_"
+        + ("the_readers_arrangement" if arrangement else "location_support"),
         support,
         subject,
         scope["views"],
@@ -796,10 +940,11 @@ def admission_decision(
 ) -> dict[str, Any]:
     """Score one candidate against one frozen parent memory.
 
-    Returns ``{"decision", "recall", "excluded_study_uid"}``. ``prepared`` must be
-    the parent's preparation for this candidate's exclusion (any other is refused
-    by recall as ``invalid_preparation``); ``record_studies`` and ``represented``
-    may be passed to share them across a round.
+    Returns ``{"decision", "recall", "excluded_study_uid"}``. The recall is
+    conditioned on the candidate's ``identity_context`` when it carries one.
+    ``prepared`` must be the parent's preparation for this candidate's exclusion (any
+    other is refused by recall as ``invalid_preparation``); ``record_studies`` and
+    ``represented`` may be passed to share them across a round.
     """
     _check_candidate(candidate)
     if not isinstance(memory, Mapping):
@@ -818,6 +963,7 @@ def admission_decision(
         exclude_study_uid=exclusion,
         sanity=candidate.get("sanity"),
         prepared=prepared,
+        context=candidate.get("identity_context"),
     )
     return {
         "decision": admission_from_recall(candidate, recall),
@@ -1198,6 +1344,7 @@ def _lineage(
             key: copy.deepcopy(decision[key])
             for key in ("state", "reason", "recognized_identity", "views", "support")
         },
+        "identity_context": copy.deepcopy(decision.get("identity_context")),
     }
 
 

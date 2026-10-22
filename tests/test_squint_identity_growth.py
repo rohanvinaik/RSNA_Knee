@@ -4,9 +4,22 @@ CLASSICAL_AI_BUILD_DESIGN §§7, 7.1-7.2 and the OpenSpec change
 ``complete-signed-bootstrap-loop``: answering and admitting are different
 decisions; an anatomical pass is a location law check; a round scores against
 its frozen parent alone; the child keeps every signed record; a candidate's
-whole study leaves its comparison across every record kind; an admission asserts
-only the views that spoke. Each test pins one meaning in both signs, through
-direct calls to the growth API, the identity reader and the CLI.
+whole study leaves its comparison across every record kind.
+
+Rohan, 2026-10-21: «Growth stores the warranted object presentation with that context
+and lineage.» A candidate's identity is warranted in its context, what the inference
+run's structure established about it, with a high recognition match: a bone its
+structural reader established whose own cases rise above every identity but the
+reader's other bones (which it tells apart by arrangement, found or not), or an object
+the anatomy map placed whose own cases speak against the alternatives that placement
+leaves open; never a placement by the prior alone. The reader's recorded arrangement is
+its affirmative support. «Positive and negative cases are expertise, not decorative
+annotations»: a negative case whose reason holds for the candidate's asserted region
+opposes it; one that speaks only with the surroundings, or asserts an alternative
+structure removed, is recorded and changes nothing. Resemblance to another object never
+blocks. A reversed law check blocks as an ``identity_question``. Each test pins one
+meaning in both signs, through direct calls to the growth API, the identity reader and
+the CLI.
 """
 
 from __future__ import annotations
@@ -22,14 +35,24 @@ from types import SimpleNamespace
 
 import pytest
 
+from knee.diagnosis.squint_anatomy_locator import BONES
 from knee.diagnosis.squint_bootstrap import (
     CALLS_SCHEMA,
     build_review,
     publish_seed_memory,
 )
 from knee.diagnosis.squint_identity import (
+    CONDITIONING,
+    CONTEXT_SCHEMA,
     IDENTITY_CASES_SCHEMA,
+    IDENTITY_CONSUMPTION_SCHEMA,
+    MAP_RELATION,
+    PRIOR_ONLY,
+    PROPOSED_PLACES,
+    RECALL_CONTEXT_SCHEMA,
+    RESOLVED_SUPPORT,
     SANITY_SCHEMA,
+    STRUCTURAL_READER,
     TEACHING_SCHEMA,
     prepare_identity,
     recall_identity,
@@ -87,23 +110,40 @@ DECISION_KEYS = sorted(
         "support",
         "regions",
         "source",
+        "identity_context",
+        "identity_question",
     ]
 )
+#: The structural reader's own record of how it named a bone, as infer_study copies it
+#: from the anchor territory's provenance.
+ARRANGEMENT = {
+    "establishes": "bone_identity_by_the_readers_observed_arrangement",
+    "series_uid": "series-sag",
+    "window": list(WINDOW),
+    "producer": "knee.diagnosis.squint_anchors",
+    "derivation": "middle_slice_named_by_the_established_rule",
+    "rule": "knee.objects.assignments.assign_plane, read with its partner (with_partner)",
+    "middle_slice_code": "identified",
+    "partner": "agree",
+    "cross_view_checks": [],
+}
 
 
-def bank(view: list[str]) -> str:
+def bank(view: list[str], role: str = "object") -> str:
     return (
         "squint/v2/view="
         + json.dumps(view, separators=(",", ":"))
-        + "/role=object/metric=signal/direction=d/scale=10mm"
+        + f"/role={role}/metric=signal/direction=d/scale=10mm"
     )
 
 
-def profile(subject: str, by_view) -> dict:
+def profile(subject: str, by_view, ring=()) -> dict:
+    banks = {bank(view): list(counts) for view, counts in by_view}
+    banks.update({bank(view, "context"): list(counts) for view, counts in ring})
     return {
         "schema": "knee.squint-profile/v1",
         "subject": subject,
-        "banks": {bank(view): list(counts) for view, counts in by_view},
+        "banks": banks,
         "source": {"procedure": PROCEDURE},
     }
 
@@ -158,10 +198,44 @@ def contradicted(subject: str) -> dict:
     return sanity(subject, "contradicted", "reversed_strictly_after")
 
 
-def located(subject: str, by_view, anatomy) -> dict:
+def identity_context(
+    subject: str,
+    basis: str = STRUCTURAL_READER,
+    open_alternatives=(),
+    contradictions=(),
+    *,
+    arrangement: bool = True,
+) -> dict:
+    """What an inference run's structure established about one located object."""
+    structural = basis == STRUCTURAL_READER
+    observations: dict = {"reason": "fixture", "record": f"objects/{subject}/evidence"}
+    if structural and arrangement:
+        observations["arrangement"] = [dict(ARRANGEMENT)]
+    return {
+        "schema": CONTEXT_SCHEMA,
+        "subject": subject,
+        "basis": basis,
+        "conditioning": CONDITIONING[basis],
+        "support": RESOLVED_SUPPORT if structural else PROPOSED_PLACES,
+        "open_alternatives": sorted(open_alternatives),
+        "removed_by_structure": sorted(set(BONES) - {subject}) if structural else [],
+        "contradictions": list(contradictions),
+        "supporting_observations": observations,
+    }
+
+
+def established(subject: str, **options) -> dict:
+    return identity_context(subject, STRUCTURAL_READER, **options)
+
+
+def placed(subject: str, *alternatives: str) -> dict:
+    return identity_context(subject, MAP_RELATION, alternatives)
+
+
+def located(subject: str, by_view, anatomy, ring=()) -> dict:
     return {
         "status": "proposal",
-        "profile": profile(subject, by_view),
+        "profile": profile(subject, by_view, ring),
         "regions": [
             {
                 "series_uid": "series-sag",
@@ -178,9 +252,18 @@ def located(subject: str, by_view, anatomy) -> dict:
     }
 
 
-def study_record(uid: str, objects: dict, revision: str = INFERENCE_REVISION) -> dict:
-    """A knee.squint-study/v1 record as infer_study writes it, abridged."""
-    return {
+def study_record(
+    uid: str,
+    objects: dict,
+    revision: str = INFERENCE_REVISION,
+    contexts: dict | None = None,
+) -> dict:
+    """A knee.squint-study/v1 record as infer_study writes it, abridged.
+
+    ``contexts`` are recorded in its ``identity_consumption``, where infer_study keeps
+    each located object's identity context.
+    """
+    record = {
         "schema": "knee.squint-study/v1",
         "study_uid": uid,
         "memory_revision": revision,
@@ -190,22 +273,44 @@ def study_record(uid: str, objects: dict, revision: str = INFERENCE_REVISION) ->
         "questions": {},
         "values": {},
     }
+    if contexts is not None:
+        record["identity_consumption"] = {
+            "schema": IDENTITY_CONSUMPTION_SCHEMA,
+            "not_read_as_subject": [],
+            "objects": {
+                subject: {
+                    "answers_questions_as": subject,
+                    "identity_basis": (contexts.get(subject) or {}).get("basis"),
+                    "recall_outcome": "fixture",
+                    "identity_context": contexts.get(subject),
+                    "identity_question": None,
+                }
+                for subject in objects
+            },
+        }
+    return record
 
 
-def candidate(uid: str, subject: str, by_view, anatomy) -> dict:
+def candidate(uid: str, subject: str, by_view, anatomy, context, ring=()) -> dict:
     [item] = harvest_candidates(
-        [study_record(uid, {subject: located(subject, by_view, anatomy)})]
+        [
+            study_record(
+                uid,
+                {subject: located(subject, by_view, anatomy, ring)},
+                contexts={subject: context},
+            )
+        ]
     )
     return item
 
 
-def _record(case_id: str, subject: str, study_uid: str, by_view) -> dict:
+def _record(case_id: str, subject: str, study_uid: str, by_view, ring=()) -> dict:
     return {
         "case_id": case_id,
         "study_uid": study_uid,
         "subject": subject,
         "condition_calls": {},
-        "profile": profile(subject, by_view),
+        "profile": profile(subject, by_view, ring),
         "regions": [],
     }
 
@@ -213,8 +318,8 @@ def _record(case_id: str, subject: str, study_uid: str, by_view) -> dict:
 def identity_memory(seeds, negatives=(), revision: str = "parent-r1") -> dict:
     """A valid squint memory of confirmed seeds and scoped ordinary negative cases.
 
-    ``seeds`` are (case_id, subject, study_uid, by_view); ``negatives`` add the
-    views their reject asserted.
+    ``seeds`` are (case_id, subject, study_uid, by_view[, ring]); ``negatives`` add the
+    views their reject asserted (and optionally a ring).
     """
     cases = [_record(*seed) for seed in seeds]
     calls = [
@@ -243,8 +348,10 @@ def identity_memory(seeds, negatives=(), revision: str = "parent-r1") -> dict:
         records = []
         teaching["negative_case_ids"] = []
         teaching["negative_views"] = {}
-        for case_id, subject, study_uid, by_view, views in negatives:
-            records.append(_record(case_id, subject, study_uid, by_view))
+        for case_id, subject, study_uid, by_view, views, *ring in negatives:
+            records.append(
+                _record(case_id, subject, study_uid, by_view, *(ring or [()]))
+            )
             teaching["negative_case_ids"].append(case_id)
             teaching["negative_views"][case_id] = [list(view) for view in views]
             calls.append(
@@ -282,6 +389,9 @@ TWO_SEEDS = (
     ("a1", "femur", "sa", [(SAG, (3, 0, 0))]),
     ("b1", "patella", "sb", [(SAG, (0, 0, 3))]),
 )
+# A muscle seed sharing nothing with the femur seed: the identity a structural bone's
+# own cases are calibrated against once the reader's other bones are set aside.
+MUSCLE = ("m1", "medial_gastrocnemius", "sm", [(SAG, (0, 3, 0))])
 # A reviewer rejected this sagittal support as femur; study "sn" holds nothing else.
 NEGATIVE = ("n1", "femur", "sn", [(SAG, (1, 2, 0))], [SAG])
 
@@ -289,18 +399,22 @@ NEGATIVE = ("n1", "femur", "sn", [(SAG, (1, 2, 0))], [SAG])
 # ------------------------------------------------------------- the decision
 
 
-def test_identified_with_location_support_is_admitted_at_the_views_that_spoke():
+def test_a_placement_its_own_cases_support_is_admitted_at_the_views_that_spoke():
     memory = identity_memory(ROUND_SEEDS)
-    item = candidate("sx", "femur", [(SAG, (4, 0, 1))], plausible("femur"))
+    item = candidate(
+        "sx", "femur", [(SAG, (4, 0, 1))], plausible("femur"), placed("femur", "tibia")
+    )
     scored = admission_decision(item, memory)
     decision = scored["decision"]
     assert sorted(decision) == DECISION_KEYS
     assert (decision["state"], decision["reason"]) == (
         "admitted",
-        "identified_with_location_support",
+        "appearance_supports_with_location_support",
     )
     assert decision["recognized_identity"] == "femur"
     assert decision["views"] == [SAG]
+    assert decision["identity_context"] == placed("femur", "tibia")
+    assert decision["identity_question"] is None
     [support] = decision["support"]
     assert support["establishes"] == "location_only"
     assert (support["rule_id"], support["axis"], support["result"]) == (
@@ -310,19 +424,93 @@ def test_identified_with_location_support_is_admitted_at_the_views_that_spoke():
     )
     assert support["candidate_interval"] == [40.0, 80.0]
     assert support["target_interval"] == [0.0, 30.0]
-    assert scored["recall"]["outcome"] == "identified"
+    recall = scored["recall"]
+    assert (recall["schema"], recall["outcome"]) == (
+        RECALL_CONTEXT_SCHEMA,
+        "appearance_supports",
+    )
+    assert recall["speaking_case_ids"] == ["a1"]
     assert scored["excluded_study_uid"] is None
+    # Its own case does not reach past the placement's open alternative: a proposal.
+    quiet = candidate(
+        "sw", "femur", [(SAG, (4, 0, 2))], plausible("femur"), placed("femur", "tibia")
+    )
+    decision = decide(quiet, memory)
+    assert (decision["state"], decision["reason"]) == ("proposal", "appearance_silent")
+    assert decision["recognized_identity"] is None and decision["views"] == []
 
 
-def test_unknown_only_anatomy_keeps_a_proposal_even_when_recall_identifies():
-    memory = identity_memory(ROUND_SEEDS)
+def test_a_structural_bone_must_rise_above_every_identity_but_the_readers_bones():
+    item = candidate(
+        "sw",
+        "femur",
+        [(SAG, (4, 0, 2)), (COR, (1, 1, 1))],
+        plausible("femur"),
+        established("femur"),
+    )
+    # The tibia is the reader's own bone: its cases never set the femur's bar, and the
+    # muscle's do. The femur's case rises above the muscle's: a high recognition match.
+    memory = identity_memory((*ROUND_SEEDS, MUSCLE))
+    scored = admission_decision(item, memory)
+    recall = scored["recall"]
+    assert (recall["outcome"], recall["appearance"]) == (
+        "established_by_structure",
+        "supports",
+    )
+    [row] = recall["cases"]
+    assert row["envelope"]["opposing_identities"] == ["medial_gastrocnemius"]
+    decision = scored["decision"]
+    assert (decision["state"], decision["reason"]) == (
+        "admitted",
+        "established_by_structure_with_the_readers_arrangement",
+    )
+    assert decision["recognized_identity"] == "femur"
+    # Its scope is where the recognition match spoke, the sagittal view.
+    assert decision["views"] == [SAG]
+    assert decision["support"][0] == ARRANGEMENT
+    # Placed by the map with the tibia open, the same case cannot beat the tibia's.
+    as_placement = {**item, "identity_context": placed("femur", "tibia")}
+    assert decide(as_placement, memory)["reason"] == "appearance_silent"
+    # Structure alone never admits: with nothing but the reader's bones to compare
+    # against, the recognition match is uncalibrated.
+    alone = decide(item, identity_memory(ROUND_SEEDS))
+    assert (alone["state"], alone["reason"]) == (
+        "proposal",
+        "structural_appearance_uncalibrated",
+    )
+
+
+def test_the_readers_arrangement_is_the_support_and_a_placement_needs_a_recorded_pass():
+    with_muscle = identity_memory((*ROUND_SEEDS, MUSCLE))
     for anatomy in (unknown("femur"), None):
-        scored = admission_decision(
-            candidate("sx", "femur", [(SAG, (4, 0, 1))], anatomy), memory
+        # An unavailable law check does not erase the reader's own observation.
+        reader = decide(
+            candidate("sx", "femur", [(SAG, (4, 0, 1))], anatomy, established("femur")),
+            with_muscle,
         )
-        # The legacy recall field says admitted; it is not a publication warrant.
-        assert scored["recall"]["outcome"] == "identified"
-        assert scored["recall"]["admitted"] is True
+        assert (reader["state"], reader["support"]) == ("admitted", [ARRANGEMENT])
+        # Without a recorded arrangement it has no affirmative support.
+        bare = decide(
+            candidate(
+                "sx",
+                "femur",
+                [(SAG, (4, 0, 1))],
+                anatomy,
+                established("femur", arrangement=False),
+            ),
+            with_muscle,
+        )
+        assert (bare["state"], bare["reason"]) == ("proposal", "anatomy_unknown")
+        assert bare["recognized_identity"] == "femur"
+        # A placement's identity is warranted, but unknown-only anatomy keeps it a
+        # proposal.
+        scored = admission_decision(
+            candidate(
+                "sx", "femur", [(SAG, (4, 0, 1))], anatomy, placed("femur", "tibia")
+            ),
+            identity_memory(ROUND_SEEDS),
+        )
+        assert scored["recall"]["outcome"] == "appearance_supports"
         decision = scored["decision"]
         assert (decision["state"], decision["reason"]) == (
             "proposal",
@@ -331,8 +519,14 @@ def test_unknown_only_anatomy_keeps_a_proposal_even_when_recall_identifies():
         assert decision["recognized_identity"] == "femur"
         assert decision["views"] == [] and decision["support"] == []
     # A bare plausible status that records no supporting check establishes nothing.
-    bare = candidate("sx", "femur", [(SAG, (4, 0, 1))], sanity("femur", "plausible"))
-    decision = decide(bare, memory)
+    bare = candidate(
+        "sx",
+        "femur",
+        [(SAG, (4, 0, 1))],
+        sanity("femur", "plausible"),
+        placed("femur", "tibia"),
+    )
+    decision = decide(bare, identity_memory(ROUND_SEEDS))
     assert (decision["state"], decision["reason"]) == (
         "proposal",
         "anatomy_support_unrecorded",
@@ -342,11 +536,17 @@ def test_unknown_only_anatomy_keeps_a_proposal_even_when_recall_identifies():
 def test_admission_needs_a_plausible_status_as_well_as_a_recorded_pass():
     memory = identity_memory(ROUND_SEEDS)
     passed = sanity("femur", "plausible", "supported_strictly_after")
-    decision = decide(candidate("sx", "femur", [(SAG, (4, 0, 1))], passed), memory)
+    decision = decide(
+        candidate("sx", "femur", [(SAG, (4, 0, 1))], passed, placed("femur", "tibia")),
+        memory,
+    )
     assert decision["state"] == "admitted"
     inconsistent = sanity("femur", "unknown", "supported_strictly_after")
     decision = decide(
-        candidate("sx", "femur", [(SAG, (4, 0, 1))], inconsistent), memory
+        candidate(
+            "sx", "femur", [(SAG, (4, 0, 1))], inconsistent, placed("femur", "tibia")
+        ),
+        memory,
     )
     assert (decision["state"], decision["reason"]) == ("proposal", "anatomy_unknown")
     assert [row["result"] for row in decision["support"]] == [
@@ -354,27 +554,79 @@ def test_admission_needs_a_plausible_status_as_well_as_a_recorded_pass():
     ]
 
 
-def test_a_known_contradiction_blocks_and_one_reversed_check_is_enough():
+def test_a_reversed_check_is_an_identity_question_that_blocks_and_a_supported_one_admits():
+    """Reachable as inference records it: a bone whose own anchor the locator set aside
+    for a reversed relation, placed from the other anchors, carries that contradiction
+    in its context. A caller-supplied sanity (a memory candidate's) can carry one on the
+    candidate's own window; the locator's own windows exclude contradicted ones."""
     memory = identity_memory(ROUND_SEEDS)
-    decision = decide(
-        candidate("sx", "femur", [(SAG, (4, 0, 1))], contradicted("femur")), memory
+    admitted = decide(
+        candidate(
+            "sx",
+            "femur",
+            [(SAG, (4, 0, 1))],
+            plausible("femur"),
+            placed("femur", "tibia"),
+        ),
+        memory,
     )
-    assert (decision["state"], decision["reason"]) == (
-        "blocked",
-        "anatomy_contradicted",
+    assert admitted["state"] == "admitted"
+    assert admitted["identity_question"] is None
+    blocked = decide(
+        candidate(
+            "sx",
+            "femur",
+            [(SAG, (4, 0, 1))],
+            contradicted("femur"),
+            placed("femur", "tibia"),
+        ),
+        memory,
     )
+    assert (blocked["state"], blocked["reason"]) == ("blocked", "identity_question")
+    question = blocked["identity_question"]
+    assert (question["status"], question["revisable"]) == ("open", True)
+    [check] = question["location_checks"]
+    assert (check["rule_id"], check["result"]) == (
+        "authored:femur:superior_to:tibia",
+        "reversed_strictly_after",
+    )
+    assert (check["candidate_interval"], check["target_interval"]) == (
+        [40.0, 80.0],
+        [0.0, 30.0],
+    )
+    # One reversed check is enough, and the pass beside it stays location support.
     mixed = sanity(
         "femur", "plausible", "supported_strictly_after", "reversed_strictly_after"
     )
-    decision = decide(candidate("sx", "femur", [(SAG, (4, 0, 1))], mixed), memory)
-    assert (decision["state"], decision["reason"]) == (
-        "blocked",
-        "anatomy_contradicted",
+    decision = decide(
+        candidate("sx", "femur", [(SAG, (4, 0, 1))], mixed, placed("femur", "tibia")),
+        memory,
     )
-    # Its pass is still recorded, as location only.
+    assert (decision["state"], decision["reason"]) == ("blocked", "identity_question")
     assert [row["result"] for row in decision["support"]] == [
         "supported_strictly_after"
     ]
+    # The contradiction a set-aside anchor leaves in the context blocks as well.
+    set_aside = identity_context(
+        "femur",
+        MAP_RELATION,
+        ["tibia"],
+        contradictions=[
+            {
+                "scope": "set_aside_structural_anchor",
+                "result": "reversed_strictly_after",
+            }
+        ],
+    )
+    decision = decide(
+        candidate("sx", "femur", [(SAG, (4, 0, 1))], plausible("femur"), set_aside),
+        memory,
+    )
+    assert (decision["state"], decision["reason"]) == ("blocked", "identity_question")
+    assert (
+        decision["identity_question"]["context_contradictions"]
+        == (set_aside["contradictions"])
+    )
 
 
 def test_a_pass_is_location_support_for_its_own_subject_only():
@@ -384,7 +636,9 @@ def test_a_pass_is_location_support_for_its_own_subject_only():
     asserted = {**plausible("femur"), "identity_assertion": "femur"}
     assert location_support(asserted, "femur")["status"] is None
     decision = decide(
-        candidate("sx", "femur", [(SAG, (4, 0, 1))], tibia_pass),
+        candidate(
+            "sx", "femur", [(SAG, (4, 0, 1))], tibia_pass, placed("femur", "tibia")
+        ),
         identity_memory(ROUND_SEEDS),
     )
     assert (decision["state"], decision["reason"]) == (
@@ -393,47 +647,171 @@ def test_a_pass_is_location_support_for_its_own_subject_only():
     )
 
 
-def test_a_negative_case_speaking_against_an_otherwise_identified_candidate_blocks_it():
-    item = candidate("sr", "femur", [(SAG, (1, 2, 0))], plausible("femur"))
-    assert decide(item, identity_memory(TWO_SEEDS))["state"] == "admitted"
-    decision = decide(item, identity_memory(TWO_SEEDS, [NEGATIVE]))
+def test_a_prior_only_placement_never_auto_admits_and_a_missing_context_never_does():
+    memory = identity_memory(TWO_SEEDS)
+    femur_like = [(SAG, (3, 0, 0))]
+    # Unconditioned, the same presentation is recognized as femur above its envelope.
+    assert recall_identity(profile("femur", femur_like), memory)["identity"] == "femur"
+    prior = decide(
+        candidate(
+            "sx",
+            "femur",
+            femur_like,
+            plausible("femur"),
+            identity_context("femur", PRIOR_ONLY),
+        ),
+        memory,
+    )
+    assert (prior["state"], prior["reason"]) == (
+        "proposal",
+        "identity_basis_prior_only",
+    )
+    assert prior["recognized_identity"] is None
+    [bare] = harvest_candidates(
+        [
+            study_record(
+                "sx", {"femur": located("femur", femur_like, plausible("femur"))}
+            )
+        ]
+    )
+    assert bare["identity_context"] is None
+    missing = decide(bare, memory)
+    assert (missing["state"], missing["reason"]) == (
+        "proposal",
+        "identity_context_unavailable",
+    )
+    warranted = decide(
+        candidate(
+            "sx", "femur", femur_like, plausible("femur"), placed("femur", "patella")
+        ),
+        memory,
+    )
+    assert warranted["state"] == "admitted"
+
+
+def test_resembling_another_identity_never_renames_or_blocks_the_candidate():
+    memory = identity_memory((*TWO_SEEDS, MUSCLE))
+    both = [(SAG, (3, 0, 3))]
+    # Unconditioned, this reading resembles the femur and the patella seeds alike: the
+    # withdrawn authority read that as a conflict between two bones.
+    assert recall_identity(profile("femur", both), memory)["outcome"] == (
+        "unresolved_conflict"
+    )
+    scored = admission_decision(
+        candidate("sp", "femur", both, plausible("femur"), established("femur")), memory
+    )
+    assert [row["identity"] for row in scored["recall"]["also_resembles"]][:1] == [
+        "patella"
+    ]
+    decision = scored["decision"]
+    assert (decision["state"], decision["recognized_identity"]) == ("admitted", "femur")
+    # A reading recognized as the patella, unconditioned, is never renamed and never a
+    # conflict: the femur's own cases do not speak, so it stays a proposal.
+    patella_like = [(SAG, (0, 0, 3))]
+    assert recall_identity(profile("femur", patella_like), memory)["identity"] == (
+        "patella"
+    )
+    scored = admission_decision(
+        candidate(
+            "sp", "femur", patella_like, plausible("femur"), established("femur")
+        ),
+        memory,
+    )
+    assert scored["recall"]["identity"] == "femur"
+    decision = scored["decision"]
     assert (decision["state"], decision["reason"]) == (
-        "conflict",
-        "identity_spoken_for_and_against",
+        "proposal",
+        "structural_appearance_silent",
     )
-    assert decision["views"] == [] and decision["recognized_identity"] is None
-    # The location pass is kept, as location only (OpenSpec: a plausible location
-    # that a negative case opposes).
-    assert [row["establishes"] for row in decision["support"]] == ["location_only"]
-
-
-def test_a_negative_case_speaking_alone_is_named_opposed():
-    item = candidate("sq", "femur", [(SAG, (1, 2, 0))], plausible("femur"))
-    alone = decide(item, identity_memory(ROUND_SEEDS))
-    assert (alone["state"], alone["reason"]) == ("proposal", "no_case_above_envelope")
-    decision = decide(item, identity_memory(ROUND_SEEDS, [NEGATIVE]))
-    assert (decision["state"], decision["reason"]) == (
-        "opposed",
-        "negative_case_speaks_against_proposed_identity",
-    )
-    assert decision["recognized_identity"] is None
-    assert decision["support"][0]["establishes"] == "location_only"
-
-
-def test_recognition_as_another_identity_is_a_conflict_naming_that_identity():
-    memory = identity_memory(TWO_SEEDS, [NEGATIVE])
-    decision = decide(
-        candidate("sp", "femur", [(SAG, (0, 0, 3))], plausible("femur")), memory
-    )
-    assert (decision["state"], decision["reason"]) == (
-        "conflict",
-        "recognized_as_other_identity",
-    )
-    assert decision["recognized_identity"] == "patella"
     own = decide(
-        candidate("sp", "patella", [(SAG, (0, 0, 3))], plausible("patella")), memory
+        candidate(
+            "sp",
+            "patella",
+            patella_like,
+            plausible("patella"),
+            established("patella"),
+        ),
+        memory,
     )
     assert (own["state"], own["recognized_identity"]) == ("admitted", "patella")
+
+
+def test_an_applicable_negative_case_opposes_or_conflicts_and_never_renames():
+    item = candidate(
+        "sr",
+        "femur",
+        [(SAG, (1, 2, 0))],
+        plausible("femur"),
+        placed("femur", "patella"),
+    )
+    without = admission_decision(item, identity_memory(TWO_SEEDS))
+    assert (without["decision"]["state"], without["decision"]["views"]) == (
+        "admitted",
+        [SAG],
+    )
+    # The reviewer's "not femur" support, over the same asserted region: its reason
+    # holds here. With the femur's own case speaking too, a signed conflict, kept open.
+    scored = admission_decision(item, identity_memory(TWO_SEEDS, [NEGATIVE]))
+    [negative] = scored["recall"]["negative_cases"]
+    assert (negative["case_id"], negative["applies"], negative["reason"]) == (
+        "n1",
+        True,
+        "speaks_over_the_asserted_region",
+    )
+    assert scored["recall"]["outcome"] == "signed_conflict"
+    assert scored["recall"]["identity"] == "femur"
+    decision = scored["decision"]
+    assert (decision["state"], decision["reason"]) == (
+        "conflict",
+        "own_case_and_applicable_negative_case_speak",
+    )
+    assert decision["recognized_identity"] is None and decision["views"] == []
+    # With none of its own cases speaking, the negative opposes the femur outright.
+    silent = candidate(
+        "sq", "femur", [(SAG, (1, 2, 0))], plausible("femur"), placed("femur", "tibia")
+    )
+    decision = decide(silent, identity_memory(ROUND_SEEDS))
+    assert (decision["state"], decision["reason"]) == ("proposal", "appearance_silent")
+    decision = decide(silent, identity_memory(ROUND_SEEDS, [NEGATIVE]))
+    assert (decision["state"], decision["reason"]) == (
+        "opposed",
+        "applicable_negative_case_speaks",
+    )
+
+
+def test_a_negative_case_heard_only_through_the_surroundings_changes_nothing():
+    # A "not femur" support whose ring resembles this candidate's ring, while its own
+    # asserted region does not resemble the candidate's: surroundings, not occupancy.
+    seeds = (
+        ("a1", "femur", "sa", [(SAG, (3, 0, 0))], [(SAG, (3, 0, 0))]),
+        ("b1", "patella", "sb", [(SAG, (0, 0, 3))], [(SAG, (0, 0, 3))]),
+    )
+    surroundings = ("n2", "femur", "sn", [(SAG, (0, 3, 0))], [SAG], [(SAG, (1, 2, 0))])
+    memory = identity_memory(seeds, [surroundings])
+    item = candidate(
+        "sr",
+        "femur",
+        [(SAG, (3, 0, 0))],
+        plausible("femur"),
+        placed("femur", "patella"),
+        ring=[(SAG, (1, 2, 0))],
+    )
+    scored = admission_decision(item, memory)
+    [negative] = scored["recall"]["negative_cases"]
+    assert (negative["applies"], negative["reason"]) == (False, "surroundings_only")
+    assert negative["with_the_surroundings"]["speaks"] is True
+    assert negative["over_the_asserted_region"]["speaks"] is False
+    assert scored["decision"]["state"] == "admitted"
+    # The same negative over the candidate's own asserted region applies.
+    occupying = candidate(
+        "sr",
+        "femur",
+        [(SAG, (0, 3, 0))],
+        plausible("femur"),
+        placed("femur", "patella"),
+        ring=[(SAG, (1, 2, 0))],
+    )
+    assert decide(occupying, memory)["state"] in ("opposed", "conflict")
 
 
 def test_a_study_known_only_through_a_negative_record_is_excluded():
@@ -441,20 +819,25 @@ def test_a_study_known_only_through_a_negative_record_is_excluded():
     # Reading studies from ``cases`` alone, as the prototype did, misses "sn".
     assert {case["study_uid"] for case in memory["cases"]} == {"sa", "sb"}
     assert exclusion_studies(memory) == {"sa", "sb", "sn"}
-    item = candidate("sn", "tibia", [(SAG, (1, 2, 0))], plausible("tibia"))
+    item = candidate(
+        "sn", "tibia", [(SAG, (1, 2, 0))], plausible("tibia"), established("tibia")
+    )
     scored = admission_decision(item, memory)
     assert scored["excluded_study_uid"] == "sn"
+    assert scored["recall"]["negative_cases_compared"] == 0
     assert scored["recall"]["negative_cases"] == []
-    decision = scored["decision"]
-    assert (decision["state"], decision["reason"]) == (
-        "conflict",
-        "recognized_as_other_identity",
-    )
-    assert decision["recognized_identity"] == "femur"
-    # Unexcluded, the study's own negative would speak in its candidate's comparison.
-    leaked = recall_identity(item["profile"], memory, sanity=item["sanity"])
-    assert leaked["reason"] == "identity_spoken_for_and_against"
     assert prepare_identity(memory, exclude_study_uid="sn")["negative_case_count"] == 0
+    # Unexcluded, the study's own negative would be heard in its candidate's
+    # comparison: a femur negative, so of another identity than this tibia's.
+    leaked = recall_identity(
+        item["profile"], memory, sanity=item["sanity"], context=established("tibia")
+    )
+    [row] = leaked["negative_cases"]
+    assert (row["case_id"], row["applies"], row["reason"]) == (
+        "n1",
+        False,
+        "concerns_another_identity",
+    )
 
 
 def test_an_object_the_parent_already_holds_in_either_sign_is_a_duplicate():
@@ -466,18 +849,31 @@ def test_an_object_the_parent_already_holds_in_either_sign_is_a_duplicate():
     }
     for uid in ("sa", "sn"):
         decision = decide(
-            candidate(uid, "femur", [(SAG, (3, 0, 0))], plausible("femur")), memory
+            candidate(
+                uid,
+                "femur",
+                [(SAG, (3, 0, 0))],
+                plausible("femur"),
+                established("femur"),
+            ),
+            memory,
         )
         assert (decision["state"], decision["reason"]) == (
             "duplicate",
             "object_already_in_parent",
         )
+        assert decision["identity_context"] == established("femur")
     other = decide(
-        candidate("sa", "tibia", [(SAG, (0, 0, 3))], plausible("tibia")), memory
+        candidate(
+            "sa", "tibia", [(SAG, (0, 0, 3))], plausible("tibia"), established("tibia")
+        ),
+        memory,
     )
     assert other["state"] != "duplicate"
     same_id = {
-        **candidate("sz", "tibia", [(SAG, (0, 0, 3))], plausible("tibia")),
+        **candidate(
+            "sz", "tibia", [(SAG, (0, 0, 3))], plausible("tibia"), established("tibia")
+        ),
         "case_id": "a1",
     }
     decision = decide(same_id, memory)
@@ -495,53 +891,179 @@ def _row(identity: str, speaks: bool, *views: list[str]) -> dict:
     }
 
 
-def test_scope_is_the_views_that_spoke_minus_any_view_a_negative_speaks_through():
+def _in_context(identity: str, basis: str, outcome: str, **fields) -> dict:
+    return {
+        "schema": RECALL_CONTEXT_SCHEMA,
+        "identity": identity,
+        "identity_basis": basis,
+        "outcome": outcome,
+        **fields,
+    }
+
+
+def test_scope_is_the_views_the_recognition_match_spoke_through_and_no_negative_subtracts():
     axial = ["Axial", "0", "0"]
     rows = [
         _row("femur", True, SAG, COR),
         _row("patella", True, axial),
         _row("femur", False, axial),
     ]
-    recall = {"cases": rows, "negative_cases": [_row("femur", True, SAG)]}
-    assert admission_scope(recall, "femur") == {"views": [COR]}
-    quiet = {
-        "cases": rows,
-        "negative_cases": [_row("femur", False, SAG), _row("patella", True, COR)],
+    not_applying = [{**_row("femur", True, SAG), "applies": False}]
+    for basis, outcome in (
+        (MAP_RELATION, "appearance_supports"),
+        (STRUCTURAL_READER, "established_by_structure"),
+    ):
+        warranted = _in_context(
+            "femur",
+            basis,
+            outcome,
+            appearance="supports",
+            cases=rows,
+            negative_cases=not_applying,
+        )
+        assert admission_scope(warranted, "femur") == {"views": [COR, SAG]}
+    # A bone the reader established whose own cases do not speak warrants no scope.
+    unsupported = _in_context(
+        "femur",
+        STRUCTURAL_READER,
+        "established_by_structure",
+        appearance="silent",
+        cases=rows,
+    )
+    assert admission_scope(unsupported, "femur")["detail"] == (
+        "identity_not_warranted_in_context"
+    )
+    # A recall made without context warrants no scope, whatever spoke in it.
+    legacy = {"cases": rows, "negative_cases": []}
+    assert admission_scope(legacy, "femur") == {
+        "refusal": "admission_scope_unresolved",
+        "detail": "recall_not_in_context",
     }
-    assert admission_scope(quiet, "femur") == {"views": [COR, SAG]}
-    assert admission_scope({"cases": rows}, "femur") == {"views": [COR, SAG]}
 
 
 def test_unresolved_or_malformed_scope_is_a_named_refusal_never_a_whole_case_call():
     unparsed = [
         {"identity": "femur", "speaks": True, "common_speaking_banks": ["not-a-bank"]}
     ]
-    for recall in (
-        {
-            "cases": [_row("femur", True, SAG)],
-            "negative_cases": [_row("femur", True, SAG)],
-        },
-        {"cases": unparsed},
-        {"cases": [{"identity": "femur", "speaks": True, "common_speaking_banks": []}]},
-        {"cases": [_row("femur", False, SAG)]},
-        {"cases": "rows"},
-        {},
+    for recall, detail in (
+        (
+            _in_context("femur", MAP_RELATION, "appearance_supports", cases=unparsed),
+            "speaking_banks_malformed",
+        ),
+        (
+            _in_context(
+                "femur",
+                MAP_RELATION,
+                "appearance_supports",
+                cases=[_row("femur", False, SAG)],
+            ),
+            "no_usable_view",
+        ),
+        (
+            _in_context("femur", MAP_RELATION, "appearance_supports", cases="rows"),
+            "recall_rows_missing",
+        ),
+        (
+            _in_context("femur", MAP_RELATION, "appearance_silent", cases=[]),
+            "identity_not_warranted_in_context",
+        ),
+        (
+            _in_context("femur", MAP_RELATION, "signed_conflict", cases=[]),
+            "identity_not_warranted_in_context",
+        ),
+        (
+            _in_context(
+                "tibia",
+                STRUCTURAL_READER,
+                "established_by_structure",
+                appearance="supports",
+                cases=[_row("tibia", True, SAG)],
+            ),
+            "recall_identity_mismatch",
+        ),
+        ({}, "recall_not_in_context"),
     ):
-        assert (
-            admission_scope(recall, "femur")["refusal"] == "admission_scope_unresolved"
-        )
-    item = candidate("sx", "femur", [(SAG, (4, 0, 1))], plausible("femur"))
-    identified = {"outcome": "identified", "identity": "femur", "negative_cases": []}
-    decision = admission_from_recall(item, {**identified, "cases": unparsed})
+        assert admission_scope(recall, "femur") == {
+            "refusal": "admission_scope_unresolved",
+            "detail": detail,
+        }
+    item = candidate(
+        "sx", "femur", [(SAG, (4, 0, 1))], plausible("femur"), placed("femur", "tibia")
+    )
+    decision = admission_from_recall(
+        item,
+        _in_context("femur", MAP_RELATION, "appearance_supports", cases=unparsed),
+    )
     assert (decision["state"], decision["reason"]) == (
         "refused",
         "admission_scope_unresolved",
     )
     assert decision["views"] == []
     scoped = admission_from_recall(
-        item, {**identified, "cases": [_row("femur", True, SAG)]}
+        item,
+        _in_context(
+            "femur",
+            MAP_RELATION,
+            "appearance_supports",
+            cases=[_row("femur", True, SAG)],
+        ),
     )
     assert (scoped["state"], scoped["views"]) == ("admitted", [SAG])
+    # A recall made for another basis than the candidate's context is refused by name.
+    mismatched = admission_from_recall(
+        item,
+        _in_context(
+            "femur",
+            STRUCTURAL_READER,
+            "established_by_structure",
+            appearance="supports",
+            cases=[_row("femur", True, SAG)],
+        ),
+    )
+    assert (mismatched["state"], mismatched["reason"]) == (
+        "refused",
+        "recall_not_in_this_context",
+    )
+
+
+def test_a_malformed_context_is_refused_by_name_and_never_recalled_as_valid():
+    memory = identity_memory(ROUND_SEEDS)
+    item = candidate(
+        "sx", "femur", [(SAG, (4, 0, 1))], plausible("femur"), established("femur")
+    )
+    for broken, code in (
+        (
+            {**placed("femur"), "subject": "tibia"},
+            "identity_context_subject_mismatch",
+        ),
+        (
+            # Valid for no subject: the reader removes the context's own bone.
+            {**established("femur"), "subject": "tibia"},
+            "identity_context_removed_invalid",
+        ),
+        (
+            {**established("femur"), "basis": "resemblance"},
+            "identity_context_basis_invalid",
+        ),
+        (
+            {**established("femur"), "open_alternatives": ["muscle"]},
+            "identity_context_alternatives_invalid",
+        ),
+        (
+            {**placed("femur"), "conditioning": "unconditioned"},
+            "identity_context_conditioning_invalid",
+        ),
+        (
+            {**established("femur"), "removed_by_structure": ["femur"]},
+            "identity_context_removed_invalid",
+        ),
+        (
+            {**established("femur"), "support": "established_tissue"},
+            "identity_context_support_invalid",
+        ),
+    ):
+        decision = decide({**item, "identity_context": broken}, memory)
+        assert (decision["state"], decision["reason"]) == ("refused", code)
 
 
 # ------------------------------------------------------------- candidates
@@ -575,6 +1097,23 @@ def test_harvest_takes_each_located_profile_with_its_recorded_sanity_and_source(
     assert pinned["source"]["record_sha256_scope"] == "file_bytes"
 
 
+def test_harvest_carries_the_identity_context_the_run_recorded_and_no_other():
+    objects = {"femur": located("femur", [(SAG, (4, 0, 1))], plausible("femur"))}
+    [item] = harvest_candidates(
+        [study_record("s1", objects, contexts={"femur": placed("femur", "tibia")})]
+    )
+    assert item["identity_context"] == placed("femur", "tibia")
+    # A record without the versioned consumption record carries none.
+    [bare] = harvest_candidates([study_record("s1", objects)])
+    assert bare["identity_context"] is None
+    older = study_record("s1", objects)
+    older["identity_consumption"] = {
+        "femur": {"decision": "kept", "reason": "identified"}
+    }
+    [old] = harvest_candidates([older])
+    assert old["identity_context"] is None
+
+
 def test_harvest_refuses_a_repeated_study_and_malformed_records_by_name():
     record = study_record("s1", {"femur": located("femur", [(SAG, (4, 0, 1))], None)})
     bad_window = copy.deepcopy(record)
@@ -600,19 +1139,21 @@ def test_harvest_refuses_a_repeated_study_and_malformed_records_by_name():
 # ---------------------------------------------------------- rounds and children
 
 
+def _placed_record(uid: str, subject: str, by_view, alternative: str) -> dict:
+    return study_record(
+        uid,
+        {subject: located(subject, by_view, plausible(subject))},
+        contexts={subject: placed(subject, alternative)},
+    )
+
+
 def test_a_round_consumes_one_shot_streams_in_arrival_order(tmp_path: Path):
     parent = saved(tmp_path, "parent", identity_memory(ROUND_SEEDS))
     records = [
-        study_record(
-            "sx", {"femur": located("femur", [(SAG, (4, 0, 1))], plausible("femur"))}
-        ),
+        _placed_record("sx", "femur", [(SAG, (4, 0, 1))], "tibia"),
         # A study the parent holds: scored on its own held-out preparation.
-        study_record(
-            "sa", {"tibia": located("tibia", [(SAG, (2, 1, 0))], plausible("tibia"))}
-        ),
-        study_record(
-            "sw", {"femur": located("femur", [(SAG, (4, 0, 2))], plausible("femur"))}
-        ),
+        _placed_record("sa", "tibia", [(SAG, (2, 1, 0))], "femur"),
+        _placed_record("sw", "femur", [(SAG, (4, 0, 2))], "tibia"),
     ]
     read: list[str] = []
 
@@ -630,7 +1171,13 @@ def test_a_round_consumes_one_shot_streams_in_arrival_order(tmp_path: Path):
     assert document["decisions"] == expected
     assert receipt["admitted_case_ids"] == [f"located:sx:femur:{INFERENCE_REVISION}"]
     [held] = harvest_candidates(records[1:2])
-    assert admission_decision(held, parent.memory)["excluded_study_uid"] == "sa"
+    scored = admission_decision(held, parent.memory)
+    assert scored["excluded_study_uid"] == "sa"
+    # Its study's femur case is held out: no femur case is left to calibrate against.
+    assert (scored["decision"]["state"], scored["decision"]["reason"]) == (
+        "proposal",
+        "placement_only",
+    )
     # A refusal met mid-stream leaves nothing written.
     with pytest.raises(IdentityGrowthError) as info:
         grow_identity_memory(
@@ -646,8 +1193,12 @@ def test_admissions_never_speak_in_their_own_round_and_the_next_round_hears_them
     tmp_path: Path,
 ):
     parent = saved(tmp_path, "parent", identity_memory(ROUND_SEEDS))
-    x = candidate("sx", "femur", [(SAG, (4, 0, 1))], plausible("femur"))
-    w = candidate("sw", "femur", [(SAG, (4, 0, 2))], plausible("femur"))
+    x = candidate(
+        "sx", "femur", [(SAG, (4, 0, 1))], plausible("femur"), placed("femur", "tibia")
+    )
+    w = candidate(
+        "sw", "femur", [(SAG, (4, 0, 2))], plausible("femur"), placed("femur", "tibia")
+    )
     receipt = grow_identity_memory(parent, [x, w], tmp_path / "round-1")
     assert receipt["outcome"] == "published"
     assert receipt["admitted_case_ids"] == [x["case_id"]]
@@ -661,12 +1212,14 @@ def test_admissions_never_speak_in_their_own_round_and_the_next_round_hears_them
         )
     assert (by_id[w["case_id"]]["state"], by_id[w["case_id"]]["reason"]) == (
         "proposal",
-        "no_case_above_envelope",
+        "appearance_silent",
     )
     child = load_memory_snapshot(tmp_path / "round-1" / CHILD_DIRECTORY)
     assert prepare_identity(child.memory)["seed_count"] == 3
-    heard = recall_identity(w["profile"], child.memory, sanity=w["sanity"])
-    assert heard["identity"] == "femur"
+    heard = recall_identity(
+        w["profile"], child.memory, sanity=w["sanity"], context=w["identity_context"]
+    )
+    assert heard["outcome"] == "appearance_supports"
     [row] = [row for row in heard["cases"] if row["case_id"] == x["case_id"]]
     assert row["speaks"] is True
     assert row["lineage"]["call"]["reader"] == READER
@@ -687,7 +1240,9 @@ def test_each_admission_is_recognition_derived_with_lineage_and_no_clinical_call
     tmp_path: Path,
 ):
     parent = saved(tmp_path, "parent", identity_memory(ROUND_SEEDS))
-    x = candidate("sx", "femur", [(SAG, (4, 0, 1))], plausible("femur"))
+    x = candidate(
+        "sx", "femur", [(SAG, (4, 0, 1))], plausible("femur"), placed("femur", "tibia")
+    )
     receipt = grow_identity_memory(parent, [x], tmp_path / "grown")
     data = (tmp_path / "grown" / DECISIONS_FILE).read_bytes()
     assert receipt["decisions_sha256"] == hashlib.sha256(data).hexdigest()
@@ -707,6 +1262,8 @@ def test_each_admission_is_recognition_derived_with_lineage_and_no_clinical_call
     assert lineage["source"] == x["source"]
     assert lineage["decision"]["views"] == [SAG]
     assert lineage["decision"]["support"][0]["establishes"] == "location_only"
+    # The admitted presentation keeps the context its identity was warranted in.
+    assert lineage["identity_context"] == placed("femur", "tibia")
     teaching = child["object_identity_teaching"]
     [call] = [row for row in teaching["calls"] if row["candidate_id"] == x["case_id"]]
     assert (call["call"], call["views"], call["reader"]) == ("confirm", [SAG], READER)
@@ -726,13 +1283,23 @@ def test_a_round_without_admissions_writes_decisions_and_publishes_no_child(
     tmp_path: Path,
 ):
     parent = saved(tmp_path, "parent", identity_memory(ROUND_SEEDS))
-    w = candidate("sw", "femur", [(SAG, (4, 0, 2))], plausible("femur"))
+    w = candidate(
+        "sw", "femur", [(SAG, (4, 0, 2))], plausible("femur"), placed("femur", "tibia")
+    )
     receipt = grow_identity_memory(parent, [w], tmp_path / "quiet")
     assert (receipt["outcome"], receipt["child"]) == ("no_admissions", None)
     assert [path.name for path in (tmp_path / "quiet").iterdir()] == [DECISIONS_FILE]
     only = grow_identity_memory(
         parent,
-        [candidate("sx", "femur", [(SAG, (4, 0, 1))], plausible("femur"))],
+        [
+            candidate(
+                "sx",
+                "femur",
+                [(SAG, (4, 0, 1))],
+                plausible("femur"),
+                placed("femur", "tibia"),
+            )
+        ],
         tmp_path / "decisions",
         decisions_only=True,
     )
@@ -744,7 +1311,9 @@ def test_a_round_without_admissions_writes_decisions_and_publishes_no_child(
 
 def test_a_round_refuses_by_name_and_writes_nothing(tmp_path: Path):
     parent = saved(tmp_path, "parent", identity_memory(ROUND_SEEDS))
-    x = candidate("sx", "femur", [(SAG, (4, 0, 1))], plausible("femur"))
+    x = candidate(
+        "sx", "femur", [(SAG, (4, 0, 1))], plausible("femur"), placed("femur", "tibia")
+    )
     (tmp_path / "taken").mkdir()
     plain = identity_memory(ROUND_SEEDS)
     del plain["object_identity_teaching"]
@@ -900,17 +1469,31 @@ def test_growth_keeps_every_signed_record_and_the_next_reader_hears_the_negative
     parent = signed.parent
     before = copy.deepcopy(parent.memory)
     x = candidate(
-        "study-x", "femur", [(SAG, (3, 0, 0)), (COR, (3, 0, 0))], plausible("femur")
+        "study-x",
+        "femur",
+        [(SAG, (3, 0, 0)), (COR, (3, 0, 0))],
+        plausible("femur"),
+        placed("femur", "patella"),
     )
+    # Placed by the prior alone, it leaves every identity open: the parent's sagittal
+    # "not femur" support is heard in this very round, beside the femur's own case.
     y = candidate(
-        "study-y", "femur", [(SAG, (1, 2, 0)), (COR, (3, 0, 0))], plausible("femur")
+        "study-y",
+        "femur",
+        [(SAG, (1, 2, 0)), (COR, (3, 0, 0))],
+        plausible("femur"),
+        identity_context("femur", PRIOR_ONLY),
     )
     receipt = grow_identity_memory(parent, [x, y], signed.root / "grown")
     assert receipt["state_counts"] == {"admitted": 1, "conflict": 1}
     document = json.loads((signed.root / "grown" / DECISIONS_FILE).read_text())
     by_id = {row["candidate_id"]: row for row in document["decisions"]}
     assert by_id[x["case_id"]]["views"] == [COR, SAG]
-    assert by_id[y["case_id"]]["reason"] == "identity_spoken_for_and_against"
+    assert (by_id[y["case_id"]]["state"], by_id[y["case_id"]]["reason"]) == (
+        "conflict",
+        "own_case_and_applicable_negative_case_speak",
+    )
+    assert by_id[y["case_id"]]["recognized_identity"] is None
     child = load_memory_snapshot(signed.root / "grown" / CHILD_DIRECTORY).memory
     # The frozen parent is untouched, in memory and on disk.
     assert parent.memory == before
@@ -960,6 +1543,14 @@ def test_growth_keeps_every_signed_record_and_the_next_reader_hears_the_negative
     heard = recall_identity(y["profile"], child, prepared=prepared)
     assert heard["outcome"] == "unresolved_conflict"
     assert FC in [row["case_id"] for row in heard["negative_cases"] if row["speaks"]]
+    # In context it applies over the region it asserted.
+    in_context = recall_identity(
+        y["profile"], child, prepared=prepared, context=placed("femur", "patella")
+    )
+    applying = [
+        row["case_id"] for row in in_context["negative_cases"] if row["applies"]
+    ]
+    assert applying == [FC]
     held_out = memory_view(child, exclude_study_uids=("study-c",))
     assert FC not in [
         row["case_id"] for row in held_out["object_identity_cases"]["cases"]
@@ -970,10 +1561,22 @@ def test_growth_keeps_every_signed_record_and_the_next_reader_hears_the_negative
     assert prepare_recall(child)["outcome"] == "prepared"
 
 
+def _memory_items(snapshot, candidate_ids, contexts, sanity_by_case_id=None):
+    """Memory candidates with the contexts a caller supplies, as candidates_from_memory
+    carries none of its own."""
+    for item in candidates_from_memory(
+        snapshot, candidate_ids=candidate_ids, sanity_by_case_id=sanity_by_case_id
+    ):
+        if item["case_id"] in contexts:
+            item = {**item, "identity_context": contexts[item["case_id"]]}
+        yield item
+
+
 def test_a_candidate_memory_case_enters_as_its_source_holds_it(signed):
-    items = candidates_from_memory(
+    items = _memory_items(
         signed.catalogue,
-        candidate_ids=[FE, FA, FC],
+        [FE, FA, FC],
+        {FE: placed("femur", "patella")},
         sanity_by_case_id={FE: plausible("femur")},
     )
     receipt = grow_identity_memory(signed.parent, items, signed.root / "from-memory")
@@ -983,7 +1586,7 @@ def test_a_candidate_memory_case_enters_as_its_source_holds_it(signed):
         for row in document["decisions"]
     }
     assert states == {
-        FE: ("admitted", "identified_with_location_support"),
+        FE: ("admitted", "appearance_supports_with_location_support"),
         FA: ("duplicate", "case_id_already_in_parent"),
         # A rejected support never returns as a positive of its own case.
         FC: ("duplicate", "case_id_already_in_parent"),
@@ -1009,9 +1612,10 @@ def test_a_candidate_memory_case_enters_as_its_source_holds_it(signed):
     with pytest.raises(IdentityGrowthError) as info:
         candidates_from_memory(signed.catalogue, candidate_ids=["unknown-case"])
     assert info.value.code == "unknown_candidate"
+    # A memory case carries no inference context: it stays a proposal, named.
     [plain] = candidates_from_memory(signed.catalogue, candidate_ids=[FE])
     assert admission_decision(plain, signed.parent.memory)["decision"]["reason"] == (
-        "anatomy_unknown"
+        "memory_candidate_without_identity_context"
     )
 
 
@@ -1051,6 +1655,7 @@ def test_cli_decisions_only_writes_the_frozen_schema_and_publishes_nothing(
             "femur": located("femur", [(SAG, (4, 0, 1))], plausible("femur")),
             "tibia": located("tibia", [(SAG, (0, 0, 3))], unknown("tibia")),
         },
+        contexts={"femur": placed("femur", "tibia"), "tibia": placed("tibia", "femur")},
     )
     record["work"] = {"elapsed_seconds": math.nan}
     directory = _inference(tmp_path, "inference", [record])
@@ -1086,7 +1691,11 @@ def test_cli_decisions_only_writes_the_frozen_schema_and_publishes_nothing(
     assert all(sorted(row) == DECISION_KEYS for row in document["decisions"])
     by_subject = {row["subject"]: row for row in document["decisions"]}
     assert by_subject["femur"]["state"] == "admitted"
-    assert by_subject["tibia"]["state"] == "proposal"
+    assert by_subject["femur"]["identity_context"] == placed("femur", "tibia")
+    assert (by_subject["tibia"]["state"], by_subject["tibia"]["reason"]) == (
+        "proposal",
+        "appearance_silent",
+    )
     file_sha256 = hashlib.sha256(
         (directory / "studies" / "sx.json.xz").read_bytes()
     ).hexdigest()
@@ -1108,9 +1717,7 @@ def test_cli_publishes_the_child_beside_its_decisions_and_refuses_overwrite(
     tmp_path: Path,
 ):
     saved(tmp_path, "parent", identity_memory(ROUND_SEEDS))
-    record = study_record(
-        "sx", {"femur": located("femur", [(SAG, (4, 0, 1))], plausible("femur"))}
-    )
+    record = _placed_record("sx", "femur", [(SAG, (4, 0, 1))], "tibia")
     directory = _inference(tmp_path, "inference", [record])
     output = tmp_path / "grown"
     arguments = [
@@ -1141,9 +1748,7 @@ def test_cli_refuses_a_parent_without_identity_teaching(tmp_path: Path):
     plain = identity_memory(ROUND_SEEDS)
     del plain["object_identity_teaching"]
     save_memory(plain, tmp_path / "plain")
-    record = study_record(
-        "sx", {"femur": located("femur", [(SAG, (4, 0, 1))], plausible("femur"))}
-    )
+    record = _placed_record("sx", "femur", [(SAG, (4, 0, 1))], "tibia")
     directory = _inference(tmp_path, "inference", [record])
     with pytest.raises(SystemExit) as info:
         MOD.main(
@@ -1180,9 +1785,10 @@ def _labels_csv(path: Path, rows: dict) -> Path:
 def test_a_memory_candidate_keeps_its_source_calls_and_its_row_is_not_read(signed):
     # study-e's row is malformed: reading it would refuse the round.
     labels = _labels_csv(signed.root / "train.csv", {"study-e": {"ACL": "x"}})
-    items = candidates_from_memory(
+    items = _memory_items(
         signed.catalogue,
-        candidate_ids=[FE],
+        [FE],
+        {FE: placed("femur", "patella")},
         sanity_by_case_id={FE: plausible("femur")},
     )
     receipt = grow_identity_memory(
@@ -1210,9 +1816,7 @@ def test_cli_carries_labels_and_holds_out_studies_without_changing_decisions(
 ):
     saved(tmp_path, "parent", identity_memory(ROUND_SEEDS))
     records = [
-        study_record(
-            uid, {"femur": located("femur", [(SAG, (4, 0, 1))], plausible("femur"))}
-        )
+        _placed_record(uid, "femur", [(SAG, (4, 0, 1))], "tibia")
         for uid in ("sh", "sx")
     ]
     directory = _inference(tmp_path, "inference", records)

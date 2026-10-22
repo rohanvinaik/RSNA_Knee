@@ -25,7 +25,51 @@ PREPARATION_SCHEMA = "knee.object-identity-recall-preparation/v1"
 RECALL_SCHEMA = "knee.object-identity-recall/v1"
 SANITY_SCHEMA = "knee.object-anatomical-sanity/v1"
 
+# What the current study's own structure already established about one located object
+# (``identity_context``), and the recall conditioned on it. The context is read from the
+# locator's records by ``squint_pipeline`` and carried forward to recall, diagnosis and
+# admission; recognition is never repeated to make it.
+CONTEXT_SCHEMA = "knee.object-identity-context/v1"
+RECALL_CONTEXT_SCHEMA = "knee.object-identity-recall-in-context/v1"
+#: How the study records each located object's identity in context (``infer_study``).
+IDENTITY_CONSUMPTION_SCHEMA = "knee.study-identity-consumption/v2"
+#: A bone located by its own structural anchor: the existing reader's territories, key
+#: planes and anatomical ordering already decided which bone it is.
+STRUCTURAL_READER = "structural_reader"
+#: An object placed by the authored anatomy map from the study's established anchors.
+MAP_RELATION = "map_relation"
+#: Placed by the leg-frame prior alone, or with no usable structural anchor: nothing known.
+PRIOR_ONLY = "prior_only"
+IDENTITY_BASES = (STRUCTURAL_READER, MAP_RELATION, PRIOR_ONLY)
+#: Which other identities each basis leaves open, by name: a bone the reader established
+#: still answers to every identity but the other bones it established in the same study;
+#: a placement, to the alternatives whose own proposals overlap it; the prior, to all.
+CONDITIONING = {
+    STRUCTURAL_READER: "every_identity_not_removed_by_structure",
+    MAP_RELATION: "open_alternatives",
+    PRIOR_ONLY: "unconditioned",
+}
+#: What the located region is, by its territories' origin (``squint_interfaces``): a
+#: resolved support (``anchor_structure``, ``teacher_support``, ``residual_native_support``)
+#: or proposed places (``anatomical_relation``, ``fallback_location``), never confused.
+RESOLVED_SUPPORT = "resolved_support"
+PROPOSED_PLACES = "proposed_places"
+SUPPORT_UNRECORDED = "support_unrecorded"
+SUPPORT_KINDS = (RESOLVED_SUPPORT, PROPOSED_PLACES, SUPPORT_UNRECORDED)
+ESTABLISHED_BY_STRUCTURE = "established_by_structure"
+APPEARANCE_SUPPORTS = "appearance_supports"
+APPEARANCE_SILENT = "appearance_silent"
+PLACEMENT_ONLY = "placement_only"
+#: An applicable negative case speaks over the asserted region and none of the object's own
+#: cases does: appearance opposes the identity. Nothing renames it.
+APPEARANCE_OPPOSED = "appearance_opposed"
+#: Its own cases and an applicable negative case both speak: a signed conflict, kept open.
+SIGNED_CONFLICT = "signed_conflict"
+CONTESTED_OUTCOMES = (APPEARANCE_OPPOSED, SIGNED_CONFLICT)
+
 _SPEAKING_ROLES = ("object", "context")
+#: The tiles of the region asserted to be the object (``squint_interfaces.ROLE_OBJECT``).
+_OBJECT_ROLE = ("object",)
 _SANITY_STATUSES = ("plausible", "unknown", "contradicted")
 # Explicit provenance keys only; never substring matching.
 _PROVENANCE_KEYS = (
@@ -54,15 +98,18 @@ def _provenance(*sources: object) -> dict[str, Any]:
 
 
 def _signal_banks(
-    banks: Mapping[str, tuple[int, ...]], views: set[tuple[str, str, str]] | None = None
+    banks: Mapping[str, tuple[int, ...]],
+    views: set[tuple[str, str, str]] | None = None,
+    roles: tuple[str, ...] = _SPEAKING_ROLES,
 ) -> dict[str, tuple[int, ...]]:
-    # Only parsed territory-v2 object/context banks at exactly 10 mm speak.
+    # Only parsed territory-v2 object/context banks at exactly 10 mm speak; ``roles``
+    # narrows them to the object's own tiles where a question concerns its region alone.
     result: dict[str, tuple[int, ...]] = {}
     for name, counts in banks.items():
         parsed = parse_territory_bank_name(name)
         if parsed is None:
             continue
-        if parsed.get("role") not in _SPEAKING_ROLES:
+        if parsed.get("role") not in roles:
             continue
         # The bank name's own scale token, as every writer formats it (f"{tile_mm:g}mm").
         if parsed.get("scale") != "10mm":
@@ -93,6 +140,64 @@ def _invalid(reason: str) -> dict[str, Any]:
     return {"outcome": "invalid_input", "reason": reason}
 
 
+def _names_list(value: object) -> list[str] | None:
+    """A list of unique nonempty object names, or None."""
+    if not isinstance(value, list) or not all(
+        isinstance(item, str) and item and not item.startswith("diagnosis/")
+        for item in value
+    ):
+        return None
+    return value if len(set(value)) == len(value) else None
+
+
+def identity_context_code(context: object, *, subject: str | None = None) -> str:
+    """``valid`` or the first named defect of one object's identity context.
+
+    The basis names what placed the object (``STRUCTURAL_READER``, ``MAP_RELATION`` or
+    ``PRIOR_ONLY``) and its ``conditioning`` which other identities that leaves open:
+    every one but the bones the structural reader established elsewhere in the study
+    (``removed_by_structure``), the listed ``open_alternatives``, or all
+    (``unconditioned``). Neither of the first and last is enumerated: a growth round
+    recalls against a parent memory that may be another revision. ``support`` names what
+    the region is by its territories' origin (``SUPPORT_KINDS``). Every
+    ``contradictions`` row is a recorded ``reversed_*`` law check. ``subject``, when
+    given, must be the context's own.
+    """
+    if not isinstance(context, Mapping) or context.get("schema") != CONTEXT_SCHEMA:
+        return "identity_context_invalid"
+    name = context.get("subject")
+    if not isinstance(name, str) or not name or name.startswith("diagnosis/"):
+        return "identity_context_subject_invalid"
+    if subject is not None and name != subject:
+        return "identity_context_subject_mismatch"
+    basis = context.get("basis")
+    if basis not in IDENTITY_BASES:
+        return "identity_context_basis_invalid"
+    if context.get("conditioning") != CONDITIONING[basis]:
+        return "identity_context_conditioning_invalid"
+    alternatives = _names_list(context.get("open_alternatives"))
+    if alternatives is None or name in alternatives:
+        return "identity_context_alternatives_invalid"
+    if basis != MAP_RELATION and alternatives:
+        return "identity_context_alternatives_invalid"
+    removed = _names_list(context.get("removed_by_structure"))
+    if removed is None or name in removed or set(removed) & set(alternatives):
+        return "identity_context_removed_invalid"
+    if context.get("support") not in SUPPORT_KINDS:
+        return "identity_context_support_invalid"
+    contradictions = context.get("contradictions")
+    if not isinstance(contradictions, list) or not all(
+        isinstance(row, Mapping)
+        and isinstance(row.get("result"), str)
+        and row["result"].startswith("reversed_")
+        for row in contradictions
+    ):
+        return "identity_context_contradictions_invalid"
+    if not isinstance(context.get("supporting_observations"), Mapping):
+        return "identity_context_observations_invalid"
+    return "valid"
+
+
 def _ratio(num: int, den: int) -> dict[str, str]:
     return {"numerator": str(num), "denominator": str(den)}
 
@@ -106,6 +211,17 @@ class _Prepared(Mapping):
     projection, matrix and envelopes, and of the negative identity cases with
     theirs; reuse never reads mutable memory content. It is not serializable and
     not a cache export. Re-prepare when the memory snapshot changes.
+
+    ``_opposition`` keeps, for each seed and each common-bank key, the largest
+    resemblance to each opposing identity separately; ``_envelopes`` is their maximum,
+    built in the same pass. A recall in context takes the maximum over only the
+    identities its context leaves open; a call without context reads ``_envelopes``.
+
+    A negative case's reason concerns the region it asserted, so each is also held over
+    its object-role banks alone (``_negative_object_matrix``), with its envelope made
+    over the same banks of its identity's positive seeds
+    (``_negative_object_envelopes``): the candidate's object tiles against the
+    negative's object tiles.
     """
 
     __slots__ = (
@@ -115,7 +231,10 @@ class _Prepared(Mapping):
         "_memory",
         "_negative_envelopes",
         "_negative_matrix",
+        "_negative_object_envelopes",
+        "_negative_object_matrix",
         "_negatives",
+        "_opposition",
         "_public",
         "_seeds",
     )
@@ -131,6 +250,9 @@ class _Prepared(Mapping):
         negative_matrix=None,
         negative_envelopes=(),
         has_negatives=False,
+        opposition=(),
+        negative_object_matrix=None,
+        negative_object_envelopes=(),
     ):
         self._public = MappingProxyType(dict(public))
         self._memory = memory
@@ -141,6 +263,9 @@ class _Prepared(Mapping):
         self._negative_matrix = negative_matrix
         self._negative_envelopes = negative_envelopes
         self._has_negatives = has_negatives
+        self._opposition = opposition
+        self._negative_object_matrix = negative_object_matrix
+        self._negative_object_envelopes = negative_object_envelopes
 
     def __getitem__(self, key):
         return self._public[key]
@@ -363,6 +488,8 @@ def _negative_entries(
                 "procedure_view": {"source": {"procedure": procedure}},
                 "views": tuple(sorted(views)),
                 "banks": _signal_banks(banks, views),
+                "object_banks": _signal_banks(banks, views, _OBJECT_ROLE),
+                "asserted_alternatives": _asserted_alternatives(row, views),
                 "lineage": {
                     **copy.deepcopy(dict(lineage)),
                     "call": copy.deepcopy(dict(row)),
@@ -373,6 +500,24 @@ def _negative_entries(
             }
         )
     return entries
+
+
+def _asserted_alternatives(
+    row: Mapping[str, Any], views: set[tuple[str, ...]]
+) -> tuple[str, ...]:
+    """The identities a call says the negative's own views show instead, sorted.
+
+    An ``also_positive`` entry on another view says nothing about this negative.
+    """
+    items = row.get("also_positive")
+    found = set()
+    for item in items if isinstance(items, Sequence) else ():
+        if not isinstance(item, Mapping) or not isinstance(item.get("identity"), str):
+            continue
+        claimed = _view_set(item.get("views"))
+        if claimed is not None and claimed & views:
+            found.add(item["identity"])
+    return tuple(sorted(found))
 
 
 def _alternative_seeds(
@@ -485,18 +630,79 @@ def _identity_extensions(
     return negatives, seeds, bool(negative_ids), bool(alternatives)
 
 
+def _fold(table: dict, key: Any, num: int, den: int, case_id: str) -> None:
+    """Keep the largest exact squared cosine under ``key``, its tied cases and the count."""
+    current = table.get(key)
+    if current is None:
+        table[key] = {"num": num, "den": den, "opponents": [case_id], "count": 1}
+        return
+    current["count"] += 1
+    if num * current["den"] > current["num"] * den:
+        current["num"], current["den"] = num, den
+        current["opponents"] = [case_id]
+    elif num * current["den"] == current["num"] * den:
+        current["opponents"].append(case_id)
+
+
+def _frozen_envelope(table: Mapping[Any, Mapping[str, Any]]) -> Mapping[Any, Any]:
+    return MappingProxyType(
+        {
+            key: MappingProxyType({**value, "opponents": tuple(value["opponents"])})
+            for key, value in table.items()
+        }
+    )
+
+
 def _opposing_envelope(
-    case: Mapping[str, Any], population: Sequence[Mapping[str, Any]], opposes
+    case: Mapping[str, Any],
+    population: Sequence[Mapping[str, Any]],
+    opposes,
+    *,
+    case_banks: Mapping[str, Sequence[int]] | None = None,
+    population_banks: Sequence[Mapping[str, Sequence[int]]] | None = None,
 ) -> Mapping[tuple[str, ...], Mapping[str, Any]]:
     """Largest exact squared cosine to each opposing case over identical banks.
 
-    The opposing side of a positive seed is every seed of another identity; of a
-    negative identity case, every positive seed of its own identity.
+    The opposing side of a negative identity case is every positive seed of its own
+    identity (a positive seed's side is made by ``_seed_envelopes``). ``case_banks`` and
+    ``population_banks`` (aligned with ``population``) replace each side's own banks,
+    so an envelope can be made over one role of both.
     """
     env: dict[tuple[str, ...], dict[str, Any]] = {}
+    left = case["banks"] if case_banks is None else case_banks
+    if isinstance(case["procedure"], str) and case["procedure"]:
+        for index, other in enumerate(population):
+            if not opposes(other) or not _same_procedure(
+                case["procedure_view"], other["procedure_view"]
+            ):
+                continue
+            right = (
+                other["banks"] if population_banks is None else population_banks[index]
+            )
+            terms = _exact_bank_terms(left, right)
+            if terms["code"] != "ok":
+                continue
+            num, den = terms["cosine_squared"]
+            _fold(
+                env, tuple(terms["common_speaking_banks"]), num, den, other["case_id"]
+            )
+    return _frozen_envelope(env)
+
+
+def _seed_envelopes(
+    case: Mapping[str, Any], population: Sequence[Mapping[str, Any]]
+) -> tuple[Mapping[Any, Any], Mapping[Any, Any]]:
+    """A positive seed's opposing envelope, overall and per opposing identity.
+
+    The opposing side is every seed of another identity. One pass makes both: the
+    overall maximum (exactly the envelope a call without context reads) and, under each
+    common-bank key, the largest resemblance to each other identity separately.
+    """
+    overall: dict[tuple[str, ...], dict[str, Any]] = {}
+    by_identity: dict[tuple[str, ...], dict[str, dict[str, Any]]] = {}
     if isinstance(case["procedure"], str) and case["procedure"]:
         for other in population:
-            if not opposes(other) or not _same_procedure(
+            if other["subject"] == case["subject"] or not _same_procedure(
                 case["procedure_view"], other["procedure_view"]
             ):
                 continue
@@ -505,26 +711,16 @@ def _opposing_envelope(
                 continue
             key = tuple(terms["common_speaking_banks"])
             num, den = terms["cosine_squared"]
-            current = env.get(key)
-            if current is None:
-                env[key] = {
-                    "num": num,
-                    "den": den,
-                    "opponents": [other["case_id"]],
-                    "count": 1,
-                }
-                continue
-            current["count"] += 1
-            if num * current["den"] > current["num"] * den:
-                current["num"], current["den"] = num, den
-                current["opponents"] = [other["case_id"]]
-            elif num * current["den"] == current["num"] * den:
-                current["opponents"].append(other["case_id"])
-    return MappingProxyType(
-        {
-            key: MappingProxyType({**value, "opponents": tuple(value["opponents"])})
-            for key, value in env.items()
-        }
+            _fold(overall, key, num, den, other["case_id"])
+            _fold(
+                by_identity.setdefault(key, {}),
+                other["subject"],
+                num,
+                den,
+                other["case_id"],
+            )
+    return _frozen_envelope(overall), MappingProxyType(
+        {key: _frozen_envelope(table) for key, table in by_identity.items()}
     )
 
 
@@ -533,7 +729,11 @@ def _frozen_entries(entries: Sequence[Mapping[str, Any]]) -> tuple:
         MappingProxyType(
             {
                 **entry,
-                "banks": MappingProxyType(dict(entry["banks"])),
+                **{
+                    key: MappingProxyType(dict(entry[key]))
+                    for key in ("banks", "object_banks")
+                    if key in entry
+                },
                 "procedure_view": MappingProxyType(entry["procedure_view"]),
             }
         )
@@ -541,10 +741,12 @@ def _frozen_entries(entries: Sequence[Mapping[str, Any]]) -> tuple:
     )
 
 
-def _frozen_matrix(entries: Sequence[Mapping[str, Any]]) -> Mapping[str, Any] | None:
+def _frozen_matrix(
+    entries: Sequence[Mapping[str, Any]], key: str = "banks"
+) -> Mapping[str, Any] | None:
     if not entries:
         return None
-    built = _case_matrix([dict(entry["banks"]) for entry in entries])
+    built = _case_matrix([dict(entry[key]) for entry in entries])
     for array_key in ("values", "speaks", "valid"):
         built[array_key].setflags(write=False)
     return MappingProxyType(built)
@@ -678,16 +880,29 @@ def prepare_identity(
         seen.add(seed["case_id"])
         entries.append(seed)
     kept = [e for e in entries if e["study_uid"] != exclude_study_uid]
-    envelopes = [
-        _opposing_envelope(
-            first, kept, lambda other, first=first: other["subject"] != first["subject"]
-        )
-        for first in kept
-    ]
+    seed_envelopes = [_seed_envelopes(first, kept) for first in kept]
+    envelopes = [overall for overall, _by_identity in seed_envelopes]
+    opposition = [by_identity for _overall, by_identity in seed_envelopes]
     kept_negatives = [n for n in negatives if n["study_uid"] != exclude_study_uid]
     negative_envelopes = [
         _opposing_envelope(
             case, kept, lambda other, case=case: other["subject"] == case["subject"]
+        )
+        for case in kept_negatives
+    ]
+    # The same envelopes over the object role of both sides: the region each asserted.
+    seed_object_banks = (
+        [_signal_banks(seed["banks"], roles=_OBJECT_ROLE) for seed in kept]
+        if kept_negatives
+        else []
+    )
+    negative_object_envelopes = [
+        _opposing_envelope(
+            case,
+            kept,
+            lambda other, case=case: other["subject"] == case["subject"],
+            case_banks=case["object_banks"],
+            population_banks=seed_object_banks,
         )
         for case in kept_negatives
     ]
@@ -738,6 +953,9 @@ def prepare_identity(
         negative_matrix=_frozen_matrix(kept_negatives),
         negative_envelopes=tuple(negative_envelopes),
         has_negatives=has_negatives,
+        opposition=tuple(opposition),
+        negative_object_matrix=_frozen_matrix(kept_negatives, "object_banks"),
+        negative_object_envelopes=tuple(negative_object_envelopes),
     )
 
 
@@ -761,7 +979,11 @@ def _proposed_name(profile: object) -> Any:
 
 
 def _negative_evidence(
-    profile: object, query_banks: Mapping[str, Sequence[int]], prepared: _Prepared
+    profile: object,
+    query_banks: Mapping[str, Sequence[int]],
+    prepared: _Prepared,
+    *,
+    object_role: bool = False,
 ) -> list[dict[str, Any]]:
     """Each negative identity case's exact resemblance to the query, signed -1.
 
@@ -769,12 +991,24 @@ def _negative_evidence(
     speaks against that identity only strictly above its own opposing envelope,
     the largest resemblance it shares with that identity's positive seeds over
     the same banks. With no such seed it stays silent, named; it is never a veto.
+    ``object_role`` compares the query's object tiles with the negative's object
+    tiles alone, against the envelope made over those banks.
     """
     negatives = prepared._negatives
+    if object_role:
+        query = _signal_banks(query_banks, roles=_OBJECT_ROLE)
+        bank_key = "object_banks"
+        matrix = prepared._negative_object_matrix
+        envelopes = prepared._negative_object_envelopes
+    else:
+        query = query_banks
+        bank_key = "banks"
+        matrix = prepared._negative_matrix
+        envelopes = prepared._negative_envelopes
     terms = _batch_terms(
-        query_banks,
-        [case["banks"] for case in negatives],
-        matrix_cache=prepared._negative_matrix,
+        query,
+        [case[bank_key] for case in negatives],
+        matrix_cache=matrix,
         compatible=[
             _same_procedure(profile, case["procedure_view"]) for case in negatives
         ],
@@ -785,7 +1019,7 @@ def _negative_evidence(
             continue
         num, den = term["cosine_squared"]
         key = tuple(term["common_speaking_banks"])
-        env = prepared._negative_envelopes[index].get(key)
+        env = envelopes[index].get(key)
         if env is None:
             status, speaks, env_out = "no_compatible_opposing_case", False, None
         else:
@@ -817,6 +1051,427 @@ def _negative_evidence(
     return rows
 
 
+def _seed_row(
+    seed: Mapping[str, Any],
+    term: Mapping[str, Any],
+    envelope: Mapping[str, Any] | None,
+    missing_status: str,
+) -> dict[str, Any]:
+    """One seed's exact resemblance to the query, and whether it reaches past ``envelope``.
+
+    It speaks only strictly above the envelope; with none it stays silent under
+    ``missing_status``. An envelope made over named identities names them.
+    """
+    num, den = term["cosine_squared"]
+    if envelope is None:
+        status, speaks, env_out = missing_status, False, None
+    else:
+        speaks = num * envelope["den"] > envelope["num"] * den
+        status = "above_envelope" if speaks else "not_above_envelope"
+        env_out = {
+            **_ratio(envelope["num"], envelope["den"]),
+            "opponent_case_ids": list(envelope["opponents"]),
+            "comparison_count": envelope["count"],
+        }
+        if "identities" in envelope:
+            env_out["opposing_identities"] = list(envelope["identities"])
+    row = {
+        "case_id": seed["case_id"],
+        "identity": seed["subject"],
+        "study_uid": seed["study_uid"],
+        "lineage": copy.deepcopy(seed["lineage"]),
+        "common_speaking_banks": list(term["common_speaking_banks"]),
+        "dot": term["dot"],
+        "left_norm_sq": term["left_norm_sq"],
+        "right_norm_sq": term["right_norm_sq"],
+        "squared_cosine": _ratio(num, den),
+        "envelope": env_out,
+        "envelope_status": status,
+        "speaks": speaks,
+    }
+    if "source_case_id" in seed:
+        row["source_case_id"] = seed["source_case_id"]
+    return row
+
+
+def _envelope_over(
+    table: Mapping[str, Mapping[str, Any]] | None, allowed: frozenset[str]
+) -> dict[str, Any] | None:
+    """The largest opposing resemblance over the ``allowed`` identities only, or None.
+
+    ``table`` is one seed's per-identity maxima under one common-bank key. Tied
+    identities and their cases are all named; the count is every comparison made with
+    an allowed identity's cases over those banks.
+    """
+    if table is None:
+        return None
+    best: dict[str, Any] | None = None
+    count = 0
+    for identity in sorted(allowed):
+        entry = table.get(identity)
+        if entry is None:
+            continue
+        count += entry["count"]
+        if best is None or entry["num"] * best["den"] > best["num"] * entry["den"]:
+            best = {
+                "num": entry["num"],
+                "den": entry["den"],
+                "opponents": list(entry["opponents"]),
+                "identities": [identity],
+            }
+        elif entry["num"] * best["den"] == best["num"] * entry["den"]:
+            best["opponents"].extend(entry["opponents"])
+            best["identities"].append(identity)
+    if best is not None:
+        best["count"] = count
+    return best
+
+
+def _squared(row: Mapping[str, Any]) -> Fraction:
+    ratio = row["squared_cosine"]
+    return Fraction(int(ratio["numerator"]), int(ratio["denominator"]))
+
+
+def _also_resembles(
+    compared: Mapping[str, Sequence[tuple[int, Mapping[str, Any], Mapping[str, Any]]]],
+    subject: str,
+    open_set: frozenset[str],
+) -> list[dict[str, Any]]:
+    """Each other identity's most resembling case, as information only.
+
+    Equal resemblance goes to the smaller case id; the list runs from the most
+    resembling identity down, by name on ties.
+    """
+    rows = []
+    for identity, items in compared.items():
+        if identity == subject:
+            continue
+        _index, seed, term = min(
+            items,
+            key=lambda item: (
+                -Fraction(*item[2]["cosine_squared"]),
+                item[1]["case_id"],
+            ),
+        )
+        rows.append(
+            {
+                "identity": identity,
+                "case_id": seed["case_id"],
+                "squared_cosine": _ratio(*term["cosine_squared"]),
+                "compared_cases": len(items),
+                "open_alternative": identity in open_set,
+            }
+        )
+    rows.sort(key=lambda row: (-_squared(row), row["identity"]))
+    return rows
+
+
+def _silence_reason(
+    seeds: Sequence[Mapping[str, Any]], compatible: Sequence[bool], subject: str
+) -> str:
+    if not seeds:
+        return "no_eligible_seed_cases"
+    if not any(compatible):
+        return "procedure_mismatch_no_compatible_seed"
+    if not any(seed["subject"] == subject for seed in seeds):
+        return "no_case_of_this_identity"
+    return "no_common_speaking_banks"
+
+
+def _bank_views(names: Sequence[str]) -> list[list[str]]:
+    """The exact view triples of parsed territory-v2 bank names, once each, sorted."""
+    views = set()
+    for name in names:
+        parsed = parse_territory_bank_name(name)
+        if parsed is not None:
+            views.add(tuple(parsed["view"]))
+    return [list(view) for view in sorted(views)]
+
+
+def identity_is_open(context: Mapping[str, Any], identity: str) -> bool:
+    """Whether ``identity`` is still possible for the region, by what structure left open.
+
+    A placement leaves its listed alternatives open; the structural reader and the prior
+    leave every identity but those structure removed (none, for the prior).
+    """
+    if identity == context["subject"]:
+        return True
+    if context["basis"] == MAP_RELATION:
+        return identity in context["open_alternatives"]
+    return identity not in context["removed_by_structure"]
+
+
+def _opposing_set(
+    table: Mapping[str, Any] | None, context: Mapping[str, Any]
+) -> frozenset[str]:
+    """The identities whose cases set an own case's bar, under its context."""
+    if table is None:
+        return frozenset()
+    if context["basis"] == MAP_RELATION:
+        return frozenset(context["open_alternatives"])
+    return frozenset(
+        identity
+        for identity in table
+        if identity != context["subject"] and identity_is_open(context, identity)
+    )
+
+
+def _without_lineage(row: Mapping[str, Any] | None) -> dict[str, Any] | None:
+    if row is None:
+        return None
+    return {key: value for key, value in row.items() if key != "lineage"}
+
+
+def _negatives_in_context(
+    profile: object,
+    query_banks: Mapping[str, Sequence[int]],
+    prepared: _Prepared,
+    context: Mapping[str, Any],
+) -> tuple[list[dict[str, Any]], int]:
+    """Each negative case that speaks in either comparison, and whether it applies here.
+
+    A negative case's reason concerns the region it asserted, so it applies when it
+    speaks over the asserted region alone: the candidate's object tiles against its own
+    object tiles, above its envelope over the same banks. Speaking only when the
+    surroundings (the context ring) are read too, it is ``surroundings_only``. A negative
+    of another identity concerns another question. One whose call asserts an alternative
+    identity applies only while that alternative is still open (``identity_is_open``).
+    A negative that applies takes part as an ordinary signed case; one that does not is
+    recorded with its reason and changes nothing. Returns the rows and how many negative
+    cases were compared at all.
+    """
+    if not prepared._negatives:
+        return [], 0
+    with_ring = {
+        row["case_id"]: row
+        for row in _negative_evidence(profile, query_banks, prepared)
+    }
+    over_region = {
+        row["case_id"]: row
+        for row in _negative_evidence(profile, query_banks, prepared, object_role=True)
+    }
+    rows = []
+    for case in prepared._negatives:
+        region, ring = over_region.get(case["case_id"]), with_ring.get(case["case_id"])
+        speaks_region = region is not None and region["speaks"]
+        if not (speaks_region or (ring is not None and ring["speaks"])):
+            continue
+        alternatives = list(case["asserted_alternatives"])
+        if case["subject"] != context["subject"]:
+            applies, reason = False, "concerns_another_identity"
+        elif not speaks_region:
+            applies, reason = False, "surroundings_only"
+        elif alternatives and not any(
+            identity_is_open(context, identity) for identity in alternatives
+        ):
+            applies, reason = False, "asserted_alternative_removed_by_structure"
+        else:
+            applies, reason = True, "speaks_over_the_asserted_region"
+        rows.append(
+            {
+                "case_id": case["case_id"],
+                "identity": case["subject"],
+                "digit": -1,
+                "study_uid": case["study_uid"],
+                "views": [list(view) for view in case["views"]],
+                "asserted_alternatives": alternatives,
+                "call_notes": (case["lineage"].get("call") or {}).get("notes"),
+                "applies": applies,
+                "reason": reason,
+                "over_the_asserted_region": _without_lineage(region),
+                "with_the_surroundings": _without_lineage(ring),
+                "lineage": copy.deepcopy(case["lineage"]),
+            }
+        )
+    return rows, len(set(with_ring) | set(over_region))
+
+
+def _unconditioned_speakers(
+    compared: Mapping[str, Sequence[tuple[int, Mapping[str, Any], Mapping[str, Any]]]],
+    prepared: _Prepared,
+) -> list[str]:
+    """The identities whose cases speak above their envelopes over every other identity."""
+    speakers = set()
+    for identity, items in compared.items():
+        for index, _seed, term in items:
+            envelope = prepared._envelopes[index].get(
+                tuple(term["common_speaking_banks"])
+            )
+            num, den = term["cosine_squared"]
+            if envelope is not None and num * envelope["den"] > envelope["num"] * den:
+                speakers.add(identity)
+                break
+    return sorted(speakers)
+
+
+def _recall_in_context(
+    profile: object,
+    query_banks_all: Mapping[str, tuple[int, ...]],
+    prepared: _Prepared,
+    status_name: str,
+    context: Mapping[str, Any],
+) -> dict[str, Any]:
+    """Recall conditioned on what the current study's structure already established.
+
+    The located object's identity is the context's subject, never renamed. Its own cases
+    speak against the identities the context leaves open (``_opposing_set``): for a bone
+    the structural reader established, every identity but the reader's other bones,
+    which it tells apart by their observed arrangement, found in this study or not; for
+    a placement, the alternatives whose own proposals overlap it; for the prior, every
+    other identity. One speaking is the appearance supporting the identity; with no
+    comparable opposing case it is uncalibrated.
+
+    Negative cases apply where their reason holds for the candidate's actual support
+    (``_negatives_in_context``). An applicable negative speaking with no own case is
+    ``appearance_opposed``; with one, a ``signed_conflict`` kept open. Either leaves the
+    identity contested and revisable. Otherwise the reader's bone is
+    ``established_by_structure``, and a placement or the prior is
+    ``appearance_supports``, ``appearance_silent`` or ``placement_only`` (uncalibrated).
+    Every other identity's resemblance is kept as information (``also_resembles``); a
+    placement also hears each open alternative against the rest
+    (``open_alternative_resembles``), and the prior records which identities speak
+    unconditioned. A contradicted anatomical check never blocks here: the context's
+    contradictions are carried as revisable evidence for the consumers that act on them.
+    """
+    subject = context["subject"]
+    basis = context["basis"]
+    seeds = prepared._seeds
+    query_banks = _signal_banks(query_banks_all)
+    compatible = [_same_procedure(profile, seed["procedure_view"]) for seed in seeds]
+    terms = (
+        _batch_terms(
+            query_banks,
+            [seed["banks"] for seed in seeds],
+            matrix_cache=prepared._matrix,
+            compatible=compatible,
+        )
+        if any(compatible)
+        else [None] * len(seeds)
+    )
+    compared: dict[str, list[tuple[int, Mapping[str, Any], Mapping[str, Any]]]] = {}
+    for index, (seed, term) in enumerate(zip(seeds, terms, strict=True)):
+        if term is not None and term["code"] == "ok":
+            compared.setdefault(seed["subject"], []).append((index, seed, term))
+    open_set = frozenset(context["open_alternatives"])
+
+    def heard(identity: str, opposing) -> list[dict[str, Any]]:
+        rows = []
+        for index, seed, term in compared.get(identity, ()):
+            table = prepared._opposition[index].get(
+                tuple(term["common_speaking_banks"])
+            )
+            allowed = opposing(table)
+            envelope = _envelope_over(table, allowed) if allowed else None
+            missing = (
+                "no_compatible_opposing_case"
+                if allowed or basis != MAP_RELATION
+                else "no_open_alternative"
+            )
+            rows.append(_seed_row(seed, term, envelope, missing))
+        return rows
+
+    own = heard(subject, lambda table: _opposing_set(table, context))
+    if not own:
+        appearance = "silent"
+    elif any(row["speaks"] for row in own):
+        appearance = "supports"
+    elif all(row["envelope"] is None for row in own):
+        appearance = "uncalibrated"
+    else:
+        appearance = "silent"
+    negatives, compared_negatives = _negatives_in_context(
+        profile, query_banks, prepared, context
+    )
+    applicable = [row["case_id"] for row in negatives if row["applies"]]
+    presentation = "compared" if own else _silence_reason(seeds, compatible, subject)
+    if applicable:
+        outcome = SIGNED_CONFLICT if appearance == "supports" else APPEARANCE_OPPOSED
+        reason = (
+            "own_case_and_applicable_negative_case_speak"
+            if outcome == SIGNED_CONFLICT
+            else "applicable_negative_case_speaks_and_no_own_case"
+        )
+        state = "contested"
+    elif basis == STRUCTURAL_READER:
+        outcome, reason = (
+            ESTABLISHED_BY_STRUCTURE,
+            "identity_established_by_structural_reader",
+        )
+        state = "established"
+    else:
+        outcome = {
+            "supports": APPEARANCE_SUPPORTS,
+            "silent": APPEARANCE_SILENT,
+            "uncalibrated": PLACEMENT_ONLY,
+        }[appearance]
+        reason = {
+            "supports": "own_case_above_the_open_identities",
+            "silent": "no_own_case_above_the_open_identities" if own else presentation,
+            "uncalibrated": "no_open_alternative"
+            if basis == MAP_RELATION and not open_set
+            else "no_comparable_opposing_case",
+        }[appearance]
+        state = "placed" if basis == MAP_RELATION else "unconditioned"
+    result: dict[str, Any] = {
+        "schema": RECALL_CONTEXT_SCHEMA,
+        "proposed_name": _proposed_name(profile),
+        "identity": subject,
+        "identity_basis": basis,
+        "identity_state": state,
+        "support": context["support"],
+        "conditioning": context["conditioning"],
+        "open_alternatives": sorted(open_set),
+        "removed_by_structure": sorted(context["removed_by_structure"]),
+        "outcome": outcome,
+        "reason": reason,
+        "appearance": appearance,
+        "sanity": {"status": status_name},
+        "prepared_view": {
+            "schema": PREPARATION_SCHEMA,
+            "source_pin": prepared["source_pin"],
+        },
+        "presentation": presentation,
+        "cases": own,
+        "nearest_cases": [
+            row["case_id"]
+            for row in sorted(own, key=lambda row: (-_squared(row), row["case_id"]))
+        ],
+        "speaking_case_ids": sorted(row["case_id"] for row in own if row["speaks"]),
+        "also_resembles": _also_resembles(compared, subject, open_set),
+        "negative_cases": negatives,
+        "applicable_negative_case_ids": applicable,
+        "negative_cases_compared": compared_negatives,
+        "contradictions": copy.deepcopy(list(context["contradictions"])),
+        "calibrated_probability": False,
+    }
+    if basis == STRUCTURAL_READER:
+        result["established_views"] = _bank_views(list(query_banks))
+    elif basis == MAP_RELATION:
+        resembles: list[str] = []
+        alternative_cases: list[dict[str, Any]] = []
+        for alternative in sorted(open_set):
+            others = (open_set | {subject}) - {alternative}
+            speaking = [
+                row
+                for row in heard(alternative, lambda table, others=others: others)
+                if row["speaks"]
+            ]
+            if speaking:
+                resembles.append(alternative)
+                alternative_cases.extend(speaking)
+        result.update(
+            open_alternative_resembles=resembles,
+            open_alternative_cases=alternative_cases,
+        )
+    else:
+        speakers = _unconditioned_speakers(compared, prepared)
+        result.update(
+            unconditioned_speaking_identities=speakers,
+            unconditioned_identity=speakers[0] if len(speakers) == 1 else None,
+        )
+    return result
+
+
 def recall_identity(
     profile: object,
     memory: object,
@@ -824,19 +1479,33 @@ def recall_identity(
     exclude_study_uid: str | None = None,
     sanity: object = None,
     prepared: Mapping[str, Any] | None = None,
+    context: Mapping[str, Any] | None = None,
 ) -> dict[str, Any]:
     """Score one query against the signed identity cases.
 
-    Positive seeds speak for their identity and negative identity cases against
-    theirs, each only above its own opposing envelope. An identity spoken for and
-    against is a conflict; one spoken against only is recorded in
-    ``opposed_identities`` and cannot be identified. A prepared view is valid
-    only for the same memory object and exclusion it was built from; anything
-    else returns invalid_preparation without scoring.
+    Without ``context``: positive seeds speak for their identity and negative identity
+    cases against theirs, each only above its own opposing envelope. An identity spoken
+    for and against is a conflict; one spoken against only is recorded in
+    ``opposed_identities`` and cannot be identified.
+
+    With ``context`` (``identity_context_code``), recall is conditioned on what the
+    current study's structure already established (``_recall_in_context``): the
+    located object keeps its identity, its own cases speak against the identities the
+    context leaves open, and a negative case applies only where its reason holds for the
+    candidate's actual support. A ``PRIOR_ONLY`` context leaves every identity open.
+
+    A prepared view is valid only for the same memory object and exclusion it was built
+    from; anything else returns invalid_preparation without scoring.
     """
     status_name = _sanity_status(sanity)
     if status_name is None:
         return _invalid("sanity_invalid")
+    if context is not None:
+        # The context's subject is the located object; the profile's name stays a
+        # proposed label and can force nothing either way.
+        code = identity_context_code(context)
+        if code != "valid":
+            return _invalid(code)
     query_banks_all = _banks(profile)
     if query_banks_all is None:
         return _invalid("profile_banks_invalid")
@@ -853,6 +1522,20 @@ def recall_identity(
         return {"outcome": "invalid_preparation", "reason": "memory_mismatch"}
     elif prepared.get("exclude_study_uid") != exclude_study_uid:
         return {"outcome": "invalid_preparation", "reason": "exclusion_mismatch"}
+    if context is not None:
+        return _recall_in_context(
+            profile, query_banks_all, prepared, status_name, context
+        )
+    return _recall_unconditioned(profile, query_banks_all, prepared, status_name)
+
+
+def _recall_unconditioned(
+    profile: object,
+    query_banks_all: Mapping[str, tuple[int, ...]],
+    prepared: _Prepared,
+    status_name: str,
+) -> dict[str, Any]:
+    """The recall without context: every identity's seeds against every other's."""
     seeds = prepared._seeds
     base: dict[str, Any] = {
         "schema": RECALL_SCHEMA,
@@ -893,37 +1576,9 @@ def recall_identity(
     for index, (seed, term) in enumerate(zip(seeds, terms, strict=True)):
         if term is None or term["code"] != "ok":
             continue
-        num, den = term["cosine_squared"]
-        key = tuple(term["common_speaking_banks"])
-        env = prepared._envelopes[index].get(key)
-        if env is None:
-            status, speaks, env_out = "no_compatible_opposing_case", False, None
-            missing_envelope = True
-        else:
-            speaks = num * env["den"] > env["num"] * den
-            status = "above_envelope" if speaks else "not_above_envelope"
-            env_out = {
-                **_ratio(env["num"], env["den"]),
-                "opponent_case_ids": list(env["opponents"]),
-                "comparison_count": env["count"],
-            }
-        row = {
-            "case_id": seed["case_id"],
-            "identity": seed["subject"],
-            "study_uid": seed["study_uid"],
-            "lineage": copy.deepcopy(seed["lineage"]),
-            "common_speaking_banks": list(term["common_speaking_banks"]),
-            "dot": term["dot"],
-            "left_norm_sq": term["left_norm_sq"],
-            "right_norm_sq": term["right_norm_sq"],
-            "squared_cosine": _ratio(num, den),
-            "envelope": env_out,
-            "envelope_status": status,
-            "speaks": speaks,
-        }
-        if "source_case_id" in seed:
-            row["source_case_id"] = seed["source_case_id"]
-        evidence.append(row)
+        env = prepared._envelopes[index].get(tuple(term["common_speaking_banks"]))
+        missing_envelope = missing_envelope or env is None
+        evidence.append(_seed_row(seed, term, env, "no_compatible_opposing_case"))
     base["cases"] = evidence
     negative_rows = (
         _negative_evidence(profile, query_banks, prepared)

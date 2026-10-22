@@ -46,6 +46,11 @@ from knee.diagnosis.squint_configurations import (
 )
 from knee.diagnosis.squint_contracts import combine_condition
 from knee.diagnosis.squint_identity import (
+    CONDITIONING,
+    CONTEXT_SCHEMA,
+    IDENTITY_CONSUMPTION_SCHEMA,
+    MAP_RELATION,
+    PROPOSED_PLACES,
     SANITY_SCHEMA,
     TEACHING_SCHEMA,
     prepare_identity,
@@ -212,6 +217,22 @@ def sanity(subject: str, status: str, result: str) -> dict:
     }
 
 
+def placed_femur() -> dict:
+    """The identity context infer_study records for a femur the anatomy map placed
+    with the patella still open beside it."""
+    return {
+        "schema": CONTEXT_SCHEMA,
+        "subject": "femur",
+        "basis": MAP_RELATION,
+        "conditioning": CONDITIONING[MAP_RELATION],
+        "support": PROPOSED_PLACES,
+        "open_alternatives": ["patella"],
+        "removed_by_structure": [],
+        "contradictions": [],
+        "supporting_observations": {"reason": "fixture"},
+    }
+
+
 def record(uid: str, banks=CANDIDATE_BANKS, *, anatomy: str = "plausible") -> dict:
     """A knee.squint-study/v1 record with one located femur, abridged."""
     result = "supported_strictly_after" if anatomy == "plausible" else "unknown"
@@ -230,6 +251,11 @@ def record(uid: str, banks=CANDIDATE_BANKS, *, anatomy: str = "plausible") -> di
             }
         },
         "identity_recall": {"outcome": "examined", "objects": {}},
+        "identity_consumption": {
+            "schema": IDENTITY_CONSUMPTION_SCHEMA,
+            "not_read_as_subject": [],
+            "objects": {"femur": {"identity_context": placed_femur()}},
+        },
         "questions": {},
         "values": {},
     }
