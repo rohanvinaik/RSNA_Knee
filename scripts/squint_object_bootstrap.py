@@ -10,8 +10,10 @@ admit: rehash the review file bytes, check the rendered sheets, then hand the
 review, the human calls and the hash to the shared seed API. Nothing is
 inferred, ranked or relabelled here. A review of a growth child's admissions
 (from ``export-admissions``) goes to the shared admission-correction API instead:
-a reject returns its admission as a negative case on exactly its views, a confirm
-is recorded only, and the corrected memory is a new child of the reviewed one.
+each call applies only where it asserts, so a rejected view becomes a negative
+case on exactly that view while the admission's other views keep speaking, a
+confirm is recorded only, and the corrected memory is a new child of the
+reviewed one.
 
 export-admissions: review a growth child's admissions on their pictures before the
 child becomes the next parent (by default every standing admission of its latest
@@ -1778,11 +1780,13 @@ def _admission_index_markdown(review: Mapping[str, Any], review_sha256: str) -> 
         "- candidates: " + str(len(review["candidates"])),
         "",
         "Edit `calls.json`: set `reader` to the actual visual reviewer and list the admissions",
-        "you call. `confirm` leaves an admission as it is and records your confirmation;",
-        "`reject` returns it as a negative case of its proposed identity on exactly the views",
-        "you name (every drawn view when `views` is omitted), and it no longer speaks for that",
-        "identity; `unsure`, or leaving it out, changes nothing. Then run `admit` with",
-        "`--memory` the memory this review was exported from.",
+        "you call. `reject` makes the views you name (every drawn view when `views` is",
+        "omitted) a negative case of the proposed identity; the admission's other views keep",
+        "speaking for it, and only when every admitted view is rejected does the whole case",
+        "move. `negative_views` and `also_positive` keep their seed meanings. `confirm`",
+        "otherwise leaves an admission as it is and records your confirmation; `unsure`, or",
+        "leaving it out, changes nothing. Then run `admit` with `--memory` the memory this",
+        "review was exported from.",
     ]
     for candidate in review["candidates"]:
         evidence = candidate["evidence"]

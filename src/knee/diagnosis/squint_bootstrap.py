@@ -17,14 +17,20 @@ A growth round's admissions are reviewed the same way, on their own review
 admission holds a cheap profile, its regions and recognition-derived lineage, and
 no full profile; none is required or made. Its sheet is the squint tile window the
 recognition read on each native slice, so a view counts as drawn when its window
-was drawn on a read slice. A call means what it means on a seed review. Reject
-returns the admission as an ordinary negative identity case of its proposed
-identity on exactly its views (every drawn profile view when it names none): the
-whole case moves to ``object_identity_cases``, its recognition-derived confirm row
-is replaced by the reviewer's reject row, kept verbatim with its actual reader, and
-the case no longer speaks as a positive. Confirm leaves the admission exactly as it
-is and records the reader's confirmation: a recognition-derived case does not become
-an independent confirmation (OpenSpec ``complete-signed-bootstrap-loop``). Unsure
+was drawn on a read slice. A call means what it means on a seed review, and is
+applied only where it asserts. A reject's views (every drawn profile view when it
+names none), or a confirm's ``negative_views``, become an ordinary negative
+identity case of the proposed identity on exactly those views; ``also_positive``
+gives its views to the named identity. Every admitted view not taken keeps
+speaking for the proposed identity with its recognition-derived lineage and its
+condition evidence: the case stays confirmed in ``cases`` and its round's confirm
+row takes the seed's mixed form (``views`` the remaining views, beside
+``negative_views`` and ``also_positive``). Only when every admitted view is taken
+does the whole case move to ``object_identity_cases``, its row then the reviewer's
+reject row with that reader. The corrected facets name the reviewer through the
+case's identity record. Confirm otherwise leaves the admission as it is and records
+the reader's confirmation: a recognition-derived case does not become an
+independent confirmation (OpenSpec ``complete-signed-bootstrap-loop``). Unsure
 changes nothing. The corrected memory is a new child of the reviewed one, keeping
 every other record.
 """
@@ -301,6 +307,9 @@ def _standing_admission(
     A standing admission is a growth case (``identity_growth`` of RECOGNITION_KIND)
     that is still confirmed by exactly one call row: the confirm its round wrote,
     marked with the same lineage kind and parent, naming views its profile holds.
+    A row that already carries ``negative_views`` or ``also_positive`` was
+    corrected in part by an earlier review: its remaining positive views keep
+    speaking, and it is not reviewed again as an untouched admission.
     """
     lineage = case.get("identity_growth")
     if not isinstance(lineage, Mapping) or lineage.get("kind") != RECOGNITION_KIND:
@@ -315,6 +324,8 @@ def _standing_admission(
         or mark.get("parent_manifest_sha256") != lineage.get("parent_manifest_sha256")
     ):
         return None, "admission_call_not_found"
+    if "negative_views" in rows[0] or "also_positive" in rows[0]:
+        return None, "admission_corrected_in_part"
     if case["case_id"] not in confirmed:
         return None, "admission_not_confirmed"
     views = rows[0].get("views")
@@ -329,7 +340,8 @@ def round_admissions(memory: Any, *, round_index: int | None = None) -> dict[str
 
     A standing admission can be reviewed (``build_admission_review``). One that no
     longer stands keeps its reason: ``corrected_negative`` once a review returned
-    it as a negative case, else the reason ``_standing_admission`` names.
+    the whole case as a negative, else the reason ``_standing_admission`` names
+    (``admission_corrected_in_part`` once a review corrected some of its facets).
     """
     clean = _clean_memory(memory)
     growth = clean.get("object_identity_growth")
@@ -641,6 +653,28 @@ def _check_one_identity_per_view(
         claimed |= views
 
 
+def _check_admission_claims(
+    candidate: Mapping[str, Any],
+    record: Mapping[str, Any],
+    negative: Sequence[Sequence[str]],
+) -> None:
+    """A call on an admission keeps one claim per view beside the admission's own.
+
+    The admission already asserts its admitted views. The call's negative views
+    (a reject's views, or a confirm's ``negative_views``) take those views from
+    it, and every other admitted view still speaks for the proposed identity. A
+    confirm that would leave none is a reject in all but name and is refused; an
+    ``also_positive`` view may not be one that still speaks for the proposed one.
+    """
+    taken = {tuple(view) for view in negative}
+    remaining = {tuple(view) for view in candidate["admitted_views"]} - taken
+    if record["call"] == "confirm" and not remaining:
+        raise _fail("admission_confirm_leaves_no_admitted_view")
+    for item in record.get("also_positive", ()):
+        if remaining & {tuple(view) for view in item["views"]}:
+            raise _fail("call_views_overlap")
+
+
 def validate_calls(
     review: Any,
     calls: Any,
@@ -659,11 +693,11 @@ def validate_calls(
     ``known_subjects``, when given, are the object subjects the memory names.
 
     An admission review (ADMISSION_REVIEW_SCHEMA) is read the same way, with a
-    view drawn when its squint tile window was drawn on a read native slice. Its
-    calls take neither ``negative_views`` nor ``also_positive``: each would split
-    one recognition-derived confirm row between two readers, a meaning no contract
-    gives yet, so both are refused by name. A reject that has no drawn view to
-    name is refused rather than left to change nothing.
+    view drawn when its squint tile window was drawn on a read native slice, and
+    every call keeps its seed meaning: ``negative_views`` and ``also_positive``
+    included. The admission itself already asserts its admitted views, so a view
+    still carries one claim (``_check_admission_claims``). A reject that has no
+    drawn view to name is refused rather than left to change nothing.
     """
     if not _is_sha(review_sha256):
         raise _fail("review_sha256_invalid")
@@ -703,10 +737,6 @@ def validate_calls(
         if "reader" in record and not _text(record["reader"]):
             raise _fail("call_reader_invalid")
         candidate = candidates[candidate_id]
-        if admissions and "negative_views" in record:
-            raise _fail("admission_negative_views_unsupported")
-        if admissions and "also_positive" in record:
-            raise _fail("admission_also_positive_unsupported")
         if "views" in record:
             if not _facets_valid(record["views"]):
                 raise _fail("call_views_invalid")
@@ -739,6 +769,10 @@ def validate_calls(
                 negative_views[candidate_id] = views
         elif call == "confirm" and "negative_views" in record:
             negative_views[candidate_id] = copy.deepcopy(record["negative_views"])
+        if admissions:
+            _check_admission_claims(
+                candidate, record, negative_views.get(candidate_id, [])
+            )
         alternatives[candidate_id] = [
             {
                 "entry_id": alternative_entry_id(candidate_id, item["identity"]),
@@ -1160,24 +1194,117 @@ def _verify_admissions(
     return rows
 
 
+def _admission_effects(
+    candidates: Mapping[str, Mapping[str, Any]], validated: Mapping[str, Any]
+) -> dict[str, dict[str, Any]]:
+    """What each call changes on its admission, in review order.
+
+    A call's negative views (a reject's views, or a confirm's ``negative_views``)
+    take those views from the admission, and its ``also_positive`` entries give
+    their views to another identity; every other admitted view keeps speaking.
+    When no admitted view remains the whole case moves (``whole_case``),
+    otherwise only the named facets change (``facets``). A call naming neither
+    (a plain confirm or unsure) changes nothing and has no entry.
+    """
+    calls = {record["candidate_id"]: record for record in validated["calls"]}
+    alternatives: dict[str, list[dict[str, Any]]] = {}
+    for entry in validated["alternative_positives"]:
+        alternatives.setdefault(entry["case_id"], []).append(entry)
+    effects: dict[str, dict[str, Any]] = {}
+    for case_id, candidate in candidates.items():
+        call = calls.get(case_id)
+        negative = validated["negative_views"].get(case_id, [])
+        others = alternatives.get(case_id, [])
+        if call is None or (not negative and not others):
+            continue
+        remaining = [
+            view for view in candidate["admitted_views"] if view not in negative
+        ]
+        effects[case_id] = {
+            "effect": "facets" if remaining else "whole_case",
+            "call": copy.deepcopy(call),
+            "reader": call.get("reader", validated["reader"]),
+            "positive_views": copy.deepcopy(remaining),
+            "negative_views": copy.deepcopy(negative),
+            "alternatives": copy.deepcopy(others),
+        }
+    return effects
+
+
+def _corrected_row(
+    admission_row: Mapping[str, Any], effect: Mapping[str, Any]
+) -> dict[str, Any]:
+    """The case's one call row after its correction, in a form the seed path writes.
+
+    A whole-case correction is the reviewer's reject row, which names that reader:
+    the teaching's own reader is the seed's reviewer. A facet correction is the
+    round's own confirm row, its recognition-derived reader and lineage mark kept,
+    with ``views`` the admitted views that still speak, ``negative_views`` the
+    views taken from it and ``also_positive`` the views given to another identity,
+    exactly as a seed confirm row carries them.
+    """
+    if effect["effect"] == "whole_case":
+        return {**copy.deepcopy(effect["call"]), "reader": effect["reader"]}
+    row = copy.deepcopy(dict(admission_row))
+    row["views"] = copy.deepcopy(effect["positive_views"])
+    if effect["negative_views"]:
+        row["negative_views"] = copy.deepcopy(effect["negative_views"])
+    if effect["alternatives"]:
+        row["also_positive"] = copy.deepcopy(effect["call"]["also_positive"])
+    return row
+
+
+def _corrected_record(
+    case: Mapping[str, Any],
+    admission_row: Mapping[str, Any],
+    effect: Mapping[str, Any],
+    provenance: Mapping[str, Any],
+) -> dict[str, Any]:
+    """The identity record a correction adds: the case, and who called which facet.
+
+    The record is the case exactly as its round admitted it. Its top-level
+    ``reader`` and ``review_sha256`` are the record's provenance, which the
+    identity reader gives to the negative and alternative entries it builds from
+    the record, so those facets name the reviewer; ``identity_correction`` keeps
+    the call, the facets it moved and the superseded confirm row verbatim.
+    """
+    record = copy.deepcopy(dict(case))
+    record["reader"] = effect["reader"]
+    record["review_sha256"] = provenance["review_sha256"]
+    record["identity_correction"] = {
+        "schema": CORRECTION_SCHEMA,
+        "kind": CORRECTION_KIND,
+        "corrected_by": effect["reader"],
+        **copy.deepcopy(dict(provenance)),
+        "effect": effect["effect"],
+        "call": copy.deepcopy(effect["call"]),
+        "positive_views_after": copy.deepcopy(effect["positive_views"]),
+        "negative_views": copy.deepcopy(effect["negative_views"]),
+        "alternative_positives": copy.deepcopy(effect["alternatives"]),
+        "superseded_call": copy.deepcopy(dict(admission_row)),
+    }
+    return record
+
+
 def _corrected_teaching(
     memory: Mapping[str, Any],
-    validated: Mapping[str, Any],
+    effects: Mapping[str, Mapping[str, Any]],
     rows: Mapping[str, dict[str, Any]],
     review_record: dict[str, Any],
 ) -> dict[str, Any]:
     """The reviewed memory's teaching with its corrections applied, a fresh copy."""
     teaching = copy.deepcopy(dict(memory["object_identity_teaching"]))
-    corrected = list(validated["negative_case_ids"])
     for key, kind in (
         ("negative_case_ids", list),
         ("negative_views", Mapping),
+        ("alternative_positives", list),
         ("admission_reviews", list),
     ):
         if key in teaching and not isinstance(teaching[key], kind):
             raise _fail("identity_teaching_invalid")
+    moved = {cid for cid, effect in effects.items() if effect["effect"] == "whole_case"}
     teaching["confirmed_case_ids"] = [
-        case_id for case_id in teaching["confirmed_case_ids"] if case_id not in rows
+        case_id for case_id in teaching["confirmed_case_ids"] if case_id not in moved
     ]
     # Each corrected admission had exactly one row, its round's confirm.
     teaching["calls"] = [
@@ -1186,18 +1313,29 @@ def _corrected_teaching(
         else row
         for row in teaching["calls"]
     ]
-    if corrected:
+    negatives = [cid for cid, effect in effects.items() if effect["negative_views"]]
+    if negatives:
         teaching["negative_case_ids"] = [
             *teaching.get("negative_case_ids", []),
-            *corrected,
+            *negatives,
         ]
         teaching["negative_views"] = {
             **teaching.get("negative_views", {}),
             **{
-                case_id: copy.deepcopy(validated["negative_views"][case_id])
-                for case_id in corrected
+                case_id: copy.deepcopy(effects[case_id]["negative_views"])
+                for case_id in negatives
             },
         }
+    alternatives = [
+        copy.deepcopy(entry)
+        for effect in effects.values()
+        for entry in effect["alternatives"]
+    ]
+    if alternatives:
+        teaching["alternative_positives"] = [
+            *teaching.get("alternative_positives", []),
+            *alternatives,
+        ]
     teaching["admission_reviews"] = [
         *teaching.get("admission_reviews", []),
         review_record,
@@ -1205,20 +1343,42 @@ def _corrected_teaching(
     return teaching
 
 
+def _corrections_summary(
+    effects: Mapping[str, Mapping[str, Any]],
+) -> dict[str, dict[str, Any]]:
+    """Per corrected admission: what moved, on which views, and who called it."""
+    return {
+        case_id: {
+            "effect": effect["effect"],
+            "reader": effect["reader"],
+            "positive_views_after": copy.deepcopy(effect["positive_views"]),
+            "negative_views": copy.deepcopy(effect["negative_views"]),
+            "alternative_positive_ids": [
+                entry["entry_id"] for entry in effect["alternatives"]
+            ],
+        }
+        for case_id, effect in effects.items()
+    }
+
+
 def _corrected_child(
     memory: Mapping[str, Any],
-    reviewed_sha256: str,
-    review_sha256: str,
+    provenance: Mapping[str, Any],
     calls: Mapping[str, Any],
     validated: Mapping[str, Any],
+    effects: Mapping[str, Mapping[str, Any]],
     admission_rows: Mapping[str, Mapping[str, Any]],
     reviewed_ids: Sequence[str],
 ) -> tuple[dict[str, Any], list[dict[str, Any]]]:
-    """The child memory and the corrected records it adds; the reviewed memory is not mutated."""
+    """The child memory and the identity records it adds; the reviewed memory is not mutated.
+
+    A whole-case correction moves the case out of ``cases``; a facet correction
+    leaves it there, confirmed, and rewrites only its call row. Either adds the
+    case's identity record, which the identity reader needs to build the
+    negative and alternative entries of the corrected facets.
+    """
     from knee.diagnosis.squint_identity_growth import _RUNTIME_KEYS
 
-    corrected = list(validated["negative_case_ids"])
-    call_by_id = {record["candidate_id"]: record for record in validated["calls"]}
     table = memory.get("object_identity_cases")
     if table is None:
         table = {"schema": IDENTITY_CASES_SCHEMA, "cases": []}
@@ -1232,66 +1392,122 @@ def _corrected_child(
     by_id = {case["case_id"]: case for case in memory["cases"]}
     rows: dict[str, dict[str, Any]] = {}
     records: list[dict[str, Any]] = []
-    superseded: list[dict[str, Any]] = []
-    for case_id in corrected:
+    for case_id, effect in effects.items():
         if case_id in held:
             raise _fail("corrected_case_id_already_held")
-        call = call_by_id[case_id]
-        reader = call.get("reader", validated["reader"])
-        mark = {
-            "schema": CORRECTION_SCHEMA,
-            "kind": CORRECTION_KIND,
-            "review_sha256": review_sha256,
-            "reviewed_manifest_sha256": reviewed_sha256,
-        }
-        # The reject row speaks in identity recall with its own reader: the
-        # teaching's top-level reader is the seed's reviewer, not this one.
-        rows[case_id] = {**copy.deepcopy(call), "reader": reader, "correction": mark}
-        record = copy.deepcopy(by_id[case_id])
-        record["identity_correction"] = {
-            **mark,
-            "corrected_by": reader,
-            "reviewed_revision": memory["revision"],
-            "negative_views": copy.deepcopy(validated["negative_views"][case_id]),
-            "call": copy.deepcopy(call),
-            "superseded_call": copy.deepcopy(dict(admission_rows[case_id])),
-        }
-        records.append(record)
-        superseded.append(copy.deepcopy(dict(admission_rows[case_id])))
+        rows[case_id] = _corrected_row(admission_rows[case_id], effect)
+        records.append(
+            _corrected_record(
+                by_id[case_id], admission_rows[case_id], effect, provenance
+            )
+        )
     review_record = {
         "schema": ADMISSION_RECORD_SCHEMA,
-        "review_sha256": review_sha256,
         "reader": validated["reader"],
-        "reviewed_manifest_sha256": reviewed_sha256,
-        "reviewed_revision": memory["revision"],
+        **copy.deepcopy(dict(provenance)),
         "reviewed_candidate_ids": list(reviewed_ids),
         "calls": copy.deepcopy(validated["calls"]),
         "confirmed_admission_ids": list(validated["confirmed_case_ids"]),
-        "corrected_case_ids": corrected,
         "unsure_case_ids": [
             record["candidate_id"]
             for record in validated["calls"]
             if record["call"] == "unsure"
         ],
-        "negative_views": {
-            case_id: copy.deepcopy(validated["negative_views"][case_id])
-            for case_id in corrected
-        },
-        "superseded_calls": superseded,
+        "corrected_case_ids": list(effects),
+        "corrections": _corrections_summary(effects),
+        "superseded_calls": [
+            copy.deepcopy(dict(admission_rows[case_id])) for case_id in effects
+        ],
         "confirm_effect": "recorded_only_recognition_derived_lineage_kept",
     }
+    moved = {cid for cid, effect in effects.items() if effect["effect"] == "whole_case"}
     child = {key: value for key, value in memory.items() if key not in _RUNTIME_KEYS}
-    child["cases"] = [case for case in memory["cases"] if case["case_id"] not in rows]
+    child["cases"] = [case for case in memory["cases"] if case["case_id"] not in moved]
     child["object_identity_teaching"] = _corrected_teaching(
-        memory, validated, rows, review_record
+        memory, effects, rows, review_record
     )
     if records:
         child["object_identity_cases"] = {**table, "cases": [*table["cases"], *records]}
     digest = _json_sha256(
-        [reviewed_sha256, review_sha256, calls, ADMISSION_RECORD_SCHEMA]
+        [
+            provenance["reviewed_manifest_sha256"],
+            provenance["review_sha256"],
+            calls,
+            ADMISSION_RECORD_SCHEMA,
+        ]
     )
     child["revision"] = f"{memory['revision']}+admission-review-{digest[:16]}"
     return child, records
+
+
+def _facet(
+    banks: Mapping[str, tuple[int, ...]], identity: str, views: Sequence[Sequence[str]]
+) -> tuple[str, frozenset]:
+    """One identity-recall entry as the reader builds it: its identity and banks."""
+    from knee.diagnosis.squint_identity import _signal_banks
+
+    selected = {tuple(view) for view in views}
+    return identity, frozenset(_signal_banks(banks, selected).items())
+
+
+def _identity_facets(prepared: Any) -> dict[tuple[str, str], tuple[str, frozenset]]:
+    """Every entry the identity reader prepared, by sign and id: identity and banks.
+
+    Seeds, alternative-identity seeds among them, are ``+``; negative identity
+    cases are ``-``. Nothing else speaks in identity recall.
+    """
+    facets: dict[tuple[str, str], tuple[str, frozenset]] = {}
+    for sign, entries in (("+", prepared._seeds), ("-", prepared._negatives)):
+        for entry in entries:
+            facets[(sign, entry["case_id"])] = (
+                entry["subject"],
+                frozenset(dict(entry["banks"]).items()),
+            )
+    return facets
+
+
+def _expected_facets(
+    before: Mapping[tuple[str, str], tuple[str, frozenset]],
+    effects: Mapping[str, Mapping[str, Any]],
+    by_id: Mapping[str, Mapping[str, Any]],
+) -> dict[tuple[str, str], tuple[str, frozenset]]:
+    """The reviewed memory's entries with exactly the corrected facets moved."""
+    from knee.diagnosis.squint_locator import _banks
+
+    expected = dict(before)
+    for case_id, effect in effects.items():
+        case = by_id[case_id]
+        banks = _banks(case["profile"]) or {}
+        if effect["effect"] == "whole_case":
+            expected.pop(("+", case_id), None)
+        else:
+            expected[("+", case_id)] = _facet(
+                banks, case["subject"], effect["positive_views"]
+            )
+        if effect["negative_views"]:
+            expected[("-", case_id)] = _facet(
+                banks, case["subject"], effect["negative_views"]
+            )
+        for entry in effect["alternatives"]:
+            expected[("+", entry["entry_id"])] = _facet(
+                banks, entry["identity"], entry["views"]
+            )
+    return expected
+
+
+def _expected_condition_views(
+    before: Mapping[str, Any], effects: Mapping[str, Mapping[str, Any]]
+) -> dict[str, Any]:
+    """Where each case's condition evidence speaks once the corrections apply."""
+    expected = dict(before)
+    for case_id, effect in effects.items():
+        if effect["effect"] == "whole_case":
+            expected.pop(case_id, None)
+        else:
+            expected[case_id] = frozenset(
+                tuple(view) for view in effect["positive_views"]
+            )
+    return expected
 
 
 def publish_admission_corrections(
@@ -1303,20 +1519,25 @@ def publish_admission_corrections(
 ) -> dict[str, Any]:
     """Publish a child of a reviewed growth child holding the reviewer's calls.
 
-    ``source_snapshot`` is the memory the admission review was exported from. A
-    reject moves its whole case from ``cases`` to ``object_identity_cases`` as an
-    ordinary negative identity case of its proposed identity on exactly its views:
-    the record keeps its cheap profile, regions, source and recognition-derived
-    lineage, and gains an ``identity_correction`` naming the actual reader. Its
-    round's confirm row is replaced in ``calls`` by the reviewer's reject row, with
-    that reader and a ``correction`` mark, and kept verbatim in the correction and
-    in the review record. Confirm and unsure change no case and no row; the review
-    record in ``object_identity_teaching["admission_reviews"]`` keeps every call,
-    the reader and the confirmed admissions. Every other record (cases,
-    configurations, identity records, calls, full tables, source identities and
-    growth rounds) is the reviewed memory's own. A call file applying neither a
-    confirm nor a reject is refused. The child must prepare with exactly the
-    corrected cases moved from the positive side to the negative side.
+    ``source_snapshot`` is the memory the admission review was exported from.
+    Each call applies only where it asserts (``_admission_effects``). A call's
+    negative views become an ordinary negative identity case of the proposed
+    identity on exactly those views, and its ``also_positive`` views a positive of
+    the named identity on exactly theirs, read from the case's identity record,
+    which names the reviewer. Every admitted view not taken keeps speaking for the
+    proposed identity, with its recognition-derived lineage and its condition
+    evidence: the case stays in ``cases``, confirmed, and its round's confirm row
+    narrows its ``views`` and gains ``negative_views`` or ``also_positive`` as a
+    seed confirm row carries them. Only when every admitted view is taken does the
+    whole case move to ``object_identity_cases``, its row then the reviewer's
+    reject row. Each superseded row is kept verbatim. A plain confirm or unsure
+    changes no case and no row; the review record in
+    ``object_identity_teaching["admission_reviews"]`` keeps every call, the reader
+    and the confirmed admissions. Every other record (cases, configurations,
+    identity records, calls, full tables, source identities and growth rounds) is
+    the reviewed memory's own. A call file applying nothing is refused. The child
+    must prepare with exactly the corrected facets moved, in identity recall and in
+    where condition evidence speaks, and nothing else changed.
     """
     memory = _snapshot_memory(source_snapshot)
     if not isinstance(review, dict) or review.get("schema") != ADMISSION_REVIEW_SCHEMA:
@@ -1324,23 +1545,38 @@ def publish_admission_corrections(
     candidates = _admission_review_candidates(review)
     if review["source_manifest_sha256"] != source_snapshot.sha256:
         raise _fail("stale_source_pin")
-    validated = validate_calls(review, calls, review_sha256)
-    if not validated["confirmed_case_ids"] and not validated["negative_case_ids"]:
+    known_subjects = {
+        case["subject"] for case in memory["cases"] if not _is_configuration(case)
+    }
+    validated = validate_calls(
+        review, calls, review_sha256, known_subjects=known_subjects
+    )
+    effects = _admission_effects(candidates, validated)
+    if not validated["confirmed_case_ids"] and not effects:
         raise _fail("no_admission_calls_applied")
     rows_by_id, confirmed = _teaching_rows(memory)
     admission_rows = _verify_admissions(memory, candidates, rows_by_id, confirmed)
     destination = _check_output(output, source_snapshot)
-    from knee.diagnosis.squint_identity import prepare_identity
+    from knee.diagnosis.squint_identity import (
+        identity_condition_views,
+        prepare_identity,
+    )
 
     before = prepare_identity(memory)
-    if before.get("outcome") != "prepared":
+    before_scope = identity_condition_views(memory)
+    if before.get("outcome") != "prepared" or before_scope.get("outcome") != "scoped":
         raise _fail("parent_identity_teaching_invalid")
+    provenance = {
+        "review_sha256": review_sha256,
+        "reviewed_manifest_sha256": source_snapshot.sha256,
+        "reviewed_revision": memory["revision"],
+    }
     child, records = _corrected_child(
         memory,
-        source_snapshot.sha256,
-        review_sha256,
+        provenance,
         calls,
         validated,
+        effects,
         admission_rows,
         list(candidates),
     )
@@ -1358,18 +1594,18 @@ def publish_admission_corrections(
     except SquintMemoryError as error:
         raise _fail("child_memory_invalid") from error
     prepared = prepare_identity(child)
-    if prepared.get("outcome") != "prepared":
+    scope = identity_condition_views(child)
+    if prepared.get("outcome") != "prepared" or scope.get("outcome") != "scoped":
         raise _fail("child_identity_teaching_invalid")
-    # Exactly the corrected cases left the positive side and reached the negative
-    # side; a row the reader would skip shows up here, not as a silent no-op.
-    moved = len(records)
-    negatives_before = before.get("negative_case_count", 0)
-    negatives_after = prepared.get("negative_case_count", 0)
-    if (
-        negatives_after != negatives_before + moved
-        or prepared.get("seed_count") != before.get("seed_count") - moved
+    # Exactly the corrected facets moved, in identity recall and in where condition
+    # evidence speaks, and nothing else changed: a row the reader would skip, or a
+    # positive facet a correction erased, shows up here, not as a silent change.
+    by_id = {case["case_id"]: case for case in memory["cases"]}
+    expected = _expected_facets(_identity_facets(before), effects, by_id)
+    if _identity_facets(prepared) != expected or scope["views"] != (
+        _expected_condition_views(before_scope["views"], effects)
     ):
-        raise _fail("corrected_negative_not_prepared")
+        raise _fail("corrected_facets_not_prepared")
     receipt = save_memory(child, destination)
     readback = prepare_identity(load_memory(destination))
     if readback.get("outcome") != "prepared" or dict(readback) != dict(prepared):
@@ -1381,7 +1617,13 @@ def publish_admission_corrections(
         "case_count": receipt["case_count"],
         "revision": child["revision"],
         "confirmed_admission_ids": list(validated["confirmed_case_ids"]),
-        "corrected_case_ids": list(validated["negative_case_ids"]),
+        "corrected_case_ids": list(effects),
+        "whole_case_ids": [
+            case_id
+            for case_id, effect in effects.items()
+            if effect["effect"] == "whole_case"
+        ],
+        "corrections": _corrections_summary(effects),
         "negative_views": copy.deepcopy(validated["negative_views"]),
         "unsure_case_ids": [
             record["candidate_id"]
