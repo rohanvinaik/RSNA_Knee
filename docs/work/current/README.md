@@ -91,22 +91,35 @@ study `…075652399585` and `…548497591402` the sagittal middle-slice naming t
 for the femur, the very mistake the M1b negative cases record; the cross-view check catches it, and the producer
 then discards the correct coronal femur as well. The lead's draft repair (rename a contradicted orientation's
 section to the territory the other view's carried section lies in, accepted only if Law 9 then holds both ways)
-is under FULL_BUILD_PLAN §7's review: draft `lead-draft-cross-view-rule.md`, Codex and Fable answers beside it.
+went through FULL_BUILD_PLAN §7's review. Fable read the pictures the same way (sagittal "femur" = popliteal
+fossa; coronal = femur) and, with Codex, rejected choosing by which view escaped contradiction. The rule being
+built is r4 (`lead-draft-cross-view-rule-r4.md`): a disagreement leaves only that pair unresolved; the one change
+allowed is a swap to the rival when anatomy positively favours it (like the marrow of the other bone's section on
+the same fat-bright slice, a reference with a positive cross-view agreement, on the bone's own side of it); nothing
+is withdrawn for failing; Law 9 confirms; still-contradicting pairs are withheld from anchoring, the rest anchor.
+Codex's answers on r1 and r3, Fable's, and drafts r1–r4 are in the survey folder. A side agent's corrections
+(relayed, agent text) on scope and on marrow as evidence only are taken in r4.
 
-## STARTING BUCKETS (M1b inventory)
+## STARTING BUCKETS (M1b inventory r2, read through the identity reader)
 
-`data/readings/ai-bootstrap-loop-20261021/bucket-inventory-m1b/inventory.json`, with an example sheet per object
-and call. Every one of the catalogue's 493 candidates was called (43 unsure). Gaps no existing candidate can fill:
-a diagnosed ACL and MCL presentation, a normal bursa (Baker's); thin: patella, fibula, cartilages, fat pads; no
-LCL, popliteus or ITB candidates at all. They come from recognition on labelled studies, called on their
-pictures, with the official labels at their scope.
+`data/readings/ai-bootstrap-loop-20261021/bucket-inventory-m1b/inventory-r2.json` (script `inventory_r2.py`; the
+first inventory misreported negative scopes and missed alternative facets). Catalogue: 40 anatomical objects; 21
+have a positive seed. No seed: biceps femoris tendon, gracilis, Hoffa's pad, ITB, both gastrocnemius heads, both
+patellar retinacula, LCL, the generic meniscus, patellar cartilage, patellar and quadriceps tendons, popliteal
+artery and vein, popliteus, sartorius, semitendinosus, suprapatellar fat. Conditions: not all twelve polarities
+are covered: ACL and MCL lack a diagnosed presentation of their own tissue, Baker's a normal one; the menisci and
+Synovitis are thin. Every one of the catalogue's 493 candidates was called (43 unsure), so the gaps are filled by
+direct visual teaching (lane V), not by more calls on old candidates.
 
 ## WORKERS
 
 | Task | State | Evidence |
 |---|---|---|
 | H1: contextual identity through preparation, recall, diagnosis and admission (handoffs 1 and 2) | running. Corrected twice by root: negatives apply where their question is open and their reason holds for the candidate's actual support, judged over object-role banks (a territory's `object` tiles, not its `context` ring); a territory's origin tells a resolved support from a proposal; contested or opposed identities are not admitted and do not decide that identity's questions; under the structural basis the reader's observed ordering is the anatomical support, and the recognition match is heard against every identity outside the structural reader's own bones (femur, tibia, patella, fibula, found in this study or not: a side agent's note, checked against Rohan's «They're BOTH BONES» and «Do not ... tune bone profiles apart»); it measures that on the M1 public readings and reports the numbers; it delivers a branch on main | worktree `agent-a7e32e09526dae3c0` |
-| G3: correctable admissions, scoped (handoff 3) | first delivery `lane-g3-main` (`12c278d`, `11f4d87`): export-admissions, reject moves the case to a scoped negative; defect confirmed (a one-view reject removed every positive view and its diagnosis evidence; mixed and alternative call forms refused). Resumed: split by view through the seed path's own mixed form, accept `negative_views` and `also_positive`, reverse the tests that pinned the refusals | worktree `agent-a17bc123853d1ecd7` |
+| G3: correctable admissions, scoped (handoff 3) | **integrated** `877d2af`, `603ea10`, `8d85c2c` (337 focused tests on main): a call applies only where it asserts; the untouched facets keep speaking with their diagnosis evidence; `negative_views` and `also_positive` accepted. Open: an admission corrected in part cannot be reviewed again; the corrected case's carry record still lists its admission-time views (the consumer scopes by the rewritten row) | `tests/test_squint_admission_correction.py` |
+| V: direct visual teaching for the empty and thin buckets (the G3 worker, resumed) | running: eligible labelled studies (ACL=1, MCL=1, Baker's=0, and any study for each unseeded object); the reviewer names the lens territory that is the object on the locator's slice; existing writer; existing review, calls and admit; official labels at scope | branch `lane-v` |
+| A2: bone anchors decided by anatomy (rule r4) | running, branch `lane-a2` at `8ac5bbc`; validation is the 63-study survey before/after and pictures of every kind of outcome | isolated worktree |
+| K: knee side from the fibula when the header names none | running, branch `lane-k` at `639b962`; validated against the headers that name the knee | isolated worktree |
 | C2: whole-condition configurations grown from newly admitted objects (handoff 5) | running, branch `lane-c2` at `829df83`; uses the existing builder and lane E's identity-view scoping; parent configurations unchanged | isolated worktree |
 | P: each observation request kind gets its own acting consumer (`locate_object_region`, `profile_object_window`, `repeat_object_recall`; `bounded_zoom` unchanged) | running, branch `lane-p` at `829df83`; new module `squint_procedures.py`, one call changed in `infer_study` | isolated worktree |
 
