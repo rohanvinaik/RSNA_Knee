@@ -8,10 +8,19 @@ labels speak through those views alike, a blank label makes no call, and a
 Fracture or Contusion positive stays unlocalized. The calls keep train.csv as
 their source, apart from the recognition-derived identity lineage, and labels
 never reach a decision. A held-out study is never scored or admitted, its labels
-are never read, and every child keeps its parent's held-out studies. Each test
-pins one meaning in both signs, through the growth API, the published child and
-the production condition consumer: ``prepare_recall``/``recall_object`` as the
-squint pipeline calls them, ``memory_view`` and ``combine_condition``.
+are never read, and every child keeps its parent's held-out studies.
+
+The same carried row also teaches the study's whole-condition configuration
+cases, made by the seed's own scoped builder from the cases admitted that round,
+each role on its admission's views. The call is the official label alone, at
+study scope; the identity basis stays recognition-derived; a blank label, an
+unlabelled round, a proposal or a held-out candidate teaches none; and no parent
+record is rebuilt, a held configuration or ledger row being refused by name.
+
+Each test pins one meaning in both signs, through the growth API, the published
+child and the production condition consumer: ``prepare_recall``/``recall_object``
+as the squint pipeline calls them (``_recall_question``), ``memory_view`` and
+``combine_condition``.
 """
 
 from __future__ import annotations
@@ -23,12 +32,17 @@ from pathlib import Path
 
 import pytest
 
+from knee.diagnosis.declarations import QUESTIONS, question_for
+from knee.diagnosis.squint_bootstrap import _rebuilt_configurations
+from knee.diagnosis.squint_configurations import with_configuration_cases
 from knee.diagnosis.squint_contracts import combine_condition
 from knee.diagnosis.squint_identity import SANITY_SCHEMA, TEACHING_SCHEMA
 from knee.diagnosis.squint_identity_growth import (
     CHILD_DIRECTORY,
     CONDITION_TEACHING_SCHEMA,
+    CONFIGURATION_TEACHING_SCHEMA,
     DECISIONS_FILE,
+    GROWTH_SCHEMA,
     HELD_OUT_SCHEMA,
     LABEL_SOURCE,
     RECOGNITION_KIND,
@@ -51,6 +65,7 @@ from knee.diagnosis.squint_memory import (
     save_memory,
 )
 from knee.diagnosis.squint_memory_view import memory_view
+from knee.diagnosis.squint_pipeline import _recall_question
 from knee.diagnosis.squint_questions import question_selection
 from knee.study.tables import LABELS
 
@@ -503,17 +518,30 @@ def test_labels_never_change_a_decision(tmp_path: Path, parent):
     assert len({receipt["decisions_sha256"] for receipt in receipts.values()}) == 1
     children = {name: child_of(tmp_path, name) for name in receipts}
     carried = ("condition_calls", "presentation_scope", "label_attribution")
-    for name in ("ones", "zeros"):
+    # Unlabelled, the child holds no configuration case and no ledger row.
+    assert "label_ledger" not in children["plain"]
+    assert not [case for case in children["plain"]["cases"] if is_configuration(case)]
+    for name, value in (("ones", 1), ("zeros", 0)):
         child = children[name]
-        # Apart from the carried calls and what records them, the children agree.
+        # Apart from the carried calls, the configuration cases and the row they
+        # were read from, and what records them, the children agree.
         for key in set(child) | set(children["plain"]):
-            if key not in ("cases", "revision", "object_identity_growth"):
+            if key not in (
+                "cases",
+                "revision",
+                "object_identity_growth",
+                "label_ledger",
+            ):
                 assert child[key] == children["plain"][key], key
-        for mine, theirs in zip(
-            child["cases"], children["plain"]["cases"], strict=True
-        ):
+        assert child["label_ledger"] == {"study-x": dict.fromkeys(LABELS, value)}
+        objects = [case for case in child["cases"] if not is_configuration(case)]
+        for mine, theirs in zip(objects, children["plain"]["cases"], strict=True):
             if mine["case_id"] != X:
                 assert mine == theirs
+        # Every labelled question gets its configuration case, after the objects.
+        assert [case["case_id"] for case in child["cases"][len(objects) :]] == [
+            configuration_id("study-x", question) for question in QUESTION_ORDER
+        ]
         case, plain_case = case_of(child, X), case_of(children["plain"], X)
         assert {
             key: value
@@ -528,15 +556,24 @@ def test_labels_never_change_a_decision(tmp_path: Path, parent):
             child["object_identity_growth"]["rounds"],
             children["plain"]["object_identity_growth"]["rounds"],
         )
-        assert {k: v for k, v in mine.items() if k != "condition_teaching"} == theirs
+        taught_keys = ("condition_teaching", "configuration_teaching")
+        assert {k: v for k, v in mine.items() if k not in taught_keys} == theirs
     assert set(case_of(children["ones"], X)["condition_calls"].values()) == {1}
     assert set(case_of(children["zeros"], X)["condition_calls"].values()) == {-1}
+    # The labels are each configuration's call and never its composition.
+    grown = {
+        name: [case for case in children[name]["cases"] if is_configuration(case)]
+        for name in ("ones", "zeros")
+    }
+    assert [case["profile"] for case in grown["ones"]] == [
+        case["profile"] for case in grown["zeros"]
+    ]
+    assert {d for c in grown["ones"] for d in c["condition_calls"].values()} == {1}
+    assert {d for c in grown["zeros"] for d in c["condition_calls"].values()} == {-1}
     # A child carrying labels never shares a revision with another child.
     assert len({child["revision"] for child in children.values()}) == 3
-    assert (
-        "condition_teaching"
-        not in children["plain"]["object_identity_growth"]["rounds"][0]
-    )
+    for key in ("condition_teaching", "configuration_teaching"):
+        assert key not in children["plain"]["object_identity_growth"]["rounds"][0]
 
 
 def test_labels_are_checked_before_the_round_and_refused_with_decisions_only(
@@ -813,3 +850,589 @@ def test_a_malformed_held_out_record_or_list_is_refused_by_name(tmp_path: Path, 
             grow(tmp_path, "bad", parent, [record("study-x")], held_out=held_out)
         assert info.value.code == code
         assert not (tmp_path / "bad").exists()
+
+
+# -------------------------------------- whole-condition configurations of a round
+
+QUESTION_ORDER = tuple(question.question_id for question in QUESTIONS)
+# The configured parent's labelled normal femurs, so every question the rounds
+# below teach has an opposing configuration case.
+SEED_ROW = {**NORMAL, "Contusion": 0}
+FEMUR_SAG, FEMUR_COR = "object/femur/" + SAG_BANK, "object/femur/" + COR_BANK
+PATELLA_SAG = "object/patella/" + SAG_BANK
+
+
+def is_configuration(case: dict) -> bool:
+    return case["subject"].startswith("diagnosis/")
+
+
+def configuration_id(study: str, question: str) -> str:
+    return f"squint-configuration:{study}:{question}"
+
+
+def configurations_of(memory: dict, study: str) -> list[dict]:
+    return [
+        case
+        for case in memory["cases"]
+        if is_configuration(case) and case["study_uid"] == study
+    ]
+
+
+def located_of(uid: str, subject: str) -> str:
+    return f"located:{uid}:{subject}:{REVISION}"
+
+
+def canonical(value) -> bytes:
+    return json.dumps(value, sort_keys=True, separators=(",", ":")).encode("utf-8")
+
+
+def configured_parent_memory() -> dict:
+    """The parent as a seed publishes it: its two labelled studies' configuration
+    cases, built by the seed's own scoped builder, with their ledger rows."""
+    memory = parent_memory()
+    for case in memory["cases"]:
+        if case["study_uid"] in ("study-b", "study-c"):
+            calls, scopes = _condition_calls("femur", label_row(SEED_ROW))
+            case.update(condition_calls=calls, presentation_scope=scopes)
+    ledger = {study: label_row(SEED_ROW) for study in ("study-b", "study-c")}
+    built, rows, revision = _rebuilt_configurations({"label_ledger": ledger}, memory)
+    memory.update(cases=[*memory["cases"], *built], label_ledger=rows)
+    memory["revision"] = revision
+    return memory
+
+
+@pytest.fixture
+def configured(tmp_path: Path):
+    save_memory(configured_parent_memory(), tmp_path / "configured-parent")
+    return load_memory_snapshot(tmp_path / "configured-parent")
+
+
+def with_patella(base: dict, anatomy: str = "plausible") -> dict:
+    """The record with a located patella beside its femur; only the patella
+    seed's sagittal reading resembles it."""
+    result = copy.deepcopy(base)
+    located = copy.deepcopy(result["objects"]["femur"])
+    outcome = "supported_strictly_after" if anatomy == "plausible" else "unknown"
+    located.update(
+        profile=profile("patella", {SAG_BANK: (0, 0, 3)}),
+        sanity=sanity("patella", anatomy, outcome),
+    )
+    result["objects"]["patella"] = located
+    return result
+
+
+def next_round(memory: dict, question: str, banks=QUERY_SAG) -> tuple[dict, dict]:
+    """One question of a later study read on a published memory, as ``infer_study``
+    reads it: ``_recall_question`` on a located femur, then ``combine_condition``."""
+    attached = {**memory, "prepared_recall": prepare_recall(memory)}
+    located = {
+        "femur": {
+            "status": "located",
+            "profile": profile("femur", banks),
+            "regions": [{"series_uid": "series-sag", "window": list(WINDOW)}],
+        }
+    }
+    evidence = _recall_question(
+        question_for(question), located, attached, "study-q", False
+    )
+    return evidence, combine_condition(question, evidence)
+
+
+def lineage_link(case: dict) -> dict:
+    lineage = case["identity_growth"]
+    return {
+        "kind": RECOGNITION_KIND,
+        "independent_confirmation": False,
+        "parent_manifest_sha256": lineage["parent_manifest_sha256"],
+        "lineage_sha256": _json_sha256(lineage),
+    }
+
+
+def test_a_labelled_admission_teaches_its_studys_configurations_on_its_views(
+    tmp_path: Path, configured
+):
+    rows = {"study-x": {**STUDY_X, "Effusion": 1}}
+    receipt, child, _labels = taught(tmp_path, configured, rows=rows)
+    [decision] = decisions_of(tmp_path, "grown")["decisions"]
+    assert (decision["state"], decision["views"]) == ("admitted", [SAG])
+    femur = case_of(child, X)
+    assert set(femur["profile"]["banks"]) == {SAG_BANK, COR_BANK}
+    row = label_row(rows["study-x"])
+    grown = configurations_of(child, "study-x")
+    # One case per labelled question; a blank label writes none.
+    assert [case["case_id"] for case in grown] == [
+        configuration_id("study-x", question)
+        for question in QUESTION_ORDER
+        if row[question] is not None
+    ]
+    record_ = receipt["configuration_teaching"]
+    for case in grown:
+        question = case["subject"].removeprefix("diagnosis/")
+        objects = question_for(question).objects
+        present = [subject for subject in objects if subject == "femur"]
+        source = case["profile"]["source"]
+        # The role holds only its admission's view: the coronal reading stays out.
+        assert case["profile"]["banks"] == ({FEMUR_SAG: [3, 0, 0]} if present else {})
+        assert sorted(source["roles"]) == present
+        assert source["missing_roles"] == [
+            {"subject": subject, "status": "missing_object_case"}
+            for subject in objects
+            if subject not in present
+        ]
+        # The call is the official label alone, as the seed's builder writes it.
+        assert case["condition_calls"] == {question: 1 if row[question] else -1}
+        assert case["presentation_scope"] == {question: "study_condition_configuration"}
+        assert case["label_attribution"] == {
+            question: {
+                "source": "label_ledger",
+                "study_uid": "study-x",
+                "condition": question,
+            }
+        }
+        assert case["teaching_source"] == {
+            "kind": "official_train_csv_label_ledger",
+            "scope": "study_condition_configuration",
+        }
+        # The role names its admitted case; its identity stays recognition-derived.
+        assert case["configuration_teaching"] == {
+            "schema": CONFIGURATION_TEACHING_SCHEMA,
+            "labels": {**record_["labels"], "study_uid": "study-x"},
+            "round": record_["round"],
+            "roles": {
+                "femur": {
+                    "case_id": X,
+                    "identity_views": [SAG],
+                    "identity": lineage_link(femur),
+                }
+            }
+            if present
+            else {},
+            "supersedes": None,
+        }
+    # Exactly the builder's cases for the admitted case read on its view alone.
+    scoped = {**femur, "profile": {**femur["profile"], "banks": {SAG_BANK: [3, 0, 0]}}}
+    staged = {
+        "schema": SCHEMA,
+        "revision": "builder",
+        "cases": [scoped],
+        "label_ledger": {"study-x": row},
+    }
+    expected = with_configuration_cases(staged, procedure=TERRITORY_PROCEDURE)
+    assert [
+        {key: value for key, value in case.items() if key != "configuration_teaching"}
+        for case in grown
+    ] == expected["cases"][1:]
+    # Control: were its identity held coronally too, the same builder hears both.
+    widened = copy.deepcopy(child)
+    call_of(widened, X)["views"] = [COR, SAG]
+    rebuilt, _rows, _revision = _rebuilt_configurations(
+        {"label_ledger": {"study-x": row}}, {**widened, "cases": [case_of(widened, X)]}
+    )
+    assert set(rebuilt[-1]["profile"]["banks"]) == {FEMUR_SAG, FEMUR_COR}
+    # The round's record, the ledger row it adds, and the revision binding both.
+    [entry] = child["object_identity_growth"]["rounds"]
+    assert entry["configuration_teaching"] == record_
+    assert record_ == {
+        "schema": CONFIGURATION_TEACHING_SCHEMA,
+        "labels": receipt["condition_teaching"]["labels"],
+        "round": {
+            "ordinal": 1,
+            "parent_manifest_sha256": configured.sha256,
+            "decisions_sha256": receipt["decisions_sha256"],
+        },
+        "study_uids": ["study-x"],
+        "case_ids": [case["case_id"] for case in grown],
+        "superseded": {},
+        "cases_sha256": _json_sha256(grown),
+        "label_ledger_added": ["study-x"],
+    }
+    assert child["label_ledger"] == {
+        **configured.memory["label_ledger"],
+        "study-x": row,
+    }
+    parts = [
+        configured.sha256,
+        receipt["decisions_sha256"],
+        GROWTH_SCHEMA,
+        _json_sha256(entry["condition_teaching"]),
+    ]
+    bound = _json_sha256([*parts, _json_sha256(record_)])[:16]
+    assert (
+        child["revision"] == f"{configured.memory['revision']}+identity-growth-{bound}"
+    )
+    assert bound != _json_sha256(parts)[:16]
+
+
+def test_no_label_row_or_label_file_teaches_no_configuration(
+    tmp_path: Path, configured
+):
+    parent_ids = [case["case_id"] for case in configured.memory["cases"]]
+    plain = grow(tmp_path, "plain", configured, [record("study-x")])
+    child = child_of(tmp_path, "plain")
+    assert plain["configuration_teaching"] is None
+    assert "configuration_teaching" not in child["object_identity_growth"]["rounds"][0]
+    assert [case["case_id"] for case in child["cases"]] == [*parent_ids, X]
+    assert child["label_ledger"] == configured.memory["label_ledger"]
+    # A study with no row teaches none; neither does a row blank for every label.
+    for name, rows, read in (
+        ("test-study", {"study-other": STUDY_X}, []),
+        ("blank-row", {"study-x": {}}, ["study-x"]),
+    ):
+        receipt, child, _labels = taught(tmp_path, configured, name, rows=rows)
+        assert [case["case_id"] for case in child["cases"]] == [*parent_ids, X]
+        teaching = receipt["configuration_teaching"]
+        assert (teaching["study_uids"], teaching["case_ids"]) == (read, [])
+    assert child["label_ledger"]["study-x"] == dict.fromkeys(LABELS)
+    # The same admission with its row teaches exactly its labelled questions.
+    receipt, child, _labels = taught(tmp_path, configured, "labelled")
+    assert receipt["configuration_teaching"]["case_ids"] == [
+        configuration_id("study-x", question)
+        for question in QUESTION_ORDER
+        if question in STUDY_X
+    ]
+
+
+def test_parent_configurations_stay_byte_identical_where_nothing_was_admitted(
+    tmp_path: Path, configured
+):
+    manifest = configured.path.read_bytes()
+    before = canonical(configured.memory)
+    taught(tmp_path, configured, "round-1")
+    # The parent, in memory and on disk, is never changed.
+    assert canonical(configured.memory) == before
+    assert configured.path.read_bytes() == manifest
+    child = child_of(tmp_path, "round-1")
+    held = {case["case_id"]: case for case in child["cases"]}
+    for case in configured.memory["cases"]:
+        assert canonical(held[case["case_id"]]) == canonical(case)
+    # Round two admits in study-y alone: every case of round one, the teaching
+    # set's and study-x's configurations included, stays byte for byte.
+    first = load_memory_snapshot(tmp_path / "round-1" / CHILD_DIRECTORY)
+    first_bytes = first.path.read_bytes()
+    labels = write_labels(tmp_path / "round-2.csv", {"study-y": STUDY_X})
+    second = grow(tmp_path, "round-2", first, [record("study-y")], labels=labels)
+    assert first.path.read_bytes() == first_bytes
+    later = {case["case_id"]: case for case in child_of(tmp_path, "round-2")["cases"]}
+    for case in child["cases"]:
+        assert canonical(later[case["case_id"]]) == canonical(case)
+    assert second["configuration_teaching"]["superseded"] == {}
+    assert second["configuration_teaching"]["case_ids"] == [
+        configuration_id("study-y", question)
+        for question in QUESTION_ORDER
+        if question in STUDY_X
+    ]
+
+
+def test_a_later_admission_rebuilds_its_studys_configurations_with_every_role(
+    tmp_path: Path, configured
+):
+    taught(tmp_path, configured, "round-1")
+    first = load_memory_snapshot(tmp_path / "round-1" / CHILD_DIRECTORY)
+    child = first.memory
+    versions = {case["case_id"]: case for case in configurations_of(child, "study-x")}
+    labels = write_labels(tmp_path / "round-2.csv", {"study-x": STUDY_X})
+    again = [with_patella(record("study-x"))]
+    second = grow(tmp_path, "round-2", first, again, labels=labels)
+    states = {
+        row["subject"]: row["state"]
+        for row in decisions_of(tmp_path, "round-2")["decisions"]
+    }
+    assert states == {"femur": "duplicate", "patella": "admitted"}
+    grandchild = child_of(tmp_path, "round-2")
+    # The same ids, in the parent versions' places: one live case per condition.
+    ids = [case["case_id"] for case in grandchild["cases"]]
+    assert len(ids) == len(set(ids))
+    assert ids[: len(child["cases"])] == [case["case_id"] for case in child["cases"]]
+    assert [case["case_id"] for case in configurations_of(grandchild, "study-x")] == [
+        *versions
+    ]
+    # Both rounds' admissions are roles, each on its own admission's view.
+    patella = case_of(grandchild, located_of("study-x", "patella"))
+    fracture = case_of(grandchild, configuration_id("study-x", "Fracture"))
+    assert fracture["profile"]["banks"] == {
+        FEMUR_SAG: [3, 0, 0],
+        PATELLA_SAG: [0, 0, 3],
+    }
+    assert fracture["configuration_teaching"]["roles"] == {
+        "femur": {
+            "case_id": X,
+            "identity_views": [SAG],
+            "identity": lineage_link(case_of(grandchild, X)),
+        },
+        "patella": {
+            "case_id": patella["case_id"],
+            "identity_views": [SAG],
+            "identity": lineage_link(patella),
+        },
+    }
+    # Round two's admission was recognized against round one's child.
+    assert patella["identity_growth"]["parent_manifest_sha256"] == first.sha256
+    # The version it replaces is recorded with its round, and the parent keeps it.
+    prior = versions[configuration_id("study-x", "Fracture")]
+    assert fracture["configuration_teaching"]["supersedes"] == {
+        "case_sha256": _json_sha256(prior),
+        "round": prior["configuration_teaching"]["round"],
+    }
+    assert prior["configuration_teaching"]["round"]["ordinal"] == 1
+    assert fracture["configuration_teaching"]["round"]["ordinal"] == 2
+    assert second["configuration_teaching"]["superseded"] == {
+        case_id: _json_sha256(case) for case_id, case in versions.items()
+    }
+    on_disk = load_memory_snapshot(first.path)
+    assert on_disk.sha256 == first.sha256
+    assert canonical(case_of(on_disk.memory, prior["case_id"])) == canonical(prior)
+    # A condition the patella has no role in keeps round one's composition.
+    acl = case_of(grandchild, configuration_id("study-x", "ACL"))
+    assert acl["profile"] == versions[configuration_id("study-x", "ACL")]["profile"]
+    # Without a label file the admission still rebuilds them, from the ledger row.
+    plain = grow(tmp_path, "round-2-plain", first, again)
+    unlabelled = child_of(tmp_path, "round-2-plain")
+    fracture = case_of(unlabelled, configuration_id("study-x", "Fracture"))
+    assert set(fracture["profile"]["banks"]) == {FEMUR_SAG, PATELLA_SAG}
+    assert fracture["condition_calls"] == {"Fracture": 1}
+    assert fracture["configuration_teaching"]["labels"] == {
+        "source": "label_ledger",
+        "parent_manifest_sha256": first.sha256,
+        "study_uid": "study-x",
+    }
+    assert plain["configuration_teaching"]["labels"] is None
+    assert (
+        case_of(unlabelled, located_of("study-x", "patella"))["condition_calls"] == {}
+    )
+
+
+def test_a_teaching_study_is_rebuilt_only_when_an_object_of_it_is_admitted(
+    tmp_path: Path, configured
+):
+    teaching = configured.memory["object_identity_teaching"]
+    seed_id = "squint-case:study-b:femur"
+    [seed_call] = [row for row in teaching["calls"] if row["candidate_id"] == seed_id]
+    versions = {
+        case["case_id"]: case
+        for case in configurations_of(configured.memory, "study-b")
+    }
+    labels = write_labels(tmp_path / "train.csv", {"study-b": SEED_ROW})
+    grow(
+        tmp_path, "grown", configured, [with_patella(record("study-b"))], labels=labels
+    )
+    child = child_of(tmp_path, "grown")
+    patella = case_of(child, located_of("study-b", "patella"))
+    assert [case["case_id"] for case in configurations_of(child, "study-b")] == [
+        *versions
+    ]
+    fracture = case_of(child, configuration_id("study-b", "Fracture"))
+    assert fracture["profile"]["banks"] == {
+        FEMUR_SAG: [1, 2, 0],
+        PATELLA_SAG: [0, 0, 3],
+    }
+    # Each role keeps its own provenance: the seed's visual call, the admission's
+    # recognition-derived lineage.
+    assert fracture["configuration_teaching"]["roles"] == {
+        "femur": {
+            "case_id": seed_id,
+            "identity_views": None,
+            "identity": {
+                "kind": "seed_visual_call",
+                "reader": "fixture reviewer",
+                "call_sha256": _json_sha256(seed_call),
+            },
+        },
+        "patella": {
+            "case_id": patella["case_id"],
+            "identity_views": [SAG],
+            "identity": lineage_link(patella),
+        },
+    }
+    prior = versions[configuration_id("study-b", "Fracture")]
+    assert fracture["configuration_teaching"]["supersedes"] == {
+        "case_sha256": _json_sha256(prior),
+        "round": None,
+    }
+    # The other teaching study, nothing of it admitted, keeps its cases.
+    for case in configurations_of(configured.memory, "study-c"):
+        assert canonical(case_of(child, case["case_id"])) == canonical(case)
+    # A round admitting nothing of study-b leaves its cases byte for byte too.
+    taught(tmp_path, configured, "elsewhere")
+    elsewhere = child_of(tmp_path, "elsewhere")
+    for case in versions.values():
+        assert canonical(case_of(elsewhere, case["case_id"])) == canonical(case)
+
+
+def test_a_proposal_or_held_out_candidate_contributes_no_role(
+    tmp_path: Path, configured
+):
+    rows = {"study-x": STUDY_X, "study-h": {"Fracture": "x"}}
+    labels = write_labels(tmp_path / "train.csv", rows)
+    records = [with_patella(record("study-x"), "unknown"), record("study-h")]
+    receipt = grow(
+        tmp_path, "grown", configured, records, labels=labels, held_out=["study-h"]
+    )
+    decided = {
+        (row["study_uid"], row["subject"]): (row["state"], row["reason"])
+        for row in decisions_of(tmp_path, "grown")["decisions"]
+    }
+    assert decided == {
+        ("study-x", "femur"): ("admitted", "identified_with_location_support"),
+        ("study-x", "patella"): ("proposal", "anatomy_unknown"),
+        ("study-h", "femur"): ("held_out", "study_held_out"),
+    }
+    child = child_of(tmp_path, "grown")
+    fracture = case_of(child, configuration_id("study-x", "Fracture"))
+    assert fracture["profile"]["banks"] == {FEMUR_SAG: [3, 0, 0]}
+    assert sorted(fracture["profile"]["source"]["roles"]) == ["femur"]
+    assert {"subject": "patella", "status": "missing_object_case"} in fracture[
+        "profile"
+    ]["source"]["missing_roles"]
+    assert configurations_of(child, "study-h") == []
+    assert receipt["configuration_teaching"]["study_uids"] == ["study-x"]
+    assert "study-h" not in child["label_ledger"]
+    # Admitted, the same patella is a role on its admission's view.
+    both = write_labels(tmp_path / "both.csv", {"study-x": STUDY_X})
+    grow(tmp_path, "both", configured, [with_patella(record("study-x"))], labels=both)
+    fracture = case_of(
+        child_of(tmp_path, "both"), configuration_id("study-x", "Fracture")
+    )
+    assert fracture["profile"]["banks"] == {
+        FEMUR_SAG: [3, 0, 0],
+        PATELLA_SAG: [0, 0, 3],
+    }
+
+
+def test_the_next_rounds_consumer_decides_only_through_defining_tissue(
+    tmp_path: Path, configured
+):
+    _receipt, child, _labels = taught(tmp_path, configured)
+    grow(tmp_path, "plain", configured, [record("study-x")])
+    plain = child_of(tmp_path, "plain")
+    # Fracture: the femur is a defining site, so the grown configuration decides.
+    grown = configuration_id("study-x", "Fracture")
+    evidence, finding = next_round(child, "Fracture")
+    joint = evidence["diagnosis/Fracture"]
+    assert (joint["outcome"], joint["speaking_case_ids"]) == ("present", [grown])
+    [term] = [row for row in joint["case_terms"] if row["case_id"] == grown]
+    assert term["reaches_trust"] is True
+    assert term["common_speaking_banks"] == [FEMUR_SAG]
+    assert term["call_scope"] == "study_condition_configuration"
+    assert (finding["outcome"], finding["reason"]) == (
+        "assigned",
+        "warranted_condition_configuration",
+    )
+    assert finding["evidence"]["decided_by"] == ["diagnosis/Fracture"]
+    # Without that case (an unlabelled round) nothing decides.
+    _evidence, unlabelled = next_round(plain, "Fracture")
+    assert unlabelled["outcome"] == "open"
+    # ACL: the femur is only its context. The same voice grades and never decides.
+    acl = configuration_id("study-x", "ACL")
+    evidence, finding = next_round(child, "ACL")
+    assert evidence["diagnosis/ACL"]["speaking_case_ids"] == [acl]
+    assert (finding["outcome"], finding["reason"]) == (
+        "open",
+        "configuration_defining_tissue_coverage_missing",
+    )
+    coverage = finding["evidence"]["joint_configuration_coverage"]
+    excluded = {row["case_id"]: row["reason"] for row in coverage["excluded_cases"]}
+    assert excluded[acl] == "defining_tissue_coverage_incomplete"
+    unheard = {key: value for key, value in evidence.items() if key != "diagnosis/ACL"}
+    ungraded = combine_condition("ACL", unheard)
+    assert ungraded["outcome"] == "open"
+    assert 4 / 9 < ungraded["probability"] < finding["probability"] < 5 / 9
+
+
+def test_a_bone_positive_configuration_stays_at_study_scope(tmp_path: Path, configured):
+    rows = {"study-x": {**STUDY_X, "Contusion": 1}}
+    _receipt, child, _labels = taught(tmp_path, configured, rows=rows)
+    femur = case_of(child, X)
+    carry = femur["condition_teaching"]["carry"]
+    assert (femur["condition_calls"], femur["presentation_scope"]) == (
+        carry["condition_calls"],
+        carry["presentation_scope"],
+    )
+    for question in ("Fracture", "Contusion"):
+        configuration = case_of(child, configuration_id("study-x", question))
+        assert configuration["condition_calls"] == {question: 1}
+        assert configuration["presentation_scope"] == {
+            question: "study_condition_configuration"
+        }
+        # The femur keeps the study's unlocalized presentation, as carried.
+        assert femur["presentation_scope"][question] == (
+            "positive_condition_presentation"
+        )
+        _evidence, finding = next_round(child, question)
+        reading = finding["evidence"]["readings"]["femur"]
+        assert (reading["state"], reading["code"]) == (
+            "unknown",
+            "study_positive_presentation_not_localized",
+        )
+        assert finding["outcome"] == "assigned"
+        assert finding["evidence"]["decided_by"] == [f"diagnosis/{question}"]
+    scopes = {
+        scope
+        for case in child["cases"]
+        for scope in (case.get("presentation_scope") or {}).values()
+    }
+    assert LOCALIZED_PRESENTATION_SCOPE not in scopes
+    # Were the femur's positive localized, the femur itself would decide.
+    localized = copy.deepcopy(child)
+    case_of(localized, X)["presentation_scope"]["Fracture"] = (
+        LOCALIZED_PRESENTATION_SCOPE
+    )
+    _evidence, finding = next_round(localized, "Fracture")
+    assert finding["evidence"]["readings"]["femur"]["state"] == "positive"
+    assert finding["evidence"]["decided_by"] == ["femur"]
+
+
+def test_a_label_row_or_configuration_the_parent_holds_otherwise_is_refused(
+    tmp_path: Path, configured
+):
+    again = [with_patella(record("study-b"))]
+    # A carried row differing from the parent's ledger row.
+    changed = write_labels(
+        tmp_path / "changed.csv", {"study-b": {**SEED_ROW, "ACL": 1}}
+    )
+    with pytest.raises(IdentityGrowthError) as info:
+        grow(tmp_path, "changed", configured, again, labels=changed)
+    assert (info.value.code, info.value.detail) == (
+        "label_ledger_row_conflict",
+        "study-b",
+    )
+    assert not (tmp_path / "changed").exists()
+    # The same row as the parent's is kept, never added again.
+    same = write_labels(tmp_path / "same.csv", {"study-b": SEED_ROW})
+    receipt = grow(tmp_path, "same", configured, again, labels=same)
+    assert receipt["configuration_teaching"]["label_ledger_added"] == []
+    ledger = child_of(tmp_path, "same")["label_ledger"]
+    assert ledger == configured.memory["label_ledger"]
+    # A configured study whose ledger row is missing cannot be rebuilt, and a
+    # parent case its row no longer writes would stay live beside the rebuild.
+    rowless = configured_parent_memory()
+    del rowless["label_ledger"]["study-b"]
+    stale = configured_parent_memory()
+    stale["label_ledger"]["study-b"]["ACL"] = None
+    refusals = (
+        (rowless, ("configuration_label_row_missing", "study-b")),
+        (
+            stale,
+            ("configuration_rebuild_incomplete", configuration_id("study-b", "ACL")),
+        ),
+    )
+    for index, (memory, expected) in enumerate(refusals):
+        save_memory(memory, tmp_path / f"refusing-{index}")
+        parent_ = load_memory_snapshot(tmp_path / f"refusing-{index}")
+        with pytest.raises(IdentityGrowthError) as info:
+            grow(tmp_path, f"refused-{index}", parent_, again)
+        assert (info.value.code, info.value.detail) == expected
+        assert not (tmp_path / f"refused-{index}").exists()
+    # A new case's id the parent holds under another study is never overwritten.
+    misfiled = configured_parent_memory()
+    acl = configuration_id("study-x", "ACL")
+    [held] = [
+        case
+        for case in misfiled["cases"]
+        if case["case_id"] == configuration_id("study-c", "ACL")
+    ]
+    held["case_id"] = acl
+    save_memory(misfiled, tmp_path / "misfiled")
+    with pytest.raises(IdentityGrowthError) as info:
+        taught(tmp_path, load_memory_snapshot(tmp_path / "misfiled"), "misfiled-round")
+    assert (info.value.code, info.value.detail) == ("configuration_case_conflict", acl)
+    assert not (tmp_path / "misfiled-round").exists()
