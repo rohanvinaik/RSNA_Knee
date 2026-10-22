@@ -11,7 +11,7 @@ from __future__ import annotations
 
 import json
 import sys
-from types import ModuleType
+from types import ModuleType, SimpleNamespace
 
 import numpy as np
 import pytest
@@ -1099,6 +1099,75 @@ def test_a_reversed_pair_sets_aside_only_the_member_no_other_view_confirms(
             "overruled_relation_conflicts" not in bones[bone]
             for bone in ("tibia", "fibula")
         )
+
+
+def _positioned(x_mm: float) -> dict:
+    """A series record whose squint tiles all centre at patient x = ``x_mm``."""
+    centres = np.zeros((1, 2, 2, 3))
+    centres[..., 0] = x_mm
+    return {"stack": SimpleNamespace(centres_lps=centres)}
+
+
+def test_the_knees_position_names_a_side_only_off_the_bore_axis():
+    side = anatomy_locator.knee_side_from_position
+    right = side({"a": _positioned(-90.0), "b": _positioned(-80.0)})
+    assert (right["side"], right["code"], right["centre_x_mm"]) == (
+        "right",
+        "named_by_position",
+        -85.0,
+    )
+    assert side({"a": _positioned(85.0)})["side"] == "left"
+    # Within the knee's half-breadth of the axis the knee straddles it: no side.
+    near = side({"a": _positioned(-20.0)})
+    assert (near["side"], near["code"]) == (None, "knee_straddles_the_bore_axis")
+    assert side({})["code"] == "no_series_position"
+    # The fixture's leg (its leg-map tiles) is centred on the axis.
+    assert side({CORONAL: _series()})["side"] is None
+
+
+def test_the_knees_position_names_the_side_the_headers_omit_and_never_overrules_them(
+    monkeypatch,
+):
+    _no_producer(monkeypatch)
+    series = _series()
+    memory = _memory(series, {"medial_meniscus": (4, 5, 11, 12, 10, 15)})
+
+    def locate(knee, position_side):
+        monkeypatch.setattr(
+            anatomy_locator,
+            "knee_side_from_position",
+            lambda _series: {
+                "side": position_side,
+                "code": "fixture",
+                "centre_x_mm": None,
+            },
+        )
+        return locator.locate_objects(
+            _study(series, anchors=_sided_anchors(knee, knee)), memory
+        )["evidence"]
+
+    # No header side: the position names it, and the fibula's lateral check reads it.
+    evidence = locate(None, "left")
+    assert evidence["knee_side"] == {
+        "side": "left",
+        "source": "knee_position_in_patient_frame",
+    }
+    assert evidence["anchors"]["anatomical_sanity"]["fibula"]["status"] == "plausible"
+    # Header and position agree: the header is the recorded source.
+    assert locate("L", "left")["knee_side"] == {
+        "side": "left",
+        "source": "series_header_laterality",
+    }
+    # Header with no side by position: the header stands.
+    assert locate("L", None)["knee_side"]["side"] == "left"
+    # They name different knees: neither is chosen, and the conflict is kept.
+    evidence = locate("R", "left")
+    assert evidence["knee_side"] == {"side": None, "source": None}
+    assert evidence["knee_position"]["conflict"] == {
+        "header": "right",
+        "position": "left",
+    }
+    assert evidence["anchors"]["anatomical_sanity"]["fibula"]["status"] == "unknown"
 
 
 def _partial_axial_anchor(bone: str, box: tuple[int, ...], height_mm: float):

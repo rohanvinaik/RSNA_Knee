@@ -49,11 +49,20 @@ placed from them (SQUINT_TRAINING_BUILD §4 L2/L0, §9 W10).
   No position is invented, and a missing plane stays missing.
 * The knee's side is the study's ``knee_side`` when the caller supplies one, else
   the knee the series headers name (DICOM Laterality, ``R`` or ``L``) as the
-  anchors recorded it: a recorded fact of the acquisition, not an inference. It
-  reaches the anchor checks and every window proposal, so medial and lateral
-  relations are read where the knee is known. Anchors naming different knees, or
-  none, leave the side unknown, and those relations stay unknown; the location
-  evidence names the side and where it came from.
+  anchors recorded it: a recorded fact of the acquisition, not an inference. Beside
+  it stands where the knee lies (``knee_side_from_position``): the scanner's table
+  moves only head to foot, so the bore's axis runs near the patient's midline, and a
+  right knee lies at negative x of the patient frame (+x is the patient's left), a
+  left knee at positive x. Over the 29 local studies whose headers name a knee it
+  agreed with 28; the 29th header names the left knee of a scan whose coronal slices
+  show the fibula on the patient's right. A knee within ``KNEE_HALF_BREADTH_MM`` of
+  the axis straddles it and names no side by position. Where the headers name no
+  knee, its position names it; where the two name different knees, neither is
+  chosen and the side stays unknown. The side reaches the anchor checks and every
+  window proposal, so medial and lateral relations are read where the knee is known.
+  Anchors naming different knees, or none, with no side by position, leave the side
+  unknown, and those relations stay unknown; the location evidence names the side,
+  where it came from, and the position reading beside it.
 
 On the structural route each located object keeps ``regions`` (one address per
 reading) and the aligned ``territories`` as JSON-safe records
@@ -79,6 +88,7 @@ from knee.diagnosis.squint_geometry import (
     object_geometry,
 )
 from knee.diagnosis.squint_interfaces import (
+    LEG_INSIDE,
     LEG_OUTSIDE,
     ROLE_CONTEXT,
     ROLE_OBJECT,
@@ -107,6 +117,10 @@ FINE_READING_DEFERRED = "deferred_to_a_named_question"
 NATIVE_SUPPORT_RETAINED = "native_support_territories"
 #: The header's knee word as the sanity checks and window proposals spell it.
 HEADER_KNEE_SIDE = {"L": "left", "R": "right"}
+#: Half an adult knee's breadth (a knee is about 10 cm across), in mm. A knee whose
+#: centre lies nearer the bore's axis than this straddles the axis, so where it lies
+#: does not say which side of the body it is on (module note).
+KNEE_HALF_BREADTH_MM = 50.0
 _DEPENDENT_API = "knee.diagnosis.squint_anatomy_locator.dependent_territories/v1"
 _ORIENTATIONS = ("sagittal", "coronal", "axial")
 
@@ -1407,6 +1421,49 @@ def _check_anchor_sanity(
             state["source"]["route_reason"] = "anatomical_anchor_conflict"
 
 
+def knee_side_from_position(series_by_uid: Mapping[str, Any]) -> dict[str, Any]:
+    """Which knee the scan's own position names, in the patient frame (module note).
+
+    Each series gives the mean x of its squint tiles' physical centres over the leg
+    (over every tile with a centre where it has no valid leg map); the study takes
+    the median over its series. Read from values the squint already holds.
+    """
+    xs: list[float] = []
+    for row in series_by_uid.values():
+        stack = row.get("stack") if isinstance(row, Mapping) else None
+        centres = getattr(stack, "centres_lps", None)
+        if centres is None:
+            continue
+        x = np.asarray(centres, dtype=float)[..., 0]
+        keep = np.isfinite(x)
+        leg = row.get("leg_map")
+        if (
+            isinstance(leg, Mapping)
+            and leg_map_code(leg, grid_shape=x.shape) == "valid"
+            and (np.asarray(leg["codes"]) == LEG_INSIDE).any()
+        ):
+            keep &= np.asarray(leg["codes"]) == LEG_INSIDE
+        if keep.any():
+            xs.append(float(np.mean(x[keep])))
+    if not xs:
+        return {"side": None, "code": "no_series_position", "centre_x_mm": None}
+    centre = float(np.median(xs))
+    side = (
+        "left"
+        if centre >= KNEE_HALF_BREADTH_MM
+        else "right"
+        if centre <= -KNEE_HALF_BREADTH_MM
+        else None
+    )
+    return {
+        "side": side,
+        "code": "named_by_position" if side else "knee_straddles_the_bore_axis",
+        "centre_x_mm": round(centre, 1),
+        "series": len(xs),
+        "half_breadth_mm": KNEE_HALF_BREADTH_MM,
+    }
+
+
 def locate_anatomy_first(
     study: dict,
     memory: dict,
@@ -1529,10 +1586,24 @@ def locate_anatomy_first(
     # (module note): nothing from an earlier location, and nothing when it pairs now.
     retained_support: list[Mapping[str, Any]] | None = None if refine_finalists else []
     anchor_state = study_anchors(study, series_by_uid, deadline=deadline)
+    knee_position = knee_side_from_position(series_by_uid)
     if knee_side is None:
-        # The knee the series headers name, as the anchors recorded it (module note).
-        knee_side = HEADER_KNEE_SIDE.get(anchor_state["knee"])
-        knee_side_source = None if knee_side is None else "series_header_laterality"
+        # The knee the series headers name, as the anchors recorded it, beside the
+        # knee its position names; different knees choose neither (module note).
+        header_side = HEADER_KNEE_SIDE.get(anchor_state["knee"])
+        position_side = knee_position["side"]
+        if header_side and position_side and header_side != position_side:
+            knee_position["conflict"] = {
+                "header": header_side,
+                "position": position_side,
+            }
+        elif header_side:
+            knee_side, knee_side_source = header_side, "series_header_laterality"
+        elif position_side:
+            knee_side, knee_side_source = (
+                position_side,
+                "knee_position_in_patient_frame",
+            )
     _check_anchor_sanity(anchor_state, series_by_uid, knee_side)
     structural = anchor_state["route"] == STRUCTURAL_ROUTE
     structural_geometry: dict[str, dict[str, Any]] = anchor_state["geometry"]
@@ -2214,6 +2285,7 @@ def locate_anatomy_first(
             }
         ),
         "knee_side": {"side": knee_side, "source": knee_side_source},
+        "knee_position": knee_position,
     }
     if territory_v2 and not refine_finalists:
         study_evidence["fine_reading"] = FINE_READING_DEFERRED
@@ -2230,11 +2302,13 @@ __all__ = [
     "CONTEXT_RING_TILES",
     "EXISTING_ROUTE",
     "FINE_READING_DEFERRED",
+    "KNEE_HALF_BREADTH_MM",
     "NATIVE_SUPPORT_RETAINED",
     "STRUCTURAL_ROUTE",
     "TERRITORY_RECORD_SERIALIZATION",
     "USABLE_ANCHOR_STATUSES",
     "dependent_territories",
+    "knee_side_from_position",
     "locate_anatomy_first",
     "resolve_anchor_views",
     "retained_native_territory",
