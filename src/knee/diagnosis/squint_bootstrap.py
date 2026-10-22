@@ -1440,6 +1440,100 @@ def _corrected_child(
     return child, records
 
 
+def _refresh_corrected_configurations(
+    child: dict[str, Any],
+    memory: Mapping[str, Any],
+    effects: Mapping[str, Mapping[str, Any]],
+    provenance: Mapping[str, Any],
+) -> tuple[dict[str, Any], dict[str, Any] | None]:
+    """Rebuild the whole-condition cases of every study a correction touched.
+
+    A correction changes the views where an admitted object's identity holds, or
+    takes the object out of ``cases``; a configuration built with that object as
+    a role would otherwise keep speaking for it. The studies are rebuilt from the
+    corrected child with the public pair
+    (``squint_configurations.rebuild_study_configurations`` /
+    ``apply_rebuilt_configurations``): every role on the views where its identity
+    now holds, a whole-case correction no longer a role, the official label at
+    study scope from the child's ledger row, and each replaced version kept whole
+    as a record. A study without configurations or a ledger row is left as it is.
+    The rebuild is recorded on the review record it follows from.
+    """
+    from knee.diagnosis.squint_configurations import (
+        SUPERSEDED_CONFIGURATIONS_KEY,
+        SUPERSEDED_CONFIGURATIONS_SCHEMA,
+        ConfigurationProfileError,
+        apply_rebuilt_configurations,
+        rebuild_study_configurations,
+    )
+
+    by_id = {case["case_id"]: case for case in memory["cases"]}
+    studies = sorted({by_id[case_id]["study_uid"] for case_id in effects})
+    if not studies:
+        return child, None
+    built_by = {
+        "kind": "admission_correction",
+        "review_sha256": provenance["review_sha256"],
+        "reviewed_manifest_sha256": provenance["reviewed_manifest_sha256"],
+    }
+    # A study left with no object case has no warranted role for any configuration:
+    # its configurations are retired whole, as records, rather than rebuilt.
+    with_objects = {
+        case["study_uid"] for case in child["cases"] if not _is_configuration(case)
+    }
+    emptied = [study for study in studies if study not in with_objects]
+    retired = [
+        case
+        for case in child["cases"]
+        if _is_configuration(case) and case["study_uid"] in emptied
+    ]
+    if retired:
+        table = child.get(SUPERSEDED_CONFIGURATIONS_KEY) or {
+            "schema": SUPERSEDED_CONFIGURATIONS_SCHEMA,
+            "cases": [],
+        }
+        child = {
+            **child,
+            "cases": [case for case in child["cases"] if case not in retired],
+            SUPERSEDED_CONFIGURATIONS_KEY: {
+                **table,
+                "cases": [
+                    *table["cases"],
+                    *(
+                        {
+                            "case_sha256": _json_sha256(case),
+                            "superseded_by": dict(built_by),
+                            "retired": "no_object_case_remains_in_the_study",
+                            "case": case,
+                        }
+                        for case in retired
+                    ),
+                ],
+            },
+        }
+    try:
+        rebuilt = rebuild_study_configurations(
+            child,
+            [study for study in studies if study in with_objects],
+            built_by=built_by,
+        )
+        refreshed = apply_rebuilt_configurations(child, rebuilt)
+    except ConfigurationProfileError as error:
+        raise _fail(f"configuration_rebuild_refused:{error.code}") from error
+    summary = {
+        "built_by": built_by,
+        "study_uids": list(rebuilt["study_uids"]),
+        "rebuilt_case_ids": [case["case_id"] for case in rebuilt["cases"]],
+        "new_case_ids": [case["case_id"] for case in rebuilt["new"]],
+        "superseded_sha256": dict(rebuilt["superseded"]),
+        "retired_case_ids": [case["case_id"] for case in retired],
+    }
+    refreshed["object_identity_teaching"]["admission_reviews"][-1][
+        "configuration_rebuild"
+    ] = summary
+    return refreshed, summary
+
+
 def _facet(
     banks: Mapping[str, tuple[int, ...]], identity: str, views: Sequence[Sequence[str]]
 ) -> tuple[str, frozenset]:
@@ -1533,9 +1627,13 @@ def publish_admission_corrections(
     reject row. Each superseded row is kept verbatim. A plain confirm or unsure
     changes no case and no row; the review record in
     ``object_identity_teaching["admission_reviews"]`` keeps every call, the reader
-    and the confirmed admissions. Every other record (cases, configurations,
-    identity records, calls, full tables, source identities and growth rounds) is
-    the reviewed memory's own. A call file applying nothing is refused. The child
+    and the confirmed admissions. The whole-condition configurations of every
+    study a correction touched are rebuilt from the corrected child
+    (``_refresh_corrected_configurations``), their replaced versions kept as
+    records and the rebuild noted on the review record. Every other record (cases,
+    the other studies' configurations, identity records, calls, full tables,
+    source identities and growth rounds) is the reviewed memory's own. A call file
+    applying nothing is refused. The child
     must prepare with exactly the corrected facets moved, in identity recall and in
     where condition evidence speaks, and nothing else changed.
     """
@@ -1579,6 +1677,9 @@ def publish_admission_corrections(
         effects,
         admission_rows,
         list(candidates),
+    )
+    child, configuration_rebuild = _refresh_corrected_configurations(
+        child, memory, effects, provenance
     )
     try:
         _validate_memory(child)
@@ -1630,5 +1731,6 @@ def publish_admission_corrections(
             for record in validated["calls"]
             if record["call"] == "unsure"
         ],
+        "configuration_rebuild": configuration_rebuild,
         "identity_preparation": dict(readback),
     }
