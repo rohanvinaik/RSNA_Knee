@@ -25,15 +25,25 @@ from pathlib import Path
 from knee.diagnosis.squint_anatomy_locator import BONES as READER_BONES
 from knee.diagnosis.squint_identity import (
     CONDITIONING,
+    CONTESTED_AFTER_FINER_READING,
+    CONTESTED_AT_SQUINT_SCALE,
     CONTESTED_OUTCOMES,
     CONTEXT_SCHEMA,
+    FINE_SCALE,
     IDENTITY_CONSUMPTION_SCHEMA,
+    JOINT_SCALE,
     MAP_RELATION,
     PRIOR_ONLY,
     PROPOSED_PLACES,
+    RECALL_CONTEXT_SCHEMA,
+    RESOLVED_BY_FINER_READING,
     RESOLVED_SUPPORT,
+    SIGNED_CONFLICT,
+    SQUINT_SCALE,
     STRUCTURAL_READER,
     SUPPORT_UNRECORDED,
+    holds_scale,
+    squint_contest_resolution,
 )
 from knee.diagnosis.squint_interfaces import (
     MEASURED_ORIGINS,
@@ -1216,35 +1226,55 @@ def _identity_readings(
 
 
 def _identity_open_question(
-    subject: str, context: Mapping | None, reading: Mapping | None, effect: str
+    subject: str,
+    context: Mapping | None,
+    reading: Mapping | None,
+    effect: str,
+    contest: Mapping | None = None,
+    holds_fine: bool = False,
 ) -> dict | None:
     """The bounded next observation that could settle an identity left open.
 
-    Contested (an applicable negative case speaks), or a placement or prior whose own
-    cases do not support it: the existing residual paths are named, the paired finer
-    reading of the located regions (``refine_territory`` or ``refine_window`` at 2 mm,
-    ``_bounded_observation``'s default) and, where the part has one, its own native
-    producer (``squint_residual.own_outline``). Naming them runs nothing: the consumer
-    decides within its budget. A bone the reader established, uncontested, asks none.
+    Contested at its deciding scale (an applicable negative case speaks), a squint-scale
+    contest the finer reading has not settled, or a placement or prior whose own cases
+    do not support it: the existing residual paths that remain are named. The paired
+    finer reading of the located regions (``refine_territory`` or ``refine_window`` at
+    2 mm, ``_bounded_observation``'s default) is named only while no finer reading is
+    held, so nothing is read twice; where the part has one, its own native producer
+    (``squint_residual.own_outline``) is named too. Naming them runs nothing: the
+    consumer decides within its budget. A squint-scale contest's finer look, which
+    ``infer_study`` makes itself, is recorded as ``finer_look``. A bone the reader
+    established, uncontested, asks none.
     """
     if context is None or reading is None:
         return None
+    pending = contest is not None and contest["status"] not in (
+        RESOLVED_BY_FINER_READING,
+        CONTESTED_AFTER_FINER_READING,
+    )
     unconfirmed = context["basis"] != STRUCTURAL_READER and reading.get(
         "appearance"
     ) in ("silent", "uncalibrated")
-    if effect == "answers" and not unconfirmed:
+    if effect == "answers" and not pending and not unconfirmed:
         return None
     from knee.diagnosis.squint_residual import FINE_TILE_MM, producer_for
 
-    why = "contested" if effect != "answers" else "appearance_unconfirmed"
-    observations = [
-        {
-            "request": {"object": subject, "question": "identity", "reason": why},
-            "procedure": "paired_finer_reading",
-            "reads": f"the located regions at {FINE_TILE_MM:g} mm: refine_territory "
-            "over a territory reading, refine_window over a tile window",
-        }
-    ]
+    if effect in CONTESTED_OUTCOMES:
+        why = "contested"
+    elif pending:
+        why = CONTESTED_AT_SQUINT_SCALE
+    else:
+        why = "appearance_unconfirmed"
+    observations = []
+    if not holds_fine:
+        observations.append(
+            {
+                "request": {"object": subject, "question": "identity", "reason": why},
+                "procedure": "paired_finer_reading",
+                "reads": f"the located regions at {FINE_TILE_MM:g} mm: refine_territory "
+                "over a territory reading, refine_window over a tile window",
+            }
+        )
     producer = producer_for(subject)
     if producer is not None:
         observations.append(
@@ -1259,25 +1289,54 @@ def _identity_open_question(
                 "reads": producer.definition,
             }
         )
-    return {
+    question = {
         "status": "open",
         "why": why,
         "support": context.get("support"),
         "next_observations": observations,
         "run": "left_to_the_consumer_within_budget",
     }
+    if contest is not None:
+        question["finer_look"] = copy.deepcopy(contest.get("finer_look"))
+    return question
+
+
+def _look_summary(look: object) -> dict | None:
+    """The finer look a squint-scale contest earned: its code and what it read."""
+    if not isinstance(look, Mapping):
+        return None
+    return {
+        "code": look.get("code"),
+        "reason": look.get("reason"),
+        "lens": look.get("lens"),
+        "regions_read": len(look.get("regions") or ()),
+    }
 
 
 def _object_consumption(
-    subject: str, reading: object, examined: object, context: object
+    subject: str,
+    reading: object,
+    examined: object,
+    context: object,
+    contest_state: Mapping | None = None,
+    holds_fine: bool = False,
 ) -> dict:
     """How one object's identity in context reaches its condition questions.
 
     The object answers its own questions as the object identified in context unless an
-    applicable negative case speaks over its asserted region: then the region is not
-    read as that object (``appearance_opposed``, or a ``signed_conflict`` with its own
-    cases), its questions stay open, and nothing renames it. A genuine contradictory law
-    observation is a revisable ``identity_question``.
+    applicable negative case speaks over its asserted region in the comparison that
+    decides: then the region is not read as that object (``appearance_opposed``, or a
+    ``signed_conflict`` with its own cases), its questions stay open, and nothing renames
+    it. A negative speaking at the squint scale opens the question and does not decide
+    it: the joint recall after the finer look in ``contest_state`` does
+    (``squint_contest_resolution``). Settled there, the object answers. Opposed there,
+    the region is not read. When its own cases and a negative both still speak, the
+    question returns to the structure's own word (thesis §11.2): a bone the structural
+    reader named stands, the disagreement kept as a finding, and a placement or prior,
+    with no concurring family, stays open. Not yet settled, a reader's bone stands, its
+    question recorded, and a placement or prior is ``contested_at_squint_scale``, its
+    questions left open. A contest is never broken by which side resembles more. A
+    genuine contradictory law observation is a revisable ``identity_question``.
     """
     if examined != "examined":
         outcome = examined if isinstance(examined, str) and examined else None
@@ -1293,25 +1352,59 @@ def _object_consumption(
         )
     context = context if isinstance(context, Mapping) else None
     heard = reading if examined == "examined" and isinstance(reading, Mapping) else None
-    effect = (
-        outcome if heard is not None and outcome in CONTESTED_OUTCOMES else "answers"
-    )
+    deciding, scale, effect, contest = heard, SQUINT_SCALE, "answers", None
+    standing = False
+    if heard is not None and outcome in CONTESTED_OUTCOMES:
+        state = contest_state if isinstance(contest_state, Mapping) else {}
+        resolution = state.get("resolution") or squint_contest_resolution(heard, None)
+        resolved = state.get("resolved")
+        structural = context is not None and context["basis"] == STRUCTURAL_READER
+        finding = None
+        if resolution["status"] == CONTESTED_AFTER_FINER_READING:
+            deciding, scale = resolved, JOINT_SCALE
+            if resolved["outcome"] == SIGNED_CONFLICT and structural:
+                # Both voices still reach: the structure's own word stands.
+                standing = True
+                finding = "disagreement_kept_structural_identity_stands"
+            else:
+                effect = resolved["outcome"]
+        elif resolution["status"] == RESOLVED_BY_FINER_READING:
+            deciding, scale = resolved, JOINT_SCALE
+        elif structural:
+            standing = True
+        else:
+            effect = CONTESTED_AT_SQUINT_SCALE
+        contest = {
+            "finer_look": _look_summary(state.get("look")),
+            **resolution,
+            "finding": finding,
+        }
+    if effect in CONTESTED_OUTCOMES:
+        applicable = list(deciding.get("applicable_negative_case_ids", ()))
+    elif effect == CONTESTED_AT_SQUINT_SCALE:
+        applicable = list(heard.get("applicable_negative_case_ids", ()))
+    else:
+        applicable = []
     contradictions = list(context["contradictions"]) if context is not None else []
     entry = {
         "answers_questions_as": subject if effect == "answers" else None,
         "region_read_as_subject": effect == "answers",
         "identity_effect": effect,
         "identity_basis": context["basis"] if context is not None else None,
-        "identity_state": heard.get("identity_state") if heard is not None else None,
+        "identity_scale": scale if heard is not None else None,
+        "identity_state": "established"
+        if standing
+        else deciding.get("identity_state")
+        if deciding is not None
+        else None,
         "support": context.get("support") if context is not None else None,
         "recall_outcome": outcome,
-        "applicable_negative_case_ids": list(
-            heard.get("applicable_negative_case_ids", ()) if heard is not None else ()
-        ),
+        "applicable_negative_case_ids": applicable,
+        "squint_scale_contest": contest,
         "identity_context": copy.deepcopy(context),
         "identity_question": None,
         "identity_open_question": _identity_open_question(
-            subject, context, heard, effect
+            subject, context, deciding, effect, contest, holds_fine
         ),
     }
     if contradictions:
@@ -1325,13 +1418,18 @@ def _object_consumption(
 
 
 def _identity_consumption(
-    objects: object, identity_readings: object, contexts: object = None
+    objects: object,
+    identity_readings: object,
+    contexts: object = None,
+    contests: object = None,
 ) -> dict:
     """Each located object's identity in context, as condition reasoning consumes it.
 
     Resemblance to another object never keeps a region from its own questions; an
-    applicable negative case does (``_object_consumption``). ``not_read_as_subject``
-    names those regions; bounded looks are never refused for identity.
+    applicable negative case at the deciding scale does (``_object_consumption``), and
+    ``contests`` holds the finer recall of each squint-scale contest
+    (``_resolve_identity_contests``). ``not_read_as_subject`` names those regions;
+    bounded looks are never refused for identity.
     """
     record: dict = {
         "schema": IDENTITY_CONSUMPTION_SCHEMA,
@@ -1347,9 +1445,20 @@ def _identity_consumption(
     if not isinstance(readings, Mapping):
         readings = {}
     known = contexts if isinstance(contexts, Mapping) else {}
+    states = contests if isinstance(contests, Mapping) else {}
     record["objects"] = {
         subject: _object_consumption(
-            subject, readings.get(subject), examined, known.get(subject)
+            subject,
+            readings.get(subject),
+            examined,
+            known.get(subject),
+            states.get(subject),
+            holds_scale(
+                objects[subject].get("profile")
+                if isinstance(objects[subject], Mapping)
+                else None,
+                FINE_SCALE,
+            ),
         )
         for subject in sorted(objects)
     }
@@ -1374,6 +1483,97 @@ def _regions_not_read(consumption: Mapping) -> dict[str, dict]:
     }
 
 
+def _resolve_identity_contests(
+    objects: dict,
+    study: dict,
+    memory: dict,
+    excluded_uid: str | None,
+    identity_readings: dict,
+    contexts: Mapping | None,
+    attempted: set,
+    observations: list,
+    deadline: float | None,
+    prepared_resolved: Mapping | None = None,
+) -> dict[str, dict]:
+    """Settle each squint-scale identity contest with the object's own finer reading.
+
+    A located object whose squint-scale recall in context has an applicable negative
+    case (``CONTESTED_OUTCOMES``) has an open identity question, not a decided one: at
+    10 mm a support's object tiles still mix the object with its surroundings. It earns
+    the existing bounded finer look of its own region (``_bounded_observation``'s paired
+    finer reading at the same address), shared with every later question through
+    ``attempted`` and ``observations``, so nothing is read twice. An object that then
+    holds a finer reading of its own tiles is recalled again as one comparison over
+    every bank both sides speak in at both scales (``JOINT_SCALE``), under the same
+    context and rules, against a joint view prepared once (``prepared_resolved``, else
+    from this ``memory`` and exclusion); how its contest stands is
+    ``squint_contest_resolution``. Returns, per contested object, its look, its joint
+    recall (None without a finer reading) and the resolution, and records the joint
+    recalls in ``identity_readings["resolved_scale"]``. With no contest, nothing is read
+    and nothing is recorded.
+    """
+    from knee.diagnosis.squint_identity import prepare_identity, recall_identity
+
+    if identity_readings.get("outcome") != "examined":
+        return {}
+    readings = identity_readings.get("objects")
+    readings = readings if isinstance(readings, Mapping) else {}
+    contested = sorted(
+        subject
+        for subject, reading in readings.items()
+        if isinstance(reading, Mapping)
+        and reading.get("schema") == RECALL_CONTEXT_SCHEMA
+        and reading.get("outcome") in CONTESTED_OUTCOMES
+        and isinstance(objects.get(subject), dict)
+    )
+    if not contested:
+        return {}
+    known = contexts if isinstance(contexts, Mapping) else {}
+    prepared = prepared_resolved
+    finer: dict[str, dict] = {}
+    states: dict[str, dict] = {}
+    for subject in contested:
+        located = objects[subject]
+        request = {
+            "object": subject,
+            "question": "identity",
+            "reason": CONTESTED_AT_SQUINT_SCALE,
+        }
+        look = _bounded_observation(request, study, objects, attempted, deadline)
+        observations.append({**look, "requested_by": "identity_question"})
+        resolved = None
+        if holds_scale(located.get("profile"), FINE_SCALE):
+            if prepared is None:
+                prepared = prepare_identity(
+                    memory, exclude_study_uid=excluded_uid, scale=JOINT_SCALE
+                )
+            resolved = recall_identity(
+                located["profile"],
+                memory,
+                exclude_study_uid=excluded_uid,
+                sanity=located.get("sanity"),
+                prepared=prepared,
+                context=known.get(subject),
+                scale=JOINT_SCALE,
+                resolve_negatives=readings[subject].get(
+                    "applicable_negative_case_ids", ()
+                ),
+            )
+            finer[subject] = resolved
+        states[subject] = {
+            "look": look,
+            "resolved": resolved,
+            "resolution": squint_contest_resolution(readings[subject], resolved),
+        }
+    identity_readings["resolved_scale"] = {
+        "scale": JOINT_SCALE,
+        "contested_at_squint_scale": contested,
+        "preparation": dict(prepared) if isinstance(prepared, Mapping) else None,
+        "objects": finer,
+    }
+    return states
+
+
 def infer_study(
     root: Path,
     uid: str,
@@ -1383,6 +1583,7 @@ def infer_study(
     io_workers: int = 8,
     exclude_same_study: bool = False,
     prepared_identity: Mapping | None = None,
+    prepared_identity_resolved: Mapping | None = None,
 ) -> dict:
     """Consume current-study cheap observations; never read teaching calls as features.
 
@@ -1393,9 +1594,13 @@ def infer_study(
     forward once as its identity context (``_identity_contexts``): identity recall is
     conditioned on it, and every located object answers its own questions as the object
     identified in context (``identity_consumption``). Resemblance to another object
-    changes nothing; an applicable negative case keeps its region from its object's
-    questions, which stay open. A genuine contradictory law observation is a revisable
-    question, and bounded looks are never refused for identity.
+    changes nothing. A negative case speaking at the squint scale opens the identity
+    question, which earns the object's finer look and a finer recall before any
+    condition question is asked (``_resolve_identity_contests``); one still applying
+    there keeps its region from its object's questions, which stay open. A genuine
+    contradictory law observation is a revisable question, and bounded looks are never
+    refused for identity. ``prepared_identity`` and ``prepared_identity_resolved`` are
+    the identity views at the squint and the finer scale, made from this ``memory``.
     """
     from knee.diagnosis.declarations import QUESTIONS
     from knee.diagnosis.squint_contracts import combine_condition, rank_condition
@@ -1423,23 +1628,39 @@ def infer_study(
         study, memory, deadline=deadline, **_squint_first_location(locate_objects)
     )
     objects = locations.get("objects", {})
+    excluded_uid = uid if exclude_same_study else None
     identity_contexts = _identity_contexts(objects)
     identity_readings = _identity_readings(
         objects,
         memory,
-        uid if exclude_same_study else None,
+        excluded_uid,
         prepared_identity=prepared_identity,
         contexts=identity_contexts,
     )
+    # 2 mm readings held when location returned, before any look this study earns.
+    fine_readings_at_location = _fine_readings_held(objects)
+    observations: list = []
+    attempted: set = set()
+    # Identity is settled before any condition question reads a region, and the one
+    # finer reading an identity question earns is the one every later question reuses.
+    contests = _resolve_identity_contests(
+        objects,
+        study,
+        memory,
+        excluded_uid,
+        identity_readings,
+        identity_contexts,
+        attempted,
+        observations,
+        deadline,
+        prepared_identity_resolved,
+    )
     identity_consumption = _identity_consumption(
-        objects, identity_readings, identity_contexts
+        objects, identity_readings, identity_contexts, contests
     )
     not_read = _regions_not_read(identity_consumption)
-    fine_readings_at_location = _fine_readings_held(objects)
     questions = {}
     values = {}
-    observations = []
-    attempted = set()
     for question in QUESTIONS:
         object_evidence = _recall_question(
             question, objects, memory, uid, exclude_same_study, not_read_as=not_read
@@ -1772,6 +1993,7 @@ def run_squint_cli(args, *, prepared_memory_snapshot=None) -> dict:
         elif mode != "capacity":
             preparation_cache_status = "invalid_recomputed"
     identity_preparation_seconds = 0.0
+    identity_resolved_preparation_seconds = 0.0
     # The shared preparation; capacity runs prepare each study's held-out view instead.
     prepared: dict | None = None
     if mode != "capacity":
@@ -1830,14 +2052,23 @@ def run_squint_cli(args, *, prepared_memory_snapshot=None) -> dict:
             "memory_revision": memory.get("revision", ""),
         }
         identity_prepared_shared = None
+        identity_resolved_shared = None
         if "object_identity_teaching" in memory:
             from knee.diagnosis.squint_identity import prepare_identity
 
             identity_started = time.perf_counter()
             identity_prepared_shared = prepare_identity(memory)
             identity_preparation_seconds = time.perf_counter() - identity_started
+            # Once per bank set (its own trust radii), from the very memory object
+            # every study is given.
+            identity_started = time.perf_counter()
+            identity_resolved_shared = prepare_identity(memory, scale=JOINT_SCALE)
+            identity_resolved_preparation_seconds = (
+                time.perf_counter() - identity_started
+            )
     else:
         identity_prepared_shared = None
+        identity_resolved_shared = None
         preparation_artifact_schema = None
         preparation_artifact_source = "not_written"
         preparation_identity = None
@@ -1915,6 +2146,11 @@ def run_squint_cli(args, *, prepared_memory_snapshot=None) -> dict:
             deadline=deadline,
             exclude_same_study=mode == "capacity",
             prepared_identity=identity_prepared,
+            # A capacity study's finer view is made from its own held-out memory,
+            # only when one of its identity questions needs it.
+            prepared_identity_resolved=(
+                identity_resolved_shared if mode != "capacity" else None
+            ),
         )
         record["work"].update(
             {
@@ -2049,7 +2285,13 @@ def run_squint_cli(args, *, prepared_memory_snapshot=None) -> dict:
             "memory_loaded_once": True,
             "recall_preparation_seconds": preparation_seconds,
             "identity_preparation_seconds": identity_preparation_seconds,
+            "identity_resolved_preparation_seconds": (
+                identity_resolved_preparation_seconds
+            ),
             "identity_preparations_shared": int(identity_prepared_shared is not None),
+            "identity_resolved_preparations_shared": int(
+                identity_resolved_shared is not None
+            ),
             "workers": worker_count,
             "studies": studies,
         },

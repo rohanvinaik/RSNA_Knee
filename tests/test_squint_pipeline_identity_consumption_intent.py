@@ -10,18 +10,25 @@ decorative annotations... Muscle surrounding a bone is different from muscle occ
 region asserted to be the bone. A broad mixed window is different from a resolved object.»
 
 So resemblance to another object never keeps a region from its own questions or its
-bounded looks. A negative case whose reason holds for the asserted region (it speaks over
-the object's own tiles) keeps that region from being read as the object: its questions
-stay open, nothing renames it, and its bounded looks are still made. A negative heard only
-through the surroundings changes nothing. ``identity_consumption``
-(``knee.study-identity-consumption/v2``) records each object's identity context, its
-recall outcome and effect, a revisable ``identity_question`` for a genuine contradictory
-law observation, and an ``identity_open_question`` naming the existing bounded readings
-that could settle an unsettled identity, run by nothing here.
+bounded looks. At 10 mm a support's object tiles still mix the object with its
+surroundings, so a negative case speaking over them only opens the identity question.
+The question earns the object's finer look at the same address, read once and shared
+with every later question, and is recalled again as one comparison over both scales. A
+negative still applying there keeps the region from being read as the object (opposed);
+when its own cases also still speak, the structure's own word decides: a bone the
+structural reader named stands, the disagreement kept as a finding, and a placement or
+prior stays open. A negative that does not apply there was squint-scale resemblance only.
+Until the finer reading exists, a reader's bone stands and a placement or prior stays
+open. A negative heard only through the surroundings changes nothing.
+``identity_consumption`` (``knee.study-identity-consumption/v2``) records each object's
+identity context, its recall outcome, effect and deciding scale, the squint-scale
+contest, a revisable ``identity_question`` for a genuine contradictory law observation,
+and an ``identity_open_question`` naming the existing bounded readings that remain.
 
 Each meaning is pinned with both signs. ``recall_object`` is a spy (an empty profile gets
 the real recall, as production gives an unlocated object); identity recall, configuration
-composition and the condition contracts are the real ones.
+composition and the condition contracts are the real ones. The finer look's lowest read,
+``_refine_regions``, is replaced where a test needs a 2 mm reading.
 """
 
 from __future__ import annotations
@@ -41,15 +48,27 @@ from knee.diagnosis.squint_contracts import combine_condition
 from knee.diagnosis.squint_identity import (
     APPEARANCE_OPPOSED,
     CONDITIONING,
+    CONTESTED_AFTER_FINER_READING,
+    CONTESTED_AT_SQUINT_SCALE,
     CONTEXT_SCHEMA,
     IDENTITY_CONSUMPTION_SCHEMA,
+    JOINT_SCALE,
     MAP_RELATION,
+    NEGATIVE_APPLIES,
+    NEGATIVE_COMPARED_NOT_APPLYING,
+    NEGATIVE_NOT_COMPARED,
     PRIOR_ONLY,
     PROPOSED_PLACES,
+    RECALL_CONTEXT_SCHEMA,
+    RESOLVED_BY_FINER_READING,
     RESOLVED_SUPPORT,
     SIGNED_CONFLICT,
+    SQUINT_SCALE,
     STRUCTURAL_READER,
     SUPPORT_UNRECORDED,
+    UNRESOLVED_NO_FINER_READING,
+    UNRESOLVED_NOT_COMPARED,
+    squint_contest_resolution,
 )
 from knee.diagnosis.squint_interfaces import TERRITORY_PROCEDURE, territory_bank_name
 
@@ -78,14 +97,17 @@ PROVENANCE = {
 }
 
 
-def bank(view=SAG, role="object") -> str:
-    return territory_bank_name(view, role, "m", "d", 10.0)
+def bank(view=SAG, role="object", tile_mm=10.0) -> str:
+    return territory_bank_name(view, role, "m", "d", tile_mm)
 
 
-def tprofile(subject: str, counts, view=SAG, ring=None) -> dict:
+def tprofile(subject: str, counts, view=SAG, ring=None, fine=None, fine_view=None):
+    """A territory-v2 profile; ``fine`` adds the object tiles' 2 mm reading."""
     banks = {bank(view): list(counts)}
     if ring is not None:
         banks[bank(view, "context")] = list(ring)
+    if fine is not None:
+        banks[bank(fine_view or view, tile_mm=2.0)] = list(fine)
     return {
         "schema": "knee.squint-profile/v1",
         "subject": subject,
@@ -231,13 +253,99 @@ def placed(subject: str, counts, *, unanchored=None) -> dict:
     }
 
 
-def seed(case_id: str, subject: str, study_uid: str, counts, ring=None) -> dict:
+def seed(
+    case_id: str, subject: str, study_uid: str, counts, ring=None, fine=None
+) -> dict:
     return {
         "case_id": case_id,
         "subject": subject,
         "study_uid": study_uid,
-        "profile": tprofile(subject, counts, ring=ring),
+        "profile": tprofile(subject, counts, ring=ring, fine=fine),
     }
+
+
+#: Object tiles read at 10 mm and at 2 mm (finer tiles, so larger counts). At 10 mm the
+#: reviewer's "not femur" support (2,1,0) still mixes bone with the soft tissue it named,
+#: close to the femur seed (3,1,0); at 2 mm it is that soft tissue (0,15,0) and the femur
+#: seed is bone (15,0,0).
+FEMUR_10, FEMUR_2 = (3, 1, 0), (15, 0, 0)
+NOT_FEMUR_10, NOT_FEMUR_2 = (2, 1, 0), (0, 15, 0)
+
+
+def joint_memory(*, muscle: bool = False) -> dict:
+    """Femur and tibia seeds and one sagittal "not femur" reject, read at both scales.
+
+    With ``muscle`` a calf-muscle seed calibrates a bone the structural reader
+    established, whose own cases are heard against every identity but its other bones.
+    """
+    cases = [
+        seed("f1", "femur", "sf", FEMUR_10, fine=FEMUR_2),
+        seed("t1", "tibia", "st", (0, 0, 3), fine=(0, 0, 15)),
+    ]
+    if muscle:
+        cases.append(
+            seed("m1", "medial_gastrocnemius", "sm", (0, 1, 3), fine=(0, 0, 15))
+        )
+    ids = [case["case_id"] for case in cases]
+    return {
+        "revision": "r1",
+        "cases": cases,
+        "object_identity_teaching": {
+            "schema": "knee.object-identity-teaching/v1",
+            "confirmed_case_ids": ids,
+            "calls": [{"candidate_id": case_id, "call": "confirm"} for case_id in ids]
+            + [
+                {
+                    "candidate_id": "n1",
+                    "call": "reject",
+                    "views": [SAG_TRIPLE],
+                    "notes": "posterior soft tissue, not femur",
+                }
+            ],
+            "negative_case_ids": ["n1"],
+            "negative_views": {"n1": [SAG_TRIPLE]},
+        },
+        "object_identity_cases": {
+            "schema": "knee.object-identity-cases/v1",
+            "cases": [seed("n1", "femur", "sn", NOT_FEMUR_10, fine=NOT_FEMUR_2)],
+        },
+    }
+
+
+def proposing(located_object: dict, window=WINDOW) -> dict:
+    """The same object, with a candidate window of its own the locator considered."""
+    evidence = dict(located_object.get("evidence") or {})
+    evidence["candidate_territories"] = {
+        "series-sag": {"candidate_object_windows": [list(window)]}
+    }
+    return {**located_object, "evidence": evidence}
+
+
+def finer_look(monkeypatch, fine: dict, view=SAG) -> list:
+    """Replace the finer look's lowest read (``_refine_regions``), counting each call.
+
+    A named object's look reads ``fine`` as its own tiles' 2 mm reading on ``view``;
+    any other object's look reaches its deadline before reading.
+    """
+    calls: list = []
+
+    def refine(located, deadline, by_uid, pair):
+        subject = located["profile"]["subject"]
+        calls.append(subject)
+        address = {"series_uid": "series-sag", "window": list(WINDOW)}
+        counts = fine.get(subject)
+        if counts is None:
+            return [], [], [], [{**address, "reason": "deadline_before_zoom"}]
+        reading = {
+            "schema": "knee.squint-profile/v1",
+            "subject": subject,
+            "banks": {bank(view, tile_mm=2.0): list(counts)},
+            "source": {"procedure": TERRITORY_PROCEDURE},
+        }
+        return [reading], [address], [], []
+
+    monkeypatch.setattr(squint_pipeline, "_refine_regions", refine)
+    return calls
 
 
 def taught_memory(*, femur_negative: bool = False, ring: bool = False) -> dict:
@@ -443,6 +551,27 @@ def reading(outcome: str, basis: str, appearance: str, *negatives: str) -> dict:
     }
 
 
+def squint_reading(outcome: str, basis: str, *negatives: str) -> dict:
+    """A squint-scale recall in context, as ``_identity_readings`` returns it."""
+    appearance = "supports" if outcome == SIGNED_CONFLICT else "uncalibrated"
+    return {
+        **reading(outcome, basis, appearance, *negatives),
+        "schema": RECALL_CONTEXT_SCHEMA,
+        "scale": SQUINT_SCALE,
+    }
+
+
+def joint_reading(outcome: str, basis: str, statuses: dict, *negatives: str) -> dict:
+    """The recall after the finer look: one comparison over both scales."""
+    appearance = "uncalibrated" if outcome == APPEARANCE_OPPOSED else "supports"
+    return {
+        **reading(outcome, basis, appearance, *negatives),
+        "schema": RECALL_CONTEXT_SCHEMA,
+        "scale": JOINT_SCALE,
+        "squint_scale_negatives": dict(statuses),
+    }
+
+
 @pytest.mark.parametrize(
     ("heard", "basis"),
     [
@@ -481,40 +610,135 @@ def test_whatever_its_recall_resembles_an_uncontested_object_answers_as_itself(
 
 @pytest.mark.parametrize("outcome", [APPEARANCE_OPPOSED, SIGNED_CONFLICT])
 @pytest.mark.parametrize("basis", [STRUCTURAL_READER, MAP_RELATION, PRIOR_ONLY])
-def test_an_applicable_negative_keeps_the_region_from_being_read_as_its_object(
-    outcome, basis
-):
+def test_a_squint_scale_negative_opens_the_question_and_decides_nothing(outcome, basis):
     record = squint_pipeline._identity_consumption(
         {"femur": {}, "tibia": {}},
         {
             "outcome": "examined",
             "objects": {
-                "femur": reading(outcome, basis, "supports", "n1"),
+                "femur": squint_reading(outcome, basis, "n1"),
                 "tibia": reading("appearance_silent", basis, "silent"),
             },
         },
         {"femur": context("femur", basis), "tibia": context("tibia", basis)},
     )
     entry = record["objects"]["femur"]
-    # Never renamed: the region is simply not read as the femur.
-    assert (entry["answers_questions_as"], entry["region_read_as_subject"]) == (
-        None,
-        False,
+    contest = entry["squint_scale_contest"]
+    assert (contest["status"], contest["squint_outcome"]) == (
+        UNRESOLVED_NO_FINER_READING,
+        outcome,
     )
-    assert entry["identity_effect"] == outcome
-    assert entry["applicable_negative_case_ids"] == ["n1"]
-    assert record["not_read_as_subject"] == ["femur"]
+    assert contest["negatives"] == {"n1": NEGATIVE_NOT_COMPARED}
+    assert entry["identity_scale"] == SQUINT_SCALE
+    if basis == STRUCTURAL_READER:
+        # The reader's bone stands until the finer reading speaks; nothing is renamed.
+        assert (entry["answers_questions_as"], entry["region_read_as_subject"]) == (
+            "femur",
+            True,
+        )
+        assert (entry["identity_effect"], entry["identity_state"]) == (
+            "answers",
+            "established",
+        )
+        assert record["not_read_as_subject"] == []
+    else:
+        # A placement or prior has no structure's word to stand on: it stays open.
+        assert (entry["answers_questions_as"], entry["region_read_as_subject"]) == (
+            None,
+            False,
+        )
+        assert entry["identity_effect"] == CONTESTED_AT_SQUINT_SCALE
+        assert squint_pipeline._regions_not_read(record) == {
+            "femur": {
+                "reason": CONTESTED_AT_SQUINT_SCALE,
+                "applicable_negative_case_ids": ["n1"],
+            }
+        }
     assert record["objects"]["tibia"]["region_read_as_subject"] is True
-    assert squint_pipeline._regions_not_read(record) == {
-        "femur": {"reason": outcome, "applicable_negative_case_ids": ["n1"]}
-    }
-    # The contested identity names the bounded readings that could settle it.
+    # The open question names the finer look that would settle it.
     question_ = entry["identity_open_question"]
-    assert (question_["status"], question_["why"]) == ("open", "contested")
-    assert question_["run"] == "left_to_the_consumer_within_budget"
+    assert (question_["status"], question_["why"]) == (
+        "open",
+        CONTESTED_AT_SQUINT_SCALE,
+    )
     assert [row["procedure"] for row in question_["next_observations"]] == [
         "paired_finer_reading"
     ]
+
+
+@pytest.mark.parametrize("basis", [STRUCTURAL_READER, MAP_RELATION, PRIOR_ONLY])
+@pytest.mark.parametrize(
+    ("joint_outcome", "status_of_n1", "settled"),
+    [
+        ("uncontested", NEGATIVE_COMPARED_NOT_APPLYING, RESOLVED_BY_FINER_READING),
+        (APPEARANCE_OPPOSED, NEGATIVE_APPLIES, CONTESTED_AFTER_FINER_READING),
+        (SIGNED_CONFLICT, NEGATIVE_APPLIES, CONTESTED_AFTER_FINER_READING),
+        ("uncontested", NEGATIVE_NOT_COMPARED, UNRESOLVED_NOT_COMPARED),
+    ],
+)
+def test_the_recall_after_the_finer_look_decides_the_contest(
+    basis, joint_outcome, status_of_n1, settled
+):
+    squint = squint_reading(SIGNED_CONFLICT, basis, "n1")
+    if joint_outcome == "uncontested":
+        joint_outcome = (
+            "established_by_structure"
+            if basis == STRUCTURAL_READER
+            else "appearance_supports"
+        )
+    applying = ["n1"] if status_of_n1 == NEGATIVE_APPLIES else []
+    joint = joint_reading(joint_outcome, basis, {"n1": status_of_n1}, *applying)
+    resolution = squint_contest_resolution(squint, joint)
+    assert resolution["status"] == settled
+    record = squint_pipeline._identity_consumption(
+        {"femur": {"profile": tprofile("femur", (1, 0, 0), fine=(1, 0, 0))}},
+        {"outcome": "examined", "objects": {"femur": squint}},
+        {"femur": context("femur", basis)},
+        {
+            "femur": {
+                "look": {"code": "measured", "lens": "paired_finer", "regions": [{}]},
+                "resolved": joint,
+                "resolution": resolution,
+            }
+        },
+    )
+    entry = record["objects"]["femur"]
+    contest = entry["squint_scale_contest"]
+    assert contest["finer_look"] == {
+        "code": "measured",
+        "reason": None,
+        "lens": "paired_finer",
+        "regions_read": 1,
+    }
+    structural = basis == STRUCTURAL_READER
+    if settled == RESOLVED_BY_FINER_READING:
+        # The squint-scale negative was resemblance only: the object answers.
+        assert entry["region_read_as_subject"] is True
+        assert entry["identity_scale"] == JOINT_SCALE
+        assert contest["squint_scale_resemblance_only"] == ["n1"]
+    elif settled == UNRESOLVED_NOT_COMPARED:
+        # A finer reading that could not include the negative settles nothing for it.
+        assert entry["region_read_as_subject"] is structural
+        assert entry["identity_scale"] == SQUINT_SCALE
+    elif joint_outcome == SIGNED_CONFLICT and structural:
+        # Both voices still reach: the structure's own word stands, the disagreement
+        # kept as a finding, never broken by which side resembles more.
+        assert entry["region_read_as_subject"] is True
+        assert entry["identity_state"] == "established"
+        assert contest["finding"] == "disagreement_kept_structural_identity_stands"
+        assert entry["identity_open_question"] is None
+    else:
+        # Opposed after the look, or a disagreement with no structure's word: open.
+        assert entry["region_read_as_subject"] is False
+        assert entry["identity_effect"] == joint_outcome
+        assert entry["identity_scale"] == JOINT_SCALE
+        assert entry["applicable_negative_case_ids"] == ["n1"]
+    # A held finer reading is never named again as the next observation.
+    question_ = entry["identity_open_question"]
+    if question_ is not None:
+        assert "paired_finer_reading" not in [
+            row["procedure"] for row in question_["next_observations"]
+        ]
 
 
 def test_a_contradiction_is_a_revisable_question_and_a_plain_context_asks_none():
@@ -840,55 +1064,187 @@ def test_a_located_femur_gives_its_own_findings_not_an_unlocated_ones(monkeypatc
     assert decided(present) != decided(missing)
 
 
-def test_an_applicable_negative_keeps_the_femur_open_and_its_looks_are_still_made(
+def test_a_squint_scale_negative_is_not_applied_after_a_finer_reading_it_does_not_speak_in(
     monkeypatch,
 ):
-    record, calls = run_study(
-        monkeypatch,
-        taught_memory(femur_negative=True),
-        bones(anchored("femur", (1, 2, 0))),
+    # A femur the map placed reads like the reviewer's "not femur" support at 10 mm;
+    # its own 2 mm tiles are bone, as the femur seed's are.
+    looks = finer_look(monkeypatch, {"femur": FEMUR_2})
+    record, reads = run_study(
+        monkeypatch, joint_memory(), bones(placed("femur", NOT_FEMUR_10))
     )
-    recall = record["identity_recall"]["objects"]["femur"]
-    assert (recall["outcome"], recall["identity"]) == (APPEARANCE_OPPOSED, "femur")
-    [negative] = recall["negative_cases"]
-    assert (negative["case_id"], negative["applies"], negative["reason"]) == (
-        "n1",
-        True,
-        "speaks_over_the_asserted_region",
+    squint = record["identity_recall"]["objects"]["femur"]
+    assert (squint["outcome"], squint["applicable_negative_case_ids"]) == (
+        APPEARANCE_OPPOSED,
+        ["n1"],
     )
-    assert negative["call_notes"] == "posterior soft tissue, not femur"
-    assert negative["views"] == [SAG_TRIPLE]
-    consumption = record["identity_consumption"]
-    entry = consumption["objects"]["femur"]
-    assert (entry["answers_questions_as"], entry["region_read_as_subject"]) == (
-        None,
-        False,
+    joint = record["identity_recall"]["resolved_scale"]["objects"]["femur"]
+    assert joint["scale"] == JOINT_SCALE
+    assert joint["squint_scale_negatives"] == {"n1": NEGATIVE_COMPARED_NOT_APPLYING}
+    entry = record["identity_consumption"]["objects"]["femur"]
+    contest = entry["squint_scale_contest"]
+    assert (contest["status"], contest["squint_scale_resemblance_only"]) == (
+        RESOLVED_BY_FINER_READING,
+        ["n1"],
     )
-    assert entry["applicable_negative_case_ids"] == ["n1"]
-    assert consumption["not_read_as_subject"] == ["femur"]
-    assert entry["identity_open_question"]["why"] == "contested"
-    # The region the negative speaks over never reached the femur's questions.
-    assert reads_of(calls, "femur") and all(b == () for b in reads_of(calls, "femur"))
-    assert not any(b.startswith("object/femur/") for b in configuration_banks(calls))
+    assert contest["finer_look"]["code"] == "measured"
+    assert (entry["answers_questions_as"], entry["identity_scale"]) == (
+        "femur",
+        JOINT_SCALE,
+    )
+    assert record["identity_consumption"]["not_read_as_subject"] == []
+    # One comparison over both scales: the own case's banks hold both.
+    [own] = joint["cases"]
+    assert sorted(own["common_speaking_banks"]) == sorted([bank(), bank(tile_mm=2.0)])
+    # Every femur question read the femur, with the reading its identity look made.
+    assert reads_of(reads, "femur")
+    assert set(reads_of(reads, "femur")) == {tuple(sorted([bank(), bank(tile_mm=2.0)]))}
+    assert looks.count("femur") == 1
+
+
+def test_a_negative_still_applying_with_the_finer_reading_is_applied(monkeypatch):
+    # The same femur, whose own 2 mm tiles are the soft tissue the reviewer named.
+    finer_look(monkeypatch, {"femur": NOT_FEMUR_2})
+    record, reads = run_study(
+        monkeypatch, joint_memory(), bones(placed("femur", NOT_FEMUR_10))
+    )
+    joint = record["identity_recall"]["resolved_scale"]["objects"]["femur"]
+    assert joint["squint_scale_negatives"] == {"n1": NEGATIVE_APPLIES}
+    entry = record["identity_consumption"]["objects"]["femur"]
+    assert entry["squint_scale_contest"]["status"] == CONTESTED_AFTER_FINER_READING
+    assert (entry["identity_effect"], entry["identity_scale"]) == (
+        APPEARANCE_OPPOSED,
+        JOINT_SCALE,
+    )
+    assert record["identity_consumption"]["not_read_as_subject"] == ["femur"]
+    assert reads_of(reads, "femur") and all(b == () for b in reads_of(reads, "femur"))
     for question_id in femur_questions():
         evidence = record["questions"][question_id]["objects"]["femur"]
         assert evidence["region_not_read_as_subject"] == {
             "reason": APPEARANCE_OPPOSED,
             "applicable_negative_case_ids": ["n1"],
         }
-    # Not a normal femur, so never the all-normal defeat: the question stays open.
     assert record["questions"]["Fracture"]["finding"]["outcome"] == "open"
-    # Its bounded looks are still made: identity never refuses one.
-    assert femur_rows(record)
-    assert all(row["code"] != "object_region_unavailable" for row in femur_rows(record))
-    # The same memory, a femur its negative does not speak over: read, and defeated.
-    clean, _ = run_study(
+
+
+def test_a_structural_bone_stands_while_its_finer_look_is_pending(monkeypatch):
+    # The look reaches its deadline before it reads: no finer reading exists.
+    finer_look(monkeypatch, {})
+    record, reads = run_study(
         monkeypatch,
-        taught_memory(femur_negative=True),
-        bones(anchored("femur", (3, 0, 0))),
+        joint_memory(muscle=True),
+        bones(anchored("femur", NOT_FEMUR_10)),
     )
-    assert clean["identity_consumption"]["not_read_as_subject"] == []
-    assert clean["questions"]["Fracture"]["finding"]["outcome"] == "defeated"
+    squint = record["identity_recall"]["objects"]["femur"]
+    assert squint["outcome"] == SIGNED_CONFLICT
+    assert record["identity_recall"]["resolved_scale"]["objects"] == {}
+    entry = record["identity_consumption"]["objects"]["femur"]
+    contest = entry["squint_scale_contest"]
+    assert (contest["status"], contest["finer_look"]["code"]) == (
+        UNRESOLVED_NO_FINER_READING,
+        "deadline_before_zoom",
+    )
+    # The structure's established information is carried forward: it stands.
+    assert (entry["answers_questions_as"], entry["identity_state"]) == (
+        "femur",
+        "established",
+    )
+    assert set(reads_of(reads, "femur")) == {(bank(),)}
+    assert record["questions"]["Fracture"]["finding"]["outcome"] == "defeated"
+    question_ = entry["identity_open_question"]
+    assert question_["why"] == CONTESTED_AT_SQUINT_SCALE
+    assert [row["procedure"] for row in question_["next_observations"]] == [
+        "paired_finer_reading"
+    ]
+    # A placement in the same state has no structure's word: it stays open.
+    placement, _ = run_study(
+        monkeypatch, joint_memory(), bones(placed("femur", NOT_FEMUR_10))
+    )
+    entry = placement["identity_consumption"]["objects"]["femur"]
+    assert entry["identity_effect"] == CONTESTED_AT_SQUINT_SCALE
+    assert placement["identity_consumption"]["not_read_as_subject"] == ["femur"]
+    assert placement["questions"]["Fracture"]["finding"]["outcome"] == "open"
+
+
+def test_a_disagreement_after_the_finer_look_returns_to_the_structures_word(
+    monkeypatch,
+):
+    # Its own case and the reviewer's "not femur" both still speak after the look.
+    finer_look(monkeypatch, {"femur": NOT_FEMUR_2})
+    record, reads = run_study(
+        monkeypatch,
+        joint_memory(muscle=True),
+        bones(anchored("femur", NOT_FEMUR_10)),
+    )
+    joint = record["identity_recall"]["resolved_scale"]["objects"]["femur"]
+    assert (joint["outcome"], joint["speaking_case_ids"]) == (SIGNED_CONFLICT, ["f1"])
+    entry = record["identity_consumption"]["objects"]["femur"]
+    contest = entry["squint_scale_contest"]
+    assert contest["status"] == CONTESTED_AFTER_FINER_READING
+    assert contest["finding"] == "disagreement_kept_structural_identity_stands"
+    assert (entry["answers_questions_as"], entry["identity_scale"]) == (
+        "femur",
+        JOINT_SCALE,
+    )
+    assert set(reads_of(reads, "femur")) == {tuple(sorted([bank(), bank(tile_mm=2.0)]))}
+    # A placement with its tibia alternative open: no concurring family, it stays open.
+    tibia = proposing(located("tibia", (0, 0, 3)))
+    placement, placement_reads = run_study(
+        monkeypatch, joint_memory(), bones(placed("femur", NOT_FEMUR_10), tibia)
+    )
+    joint = placement["identity_recall"]["resolved_scale"]["objects"]["femur"]
+    assert (joint["outcome"], joint["open_alternatives"]) == (
+        SIGNED_CONFLICT,
+        ["tibia"],
+    )
+    entry = placement["identity_consumption"]["objects"]["femur"]
+    assert (entry["identity_effect"], entry["region_read_as_subject"]) == (
+        SIGNED_CONFLICT,
+        False,
+    )
+    assert all(b == () for b in reads_of(placement_reads, "femur"))
+
+
+def test_a_finer_reading_that_misses_the_negatives_view_settles_nothing(monkeypatch):
+    # The look read the femur's coronal tiles only; the "not femur" call is sagittal.
+    finer_look(monkeypatch, {"femur": FEMUR_2}, view=COR)
+    record, _ = run_study(
+        monkeypatch, joint_memory(), bones(placed("femur", NOT_FEMUR_10))
+    )
+    joint = record["identity_recall"]["resolved_scale"]["objects"]["femur"]
+    assert joint["squint_scale_negatives"] == {"n1": NEGATIVE_NOT_COMPARED}
+    entry = record["identity_consumption"]["objects"]["femur"]
+    assert entry["squint_scale_contest"]["status"] == UNRESOLVED_NOT_COMPARED
+    assert entry["identity_effect"] == CONTESTED_AT_SQUINT_SCALE
+    assert record["identity_consumption"]["not_read_as_subject"] == ["femur"]
+
+
+def test_the_finer_look_is_read_once_and_shared_with_later_questions(monkeypatch):
+    looks = finer_look(monkeypatch, {"femur": FEMUR_2})
+    record, _ = run_study(
+        monkeypatch,
+        joint_memory(),
+        bones(placed("femur", NOT_FEMUR_10)),
+        femur_left_open,
+    )
+    assert looks.count("femur") == 1
+    rows = femur_rows(record)
+    assert rows[0]["requested_by"] == "identity_question"
+    assert rows[0]["code"] == "measured"
+    # Every femur question left open asked again, and shared the one reading.
+    assert len(rows) > 1
+    assert {row["code"] for row in rows[1:]} == {"shared_observation_already_available"}
+    # Identity is settled before any condition question reads the region.
+    assert record["identity_consumption"]["objects"]["femur"]["identity_scale"] == (
+        JOINT_SCALE
+    )
+    question_ = record["identity_consumption"]["objects"]["femur"][
+        "identity_open_question"
+    ]
+    assert question_ is not None and question_["why"] == "appearance_unconfirmed"
+    assert "paired_finer_reading" not in [
+        row["procedure"] for row in question_["next_observations"]
+    ]
 
 
 def test_a_negative_heard_only_through_the_surroundings_changes_nothing(monkeypatch):
@@ -901,14 +1257,19 @@ def test_a_negative_heard_only_through_the_surroundings_changes_nothing(monkeypa
     assert (negative["applies"], negative["reason"]) == (False, "surroundings_only")
     assert negative["with_the_surroundings"]["speaks"] is True
     assert negative["over_the_asserted_region"]["speaks"] is False
+    entry = record["identity_consumption"]["objects"]["femur"]
+    assert entry["squint_scale_contest"] is None
     assert record["identity_consumption"]["not_read_as_subject"] == []
     plain, _ = run_study(monkeypatch, untaught(memory), copy.deepcopy(around))
     assert record["questions"] == plain["questions"]
     assert record["observations"] == plain["observations"]
-    # The same negative over the femur's own tiles applies.
+    # The same negative over the femur's own tiles applies: it opens the question.
     occupying = bones(anchored("femur", (0, 3, 0), ring=(1, 2, 0)))
-    opposed, _ = run_study(monkeypatch, memory, occupying)
-    assert opposed["identity_consumption"]["not_read_as_subject"] == ["femur"]
+    opened, _ = run_study(monkeypatch, memory, occupying)
+    contest = opened["identity_consumption"]["objects"]["femur"]["squint_scale_contest"]
+    assert contest["squint_applicable_negative_case_ids"] == ["n1"]
+    # This memory holds no finer reading of the reject: the reader's bone stands.
+    assert contest["status"] == UNRESOLVED_NO_FINER_READING
 
 
 @pytest.mark.parametrize(
@@ -918,7 +1279,9 @@ def test_a_negative_heard_only_through_the_surroundings_changes_nothing(monkeypa
 def test_identity_teaching_changes_condition_reading_only_where_a_negative_applies(
     monkeypatch, femur_counts, changes
 ):
-    objects = bones(anchored("femur", femur_counts))
+    # A femur the anatomy map placed; at (1,2,0) the "not femur" call applies, and with
+    # no finer reading of it the placement stays open.
+    objects = bones(placed("femur", femur_counts))
     taught, _ = run_study(
         monkeypatch, taught_memory(femur_negative=True), copy.deepcopy(objects)
     )

@@ -67,6 +67,48 @@ APPEARANCE_OPPOSED = "appearance_opposed"
 SIGNED_CONFLICT = "signed_conflict"
 CONTESTED_OUTCOMES = (APPEARANCE_OPPOSED, SIGNED_CONFLICT)
 
+# The banks identity is read over, by the scales the territory writer names them with
+# (f"{tile_mm:g}mm"). At the squint scale a support's object tiles still mix the object
+# with its surroundings («A broad mixed window is different from a resolved object»),
+# so a negative case speaking there opens the identity question rather than deciding
+# it. The question then earns the existing finer reading of the same region
+# (``squint_residual.FINE_TILE_MM``), and is recalled again as ONE comparison over every
+# bank both sides speak in at both scales, under the same context and rules: never a
+# cosine per scale. Before that look the query's finer banks are silent, so the one
+# comparison is the squint-scale one. Each bank set has its own trust radii, so a view
+# is prepared per set (``prepare_identity``'s ``scale``).
+SQUINT_SCALE = "10mm"
+#: The scale token the finer look writes.
+FINE_SCALE = "2mm"
+#: The squint scale and the finer scale together, compared as one.
+JOINT_SCALE = "10mm+2mm"
+IDENTITY_SCALES = (SQUINT_SCALE, JOINT_SCALE)
+_SCALE_TOKENS = {
+    SQUINT_SCALE: frozenset({SQUINT_SCALE}),
+    FINE_SCALE: frozenset({FINE_SCALE}),
+    JOINT_SCALE: frozenset({SQUINT_SCALE, FINE_SCALE}),
+}
+#: How a squint-scale contest stands after the joint recall (``squint_contest_resolution``):
+#: a negative still applies over both scales; every squint-scale negative was compared
+#: over its own asserted region at both scales and none applies; or it is not settled
+#: (no finer reading, a negative the joint comparison could not include, or a refused
+#: joint recall).
+CONTESTED_AFTER_FINER_READING = "contested_after_finer_reading"
+RESOLVED_BY_FINER_READING = "resolved_by_finer_reading"
+UNRESOLVED_NO_FINER_READING = "unresolved_no_finer_reading"
+UNRESOLVED_NOT_COMPARED = "unresolved_not_compared_with_finer_reading"
+FINER_RECALL_INVALID = "finer_recall_invalid"
+#: A placement or prior whose squint-scale contest the finer reading has not settled:
+#: its region answers none of its object's questions while the contest stays open. A
+#: bone the structural reader established stands instead, its question recorded.
+CONTESTED_AT_SQUINT_SCALE = "contested_at_squint_scale"
+#: Each squint-scale negative in the joint recall: it applies; it was compared over its
+#: own asserted region (common banks and an envelope over them) and does not apply,
+#: which makes it squint-scale resemblance only; or it was not compared there.
+NEGATIVE_APPLIES = "applies"
+NEGATIVE_COMPARED_NOT_APPLYING = "compared_not_applying"
+NEGATIVE_NOT_COMPARED = "not_compared"
+
 _SPEAKING_ROLES = ("object", "context")
 #: The tiles of the region asserted to be the object (``squint_interfaces.ROLE_OBJECT``).
 _OBJECT_ROLE = ("object",)
@@ -101,9 +143,14 @@ def _signal_banks(
     banks: Mapping[str, tuple[int, ...]],
     views: set[tuple[str, str, str]] | None = None,
     roles: tuple[str, ...] = _SPEAKING_ROLES,
+    *,
+    scale: str = SQUINT_SCALE,
 ) -> dict[str, tuple[int, ...]]:
-    # Only parsed territory-v2 object/context banks at exactly 10 mm speak; ``roles``
-    # narrows them to the object's own tiles where a question concerns its region alone.
+    # Only parsed territory-v2 object/context banks of the named scales speak (the squint
+    # scale, unless the question went to the finer look: then both scales, as one bank
+    # set); ``roles`` narrows them to the object's own tiles where a question concerns
+    # its region alone.
+    tokens = _SCALE_TOKENS[scale]
     result: dict[str, tuple[int, ...]] = {}
     for name, counts in banks.items():
         parsed = parse_territory_bank_name(name)
@@ -112,12 +159,23 @@ def _signal_banks(
         if parsed.get("role") not in roles:
             continue
         # The bank name's own scale token, as every writer formats it (f"{tile_mm:g}mm").
-        if parsed.get("scale") != "10mm":
+        if parsed.get("scale") not in tokens:
             continue
         if views is not None and tuple(parsed.get("view", ())) not in views:
             continue
         result[name] = tuple(counts)
     return result
+
+
+def holds_scale(profile: object, scale: str) -> bool:
+    """Whether a profile holds a reading of its object's own tiles at ``scale``.
+
+    A joint identity recall needs the object's own tiles read by the finer look
+    (``FINE_SCALE``); without them there is nothing to settle a squint-scale contest
+    with.
+    """
+    banks = _banks(profile)
+    return bool(banks) and bool(_signal_banks(banks, roles=_OBJECT_ROLE, scale=scale))
 
 
 def _view_set(value: object) -> set[tuple[str, ...]] | None:
@@ -222,6 +280,9 @@ class _Prepared(Mapping):
     over the same banks of its identity's positive seeds
     (``_negative_object_envelopes``): the candidate's object tiles against the
     negative's object tiles.
+
+    A view holds one scale (``_scale``): every bank it compares, its envelopes included,
+    is read at that scale. A finer recall uses a view prepared at the finer scale.
     """
 
     __slots__ = (
@@ -236,6 +297,7 @@ class _Prepared(Mapping):
         "_negatives",
         "_opposition",
         "_public",
+        "_scale",
         "_seeds",
     )
 
@@ -253,6 +315,7 @@ class _Prepared(Mapping):
         opposition=(),
         negative_object_matrix=None,
         negative_object_envelopes=(),
+        scale=SQUINT_SCALE,
     ):
         self._public = MappingProxyType(dict(public))
         self._memory = memory
@@ -266,6 +329,7 @@ class _Prepared(Mapping):
         self._opposition = opposition
         self._negative_object_matrix = negative_object_matrix
         self._negative_object_envelopes = negative_object_envelopes
+        self._scale = scale
 
     def __getitem__(self, key):
         return self._public[key]
@@ -445,10 +509,12 @@ def _negative_entries(
     records: Mapping[str, Mapping[str, Any]],
     rows_by_id: Mapping[str, list[Mapping]],
     lineage: Mapping[str, Any],
+    scale: str = SQUINT_SCALE,
 ) -> list[dict[str, Any]] | dict[str, Any]:
     """Ordinary negative identity cases: -1 on the proposed subject, own views.
 
-    Only a reject call, or a confirm call's ``negative_views``, writes one.
+    Only a reject call, or a confirm call's ``negative_views``, writes one. Its banks
+    are read at ``scale``.
     """
     wanted = set(teaching.get("negative_case_ids", ()))
     views_by_id = _mapping(teaching.get("negative_views"))
@@ -487,8 +553,8 @@ def _negative_entries(
                 "procedure": procedure,
                 "procedure_view": {"source": {"procedure": procedure}},
                 "views": tuple(sorted(views)),
-                "banks": _signal_banks(banks, views),
-                "object_banks": _signal_banks(banks, views, _OBJECT_ROLE),
+                "banks": _signal_banks(banks, views, scale=scale),
+                "object_banks": _signal_banks(banks, views, _OBJECT_ROLE, scale=scale),
                 "asserted_alternatives": _asserted_alternatives(row, views),
                 "lineage": {
                     **copy.deepcopy(dict(lineage)),
@@ -525,11 +591,13 @@ def _alternative_seeds(
     records: Mapping[str, Mapping[str, Any]],
     rows_by_id: Mapping[str, list[Mapping]],
     lineage: Mapping[str, Any],
+    scale: str = SQUINT_SCALE,
 ) -> list[dict[str, Any]] | dict[str, Any]:
     """Positive seeds of a known alternative identity, on the called views only.
 
     The source case keeps its own subject and condition calls; the seed speaks
-    for the alternative identity and is keyed by its own teaching entry id.
+    for the alternative identity and is keyed by its own teaching entry id. Its
+    banks are read at ``scale``.
     """
     seeds: list[dict[str, Any]] = []
     for item in teaching.get("alternative_positives", ()):
@@ -572,7 +640,7 @@ def _alternative_seeds(
                 "study_uid": study,
                 "procedure": procedure,
                 "procedure_view": {"source": {"procedure": procedure}},
-                "banks": _signal_banks(banks, views),
+                "banks": _signal_banks(banks, views, scale=scale),
                 "lineage": {
                     **copy.deepcopy(dict(lineage)),
                     "call": copy.deepcopy(dict(rows[0])),
@@ -591,8 +659,9 @@ def _identity_extensions(
     teaching: Mapping[str, Any],
     rows_by_id: Mapping[str, list[Mapping]],
     lineage: Mapping[str, Any],
+    scale: str = SQUINT_SCALE,
 ) -> tuple[list, list, bool, bool] | dict[str, Any]:
-    """Negative identity cases and alternative-identity positive seeds.
+    """Negative identity cases and alternative-identity positive seeds, at ``scale``.
 
     A memory published before signed identity teaching declares neither and is
     read exactly as before. Returns (negatives, alternatives, has_negatives,
@@ -621,10 +690,10 @@ def _identity_extensions(
     records = table["records"]
     negatives: list | dict = []
     if negative_ids:
-        negatives = _negative_entries(teaching, records, rows_by_id, lineage)
+        negatives = _negative_entries(teaching, records, rows_by_id, lineage, scale)
         if isinstance(negatives, dict):
             return negatives
-    seeds = _alternative_seeds(teaching, records, rows_by_id, lineage)
+    seeds = _alternative_seeds(teaching, records, rows_by_id, lineage, scale)
     if isinstance(seeds, dict):
         return seeds
     return negatives, seeds, bool(negative_ids), bool(alternatives)
@@ -767,21 +836,30 @@ def _seed_projection(seed: Mapping[str, Any]) -> dict[str, Any]:
 
 
 def prepare_identity(
-    memory: object, *, exclude_study_uid: str | None = None
+    memory: object,
+    *,
+    exclude_study_uid: str | None = None,
+    scale: str = SQUINT_SCALE,
 ) -> Mapping[str, Any]:
-    """Prepare one memory/exclusion view (see _Prepared for lifetime contract).
+    """Prepare one memory/exclusion view at one scale (see _Prepared for lifetime).
 
     The source pin is computed once from the frozen eligible seed projection and
     explicit teaching/source provenance, including the exclusion. The full memory
     is never serialized or hashed. Negative identity cases and alternative-
     identity positives are read from ``object_identity_cases`` when the teaching
     declares them; held-out exclusion removes them exactly as it removes seeds,
-    before any envelope is formed.
+    before any envelope is formed. Every bank, and so every envelope, is read over the
+    bank set ``scale`` names (``IDENTITY_SCALES``): the squint scale alone, or both
+    scales as one set (``JOINT_SCALE``), each with its own trust radii. A joint view
+    names its set in its pin and public record; the squint-scale view is exactly as it
+    was before scales.
     """
     if exclude_study_uid is not None and (
         not isinstance(exclude_study_uid, str) or not exclude_study_uid
     ):
         return _invalid("excluded_study_uid_invalid")
+    if scale not in IDENTITY_SCALES:
+        return _invalid("identity_scale_invalid")
     root = _mapping(memory)
     if root is None:
         return _invalid("memory_must_be_object")
@@ -856,7 +934,7 @@ def prepare_identity(
                 "study_uid": study,
                 "procedure": procedure,
                 "procedure_view": {"source": {"procedure": procedure}},
-                "banks": _signal_banks(banks, selected_views),
+                "banks": _signal_banks(banks, selected_views, scale=scale),
                 "lineage": {
                     "source": copy.deepcopy(source_lineage),
                     "teaching": copy.deepcopy(teaching_lineage),
@@ -870,6 +948,7 @@ def prepare_identity(
         teaching,
         rows_by_id,
         {"source": source_lineage, "teaching": teaching_lineage},
+        scale,
     )
     if isinstance(extensions, dict):
         return extensions
@@ -892,7 +971,7 @@ def prepare_identity(
     ]
     # The same envelopes over the object role of both sides: the region each asserted.
     seed_object_banks = (
-        [_signal_banks(seed["banks"], roles=_OBJECT_ROLE) for seed in kept]
+        [_signal_banks(seed["banks"], roles=_OBJECT_ROLE, scale=scale) for seed in kept]
         if kept_negatives
         else []
     )
@@ -912,6 +991,9 @@ def prepare_identity(
         "teaching": teaching_lineage,
         "seeds": [_seed_projection(seed) for seed in kept],
     }
+    if scale != SQUINT_SCALE:
+        # The squint-scale view keeps exactly the pin it had before scales.
+        projection["scale"] = scale
     if has_negatives:
         projection["negatives"] = [
             {
@@ -943,6 +1025,8 @@ def prepare_identity(
         )
     if has_negatives:
         public["negative_case_count"] = len(kept_negatives)
+    if scale != SQUINT_SCALE:
+        public["scale"] = scale
     return _Prepared(
         public,
         memory,
@@ -956,7 +1040,13 @@ def prepare_identity(
         opposition=tuple(opposition),
         negative_object_matrix=_frozen_matrix(kept_negatives, "object_banks"),
         negative_object_envelopes=tuple(negative_object_envelopes),
+        scale=scale,
     )
+
+
+def preparation_scale(prepared: object) -> str | None:
+    """The scale one prepared view reads its banks at, or None for anything else."""
+    return prepared._scale if isinstance(prepared, _Prepared) else None
 
 
 def _sanity_status(sanity: object) -> str | None:
@@ -992,11 +1082,12 @@ def _negative_evidence(
     the largest resemblance it shares with that identity's positive seeds over
     the same banks. With no such seed it stays silent, named; it is never a veto.
     ``object_role`` compares the query's object tiles with the negative's object
-    tiles alone, against the envelope made over those banks.
+    tiles alone, against the envelope made over those banks. Both are read at the
+    view's scale.
     """
     negatives = prepared._negatives
     if object_role:
-        query = _signal_banks(query_banks, roles=_OBJECT_ROLE)
+        query = _signal_banks(query_banks, roles=_OBJECT_ROLE, scale=prepared._scale)
         bank_key = "object_banks"
         matrix = prepared._negative_object_matrix
         envelopes = prepared._negative_object_envelopes
@@ -1227,7 +1318,7 @@ def _negatives_in_context(
     query_banks: Mapping[str, Sequence[int]],
     prepared: _Prepared,
     context: Mapping[str, Any],
-) -> tuple[list[dict[str, Any]], int]:
+) -> tuple[list[dict[str, Any]], int, dict[str, dict[str, Any]]]:
     """Each negative case that speaks in either comparison, and whether it applies here.
 
     A negative case's reason concerns the region it asserted, so it applies when it
@@ -1237,11 +1328,11 @@ def _negatives_in_context(
     of another identity concerns another question. One whose call asserts an alternative
     identity applies only while that alternative is still open (``identity_is_open``).
     A negative that applies takes part as an ordinary signed case; one that does not is
-    recorded with its reason and changes nothing. Returns the rows and how many negative
-    cases were compared at all.
+    recorded with its reason and changes nothing. Returns the rows, how many negative
+    cases were compared at all, and every comparison over the asserted region by case.
     """
     if not prepared._negatives:
-        return [], 0
+        return [], 0, {}
     with_ring = {
         row["case_id"]: row
         for row in _negative_evidence(profile, query_banks, prepared)
@@ -1283,7 +1374,33 @@ def _negatives_in_context(
                 "lineage": copy.deepcopy(case["lineage"]),
             }
         )
-    return rows, len(set(with_ring) | set(over_region))
+    return rows, len(set(with_ring) | set(over_region)), over_region
+
+
+def _squint_negative_statuses(
+    case_ids: Sequence[str],
+    applicable: Sequence[str],
+    over_region: Mapping[str, Mapping[str, Any]],
+) -> dict[str, str]:
+    """How each squint-scale negative stands in this (finer) recall, by case id.
+
+    It applies here; or it was compared over its own asserted region, sharing banks with
+    the candidate's object tiles and with an envelope over them, and does not apply, its
+    squint-scale resemblance then being only that; or it was not compared here at all
+    (no common banks, or no seed of its identity to make an envelope over them), which
+    settles nothing for it.
+    """
+    applying = set(applicable)
+    statuses = {}
+    for case_id in case_ids:
+        region = over_region.get(case_id)
+        if case_id in applying:
+            statuses[case_id] = NEGATIVE_APPLIES
+        elif region is not None and region.get("envelope") is not None:
+            statuses[case_id] = NEGATIVE_COMPARED_NOT_APPLYING
+        else:
+            statuses[case_id] = NEGATIVE_NOT_COMPARED
+    return statuses
 
 
 def _unconditioned_speakers(
@@ -1310,6 +1427,7 @@ def _recall_in_context(
     prepared: _Prepared,
     status_name: str,
     context: Mapping[str, Any],
+    resolve_negatives: Sequence[str] = (),
 ) -> dict[str, Any]:
     """Recall conditioned on what the current study's structure already established.
 
@@ -1332,11 +1450,16 @@ def _recall_in_context(
     (``open_alternative_resembles``), and the prior records which identities speak
     unconditioned. A contradicted anatomical check never blocks here: the context's
     contradictions are carried as revisable evidence for the consumers that act on them.
+
+    Every bank is read at the prepared view's scale, the same rules at either scale.
+    ``resolve_negatives`` names the negative cases that applied at the squint scale; a
+    finer recall then records how each stands at its own scale
+    (``_squint_negative_statuses``), for ``squint_contest_resolution``.
     """
     subject = context["subject"]
     basis = context["basis"]
     seeds = prepared._seeds
-    query_banks = _signal_banks(query_banks_all)
+    query_banks = _signal_banks(query_banks_all, scale=prepared._scale)
     compatible = [_same_procedure(profile, seed["procedure_view"]) for seed in seeds]
     terms = (
         _batch_terms(
@@ -1379,7 +1502,7 @@ def _recall_in_context(
         appearance = "uncalibrated"
     else:
         appearance = "silent"
-    negatives, compared_negatives = _negatives_in_context(
+    negatives, compared_negatives, over_region = _negatives_in_context(
         profile, query_banks, prepared, context
     )
     applicable = [row["case_id"] for row in negatives if row["applies"]]
@@ -1422,6 +1545,7 @@ def _recall_in_context(
         "conditioning": context["conditioning"],
         "open_alternatives": sorted(open_set),
         "removed_by_structure": sorted(context["removed_by_structure"]),
+        "scale": prepared._scale,
         "outcome": outcome,
         "reason": reason,
         "appearance": appearance,
@@ -1444,6 +1568,10 @@ def _recall_in_context(
         "contradictions": copy.deepcopy(list(context["contradictions"])),
         "calibrated_probability": False,
     }
+    if resolve_negatives:
+        result["squint_scale_negatives"] = _squint_negative_statuses(
+            resolve_negatives, applicable, over_region
+        )
     if basis == STRUCTURAL_READER:
         result["established_views"] = _bank_views(list(query_banks))
     elif basis == MAP_RELATION:
@@ -1472,6 +1600,90 @@ def _recall_in_context(
     return result
 
 
+def squint_contest_resolution(
+    squint: object, resolved: object = None
+) -> dict[str, Any]:
+    """How a squint-scale identity contest stands after the joint recall of the object.
+
+    ``squint`` is the recall in context at the squint scale. It is a contest when an
+    applicable negative case speaks there (``CONTESTED_OUTCOMES``), which opens the
+    identity question and never decides it. ``resolved`` is the recall of the same
+    object, under the same context, after its finer look: one comparison over every
+    bank both sides speak in at both scales (``JOINT_SCALE``), made with
+    ``resolve_negatives`` naming the squint scale's applicable negatives; None when the
+    object holds no finer reading of its own tiles. The contest stands after the look
+    when a negative applies in that comparison (``CONTESTED_AFTER_FINER_READING``, its
+    opposed or conflict outcome). It is settled for the identity only when every
+    squint-scale negative was compared over its own asserted region at both scales and
+    none applies (``RESOLVED_BY_FINER_READING``: each was squint-scale resemblance only).
+    A negative the joint comparison could not include settles nothing for it
+    (``UNRESOLVED_NOT_COMPARED``), and neither does a missing or refused joint recall
+    (``UNRESOLVED_NO_FINER_READING``, ``FINER_RECALL_INVALID``, named). A recall that is
+    no contest returns ``{"status": None}``. Nothing here weighs which side the object
+    resembles more: a contest is settled by what applies, never by a margin.
+    """
+    if (
+        not isinstance(squint, Mapping)
+        or squint.get("schema") != RECALL_CONTEXT_SCHEMA
+        or squint.get("outcome") not in CONTESTED_OUTCOMES
+    ):
+        return {"status": None}
+    applicable = [
+        item for item in squint.get("applicable_negative_case_ids") or () if item
+    ]
+    result: dict[str, Any] = {
+        "status": UNRESOLVED_NO_FINER_READING,
+        "squint_outcome": squint["outcome"],
+        "squint_applicable_negative_case_ids": list(applicable),
+        "negatives": dict.fromkeys(applicable, NEGATIVE_NOT_COMPARED),
+        "squint_scale_resemblance_only": [],
+        "resolved_scale": None,
+        "resolved_outcome": None,
+    }
+    if resolved is None:
+        return result
+    if (
+        not isinstance(resolved, Mapping)
+        or resolved.get("schema") != RECALL_CONTEXT_SCHEMA
+        or resolved.get("scale") != JOINT_SCALE
+        or resolved.get("identity") != squint.get("identity")
+        or resolved.get("identity_basis") != squint.get("identity_basis")
+    ):
+        reason = (
+            resolved.get("reason") or resolved.get("outcome")
+            if isinstance(resolved, Mapping)
+            else None
+        )
+        return {
+            **result,
+            "status": FINER_RECALL_INVALID,
+            "reason": str(reason or "not_a_joint_recall_in_context"),
+        }
+    statuses = resolved.get("squint_scale_negatives")
+    statuses = statuses if isinstance(statuses, Mapping) else {}
+    negatives = {
+        case_id: statuses.get(case_id, NEGATIVE_NOT_COMPARED) for case_id in applicable
+    }
+    if resolved.get("outcome") in CONTESTED_OUTCOMES:
+        status = CONTESTED_AFTER_FINER_READING
+    elif all(value == NEGATIVE_COMPARED_NOT_APPLYING for value in negatives.values()):
+        status = RESOLVED_BY_FINER_READING
+    else:
+        status = UNRESOLVED_NOT_COMPARED
+    return {
+        **result,
+        "status": status,
+        "negatives": negatives,
+        "squint_scale_resemblance_only": [
+            case_id
+            for case_id, value in negatives.items()
+            if value == NEGATIVE_COMPARED_NOT_APPLYING
+        ],
+        "resolved_scale": JOINT_SCALE,
+        "resolved_outcome": resolved.get("outcome"),
+    }
+
+
 def recall_identity(
     profile: object,
     memory: object,
@@ -1480,6 +1692,8 @@ def recall_identity(
     sanity: object = None,
     prepared: Mapping[str, Any] | None = None,
     context: Mapping[str, Any] | None = None,
+    scale: str | None = None,
+    resolve_negatives: Sequence[str] = (),
 ) -> dict[str, Any]:
     """Score one query against the signed identity cases.
 
@@ -1494,12 +1708,19 @@ def recall_identity(
     context leaves open, and a negative case applies only where its reason holds for the
     candidate's actual support. A ``PRIOR_ONLY`` context leaves every identity open.
 
-    A prepared view is valid only for the same memory object and exclusion it was built
-    from; anything else returns invalid_preparation without scoring.
+    ``scale`` names the bank set read (the squint scale unless given; ``JOINT_SCALE``
+    after a finer look); a prepared view must be of that set. ``resolve_negatives`` (in
+    context only) names the negative cases that applied at the squint scale, so a joint
+    recall records how each stands in its one comparison over both scales.
+
+    A prepared view is valid only for the same memory object, exclusion and scale it
+    was built for; anything else returns invalid_preparation without scoring.
     """
     status_name = _sanity_status(sanity)
     if status_name is None:
         return _invalid("sanity_invalid")
+    if scale is not None and scale not in IDENTITY_SCALES:
+        return _invalid("identity_scale_invalid")
     if context is not None:
         # The context's subject is the located object; the profile's name stays a
         # proposed label and can force nothing either way.
@@ -1513,7 +1734,9 @@ def recall_identity(
     if not isinstance(procedure, str) or not procedure:
         return _invalid("query_procedure_missing")
     if prepared is None:
-        prepared = prepare_identity(memory, exclude_study_uid=exclude_study_uid)
+        prepared = prepare_identity(
+            memory, exclude_study_uid=exclude_study_uid, scale=scale or SQUINT_SCALE
+        )
         if not isinstance(prepared, _Prepared):
             return dict(prepared)
     elif not isinstance(prepared, _Prepared) or prepared.get("outcome") != "prepared":
@@ -1522,9 +1745,16 @@ def recall_identity(
         return {"outcome": "invalid_preparation", "reason": "memory_mismatch"}
     elif prepared.get("exclude_study_uid") != exclude_study_uid:
         return {"outcome": "invalid_preparation", "reason": "exclusion_mismatch"}
+    elif scale is not None and prepared._scale != scale:
+        return {"outcome": "invalid_preparation", "reason": "scale_mismatch"}
     if context is not None:
         return _recall_in_context(
-            profile, query_banks_all, prepared, status_name, context
+            profile,
+            query_banks_all,
+            prepared,
+            status_name,
+            context,
+            tuple(resolve_negatives),
         )
     return _recall_unconditioned(profile, query_banks_all, prepared, status_name)
 
@@ -1564,7 +1794,7 @@ def _recall_unconditioned(
             "outcome": "silent",
             "reason": "procedure_mismatch_no_compatible_seed",
         }
-    query_banks = _signal_banks(query_banks_all)
+    query_banks = _signal_banks(query_banks_all, scale=prepared._scale)
     terms = _batch_terms(
         query_banks,
         [seed["banks"] for seed in seeds],

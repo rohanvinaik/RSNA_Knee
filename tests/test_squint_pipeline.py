@@ -757,13 +757,13 @@ def test_production_studies_reuse_one_identity_preparation_for_shared_view(
     _wire(monkeypatch)
     preparations = []
 
-    def prepare(memory, *, exclude_study_uid=None):
+    def prepare(memory, *, exclude_study_uid=None, scale="10mm"):
         prepared = {
             "outcome": "prepared",
-            "source_pin": "shared-unexcluded-view",
+            "source_pin": f"shared-unexcluded-view-{scale}",
             "exclude_study_uid": exclude_study_uid,
         }
-        preparations.append((memory, exclude_study_uid, prepared))
+        preparations.append((memory, exclude_study_uid, scale, prepared))
         return prepared
 
     _module(
@@ -790,15 +790,20 @@ def test_production_studies_reuse_one_identity_preparation_for_shared_view(
             workers=2,
         )
     )
-    assert len(preparations) == 1
-    assert preparations[0][1] is None
+    # Once per bank set, for the whole run, from the one memory object.
+    assert [(item[1], item[2]) for item in preparations] == [
+        (None, "10mm"),
+        (None, "10mm+2mm"),
+    ]
+    assert preparations[0][0] is preparations[1][0]
     assert result["work"]["identity_preparations_shared"] == 1
+    assert result["work"]["identity_resolved_preparations_shared"] == 1
     assert result["work"]["identity_preparation_seconds"] >= 0
     for study in result["work"]["studies"]:
         assert study["identity_preparation_source"] == "shared_once"
         record = load_json(tmp_path / "out" / study["evidence_path"])
         assert record["identity_recall"]["preparation"]["source_pin"] == (
-            "shared-unexcluded-view"
+            "shared-unexcluded-view-10mm"
         )
 
 

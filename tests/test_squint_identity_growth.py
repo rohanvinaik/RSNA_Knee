@@ -46,6 +46,7 @@ from knee.diagnosis.squint_identity import (
     CONTEXT_SCHEMA,
     IDENTITY_CASES_SCHEMA,
     IDENTITY_CONSUMPTION_SCHEMA,
+    JOINT_SCALE,
     MAP_RELATION,
     PRIOR_ONLY,
     PROPOSED_PLACES,
@@ -112,6 +113,7 @@ DECISION_KEYS = sorted(
         "source",
         "identity_context",
         "identity_question",
+        "identity_scale",
     ]
 )
 #: The structural reader's own record of how it named a bone, as infer_study copies it
@@ -129,17 +131,19 @@ ARRANGEMENT = {
 }
 
 
-def bank(view: list[str], role: str = "object") -> str:
+def bank(view: list[str], role: str = "object", scale: str = "10mm") -> str:
     return (
         "squint/v2/view="
         + json.dumps(view, separators=(",", ":"))
-        + f"/role={role}/metric=signal/direction=d/scale=10mm"
+        + f"/role={role}/metric=signal/direction=d/scale={scale}"
     )
 
 
-def profile(subject: str, by_view, ring=()) -> dict:
+def profile(subject: str, by_view, ring=(), fine=()) -> dict:
+    """A profile's object tiles at 10 mm, its ``ring`` and its ``fine`` 2 mm tiles."""
     banks = {bank(view): list(counts) for view, counts in by_view}
     banks.update({bank(view, "context"): list(counts) for view, counts in ring})
+    banks.update({bank(view, scale="2mm"): list(counts) for view, counts in fine})
     return {
         "schema": "knee.squint-profile/v1",
         "subject": subject,
@@ -232,10 +236,10 @@ def placed(subject: str, *alternatives: str) -> dict:
     return identity_context(subject, MAP_RELATION, alternatives)
 
 
-def located(subject: str, by_view, anatomy, ring=()) -> dict:
+def located(subject: str, by_view, anatomy, ring=(), fine=()) -> dict:
     return {
         "status": "proposal",
-        "profile": profile(subject, by_view, ring),
+        "profile": profile(subject, by_view, ring, fine),
         "regions": [
             {
                 "series_uid": "series-sag",
@@ -291,12 +295,14 @@ def study_record(
     return record
 
 
-def candidate(uid: str, subject: str, by_view, anatomy, context, ring=()) -> dict:
+def candidate(
+    uid: str, subject: str, by_view, anatomy, context, ring=(), fine=()
+) -> dict:
     [item] = harvest_candidates(
         [
             study_record(
                 uid,
-                {subject: located(subject, by_view, anatomy, ring)},
+                {subject: located(subject, by_view, anatomy, ring, fine)},
                 contexts={subject: context},
             )
         ]
@@ -304,13 +310,15 @@ def candidate(uid: str, subject: str, by_view, anatomy, context, ring=()) -> dic
     return item
 
 
-def _record(case_id: str, subject: str, study_uid: str, by_view, ring=()) -> dict:
+def _record(
+    case_id: str, subject: str, study_uid: str, by_view, ring=(), fine=()
+) -> dict:
     return {
         "case_id": case_id,
         "study_uid": study_uid,
         "subject": subject,
         "condition_calls": {},
-        "profile": profile(subject, by_view, ring),
+        "profile": profile(subject, by_view, ring, fine),
         "regions": [],
     }
 
@@ -318,8 +326,8 @@ def _record(case_id: str, subject: str, study_uid: str, by_view, ring=()) -> dic
 def identity_memory(seeds, negatives=(), revision: str = "parent-r1") -> dict:
     """A valid squint memory of confirmed seeds and scoped ordinary negative cases.
 
-    ``seeds`` are (case_id, subject, study_uid, by_view[, ring]); ``negatives`` add the
-    views their reject asserted (and optionally a ring).
+    ``seeds`` are (case_id, subject, study_uid, by_view[, ring[, fine]]); ``negatives``
+    add the views their reject asserted (and optionally a ring and fine 2 mm tiles).
     """
     cases = [_record(*seed) for seed in seeds]
     calls = [
@@ -348,10 +356,8 @@ def identity_memory(seeds, negatives=(), revision: str = "parent-r1") -> dict:
         records = []
         teaching["negative_case_ids"] = []
         teaching["negative_views"] = {}
-        for case_id, subject, study_uid, by_view, views, *ring in negatives:
-            records.append(
-                _record(case_id, subject, study_uid, by_view, *(ring or [()]))
-            )
+        for case_id, subject, study_uid, by_view, views, *rest in negatives:
+            records.append(_record(case_id, subject, study_uid, by_view, *rest))
             teaching["negative_case_ids"].append(case_id)
             teaching["negative_views"][case_id] = [list(view) for view in views]
             calls.append(
@@ -394,6 +400,35 @@ TWO_SEEDS = (
 MUSCLE = ("m1", "medial_gastrocnemius", "sm", [(SAG, (0, 3, 0))])
 # A reviewer rejected this sagittal support as femur; study "sn" holds nothing else.
 NEGATIVE = ("n1", "femur", "sn", [(SAG, (1, 2, 0))], [SAG])
+# Seeds and a "not femur" reject read at both scales (finer tiles, so larger 2 mm
+# counts). At 10 mm the reject (2,1,0) still mixes bone with the soft tissue it named and
+# sits close to the femur seed (3,1,0); at 2 mm it is that soft tissue (0,15,0), and the
+# femur seed is bone (15,0,0).
+JOINT_SEEDS = (
+    ("a1", "femur", "sa", [(SAG, (3, 1, 0))], (), [(SAG, (15, 0, 0))]),
+    ("t1", "tibia", "st", [(SAG, (0, 0, 3))], (), [(SAG, (0, 0, 15))]),
+)
+JOINT_MUSCLE = (
+    "m1",
+    "medial_gastrocnemius",
+    "sm",
+    [(SAG, (0, 1, 3))],
+    (),
+    [(SAG, (0, 0, 15))],
+)
+JOINT_NEGATIVE = (
+    "n1",
+    "femur",
+    "sn",
+    [(SAG, (2, 1, 0))],
+    [SAG],
+    (),
+    [(SAG, (0, 15, 0))],
+)
+#: A candidate that reads like the reject at 10 mm, and its own 2 mm tiles either way.
+LIKE_THE_REJECT = [(SAG, (2, 1, 0))]
+BONE_2MM = [(SAG, (15, 0, 0))]
+SOFT_TISSUE_2MM = [(SAG, (0, 15, 0))]
 
 
 # ------------------------------------------------------------- the decision
@@ -411,6 +446,9 @@ def test_a_placement_its_own_cases_support_is_admitted_at_the_views_that_spoke()
         "admitted",
         "appearance_supports_with_location_support",
     )
+    # Nothing contested it at the squint scale, so the squint-scale recall decided.
+    assert decision["identity_scale"] == "10mm"
+    assert scored["resolved_recall"] is None
     assert decision["recognized_identity"] == "femur"
     assert decision["views"] == [SAG]
     assert decision["identity_context"] == placed("femur", "tibia")
@@ -736,7 +774,7 @@ def test_resembling_another_identity_never_renames_or_blocks_the_candidate():
     assert (own["state"], own["recognized_identity"]) == ("admitted", "patella")
 
 
-def test_an_applicable_negative_case_opposes_or_conflicts_and_never_renames():
+def test_a_squint_scale_negative_opens_the_question_and_the_finer_look_decides():
     item = candidate(
         "sr",
         "femur",
@@ -750,7 +788,7 @@ def test_an_applicable_negative_case_opposes_or_conflicts_and_never_renames():
         [SAG],
     )
     # The reviewer's "not femur" support, over the same asserted region: its reason
-    # holds here. With the femur's own case speaking too, a signed conflict, kept open.
+    # holds at 10 mm. That opens the identity question; it decides nothing.
     scored = admission_decision(item, identity_memory(TWO_SEEDS, [NEGATIVE]))
     [negative] = scored["recall"]["negative_cases"]
     assert (negative["case_id"], negative["applies"], negative["reason"]) == (
@@ -760,22 +798,130 @@ def test_an_applicable_negative_case_opposes_or_conflicts_and_never_renames():
     )
     assert scored["recall"]["outcome"] == "signed_conflict"
     assert scored["recall"]["identity"] == "femur"
+    assert scored["resolved_recall"] is None
     decision = scored["decision"]
-    assert (decision["state"], decision["reason"]) == (
-        "conflict",
-        "own_case_and_applicable_negative_case_speak",
+    assert (decision["state"], decision["reason"], decision["identity_scale"]) == (
+        "proposal",
+        "squint_contest_unresolved_no_finer_reading",
+        "10mm",
     )
     assert decision["recognized_identity"] is None and decision["views"] == []
-    # With none of its own cases speaking, the negative opposes the femur outright.
-    silent = candidate(
-        "sq", "femur", [(SAG, (1, 2, 0))], plausible("femur"), placed("femur", "tibia")
+    # Read at both scales: placed with nothing left open, so its own cases are
+    # uncalibrated and the reject opposes it at 10 mm.
+    memory = identity_memory(JOINT_SEEDS, [JOINT_NEGATIVE])
+    alone = placed("femur")
+    opposed = decide(
+        candidate(
+            "sq",
+            "femur",
+            LIKE_THE_REJECT,
+            plausible("femur"),
+            alone,
+            fine=SOFT_TISSUE_2MM,
+        ),
+        memory,
     )
-    decision = decide(silent, identity_memory(ROUND_SEEDS))
-    assert (decision["state"], decision["reason"]) == ("proposal", "appearance_silent")
-    decision = decide(silent, identity_memory(ROUND_SEEDS, [NEGATIVE]))
-    assert (decision["state"], decision["reason"]) == (
+    # Still the soft tissue with its 2 mm tiles: opposed, never renamed.
+    assert (opposed["state"], opposed["reason"], opposed["identity_scale"]) == (
         "opposed",
         "applicable_negative_case_speaks",
+        JOINT_SCALE,
+    )
+    assert opposed["recognized_identity"] is None
+    # Bone with its 2 mm tiles: the reject was squint-scale resemblance only, and
+    # with nothing open to calibrate against, the placement alone stays a proposal.
+    settled = decide(
+        candidate(
+            "sq", "femur", LIKE_THE_REJECT, plausible("femur"), alone, fine=BONE_2MM
+        ),
+        memory,
+    )
+    assert (settled["state"], settled["reason"], settled["identity_scale"]) == (
+        "proposal",
+        "placement_only",
+        JOINT_SCALE,
+    )
+
+
+def test_admission_waits_for_the_identity_settled_after_the_finer_look(tmp_path: Path):
+    memory = identity_memory(JOINT_SEEDS, [JOINT_NEGATIVE])
+    placement = placed("femur", "tibia")
+
+    def scored(fine=(), context=placement):
+        return admission_decision(
+            candidate(
+                "sx", "femur", LIKE_THE_REJECT, plausible("femur"), context, fine=fine
+            ),
+            memory,
+        )
+
+    # At 10 mm the femur's own case and the reject both speak: an open question.
+    squint_only = scored()
+    assert squint_only["recall"]["outcome"] == "signed_conflict"
+    assert squint_only["recall"]["applicable_negative_case_ids"] == ["n1"]
+    decision = squint_only["decision"]
+    assert (decision["state"], decision["reason"]) == (
+        "proposal",
+        "squint_contest_unresolved_no_finer_reading",
+    )
+    # Its own 2 mm tiles are bone: one comparison over both scales settles it, and the
+    # identity is admitted on that comparison, its scope that comparison's.
+    settled = scored(BONE_2MM)
+    joint = settled["resolved_recall"]
+    assert (joint["scale"], joint["squint_scale_negatives"]) == (
+        JOINT_SCALE,
+        {"n1": "compared_not_applying"},
+    )
+    [own] = [row for row in joint["cases"] if row["case_id"] == "a1"]
+    assert sorted(own["common_speaking_banks"]) == sorted(
+        [bank(SAG), bank(SAG, scale="2mm")]
+    )
+    decision = settled["decision"]
+    assert (decision["state"], decision["reason"], decision["identity_scale"]) == (
+        "admitted",
+        "appearance_supports_with_location_support",
+        JOINT_SCALE,
+    )
+    assert decision["views"] == [SAG]
+    # Its own 2 mm tiles are the soft tissue the reviewer named: still contested.
+    decision = scored(SOFT_TISSUE_2MM)["decision"]
+    assert (decision["state"], decision["identity_scale"]) == ("conflict", JOINT_SCALE)
+    # A finer reading of another view cannot include the sagittal reject: unsettled.
+    decision = scored([(COR, (15, 0, 0))])["decision"]
+    assert (decision["state"], decision["reason"]) == (
+        "proposal",
+        "squint_contest_unresolved_not_compared_with_finer_reading",
+    )
+    # A bone the reader established whose disagreement stands after the look: the
+    # structure's word carries diagnosis, but admission needs it settled.
+    muscled = identity_memory((*JOINT_SEEDS, JOINT_MUSCLE), [JOINT_NEGATIVE])
+    decision = admission_decision(
+        candidate(
+            "sx",
+            "femur",
+            LIKE_THE_REJECT,
+            plausible("femur"),
+            established("femur"),
+            fine=SOFT_TISSUE_2MM,
+        ),
+        muscled,
+    )["decision"]
+    assert (decision["state"], decision["identity_scale"]) == ("conflict", JOINT_SCALE)
+    # A round admits on the joint comparison and its lineage says so.
+    parent = saved(tmp_path, "parent", memory)
+    item = candidate(
+        "sx", "femur", LIKE_THE_REJECT, plausible("femur"), placement, fine=BONE_2MM
+    )
+    receipt = grow_identity_memory(parent, [item], tmp_path / "grown")
+    assert receipt["admitted_case_ids"] == [item["case_id"]]
+    child = load_memory_snapshot(tmp_path / "grown" / CHILD_DIRECTORY).memory
+    [case] = [case for case in child["cases"] if case["case_id"] == item["case_id"]]
+    lineage = case["identity_growth"]
+    assert lineage["decision"]["identity_scale"] == JOINT_SCALE
+    assert lineage["speaking_case_ids"] == ["a1"]
+    assert (
+        lineage["preparation_source_pin"]
+        == (prepare_identity(parent.memory, scale=JOINT_SCALE)["source_pin"])
     )
 
 
@@ -802,7 +948,8 @@ def test_a_negative_case_heard_only_through_the_surroundings_changes_nothing():
     assert negative["with_the_surroundings"]["speaks"] is True
     assert negative["over_the_asserted_region"]["speaks"] is False
     assert scored["decision"]["state"] == "admitted"
-    # The same negative over the candidate's own asserted region applies.
+    # The same negative over the candidate's own asserted region applies: at 10 mm that
+    # opens the identity question, and with no finer reading it stays a proposal.
     occupying = candidate(
         "sr",
         "femur",
@@ -811,7 +958,12 @@ def test_a_negative_case_heard_only_through_the_surroundings_changes_nothing():
         placed("femur", "patella"),
         ring=[(SAG, (1, 2, 0))],
     )
-    assert decide(occupying, memory)["state"] in ("opposed", "conflict")
+    scored = admission_decision(occupying, memory)
+    assert scored["recall"]["applicable_negative_case_ids"] == ["n2"]
+    assert (scored["decision"]["state"], scored["decision"]["reason"]) == (
+        "proposal",
+        "squint_contest_unresolved_no_finer_reading",
+    )
 
 
 def test_a_study_known_only_through_a_negative_record_is_excluded():
@@ -1476,7 +1628,8 @@ def test_growth_keeps_every_signed_record_and_the_next_reader_hears_the_negative
         placed("femur", "patella"),
     )
     # Placed by the prior alone, it leaves every identity open: the parent's sagittal
-    # "not femur" support is heard in this very round, beside the femur's own case.
+    # "not femur" support is heard in this very round, beside the femur's own case. At
+    # 10 mm that opens its identity question, and with no finer reading it stays open.
     y = candidate(
         "study-y",
         "femur",
@@ -1485,13 +1638,13 @@ def test_growth_keeps_every_signed_record_and_the_next_reader_hears_the_negative
         identity_context("femur", PRIOR_ONLY),
     )
     receipt = grow_identity_memory(parent, [x, y], signed.root / "grown")
-    assert receipt["state_counts"] == {"admitted": 1, "conflict": 1}
+    assert receipt["state_counts"] == {"admitted": 1, "proposal": 1}
     document = json.loads((signed.root / "grown" / DECISIONS_FILE).read_text())
     by_id = {row["candidate_id"]: row for row in document["decisions"]}
     assert by_id[x["case_id"]]["views"] == [COR, SAG]
     assert (by_id[y["case_id"]]["state"], by_id[y["case_id"]]["reason"]) == (
-        "conflict",
-        "own_case_and_applicable_negative_case_speak",
+        "proposal",
+        "squint_contest_unresolved_no_finer_reading",
     )
     assert by_id[y["case_id"]]["recognized_identity"] is None
     child = load_memory_snapshot(signed.root / "grown" / CHILD_DIRECTORY).memory

@@ -797,12 +797,16 @@ def test_held_out_exclusion_and_the_next_round_hear_the_correction(grown):
     view = memory_view(corrected, exclude_study_uids=("sx",))
     assert grown.x not in object_ids(view)
     assert grown.x not in {r["case_id"] for r in view["object_identity_cases"]["cases"]}
-    # A next round on the corrected child: a candidate like x now meets its -1.
+    # A next round on the corrected child: a candidate like x now meets its -1, which
+    # applies at 10 mm and opens its identity question; with no finer reading of it,
+    # the candidate is never admitted on the squint scale alone.
     [like_x] = harvest_candidates(records(("sy", X_BANKS)))
-    decision = admission_decision(like_x, corrected)["decision"]
+    scored = admission_decision(like_x, corrected)
+    assert grown.x in scored["recall"]["applicable_negative_case_ids"]
+    decision = scored["decision"]
     assert (decision["state"], decision["reason"]) == (
-        "conflict",
-        "own_case_and_applicable_negative_case_speak",
+        "proposal",
+        "squint_contest_unresolved_no_finer_reading",
     )
     # On the reviewed child, before the correction, the same candidate is admitted.
     assert admission_decision(like_x, grown.child.memory)["decision"]["state"] == (
@@ -814,7 +818,7 @@ def test_held_out_exclusion_and_the_next_round_hear_the_correction(grown):
         "case_id_already_in_parent"
     )
     receipt = grow_identity_memory(snapshot, [like_x, again], grown.root / "round-2")
-    assert receipt["state_counts"] == {"conflict": 1, "duplicate": 1}
+    assert receipt["state_counts"] == {"duplicate": 1, "proposal": 1}
     assert [p.name for p in (grown.root / "round-2").iterdir()] == [DECISIONS_FILE]
 
 

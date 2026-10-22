@@ -31,21 +31,31 @@ from knee.diagnosis.squint_identity import (
     APPEARANCE_OPPOSED,
     APPEARANCE_SUPPORTS,
     CONDITIONING,
+    CONTESTED_AFTER_FINER_READING,
     CONTEXT_SCHEMA,
     ESTABLISHED_BY_STRUCTURE,
+    FINER_RECALL_INVALID,
     IDENTITY_CASES_SCHEMA,
+    JOINT_SCALE,
     MAP_RELATION,
+    NEGATIVE_APPLIES,
+    NEGATIVE_NOT_COMPARED,
     PRIOR_ONLY,
     PROPOSED_PLACES,
     RECALL_CONTEXT_SCHEMA,
+    RESOLVED_BY_FINER_READING,
     RESOLVED_SUPPORT,
     SIGNED_CONFLICT,
+    SQUINT_SCALE,
     STRUCTURAL_READER,
     SUPPORT_UNRECORDED,
     TEACHING_SCHEMA,
+    UNRESOLVED_NO_FINER_READING,
     _envelope_over,
+    preparation_scale,
     prepare_identity,
     recall_identity,
+    squint_contest_resolution,
 )
 from knee.diagnosis.squint_interfaces import territory_bank_name
 
@@ -632,3 +642,177 @@ def test_a_set_aside_anchors_reversed_relation_is_a_contradiction_and_a_reader_c
         ]
         == []
     )
+
+
+# ------------------------------------------- one comparison over every scale
+
+
+def fine_bank(view: list[str], role: str = "object") -> str:
+    return territory_bank_name(
+        dict(
+            zip(
+                ("orientation", "fluid_sensitive", "fat_suppression"), view, strict=True
+            )
+        ),
+        role,
+        "signal",
+        "d",
+        2.0,
+    )
+
+
+def with_fine(taught: dict, fine: dict) -> dict:
+    """The same memory with each named case's object tiles also read at 2 mm."""
+    result = copy.deepcopy(taught)
+    records = [
+        *result["cases"],
+        *(result.get("object_identity_cases") or {}).get("cases", ()),
+    ]
+    for case in records:
+        for view, counts in fine.get(case["case_id"], ()):
+            case["profile"]["banks"][fine_bank(view)] = list(counts)
+    return result
+
+
+def joint_query(subject: str, coarse, finer, view=SAG) -> dict:
+    query = profile(subject, [(SAG, coarse)])
+    query["banks"][fine_bank(view)] = list(finer)
+    return query
+
+
+# Femur and tibia seeds and a sagittal "not femur" reject, at both scales: at 10 mm the
+# reject (2,1,0) still mixes bone with the soft tissue it named; at 2 mm it is that soft
+# tissue (0,15,0), and the femur seed is bone (15,0,0).
+JOINT = with_fine(
+    memory(
+        (
+            ("f1", "femur", "sf", [(SAG, (3, 1, 0))]),
+            ("t1", "tibia", "st", [(SAG, (0, 0, 3))]),
+        ),
+        [{**NOT_FEMUR, "by_view": [(SAG, (2, 1, 0))]}],
+    ),
+    {
+        "f1": [(SAG, (15, 0, 0))],
+        "t1": [(SAG, (0, 0, 15))],
+        "n1": [(SAG, (0, 15, 0))],
+    },
+)
+
+
+def test_the_squint_view_is_unchanged_and_the_joint_view_names_its_bank_set():
+    squint = prepare_identity(JOINT)
+    joint = prepare_identity(JOINT, scale=JOINT_SCALE)
+    assert "scale" not in squint and joint["scale"] == JOINT_SCALE
+    assert squint["source_pin"] != joint["source_pin"]
+    assert (preparation_scale(squint), preparation_scale(joint)) == (
+        SQUINT_SCALE,
+        JOINT_SCALE,
+    )
+    # The squint scale reads exactly the banks it read before scales.
+    assert (
+        squint["source_pin"]
+        == prepare_identity(JOINT, scale=SQUINT_SCALE)["source_pin"]
+    )
+    # A finer scale alone is no identity bank set; a view is used only at its own set.
+    assert prepare_identity(JOINT, scale="2mm") == {
+        "outcome": "invalid_input",
+        "reason": "identity_scale_invalid",
+    }
+    query = joint_query("femur", (2, 1, 0), (15, 0, 0))
+    assert recall_identity(
+        query,
+        JOINT,
+        prepared=squint,
+        context=context("femur", PRIOR_ONLY),
+        scale=JOINT_SCALE,
+    ) == {"outcome": "invalid_preparation", "reason": "scale_mismatch"}
+
+
+def test_one_comparison_over_both_scales_never_a_cosine_per_scale():
+    placement = context("femur", MAP_RELATION, ["tibia"])
+    query = joint_query("femur", (2, 1, 0), (15, 0, 0))
+    joint = recall_identity(
+        query,
+        JOINT,
+        prepared=prepare_identity(JOINT, scale=JOINT_SCALE),
+        context=placement,
+        scale=JOINT_SCALE,
+    )
+    [own] = joint["cases"]
+    # One dot product and one pair of norms over every bank both sides speak in.
+    assert (own["dot"], own["left_norm_sq"], own["right_norm_sq"]) == (
+        7 + 225,
+        5 + 225,
+        10 + 225,
+    )
+    assert Fraction(
+        int(own["squared_cosine"]["numerator"]),
+        int(own["squared_cosine"]["denominator"]),
+    ) == Fraction(232**2, 230 * 235)
+    assert sorted(own["common_speaking_banks"]) == sorted([bank(SAG), fine_bank(SAG)])
+    # Before the look the query's 2 mm banks are silent: the comparison is the 10 mm one,
+    # against the squint view's own trust radii.
+    coarse = profile("femur", [(SAG, (2, 1, 0))])
+    squint = recall_identity(coarse, JOINT, context=placement)
+    [own] = squint["cases"]
+    assert (own["dot"], own["left_norm_sq"], own["right_norm_sq"]) == (7, 5, 10)
+    assert own["envelope"] is not None
+    # The joint view has no trust radius for a bank set it was not prepared over.
+    unread = recall_identity(
+        coarse,
+        JOINT,
+        prepared=prepare_identity(JOINT, scale=JOINT_SCALE),
+        context=placement,
+        scale=JOINT_SCALE,
+    )
+    [own] = unread["cases"]
+    assert own["envelope"] is None
+
+
+def test_a_contest_is_settled_by_what_applies_never_by_a_margin():
+    placement = context("femur", MAP_RELATION, ["tibia"])
+    coarse = profile("femur", [(SAG, (2, 1, 0))])
+    squint = recall_identity(coarse, JOINT, context=placement)
+    assert (squint["outcome"], squint["applicable_negative_case_ids"]) == (
+        SIGNED_CONFLICT,
+        ["n1"],
+    )
+    # No finer reading: unsettled, every squint-scale negative not compared.
+    assert squint_contest_resolution(squint, None)["status"] == (
+        UNRESOLVED_NO_FINER_READING
+    )
+    assert squint_contest_resolution(squint, None)["negatives"] == {
+        "n1": NEGATIVE_NOT_COMPARED
+    }
+    view = prepare_identity(JOINT, scale=JOINT_SCALE)
+
+    def after(finer):
+        return recall_identity(
+            joint_query("femur", (2, 1, 0), finer),
+            JOINT,
+            prepared=view,
+            context=placement,
+            scale=JOINT_SCALE,
+            resolve_negatives=squint["applicable_negative_case_ids"],
+        )
+
+    bone = squint_contest_resolution(squint, after((15, 0, 0)))
+    assert (bone["status"], bone["squint_scale_resemblance_only"]) == (
+        RESOLVED_BY_FINER_READING,
+        ["n1"],
+    )
+    soft = squint_contest_resolution(squint, after((0, 15, 0)))
+    assert (soft["status"], soft["resolved_outcome"], soft["negatives"]) == (
+        CONTESTED_AFTER_FINER_READING,
+        SIGNED_CONFLICT,
+        {"n1": NEGATIVE_APPLIES},
+    )
+    # A squint-scale recall handed over as the finer one is refused, by name.
+    refused = squint_contest_resolution(squint, squint)
+    assert refused["status"] == FINER_RECALL_INVALID
+    # A recall that is no contest asks no resolution.
+    plain = recall_identity(
+        profile("femur", [(SAG, (3, 1, 0))]), JOINT, context=placement
+    )
+    assert plain["outcome"] == APPEARANCE_SUPPORTS
+    assert squint_contest_resolution(plain, None) == {"status": None}

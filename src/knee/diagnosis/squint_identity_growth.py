@@ -31,6 +31,10 @@ tissue. A ``reversed_*`` check is a genuine contradiction and blocks it as an
 reason still applies opposes the identity (``opposed``; with its own cases speaking
 too, ``conflict``); one that speaks only with the surroundings, concerns another
 identity, or asserts an alternative structure removed is recorded and changes nothing.
+At the squint scale such a negative only opens the identity question: the candidate is
+decided by its recall after the finer look, one comparison over every bank at both
+scales, and without that reading, or with a negative it could not include, it stays a
+proposal, never admitted on the squint scale alone (``squint_contest_resolution``).
 Resemblance to another object never blocks admission. Unknown-only anatomy keeps a
 placement a proposal: not admitted, not rejected, never a negative. A candidate without
 a context keeps a proposal. The legacy recall field ``admitted`` is not a publication
@@ -110,7 +114,7 @@ import os
 import re
 import tempfile
 from collections import Counter
-from collections.abc import Iterable, Iterator, Mapping, Sequence
+from collections.abc import Callable, Iterable, Iterator, Mapping, Sequence
 from pathlib import Path
 from typing import Any
 
@@ -123,17 +127,25 @@ from knee.diagnosis.squint_configurations import (
 from knee.diagnosis.squint_identity import (
     APPEARANCE_OPPOSED,
     APPEARANCE_SUPPORTS,
+    CONTESTED_AFTER_FINER_READING,
+    CONTESTED_OUTCOMES,
     ESTABLISHED_BY_STRUCTURE,
+    FINE_SCALE,
     IDENTITY_CONSUMPTION_SCHEMA,
+    JOINT_SCALE,
     MAP_RELATION,
     PRIOR_ONLY,
     RECALL_CONTEXT_SCHEMA,
+    RESOLVED_BY_FINER_READING,
     SANITY_SCHEMA,
     SIGNED_CONFLICT,
+    SQUINT_SCALE,
     STRUCTURAL_READER,
+    holds_scale,
     identity_context_code,
     prepare_identity,
     recall_identity,
+    squint_contest_resolution,
 )
 from knee.diagnosis.squint_interfaces import parse_territory_bank_name
 from knee.diagnosis.squint_memory import (
@@ -198,6 +210,7 @@ _DECISION_KEYS = (
     "source",
     "identity_context",
     "identity_question",
+    "identity_scale",
 )
 _SHA = re.compile(r"[0-9a-f]{64}")
 
@@ -791,7 +804,10 @@ def _decision(
     recognized: object = None,
     views: Sequence[Sequence[str]] = (),
     question: Mapping[str, Any] | None = None,
+    scale: str | None = None,
 ) -> dict[str, Any]:
+    """One decision record. ``scale`` is the scale of the recall that decided it (the
+    finer one when a squint-scale contest went there), None when no recall did."""
     return {
         "candidate_id": candidate["case_id"],
         "study_uid": candidate["study_uid"],
@@ -805,11 +821,14 @@ def _decision(
         "source": copy.deepcopy(dict(candidate["source"])),
         "identity_context": copy.deepcopy(candidate.get("identity_context")),
         "identity_question": copy.deepcopy(question),
+        "identity_scale": scale,
     }
 
 
 def admission_from_recall(
-    candidate: Mapping[str, Any], recall: Mapping[str, Any]
+    candidate: Mapping[str, Any],
+    recall: Mapping[str, Any],
+    resolved: Mapping[str, Any] | None = None,
 ) -> dict[str, Any]:
     """Decide one candidate from its recall in context and its recorded anatomy.
 
@@ -822,9 +841,20 @@ def admission_from_recall(
     (``conflict``): not admitted, never renamed. Resemblance to another object decides
     nothing. The structural reader's recorded arrangement is its affirmative support, so
     an unavailable law check does not block a bone it established; a placement needs a
-    recorded pass. Precedence: invalid input; a known contradiction (``blocked``, an
-    ``identity_question``); no context; a contested identity; the prior alone; an
-    identity not warranted; no affirmative support; unresolved scope; admission.
+    recorded pass.
+
+    A negative case speaking at the squint scale only opens the identity question
+    (``squint_contest_resolution``). The candidate is then decided by ``resolved``, its
+    recall after the finer look: one comparison over every bank at both scales
+    (``JOINT_SCALE``), scope included. A contest that recall settles is decided by it;
+    one still applying there is ``opposed`` or ``conflict`` whatever the basis, since
+    admission needs the identity settled; one without a finer reading, with a negative
+    the joint comparison could not include, or with a refused joint recall stays a
+    proposal, named: never admitted on the squint scale alone. Each decision names the
+    bank set it was decided over (``identity_scale``). Precedence: invalid input; a
+    known contradiction (``blocked``, an ``identity_question``); no context; an
+    unsettled squint-scale contest; a contested identity; the prior alone; an identity
+    not warranted; no affirmative support; unresolved scope; admission.
     """
     subject = candidate["subject"]
     anatomy = location_support(candidate.get("sanity"), subject)
@@ -849,7 +879,18 @@ def admission_from_recall(
             )
         support = _arrangement_support(context) + support
     contradictions = list(context["contradictions"]) if context is not None else []
-    warranted = context is not None and _warranted(recall)
+    deciding, scale = recall, SQUINT_SCALE
+    resolution = None
+    if context is not None and outcome in CONTESTED_OUTCOMES:
+        resolution = squint_contest_resolution(recall, resolved)
+        if resolution["status"] in (
+            RESOLVED_BY_FINER_READING,
+            CONTESTED_AFTER_FINER_READING,
+        ):
+            deciding, scale = resolved, JOINT_SCALE
+    unsettled = resolution is not None and deciding is recall
+    decided = deciding.get("outcome")
+    warranted = context is not None and not unsettled and _warranted(deciding)
     recognized = subject if warranted else None
     if anatomy["contradicted"] or contradictions:
         question = {
@@ -866,6 +907,7 @@ def admission_from_recall(
             support,
             recognized,
             question=question,
+            scale=scale,
         )
     if context is None:
         reason = (
@@ -873,27 +915,42 @@ def admission_from_recall(
             if candidate["source"].get("kind") == MEMORY_SOURCE
             else "identity_context_unavailable"
         )
-        return _decision(candidate, "proposal", reason, support)
-    if outcome == APPEARANCE_OPPOSED:
+        return _decision(candidate, "proposal", reason, support, scale=scale)
+    if unsettled:
         return _decision(
-            candidate, "opposed", "applicable_negative_case_speaks", support
+            candidate,
+            "proposal",
+            f"squint_contest_{resolution['status']}",
+            support,
+            scale=scale,
         )
-    if outcome == SIGNED_CONFLICT:
+    if decided == APPEARANCE_OPPOSED:
+        return _decision(
+            candidate,
+            "opposed",
+            "applicable_negative_case_speaks",
+            support,
+            scale=scale,
+        )
+    if decided == SIGNED_CONFLICT:
         return _decision(
             candidate,
             "conflict",
             "own_case_and_applicable_negative_case_speak",
             support,
+            scale=scale,
         )
     if context["basis"] == PRIOR_ONLY:
-        return _decision(candidate, "proposal", "identity_basis_prior_only", support)
+        return _decision(
+            candidate, "proposal", "identity_basis_prior_only", support, scale=scale
+        )
     if not warranted:
         reason = (
-            f"structural_appearance_{recall.get('appearance')}"
+            f"structural_appearance_{deciding.get('appearance')}"
             if context["basis"] == STRUCTURAL_READER
-            else str(outcome)
+            else str(decided)
         )
-        return _decision(candidate, "proposal", reason, support)
+        return _decision(candidate, "proposal", reason, support, scale=scale)
     arrangement = _arrangement_support(context)
     if not arrangement and (anatomy["status"] != "plausible" or not anatomy["support"]):
         reason = (
@@ -901,18 +958,21 @@ def admission_from_recall(
             if anatomy["status"] == "plausible"
             else "anatomy_unknown"
         )
-        return _decision(candidate, "proposal", reason, support, subject)
-    scope = admission_scope(recall, subject)
+        return _decision(candidate, "proposal", reason, support, subject, scale=scale)
+    scope = admission_scope(deciding, subject)
     if "views" not in scope:
-        return _decision(candidate, "refused", scope["refusal"], support, subject)
+        return _decision(
+            candidate, "refused", scope["refusal"], support, subject, scale=scale
+        )
     return _decision(
         candidate,
         "admitted",
-        f"{outcome}_with_"
+        f"{decided}_with_"
         + ("the_readers_arrangement" if arrangement else "location_support"),
         support,
         subject,
         scope["views"],
+        scale=scale,
     )
 
 
@@ -935,16 +995,24 @@ def admission_decision(
     memory: Mapping[str, Any],
     *,
     prepared: Mapping[str, Any] | None = None,
+    prepared_resolved: Mapping[str, Any]
+    | Callable[[], Mapping[str, Any]]
+    | None = None,
     record_studies: frozenset[str] | None = None,
     represented: Mapping[str, frozenset] | None = None,
 ) -> dict[str, Any]:
     """Score one candidate against one frozen parent memory.
 
-    Returns ``{"decision", "recall", "excluded_study_uid"}``. The recall is
-    conditioned on the candidate's ``identity_context`` when it carries one.
-    ``prepared`` must be the parent's preparation for this candidate's exclusion (any
-    other is refused by recall as ``invalid_preparation``); ``record_studies`` and
-    ``represented`` may be passed to share them across a round.
+    Returns ``{"decision", "recall", "resolved_recall", "excluded_study_uid"}``. The
+    recall is conditioned on the candidate's ``identity_context`` when it carries one.
+    A recall in context contested at the squint scale is followed, when the candidate
+    holds a finer reading of its own tiles, by its joint recall over both scales
+    (``resolved_recall``, else None), which then decides (``admission_from_recall``).
+    ``prepared`` must be the parent's squint-scale preparation for this candidate's
+    exclusion and ``prepared_resolved`` its joint one, or a function making it (called
+    only when a joint recall is needed); any other is refused by recall as
+    ``invalid_preparation``. ``record_studies`` and ``represented`` may be passed to
+    share them across a round.
     """
     _check_candidate(candidate)
     if not isinstance(memory, Mapping):
@@ -954,20 +1022,49 @@ def admission_decision(
     held = represented_objects(memory) if represented is None else represented
     early = _early_decision(candidate, held)
     if early is not None:
-        return {"decision": early, "recall": None, "excluded_study_uid": exclusion}
+        return {
+            "decision": early,
+            "recall": None,
+            "resolved_recall": None,
+            "excluded_study_uid": exclusion,
+        }
     if prepared is None:
         prepared = prepare_identity(memory, exclude_study_uid=exclusion)
+    context = candidate.get("identity_context")
     recall = recall_identity(
         candidate["profile"],
         memory,
         exclude_study_uid=exclusion,
         sanity=candidate.get("sanity"),
         prepared=prepared,
-        context=candidate.get("identity_context"),
+        context=context,
     )
+    resolved = None
+    if (
+        context is not None
+        and recall.get("schema") == RECALL_CONTEXT_SCHEMA
+        and recall.get("outcome") in CONTESTED_OUTCOMES
+        and holds_scale(candidate["profile"], FINE_SCALE)
+    ):
+        view = prepared_resolved() if callable(prepared_resolved) else prepared_resolved
+        if view is None:
+            view = prepare_identity(
+                memory, exclude_study_uid=exclusion, scale=JOINT_SCALE
+            )
+        resolved = recall_identity(
+            candidate["profile"],
+            memory,
+            exclude_study_uid=exclusion,
+            sanity=candidate.get("sanity"),
+            prepared=view,
+            context=context,
+            scale=JOINT_SCALE,
+            resolve_negatives=recall.get("applicable_negative_case_ids", ()),
+        )
     return {
-        "decision": admission_from_recall(candidate, recall),
+        "decision": admission_from_recall(candidate, recall, resolved),
         "recall": recall,
+        "resolved_recall": resolved,
         "excluded_study_uid": exclusion,
     }
 
@@ -1259,14 +1356,38 @@ def _prior_rounds(parent: Mapping[str, Any]) -> list[Any]:
 
 
 def _parent_preparation(
-    parent: Mapping[str, Any], exclusion: str | None
+    parent: Mapping[str, Any], exclusion: str | None, scale: str = SQUINT_SCALE
 ) -> Mapping[str, Any]:
-    prepared = prepare_identity(parent, exclude_study_uid=exclusion)
+    prepared = prepare_identity(parent, exclude_study_uid=exclusion, scale=scale)
     if prepared.get("outcome") != "prepared":
         raise IdentityGrowthError(
             "parent_identity_teaching_invalid", str(prepared.get("reason"))
         )
     return prepared
+
+
+class _RoundPreparations:
+    """The parent's identity views one round reuses, each made when first needed.
+
+    One unexcluded view and one held-out study's view per bank set, the held-out one
+    rebuilt only when the study changes (harvest yields a study's candidates together):
+    a joint view is never prepared per candidate, and only when a contest needs it.
+    """
+
+    def __init__(self, parent: Mapping[str, Any]):
+        self._parent = parent
+        self._slots: dict[tuple[bool, str], tuple[str | None, Mapping[str, Any]]] = {}
+
+    def view(self, exclusion: str | None, scale: str = SQUINT_SCALE) -> Mapping:
+        key = (exclusion is None, scale)
+        held = self._slots.get(key)
+        if held is None or held[0] != exclusion:
+            held = (exclusion, _parent_preparation(self._parent, exclusion, scale))
+            self._slots[key] = held
+        return held[1]
+
+    def joint(self, exclusion: str | None) -> Callable[[], Mapping[str, Any]]:
+        return lambda: self.view(exclusion, JOINT_SCALE)
 
 
 def _check_output(output: object, parent_snapshot: MemorySnapshot) -> Path:
@@ -1320,7 +1441,12 @@ def _lineage(
     parent_sha256: str,
 ) -> dict[str, Any]:
     decision = scored["decision"]
-    recall = scored["recall"]
+    # The recall that decided: the joint one when a squint-scale contest went there.
+    recall = (
+        scored["resolved_recall"]
+        if decision.get("identity_scale") == JOINT_SCALE
+        else scored["recall"]
+    )
     identity = decision["recognized_identity"]
     speaking = sorted(
         {
@@ -1342,7 +1468,14 @@ def _lineage(
         "source": copy.deepcopy(dict(candidate["source"])),
         "decision": {
             key: copy.deepcopy(decision[key])
-            for key in ("state", "reason", "recognized_identity", "views", "support")
+            for key in (
+                "state",
+                "reason",
+                "recognized_identity",
+                "views",
+                "support",
+                "identity_scale",
+            )
         },
         "identity_context": copy.deepcopy(decision.get("identity_context")),
     }
@@ -1633,9 +1766,9 @@ def grow_identity_memory(
     decisions: list[dict[str, Any]] = []
     admitted_ids: list[str] = []
     admissions: list[dict[str, Any]] = []
-    shared = None
-    # The parent's preparation without one of its own studies, kept per study.
-    held_preparation: tuple[str | None, Mapping[str, Any] | None] = (None, None)
+    # The unexcluded views, and the parent's views without one of its own studies, kept
+    # per study; a joint view only when a squint-scale contest needs it.
+    preparations: _RoundPreparations | None = _RoundPreparations(parent)
     for candidate in candidates:
         _check_candidate(candidate)
         if candidate["case_id"] in seen:
@@ -1656,18 +1789,13 @@ def grow_identity_memory(
             decisions.append(early)
             continue
         study = candidate["study_uid"]
-        if study in record_studies:
-            if held_preparation[0] != study:
-                held_preparation = (study, _parent_preparation(parent, study))
-            prepared = held_preparation[1]
-        else:
-            if shared is None:
-                shared = _parent_preparation(parent, None)
-            prepared = shared
+        exclusion = study if study in record_studies else None
+        assert preparations is not None
         scored = admission_decision(
             candidate,
             parent,
-            prepared=prepared,
+            prepared=preparations.view(exclusion),
+            prepared_resolved=preparations.joint(exclusion),
             record_studies=record_studies,
             represented=represented,
         )
@@ -1678,7 +1806,7 @@ def grow_identity_memory(
                 admissions.append(
                     _admission(candidate, scored, parent, parent_snapshot.sha256)
                 )
-    shared = held_preparation = None
+    preparations = None
     document = {
         "schema": DECISIONS_SCHEMA,
         "parent": {
