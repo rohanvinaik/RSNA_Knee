@@ -1,233 +1,213 @@
-# RSNA Knee: anatomical reasoning and individual-case recall
+# RSNA Knee
 
-**Application development paused at Rohan’s request, 2026-10-22; the subsequent quality/commit/push pass is explicitly authorized.** The [current packet](docs/work/current/README.md) records the accepted artifacts, implemented repairs, measured results and unfinished checks. Nothing in the examples below queues a new build, training run or submission.
+**Computer vision built around what objects are: measure the image, recognize anatomy in context, and reason from the object to the diagnosis.**
 
-A classical-AI computer-vision pipeline grounded in **What an \<Object> Is**. Complementary measurements describe anatomical objects; their physical relations constrain recognition. Each object has one HDC representation across its available lenses, views, directions and scales. Independent normal and condition-presentation cases remain individual precedents.
+[![CI](https://github.com/rohanvinaik/RSNA_Knee/actions/workflows/gate.yml/badge.svg)](https://github.com/rohanvinaik/RSNA_Knee/actions/workflows/gate.yml)
+[![Kernel benchmarks](https://github.com/rohanvinaik/RSNA_Knee/actions/workflows/codspeed.yml/badge.svg)](https://github.com/rohanvinaik/RSNA_Knee/actions/workflows/codspeed.yml)
 
-**The endpoint is diagnosis of the twelve competition conditions, with uncertainty where needed.**
-ONE society connects anatomical support/role assignment, physiological interpretation and condition
-discrimination over the same object representation. Anatomy supplies spatial organization;
-physiology supplies functional meaning. Cheap calibrated readings describe what was measured;
-grounded definitions and contextual cases warrant what those readings mean.
-[The contextual grounding and training execution guide](docs/CLASSICAL_AI_TRAINING_EXECUTION.md)
-gives the full mechanism, remaining repair contracts, existing command boundaries and scale-round
-workflow. It incorporates Rohan's latest literal corrections.
+`Anatomical reasoning · Exact HDC · Contextual K-lines · Society of Mind · Squint first`
 
-**Current extension: three-stage learned navigation over fixed HDC signals.**
-Rohan explicitly selected specialist training → frozen-specialist orchestrator training →
-joint refinement. The latest completed training, `train-r2`, used106 training studies (including all58
-fully labelled teaching studies) and the same12 development-validation studies.
-It exports a NumPy-only runtime; PyTorch is needed only for training.
-The lenses, exact HDC representation, anatomical definitions and signed K-line memory
-remain fixed. Learned numerical outputs retain the original symbolic findings and evidence.
-[Verified training/run commands](docs/SOM_NAVIGATION_RUN_GUIDE.md) describe the actual
-implementation; [experiment004](docs/experiments/training/004-three-stage-navigation-pilot.md)
-records its mixed, limited per-condition validation. This is a working training pilot,
-not a claim of competitive or clinically validated performance. The live integration and
-offline-package status remains in [the current packet](docs/work/current/README.md).
+A femur and a tibia look alike. They are both bones. A representation that finds them similar has learned something useful about bone; their arrangement across the knee joint supplies the distinction between them. Marrow belongs inside those bones. Cartilage covers their articulating surfaces. Ligaments connect them. Each object makes the next object easier to find, and each relationship gives the system another way to check what it thinks it sees.
 
-**Bootstrap and corpus growth remain part of the same development loop.**
-We are **hand-building the corpus**: recognition tools help isolate anatomical examples,
-normal and diseased, whose reviewed bundles become K-lines. A perfect or complete automatic
-recognition solution on the 58 teaching studies is not a prerequisite for training the AI.
-The teaching labels supply normal examples too: correctly identified objects not implicated by
-a study's positive conditions belong in the normal corpus, even when that knee has other injuries.
-Visually confirm or correct recognizable examples, add their signed HDC cases to the K-line memory,
-use that memory and anatomy to find more, then train the designed Minsky/Winston agencies from
-the growing corpus and sourced experiences. Bootstrap preparation and deployment verification
-are different operations. The latest request pauses further building and compute for
-documentation closeout; no competition operation is queued.
-The full corpus is on an SSD being extracted, and three computers are available for training math.
-[FULL_BUILD_PLAN §18.1](docs/FULL_BUILD_PLAN.md#181-current-phase-local-bootstrap-and-classical-ai-training)
-defines the phase boundary; [the active packet](docs/work/current/README.md) records actual progress.
+That is the starting point of **What an \<Object> Is**, and this repository is its knee-MRI implementation. The image depicts a physical system whose parts constrain one another. Represent those parts and their relationships explicitly, and recognition becomes a succession of smaller, better-posed questions. Diagnosis follows from asking what has changed about the objects the system has recognized.
 
-The [train-ready completion handoff](docs/TRAIN_READY_COMPLETION.md) gives the verified gaps,
-exact implementation/test requirements and parallel work split. It preserves balanced-ternary
-meaning and distinguishes hand-grounded teaching readback from the subsequent classical learning loop.
+The task is concrete: read a knee MRI study and answer the twelve questions in the RSNA Knee Abnormality Detection competition. The larger experiment is whether a computer-vision system can make those answers intelligible all the way down to the observations, objects and precedents that produced them.
 
-**Hand-defined teaching references:** [normal/diagnosed picture pairs for all twelve questions](docs/GROUNDED_TEACHING.md),
-with [authored categories, measured cases and replay instructions](docs/teaching/README.md).
-These establish the explicit starting reference before scaling; teaching replay is distinct from
-held-out diagnostic performance. The existing signed parent memory is preserved.
+---
 
-The high-resolution anatomical pipeline supplies bootstrap examples. **Production starts with raw-image squints and case recall.** It locates current-study anatomy, reasons over the recalled object states, and requests a bounded higher-fidelity reading only for a question still open. It does not reconstruct the whole knee before deciding whether reconstruction was needed.
+## Start with two bones
 
-Read [Rohan's latest production explanation](docs/conversations/2026-10-21-ternary-buckets-and-squint-orchestration.md), [the original conversation](docs/conversations/2026-10-13-the-thesis.md), and [the theory](docs/THEORY_OF_THE_CASE.md). [FULL_BUILD_PLAN §0](docs/FULL_BUILD_PLAN.md#0-grounding-every-session-start-and-every-compaction) gives the grounding sequence; §13 points to the sole current task packet. The approved production design and interfaces are [AI_DIAGNOSTIC_DESIGN.md](docs/AI_DIAGNOSTIC_DESIGN.md) and [SQUINT_PRODUCTION_CONTRACT.md](docs/SQUINT_PRODUCTION_CONTRACT.md).
+Consider a region that resembles stored femur and tibia examples almost equally. Appearance has supplied evidence of bone. The scan's acquisition geometry and the surrounding anatomy establish its role: the femur lies on the thigh side of the joint, the tibia on the lower-leg side, and the patella sits in front of the femur's distal end.
 
-The [full classical-AI design](docs/CLASSICAL_AI_BUILD_DESIGN.md) connects bootstrap recognition,
-corpus/training-data construction, agency learning and runtime memory. K-lines serve both initial
-recognition and the continuing recall of interpretations/procedures. Confirmed negative examples
-are active teaching information; unresolved calls remain silent. Populating the corpus enables the
-classical learning process and does not exhaust it. Implementation status remains in the current packet.
+Those are connected observations. A useful partial view still contributes even when another view is missing. A conflicting view leaves a discrepancy to resolve. The anatomical map supplies the expected organization of a knee, while the actual study supplies evidence of how this knee is organized—including damage or deviation.
 
-## Measured checkpoint — 2026-10-22
+Once the object is established, the question changes. Is its structure intact? Is its surface preserved? Is there excess fluid in the joint? The answer depends on the object's identity, its presentation and its relationships. A bright region by itself has very little meaning. A measured signal at a known place in a known object has considerably more.
 
-- The accepted signed memory has1,061 cases. The latest learner has16 specialist domains
-  and10,566,320 parameters; all three training stages completed. Exact artifacts and
-  source pins are in the current packet and run guide.
-- Saved replay over the58 GRADIENT-TRAINING studies gives raw numerical per-condition
-  AUC0.994–1.000. Existing categorical errors still impair the final combined readout.
-  This is teaching-set fit, not independent recognition or clinical validation.
-- The separate12-study development results are mixed, with some conditions missing
-  a truth class. [Per-condition reports](data/readings/som-navigation-20261022/validation-r2/SUMMARY.md)
-  retain identified/abstained/wrong and ranking details; no one-number success claim.
-- Actual reasoning repairs refresh stale dependent diagnoses and prevent context or an
-  unlocalized single bone from acquiring defining-tissue/whole-case authority by wrapping.
-- The new raw58-study check was interrupted at the user’s request after four complete
-  retained records. It has no complete cohort receipt or complete58-study result.
-- Full final-tree CI and a release rebuilt with current artifacts remain outstanding.
-  No formal competition submission occurred; it requires Rohan’s explicit permission.
+The system keeps that chain visible:
 
-[Experiment004](docs/experiments/training/004-three-stage-navigation-pilot.md) preserves the
-sequence of measurements, repairs and limitations. The project’s symbolic output policy
-is not itself evidence of comparative superiority or inferiority; diagnosis and ranking
-quality must be measured on their stated populations.
+```text
+observed region + measured appearance + current-study relationships
+                              ↓
+                      anatomical object
+                              ↓
+             normal or altered presentation, in context
+                              ↓
+              condition finding and its supporting evidence
+```
 
-## How the complete operation fits together
+A sampled window can contain several tissues. A map-proposed location remains an expectation until evidence supports it. Keeping those distinctions is what lets the same system recognize ordinary anatomy and reason about departures from it.
 
-1. **Bootstrap tools supply candidates.** The existing high-resolution results retain object supports,
-   full HDC descriptions and raw source addresses. Automatic object names remain proposals until called.
-2. **Visual calls establish the starting memory.** Keep every warranted positive, negative and
-   alternative identity at the scope actually established. Useful messy examples are welcome; an
-   unasserted view is not a negative. The full and cheap descriptions coexist within each case.
-3. **Recognition grows the corpus.** Squint the new study, constrain candidates with its own anatomy,
-   and hear both signed sides through the joint available views. Automated new-case admission requires
-   confident identity plus affirmative applicable anatomical support and no known contradiction.
-   Unknown anatomy alone leaves a proposal; it neither admits nor rejects it. An anatomical pass records
-   where the candidate lies, not what tissue it is: plausible but wrong tissue meets the negative cases.
-   Not every anatomical check, every view or a perfect outline is required. Each round reads a frozen
-   parent memory and publishes a child retaining its signed cases, source scope and recognition lineage;
-   the first round's admissions are inspected before its child becomes the next parent.
-4. **Training develops the active classical system.** Work problems with that corpus and the available
-   tools; retain what was expected, what was tried, the independently established outcome and any
-   explanatory difference. Those experiences can add a case, refine or split a K-line's claim, establish
-   a scoped censor, or associate a recalled situation with a useful procedure. The governing design
-   supplies these mechanisms; filling buckets alone is not the whole training process, and no generic
-   episode framework is a prerequisite for getting recognition to work.
-5. **Production uses the resulting memory.** Current-study squints and anatomical relations cue
-   individual cases and useful procedures. Their interpretations govern the condition questions;
-   disagreement or missing evidence remains open. Only a named unresolved question earns a bounded
-   additional reading. The run writes the twelve competition values and releases each completed study.
+## Measurements become a description of one object
 
-Object identity, object state and clinical diagnosis are distinct questions. A visual “not femur” is
-not “no fracture”; a fracture-positive study does not label every bone fractured. Labels, reports and
-independent clinical calls retain their actual scope. Recognition-derived examples retain their lineage
-and never become independent confirmation of their own ancestry.
+The pipeline reads the image through complementary **lenses**: measurements of signal, boundaries, interiors, texture and spatial relationships. Each lens reports the quantity it measures. Assigning an anatomical name or clinical meaning is a further operation, performed in context.
 
-## Setup and operation
+The thermometer is the useful analogy. Temperature is a reading. Fever is an interpretation that also requires a reference, a measurement site and a physiological claim. The representation keeps the reading and the interpretation connected, with their different scopes intact.
 
-The repository contains code and public documentation. MRI data, signed memories,
-learned artifacts and private conversation records are intentionally excluded from
-git. Artifact links under `data/` are local research evidence, not a promise that
-GitHub distributes the trained system. A fresh clone can run the synthetic gate;
-actual diagnosis additionally needs the explicitly supplied data/memory/model inputs.
-The [quality record](docs/work/reviews/QUALITY_PASS_20261022.md) documents repaired
-checks and the format-compatible runtime artifact; the navigation guide selects
-its current paths. No historical training result is rewritten by that export.
+For the knee, one object spans the available sagittal, coronal and axial views. Its key planes retain physical coordinates, orientation and source addresses. Its description includes where a reading came from, which direction and scale it describes, and whether it was measured at all.
 
+The HDC implementation uses a **512-row Sylvester–Hadamard carrier with exact count-space operations**. Typed banks keep the dimensions distinct; compatible counts can be bundled and compared without constructing a dense hypervector for every pixel. The exact representation preserves the encoded measurements, including their availability. A lossy measurement still has the information content of that lens.
+
+Crucially, the full description and its cheap **squint** coexist in the same case. The cheap view can cue a rich precedent. A question that needs finer evidence can then request the relevant reading at the relevant address.
+
+[The representation in detail → HDC_ENCODING.md](docs/HDC_ENCODING.md)
+
+## The structure buys the efficiency
+
+Finding anatomy and avoiding wasted computation are the same operation viewed from two sides. A bone interior narrows the marrow question. Located bones narrow the joint question. The joint and its neighbours narrow the search for cartilage, menisci and ligaments. Every useful established relationship removes work from the remaining search.
+
+This is the efficiency thesis: **the closer the computation follows the structure of the problem, the less work it spends reconstructing information that structure already supplies.** A coarse anatomical prior can be useful long before it is a perfect boundary.
+
+The high-resolution tools were built to resolve objects, create teaching examples and inspect difficult questions. Production begins by squinting. It recalls cases, reasons over the available anatomy and spends additional resolution only on a named question still open. Shared measurements are computed once and handed to their consumers. Each worker finishes a study, retains its required outputs and releases consumed intermediates.
+
+The intended savings come from reducing what needs computing. Recorded kernels, memory profiles and whole-run receipts then show what the implementation actually costs. Complete-system speed and memory remain measurements to make on the deployed operation.
+
+## Memory that remembers what the evidence meant
+
+A **K-line** retains a contextual precedent: what was observed, the object or question it concerned, the interpretation established there, and the procedure associated with it when that is known. Full and cheap profiles remain linked to their sources.
+
+The starting corpus is built from actual pictures. Recognizable anatomical examples are called, bundled and placed in the appropriate normal or condition-presentation buckets. The official teaching studies supply diagnosed conditions; correctly identified objects not implicated by those conditions also supply normal presentations at the scope the labels establish. Rough borders can still yield useful categorization examples.
+
+Both signs teach. A confirmed object contributes a positive precedent. A region wrongly called femur contributes a scoped “not femur,” with the views and reason preserved. An ambiguous example remains available for inspection without becoming a negative fact.
+
+A specialized **censor** goes further: it captures a significant difference that explains when a particular interpretation fails. Its reach follows that explanation. An ordinary negative example does not automatically authorize a universal veto.
+
+The bootstrap loop is therefore practical:
+
+```text
+find candidates → inspect the actual images → retain signed cases
+       ↑                                          ↓
+       └──────── recall from the larger memory ────┘
+```
+
+Automated admission requires confident joint recognition, affirmative applicable anatomical support and no unresolved applicable contradiction. Independently warranted visual calls can teach directly. Each round reads a frozen parent and publishes a child retaining the signed evidence and lineage; the first growth round's admissions are inspected before its child is used.
+
+[Picture pairs and teaching → GROUNDED_TEACHING.md](docs/GROUNDED_TEACHING.md) · [Review and publication → OBJECT_BOOTSTRAP_GUIDE.md](docs/OBJECT_BOOTSTRAP_GUIDE.md)
+
+## A society of agencies, sharing one knee
+
+Placement, identity, object state, diagnosis and the choice of what to inspect next are responsibilities within **one** Society of Mind. They share the same evolving object account. A corrected identity changes which condition questions may use that object. A new observation refreshes dependent conclusions; unrelated work stays cached.
+
+K-lines remain active throughout this process. They help recognize an object, interpret a disagreement and recall a useful next procedure. Building the corpus makes learning possible; learning also concerns how the agencies use that corpus and their observation tools.
+
+The implemented learned navigation layer follows three stages:
+
+1. **Train the subject-domain specialists** over fixed HDC, recall, anatomical and availability signals.
+2. **Freeze the specialists and train the orchestrator.**
+3. **Refine the composed system jointly** at a lower learning rate.
+
+This layer fits parameters over the structured representation. The lenses, anatomical definitions and exact HDC encoding retain their specified meanings. PyTorch performs training; the exported runtime uses NumPy. The current orchestrator orders existing observation requests with mandatory work first. Its numerical opinions grade open condition questions.
+
+The resulting operation is a loop:
+
+```mermaid
+flowchart TD
+    A[Raw MRI series] --> B[Shared squints and acquisition geometry]
+    B --> C[Anatomical candidates and typed HDC descriptions]
+    C --> D[Contextual K-line recall and agency reasoning]
+    D --> E[Condition findings]
+    E --> F{Evidence sufficient?}
+    F -->|Yes| G[Warranted present or absent]
+    F -->|No| H[Open finding and graded opinion]
+    H -->|A bounded look can help| I[Select and perform the named observation]
+    I --> C
+```
+
+The learned layer is part of this existing society. Its score supplies no new anatomical fact and cannot overrule an independently warranted finding.
+
+[Full design → CLASSICAL_AI_BUILD_DESIGN.md](docs/CLASSICAL_AI_BUILD_DESIGN.md) · [Training and runtime → SOM_NAVIGATION_RUN_GUIDE.md](docs/SOM_NAVIGATION_RUN_GUIDE.md)
+
+## From an object to a diagnosis
+
+Anatomy establishes physical organization. Physiology gives that organization functional meaning. A healthy reference describes an object's ordinary state; damage and disease are structured departures from it. Loss of structural integrity and excess tissue or fluid are different directions of change, measured through the lenses that can observe them.
+
+Balanced ternary expresses those directions: **−1 below the defined reference, 0 at the reference, +1 above it**, within each dimension's meaning. Availability is separate. An unread bank, an observed normal state, a rejected identity and an absent condition each assert something different.
+
+Each clinical question declares which tissue defines it and which tissue merely supplies context. A study-level fracture label says that a fracture is present somewhere in its scope; it does not label every bone fractured. Likewise, a whole-condition comparison has authority only over evidence it actually includes. Applicable normal and diagnosed precedents both speak.
+
+The final output preserves the difference between a decision and an unresolved opinion:
+
+| Finding | Emitted value | Basis |
+|---|---:|---|
+| Warranted present | **1** | The condition reasoning establishes it. |
+| Warranted absent | **0** | The condition reasoning establishes its absence. |
+| Open | Graded, strictly inside `(0, 1)` | Retained evidence and numerical opinion express remaining uncertainty. |
+
+The shared serializer implements this policy for both ordinary and learned inference. Numerical confidence alone cannot promote an open question to a categorical finding. All twelve conditions are answered separately; conditions can coexist.
+
+## What has been demonstrated
+
+The [experimental notebook](docs/TRAINING_EXPERIMENTAL_NOTEBOOK.md) records each learning round with its source, memory, population, calls, corrections and resulting discrimination profile. It reports **identified / abstained / wrong per condition**, alongside the ordering of positives and negatives.
+
+The dated checkpoint on **22 October 2026** contains:
+
+| Component | Retained result |
+|---|---|
+| Signed memory | **1,061 individual cases**, with scoped identity teaching and procedure experiences. |
+| Learned navigation | **16 specialist domains; 10,566,320 parameters; all three stages completed.** |
+| Training population | **106 studies**, including the 58 fully labelled teaching studies. |
+| Development validation | **12 separate studies**; results are mixed, and some conditions lack both truth signs. |
+| Current-source raw-image check | Interrupted after **four complete study records**; no completed 58-study result. |
+
+Saved teaching-row rankings fit the training examples strongly. The development set participated in epoch retention. Those observations answer different questions from untouched transfer, and the notebook keeps them separate. Earlier categorical errors also remain important: a strong numerical ranking cannot repair a wrong categorical premise by formatting it differently.
+
+The software, representation, memory and first learned navigator are implemented. Diagnostic discrimination on new studies, the usefulness of learned observation choices and the final deployment envelope still need their complete experiments. Comparative or clinical performance follows from those experiments when they exist.
+
+[The thesis and its evidence → THESIS_AND_DEMONSTRATION.md](docs/THESIS_AND_DEMONSTRATION.md) · [Three-stage pilot → experiment004](docs/experiments/training/004-three-stage-navigation-pilot.md)
+
+## Run it
+
+The public repository contains the code, tests and engineering documents. MRI data, signed memories, trained artifacts and private design conversations are kept separately. A fresh clone can run the synthetic tests; image inference additionally requires the supplied data and a reviewed memory. Learned inference also requires its matching exported artifact.
 
 ```sh
-uv sync
+uv sync --locked
 export PYTHONPATH="$PWD/src"
 .venv/bin/python scripts/run_interiors.py --help
 ```
 
-The [squint run guide](docs/SQUINT_RUN_GUIDE.md) gives bootstrap compilation, inference, retained evidence, memory growth and private Kaggle deployment instructions. Memory is immutable and loaded once. Each active worker finishes and releases one study; decoded arrays do not accumulate across the cohort.
-
-Compile the existing 58 bootstrap products into a fresh **candidate catalogue**:
+The same entry point runs local inference and the competition operation. With an explicitly selected published memory and a **new** output directory:
 
 ```sh
 .venv/bin/python scripts/run_interiors.py \
-  --labeled --root data/raw --workers 4 --diagnostic-mode teach \
-  --squint-bootstrap-products data/readings/hdc-20261020/cohort/attempt-1/encoding \
-  --diagnostic-memory /absolute/new/candidate-catalogue \
-  --diagnostic-output /absolute/new/bootstrap-receipt
+  --split test --root /path/to/competition-data --workers 4 \
+  --diagnostic-mode infer \
+  --diagnostic-memory /path/to/reviewed-memory \
+  --diagnostic-submission-template /path/to/competition-data/sample_submission.csv \
+  --diagnostic-output /path/to/new/inference
 ```
 
-Then use the [reviewed bootstrap guide](docs/OBJECT_BOOTSTRAP_GUIDE.md) to export the actual pictures,
-record calls and publish a reviewed seed. Catalogue compilation is not visual approval of its cases.
-The guide publishes signed identity teaching (positive, negative and alternative-identity cases at
-their called views) and merges recorded calls from several reviewers without widening any call's scope.
+Add `--diagnostic-navigation /path/to/compatible-navigation-artifact` to use the trained layer. The [navigation guide](docs/SOM_NAVIGATION_RUN_GUIDE.md) gives verified artifact selection, dataset preparation, training, resume and runtime commands. The [squint run guide](docs/SQUINT_RUN_GUIDE.md) covers compilation, review, immutable growth rounds, retained evidence and deployment. Outputs preserve source addresses, compared cases, findings, unresolved questions and the official twelve-column template.
 
-Run the competition operation with an explicitly chosen published memory and a fresh output directory:
+High-resolution development and optional drawing use the same entry point. [OBJECT_OUTPUT.md](docs/OBJECT_OUTPUT.md) describes retained pixel bundles and provenance; [RESOLVING_THE_PARTS.md](docs/RESOLVING_THE_PARTS.md) describes how the anatomical tools resolve each part. Drawing is off by default and excluded from production work.
 
-```sh
-.venv/bin/python scripts/run_interiors.py \
-  --split test --root data/raw --workers 4 --diagnostic-mode infer \
-  --diagnostic-memory /absolute/existing/reviewed-memory \
-  --diagnostic-submission-template data/raw/sample_submission.csv \
-  --diagnostic-output /absolute/new/inference
-```
-
-The `knee.squint-memory/v1` manifest selects the fast route. Outputs retain located object profiles/regions, per-case comparisons, categorical findings and continuous rankings, with the official template's exact UIDs and twelve columns. Missing evidence stays unknown; disagreement stays visible. The final readout emits exact1 for a warranted assigned finding, exact0 for a warranted defeated finding, and a graded value only for an open finding. Raw model probabilities remain separate opinions; no probability threshold creates a diagnosis. Calls, reports and cohort labels do not become image features or teach during inference.
-
-The 58 existing H5 products are candidate teaching sources, not a claim that every object was observed correctly in every study. The [reviewed object bootstrap guide](docs/OBJECT_BOOTSTRAP_GUIDE.md) exports actual native pictures and publishes correctly called object examples with their full and cheap profiles. Admit all correct candidates; rough borders are acceptable for categorization. Record the actual visual reviewer and the views whose identity was established. Object identity can grow by warranted recognition with anatomical checks; that does not manufacture an independent clinical diagnosis. New report-confirmed clinical calls enter a later memory revision at their stated scope.
-
-The [run guide](docs/SQUINT_RUN_GUIDE.md) also gives the immutable teaching-round command, saved-evidence replay, and explicit retirement of independently reviewed bad teaching cases. A retired case remains preserved for inspection; its evidence cannot keep voting through a derived configuration.
-
-The [run guide's integration boundary](docs/SQUINT_RUN_GUIDE.md#implementation-boundary-and-next-integration)
-distinguishes implemented consumers from demonstrated effects. Current condition reasoning
-consumes contextual identity; later shared object/identity changes refresh dependent diagnoses.
-Report teaching, memory growth and parameter training are distinct connected operations.
-A saved field or passing fixture alone does not prove clinical accuracy or learned transfer.
-
-## Efficiency and competition requirements
-
-Anatomy narrows the work; shared producers avoid repetition; exact count-space HDC avoids dense per-pixel hypervectors. Useful priors need not be perfect. Performance figures are information about the implementation, never anatomical tuning targets.
-
-Anatomy generates finite candidate windows before scoring; partial native bone planes can guide explicitly partial priors. Each study receives a bounded time share. Location keeps the cheap 10 mm reading and recalls from it first; only a named unresolved question earns its 2 mm reading at the same address, while direct and reference callers still pair upfront (the [run guide](docs/SQUINT_RUN_GUIDE.md#run-production-inference) names the counters). Prepared recall ships with the memory. A whole-condition case may decide only through comparisons that actually include its defining tissue. The [run guide](docs/SQUINT_RUN_GUIDE.md) documents the fully study-excluded capacity check and its per-condition report.
-
-Partial normal evidence still speaks at its observed site. It can oppose an overlapping configuration claim without asserting that every possible site is normal. Context and explicitly restricted readings cannot acquire categorical authority through configuration bundling.
-
-[FULL_BUILD_PLAN §16.9](docs/FULL_BUILD_PLAN.md#169-competition-resource-envelope-w8b-storage-closure-and-w10-verification) owns the source-backed deployment envelope:
-
-- At most **nine hours**, with **internet disabled**.
-- Documented CPU route: **four cores, 30 GB RAM**, with **20 GB saved output** in `/kaggle/working`. Recheck the chosen runtime; scratch has its own session lifetime and measured quota.
-- **W8b verifies storage closure**: required final object information, original values, addresses and provenance survive release of consumed intermediates.
-- **W10 verifies the complete operation**: startup, decoding, location, recall, refinement, worker/queue memory and output, plus capacity for later stages. Measured public-study workload and hidden-scale projections remain separate.
-
-The private Kaggle wrapper requires the release's exact code-bundle and memory-manifest pins before inference. It copies production source to local disk, installs the verified offline CPython 3.13 dependency closure, gives the remaining notebook budget to the study allocator, uses four study workers and writes `/kaggle/working/submission.csv`. The same source runs locally. A private dry run does not submit to the competition. Its actual results and remaining checks belong to [the current packet](docs/work/current/README.md), not a historical microbenchmark.
-
-## Reference tools, images and exact products
-
-High-resolution development remains available through the same entry point:
+### Verify the complete source
 
 ```sh
-.venv/bin/python scripts/run_interiors.py --study-uid <UID> --root <data-root> --workers 1 --draw --run <new-interiors> --main-run <new-main-slices>
-```
-
-Drawing is optional and off in competition. The development-only `scripts/squint_visual_capacity.py` pictures what a finished run's recall compared; the [run guide](docs/SQUINT_RUN_GUIDE.md#draw-what-recall-compared-development-only) gives its command. A drawing is never production, and a positive study label does not localize a lesion. `--competition-output` builds verified self-contained H5 object products before releasing consumed intermediates. Retained pixel supports preserve native, inherited and projected provenance; none silently claims a measured 3D volume.
-
-See [OBJECT_OUTPUT.md](docs/OBJECT_OUTPUT.md) for addressed output, [HDC_ENCODING.md](docs/HDC_ENCODING.md) for the exact Hadamard/count representation, and [DIAGNOSTIC_RUN_GUIDE.md](docs/DIAGNOSTIC_RUN_GUIDE.md) for the older explicit full-product/recipe/reference tools. Those legacy routes and their readout remain available as reference behavior; they are not the new production default. Unread facets remain silent; source values without a declared interpretation remain named as such.
-
-## Verification and engineering map
-
-```sh
+uv sync --locked --extra som-training
 bash scripts/ci_local.sh
 ```
 
-The gate includes intent tests, import contracts, Sonar correctness checks, Vulture and performance leads, recorded kernels and CodSpeed. Passing it does not alone establish anatomical or competition capacity. Use real images, source attribution and the real production entry point alongside it. [The Sonar setup](docs/SONARCLOUD.md) documents local/Actions checks and [the hosted project](https://sonarcloud.io/project/overview?id=rohanvinaik_RSNA_Knee).
+The training extra makes the trainer tests run too. The declared gate checks tests and coverage, formatting, workflow security, import boundaries and Sonar correctness. Vulture, type findings and recorded-kernel performance remain visible as engineering leads. The quality pass preceding this README revision passed **6,187 tests** with **zero open Sonar bugs or vulnerabilities**; [its record](docs/work/reviews/QUALITY_PASS_20261022.md) retains the repairs and remaining performance leads.
 
-- [AGENTS.md](AGENTS.md) and [CLAUDE.md](CLAUDE.md): resident instructions and grounding imports.
-- [FULL_BUILD_PLAN.md](docs/FULL_BUILD_PLAN.md): requirements, contracts and current packet index.
-- [BUILD_WORKFLOWS.md](docs/work/current/BUILD_WORKFLOWS.md): isolated worker ownership, review and integration.
-- [OBJECTS_AND_CONDITIONS.md](docs/OBJECTS_AND_CONDITIONS.md): anatomical domain and condition scope.
-- [RESOLVING_THE_PARTS.md](docs/RESOLVING_THE_PARTS.md): views and complementary measurements.
-- [SQUINT_RUN_GUIDE.md](docs/SQUINT_RUN_GUIDE.md): the production and teaching workflow.
-- [OpenSpec integration contract](openspec/changes/complete-signed-bootstrap-loop/proposal.md): the
-  remaining signed-loop requirements, named scenarios and parallel tasks; validated planning is not
-  completed implementation.
-- [Two-sign boundary tests](tests/test_bootstrap_contract_intent.py) and
-  [status intent tests](tests/test_anatomical_status_intent.py): executable intent at the
-  existing interfaces. Future admission/growth/consumer scenarios remain in OpenSpec until integrated.
+Sonar uses Docker. It can be stopped after verification; keeping the project open does not require keeping its analysis VM running. A successful software gate establishes its stated contracts. The clinical and whole-system experiments remain separately recorded.
 
-`archive/` and `archive2/` are outside the active project and remain unread unless Rohan requests them.
+### Competition deployment
 
-For the current hand-built corpus task, see [the teaching workflow](docs/GROUNDED_RECOGNITION.md):
-actual images → reviewed anatomical and normal/diagnosed examples → measured bundles and signed
-K-lines → bootstrap and train the Society of Mind. Automatic cohort recognition is not a gate
-on this teaching operation.
-The same guide gives the verified `prepare_squint_training.py` command to export reviewed
-normal/condition object buckets and source-pinned procedure experiences from saved readings,
-and `near_miss_report.py` to retain scoped corrections without inventing missing expectations.
-The [current packet](docs/work/current/README.md) names the memory and verified state.
+The offline package must fit the competition's nine-hour limit and its CPU, RAM and storage envelope. [FULL_BUILD_PLAN §16.9](docs/FULL_BUILD_PLAN.md#169-competition-resource-envelope-w8b-storage-closure-and-w10-verification) owns the deployment requirements: storage closure, complete-operation measurements and a separate account of hidden-scale projections. Current packages must be rebuilt and pinned to the selected source, memory and navigation artifact before deployment. Formal submission requires the author's explicit permission.
+
+## Read the project
+
+| Question | Start here |
+|---|---|
+| What is the theory? | [THEORY_OF_THE_CASE](docs/THEORY_OF_THE_CASE.md) and [the thesis account](docs/THESIS_AND_DEMONSTRATION.md) |
+| How do anatomy and diagnosis connect? | [RELATIVE_POSITION_MAP](docs/RELATIVE_POSITION_MAP.md), [OBJECTS_AND_CONDITIONS](docs/OBJECTS_AND_CONDITIONS.md), [AI_DIAGNOSTIC_DESIGN](docs/AI_DIAGNOSTIC_DESIGN.md) |
+| What does the representation preserve? | [HDC_ENCODING](docs/HDC_ENCODING.md) |
+| How do cases become an active AI system? | [CLASSICAL_AI_BUILD_DESIGN](docs/CLASSICAL_AI_BUILD_DESIGN.md) and [training execution](docs/CLASSICAL_AI_TRAINING_EXECUTION.md) |
+| How do I run, inspect or teach it? | [SQUINT_RUN_GUIDE](docs/SQUINT_RUN_GUIDE.md), [OBJECT_BOOTSTRAP_GUIDE](docs/OBJECT_BOOTSTRAP_GUIDE.md), [SOM_NAVIGATION_RUN_GUIDE](docs/SOM_NAVIGATION_RUN_GUIDE.md) |
+| What did each experiment establish? | [TRAINING_EXPERIMENTAL_NOTEBOOK](docs/TRAINING_EXPERIMENTAL_NOTEBOOK.md) |
+| Where should a new contributor resume? | [FULL_BUILD_PLAN §13](docs/FULL_BUILD_PLAN.md#13-context-stable-continuation-and-stop-points), its sole [current packet](docs/work/current/README.md), and [AGENTS.md](AGENTS.md) |
+
+Application development is paused at the author's request. The current packet owns the continuation; commands in this README describe available operations and do not queue new training or a submission. `archive/` and `archive2/` remain outside the active build.
+
+---
+
+Rohan Vinaik · Computer vision as reasoning about a structured world.
