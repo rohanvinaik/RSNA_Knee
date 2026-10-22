@@ -83,6 +83,18 @@ def test_a_recording_digest_is_accepted() -> None:
     )
 
 
+def test_a_teaching_spec_digest_is_accepted() -> None:
+    checks = tool()
+    digest = sha1("source_memory")
+    recording = frozenset({sha1(digest)})
+    assert (
+        checks.finding_verdict(
+            "docs/teaching/seed_categories.json", checks.HEX, sha1(digest), recording
+        )
+        == "teaching_spec_digest"
+    )
+
+
 def test_the_same_string_elsewhere_is_unexplained() -> None:
     checks = tool()
     recording = frozenset({sha1("array")})

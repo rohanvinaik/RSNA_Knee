@@ -64,6 +64,7 @@ RELEASE_PIN_NAMES = frozenset(
 # Computed public expected-manifest fixture; one module-level name at this path.
 FIXTURE_DIGEST = "tests/test_squint_memory_territory.py"
 FIXTURE_DIGEST_NAMES = frozenset({"V1_MANIFEST_SHA256"})
+TEACHING_SPECS_PREFIX = "docs/teaching/"
 HEX = "Hex High Entropy String"
 # Pinned, as the gate pins zizmor, so every push is checked with the same versions. detect-secrets reads the
 # next line's name as a secret keyword; the pragma on it is detect-secrets' own mark for a finding reviewed as
@@ -138,6 +139,8 @@ def finding_verdict(
             return "public_digest_pin"
         if path == FIXTURE_DIGEST:
             return "public_fixture_digest"
+        if path.startswith(TEACHING_SPECS_PREFIX) and path.endswith(".json"):
+            return "teaching_spec_digest"
     return "unexplained"
 
 
@@ -270,6 +273,26 @@ def certificate_hashes(sha: str) -> frozenset[str]:
     )
 
 
+def teaching_spec_hashes(sha: str, path: str) -> frozenset[str]:
+    """Recognize source_memory_sha256 in teaching specifications."""
+    try:
+        spec = json.loads(git("show", f"{sha}:{path}"))
+    except (json.JSONDecodeError, Unchecked):
+        return frozenset()
+    if not isinstance(spec, dict):
+        return frozenset()
+    value = spec.get("source_memory_sha256")
+    if (
+        isinstance(value, str)
+        and len(value) == 64
+        and all(character in "0123456789abcdefABCDEF" for character in value)
+    ):
+        return frozenset(
+            {hashlib.sha1(value.encode(), usedforsecurity=False).hexdigest()}
+        )
+    return frozenset()
+
+
 def pushed_commits(local_sha: str, remote_sha: str, remote: str) -> list[str]:
     """The commits a push of `local_sha` over `remote_sha` sends, oldest first: those the remote does not
     hold already."""
@@ -340,6 +363,8 @@ def scan(commits: list[str]) -> list[str]:
                 hashes[key] = recording_hashes(sha)
             elif path == CERTIFICATES:
                 hashes[key] = certificate_hashes(sha)
+            elif path.startswith(TEACHING_SPECS_PREFIX) and path.endswith(".json"):
+                hashes[key] = teaching_spec_hashes(sha, path)
         if path in (RELEASE_PINS, FIXTURE_DIGEST) and (sha, path) not in pins:
             pins[sha, path] = (
                 release_pin_hashes(sha)
@@ -364,12 +389,13 @@ def scan(commits: list[str]) -> list[str]:
                 "function_digest",
                 "public_digest_pin",
                 "public_fixture_digest",
+                "teaching_spec_digest",
             ):
                 accepted += 1
             else:
                 refusals.append(f"a possible secret in {where}")
     print(
-        f"secret scan: {accepted} findings are exact recorded kernel/function digests, public fixture digests, or public release pins;"
+        f"secret scan: {accepted} findings are exact recorded kernel/function digests, public fixture digests, public release pins, or teaching specification digests;"
         f" {len(refusals)} are not"
     )
     return refusals
