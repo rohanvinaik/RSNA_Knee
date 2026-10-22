@@ -961,6 +961,92 @@ def test_reversed_bone_anchor_pair_is_quarantined_before_dependent_windows(
     assert all(not ({"femur", "tibia"} & set(call["anchors"])) for call in calls)
 
 
+def _sided_anchors(tibia_knee, fibula_knee) -> dict:
+    """A tibia, and a fibula at larger LPS x (the patient's left side of it).
+
+    The tibia's territory spans x -90..-50 mm and its reference stands at x -70;
+    the fibula's spans x 30..70 and its reference stands at x 50. Each anchor
+    records the knee its series headers named (DICOM Laterality), as
+    ``find_anchors`` writes it.
+    """
+    anchors = {}
+    for bone, point, box, knee in (
+        ("tibia", (-70.0, -10.0, -30.0), (3, 4, 12, 16, 3, 6), tibia_knee),
+        ("fibula", (50.0, -10.0, -40.0), (3, 4, 14, 17, 15, 18), fibula_knee),
+    ):
+        anchor = _complete_anchor(bone, point, [_anchor_territory(bone, box)])
+        anchor["reference"] = {
+            "status": "complete",
+            "point_lps": list(point),
+            "precision_mm": [0.0, 0.0, 0.0],
+        }
+        anchor["knee"] = knee
+        anchors[bone] = anchor
+    return anchors
+
+
+def test_the_headers_knee_reaches_the_anchor_checks_and_the_sided_proposals(
+    monkeypatch,
+):
+    _no_producer(monkeypatch)
+    series = _series()
+    memory = _memory(series, {"medial_meniscus": (4, 5, 11, 12, 10, 15)})
+
+    def locate(anchors, **extra):
+        return locator.locate_objects(_study(series, anchors=anchors, **extra), memory)
+
+    def proposal_statuses(result):
+        rows = result["objects"]["medial_meniscus"]["evidence"]["proposal_sources"]
+        return {row["status"] for row in rows}
+
+    # The headers name a left knee: the fibula lies lateral of the tibia, as it
+    # must, and the sided dependent is proposed on that knee's side alone.
+    left = locate(_sided_anchors("L", "L"))
+    assert left["evidence"]["knee_side"] == {
+        "side": "left",
+        "source": "series_header_laterality",
+    }
+    anchors = left["evidence"]["anchors"]
+    assert {anchors["bones"][bone]["status"] for bone in ("tibia", "fibula")} == {
+        "complete"
+    }
+    assert anchors["anatomical_sanity"]["fibula"]["status"] == "plausible"
+    assert proposal_statuses(left) == {"proposed"}
+    # The same pictures headed as a right knee reverse that relation: the pair is
+    # quarantined and anchors nothing.
+    right = locate(_sided_anchors("R", "R"))
+    assert right["evidence"]["knee_side"] == {
+        "side": "right",
+        "source": "series_header_laterality",
+    }
+    for bone in ("tibia", "fibula"):
+        record = right["evidence"]["anchors"]["bones"][bone]
+        assert (record["status"], record["code"]) == (
+            "conflict",
+            "anatomical_relation_conflict",
+        )
+    # No knee named: the side relation stays unknown, the pair stays usable, and
+    # the dependent keeps both mirrored hypotheses.
+    unnamed = locate(_sided_anchors(None, None))
+    assert unnamed["evidence"]["knee_side"] == {"side": None, "source": None}
+    assert (
+        unnamed["evidence"]["anchors"]["anatomical_sanity"]["fibula"]["status"]
+        == "unknown"
+    )
+    assert proposal_statuses(unnamed) == {"proposed_unknown_side"}
+    # Anchors naming different knees name no side, and say why.
+    mixed = locate(_sided_anchors("L", "R"))
+    assert mixed["evidence"]["knee_side"] == {"side": None, "source": None}
+    assert mixed["evidence"]["anchors"]["source"]["knee_conflict"] == ["L", "R"]
+    # A side the caller supplies is the study's own and comes first.
+    supplied = locate(_sided_anchors("R", "R"), knee_side="left")
+    assert supplied["evidence"]["knee_side"] == {"side": "left", "source": "study"}
+    assert (
+        supplied["evidence"]["anchors"]["anatomical_sanity"]["fibula"]["status"]
+        == "plausible"
+    )
+
+
 def _partial_axial_anchor(bone: str, box: tuple[int, ...], height_mm: float):
     """A partial anchor: one coronal territory and one exactly axial key plane."""
     return {

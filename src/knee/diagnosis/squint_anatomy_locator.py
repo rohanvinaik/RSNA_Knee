@@ -47,6 +47,13 @@ placed from them (SQUINT_TRAINING_BUILD §4 L2/L0, §9 W10).
   anchor at all the study keeps the existing finite route unchanged, named by
   why (``anchor_producer_unavailable``, ``no_usable_structural_anchor``, ...).
   No position is invented, and a missing plane stays missing.
+* The knee's side is the study's ``knee_side`` when the caller supplies one, else
+  the knee the series headers name (DICOM Laterality, ``R`` or ``L``) as the
+  anchors recorded it: a recorded fact of the acquisition, not an inference. It
+  reaches the anchor checks and every window proposal, so medial and lateral
+  relations are read where the knee is known. Anchors naming different knees, or
+  none, leave the side unknown, and those relations stay unknown; the location
+  evidence names the side and where it came from.
 
 On the structural route each located object keeps ``regions`` (one address per
 reading) and the aligned ``territories`` as JSON-safe records
@@ -66,6 +73,7 @@ from typing import Any
 
 import numpy as np
 
+from knee.collapse import relative
 from knee.diagnosis import squint_locator as shared
 from knee.diagnosis.squint_geometry import (
     object_geometry,
@@ -97,6 +105,8 @@ FINE_READING_DEFERRED = "deferred_to_a_named_question"
 #: Where a deferring location keeps, on the runtime study alone, the original territories
 #: whose native masks their JSON records hold as an address (module note).
 NATIVE_SUPPORT_RETAINED = "native_support_territories"
+#: The header's knee word as the sanity checks and window proposals spell it.
+HEADER_KNEE_SIDE = {"L": "left", "R": "right"}
 _DEPENDENT_API = "knee.diagnosis.squint_anatomy_locator.dependent_territories/v1"
 _ORIENTATIONS = ("sagittal", "coronal", "axial")
 
@@ -654,7 +664,10 @@ def study_anchors(
     holds each usable bone's checked anchor and territories; ``geometry`` its
     planes and reference for the relation priors; ``bones`` a JSON-safe summary
     of every bone, usable or not, with its named code; ``source`` how the
-    anchors were obtained, or why none were.
+    anchors were obtained, or why none were; ``knee`` the knee the series
+    headers name (``R`` or ``L``) as this study's valid anchors recorded it, or
+    None when they name none or name different knees (``source`` then keeps
+    ``knee_conflict``).
     """
     state: dict[str, Any] = {
         "route": EXISTING_ROUTE,
@@ -662,6 +675,7 @@ def study_anchors(
         "bones": {},
         "usable": {},
         "geometry": {},
+        "knee": None,
     }
     study_uid = study.get("study_uid") if isinstance(study, Mapping) else None
     supplied = study.get("anchors") if isinstance(study, Mapping) else None
@@ -694,6 +708,7 @@ def study_anchors(
     if not isinstance(raw, Mapping):
         state["source"]["status"] = "anchor_result_invalid"
         return state
+    knees: set[str] = set()
     for name in sorted(raw, key=str):
         anchor = raw[name]
         if name not in BONES:
@@ -708,6 +723,9 @@ def study_anchors(
         ):
             code = "anchor_identity_mismatch"
         if code == "valid":
+            header_knee = relative.knee_side(anchor.get("knee"))
+            if header_knee is not None:
+                knees.add(header_knee)
             anchor = resolve_anchor_views(anchor)
         territories, refused = (
             _anchor_territories(name, anchor, study_uid, series_by_uid)
@@ -724,6 +742,10 @@ def study_anchors(
         state["bones"].setdefault(
             name, {"status": "unavailable", "code": "anchor_not_returned"}
         )
+    if len(knees) == 1:
+        state["knee"] = next(iter(knees))
+    elif knees:
+        state["source"]["knee_conflict"] = sorted(knees)
     if state["usable"]:
         state["route"] = STRUCTURAL_ROUTE
     else:
@@ -1405,6 +1427,7 @@ def locate_anatomy_first(
 
     raw_side = study.get("knee_side")
     knee_side = raw_side if raw_side in {"left", "right"} else None
+    knee_side_source = None if knee_side is None else "study"
     priorities = memory.get("object_order", ())
     priorities = (
         priorities
@@ -1444,6 +1467,10 @@ def locate_anatomy_first(
     # (module note): nothing from an earlier location, and nothing when it pairs now.
     retained_support: list[Mapping[str, Any]] | None = None if refine_finalists else []
     anchor_state = study_anchors(study, series_by_uid, deadline=deadline)
+    if knee_side is None:
+        # The knee the series headers name, as the anchors recorded it (module note).
+        knee_side = HEADER_KNEE_SIDE.get(anchor_state["knee"])
+        knee_side_source = None if knee_side is None else "series_header_laterality"
     _check_anchor_sanity(anchor_state, series_by_uid, knee_side)
     structural = anchor_state["route"] == STRUCTURAL_ROUTE
     structural_geometry: dict[str, dict[str, Any]] = anchor_state["geometry"]
@@ -2124,6 +2151,7 @@ def locate_anatomy_first(
                 "anatomical_sanity": anchor_state.get("sanity", {}),
             }
         ),
+        "knee_side": {"side": knee_side, "source": knee_side_source},
     }
     if territory_v2 and not refine_finalists:
         study_evidence["fine_reading"] = FINE_READING_DEFERRED
