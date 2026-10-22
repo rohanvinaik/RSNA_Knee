@@ -15,6 +15,10 @@ The full corpus is on an SSD being extracted, and three computers are available 
 [FULL_BUILD_PLAN §18.1](docs/FULL_BUILD_PLAN.md#181-current-phase-local-bootstrap-and-classical-ai-training)
 defines the phase boundary; [the active packet](docs/work/current/README.md) records actual progress.
 
+The [train-ready completion handoff](docs/TRAIN_READY_COMPLETION.md) gives the verified gaps,
+exact implementation/test requirements and parallel work split. It preserves balanced-ternary
+meaning and distinguishes hand-grounded teaching readback from the subsequent classical learning loop.
+
 **Hand-defined teaching references:** [normal/diagnosed picture pairs for all twelve questions](docs/GROUNDED_TEACHING.md),
 with [authored categories, measured cases and replay instructions](docs/teaching/README.md).
 These establish the explicit starting reference before scaling; teaching replay is distinct from

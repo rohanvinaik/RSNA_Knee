@@ -21,6 +21,7 @@ from collections import Counter
 from collections.abc import Mapping
 from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
+from typing import Any
 
 from knee.diagnosis.squint_anatomy_locator import BONES as READER_BONES
 from knee.diagnosis.squint_identity import (
@@ -1662,6 +1663,81 @@ def _refresh_identity_after_observations(
     return prepared_resolved
 
 
+def _condition_state_snapshot(
+    finding: Mapping[str, Any], subject: object
+) -> dict[str, Any]:
+    """Snapshot a condition finding before or after an observation request runs."""
+    evidence = finding.get("evidence")
+    readings = evidence.get("readings") if isinstance(evidence, Mapping) else None
+    reading = readings.get(subject) if isinstance(readings, Mapping) else None
+    rank = finding.get("rank")
+    subject_reading = None
+    if isinstance(reading, Mapping):
+        speaking = reading.get("speaking_case_ids")
+        subject_reading = {
+            "role": reading.get("role"),
+            "state": reading.get("state"),
+            "code": reading.get("code"),
+            "recall_outcomes": list(reading.get("recall_outcomes") or ()),
+            "trust_checked": reading.get("trust_checked"),
+            "speaking_cases": len(speaking)
+            if isinstance(speaking, (list, tuple))
+            else 0,
+        }
+    return {
+        "outcome": finding.get("outcome"),
+        "reason": finding.get("reason"),
+        "value": rank.get("value")
+        if isinstance(rank, Mapping)
+        else finding.get("probability"),
+        "tier": rank.get("tier") if isinstance(rank, Mapping) else None,
+        "subject_reading": subject_reading,
+        "requests_listed": [
+            f"{r.get('subject')}:{r.get('reason')}"
+            for r in (finding.get("observation_requests") or ())
+            if isinstance(r, Mapping)
+        ],
+    }
+
+
+def _subject_cue_snapshot(located: object) -> dict[str, Any] | None:
+    """Snapshot an object's coarse 10 mm HDC banks and location status before an action."""
+    if not isinstance(located, Mapping):
+        return None
+
+    profile = located.get("profile")
+    if not isinstance(profile, Mapping):
+        banks = {}
+        procedure = None
+    else:
+        raw_banks = profile.get("banks")
+        banks = (
+            {
+                k: list(v)
+                for k, v in raw_banks.items()
+                if isinstance(k, str) and k.rsplit("/scale=", 1)[-1] == "10mm"
+            }
+            if isinstance(raw_banks, Mapping)
+            else {}
+        )
+        if not banks and isinstance(raw_banks, Mapping):
+            banks = {k: list(v) for k, v in raw_banks.items() if isinstance(k, str)}
+        source = profile.get("source")
+        procedure = source.get("procedure") if isinstance(source, Mapping) else None
+
+    evidence = located.get("evidence")
+    evidence = evidence if isinstance(evidence, Mapping) else {}
+    return {
+        "subject": located.get("subject")
+        or (profile.get("subject") if isinstance(profile, Mapping) else None),
+        "status": located.get("status"),
+        "location_route": evidence.get("location_route"),
+        "location_reason": evidence.get("reason"),
+        "procedure": procedure,
+        "banks": banks,
+    }
+
+
 def infer_study(
     root: Path,
     uid: str,
@@ -1694,7 +1770,10 @@ def infer_study(
     from knee.diagnosis.squint_contracts import combine_condition, rank_condition
     from knee.diagnosis.squint_identity import prepare_identity
     from knee.diagnosis.squint_locator import locate_objects
-    from knee.diagnosis.squint_procedures import route_observation_request
+    from knee.diagnosis.squint_procedures import (
+        route_observation_request,
+        select_observation_requests,
+    )
     from knee.diagnosis.squint_profiles import read_study_squints
 
     started = time.perf_counter()
@@ -1771,48 +1850,112 @@ def infer_study(
             else []
         )
         if requests:
+            requests = select_observation_requests(
+                requests,
+                memory,
+                objects=objects,
+                finding=finding,
+                study_uid=uid,
+                exclude_same_study=exclude_same_study,
+            )
+            has_confirmed_recalled = any(
+                isinstance(r, Mapping)
+                and isinstance(r.get("recalled_procedure"), Mapping)
+                and r["recalled_procedure"].get("status")
+                == "recalled_confirmed_resolution"
+                for r in requests
+            )
             previous_profiles = {
                 subject: row.get("profile")
                 for subject, row in objects.items()
                 if isinstance(row, Mapping)
             }
             for request in requests:
-                observations.append(
-                    route_observation_request(
-                        request,
-                        study,
-                        objects,
-                        attempted,
-                        deadline,
-                        memory=memory,
-                        study_uid=uid,
-                        exclude_same_study=exclude_same_study,
-                        location_evidence=locations.get("evidence"),
-                    )
+                if (
+                    has_confirmed_recalled
+                    and finding.get("outcome") != "open"
+                    and isinstance(request, Mapping)
+                    and request.get("discretionary", True) is not False
+                ):
+                    break
+                before_finding = finding
+                subject_name = (
+                    request.get("object", request.get("subject"))
+                    if isinstance(request, Mapping)
+                    else None
                 )
-            prepared_identity_resolved = _refresh_identity_after_observations(
-                objects,
-                study,
-                memory,
-                excluded_uid,
-                previous_profiles,
-                identity_contexts,
-                identity_readings,
-                contests,
-                attempted,
-                observations,
-                deadline,
-                prepared_identity,
-                prepared_identity_resolved,
-            )
-            identity_consumption = _identity_consumption(
-                objects, identity_readings, identity_contexts, contests
-            )
-            not_read = _regions_not_read(identity_consumption)
-            object_evidence = _recall_question(
-                question, objects, memory, uid, exclude_same_study, not_read_as=not_read
-            )
-            finding = combine_condition(question.question_id, object_evidence)
+                before_cue = _subject_cue_snapshot(
+                    objects.get(subject_name)
+                    if isinstance(subject_name, str)
+                    else None
+                )
+                obs = route_observation_request(
+                    request,
+                    study,
+                    objects,
+                    attempted,
+                    deadline,
+                    memory=memory,
+                    study_uid=uid,
+                    exclude_same_study=exclude_same_study,
+                    location_evidence=locations.get("evidence"),
+                )
+                if subject_name is None:
+                    subject_name = obs.get("subject")
+                obs["question"] = question.question_id
+                obs["attribution_scope"] = "single_procedure"
+                if before_cue is not None:
+                    obs["before_cue"] = before_cue
+                if isinstance(request, Mapping):
+                    obs["request_id"] = request.get("request_id")
+                    obs["request_kind"] = request.get("kind", "bounded_zoom")
+                    obs["request_reason"] = request.get("reason")
+                    obs["request_scope"] = request.get("scope")
+                    if (
+                        "recalled_procedure" in request
+                        and "recalled_procedure" not in obs
+                    ):
+                        obs["recalled_procedure"] = request["recalled_procedure"]
+                obs["before_state"] = _condition_state_snapshot(
+                    before_finding, subject_name
+                )
+                observations.append(obs)
+                prepared_identity_resolved = _refresh_identity_after_observations(
+                    objects,
+                    study,
+                    memory,
+                    excluded_uid,
+                    previous_profiles,
+                    identity_contexts,
+                    identity_readings,
+                    contests,
+                    attempted,
+                    observations,
+                    deadline,
+                    prepared_identity,
+                    prepared_identity_resolved,
+                )
+                previous_profiles = {
+                    subject: row.get("profile")
+                    for subject, row in objects.items()
+                    if isinstance(row, Mapping)
+                }
+                identity_consumption = _identity_consumption(
+                    objects, identity_readings, identity_contexts, contests
+                )
+                not_read = _regions_not_read(identity_consumption)
+                object_evidence = _recall_question(
+                    question,
+                    objects,
+                    memory,
+                    uid,
+                    exclude_same_study,
+                    not_read_as=not_read,
+                )
+                finding = combine_condition(question.question_id, object_evidence)
+                obs["after_state"] = _condition_state_snapshot(
+                    finding, subject_name
+                )
         ranking = finding.get("rank")
         if not isinstance(ranking, dict):
             ranking = rank_condition(finding)

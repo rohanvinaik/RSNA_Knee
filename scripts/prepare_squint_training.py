@@ -3,26 +3,58 @@
 from __future__ import annotations
 
 import argparse
+import copy
 import hashlib
 import json
 import os
 import sys
 import tempfile
 from collections import Counter
-from collections.abc import Mapping, Sequence
+from collections.abc import Callable, Mapping, Sequence
 from pathlib import Path
 from typing import Any
 
-from knee.diagnosis import squint_corpus, squint_procedure_memory
+from knee.diagnosis import (
+    squint_configurations,
+    squint_contracts,
+    squint_corpus,
+    squint_identity,
+    squint_locator,
+    squint_memory,
+    squint_memory_view,
+    squint_pipeline,
+    squint_procedure_memory,
+    squint_procedures,
+    squint_visual_teaching,
+)
+from knee.diagnosis.squint_identity import (
+    identity_condition_views,
+    prepare_identity,
+)
+from knee.diagnosis.squint_locator import prepare_recall
 from knee.diagnosis.squint_memory import (
     SquintMemoryError,
+    carry_condition_calls,
     load_memory_snapshot,
+    save_memory,
 )
-from knee.json_store import load_json, resolve_json_path
+from knee.diagnosis.squint_memory_view import memory_view
+from knee.diagnosis.squint_pipeline import infer_study
+from knee.json_store import dump_json_atomic, load_json, resolve_json_path
+from knee.study.tables import LABELS
 
 RECEIPT_SCHEMA = "knee.squint-procedure-experiences/v1"
+ROUND_RECEIPT_SCHEMA = "knee.squint-training-round/v1"
+ROUND_INPUTS_SCHEMA = "knee.squint-training-round-inputs/v1"
+STUDY_PIN_SCHEMA = "knee.squint-study-checkpoint-pin/v1"
 RUN_SCHEMA = "knee.squint-run/v1"
 STUDY_SCHEMA = "knee.squint-study/v1"
+_RUNTIME_MEMORY_KEYS = {
+    "full_profile_retention",
+    "view",
+    "prepared_recall",
+    "memory_manifest_sha256",
+}
 
 
 class PrepareError(ValueError):
@@ -256,13 +288,22 @@ def _code_identity() -> dict[str, dict[str, str]]:
         "script": Path(__file__).resolve(),
         "procedure_memory_module": Path(squint_procedure_memory.__file__).resolve(),
         "object_corpus_module": Path(squint_corpus.__file__).resolve(),
+        "pipeline_module": Path(squint_pipeline.__file__).resolve(),
+        "procedures_module": Path(squint_procedures.__file__).resolve(),
+        "memory_view_module": Path(squint_memory_view.__file__).resolve(),
+        "memory_module": Path(squint_memory.__file__).resolve(),
+        "identity_module": Path(squint_identity.__file__).resolve(),
+        "locator_module": Path(squint_locator.__file__).resolve(),
+        "configurations_module": Path(squint_configurations.__file__).resolve(),
+        "visual_teaching_module": Path(squint_visual_teaching.__file__).resolve(),
+        "contracts_module": Path(squint_contracts.__file__).resolve(),
     }
     return {
         name: {
             "path": str(path),
             "sha256": _sha256_file(path, "code_unreadable:" + name),
         }
-        for name, path in code_files.items()
+        for name, path in sorted(code_files.items())
     }
 
 
@@ -387,6 +428,10 @@ def prepare(
                 "runs": run_identities,
             },
             "code": code_identity,
+            "output_sha256": {
+                name: _sha256_file(staging / name, "training_output_unreadable")
+                for name in ("object-buckets.json", "procedure-experiences.jsonl")
+            },
             "outputs": {
                 "object_buckets_file": "object-buckets.json",
                 "object_cases": len(corpus["scoped_records"]),
@@ -425,23 +470,656 @@ def prepare(
         raise
 
 
+def _training_export(
+    *,
+    memory_path: Path,
+    expected_memory_sha256: str,
+    inference_dir: Path,
+    labels_path: Path,
+    output_path: Path,
+) -> dict[str, Any]:
+    """Reuse only a complete export with identical inputs, code and output bytes."""
+    if not output_path.exists() and not output_path.is_symlink():
+        return prepare(
+            memory_path=memory_path,
+            expected_memory_sha256=expected_memory_sha256,
+            run_paths=[inference_dir],
+            labels_path=labels_path,
+            output_path=output_path,
+        )
+    if output_path.is_symlink() or not (output_path / "receipt.json").is_file():
+        raise PrepareError("training_checkpoint_invalid")
+    receipt, _actual, _sha = _stable_json(output_path / "receipt.json", "training_receipt")
+    runs, indexed = _index_all_runs([inference_dir])
+    saved_runs = _mapping_get(receipt, "inputs", "runs")
+    run_headers = (
+        [{key: value for key, value in run.items() if key != "records"} for run in saved_runs]
+        if isinstance(saved_runs, list) and all(isinstance(run, Mapping) for run in saved_runs)
+        else None
+    )
+    if (
+        not isinstance(receipt, Mapping)
+        or receipt.get("schema") != RECEIPT_SCHEMA
+        or _mapping_get(receipt, "inputs", "teaching_memory", "manifest_sha256")
+        != expected_memory_sha256
+        or _mapping_get(receipt, "inputs", "labels", "sha256")
+        != _sha256_file(labels_path.resolve(), "labels_unreadable")
+        or run_headers != runs
+        or receipt.get("code") != _code_identity()
+    ):
+        raise PrepareError("training_checkpoint_mismatch")
+    for saved_run, (_identity, root, _revision, entries) in zip(saved_runs, indexed, strict=True):
+        records = saved_run.get("records")
+        if not isinstance(records, list) or len(records) != len(entries):
+            raise PrepareError("training_checkpoint_mismatch")
+        for record, entry in zip(records, entries, strict=True):
+            if (
+                not isinstance(record, Mapping)
+                or record.get("study_uid") != entry["study_uid"]
+                or record.get("evidence_path") != entry["evidence_path"]
+                or record.get("sha256") != _sha256_file(
+                    _inside(root / entry["evidence_path"], root, "study_evidence_outside_run"),
+                    "study_record_unreadable",
+                )
+            ):
+                raise PrepareError("training_checkpoint_mismatch")
+    for name in ("object-buckets.json", "procedure-experiences.jsonl"):
+        if _mapping_get(receipt, "output_sha256", name) != _sha256_file(
+            output_path / name, "training_checkpoint_output_missing"
+        ):
+            raise PrepareError("training_checkpoint_output_mismatch")
+    return dict(receipt)
+
+
+def _memory_content_sha256(memory: Mapping[str, Any]) -> str:
+    """Exact semantic child content; publication-derived/runtime metadata is excluded."""
+    content = {key: value for key, value in memory.items() if key not in _RUNTIME_MEMORY_KEYS}
+    return _sha256_bytes(
+        json.dumps(content, sort_keys=True, separators=(",", ":"), allow_nan=False).encode()
+    )
+
+
+def _study_pin_payload(
+    *,
+    uid: str,
+    memory_manifest_sha256: str,
+    memory_revision: str,
+    code_identity: Mapping[str, Any],
+) -> dict[str, Any]:
+    return {
+        "schema": STUDY_PIN_SCHEMA,
+        "study_uid": uid,
+        "memory_manifest_sha256": memory_manifest_sha256,
+        "memory_revision": memory_revision,
+        "exclude_same_study": True,
+        "code": dict(code_identity),
+    }
+
+
+def _try_resume_study_record(
+    studies_dir: Path,
+    inference_dir: Path,
+    uid: str,
+    expected_pin: Mapping[str, Any],
+) -> dict[str, str] | None:
+    candidate = resolve_json_path(studies_dir / f"{uid}.json.xz")
+    pin_path = studies_dir / f"{uid}.pin.json"
+    if not candidate.exists() and not pin_path.exists():
+        return None
+    if not candidate.exists() or not pin_path.exists():
+        raise PrepareError("study_checkpoint_pin_mismatch:" + uid)
+    record, actual, record_sha = _stable_json(candidate, "study_record:" + uid)
+    pin_doc, _actual_pin, _pin_sha = _stable_json(pin_path, "study_pin:" + uid)
+    if (
+        not isinstance(record, Mapping)
+        or record.get("schema") != STUDY_SCHEMA
+        or record.get("study_uid") != uid
+        or record.get("memory_revision") != expected_pin["memory_revision"]
+        or not isinstance(pin_doc, Mapping)
+    ):
+        raise PrepareError("study_checkpoint_pin_mismatch:" + uid)
+    expected_with_record = {
+        **expected_pin,
+        "record_file": str(actual.relative_to(inference_dir)),
+        "record_sha256": record_sha,
+    }
+    if dict(pin_doc) != expected_with_record:
+        raise PrepareError("study_checkpoint_pin_mismatch:" + uid)
+    return {
+        "study_uid": uid,
+        "evidence_path": str(actual.relative_to(inference_dir)),
+    }
+
+
+def _pin_round_inputs(output: Path, round_inputs: Mapping[str, Any]) -> None:
+    inputs_path = output / "round-inputs.json"
+    if inputs_path.exists():
+        existing, _actual, _sha = _stable_json(inputs_path, "round_inputs")
+        if not isinstance(existing, Mapping) or dict(existing) != dict(round_inputs):
+            raise PrepareError("round_inputs_mismatch")
+        return
+    if output.exists() and any(output.iterdir()):
+        raise PrepareError("round_root_not_fresh")
+    output.mkdir(parents=True, exist_ok=True)
+    _write_json(inputs_path, dict(round_inputs))
+
+
+def _compose_round_teaching(
+    parent_memory: Mapping[str, Any],
+    parent_sha256: str,
+    *,
+    labels: Mapping[str, Any],
+    labels_identity: Mapping[str, Any],
+    visual_additions_path: Path | None,
+    round_name: str,
+) -> tuple[dict[str, Any], dict[str, Any]]:
+    """Incorporate visual object additions, carry clinical meanings, and rebuild configurations."""
+    working: dict[str, Any] = {
+        key: copy.deepcopy(value)
+        for key, value in parent_memory.items()
+        if key not in _RUNTIME_MEMORY_KEYS
+    }
+    added_visual_case_ids: list[str] = []
+    carried_condition_case_ids: list[str] = []
+    rebuilt_configuration_case_ids: list[str] = []
+    touched_studies: set[str] = set()
+
+    if visual_additions_path is not None:
+        addition_file = visual_additions_path.resolve()
+        try:
+            addition_bytes = addition_file.read_bytes()
+            additions = json.loads(addition_bytes.decode("utf-8"))
+        except (OSError, UnicodeDecodeError, ValueError) as error:
+            raise PrepareError("visual_additions_unreadable") from error
+        try:
+            new_cases, new_calls = squint_visual_teaching.validate_additions(
+                working, additions
+            )
+        except squint_visual_teaching.VisualTeachingError as error:
+            raise PrepareError(f"visual_additions_{error.code}") from error
+        digest = _sha256_bytes(addition_bytes)
+        provenance = {
+            "schema": squint_visual_teaching.SCHEMA,
+            "kind": "independent_direct_visual_teaching",
+            "reader": additions["reader"],
+            "parent_manifest_sha256": parent_sha256,
+            "additions_sha256": digest,
+            "additions_source": str(addition_file),
+            "case_ids": [case["case_id"] for case in new_cases],
+            "calls": new_calls,
+            "configuration_extension": "rebuilt_in_round",
+        }
+        for case, call in zip(new_cases, new_calls, strict=True):
+            case["direct_visual_teaching"] = {**provenance, "call": call}
+            added_visual_case_ids.append(str(case["case_id"]))
+            touched_studies.add(str(case["study_uid"]))
+        working["cases"] = [*working.get("cases", []), *new_cases]
+        teaching = copy.deepcopy(working["object_identity_teaching"])
+        teaching["confirmed_case_ids"].extend(
+            case["case_id"] for case in new_cases
+        )
+        teaching["calls"].extend(new_calls)
+        working["object_identity_teaching"] = teaching
+        working["direct_visual_teaching"] = [
+            *working.get("direct_visual_teaching", []),
+            provenance,
+        ]
+        if prepare_identity(working).get("outcome") != "prepared":
+            raise PrepareError("visual_additions_identity_preparation_failed")
+
+    teaching_block = working.get("object_identity_teaching")
+    if isinstance(teaching_block, Mapping):
+        scope = identity_condition_views(working)
+        if scope.get("outcome") == "scoped":
+            label_calls_by_uid = labels.get("calls", {})
+            complete_rows_by_uid: dict[str, dict[str, int | None]] = {}
+            for uid, row in label_calls_by_uid.items():
+                if isinstance(row, Mapping) and all(
+                    row.get(q) in (-1, 1) for q in LABELS
+                ):
+                    complete_rows_by_uid[str(uid)] = {
+                        q: int(row[q] == 1) for q in LABELS
+                    }
+            label_ref = {
+                "source": "train.csv",
+                "source_path": str(labels_identity["path"]),
+                "source_sha256": str(labels_identity["sha256"]),
+            }
+            identity_sources = scope.get("identity_sources", {})
+            for case in working.get("cases", []):
+                if not isinstance(case, dict):
+                    continue
+                subject = str(case.get("subject", ""))
+                if subject.startswith("diagnosis/") or case.get("question_reference") is not None:
+                    continue
+                cid = str(case.get("case_id", ""))
+                uid = str(case.get("study_uid", ""))
+                if cid not in scope["views"] or uid not in complete_rows_by_uid:
+                    continue
+                source_id = identity_sources.get(cid, cid)
+                call_rows = scope["calls"].get(source_id, ())
+                if not call_rows:
+                    continue
+                try:
+                    carried = carry_condition_calls(
+                        case, call_rows[0], complete_rows_by_uid[uid]
+                    )
+                except SquintMemoryError as error:
+                    raise PrepareError(f"condition_carry_{error.code}") from error
+                calls_map = dict(carried["condition_calls"])
+                existing_calls = dict(case.get("condition_calls") or {})
+                new_calls = {q: v for q, v in calls_map.items() if q not in existing_calls}
+                if new_calls:
+                    case["condition_calls"] = {**existing_calls, **new_calls}
+                    scopes = dict(case.get("presentation_scope") or {})
+                    scopes.update({q: carried["presentation_scope"][q] for q in new_calls})
+                    case["presentation_scope"] = scopes
+                    case.setdefault("label_attribution", {})
+                    case["label_attribution"].update(
+                        {
+                            question: {
+                                **label_ref,
+                                "study_uid": uid,
+                                "condition": question,
+                                "column": question,
+                            }
+                            for question in new_calls
+                        }
+                    )
+                    carried_condition_case_ids.append(cid)
+                    touched_studies.add(uid)
+
+            rebuild_uids = sorted(
+                uid for uid in touched_studies if uid in complete_rows_by_uid
+            )
+            if rebuild_uids:
+                built_by = {
+                    "kind": "training_round_teaching",
+                    "round": round_name,
+                    "parent_manifest_sha256": parent_sha256,
+                }
+                try:
+                    rebuilt = squint_configurations.rebuild_study_configurations(
+                        working,
+                        rebuild_uids,
+                        built_by=built_by,
+                        labels={
+                            uid: complete_rows_by_uid[uid] for uid in rebuild_uids
+                        },
+                        label_source=label_ref,
+                    )
+                    working = squint_configurations.apply_rebuilt_configurations(
+                        working, rebuilt
+                    )
+                except squint_configurations.ConfigurationProfileError as error:
+                    raise PrepareError(
+                        f"configuration_rebuild_{error.code}"
+                    ) from error
+                rebuilt_configuration_case_ids = [
+                    str(c["case_id"]) for c in rebuilt["cases"]
+                ]
+
+    summary = {
+        "added_visual_case_ids": added_visual_case_ids,
+        "carried_condition_case_ids": carried_condition_case_ids,
+        "rebuilt_configuration_case_ids": rebuilt_configuration_case_ids,
+        "rebuilt_study_uids": sorted(touched_studies),
+    }
+    return working, summary
+
+
+def run_round(
+    *,
+    memory_path: Path,
+    expected_memory_sha256: str,
+    root_path: Path,
+    study_uids: Sequence[str],
+    labels_path: Path,
+    output_path: Path,
+    child_revision: str | None = None,
+    visual_additions_path: Path | None = None,
+    infer_fn: Callable[..., Mapping[str, Any]] | None = None,
+) -> dict[str, Any]:
+    """Run one resumable local round: checkpoint studies, export experiences, and publish child memory."""
+    if output_path.is_symlink():
+        raise PrepareError("output_symlink_refused")
+    output = output_path.resolve()
+    if not output.parent.is_dir():
+        raise PrepareError("output_parent_missing")
+    if not study_uids:
+        raise PrepareError("study_uids_missing")
+    if not _sha256_text(expected_memory_sha256):
+        raise PrepareError("memory_sha256_invalid")
+
+    ordered_uids: list[str] = []
+    seen_uids: set[str] = set()
+    for uid in study_uids:
+        if not _text(uid) or Path(uid).name != uid:
+            raise PrepareError("study_uid_invalid")
+        if uid not in seen_uids:
+            seen_uids.add(uid)
+            ordered_uids.append(str(uid))
+
+    memory, teaching_identity = _load_verified_teaching_memory(
+        memory_path, expected_memory_sha256
+    )
+    labels, labels_identity, _initial_corpus = _load_labels_and_corpus(
+        memory, teaching_identity, labels_path
+    )
+    code_identity = _code_identity()
+    next_revision = child_revision or f"{memory['revision']}-round-{output.name}"
+    visual_pin = None
+    if visual_additions_path is not None:
+        resolved_visual = visual_additions_path.resolve()
+        visual_pin = {
+            "path": str(resolved_visual),
+            "sha256": _sha256_file(resolved_visual, "visual_additions_unreadable"),
+        }
+    round_inputs = {
+        "schema": ROUND_INPUTS_SCHEMA,
+        "parent_memory": teaching_identity,
+        "root_path": str(root_path.resolve()),
+        "study_uids": ordered_uids,
+        "labels": labels_identity,
+        "visual_additions": visual_pin,
+        "child_revision": next_revision,
+        "exclude_same_study": True,
+        "code": code_identity,
+    }
+    _pin_round_inputs(output, round_inputs)
+
+    inference_dir = output / "inference"
+    studies_dir = inference_dir / "studies"
+    training_dir = output / "training"
+    child_dir = output / "memory"
+    child_training_dir = output / "child-training"
+    round_receipt_path = output / "round-receipt.json"
+
+    if round_receipt_path.exists():
+        saved_round, _actual_rr, _rr_sha = _stable_json(
+            round_receipt_path, "round_receipt"
+        )
+        if not isinstance(saved_round, Mapping) or saved_round.get("schema") != ROUND_RECEIPT_SCHEMA:
+            raise PrepareError("round_receipt_invalid")
+        for uid in ordered_uids:
+            expected_pin = _study_pin_payload(
+                uid=uid,
+                memory_manifest_sha256=str(teaching_identity["manifest_sha256"]),
+                memory_revision=str(memory["revision"]),
+                code_identity=code_identity,
+            )
+            if _try_resume_study_record(studies_dir, inference_dir, uid, expected_pin) is None:
+                raise PrepareError("study_checkpoint_missing_on_completed_round:" + uid)
+        if not child_dir.is_dir():
+            raise PrepareError("child_memory_missing_on_completed_round")
+        child_snapshot = load_memory_snapshot(child_dir)
+        expected_child_sha = _mapping_get(saved_round, "child_memory", "manifest_sha256")
+        if (
+            child_snapshot.memory is None
+            or child_snapshot.sha256 is None
+            or child_snapshot.sha256 != expected_child_sha
+        ):
+            raise PrepareError("child_memory_sha256_mismatch_on_resume")
+        _training_export(
+            memory_path=child_dir,
+            expected_memory_sha256=child_snapshot.sha256,
+            inference_dir=inference_dir,
+            labels_path=labels_path,
+            output_path=child_training_dir,
+        )
+        if _mapping_get(saved_round, "child_training", "receipt_sha256") != _sha256_file(
+            child_training_dir / "receipt.json", "child_training_receipt_missing"
+        ):
+            raise PrepareError("child_training_receipt_mismatch")
+        resumed_receipt = dict(saved_round)
+        resumed_receipt["studies"] = {
+            "requested": ordered_uids,
+            "executed": [],
+            "resumed": list(ordered_uids),
+        }
+        return resumed_receipt
+
+    memory["memory_manifest_sha256"] = str(teaching_identity["manifest_sha256"])
+    if "prepared_recall" not in memory:
+        memory["prepared_recall"] = prepare_recall(memory)
+    actual_infer = infer_fn or infer_study
+
+    studies_dir.mkdir(parents=True, exist_ok=True)
+
+    study_entries: list[dict[str, str]] = []
+    executed_study_uids: list[str] = []
+    resumed_study_uids: list[str] = []
+
+    for uid in ordered_uids:
+        expected_pin = _study_pin_payload(
+            uid=uid,
+            memory_manifest_sha256=str(teaching_identity["manifest_sha256"]),
+            memory_revision=str(memory["revision"]),
+            code_identity=code_identity,
+        )
+        resumed = _try_resume_study_record(
+            studies_dir,
+            inference_dir,
+            uid,
+            expected_pin,
+        )
+        if resumed is not None:
+            resumed_study_uids.append(uid)
+            study_entries.append(resumed)
+            continue
+        study_memory = memory_view(memory, exclude_study_uids=(uid,))
+        record = actual_infer(
+            root_path,
+            uid,
+            study_memory,
+            exclude_same_study=True,
+        )
+        written = dump_json_atomic(studies_dir / f"{uid}.json.xz", dict(record))
+        written_sha = _sha256_file(written, "study_record_unreadable:" + uid)
+        pin_doc = {
+            **expected_pin,
+            "record_file": str(written.relative_to(inference_dir)),
+            "record_sha256": written_sha,
+        }
+        _write_json(studies_dir / f"{uid}.pin.json", pin_doc)
+        executed_study_uids.append(uid)
+        study_entries.append(
+            {
+                "study_uid": uid,
+                "evidence_path": str(written.relative_to(inference_dir)),
+            }
+        )
+
+    run_receipt = {
+        "schema": RUN_SCHEMA,
+        "action": "infer",
+        "source_mode": "raw_squint_case_recall",
+        "memory_revision": str(memory["revision"]),
+        "memory_manifest_sha256": str(teaching_identity["manifest_sha256"]),
+        "work": {
+            "studies": study_entries,
+            "executed_study_uids": executed_study_uids,
+            "resumed_study_uids": resumed_study_uids,
+        },
+    }
+    inference_receipt_path = inference_dir / "receipt.json"
+    if inference_receipt_path.exists():
+        saved_inference, _actual, _sha = _stable_json(inference_receipt_path, "run_receipt")
+        if (
+            not isinstance(saved_inference, Mapping)
+            or any(saved_inference.get(key) != run_receipt[key] for key in (
+                "schema", "action", "source_mode", "memory_revision", "memory_manifest_sha256"
+            ))
+            or _mapping_get(saved_inference, "work", "studies") != study_entries
+        ):
+            raise PrepareError("inference_checkpoint_mismatch")
+    else:
+        _write_json(inference_receipt_path, run_receipt)
+
+    training_receipt = _training_export(
+        memory_path=memory_path,
+        expected_memory_sha256=expected_memory_sha256,
+        inference_dir=inference_dir,
+        labels_path=labels_path,
+        output_path=training_dir,
+    )
+
+    exported_rows = [
+        json.loads(line)
+        for line in (training_dir / "procedure-experiences.jsonl")
+        .read_text(encoding="utf-8")
+        .splitlines()
+        if line.strip()
+    ]
+    taught_memory, teaching_summary = _compose_round_teaching(
+        memory,
+        expected_memory_sha256,
+        labels=labels,
+        labels_identity=labels_identity,
+        visual_additions_path=visual_additions_path,
+        round_name=output.name,
+    )
+    child_memory = squint_procedure_memory.retain_procedure_experiences(
+        taught_memory,
+        exported_rows,
+        revision=next_revision,
+    )
+    child_memory["parent_revision"] = memory["revision"]
+    child_memory["parent_manifest_sha256"] = expected_memory_sha256
+
+    if child_dir.exists() or child_dir.is_symlink():
+        if child_dir.is_symlink() or not child_dir.is_dir():
+            raise PrepareError("child_memory_checkpoint_invalid")
+        child_snapshot = load_memory_snapshot(child_dir)
+        if (
+            child_snapshot.memory is None
+            or child_snapshot.sha256 is None
+            or child_snapshot.memory.get("revision") != next_revision
+        ):
+            raise PrepareError("child_memory_checkpoint_mismatch")
+        if _memory_content_sha256(child_snapshot.memory) != _memory_content_sha256(child_memory):
+            raise PrepareError("child_memory_checkpoint_content_mismatch")
+    else:
+        child_prepared = prepare_recall(child_memory)
+        save_memory(child_memory, child_dir, prepared_recall=child_prepared)
+        child_snapshot = load_memory_snapshot(child_dir)
+        if child_snapshot.memory is None or child_snapshot.sha256 is None:
+            raise PrepareError("child_memory_unavailable")
+
+    child_training_receipt = _training_export(
+        memory_path=child_dir,
+        expected_memory_sha256=child_snapshot.sha256,
+        inference_dir=inference_dir,
+        labels_path=labels_path,
+        output_path=child_training_dir,
+    )
+    retained_rows = (
+        child_snapshot.memory.get("procedure_experiences", {}).get("rows", [])
+        if isinstance(child_snapshot.memory.get("procedure_experiences"), Mapping)
+        else []
+    )
+    round_receipt = {
+        "schema": ROUND_RECEIPT_SCHEMA,
+        "parent_memory": teaching_identity,
+        "child_memory": {
+            "path": str(child_dir),
+            "revision": str(child_snapshot.memory["revision"]),
+            "manifest_sha256": str(child_snapshot.sha256),
+            "case_count": len(child_snapshot.memory.get("cases", [])),
+            "retained_procedure_experiences": len(retained_rows),
+        },
+        "teaching": teaching_summary,
+        "child_training": {
+            "path": str(child_training_dir),
+            "teaching_memory": child_training_receipt["inputs"]["teaching_memory"],
+            "receipt_sha256": _sha256_file(
+                child_training_dir / "receipt.json", "child_training_receipt_missing"
+            ),
+            "outputs": child_training_receipt["outputs"],
+        },
+        "studies": {
+            "requested": ordered_uids,
+            "executed": executed_study_uids,
+            "resumed": resumed_study_uids,
+        },
+        "scope": {
+            "resumable_study_checkpoints": True,
+            "immutable_child_publication": True,
+            "procedure_learning_retained_in_child_memory": True,
+            "single_memory_chain": True,
+        },
+        "outputs": training_receipt["outputs"],
+    }
+    _write_json(round_receipt_path, round_receipt)
+    return round_receipt
+
+
+def _mapping_get(mapping: object, *keys: str) -> Any:
+    current: object = mapping
+    for key in keys:
+        if not isinstance(current, Mapping):
+            return None
+        current = current.get(key)
+    return current
+
+
 def _parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--memory", type=Path, required=True)
     parser.add_argument("--memory-sha256", required=True)
-    parser.add_argument("--run", type=Path, action="append", required=True)
+    parser.add_argument("--run", type=Path, action="append")
+    parser.add_argument("--run-round", action="store_true")
+    parser.add_argument("--root", type=Path)
+    parser.add_argument("--study-uid", action="append", default=[])
+    parser.add_argument("--study-uids-file", type=Path)
+    parser.add_argument("--visual-additions", type=Path)
+    parser.add_argument("--child-revision")
     parser.add_argument("--labels", type=Path, required=True)
     parser.add_argument("--output", type=Path, required=True)
     return parser
 
 
+def _collect_study_uids(args: argparse.Namespace) -> list[str]:
+    uids = list(args.study_uid or [])
+    if args.study_uids_file is not None:
+        text = args.study_uids_file.read_text(encoding="utf-8")
+        uids.extend(line.strip() for line in text.splitlines() if line.strip())
+    return uids
+
+
 def main(argv: Sequence[str] | None = None) -> int:
     args = _parser().parse_args(argv)
     try:
+        if args.run_round:
+            if args.root is None:
+                raise PrepareError("root_missing")
+            round_receipt = run_round(
+                memory_path=args.memory,
+                expected_memory_sha256=args.memory_sha256,
+                root_path=args.root,
+                study_uids=_collect_study_uids(args),
+                labels_path=args.labels,
+                output_path=args.output,
+                child_revision=args.child_revision,
+                visual_additions_path=args.visual_additions,
+            )
+            print(
+                json.dumps(
+                    {
+                        "output": str(args.output),
+                        "child_memory": round_receipt["child_memory"],
+                        "child_training": round_receipt["child_training"],
+                        "studies": round_receipt["studies"],
+                        "counts": round_receipt["outputs"],
+                    },
+                    sort_keys=True,
+                )
+            )
+            return 0
         receipt = prepare(
             memory_path=args.memory,
             expected_memory_sha256=args.memory_sha256,
-            run_paths=args.run,
+            run_paths=args.run or [],
             labels_path=args.labels,
             output_path=args.output,
         )

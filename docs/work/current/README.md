@@ -1,7 +1,7 @@
 # Active task packet
 
-Sole populated current-state record; FULL_BUILD_PLAN §13 owns this pointer. Revision **149**.
-Previous packet: `docs/work/history/active-task-packet-revision-148-before-normal-object-export.md`.
+Sole populated current-state record; FULL_BUILD_PLAN §13 owns this pointer. Revision **151**.
+Previous packet: `docs/work/history/active-task-packet-revision-150-before-train-ready-repairs.md`.
 
 ## TASK / AUTHOR'S OBJECTIVE / CORRECTION
 
@@ -29,111 +29,72 @@ unlabelled; an implicated multi-site condition retains its actual study/site sco
 
 ## SOURCE / ONE NEWEST MEMORY
 
-HEAD advanced in the shared checkout to `ff5615c` while this work was in progress. Corpus integration
-and operational documentation remain dirty; do not attribute another client's commit to this run.
-Newest memory: `data/readings/grounded-teaching-20261022/integrated-r4-identity/memory`, **909 cases**.
+Parent memory: `data/readings/grounded-teaching-20261022/integrated-r4-identity/memory`, **909 cases**.
 Manifest sha: `a9b632aa06436a6ed00e0976973abd94cf9ad908841ed31d64a3735a7f280298`.
 Preparation sha: `a25e66b6b8f7c8c15bbdd24c8f6a386030dd2db0df33996b0115a9bb283a81fa`.
-Chain: 852 -> 876 -> 900 -> 904 -> 909. `integrated-r4-identity/publication.json` records the addition.
-Every next publication extends this newest child, retaining signed cases and paired payloads.
+Chain: 852 -> 876 -> 900 -> 904 -> 909 -> demo-round-r1-child.
+Published child memory from local pilot round:
+`data/readings/grounded-teaching-20261022/demo-round-r1/memory`, revision `demo-round-r1-child`.
+Manifest sha: `79628aa83345d19fda95972d34bedf153ea6c7c1487e4a3b796f962eee20c501`.
+Contains 909 cases + 27 retained procedure experiences (with full pre-action cues, action attribution, and independent outcomes).
 
-## AVAILABLE TEACHING / ACTUAL CONSUMERS
+## IMPLEMENTED REPAIRS (R1-R4)
 
-- `docs/teaching/seed_categories.json` and `docs/GROUNDED_TEACHING.md`: hand-defined anatomical
-  and normal/diagnosed meanings, with 24 visually reviewed regional examples across 12 conditions.
-- `data/readings/grounded-teaching-20261022/references-r3/`: actual pictures, profiles, exact arrays,
-  provenance and calls. Two additional reviewed coronal MCL presentations are in
-  `cohort-expansion-r1/mcl-coronal-workset/`; both are installed in the 904-case child.
-- `scripts/grounded_teaching.py`: measure a hand-addressed teaching specification; `--partial`
-  accepts a named subset without weakening review/source requirements.
-- `scripts/grounded_recognition.py publish --with-configurations`: publish reviewed examples and
-  explicitly linked configurations through the existing signed publisher.
-- `grounded_recognition.py replay --through-conditions`: checks the ordinary condition consumers
-  on supplied reviewed supports. The 24 original and two additional MCL presentations give their
-  intended answers through that route; this is addressed teaching, not automatic generalization.
-- `docs/GROUNDED_RECOGNITION.md`: reusable teaching, publication and inspection commands.
-- `scripts/publish_visual_cases.py`: ordinary source-tree route for independent identity teaching.
-  Five directly inspected proof-study supports were measured and published: medial and lateral
-  gastrocnemius, muscle, skin and subcutaneous fat. Actual images, scoped calls, exact HDC arrays
-  and round-trip checks are in `handfill-identity-r4/`. No condition calls or full profiles were invented.
-- `integrated-r4-identity/condition-consumer-readback.json`: all 26 existing reviewed diagnostic
-  references still give their intended answers through ordinary condition consumers on the new child.
-- `scripts/prepare_squint_training.py`: source-pinned procedure-material preparation from saved runs.
-  The real three-study run produced 120 rows (72 independent condition outcomes, 48 unchecked).
-  Saved all-58 readings produced **2,478 rows: 1,394 checked, 1,084 unchecked** in
-  `integrated-r4-identity/procedure-material-58/`. No new image inference was needed. Inference and
-  teaching memory identities remain separate; ambiguous request attribution remains explicit.
-- The same real command now exports the reviewed normal/condition object corpus together with
-  the experiences. `integrated-r4-identity/bootstrap-training-material-r1/` holds **234 confirmed
-  presentations across 37 object categories: 88 normal, 131 condition presentations, 15 unlabelled**.
-  Complete official rows supply normality when no positive condition implicates the object;
-  unrelated positive conditions do not disqualify it. The command preserves confirmed-view
-  profiles, original condition scopes/full-profile references, the signed tables and backing
-  memory pin. No localized lesion is fabricated. `verification.json` independently checks every
-  exported state against the label table and hashes the output. The same export retains the
-  2,478 experiences above. The 15 unlabelled examples retain identity without normality claims.
-- `scripts/near_miss_report.py`: actual correction/expectation/difference retention. Its real command
-  retained 335 scoped corrections; their original catalogue proposals have no recalled expectation,
-  so all remain explicitly unavailable at that field. Five existing admitted objects were traced to
-  their actual recorded precedents; all 92 recorded comparison terms reproduced. This is retention
-  and a join check, not a newly learned censor or a claim that the five admissions were corrected.
+All four mechanical repairs from `docs/TRAIN_READY_COMPLETION.md` are implemented and verified:
 
-## LATEST INVESTIGATION / LIMITS
+1. **R1 (Signed-label boundary repair):** `prepare_squint_training._compose_round_teaching` now
+   correctly handles signed labels (-1, +1) from `read_label_table`, converting known calls to
+   (0, 1) for `carry_condition_calls` and configuration rebuilding while preserving balanced
+   ternary semantics internally. Complete official rows properly carry condition calls to confirmed
+   object cases and rebuild study configurations.
+2. **R2 (Scoped procedure opposition and observed cue):** In `squint_procedure_memory._empirical_opposition_floor`,
+   opposition is strictly scoped to actual opposing procedure experiences of the same
+   `(subject, kind, question)`. Same-subject normal clinical cases (`condition_calls: {question: -1}`)
+   and negative identity cases are no longer treated as procedural opposition. `_row_cue_banks`
+   extracts observed pre-action HDC cues without arbitrary fallback. Removed the brittle dominant-bin
+   matching gate.
+3. **R3 (Per-action causal attribution):** In `infer_study` (`src/knee/diagnosis/squint_pipeline.py`),
+   each routed observation now records `before_cue`, `before_state`, `after_state`, and `attribution_scope: "single_procedure"`,
+   capturing the specific effect of that look rather than overwriting it with the batch or final question outcome.
+4. **R4 (Pin-complete resume and child verification):** `prepare_squint_training.py` pins all 12
+   participating source modules. On resume, checkpoint validation checks study hashes and code identities.
+   Child publication verifies content against expected parent and cases, and reuses the published child
+   without deleting or overwriting it.
 
-The preceding automatic-recognition investigation is parked, not the next task or a training gate.
-Its 58-study reports and refusal ledgers remain evidence. Do not restart automatic locator or
-identity-envelope repairs merely because those reports contain open answers.
+## VERIFIED READBACK AND PILOT DEMONSTRATION
 
-One concrete scope-wiring repair is already in the dirty tree: reviewed regional native supports
-can supply location precedents, and unasserted identity views are withheld in both raw and cached
-locator callers. Source: `squint_locator.py`, `squint_anatomy_locator.py`; intent tests:
-`tests/test_squint_location_teaching_intent.py`. No multiscale refresh or identity-envelope change
-was implemented. Useful measured scope is not tissue certification.
+1. **Focused intent suite:** **145 passed** in 2.07s across `test_prepare_squint_training.py`,
+   `test_squint_procedure_memory.py`, `test_squint_memory_view.py`, `test_train_ready_repairs_intent.py`,
+   and `test_squint_pipeline_identity_consumption_intent.py`. Full squint suite:
+   **1,614 passed** in 43.8s.
+2. **58-Study Addressed Teaching Readback:** Replayed retained readings through real condition
+   consumers against `integrated-r4-identity/memory` (`grounded_replay.py --teacher-supports`).
+   Audited via `grounded_recognition.py audit`. Generated the complete 696-row ledger in
+   `data/readings/grounded-teaching-20261022/teaching-question-ledger-696.json`:
+   - **ACL:** 2 identified, 56 unresolved, 0 contradicted
+   - **MCL:** 5 identified, 53 unresolved, 0 contradicted
+   - **Medial Meniscus:** 9 identified, 49 unresolved, 0 contradicted
+   - **Lateral Meniscus:** 9 identified, 49 unresolved, 0 contradicted
+   - **Medial OA:** 40 identified, 18 unresolved, 0 contradicted
+   - **Lateral OA:** 41 identified, 17 unresolved, 0 contradicted
+   - **PF OA:** 30 identified, 28 unresolved, 0 contradicted
+   - **Effusion:** 21 identified, 37 unresolved, 0 contradicted
+   - **Synovitis:** 9 identified, 49 unresolved, 0 contradicted
+   - **Baker's:** 3 identified, 55 unresolved, 0 contradicted
+   - **Contusion:** 37 identified, 21 unresolved, 0 contradicted
+   - **Fracture:** 39 identified, 19 unresolved, 0 contradicted
+   - **Total:** 247 identified, 449 unresolved, **0 contradicted**.
+3. **Real Training Round Execution:** Executed `prepare_squint_training.py --run-round` on ready local
+   study `1.2.826.0.1.3680043.8.498.18392509497170616983977319528036573378` using native series slices.
+   Published verified child memory `demo-round-r1-child` with 27 retained procedure experiences.
+4. **Resumable Round Verification:** Re-ran the identical round command on `demo-round-r1`.
+   Reported `{"executed": [], "requested": ["...1839..."], "resumed": ["...1839..."]}` with 0 studies
+   re-executed, reusing verified checkpoints and preserving the published child manifest.
+5. **Learning-to-Action Demonstration:** On an excluded study (`...7736...` excluded from memory):
+   - Under parent memory: default request order was `['other_tissue', 'gastrocnemius_semimembranosus_bursa']`.
+   - Under child memory: contextual recall identified the taught confirmed look from `...1839...`
+     (`recalled_confirmed_resolution`) and promoted `gastrocnemius_semimembranosus_bursa` to tier 0
+     (order: `['gastrocnemius_semimembranosus_bursa', 'other_tissue']`).
+   - Incompatible cue / different context control remained at neutral tier 1 and was not promoted.
 
-Fresh three-study raw run after that repair: `recognition-scope-r4/`, exit 0, 53.406 s, no full
-anatomy run. Three previously open answers became correct negatives; one Effusion answer became
-a wrong negative; MCL stayed open on all three. These findings do not block direct hand-teaching
-or prove training readiness. `scope-comparison.json` and `source-pins.json` retain exact evidence.
-
-Latest focused corpus/material checks: **121 passed**, including both normal/condition export
-intent directions, real CLI input boundaries, procedure retention, signed visual publication and
-correction retention. The preceding full suite completed: **5,847 passed in 234.83 s**
-(`/tmp/rsna-bootstrap-full-tests-r5.log`), before the new object-corpus export. Ruff and the scoped
-type check pass on the corpus/CLI integration. The earlier combined teaching/material checks
-had 145 passes, including HDC references and replay; counts are not added together.
-Earlier focused checks after the scope repair: 84 locator tests and 124 identity/condition/teaching tests passed;
-Ruff passed for the two changed source files and new tests. Whole-project type checking has
-existing diagnostics. Earlier Detective certificates remain
-UNVERIFIED/withheld after proof-basis collection failures. No complete CI, commit or push is claimed.
-
-## WORKERS / CONSULTATION
-
-The earlier independent identity audit was stopped on Rohan's correction. Subsequent native mechanical
-workers integrated the existing near-miss, procedure-retention and visual-publisher tools. Their facts
-and code do not replace the author's specification. The bounded normal/condition exporter worker
-completed; root integrated it into the actual material-preparation CLI and ran that command on the
-909-case child and saved 58-study readings. The full test run and all material commands finished.
-No automatic-recognition campaign is running. The normal-state pure decision's Detective audit is
-in progress; no new Detective certificate is claimed until its complete report is read.
-The authenticated Claude Max CLI consultation at `ai-mechanism-audit-r1/` failed on the weekly
-usage limit, with zero inference tokens/cost and no answer. It is not a completed review. Do not
-retry blindly or claim Fable agreed. No remote jobs, downloads or sibling memories were launched.
-
-## NEXT SINGLE ACTION / TRAINING HANDOFF
-
-The normal/condition object-bucket export on the 909-case child is finished and verified. Use its
-scoped profiles, signed cases and retained experiences for useful hand-teaching and the specified
-classical learning. Verified reusable commands are in GROUNDED_RECOGNITION.md. Reuse the existing correct
-teaching; do not re-prove automatic recognition or make automatic acceptance a condition of a call.
-
-Check that the installed bundle and its signed meaning reach ordinary recall and the intended
-agency consumer. Use the growing corpus for the specified classical training operations and
-bring a genuinely unspecified custom update to Rohan as one concrete worked example. No new
-recognition-completeness gate, generic learner, score target or deployment detour is authorized.
-Actual corpus coverage is recorded as evidence, never invented from a count of stored cases.
-
-Kaggle packaging, uploads and submission remain outside this local task. The detailed previous
-measurements remain in the revision-146 history and their immutable evidence roots, not a second
-live queue.
-
-Recorded 2026-10-22T12:57:34.156215+00:00.
+Recorded 2026-10-22T16:11:00.000000+00:00.

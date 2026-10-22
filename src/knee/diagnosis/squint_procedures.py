@@ -17,6 +17,10 @@ from dataclasses import dataclass
 from typing import Any
 
 from knee.diagnosis.squint_interfaces import TERRITORY_PROCEDURE
+from knee.diagnosis.squint_procedure_memory import (
+    recall_procedure_experiences,
+    select_observation_requests,
+)
 
 __all__ = [
     "BOUNDED_ZOOM",
@@ -25,6 +29,7 @@ __all__ = [
     "REPEAT_OBJECT_RECALL",
     "SEARCH_NOT_RUN",
     "route_observation_request",
+    "select_observation_requests",
 ]
 
 BOUNDED_ZOOM = "bounded_zoom"
@@ -95,12 +100,73 @@ def route_observation_request(
         if isinstance(request, Mapping)
         else BOUNDED_ZOOM
     )
+    recalled: Mapping[str, Any] | None = None
+    if isinstance(request, Mapping) and isinstance(memory, Mapping):
+        attached = request.get("recalled_procedure")
+        if isinstance(attached, Mapping):
+            recalled = attached
+        elif "procedure_experiences" in memory:
+            subj = request.get("object", request.get("subject"))
+            quest = request.get("question")
+            if isinstance(subj, str) and isinstance(quest, str) and isinstance(kind, str):
+                located_obj = (
+                    objects.get(subj)
+                    if isinstance(objects, Mapping)
+                    else None
+                )
+                query_profile = (
+                    request.get("query_profile")
+                    if isinstance(request.get("query_profile"), Mapping)
+                    else located_obj.get("profile")
+                    if isinstance(located_obj, Mapping)
+                    and isinstance(located_obj.get("profile"), Mapping)
+                    else located_obj.get("squint_profile")
+                    if isinstance(located_obj, Mapping)
+                    and isinstance(located_obj.get("squint_profile"), Mapping)
+                    else None
+                )
+                query_context = {
+                    "request_reason": request.get("reason"),
+                    "location_status": (
+                        located_obj.get("status")
+                        if isinstance(located_obj, Mapping)
+                        else None
+                    ),
+                }
+                looked = recall_procedure_experiences(
+                    memory,
+                    question=quest,
+                    subject=subj,
+                    kind=kind,
+                    query_profile=query_profile,
+                    query_context=query_context,
+                    study_uid=study_uid,
+                    exclude_same_study=exclude_same_study,
+                )
+                if looked.get("status") not in ("no_precedent", "no_contextual_cue"):
+                    recalled = looked
+        if (
+            recalled is not None
+            and recalled.get("status") == "recalled_no_reading_in_context"
+            and request.get("discretionary", True) is not False
+        ):
+            return {
+                "kind": kind if isinstance(kind, str) else repr(kind),
+                "subject": request.get("object", request.get("subject")),
+                "question": request.get("question"),
+                "code": "skipped_by_recalled_procedure",
+                "reason": "recalled_procedure_had_no_available_reading_in_context",
+                "recalled_procedure": dict(recalled),
+            }
     if kind == BOUNDED_ZOOM:
         from knee.diagnosis import squint_pipeline
 
-        return squint_pipeline._bounded_observation(
+        zoom_obs = squint_pipeline._bounded_observation(
             request, study, objects, attempted, deadline
         )
+        if recalled is not None:
+            zoom_obs = {**zoom_obs, "recalled_procedure": dict(recalled)}
+        return zoom_obs
     assert isinstance(request, Mapping)  # a request that is no mapping names no kind
     subject = request.get("object", request.get("subject"))
     question = request.get("question")
@@ -109,6 +175,8 @@ def route_observation_request(
         "subject": subject if isinstance(subject, str) else None,
         "question": question if isinstance(question, str) else None,
     }
+    if recalled is not None:
+        row["recalled_procedure"] = dict(recalled)
     consumer = _CONSUMERS.get(kind) if isinstance(kind, str) else None
     if consumer is None:
         return {

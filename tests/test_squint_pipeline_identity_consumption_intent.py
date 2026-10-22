@@ -1415,7 +1415,8 @@ def test_a_bone_the_reader_names_carries_its_arrangement_and_support():
 # Updated for the author's whole-normal configuration decision, 2026-10-22.
 # The old digest was reproduced before adjudicating the changed OA calls and
 # evidence in normal-policy-golden-adjudication.json.
-NO_TEACHING_RECORD_SHA256 = "d629ac8f2946ee5b61b8f18eccc1832cb91e671aa9749614ea95a24c1fa16d0e"  # pragma: allowlist secret
+# Updated for per-action observation attribution (R3).
+NO_TEACHING_RECORD_SHA256 = "09132f96299c50d2e25f41aa9cf001feb1174d781a93d5b347660f82a506a07b"  # pragma: allowlist secret
 
 
 def _record_digest(record: dict) -> str:

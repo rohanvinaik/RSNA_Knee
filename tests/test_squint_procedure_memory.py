@@ -845,3 +845,478 @@ def test_tally_counts_for_reporting_and_derives_no_score():
     counts = pe.tally(rows, lambda r: r["execution"]["status"])
     assert counts == {"ran_new_reading": 5, "reading_already_available": 1}
     assert sum(counts.values()) == len(rows)
+
+
+# ----------------------------------------------------------------------- per-action attribution & contextual K-line recall
+
+
+def _cue_profile(subject: str, terciles: list[int], view: str = '["Sagittal","0","0"]'):
+    return {
+        "schema": "knee.squint-profile/v1",
+        "subject": subject,
+        "procedure": "territory-v2",
+        "banks": {
+            f"squint/v2/view={view}/role=object/metric=signal/direction=si/scale=10mm": list(
+                terciles
+            ),
+            f"squint/v2/view={view}/role=context/metric=contrast/direction=ap/scale=10mm": list(
+                terciles
+            ),
+        },
+    }
+
+
+def test_per_action_after_state_is_preserved_not_overwritten_by_final_question_finding():
+    first_obs = {
+        **obs("joint_capsule"),
+        "question": "Baker's",
+        "request_id": "Baker's/joint_capsule/bounded_zoom",
+        "request_kind": "bounded_zoom",
+        "request_reason": "proposal_without_sourced_trust",
+        "before_cue": _cue_profile("joint_capsule", [0, 1, 2]),
+        "before_state": {
+            "outcome": "open",
+            "reason": "supporting_still_unknown",
+            "subject_reading": {"state": "unknown", "code": "proposal"},
+            "value": 0.5,
+        },
+        "after_state": {
+            "outcome": "open",
+            "reason": "capsule_checked_bursa_still_unknown",
+            "subject_reading": {"state": "normal", "code": "sourced_negative"},
+            "value": 0.5,
+            "attribution_scope": "single_procedure",
+        },
+    }
+    second_obs = {
+        **obs("gastrocnemius_semimembranosus_bursa"),
+        "question": "Baker's",
+        "request_id": "Baker's/gastrocnemius_semimembranosus_bursa/bounded_zoom",
+        "request_kind": "bounded_zoom",
+        "request_reason": "proposal_without_sourced_trust",
+        "before_cue": _cue_profile(
+            "gastrocnemius_semimembranosus_bursa", [2, 2, 1]
+        ),
+        "before_state": {
+            "outcome": "open",
+            "reason": "capsule_checked_bursa_still_unknown",
+            "subject_reading": {"state": "unknown", "code": "proposal"},
+            "value": 0.5,
+        },
+        "after_state": {
+            "outcome": "assigned",
+            "reason": "necessary_and_supporting_confirmed",
+            "subject_reading": {
+                "state": "condition_presentation",
+                "code": "sourced_positive",
+            },
+            "value": 0.85,
+            "attribution_scope": "single_procedure",
+        },
+    }
+    questions = {
+        "Baker's": question_body(
+            "assigned",
+            {
+                "joint_capsule": "supporting",
+                "gastrocnemius_semimembranosus_bursa": "necessary",
+            },
+        )
+    }
+    rec = make_record(
+        observations=[first_obs, second_obs],
+        unresolved=[],
+        questions=questions,
+    )
+    labels = {"calls": {UID: {"Baker's": 1}}, "table_uids": {UID}}
+    rows = rows_of(rec, labels=labels)
+    first_row = row_for(rows, 0)
+    second_row = row_for(rows, 1)
+
+    # Sign 1: first look left Baker's open; exporter keeps its recorded single-procedure after_state
+    assert first_row["state"]["after"]["outcome"] == "open"
+    assert first_row["state"]["after"]["provenance"] == "recorded"
+    assert first_row["state"]["attribution_scope"] == "single_procedure"
+    assert first_row["state"]["changed"] is False
+    assert first_row["state"]["reading_changed"] is True
+    assert first_row["information_obtained"]["status"] == "new_reading_obtained"
+    assert first_row["independent_agreement"]["status"] == "unresolved_after_action"
+
+    # Sign 2: second look settled Baker's to assigned, matching the independent +1 call
+    assert second_row["state"]["after"]["outcome"] == "assigned"
+    assert second_row["state"]["after"]["provenance"] == "recorded"
+    assert second_row["state"]["changed"] is True
+    assert second_row["information_obtained"]["status"] == "new_reading_obtained"
+    assert second_row["independent_agreement"]["status"] == "matches_independent_call"
+    assert not (all_keys(rows) & BANNED_KEYS)
+
+
+def test_changed_wrong_answer_is_not_prioritized_and_open_reading_is_not_a_veto():
+    from knee.diagnosis.squint_procedures import (
+         route_observation_request,
+        select_observation_requests,
+    )
+
+    bakers_cue = _cue_profile("gastrocnemius_semimembranosus_bursa", [2, 2, 0])
+    acl_cue = _cue_profile("acl", [1, 0, 2])
+
+    # Experience 1: Baker's-positive study (+1) where the look ruled Baker's out ("defeated", -1)
+    wrong_bakers_obs = {
+        **obs("gastrocnemius_semimembranosus_bursa"),
+        "question": "Baker's",
+        "request_id": "Baker's/gastrocnemius_semimembranosus_bursa/bounded_zoom",
+        "request_kind": "bounded_zoom",
+        "request_reason": "proposal_without_sourced_trust",
+        "before_cue": bakers_cue,
+        "before_state": {
+            "outcome": "open",
+            "reason": "before",
+            "subject_reading": {"state": "unknown", "code": "proposal"},
+        },
+        "after_state": {
+            "outcome": "defeated",
+            "reason": "ruled_out_after_zoom",
+            "subject_reading": {"state": "normal", "code": "sourced_negative"},
+            "attribution_scope": "single_procedure",
+        },
+    }
+    # Experience 2: ACL look that obtained a 2mm reading and stayed open
+    open_acl_obs = {
+        **obs("acl"),
+        "question": "ACL",
+        "request_id": "ACL/acl/bounded_zoom",
+        "request_kind": "bounded_zoom",
+        "request_reason": "proposal_without_sourced_trust",
+        "before_cue": acl_cue,
+        "before_state": {
+            "outcome": "open",
+            "reason": "before",
+            "subject_reading": {"state": "unknown", "code": "proposal"},
+        },
+        "after_state": {
+            "outcome": "open",
+            "reason": "still_open_after_zoom",
+            "subject_reading": {"state": "unknown", "code": "proposal"},
+            "attribution_scope": "single_procedure",
+        },
+    }
+    questions = {
+        "Baker's": question_body(
+            "defeated",
+            {"gastrocnemius_semimembranosus_bursa": "necessary"},
+        ),
+        "ACL": question_body(
+            "open",
+            {"acl": "necessary"},
+            [request("ACL", "acl")],
+        ),
+    }
+    rec = make_record(
+        observations=[wrong_bakers_obs, open_acl_obs],
+        unresolved=[request("ACL", "acl")],
+        questions=questions,
+    )
+    labels = {"calls": {UID: {"Baker's": 1, "ACL": 1}}, "table_uids": {UID}}
+    rows = rows_of(rec, labels=labels)
+    memory = pe.retain_procedure_experiences(
+        {"revision": REV, "cases": []},
+        rows,
+        revision="child-rev",
+    )
+
+    # Recall on Baker's with compatible cue sees the contradiction, not a priority boost
+    bakers_recall = pe.recall_procedure_experiences(
+        memory,
+        question="Baker's",
+        subject="gastrocnemius_semimembranosus_bursa",
+        kind="bounded_zoom",
+        query_profile=bakers_cue,
+        query_context={"request_reason": "proposal_without_sourced_trust"},
+    )
+    assert bakers_recall["status"] == "recalled_outcome_contradicted"
+    assert bakers_recall["information_obtained_counts"] == {"new_reading_obtained": 1}
+    assert bakers_recall["independent_agreement_counts"] == {
+        "contradicts_independent_call": 1
+    }
+
+    # Recall on ACL without a visual cue refuses to match ("no_contextual_cue")
+    no_cue_recall = pe.recall_procedure_experiences(
+        memory,
+        question="ACL",
+        subject="acl",
+        kind="bounded_zoom",
+        query_profile=None,
+    )
+    assert no_cue_recall["status"] == "no_contextual_cue"
+
+    # Recall on ACL with compatible cue sees "recalled_reading_obtained_open", never a veto
+    acl_recall = pe.recall_procedure_experiences(
+        memory,
+        question="ACL",
+        subject="acl",
+        kind="bounded_zoom",
+        query_profile=acl_cue,
+        query_context={"request_reason": "proposal_without_sourced_trust"},
+    )
+    assert acl_recall["status"] == "recalled_reading_obtained_open"
+
+    # Routing ACL on another study with no cue or with compatible cue never skips by recalled procedure
+    routed_no_cue = route_observation_request(
+        request("ACL", "acl"),
+        {},
+        {"acl": {"regions": []}},
+        set(),
+        None,
+        memory=memory,
+        study_uid=OTHER_UID,
+    )
+    assert routed_no_cue["code"] != "skipped_by_recalled_procedure"
+
+    routed_with_cue = route_observation_request(
+        request("ACL", "acl"),
+        {},
+        {"acl": {"squint_profile": acl_cue, "regions": []}},
+        set(),
+        None,
+        memory=memory,
+        study_uid=OTHER_UID,
+    )
+    assert routed_with_cue["code"] != "skipped_by_recalled_procedure"
+    assert (
+        routed_with_cue["recalled_procedure"]["status"]
+        == "recalled_reading_obtained_open"
+    )
+
+    # Opposite sign: a confirmed resolution on a second subject promotes that request ahead of the contradicted Baker's look
+    capsule_cue = _cue_profile("joint_capsule", [0, 2, 1])
+    confirmed_capsule_obs = {
+        **obs("joint_capsule"),
+        "question": "Baker's",
+        "request_id": "Baker's/joint_capsule/bounded_zoom",
+        "request_kind": "bounded_zoom",
+        "request_reason": "proposal_without_sourced_trust",
+        "before_cue": capsule_cue,
+        "before_state": {"outcome": "open", "reason": "before"},
+        "after_state": {
+            "outcome": "assigned",
+            "reason": "confirmed_after_zoom",
+            "subject_reading": {
+                "state": "condition_presentation",
+                "code": "sourced_positive",
+            },
+            "attribution_scope": "single_procedure",
+        },
+    }
+    rec2 = make_record(
+        uid="1.2.826.0.1.3680043.8.498.1500",
+        observations=[confirmed_capsule_obs],
+        unresolved=[],
+        questions={
+            "Baker's": question_body("assigned", {"joint_capsule": "supporting"})
+        },
+    )
+    rows2 = rows_of(
+        rec2,
+        labels={
+            "calls": {"1.2.826.0.1.3680043.8.498.1500": {"Baker's": 1}},
+            "table_uids": {"1.2.826.0.1.3680043.8.498.1500"},
+        },
+        source={**SOURCE, "run": "run-b"},
+    )
+    memory2 = pe.retain_procedure_experiences(memory, rows2, revision="child-rev-2")
+    finding_with_two_requests = {
+        "outcome": "open",
+        "observation_requests": [
+            request(
+                "Baker's",
+                "gastrocnemius_semimembranosus_bursa",
+            ),
+            request("Baker's", "joint_capsule"),
+        ],
+    }
+    query_objects = {
+        "gastrocnemius_semimembranosus_bursa": {"squint_profile": bakers_cue},
+        "joint_capsule": {"squint_profile": capsule_cue},
+    }
+    selected = select_observation_requests(
+        finding_with_two_requests,
+        memory=memory2,
+        objects=query_objects,
+    )
+    assert [r["subject"] for r in selected] == [
+        "joint_capsule",
+        "gastrocnemius_semimembranosus_bursa",
+    ]
+    assert (
+        selected[0]["recalled_procedure"]["status"] == "recalled_confirmed_resolution"
+    )
+    assert (
+        selected[1]["recalled_procedure"]["status"] == "recalled_outcome_contradicted"
+    )
+
+    # And a different situation (incompatible cue on joint_capsule) does NOT inherit the promotion,
+    # while adding a normal clinical case to memory does NOT veto the useful procedure
+    memory2_with_opposing_capsule = {
+        **memory2,
+        "cases": [
+            {
+                "case_id": "case:opposing-capsule",
+                "study_uid": "1.2.826.0.1.3680043.8.498.1600",
+                "subject": "joint_capsule",
+                "condition_calls": {"Baker's": -1},
+                "profile": _cue_profile("joint_capsule", [1, 2, 2]),
+            }
+        ],
+    }
+    # Sign 1: adding a normal clinical case does NOT veto the useful procedure when cue is compatible
+    selected_compatible = select_observation_requests(
+        finding_with_two_requests,
+        memory=memory2_with_opposing_capsule,
+        objects={
+            "gastrocnemius_semimembranosus_bursa": {"squint_profile": bakers_cue},
+            "joint_capsule": {"squint_profile": capsule_cue},
+        },
+    )
+    assert [r["subject"] for r in selected_compatible] == [
+        "joint_capsule",
+        "gastrocnemius_semimembranosus_bursa",
+    ]
+
+    # Sign 2: a different situation (incompatible HDC cue on joint_capsule) does NOT inherit the promotion
+    different_capsule_cue = _cue_profile("joint_capsule", [3, 0, 0])
+    selected_different = select_observation_requests(
+        finding_with_two_requests,
+        memory=memory2_with_opposing_capsule,
+        objects={
+            "gastrocnemius_semimembranosus_bursa": {"squint_profile": bakers_cue},
+            "joint_capsule": {"squint_profile": different_capsule_cue},
+        },
+    )
+    assert [r["subject"] for r in selected_different] == [
+        "gastrocnemius_semimembranosus_bursa",
+        "joint_capsule",
+    ]
+    assert (
+        selected_different[1]["recalled_procedure"]["status"]
+        == "no_context_compatible_experience"
+    )
+
+
+def test_fuzzy_joint_hdc_resemblance_recalls_near_equal_tercile_bins_above_opposition_floor():
+    taught_cue = _cue_profile("joint_capsule", [51, 49, 0])
+    query_cue = _cue_profile("joint_capsule", [49, 51, 0])
+    same_subject_opposing_cue = _cue_profile("joint_capsule", [0, 20, 80])
+    identical_other_object_cue = _cue_profile(
+        "gastrocnemius_semimembranosus_bursa", [51, 49, 0]
+    )
+    below_floor_cue = _cue_profile("joint_capsule", [0, 10, 90])
+
+    taught_obs = {
+        **obs("joint_capsule"),
+        "question": "Baker's",
+        "request_id": "Baker's/joint_capsule/bounded_zoom",
+        "request_kind": "bounded_zoom",
+        "request_reason": "proposal_without_sourced_trust",
+        "before_cue": taught_cue,
+        "before_state": {"outcome": "open", "reason": "before"},
+        "after_state": {
+            "outcome": "assigned",
+            "reason": "confirmed_after_zoom",
+            "subject_reading": {
+                "state": "condition_presentation",
+                "code": "sourced_positive",
+            },
+            "attribution_scope": "single_procedure",
+        },
+    }
+    other_object_identical_obs = {
+        **obs("gastrocnemius_semimembranosus_bursa"),
+        "question": "Baker's",
+        "request_id": "Baker's/gastrocnemius_semimembranosus_bursa/bounded_zoom",
+        "request_kind": "bounded_zoom",
+        "request_reason": "proposal_without_sourced_trust",
+        "before_cue": identical_other_object_cue,
+        "before_state": {"outcome": "open", "reason": "before"},
+        "after_state": {
+            "outcome": "defeated",
+            "reason": "contradicted_after_zoom",
+            "subject_reading": {"state": "normal", "code": "sourced_negative"},
+            "attribution_scope": "single_procedure",
+        },
+    }
+    same_subject_opposing_obs = {
+        **obs("joint_capsule"),
+        "question": "Baker's",
+        "request_id": "Baker's/joint_capsule/bounded_zoom_opposing",
+        "request_kind": "bounded_zoom",
+        "request_reason": "proposal_without_sourced_trust",
+        "before_cue": same_subject_opposing_cue,
+        "before_state": {"outcome": "open", "reason": "before"},
+        "after_state": {
+            "outcome": "defeated",
+            "reason": "contradicted_after_zoom",
+            "subject_reading": {"state": "normal", "code": "sourced_negative"},
+            "attribution_scope": "single_procedure",
+        },
+    }
+    rec = make_record(
+        observations=[taught_obs, other_object_identical_obs, same_subject_opposing_obs],
+        unresolved=[],
+        questions={
+            "Baker's": question_body(
+                "assigned",
+                {
+                    "joint_capsule": "supporting",
+                    "gastrocnemius_semimembranosus_bursa": "necessary",
+                },
+            )
+        },
+    )
+    rows = rows_of(rec, labels={"calls": {UID: {"Baker's": 1}}, "table_uids": {UID}})
+    base_memory = {
+        "revision": REV,
+        "cases": [
+            {
+                "case_id": "case:same-subject-opposing",
+                "study_uid": OTHER_UID,
+                "subject": "joint_capsule",
+                "condition_calls": {"Baker's": -1},
+                "profile": same_subject_opposing_cue,
+            },
+            {
+                "case_id": "case:other-object-identical",
+                "study_uid": OTHER_UID,
+                "subject": "femur",
+                "condition_calls": {"Baker's": -1},
+                "profile": _cue_profile("femur", [51, 49, 0]),
+            },
+        ],
+    }
+    memory = pe.retain_procedure_experiences(
+        base_memory, rows, revision="child-fuzzy"
+    )
+
+    # Sign 1: [51,49,0] vs [49,51,0] (cosine ~ 0.9992) reaches empirical envelope and recalls,
+    # even when differently named objects (bursa, femur) have identical [51,49,0] encodings.
+    recalled = pe.recall_procedure_experiences(
+        memory,
+        question="Baker's",
+        subject="joint_capsule",
+        kind="bounded_zoom",
+        query_profile=query_cue,
+        query_context={"request_reason": "proposal_without_sourced_trust"},
+    )
+    assert recalled["status"] == "recalled_confirmed_resolution"
+    assert recalled["matched_cues"][0]["reaches_empirical_envelope"] is True
+
+    # Sign 2: a query cue below the same-subject empirical opposition floor is rejected
+    rejected = pe.recall_procedure_experiences(
+        memory,
+        question="Baker's",
+        subject="joint_capsule",
+        kind="bounded_zoom",
+        query_profile=below_floor_cue,
+        query_context={"request_reason": "proposal_without_sourced_trust"},
+    )
+    assert rejected["status"] != "recalled_confirmed_resolution"
+    assert not rejected["confirmed_resolution_row_ids"]

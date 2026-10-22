@@ -1,5 +1,13 @@
 # The society of agencies: design binding, build spec and training plan
 
+**Implementation completion appendix:** [TRAIN_READY_COMPLETION.md](TRAIN_READY_COMPLETION.md)
+pins the reviewed source gaps and the bounded repairs/tests required for a real local training
+round. Read it with the current packet before using the dated lane tables below. In particular,
+the §2 operation inventory and §3/§5 L0 critical-path claims describe earlier source, not current
+readiness. Neither those score comparisons nor automatic recovery of all teaching objects gates
+hand-built corpus construction. The appendix distinguishes complete 58-study addressed teaching
+readback from a thin, operational train-ready pilot; neither is claimed by an export alone.
+
 **Current bootstrap binding, 2026-10-22.** Hand-build the anatomical normal/diagnosed corpus,
 measure its bundles and assign the signed K-lines, then use it for the specified classical
 training. Automatic recognition of every teaching study is not a prerequisite. Correctly

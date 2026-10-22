@@ -36,7 +36,9 @@ Provenance codes used on rows (the legend is repeated in summary.md):
 
 from __future__ import annotations
 
+import copy
 import csv
+import hashlib
 import io
 import json
 from collections import defaultdict
@@ -44,6 +46,7 @@ from collections.abc import Mapping, Sequence
 from typing import Any
 
 __all__ = [
+    "PROCEDURE_EXPERIENCES_SCHEMA",
     "SCHEMA",
     "alignments",
     "attribute_routed",
@@ -53,13 +56,19 @@ __all__ = [
     "execution_status",
     "experience_rows",
     "identity_outcome",
+    "independent_agreement",
+    "information_obtained",
     "parse_candidate_id",
     "read_label_table",
+    "recall_procedure_experiences",
+    "retain_procedure_experiences",
+    "select_observation_requests",
     "split_observations",
     "tally",
 ]
 
 SCHEMA = "knee.procedure-experience/v1"
+PROCEDURE_EXPERIENCES_SCHEMA = "knee.procedure-experience-memory/v1"
 IDENTITY_QUESTION = "identity"
 IDENTITY_REQUESTER = "identity_question"
 CONTEST_REASON = "contested_at_squint_scale"
@@ -562,7 +571,62 @@ def _placing_anchors(obj: Mapping[str, Any]) -> list[dict[str, Any]]:
     return found
 
 
-def subject_context(record: Mapping[str, Any], subject: object) -> dict[str, Any]:
+def _cue_banks_from_profile(profile: object) -> dict[str, list[int]]:
+    """Extract coarse 10 mm banks when present, else all valid 3-count banks."""
+    if not isinstance(profile, Mapping):
+        return {}
+    raw = profile.get("banks")
+    if not isinstance(raw, Mapping):
+        return {}
+    all_banks: dict[str, list[int]] = {}
+    coarse_banks: dict[str, list[int]] = {}
+    for name, counts in raw.items():
+        if (
+            not isinstance(name, str)
+            or not name
+            or not isinstance(counts, (list, tuple))
+            or len(counts) != 3
+            or any(type(v) is not int or v < 0 for v in counts)
+        ):
+            continue
+        triple = [int(counts[0]), int(counts[1]), int(counts[2])]
+        if not any(triple):
+            continue
+        all_banks[name] = triple
+        if name.rsplit("/scale=", 1)[-1] == "10mm":
+            coarse_banks[name] = triple
+    return coarse_banks if coarse_banks else all_banks
+
+
+def _observed_cue(
+    record: Mapping[str, Any],
+    subject: object,
+    obs: Mapping[str, Any] | None = None,
+) -> dict[str, Any]:
+    """Observed HDC cue before the procedure ran, or coarse 10 mm banks from the record."""
+    before_cue = obs.get("before_cue") if isinstance(obs, Mapping) else None
+    if isinstance(before_cue, Mapping):
+        banks = _cue_banks_from_profile(before_cue)
+        return {
+            "banks": banks,
+            "procedure": before_cue.get("procedure"),
+            "provenance": "recorded_before_procedure",
+        }
+    obj = _mapping(_mapping(record.get("objects")).get(subject))
+    profile = _mapping(obj.get("profile"))
+    banks = _cue_banks_from_profile(profile)
+    return {
+        "banks": banks,
+        "procedure": _mapping(profile.get("source")).get("procedure"),
+        "provenance": "coarse_banks_from_record" if banks else "not_recorded",
+    }
+
+
+def subject_context(
+    record: Mapping[str, Any],
+    subject: object,
+    obs: Mapping[str, Any] | None = None,
+) -> dict[str, Any]:
     """What placed the object, its structural anchors and the identity context it was heard in."""
     obj = _mapping(_mapping(record.get("objects")).get(subject))
     evidence = _mapping(obj.get("evidence"))
@@ -588,6 +652,7 @@ def subject_context(record: Mapping[str, Any], subject: object) -> dict[str, Any
         "removed_by_structure": list(_sequence(context.get("removed_by_structure"))),
         "contradictions": len(_sequence(context.get("contradictions"))),
         "sanity_status": _get(obj, "sanity", "status"),
+        "observed_cue": _observed_cue(record, subject, obs=obs),
     }
 
 
@@ -686,39 +751,98 @@ _BEFORE_OPEN = {
 }
 
 
-def condition_state(
-    record: Mapping[str, Any], question: str | None, subject: object
-) -> dict[str, Any]:
-    """The condition finding as the record keeps it (after the look); before is open by code.
+def _has_direct_attribution(row: Mapping[str, Any]) -> bool:
+    question = row.get("question")
+    return (
+        isinstance(question, str)
+        and bool(question)
+        and ("before_state" in row or "request_id" in row)
+    )
 
-    A request is routed only while its question's finding is open (infer_study lines 1768-1772),
-    so ``before.outcome`` is ``open`` by construction; why it was open is not recorded.
-    ``after`` is the final finding, after the look and the identity refresh. ``changed`` says only
-    that the final finding is no longer open; it is not credited to the look.
+
+def condition_state(
+    record: Mapping[str, Any],
+    question: str | None,
+    subject: object,
+    obs: Mapping[str, Any] | None = None,
+) -> dict[str, Any]:
+    """The condition finding before and after the observation step.
+
+    When the observation row carries ``before_state`` and ``after_state`` directly,
+    both states come from that single procedure step with ``provenance: recorded`` so
+    an earlier look that left the question open is never credited with a later look's
+    decision. On older records without ``after_state``, ``before.outcome`` is ``open``
+    by construction and ``after`` is the final finding recorded on the question.
     """
-    body = _mapping(_mapping(record.get("questions")).get(question))
-    finding = _mapping(body.get("finding"))
+    after_raw = obs.get("after_state") if isinstance(obs, Mapping) else None
     after = None
-    if finding:
+    if isinstance(after_raw, Mapping):
         after = {
-            "outcome": finding.get("outcome"),
-            "reason": finding.get("reason"),
-            "value": _mapping(record.get("values")).get(question),
-            "tier": _get(finding, "rank", "tier"),
-            "subject_reading": _subject_reading(
-                _mapping(_get(finding, "evidence", "readings")).get(subject)
+            "outcome": after_raw.get("outcome"),
+            "provenance": "recorded",
+            "reason": after_raw.get("reason"),
+            "value": after_raw.get(
+                "value", _mapping(record.get("values")).get(question)
             ),
+            "tier": after_raw.get("tier"),
+            "subject_reading": after_raw.get("subject_reading"),
             "requests_still_listed": [
-                f"{r.get('subject')}:{r.get('reason')}"
-                for r in _sequence(finding.get("observation_requests"))
-                if isinstance(r, Mapping)
+                str(item) for item in _sequence(after_raw.get("requests_listed"))
             ],
         }
+    else:
+        body = _mapping(_mapping(record.get("questions")).get(question))
+        finding = _mapping(body.get("finding"))
+        if finding:
+            after = {
+                "outcome": finding.get("outcome"),
+                "provenance": "recorded_after_the_look",
+                "reason": finding.get("reason"),
+                "value": _mapping(record.get("values")).get(question),
+                "tier": _get(finding, "rank", "tier"),
+                "subject_reading": _subject_reading(
+                    _mapping(_get(finding, "evidence", "readings")).get(subject)
+                ),
+                "requests_still_listed": [
+                    f"{r.get('subject')}:{r.get('reason')}"
+                    for r in _sequence(finding.get("observation_requests"))
+                    if isinstance(r, Mapping)
+                ],
+            }
+    before_raw = obs.get("before_state") if isinstance(obs, Mapping) else None
+    if isinstance(before_raw, Mapping):
+        before = {
+            "outcome": before_raw.get("outcome", CONDITION_BEFORE),
+            "provenance": "recorded",
+            "reason": before_raw.get("reason"),
+            "reason_provenance": (
+                "recorded" if before_raw.get("reason") is not None else "not_recorded"
+            ),
+            "tier": before_raw.get("tier"),
+            "subject_reading": before_raw.get("subject_reading"),
+            "requests_listed": before_raw.get("requests_listed"),
+        }
+    else:
+        before = dict(_BEFORE_OPEN)
+    before_outcome = before.get("outcome", CONDITION_BEFORE)
+    before_reading = before.get("subject_reading")
+    after_reading = after.get("subject_reading") if isinstance(after, Mapping) else None
+    reading_changed = (
+        before_reading != after_reading
+        if isinstance(before_reading, Mapping) and isinstance(after_reading, Mapping)
+        else None
+    )
     return {
         "scope": "condition",
-        "before": dict(_BEFORE_OPEN),
+        "attribution_scope": (
+            "single_procedure"
+            if isinstance(after_raw, Mapping)
+            else "question_final_finding"
+        ),
+        "before": before,
         "after": after,
-        "changed": None if after is None else after["outcome"] != CONDITION_BEFORE,
+        "reading_changed": reading_changed,
+        "changed": None if after is None else after["outcome"] != before_outcome,
     }
 
 
@@ -997,7 +1121,17 @@ def _identity_request(
     }
 
 
-def _attribution_block(attribution: Mapping[str, Any]) -> dict[str, Any]:
+def _attribution_block(
+    attribution: Mapping[str, Any], row: Mapping[str, Any] | None = None
+) -> dict[str, Any]:
+    if isinstance(row, Mapping) and _has_direct_attribution(row):
+        return {
+            "status": "recorded",
+            "kind": "recorded",
+            "basis": "recorded_on_observation_row",
+            "candidates": None,
+            "rests_on": "direct_observation_attribution",
+        }
     return {
         "status": _ATTRIBUTION_STATUS[attribution["kind"]],
         "kind": attribution["kind"],
@@ -1012,6 +1146,48 @@ def _condition_request(
     attribution: Mapping[str, Any],
     listed: Mapping[str, Any] | None,
 ) -> dict[str, Any]:
+    if _has_direct_attribution(row):
+        kind = (
+            row.get("request_kind")
+            or row.get("kind")
+            or (listed.get("kind") if listed else ZOOM_KIND)
+        )
+        reason = (
+            row.get("request_reason")
+            if "request_reason" in row
+            else (listed.get("reason") if listed else None)
+        )
+        scope = (
+            row.get("request_scope")
+            if "request_scope" in row
+            else (listed.get("scope") if listed else None)
+        )
+        return {
+            "kind": kind,
+            "procedure": PAIRED_PROCEDURE
+            if kind == ZOOM_KIND
+            else row.get("procedure"),
+            "subject": row.get("subject"),
+            "question": row.get("question"),
+            "reason": reason,
+            "scope": scope,
+            "bounded": listed.get("bounded", True) if listed else True,
+            "full_study": listed.get("full_study", False) if listed else False,
+            "discretionary": listed.get("discretionary", True) if listed else True,
+            "request_id": row.get("request_id")
+            or (listed.get("request_id") if listed else None),
+            "requested_by": None,
+            "listed_after_the_look": listed is not None,
+            "provenance": {
+                "question": "recorded",
+                "reason": "recorded" if reason is not None else "not_recorded",
+                "kind": "recorded",
+                "scope": "recorded" if scope is not None else "not_recorded",
+                "first_pass_reason": (
+                    "recorded" if "request_reason" in row else "not_recorded"
+                ),
+            },
+        }
     if listed is not None:
         return {
             "kind": listed.get("kind"),
@@ -1055,6 +1231,101 @@ def _condition_request(
     }
 
 
+def information_obtained(
+    execution: Mapping[str, Any], state: Mapping[str, Any]
+) -> dict[str, Any]:
+    """What the observation procedure itself obtained, distinct from the final verdict."""
+    new_reading = bool(execution.get("new_reading"))
+    reading_available = bool(execution.get("reading_available"))
+    if new_reading:
+        status = "new_reading_obtained"
+    elif reading_available:
+        status = "reading_already_available"
+    else:
+        status = "no_new_reading_available"
+    return {
+        "status": status,
+        "new_reading": new_reading,
+        "reading_available": reading_available,
+        "reading_changed": state.get("reading_changed"),
+        "finding_changed": state.get("changed"),
+        "attribution_scope": state.get(
+            "attribution_scope", "question_final_finding"
+        ),
+    }
+
+
+def independent_agreement(
+    state: Mapping[str, Any], independent_outcome: Mapping[str, Any]
+) -> dict[str, Any]:
+    """Compare the post-action state against the independent call without conflating them."""
+    if independent_outcome.get("status") != "checked":
+        return {
+            "status": "unchecked",
+            "independent_call": None,
+            "after_answer": None,
+        }
+    scope = state.get("scope")
+    if scope == "condition":
+        call = independent_outcome.get("call")
+        after_outcome = _get(state, "after", "outcome")
+        after_answer = (
+            1
+            if after_outcome == "assigned"
+            else -1
+            if after_outcome == "defeated"
+            else 0
+        )
+        if call not in (-1, 1):
+            status = "unchecked"
+        elif after_answer == 0:
+            status = "unresolved_after_action"
+        elif after_answer == call:
+            status = "matches_independent_call"
+        else:
+            status = "contradicts_independent_call"
+        return {
+            "status": status,
+            "independent_call": call,
+            "after_outcome": after_outcome,
+            "after_answer": after_answer,
+        }
+    if scope == "identity":
+        calls = {
+            c.get("call")
+            for c in _sequence(independent_outcome.get("evidence"))
+            if isinstance(c, Mapping)
+        }
+        read_as = _get(state, "consumed", "region_read_as_subject")
+        if "confirm" in calls and "reject" not in calls:
+            status = (
+                "matches_independent_call"
+                if read_as is True
+                else "contradicts_independent_call"
+                if read_as is False
+                else "unresolved_after_action"
+            )
+            ind_call: Any = "confirm"
+        elif "reject" in calls and "confirm" not in calls:
+            status = (
+                "matches_independent_call"
+                if read_as is False
+                else "contradicts_independent_call"
+                if read_as is True
+                else "unresolved_after_action"
+            )
+            ind_call = "reject"
+        else:
+            status = "unresolved_after_action"
+            ind_call = sorted(str(c) for c in calls)
+        return {
+            "status": status,
+            "independent_call": ind_call,
+            "after_answer": read_as,
+        }
+    return {"status": "unchecked", "independent_call": None, "after_answer": None}
+
+
 def _row(
     source: Mapping[str, Any],
     uid: str,
@@ -1063,11 +1334,16 @@ def _row(
 ) -> dict[str, Any]:
     pins = {key: source[key] for key in REQUIRED_PINS}
     extras = {k: v for k, v in source.items() if k not in REQUIRED_PINS}
+    execution = _mapping(parts.get("execution"))
+    state = _mapping(parts.get("state"))
+    outcome = _mapping(parts.get("independent_outcome"))
     return {
         "schema": SCHEMA,
         "row_id": row_id,
         "source": {**pins, "study_uid": uid, **extras},
         **parts,
+        "information_obtained": information_obtained(execution, state),
+        "independent_agreement": independent_agreement(state, outcome),
     }
 
 
@@ -1099,7 +1375,7 @@ def _identity_rows(
                 {
                     "context": {
                         "study": study,
-                        "subject": subject_context(record, subject),
+                        "subject": subject_context(record, subject, obs=obs),
                     },
                     "request": _identity_request(record, obs),
                     "question_attribution": {
@@ -1127,7 +1403,7 @@ def _identity_rows(
                 {
                     "context": {
                         "study": study,
-                        "subject": subject_context(record, subject),
+                        "subject": subject_context(record, subject, obs=obs),
                     },
                     "request": {
                         "kind": None,
@@ -1190,6 +1466,7 @@ def _routed_rows(
         cap=cap,
     )
     rows = []
+    placed = {a["unresolved_index"] for a in attributions if a["kind"] == "aligned"}
     for position, (index, obs) in enumerate(routed):
         attribution = attributions[position]
         subject = obs.get("subject")
@@ -1199,7 +1476,20 @@ def _routed_rows(
             if attribution["kind"] == "aligned"
             else None
         )
-        question = attribution.get("question")
+        direct = _has_direct_attribution(obs)
+        question = obs.get("question") if direct else attribution.get("question")
+        if direct and listed is None:
+            for j, req in enumerate(unresolved):
+                if j in placed:
+                    continue
+                if req.get("question") == question and req.get("subject") == subject:
+                    if (
+                        obs.get("request_id") is None
+                        or req.get("request_id") == obs.get("request_id")
+                    ):
+                        listed = req
+                        placed.add(j)
+                        break
         rows.append(
             _row(
                 source,
@@ -1208,16 +1498,16 @@ def _routed_rows(
                 {
                     "context": {
                         "study": study,
-                        "subject": subject_context(record, subject),
+                        "subject": subject_context(record, subject, obs=obs),
                         "subject_identity_final": _identity_consumed_final(
                             record, subject
                         ),
                     },
                     "request": _condition_request(obs, attribution, listed),
-                    "question_attribution": _attribution_block(attribution),
+                    "question_attribution": _attribution_block(attribution, obs),
                     "execution": execution,
                     "state": _credited(
-                        condition_state(record, question, subject)
+                        condition_state(record, question, subject, obs=obs)
                         if question
                         else _empty_condition_state(),
                         execution,
@@ -1228,7 +1518,6 @@ def _routed_rows(
                 },
             )
         )
-    placed = {a["unresolved_index"] for a in attributions if a["kind"] == "aligned"}
     for j, request in enumerate(unresolved):
         if j in placed:
             continue
@@ -1322,6 +1611,511 @@ def experience_rows(
     return _identity_rows(record, source, uid, study, call_index) + _routed_rows(
         record, source, uid, study, labels, cap
     )
+
+
+# --------------------------------------------------------------------------- memory retention and recall
+
+
+_RUNTIME_MEMORY_KEYS = frozenset(
+    {"prepared_recall", "view", "memory_manifest_sha256", "full_profile_retention"}
+)
+
+
+def retain_procedure_experiences(
+    memory: Mapping[str, Any],
+    rows: Sequence[Mapping[str, Any]],
+    *,
+    revision: str | None = None,
+) -> dict[str, Any]:
+    """Retain checked procedure-experience rows in a child memory mapping.
+
+    Only checked rows that ran (``independent_outcome.status == "checked"`` and
+    ``execution.status != "not_run"``) with valid source pins enter memory. Each
+    retained row keeps its ``source.study_uid`` so ``memory_view`` and
+    ``recall_procedure_experiences`` exclude a study's own experiences when that
+    study is held out.
+    """
+    if not isinstance(memory, Mapping) or not isinstance(memory.get("revision"), str):
+        raise ValueError("memory_invalid")
+    existing_table = _mapping(memory.get("procedure_experiences"))
+    existing_rows = [
+        copy.deepcopy(dict(row))
+        for row in _sequence(existing_table.get("rows"))
+        if isinstance(row, Mapping) and isinstance(row.get("row_id"), str)
+    ]
+    seen_ids = {row["row_id"] for row in existing_rows}
+    added: list[dict[str, Any]] = []
+    for raw in rows:
+        if not isinstance(raw, Mapping) or raw.get("schema") != SCHEMA:
+            continue
+        row_id = raw.get("row_id")
+        if not isinstance(row_id, str) or not row_id or row_id in seen_ids:
+            continue
+        source = _mapping(raw.get("source"))
+        _require_pins(source)
+        study_uid = source.get("study_uid") or raw.get("study_uid")
+        if not isinstance(study_uid, str) or not study_uid:
+            raise ValueError(f"procedure_experience_study_uid_missing: {row_id}")
+        if _mapping(raw.get("execution")).get("status") == NOT_RUN:
+            continue
+        if _mapping(raw.get("independent_outcome")).get("status") != "checked":
+            continue
+        entry = copy.deepcopy(dict(raw))
+        entry["study_uid"] = study_uid
+        seen_ids.add(row_id)
+        added.append(entry)
+    added.sort(key=lambda item: item["row_id"])
+    merged = existing_rows + added
+    child = {
+        key: value for key, value in memory.items() if key not in _RUNTIME_MEMORY_KEYS
+    }
+    child["procedure_experiences"] = {
+        "schema": PROCEDURE_EXPERIENCES_SCHEMA,
+        "rows": merged,
+    }
+    if revision is not None:
+        child["revision"] = revision
+    elif added:
+        digest = hashlib.sha256(
+            json.dumps(
+                [item["row_id"] for item in added],
+                sort_keys=True,
+                separators=(",", ":"),
+            ).encode("utf-8")
+        ).hexdigest()
+        child["revision"] = f"{memory['revision']}+procedure-memory-{digest[:16]}"
+    return child
+
+
+def _empirical_opposition_floor(
+    raw: Mapping[str, Any],
+    row_banks: Mapping[str, Sequence[int]],
+    common_banks: Sequence[str],
+    category: str,
+    rows: Sequence[Any],
+    memory: Mapping[str, Any] | None,
+    question_envelopes: Mapping[str, Any],
+    excluded: str | None,
+) -> tuple[int, int] | None:
+    """Finite empirical opposition floor over ``common_banks`` using ``_exact_bank_terms``.
+
+    Opposition is scoped to this procedure's applicability in context:
+    other attributed experiences for the same ``(subject, kind)`` (and
+    ``question`` when present) with an opposing outcome category. Clinical or
+    identity calls alone do not establish whether a procedure helped.
+    """
+    from knee.diagnosis.squint_locator import _exact_bank_terms
+
+    _ = question_envelopes
+    restricted_left = {b: list(row_banks[b]) for b in common_banks if b in row_banks}
+    if not restricted_left:
+        return None
+    req = _mapping(raw.get("request"))
+    subject = req.get("subject")
+    question = req.get("question")
+    req_kind = str(req.get("kind") or ZOOM_KIND)
+    row_id = raw.get("row_id")
+    opposing_ratios: list[tuple[int, int]] = []
+
+    for other in rows:
+        if not isinstance(other, Mapping) or other.get("row_id") == row_id:
+            continue
+        other_uid = other.get("study_uid") or _mapping(other.get("source")).get(
+            "study_uid"
+        )
+        if excluded is not None and other_uid == excluded:
+            continue
+        if _mapping(other.get("independent_outcome")).get("status") != "checked":
+            continue
+        if _mapping(other.get("execution")).get("status") == NOT_RUN:
+            continue
+        other_req = _mapping(other.get("request"))
+        other_subj = other_req.get("subject")
+        if other_subj != subject:
+            continue
+        other_kind = str(other_req.get("kind") or ZOOM_KIND)
+        if other_kind != req_kind:
+            continue
+        other_q = other_req.get("question")
+        if question is not None and other_q is not None and other_q != question:
+            continue
+        other_cat, _info, _agree = _row_category(other, other_kind)
+        if other_cat in (category, "outcome_unattributed"):
+            continue
+        other_banks = _row_cue_banks(
+            other,
+            memory,
+            str(other_uid) if isinstance(other_uid, str) else None,
+            other_subj if isinstance(other_subj, str) else None,
+        )
+        if not other_banks:
+            continue
+        terms = _exact_bank_terms(restricted_left, other_banks)
+        if (
+            terms.get("code") == "ok"
+            and list(terms.get("common_speaking_banks", ())) == list(common_banks)
+        ):
+            opposing_ratios.append(terms["cosine_squared"])
+
+    return _max_ratio(opposing_ratios)
+
+
+def _row_cue_banks(
+    raw: Mapping[str, Any],
+    memory: Mapping[str, Any] | None,
+    row_uid: str | None,
+    subject: str | None,
+) -> dict[str, list[int]]:
+    """Observed HDC cue banks from the experience row, or explicitly linked pre-action cue."""
+    _ = (memory, row_uid, subject)
+    cue = _mapping(_get(raw, "context", "subject", "observed_cue"))
+    banks = _cue_banks_from_profile(cue)
+    if banks and cue.get("provenance") == "recorded_before_procedure":
+        return banks
+    linked = _mapping(raw.get("pre_action_cue") or raw.get("linked_cue"))
+    if linked:
+        linked_banks = _cue_banks_from_profile(linked)
+        if linked_banks:
+            return linked_banks
+    return {}
+
+
+def _row_category(raw: Mapping[str, Any], req_kind: str) -> tuple[str, dict[str, Any], dict[str, Any]]:
+    _ = req_kind
+    execution = _mapping(raw.get("execution"))
+    state = _mapping(raw.get("state"))
+    outcome = _mapping(raw.get("independent_outcome"))
+    info = (
+        dict(raw["information_obtained"])
+        if isinstance(raw.get("information_obtained"), Mapping)
+        else information_obtained(execution, state)
+    )
+    agree = (
+        dict(raw["independent_agreement"])
+        if isinstance(raw.get("independent_agreement"), Mapping)
+        else independent_agreement(state, outcome)
+    )
+    if state.get("attribution_scope") != "single_procedure":
+        # The final answer can still teach diagnosis; it cannot credit or blame
+        # an individual action without that action's recorded outcome.
+        return "outcome_unattributed", info, agree
+    if agree.get("status") == "contradicts_independent_call":
+        return "contradicted_outcome", info, agree
+    if info.get("status") == "new_reading_obtained" and agree.get("status") == "matches_independent_call":
+        return "confirmed_resolution", info, agree
+    if info.get("status") in ("new_reading_obtained", "reading_already_available"):
+        return "obtained_reading_open", info, agree
+    return "no_reading_available", info, agree
+
+
+def _max_ratio(ratios: Sequence[tuple[int, int]]) -> tuple[int, int] | None:
+    best: tuple[int, int] | None = None
+    for num, den in ratios:
+        if best is None or num * best[1] > best[0] * den:
+            best = (num, den)
+    return best
+
+
+def recall_procedure_experiences(
+    memory: Mapping[str, Any] | None,
+    *,
+    question: str | None,
+    subject: str | None,
+    kind: str | None = None,
+    query_profile: Mapping[str, Any] | None = None,
+    query_context: Mapping[str, Any] | None = None,
+    study_uid: str | None = None,
+    exclude_same_study: bool = False,
+) -> dict[str, Any]:
+    """Contextual K-line recall of checked procedure experiences for ``(question, subject, kind)``.
+
+    * Requires an observed visual/HDC cue on ``query_profile`` (or ``query_context``).
+      Without a visual cue, returns ``status: "no_contextual_cue"`` and never matches or
+      vetoes by name alone.
+    * Compares shared speaking HDC banks via ``squint_locator._exact_bank_terms`` and
+      observed request/location context, supporting partial views without requiring
+      complete geometry.
+    * Distinguishes ``information_obtained`` from ``independent_agreement``:
+      a state change that contradicts the independent call is ``recalled_outcome_contradicted``
+      (never prioritized), and a measurement that obtained a reading while leaving the
+      question open is ``recalled_reading_obtained_open`` (never a veto).
+    """
+    from knee.diagnosis.squint_locator import _exact_bank_terms
+
+    table = _mapping(_mapping(memory).get("procedure_experiences"))
+    rows = _sequence(table.get("rows"))
+    q_ctx = _mapping(query_context)
+    query_banks = _cue_banks_from_profile(query_profile)
+    if not query_banks and isinstance(q_ctx.get("profile"), Mapping):
+        query_banks = _cue_banks_from_profile(q_ctx.get("profile"))
+    if not query_banks and isinstance(q_ctx.get("observed_cue"), Mapping):
+        query_banks = _cue_banks_from_profile(q_ctx.get("observed_cue"))
+    if not query_banks:
+        return {
+            "question": question,
+            "subject": subject,
+            "kind": kind,
+            "status": "no_contextual_cue",
+            "reason": "query_visual_cue_required",
+            "confirmed_resolution_row_ids": [],
+            "obtained_reading_open_row_ids": [],
+            "contradicted_outcome_row_ids": [],
+            "no_reading_available_row_ids": [],
+            "unattributed_outcome_row_ids": [],
+            "context_mismatch_row_ids": [],
+            "incompatible_cue_row_ids": [],
+            "matched_cues": [],
+            "compared_count": 0,
+        }
+    confirmed_ids: list[str] = []
+    open_reading_ids: list[str] = []
+    contradicted_ids: list[str] = []
+    no_reading_ids: list[str] = []
+    unattributed_ids: list[str] = []
+    context_mismatch_ids: list[str] = []
+    incompatible_cue_ids: list[str] = []
+    matched_cues: list[dict[str, Any]] = []
+    confirmed_ratios: list[tuple[int, int]] = []
+    opposing_ratios: list[tuple[int, int]] = []
+    excluded = study_uid if exclude_same_study and study_uid else None
+    q_reason = q_ctx.get("request_reason", q_ctx.get("reason"))
+    q_loc_status = q_ctx.get("location_status")
+    question_envelopes = _mapping(
+        _get(memory, "prepared_recall", "envelopes", str(subject), str(question))
+    )
+    for raw in rows:
+        if not isinstance(raw, Mapping):
+            continue
+        row_uid = raw.get("study_uid") or _mapping(raw.get("source")).get("study_uid")
+        if excluded is not None and row_uid == excluded:
+            continue
+        if _mapping(raw.get("independent_outcome")).get("status") != "checked":
+            continue
+        execution = _mapping(raw.get("execution"))
+        if execution.get("status") == NOT_RUN:
+            continue
+        req = _mapping(raw.get("request"))
+        if req.get("question") != question or req.get("subject") != subject:
+            continue
+        req_kind = str(req.get("kind") or ZOOM_KIND)
+        if kind is not None and req_kind != kind:
+            continue
+        row_id = str(raw.get("row_id") or "")
+        if not row_id:
+            continue
+        category, info, agree = _row_category(raw, req_kind)
+        if category == "outcome_unattributed":
+            unattributed_ids.append(row_id)
+            continue
+        r_reason = req.get("reason")
+        if (
+            isinstance(q_reason, str)
+            and q_reason
+            and isinstance(r_reason, str)
+            and r_reason
+            and q_reason != r_reason
+        ):
+            context_mismatch_ids.append(row_id)
+            continue
+        r_loc_status = _get(raw, "context", "subject", "location_status")
+        if (
+            isinstance(q_loc_status, str)
+            and q_loc_status
+            and isinstance(r_loc_status, str)
+            and r_loc_status
+            and q_loc_status != r_loc_status
+        ):
+            context_mismatch_ids.append(row_id)
+            continue
+        row_banks = _row_cue_banks(
+            raw,
+            memory,
+            str(row_uid) if isinstance(row_uid, str) else None,
+            subject if isinstance(subject, str) else None,
+        )
+        if not row_banks:
+            incompatible_cue_ids.append(row_id)
+            continue
+        evidence = _exact_bank_terms(query_banks, row_banks)
+        if evidence.get("code") != "ok" or int(evidence.get("dot", 0)) <= 0:
+            incompatible_cue_ids.append(row_id)
+            continue
+        common_banks = list(evidence["common_speaking_banks"])
+        ratio = evidence["cosine_squared"]
+        floor = _empirical_opposition_floor(
+            raw,
+            row_banks,
+            common_banks,
+            category,
+            rows,
+            memory,
+            question_envelopes,
+            excluded,
+        )
+        reaches_envelope = None
+        if floor is not None:
+            env_num, env_den = floor
+            reaches_envelope = ratio[0] * env_den > env_num * ratio[1]
+            if not reaches_envelope:
+                incompatible_cue_ids.append(row_id)
+                continue
+        if category == "confirmed_resolution":
+            confirmed_ids.append(row_id)
+            confirmed_ratios.append(ratio)
+        elif category == "contradicted_outcome":
+            contradicted_ids.append(row_id)
+            opposing_ratios.append(ratio)
+        elif category == "obtained_reading_open":
+            open_reading_ids.append(row_id)
+        else:
+            no_reading_ids.append(row_id)
+            opposing_ratios.append(ratio)
+        matched_cues.append(
+            {
+                "row_id": row_id,
+                "study_uid": row_uid,
+                "category": category,
+                "common_speaking_banks": common_banks,
+                "terms": {
+                    k: evidence[k] for k in ("dot", "left_norm_sq", "right_norm_sq")
+                },
+                "squared_cosine": {
+                    "numerator": str(ratio[0]),
+                    "denominator": str(ratio[1]),
+                },
+                "reaches_empirical_envelope": reaches_envelope,
+                "information_obtained": info["status"],
+                "independent_agreement": agree["status"],
+                "independent_call": agree.get("independent_call"),
+            }
+        )
+    best_confirmed = _max_ratio(confirmed_ratios)
+    best_opposing = _max_ratio(opposing_ratios)
+    if confirmed_ids and not contradicted_ids and not no_reading_ids:
+        status = "recalled_confirmed_resolution"
+    elif (
+        confirmed_ids
+        and best_confirmed is not None
+        and (
+            best_opposing is None
+            or best_confirmed[0] * best_opposing[1] > best_opposing[0] * best_confirmed[1]
+        )
+    ):
+        status = "recalled_confirmed_resolution"
+    elif contradicted_ids:
+        status = "recalled_outcome_contradicted"
+    elif open_reading_ids:
+        status = "recalled_reading_obtained_open"
+    elif no_reading_ids:
+        status = "recalled_no_reading_in_context"
+    elif incompatible_cue_ids or context_mismatch_ids:
+        status = "no_context_compatible_experience"
+    elif unattributed_ids:
+        status = "no_attributed_experience"
+    else:
+        status = "no_precedent"
+    info_counts = tally(matched_cues, lambda item: item["information_obtained"])
+    agree_counts = tally(matched_cues, lambda item: item["independent_agreement"])
+    return {
+        "question": question,
+        "subject": subject,
+        "kind": kind,
+        "status": status,
+        "confirmed_resolution_row_ids": confirmed_ids,
+        "obtained_reading_open_row_ids": open_reading_ids,
+        "contradicted_outcome_row_ids": contradicted_ids,
+        "no_reading_available_row_ids": no_reading_ids,
+        "unattributed_outcome_row_ids": unattributed_ids,
+        "context_mismatch_row_ids": context_mismatch_ids,
+        "incompatible_cue_row_ids": incompatible_cue_ids,
+        "information_obtained_counts": info_counts,
+        "independent_agreement_counts": agree_counts,
+        "matched_cues": matched_cues,
+        "compared_count": len(matched_cues),
+    }
+
+
+def select_observation_requests(
+    requests: Sequence[Mapping[str, Any]] | Mapping[str, Any],
+    memory: Mapping[str, Any] | None = None,
+    *,
+    objects: Mapping[str, Any] | None = None,
+    finding: Mapping[str, Any] | None = None,
+    study_uid: str = "",
+    exclude_same_study: bool = False,
+) -> list[dict[str, Any]]:
+    """Order and annotate candidate observation requests from contextual procedure memory.
+
+    * When memory holds no ``procedure_experiences`` rows, returns ``list(requests)``
+      unchanged ("no record changes nothing").
+    * Only a request with a compatible observed HDC cue and context whose checked
+      precedents resolved in agreement with the independent call
+      (``recalled_confirmed_resolution``) is promoted to tier 0.
+    * A state change that contradicted the independent call
+      (``recalled_outcome_contradicted``) or a look that obtained a reading while
+      leaving the question open (``recalled_reading_obtained_open``) stays at
+      neutral tier 1 and is never promoted or vetoed.
+    * Only a request whose matching HDC-context precedents could obtain no reading
+      at all (``recalled_no_reading_in_context``) is placed in tier 2.
+    """
+    if isinstance(requests, Mapping):
+        if finding is None:
+            finding = requests
+        request_list = [
+            r for r in _sequence(requests.get("observation_requests")) if isinstance(r, Mapping)
+        ]
+    else:
+        request_list = [r for r in requests if isinstance(r, Mapping)]
+    if not request_list:
+        return []
+    table = _mapping(_mapping(memory).get("procedure_experiences"))
+    if not _sequence(table.get("rows")):
+        return [dict(r) for r in request_list]
+    obj_map = _mapping(objects)
+    scored: list[tuple[int, int, dict[str, Any]]] = []
+    for index, raw in enumerate(request_list):
+        req = dict(raw)
+        question = req.get("question")
+        subject = req.get("object", req.get("subject"))
+        kind = req.get("kind", ZOOM_KIND)
+        located = _mapping(obj_map.get(subject)) if isinstance(subject, str) else {}
+        query_profile = (
+            req.get("query_profile")
+            if isinstance(req.get("query_profile"), Mapping)
+            else located.get("profile")
+            if isinstance(located.get("profile"), Mapping)
+            else located.get("squint_profile")
+            if isinstance(located.get("squint_profile"), Mapping)
+            else None
+        )
+        query_context = {
+            "request_reason": req.get("reason"),
+            "location_status": located.get("status"),
+            "finding_reason": _mapping(finding).get("reason"),
+        }
+        recalled = recall_procedure_experiences(
+            memory,
+            question=question if isinstance(question, str) else None,
+            subject=subject if isinstance(subject, str) else None,
+            kind=kind if isinstance(kind, str) else None,
+            query_profile=query_profile,
+            query_context=query_context,
+            study_uid=study_uid,
+            exclude_same_study=exclude_same_study,
+        )
+        if recalled["status"] == "recalled_confirmed_resolution":
+            tier = 0
+            req["recalled_procedure"] = recalled
+        elif recalled["status"] == "recalled_no_reading_in_context":
+            tier = 2
+            req["recalled_procedure"] = recalled
+        else:
+            tier = 1
+            if recalled["status"] not in ("no_precedent", "no_contextual_cue"):
+                req["recalled_procedure"] = recalled
+        scored.append((tier, index, req))
+    scored.sort(key=lambda item: (item[0], item[1]))
+    return [item[2] for item in scored]
 
 
 # --------------------------------------------------------------------------- reporting helper

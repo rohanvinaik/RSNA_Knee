@@ -13,6 +13,11 @@ The authored starting categories and native-image examples are in
 [work/current/README](work/current/README.md); it names the current memory, run and review state.
 The procedure below is reusable; measured status lives in that packet and its linked receipts.
 
+For the exact remaining implementation, use [TRAIN_READY_COMPLETION](TRAIN_READY_COMPLETION.md):
+signed-label/clinical carry, contextual procedure applicability, action attribution, safe resumable
+publication, addressed teaching residuals and the real learning-to-action launch check. Its command
+template reuses this project's local round interface; it is not a new generic training framework.
+
 ## One memory, distinct evidence scopes
 
 `scripts/grounded_recognition.py publish` extends the workset's pinned signed parent with its
@@ -259,6 +264,20 @@ PYTHONPATH=src .venv/bin/python scripts/publish_visual_cases.py \
 
 The publisher preserves the parent and signed scopes; it does not invent a full profile or
 clinical call. Use this child's actual pin for the next publication and training export.
+
+## Local round outputs
+
+`prepare_squint_training.py --run-round` uses the interface in
+[TRAIN_READY_COMPLETION §8](TRAIN_READY_COMPLETION.md#8-existing-commands-and-verification-order).
+A completed round distinguishes `training/`, prepared against its frozen parent, from
+`child-training/`, exported after publication against its actual child. The latter includes newly
+supplied reviewed visual cases and their scoped clinical teaching. Its receipt and the round's
+`child_training` field name the child's manifest pin. Use `child-training/` for post-round corpus work.
+
+Resume with identical frozen inputs. Published children are preserved; changed signed content or
+tampered exported material is refused. A changed code epoch requires a fresh round output root.
+The command consumes supplied visual additions and retains attributed procedure experiences; the
+existing identity growth/review/correction route is a distinct operation, not implicitly run by this flag.
 
 ## What completes this corpus-building step
 

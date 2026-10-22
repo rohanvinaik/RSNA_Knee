@@ -1771,6 +1771,12 @@ alone holds the active jobs, source pins and measured outcomes.
 
 ### 18.1 Current phase: local bootstrap and classical AI training
 
+**Concrete completion requirements:** [TRAIN_READY_COMPLETION.md](TRAIN_READY_COMPLETION.md) is
+this section's implementation appendix. It records the pinned gap findings, balanced-ternary and
+scope contracts, producer-to-consumer repairs, two-sign tests, parallel ownership and the real
+learning/action/resume acceptance check. Read it before dispatching the remaining training-readiness
+work. Its dated findings are not a second live queue; §13's packet alone names current state.
+
 **Author correction, 2026-10-22:** We are hand-building the corpus. Recognition is a tool for
 isolating individual anatomical objects and their normal/diseased presentations; their reviewed
 bundles become K-lines that bootstrap the AI. Do not require a perfect or complete automatic

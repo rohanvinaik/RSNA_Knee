@@ -1,0 +1,43 @@
+{
+  "head": "8fe8ee4785bbf8a86f15318656452f02c971a1a7",
+  "label_boundary_reproduction": {
+    "after_calls": [
+      {}
+    ],
+    "before_calls": [
+      {}
+    ],
+    "reader_calls": {
+      "ACL": 1,
+      "Baker's": -1,
+      "Contusion": -1,
+      "Effusion": -1,
+      "Fracture": -1,
+      "Lateral Meniscus": -1,
+      "Lateral OA": -1,
+      "MCL": -1,
+      "Medial Meniscus": -1,
+      "Medial OA": -1,
+      "PF OA": -1,
+      "Synovitis": -1
+    },
+    "round_teaching_summary": {
+      "added_visual_case_ids": [],
+      "carried_condition_case_ids": [],
+      "rebuilt_configuration_case_ids": [],
+      "rebuilt_study_uids": []
+    }
+  },
+  "recorded_at": "2026-10-22T15:23:43.651993+00:00",
+  "scope": "Read-only review snapshot; not an implementation or training-readiness certificate.",
+  "source_files": {
+    "scripts/prepare_squint_training.py": "d4d32d4c00c6706c7de315e4bcf24332842dfb43bb0efd32c57402d19b9cfd54",
+    "src/knee/diagnosis/squint_memory_view.py": "b648fcd1497ea61fa191f9ced38f9bf5ee049fb1a9843ec0ebd0e6c32c86492a",
+    "src/knee/diagnosis/squint_pipeline.py": "ddf876e284a3f20a7c0ba62ea80af9e5e7783fd8fc55d6a34e4110b08f75aea6",
+    "src/knee/diagnosis/squint_procedure_memory.py": "84bf1392b1a7cb8de413eaf7a190b7e85b073149956f9837932e8c55bf12cf35",
+    "src/knee/diagnosis/squint_procedures.py": "b84d0375ef1371b1848f6148995b4f74ab884c07bba558444264371f9acb9f77",
+    "tests/test_prepare_squint_training.py": "95eb64ad8144d8bf546e6f5a6e6e35aff692a879d4cc9bc89d8409a448426128",
+    "tests/test_squint_memory_view.py": "d7ea8cb2e9fc4c51397cd701382bc9dde3b5d2fe00ad1f06b1ca48df59654985",
+    "tests/test_squint_procedure_memory.py": "b4778c1d8c0e61384edb79b1aeb108185016947a6cb5b149b5c960311f93630c"
+  }
+}

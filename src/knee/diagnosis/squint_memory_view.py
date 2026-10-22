@@ -136,6 +136,15 @@ def memory_view(
             **table,
             "cases": [row for row in rows if not _excluded(row, excluded)],
         }
+    if "procedure_experiences" in memory:
+        table = memory["procedure_experiences"]
+        rows = table.get("rows") if isinstance(table, Mapping) else None
+        if not isinstance(rows, Sequence) or isinstance(rows, (str, bytes)):
+            raise MemoryViewError("memory_view_procedure_experiences_invalid")
+        result["procedure_experiences"] = {
+            **table,
+            "rows": [row for row in rows if not _excluded(row, excluded)],
+        }
     result.pop("prepared_recall", None)
     result.pop("view", None)
     _portable_view(result, excluded)

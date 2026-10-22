@@ -334,3 +334,183 @@ def test_empty_labels_table_is_refused(tmp_path, monkeypatch):
             output_path=output,
         )
     assert not output.exists()
+
+
+def test_run_round_publishes_immutable_child_memory_and_resumes_pinned_checkpoints(
+    tmp_path,
+):
+    from knee.diagnosis.squint_memory import load_memory_snapshot, save_memory
+
+    uid_a = UID
+    uid_b = "1.2.826.0.1.3680043.8.498.2000"
+    parent_dir = tmp_path / "parent-memory"
+    parent_memory = reviewed_memory("r" * 64)
+    parent_memory["schema"] = "knee.squint-memory/v1"
+    parent_memory["procedure"] = "knee.squint-ternary/v1"
+    parent_memory["questions"] = list(LABELS)
+    parent_memory["cases"][0]["regions"] = []
+    parent_memory["cases"][0]["profile"]["source"] = {
+        "procedure": "knee.squint-profile/scan-tercile-v1"
+    }
+    parent_memory["cases"][0]["source"] = {"kind": "seed"}
+    save_memory(parent_memory, parent_dir)
+    parent_snapshot = load_memory_snapshot(parent_dir)
+    assert parent_snapshot.sha256 is not None
+
+    labels = tmp_path / "train.csv"
+    with labels.open("w", newline="", encoding="utf-8") as stream:
+        writer = csv.DictWriter(stream, fieldnames=["StudyInstanceUID", "Report", *LABELS])
+        writer.writeheader()
+        writer.writerow(
+            {"StudyInstanceUID": uid_a, "Report": "report", **dict.fromkeys(LABELS, 0), "ACL": 1}
+        )
+        writer.writerow(
+            {"StudyInstanceUID": uid_b, "Report": "report", **dict.fromkeys(LABELS, 0)}
+        )
+
+    executed_calls: list[str] = []
+    fail_on_b = True
+
+    def fake_infer(_root: Path, uid: str, memory, **_kwargs):
+        if uid == uid_b and fail_on_b:
+            raise RuntimeError("interrupted_before_uid_b")
+        executed_calls.append(uid)
+        rec = record(uid=uid, revision=str(memory["revision"]))
+        rec["observations"] = [
+            {
+                "subject": "acl",
+                "code": "measured",
+                "question": "ACL",
+                "request_id": "ACL/acl/bounded_zoom",
+                "request_kind": "bounded_zoom",
+                "request_reason": "proposal_without_sourced_trust",
+                "before_cue": {
+                    "schema": "knee.squint-profile/v1",
+                    "subject": "acl",
+                    "procedure": "territory-v2",
+                    "banks": {
+                        'squint/v2/view=["Sagittal","0","0"]/role=object/metric=signal/direction=si/scale=10mm': [
+                            2,
+                            0,
+                            1,
+                        ]
+                    },
+                },
+                "before_state": {"outcome": "open", "reason": "before"},
+                "after_state": {
+                    "outcome": "assigned" if uid == uid_a else "defeated",
+                    "reason": "after",
+                    "subject_reading": {
+                        "state": (
+                            "condition_presentation" if uid == uid_a else "normal"
+                        ),
+                        "code": "sourced",
+                    },
+                    "attribution_scope": "single_procedure",
+                },
+            }
+        ]
+        rec["questions"] = {
+            "ACL": {
+                "finding": {
+                    "outcome": "assigned" if uid == uid_a else "defeated",
+                    "reason": "after",
+                    "evidence": {
+                        "readings": {"acl": {"role": "necessary", "state": "normal"}},
+                        "necessary": ["acl"],
+                        "alternatives": [],
+                        "supporting": [],
+                    },
+                    "observation_requests": [],
+                    "rank": {"tier": "assigned"},
+                },
+                "ranking": {},
+                "objects": {},
+            }
+        }
+        return rec
+
+    round_dir = tmp_path / "round-1"
+    with pytest.raises(RuntimeError, match="interrupted_before_uid_b"):
+        cli.run_round(
+            memory_path=parent_dir,
+            expected_memory_sha256=parent_snapshot.sha256,
+            root_path=tmp_path / "raw",
+            study_uids=[uid_a, uid_b],
+            labels_path=labels,
+            output_path=round_dir,
+            child_revision="round-1-child",
+            infer_fn=fake_infer,
+        )
+    assert executed_calls == [uid_a]
+    assert (round_dir / "inference" / "studies" / f"{uid_a}.pin.json").exists()
+    assert not (round_dir / "memory").exists()
+
+    # Mismatched round inputs on resume are refused by name
+    with pytest.raises(cli.PrepareError, match="round_inputs_mismatch"):
+        cli.run_round(
+            memory_path=parent_dir,
+            expected_memory_sha256=parent_snapshot.sha256,
+            root_path=tmp_path / "raw",
+            study_uids=[uid_a],
+            labels_path=labels,
+            output_path=round_dir,
+            child_revision="round-1-child",
+            infer_fn=fake_infer,
+        )
+
+    # Resume interrupted round with identical pinned inputs: uid_a is reused, only uid_b executes
+    fail_on_b = False
+    completed = cli.run_round(
+        memory_path=parent_dir,
+        expected_memory_sha256=parent_snapshot.sha256,
+        root_path=tmp_path / "raw",
+        study_uids=[uid_a, uid_b],
+        labels_path=labels,
+        output_path=round_dir,
+        child_revision="round-1-child",
+        infer_fn=fake_infer,
+    )
+    assert executed_calls == [uid_a, uid_b]
+    assert completed["studies"] == {
+        "requested": [uid_a, uid_b],
+        "executed": [uid_b],
+        "resumed": [uid_a],
+    }
+    assert completed["child_memory"]["retained_procedure_experiences"] == 2
+    child_manifest = round_dir / "memory" / "manifest.json"
+    child_inode_before = child_manifest.stat().st_ino
+
+    # Calling run_round again on the completed round reuses the verified child without deleting it
+    resumed_completed = cli.run_round(
+        memory_path=parent_dir,
+        expected_memory_sha256=parent_snapshot.sha256,
+        root_path=tmp_path / "raw",
+        study_uids=[uid_a, uid_b],
+        labels_path=labels,
+        output_path=round_dir,
+        child_revision="round-1-child",
+        infer_fn=fake_infer,
+    )
+    assert executed_calls == [uid_a, uid_b]
+    assert resumed_completed["studies"] == {
+        "requested": [uid_a, uid_b],
+        "executed": [],
+        "resumed": [uid_a, uid_b],
+    }
+    assert child_manifest.stat().st_ino == child_inode_before
+
+    # Next round consumes the published child memory
+    round2_dir = tmp_path / "round-2"
+    round2 = cli.run_round(
+        memory_path=round_dir / "memory",
+        expected_memory_sha256=completed["child_memory"]["manifest_sha256"],
+        root_path=tmp_path / "raw",
+        study_uids=[uid_b],
+        labels_path=labels,
+        output_path=round2_dir,
+        child_revision="round-2-child",
+        infer_fn=fake_infer,
+    )
+    assert round2["parent_memory"]["manifest_sha256"] == completed["child_memory"]["manifest_sha256"]
+    assert round2["child_memory"]["retained_procedure_experiences"] >= 2

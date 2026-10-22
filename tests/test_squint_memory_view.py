@@ -524,3 +524,29 @@ def test_identity_teaching_records_leave_the_population_with_their_study():
     with pytest.raises(MemoryViewError) as error:
         memory_view({"cases": [], "object_identity_cases": {"cases": None}})
     assert error.value.code == "memory_view_object_identity_cases_invalid"
+
+
+def test_procedure_experiences_leave_the_population_with_their_study():
+    memory = _memory()
+    memory["procedure_experiences"] = {
+        "schema": "knee.squint-procedure-experience-memory/v1",
+        "rows": [
+            {
+                "row_id": "run|held|000",
+                "study_uid": "held",
+                "source": {"study_uid": "held"},
+            },
+            {
+                "row_id": "run|positive|000",
+                "study_uid": "positive",
+                "source": {"study_uid": "positive"},
+            },
+        ],
+    }
+    view = memory_view(memory, exclude_study_uids=("held",))
+    table = view["procedure_experiences"]
+    assert [row["row_id"] for row in table["rows"]] == ["run|positive|000"]
+    assert len(memory["procedure_experiences"]["rows"]) == 2
+    with pytest.raises(MemoryViewError) as error:
+        memory_view({"cases": [], "procedure_experiences": {"rows": None}})
+    assert error.value.code == "memory_view_procedure_experiences_invalid"
