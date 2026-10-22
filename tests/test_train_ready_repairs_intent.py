@@ -61,7 +61,9 @@ def experience(*, direct: bool, call: int = 1) -> dict:
         },
         "state": {
             "scope": "condition",
-            "attribution_scope": "single_procedure" if direct else "question_final_finding",
+            "attribution_scope": "single_procedure"
+            if direct
+            else "question_final_finding",
             "before": {"outcome": "open"},
             "after": {"outcome": "assigned"},
         },
@@ -97,16 +99,29 @@ def test_direct_action_outcome_changes_selection_but_different_context_does_not(
     row = experience(direct=True)
     category, _info, _agreement = _row_category(row, "bounded_zoom")
     assert category == "confirmed_resolution"
-    memory = retain_procedure_experiences({"revision": "parent", "cases": []}, [row])
+    ambiguous_failure = experience(direct=False, call=-1)
+    ambiguous_failure["row_id"] = "unattributed-final-failure"
+    memory = retain_procedure_experiences(
+        {"revision": "parent", "cases": []}, [row, ambiguous_failure]
+    )
     request = row["request"]
     neutral = {**request, "reason": "different_question_context"}
     objects = {"acl": {"profile": {"banks": {BANK: [2, 0, 1]}}}}
     selected = select_observation_requests(
-        [neutral, request], memory, objects=objects, study_uid=OTHER_UID, exclude_same_study=True
+        [neutral, request],
+        memory,
+        objects=objects,
+        study_uid=OTHER_UID,
+        exclude_same_study=True,
     )
     assert selected[0]["reason"] == request["reason"]
-    assert selected[0]["recalled_procedure"]["status"] == "recalled_confirmed_resolution"
-    assert selected[1].get("recalled_procedure", {}).get("status") != "recalled_confirmed_resolution"
+    assert (
+        selected[0]["recalled_procedure"]["status"] == "recalled_confirmed_resolution"
+    )
+    assert (
+        selected[1].get("recalled_procedure", {}).get("status")
+        != "recalled_confirmed_resolution"
+    )
 
 
 def test_final_object_profile_is_not_silently_used_as_a_pre_action_cue():
@@ -148,7 +163,9 @@ def round_inputs(tmp_path):
         "object_identity_teaching": {
             "schema": "knee.object-identity-teaching/v1",
             "confirmed_case_ids": [case["case_id"]],
-            "calls": [{"candidate_id": case["case_id"], "call": "confirm", "views": [VIEW]}],
+            "calls": [
+                {"candidate_id": case["case_id"], "call": "confirm", "views": [VIEW]}
+            ],
         },
     }
     parent_dir = tmp_path / "parent"
@@ -190,7 +207,9 @@ def round_inputs(tmp_path):
     }, executions
 
 
-def test_resume_after_child_publication_preserves_lineage_and_completed_work(round_inputs, monkeypatch):
+def test_resume_after_child_publication_preserves_lineage_and_completed_work(
+    round_inputs, monkeypatch
+):
     inputs, executions = round_inputs
     original_write = cli._write_json
 
@@ -206,7 +225,9 @@ def test_resume_after_child_publication_preserves_lineage_and_completed_work(rou
     published = load_memory_snapshot(child_path)
     assert published.memory is not None
     assert published.memory["parent_revision"] == "synthetic-parent"
-    assert published.memory["parent_manifest_sha256"] == inputs["expected_memory_sha256"]
+    assert (
+        published.memory["parent_manifest_sha256"] == inputs["expected_memory_sha256"]
+    )
     original_inode = (child_path / "manifest.json").stat().st_ino
     monkeypatch.setattr(cli, "_write_json", original_write)
     result = cli.run_round(**inputs)
@@ -216,7 +237,9 @@ def test_resume_after_child_publication_preserves_lineage_and_completed_work(rou
     assert (child_path / "manifest.json").stat().st_ino == original_inode
 
 
-def test_partial_resume_rejects_different_signed_content_even_with_the_same_case_ids(round_inputs):
+def test_partial_resume_rejects_different_signed_content_even_with_the_same_case_ids(
+    round_inputs,
+):
     inputs, _executions = round_inputs
     cli.run_round(**inputs)
     output = inputs["output_path"]
@@ -225,7 +248,9 @@ def test_partial_resume_rejects_different_signed_content_even_with_the_same_case
     changed = json.loads(manifest_path.read_text())
     changed["cases"][0]["condition_calls"]["ACL"] = -1
     manifest_path.write_text(json.dumps(changed))
-    with pytest.raises(cli.PrepareError, match="child_memory_checkpoint_content_mismatch"):
+    with pytest.raises(
+        cli.PrepareError, match="child_memory_checkpoint_content_mismatch"
+    ):
         cli.run_round(**inputs)
 
 
@@ -236,20 +261,33 @@ def test_child_export_contains_new_visual_teaching_and_its_own_pin(round_inputs)
         "schema": cli.squint_visual_teaching.SCHEMA,
         "reader": "synthetic-test-reviewer",
         "cases": [new_case],
-        "calls": [{
-            "candidate_id": new_case["case_id"], "call": "confirm", "views": [VIEW],
-            "notes": "Synthetic independently called support for publication test.",
-        }],
+        "calls": [
+            {
+                "candidate_id": new_case["case_id"],
+                "call": "confirm",
+                "views": [VIEW],
+                "notes": "Synthetic independently called support for publication test.",
+            }
+        ],
     }
     additions_path = inputs["output_path"].parent / "additions.json"
     additions_path.write_text(json.dumps(additions))
     result = cli.run_round(**inputs, visual_additions_path=additions_path)
-    parent_corpus = json.loads((inputs["output_path"] / "training" / "object-buckets.json").read_text())
-    child_corpus = json.loads((inputs["output_path"] / "child-training" / "object-buckets.json").read_text())
+    parent_corpus = json.loads(
+        (inputs["output_path"] / "training" / "object-buckets.json").read_text()
+    )
+    child_corpus = json.loads(
+        (inputs["output_path"] / "child-training" / "object-buckets.json").read_text()
+    )
     assert len(parent_corpus["scoped_records"]) == 1
     assert len(child_corpus["scoped_records"]) == 2
-    assert child_corpus["teaching_memory"]["manifest_sha256"] == result["child_memory"]["manifest_sha256"]
-    added = next(r for r in child_corpus["scoped_records"] if r["case_id"] == "added-acl")
+    assert (
+        child_corpus["teaching_memory"]["manifest_sha256"]
+        == result["child_memory"]["manifest_sha256"]
+    )
+    added = next(
+        r for r in child_corpus["scoped_records"] if r["case_id"] == "added-acl"
+    )
     assert added["state"]["status"] == "normal"
     assert result["child_training"]["outputs"]["object_cases"] == 2
     cli.run_round(**inputs, visual_additions_path=additions_path)
@@ -267,18 +305,37 @@ def test_completed_round_refuses_tampered_child_export(round_inputs):
         cli.run_round(**inputs)
 
 
-def test_real_cli_resume_reports_the_child_material_without_reexecuting_studies(round_inputs, capsys):
+def test_real_cli_resume_reports_the_child_material_without_reexecuting_studies(
+    round_inputs, capsys
+):
     inputs, executions = round_inputs
     expected = cli.run_round(**inputs)
-    assert cli.main([
-        "--run-round", "--memory", str(inputs["memory_path"]),
-        "--memory-sha256", inputs["expected_memory_sha256"],
-        "--root", str(inputs["root_path"]), "--study-uid", UID,
-        "--labels", str(inputs["labels_path"]),
-        "--child-revision", inputs["child_revision"],
-        "--output", str(inputs["output_path"]),
-    ]) == 0
+    assert (
+        cli.main(
+            [
+                "--run-round",
+                "--memory",
+                str(inputs["memory_path"]),
+                "--memory-sha256",
+                inputs["expected_memory_sha256"],
+                "--root",
+                str(inputs["root_path"]),
+                "--study-uid",
+                UID,
+                "--labels",
+                str(inputs["labels_path"]),
+                "--child-revision",
+                inputs["child_revision"],
+                "--output",
+                str(inputs["output_path"]),
+            ]
+        )
+        == 0
+    )
     returned = json.loads(capsys.readouterr().out)
-    assert returned["child_training"]["teaching_memory"]["manifest_sha256"] == expected["child_memory"]["manifest_sha256"]
+    assert (
+        returned["child_training"]["teaching_memory"]["manifest_sha256"]
+        == expected["child_memory"]["manifest_sha256"]
+    )
     assert returned["studies"] == {"requested": [UID], "executed": [], "resumed": [UID]}
     assert executions == [UID]

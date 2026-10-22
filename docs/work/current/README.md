@@ -1,7 +1,7 @@
 # Active task packet
 
-Sole populated current-state record; FULL_BUILD_PLAN §13 owns this pointer. Revision **151**.
-Previous packet: `docs/work/history/active-task-packet-revision-150-before-train-ready-repairs.md`.
+Sole populated current-state record; FULL_BUILD_PLAN §13 owns this pointer. Revision **153**.
+Previous packet: `docs/work/history/active-task-packet-revision-152-before-trace-and-fresh-round.md`.
 
 ## TASK / AUTHOR'S OBJECTIVE / CORRECTION
 
@@ -27,74 +27,77 @@ object set. No separate normality annotation or automatic-recognition pass is re
 official label row and confirmed identity views supply that teaching. Unlabelled studies remain
 unlabelled; an implicated multi-site condition retains its actual study/site scope.
 
-## SOURCE / ONE NEWEST MEMORY
+## SOURCE / ACTIVE MEMORY CHAIN
 
-Parent memory: `data/readings/grounded-teaching-20261022/integrated-r4-identity/memory`, **909 cases**.
-Manifest sha: `a9b632aa06436a6ed00e0976973abd94cf9ad908841ed31d64a3735a7f280298`.
-Preparation sha: `a25e66b6b8f7c8c15bbdd24c8f6a386030dd2db0df33996b0115a9bb283a81fa`.
-Chain: 852 -> 876 -> 900 -> 904 -> 909 -> demo-round-r1-child.
-Published child memory from local pilot round:
-`data/readings/grounded-teaching-20261022/demo-round-r1/memory`, revision `demo-round-r1-child`.
-Manifest sha: `79628aa83345d19fda95972d34bedf153ea6c7c1487e4a3b796f962eee20c501`.
-Contains 909 cases + 27 retained procedure experiences (with full pre-action cues, action attribution, and independent outcomes).
+1. **Parent memory:** `data/readings/grounded-teaching-20261022/integrated-r4-identity/memory`, **909 cases**.
+   - Manifest sha: `a9b632aa06436a6ed00e0976973abd94cf9ad908841ed31d64a3735a7f280298`.
+   - Preparation sha: `a25e66b6b8f7c8c15bbdd24c8f6a386030dd2db0df33996b0115a9bb283a81fa`.
+   - Chain: 852 -> 876 -> 900 -> 904 -> 909 -> demo-round-r1-child -> train-ready-round-r2-child.
 
-## IMPLEMENTED REPAIRS (R1-R4)
+2. **Published child memory (Fresh round under updated code):**
+   - Path: `data/readings/grounded-teaching-20261022/train-ready-round-r2/memory`
+   - Revision: `train-ready-round-r2-child`
+   - Manifest sha: `e0fbd5f1d768af617182824f9e262edfb4d3c82e6dfe5116169c7cb26689f89f`.
+   - Parent lineage: `parent_revision: "local-bootstrap-report-scope-repair-r1+..."`, `parent_manifest_sha256: "a9b632aa06436a6ed00e0976973abd94cf9ad908841ed31d64a3735a7f280298"`.
+   - Child training export: `data/readings/grounded-teaching-20261022/train-ready-round-r2/child-training` (receipt `1e9fae26d9e182fb27a342608619fff781ff34f33b0707f335cfdaaab4a981a3`).
+   - Retained procedure experiences: 27 rows (all with `single_procedure` attribution and pre-action coarse 10mm cues).
+   - Resumption verified: re-running on `train-ready-round-r2` executed 0 studies (`resumed: ["...1839..."]`, `executed: []`), preserving published child memory and training export.
 
-All four mechanical repairs from `docs/TRAIN_READY_COMPLETION.md` are implemented and verified:
+3. **Historical pilot child (Preserved as artifact):**
+   - Path: `data/readings/grounded-teaching-20261022/demo-round-r1/memory`, revision `demo-round-r1-child`.
+   - Manifest sha: `79628aa83345d19fda95972d34bedf153ea6c7c1487e4a3b796f962eee20c501`.
 
-1. **R1 (Signed-label boundary repair):** `prepare_squint_training._compose_round_teaching` now
-   correctly handles signed labels (-1, +1) from `read_label_table`, converting known calls to
-   (0, 1) for `carry_condition_calls` and configuration rebuilding while preserving balanced
-   ternary semantics internally. Complete official rows properly carry condition calls to confirmed
-   object cases and rebuild study configurations.
-2. **R2 (Scoped procedure opposition and observed cue):** In `squint_procedure_memory._empirical_opposition_floor`,
-   opposition is strictly scoped to actual opposing procedure experiences of the same
-   `(subject, kind, question)`. Same-subject normal clinical cases (`condition_calls: {question: -1}`)
-   and negative identity cases are no longer treated as procedural opposition. `_row_cue_banks`
-   extracts observed pre-action HDC cues without arbitrary fallback. Removed the brittle dominant-bin
-   matching gate.
-3. **R3 (Per-action causal attribution):** In `infer_study` (`src/knee/diagnosis/squint_pipeline.py`),
-   each routed observation now records `before_cue`, `before_state`, `after_state`, and `attribution_scope: "single_procedure"`,
-   capturing the specific effect of that look rather than overwriting it with the batch or final question outcome.
-4. **R4 (Pin-complete resume and child verification):** `prepare_squint_training.py` pins all 12
-   participating source modules. On resume, checkpoint validation checks study hashes and code identities.
-   Child publication verifies content against expected parent and cases, and reuses the published child
-   without deleting or overwriting it.
+## RECONCILED 58-STUDY TEACHING READBACK (696 ROWS)
 
-## VERIFIED READBACK AND PILOT DEMONSTRATION
+Audited via `scripts/build_question_ledger_696.py` against `data/readings/grounded-teaching-20261022/teaching-question-ledger-696.json`.
+Exact row counts: **245 identified, 451 unresolved, 0 contradicted** (total: 696 rows):
 
-1. **Focused intent suite:** **145 passed** in 2.07s across `test_prepare_squint_training.py`,
-   `test_squint_procedure_memory.py`, `test_squint_memory_view.py`, `test_train_ready_repairs_intent.py`,
-   and `test_squint_pipeline_identity_consumption_intent.py`. Full squint suite:
-   **1,614 passed** in 43.8s.
-2. **58-Study Addressed Teaching Readback:** Replayed retained readings through real condition
-   consumers against `integrated-r4-identity/memory` (`grounded_replay.py --teacher-supports`).
-   Audited via `grounded_recognition.py audit`. Generated the complete 696-row ledger in
-   `data/readings/grounded-teaching-20261022/teaching-question-ledger-696.json`:
-   - **ACL:** 2 identified, 56 unresolved, 0 contradicted
-   - **MCL:** 5 identified, 53 unresolved, 0 contradicted
-   - **Medial Meniscus:** 9 identified, 49 unresolved, 0 contradicted
-   - **Lateral Meniscus:** 9 identified, 49 unresolved, 0 contradicted
-   - **Medial OA:** 40 identified, 18 unresolved, 0 contradicted
-   - **Lateral OA:** 41 identified, 17 unresolved, 0 contradicted
-   - **PF OA:** 30 identified, 28 unresolved, 0 contradicted
-   - **Effusion:** 21 identified, 37 unresolved, 0 contradicted
-   - **Synovitis:** 9 identified, 49 unresolved, 0 contradicted
-   - **Baker's:** 3 identified, 55 unresolved, 0 contradicted
-   - **Contusion:** 37 identified, 21 unresolved, 0 contradicted
-   - **Fracture:** 39 identified, 19 unresolved, 0 contradicted
-   - **Total:** 247 identified, 449 unresolved, **0 contradicted**.
-3. **Real Training Round Execution:** Executed `prepare_squint_training.py --run-round` on ready local
-   study `1.2.826.0.1.3680043.8.498.18392509497170616983977319528036573378` using native series slices.
-   Published verified child memory `demo-round-r1-child` with 27 retained procedure experiences.
-4. **Resumable Round Verification:** Re-ran the identical round command on `demo-round-r1`.
-   Reported `{"executed": [], "requested": ["...1839..."], "resumed": ["...1839..."]}` with 0 studies
-   re-executed, reusing verified checkpoints and preserving the published child manifest.
-5. **Learning-to-Action Demonstration:** On an excluded study (`...7736...` excluded from memory):
-   - Under parent memory: default request order was `['other_tissue', 'gastrocnemius_semimembranosus_bursa']`.
-   - Under child memory: contextual recall identified the taught confirmed look from `...1839...`
-     (`recalled_confirmed_resolution`) and promoted `gastrocnemius_semimembranosus_bursa` to tier 0
-     (order: `['gastrocnemius_semimembranosus_bursa', 'other_tissue']`).
-   - Incompatible cue / different context control remained at neutral tier 1 and was not promoted.
+| Condition | Identified | Unresolved | Contradicted |
+| :--- | :---: | :---: | :---: |
+| **ACL** | 2 | 56 | 0 |
+| **MCL** | 5 | 53 | 0 |
+| **Medial Meniscus** | 9 | 49 | 0 |
+| **Lateral Meniscus** | 9 | 49 | 0 |
+| **Medial OA** | 40 | 18 | 0 |
+| **Lateral OA** | 41 | 17 | 0 |
+| **PF OA** | 30 | 28 | 0 |
+| **Effusion** | 21 | 37 | 0 |
+| **Synovitis** | 9 | 49 | 0 |
+| **Baker's Cyst** | 3 | 55 | 0 |
+| **Contusion** | 37 | 21 | 0 |
+| **Fracture** | 39 | 19 | 0 |
+| **Total** | **245** | **451** | **0** |
 
-Recorded 2026-10-22T16:11:00.000000+00:00.
+This is an addressed inventory of teaching readback linking ternary answers to speaking cases,
+pictured supports, and memory/run pins. It is not an AUC target or an automatic-recognition benchmark.
+
+## VERIFIED LEARNING-TO-ACTION TRACE
+
+Saved to `docs/work/reviews/learning_to_action_trace.json` and `data/readings/grounded-teaching-20261022/learning_to_action_trace.json`:
+- **Teaching experience:** Study `...1839...`, row 037 (`Baker's` / `gastrocnemius_semimembranosus_bursa`, category `confirmed_resolution`, independent outcome: `call: -1` checked against `train.csv`).
+- **Held-out study:** Study `...7736...` with `exclude_same_study=True`.
+- **Under parent memory:** No procedure experience exists (`status: no_precedent`); candidate requests stay in default contract order `['other_tissue', 'gastrocnemius_semimembranosus_bursa']`.
+- **Under child memory (matching cue):** Recalls experience `...037` (`status: recalled_confirmed_resolution`); promotes `gastrocnemius_semimembranosus_bursa` to tier 0 (`['gastrocnemius_semimembranosus_bursa', 'other_tissue']`).
+- **Under child memory (incompatible cue control):** Incompatible HDC cue does not match (`status: no_contextual_cue`); request remains unpromoted at default contract order `['other_tissue', 'gastrocnemius_semimembranosus_bursa']`.
+- **Study exclusion:** When queried with `study_uid == ...1839...`, the experience is strictly excluded from matching (`exclude_same_study=True`).
+
+## CORPUS EXPANSION CONNECTION
+
+`prepare_squint_training.py` handles runtime procedure experience retention and composes reviewed visual
+teaching and carried clinical calls into child memories and `child-training/` exports.
+It does NOT replace identity admission, review, or correction:
+1. Candidate visual additions and identity cases are admitted via `grounded_recognition.py audit` and
+   `scripts/run_squint_admission.py`.
+2. Reviewed visual teaching is validated via `squint_visual_teaching.py`.
+3. Validated additions are passed to `prepare_squint_training.py --visual-additions <path>`, which
+   incorporates them into the published child memory and generates the updated `child-training/` corpus.
+
+## VERIFICATION SUITES
+
+- Focused intent suite: **146 passed** in 2.36s (`tests/test_train_ready_repairs_intent.py`,
+  `tests/test_prepare_squint_training.py`, `tests/test_squint_procedure_memory.py`,
+  `tests/test_squint_memory_view.py`, and `tests/test_squint_pipeline_identity_consumption_intent.py`).
+- Full squint test suite: **1,614 passed** in 43.8s.
+- Ruff checks: all passed.
+
+Recorded 2026-10-22T16:32:00.000000+00:00.

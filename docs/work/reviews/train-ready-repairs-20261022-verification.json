@@ -1,0 +1,26 @@
+{
+  "detective": {
+    "log": "/tmp/rsna-train-ready-row-category-audit.log",
+    "session_id": 27354,
+    "status": "no_final_verdict_received"
+  },
+  "focused_tests": {
+    "passed": 146,
+    "seconds": 2.36,
+    "suites": [
+      "tests/test_train_ready_repairs_intent.py",
+      "tests/test_prepare_squint_training.py",
+      "tests/test_squint_procedure_memory.py",
+      "tests/test_squint_memory_view.py",
+      "tests/test_squint_pipeline_identity_consumption_intent.py"
+    ]
+  },
+  "head": "3cc1974bd0eb5d6001ca55a0a65603b58aaf8b69",
+  "recorded_at": "2026-10-22T16:23:43.510010+00:00",
+  "scope": "Bounded repair verification; no new actual memory publication or final whole-project gate.",
+  "source_files": {
+    "scripts/prepare_squint_training.py": "5fa96e099c041f8ebd0464d28728136efafa9175e367baa0c817806511b27237",
+    "src/knee/diagnosis/squint_procedure_memory.py": "1fdd09749b9bfefca57c804a5595ae1a9dd76f7523ccd4bbb197b2ee3ea3e9ad",
+    "tests/test_train_ready_repairs_intent.py": "629fe3b5adfd85d3f8dc966c6179b8199f098ed6bbc73dbc35fd46b64c6fb807"
+  }
+}

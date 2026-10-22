@@ -1249,9 +1249,7 @@ def information_obtained(
         "reading_available": reading_available,
         "reading_changed": state.get("reading_changed"),
         "finding_changed": state.get("changed"),
-        "attribution_scope": state.get(
-            "attribution_scope", "question_final_finding"
-        ),
+        "attribution_scope": state.get("attribution_scope", "question_final_finding"),
     }
 
 
@@ -1482,14 +1480,17 @@ def _routed_rows(
             for j, req in enumerate(unresolved):
                 if j in placed:
                     continue
-                if req.get("question") == question and req.get("subject") == subject:
-                    if (
+                if (
+                    req.get("question") == question
+                    and req.get("subject") == subject
+                    and (
                         obs.get("request_id") is None
                         or req.get("request_id") == obs.get("request_id")
-                    ):
-                        listed = req
-                        placed.add(j)
-                        break
+                    )
+                ):
+                    listed = req
+                    placed.add(j)
+                    break
         rows.append(
             _row(
                 source,
@@ -1636,7 +1637,7 @@ def retain_procedure_experiences(
     study is held out.
     """
     if not isinstance(memory, Mapping) or not isinstance(memory.get("revision"), str):
-        raise ValueError("memory_invalid")
+        raise TypeError("memory_invalid")
     existing_table = _mapping(memory.get("procedure_experiences"))
     existing_rows = [
         copy.deepcopy(dict(row))
@@ -1751,10 +1752,9 @@ def _empirical_opposition_floor(
         if not other_banks:
             continue
         terms = _exact_bank_terms(restricted_left, other_banks)
-        if (
-            terms.get("code") == "ok"
-            and list(terms.get("common_speaking_banks", ())) == list(common_banks)
-        ):
+        if terms.get("code") == "ok" and list(
+            terms.get("common_speaking_banks", ())
+        ) == list(common_banks):
             opposing_ratios.append(terms["cosine_squared"])
 
     return _max_ratio(opposing_ratios)
@@ -1780,7 +1780,9 @@ def _row_cue_banks(
     return {}
 
 
-def _row_category(raw: Mapping[str, Any], req_kind: str) -> tuple[str, dict[str, Any], dict[str, Any]]:
+def _row_category(
+    raw: Mapping[str, Any], req_kind: str
+) -> tuple[str, dict[str, Any], dict[str, Any]]:
     _ = req_kind
     execution = _mapping(raw.get("execution"))
     state = _mapping(raw.get("state"))
@@ -1801,7 +1803,10 @@ def _row_category(raw: Mapping[str, Any], req_kind: str) -> tuple[str, dict[str,
         return "outcome_unattributed", info, agree
     if agree.get("status") == "contradicts_independent_call":
         return "contradicted_outcome", info, agree
-    if info.get("status") == "new_reading_obtained" and agree.get("status") == "matches_independent_call":
+    if (
+        info.get("status") == "new_reading_obtained"
+        and agree.get("status") == "matches_independent_call"
+    ):
         return "confirmed_resolution", info, agree
     if info.get("status") in ("new_reading_obtained", "reading_already_available"):
         return "obtained_reading_open", info, agree
@@ -1991,14 +1996,16 @@ def recall_procedure_experiences(
         )
     best_confirmed = _max_ratio(confirmed_ratios)
     best_opposing = _max_ratio(opposing_ratios)
-    if confirmed_ids and not contradicted_ids and not no_reading_ids:
-        status = "recalled_confirmed_resolution"
-    elif (
-        confirmed_ids
-        and best_confirmed is not None
-        and (
-            best_opposing is None
-            or best_confirmed[0] * best_opposing[1] > best_opposing[0] * best_confirmed[1]
+    if (
+        (confirmed_ids and not contradicted_ids and not no_reading_ids)
+        or (
+            confirmed_ids
+            and best_confirmed is not None
+            and (
+                best_opposing is None
+                or best_confirmed[0] * best_opposing[1]
+                > best_opposing[0] * best_confirmed[1]
+            )
         )
     ):
         status = "recalled_confirmed_resolution"
@@ -2062,7 +2069,9 @@ def select_observation_requests(
         if finding is None:
             finding = requests
         request_list = [
-            r for r in _sequence(requests.get("observation_requests")) if isinstance(r, Mapping)
+            r
+            for r in _sequence(requests.get("observation_requests"))
+            if isinstance(r, Mapping)
         ]
     else:
         request_list = [r for r in requests if isinstance(r, Mapping)]

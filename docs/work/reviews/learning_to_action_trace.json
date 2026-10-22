@@ -1,0 +1,79 @@
+{
+  "schema": "knee.learning-to-action-trace/v1",
+  "description": "Demonstration trace of contextual procedure learning altering action selection on a held-out study",
+  "teaching_source": {
+    "study_uid": "1.2.826.0.1.3680043.8.498.18392509497170616983977319528036573378",
+    "retained_row_id": "/Users/rohanvinaik/Projects/Kaggle_Killer/competitions/RSNA_Knee/data/readings/grounded-teaching-20261022/train-ready-round-r2/inference|1.2.826.0.1.3680043.8.498.18392509497170616983977319528036573378|037",
+    "question": "Baker's",
+    "subject": "gastrocnemius_semimembranosus_bursa",
+    "category": "confirmed_resolution",
+    "independent_outcome": {
+      "call": -1,
+      "label_source": {
+        "bytes": 5690007,
+        "path": "/Users/rohanvinaik/Projects/Kaggle_Killer/competitions/RSNA_Knee/data/raw/train.csv",
+        "sha256": "8ca2203c0e9d61c080c7a314c7cdb51c1b03a1d9eb4770819f7f34af53ef4e33",
+        "study_count": 4407
+      },
+      "reader": "official label table",
+      "scope": "study_condition",
+      "source": "official_label",
+      "status": "checked"
+    }
+  },
+  "held_out_study": {
+    "study_uid": "1.2.826.0.1.3680043.8.498.77363493132791851253018255959820549448",
+    "same_study_exclusion_verified": true
+  },
+  "memories": {
+    "parent_revision": "local-bootstrap-report-scope-repair-r1+identity-growth-a68a07e9b364c9d2+admission-review-6718e77b3f0953c9+direct-visual-ab47810667b09767+configurations-ec6f0c6004dbdf6a+configurations-fa3157fe9cd88b2c+grounded-question-references-r1+reviewed-question-configurations-r1+grounded-question-references-r1+reviewed-question-configurations+direct-visual-1174f0f86eebbbb1",
+    "parent_manifest_sha256": "a9b632aa06436a6ed00e0976973abd94cf9ad908841ed31d64a3735a7f280298",
+    "child_revision": "train-ready-round-r2-child",
+    "child_manifest_sha256": "e0fbd5f1d768af617182824f9e262edfb4d3c82e6dfe5116169c7cb26689f89f",
+    "child_parent_manifest_sha256": "a9b632aa06436a6ed00e0976973abd94cf9ad908841ed31d64a3735a7f280298"
+  },
+  "recall_verification": {
+    "under_parent": {
+      "status": "no_precedent",
+      "recalled_confirmed_ids": []
+    },
+    "under_child_matching_cue": {
+      "status": "recalled_confirmed_resolution",
+      "recalled_confirmed_ids": [
+        "/Users/rohanvinaik/Projects/Kaggle_Killer/competitions/RSNA_Knee/data/readings/grounded-teaching-20261022/train-ready-round-r2/inference|1.2.826.0.1.3680043.8.498.18392509497170616983977319528036573378|037"
+      ],
+      "matched_row": "/Users/rohanvinaik/Projects/Kaggle_Killer/competitions/RSNA_Knee/data/readings/grounded-teaching-20261022/train-ready-round-r2/inference|1.2.826.0.1.3680043.8.498.18392509497170616983977319528036573378|037"
+    },
+    "under_child_incompatible_cue_control": {
+      "status": "no_contextual_cue",
+      "recalled_confirmed_ids": []
+    }
+  },
+  "action_selection": {
+    "input_order": [
+      "other_tissue",
+      "gastrocnemius_semimembranosus_bursa"
+    ],
+    "under_parent_selection_order": [
+      "other_tissue",
+      "gastrocnemius_semimembranosus_bursa"
+    ],
+    "under_parent_promoted": false,
+    "under_child_selection_order": [
+      "gastrocnemius_semimembranosus_bursa",
+      "other_tissue"
+    ],
+    "under_child_promoted": true,
+    "incompatible_cue_selection_order": [
+      "other_tissue",
+      "gastrocnemius_semimembranosus_bursa"
+    ],
+    "incompatible_cue_promoted": false
+  },
+  "causal_mechanism_summary": {
+    "learning_outcome": "Child memory recalled confirmed procedure and promoted action to Tier 0",
+    "parent_outcome": "Parent memory without procedure experience left default contract order unchanged",
+    "control_outcome": "Incompatible HDC cue did not match and left default contract order unchanged",
+    "exclusion_outcome": "Self-study experience is strictly excluded under exclude_same_study=True"
+  }
+}

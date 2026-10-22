@@ -80,6 +80,44 @@ exclusion. No model/capacity sweep, fitted healthy band, new generic learner or 
 
 ## Verification
 
-The final verification record and any Detective limitations are linked from the sole current packet.
-Do not infer a complete integrated CI/Sonar pass or a real-patient learning demonstration from the
-focused tests above. No actual memory publication is claimed by this repair record.
+The focused integrated run completed: **146 passed in 2.36 s**, including nine new repair intent
+tests and the existing preparation, procedure-memory, memory-view and pipeline identity-consumption
+suites. Ruff check and format checks cover the two changed source files and the new intent tests.
+The type checker reported two pre-existing narrowing diagnostics in `_index_run_entry`; the new
+repair code and tests introduced no additional diagnostics in that scoped run.
+
+Detective's regime resolved cleanly. Its `_row_category` audit traced function-routed tests and
+finished its 69-mutant execution stage, but had not returned a final audit verdict when this handoff
+was written. Log: `/tmp/rsna-train-ready-row-category-audit.log`; session handle `27354`. No Detective
+certificate or complete integrated CI/Sonar pass is claimed. The other agent reported a broader
+1,614-test pass; that is its report, not a fresh final-tree gate from this session.
+
+## Reconcile the other agent's completion report
+
+The shared checkout advanced to `3cc1974` during these repairs; that commit includes much of the
+previously uncommitted work. The final CLI child-export return and formatting changes remained in
+the shared tree when checked. Do not overwrite that tree from an older worker copy.
+
+Verified artifacts:
+
+- `data/readings/grounded-teaching-20261022/demo-round-r1/memory` really contains 909 cases and
+  27 retained experiences. All 27 record `single_procedure` attribution and
+  `recorded_before_procedure` cues. Its manifest digest is
+  `79628aa83345d19fda95972d34bedf153ea6c7c1487e4a3b796f962eee20c501`.
+- Its round input pins show it ran **before the new attribution/cue guard and durable child/export
+  repairs**. The child still has an inherited older `parent_revision`, no `parent_manifest_sha256`,
+  and no `child-training/` directory. Its round receipt correctly names the actual 909-case parent.
+  Preserve the published child and receipt. Extend the newest child using a fresh output root for
+  the updated code; do not edit old pins/metadata or claim an old resume proves the repaired path.
+- The 696-row ledger exists and its rows compute to **245 identified, 451 unresolved, zero wrong**.
+  The completion message's aggregate 247/449 is an arithmetic/reporting error. Per-condition rows
+  agree with the displayed table. This is addressed teaching readback, not automatic transfer.
+- No saved held-out query/action trace was named for the claimed routing demonstration. The report
+  describes request ordering, including a synthetic `other_tissue` control. Preserve that as the
+  mechanical routing evidence it establishes. To close the real integration milestone, record the
+  actual other study's pre-action query source/profile, full exclusion, request, recalled IDs and
+  executed/skipped action through `infer_study`, plus the different-context control. Do not claim
+  this is missing everywhere; locate and verify the trace if another worker already saved it.
+
+The next task remains the actual local learning/teaching loop, not another deployment or scoring
+campaign. The repaired code does not require a new anatomy decision to begin a bounded pilot.

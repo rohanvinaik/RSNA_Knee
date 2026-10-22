@@ -489,12 +489,18 @@ def _training_export(
         )
     if output_path.is_symlink() or not (output_path / "receipt.json").is_file():
         raise PrepareError("training_checkpoint_invalid")
-    receipt, _actual, _sha = _stable_json(output_path / "receipt.json", "training_receipt")
+    receipt, _actual, _sha = _stable_json(
+        output_path / "receipt.json", "training_receipt"
+    )
     runs, indexed = _index_all_runs([inference_dir])
     saved_runs = _mapping_get(receipt, "inputs", "runs")
     run_headers = (
-        [{key: value for key, value in run.items() if key != "records"} for run in saved_runs]
-        if isinstance(saved_runs, list) and all(isinstance(run, Mapping) for run in saved_runs)
+        [
+            {key: value for key, value in run.items() if key != "records"}
+            for run in saved_runs
+        ]
+        if isinstance(saved_runs, list)
+        and all(isinstance(run, Mapping) for run in saved_runs)
         else None
     )
     if (
@@ -508,7 +514,9 @@ def _training_export(
         or receipt.get("code") != _code_identity()
     ):
         raise PrepareError("training_checkpoint_mismatch")
-    for saved_run, (_identity, root, _revision, entries) in zip(saved_runs, indexed, strict=True):
+    for saved_run, (_identity, root, _revision, entries) in zip(
+        saved_runs, indexed, strict=True
+    ):
         records = saved_run.get("records")
         if not isinstance(records, list) or len(records) != len(entries):
             raise PrepareError("training_checkpoint_mismatch")
@@ -517,8 +525,13 @@ def _training_export(
                 not isinstance(record, Mapping)
                 or record.get("study_uid") != entry["study_uid"]
                 or record.get("evidence_path") != entry["evidence_path"]
-                or record.get("sha256") != _sha256_file(
-                    _inside(root / entry["evidence_path"], root, "study_evidence_outside_run"),
+                or record.get("sha256")
+                != _sha256_file(
+                    _inside(
+                        root / entry["evidence_path"],
+                        root,
+                        "study_evidence_outside_run",
+                    ),
                     "study_record_unreadable",
                 )
             ):
@@ -533,9 +546,13 @@ def _training_export(
 
 def _memory_content_sha256(memory: Mapping[str, Any]) -> str:
     """Exact semantic child content; publication-derived/runtime metadata is excluded."""
-    content = {key: value for key, value in memory.items() if key not in _RUNTIME_MEMORY_KEYS}
+    content = {
+        key: value for key, value in memory.items() if key not in _RUNTIME_MEMORY_KEYS
+    }
     return _sha256_bytes(
-        json.dumps(content, sort_keys=True, separators=(",", ":"), allow_nan=False).encode()
+        json.dumps(
+            content, sort_keys=True, separators=(",", ":"), allow_nan=False
+        ).encode()
     )
 
 
@@ -655,9 +672,7 @@ def _compose_round_teaching(
             touched_studies.add(str(case["study_uid"]))
         working["cases"] = [*working.get("cases", []), *new_cases]
         teaching = copy.deepcopy(working["object_identity_teaching"])
-        teaching["confirmed_case_ids"].extend(
-            case["case_id"] for case in new_cases
-        )
+        teaching["confirmed_case_ids"].extend(case["case_id"] for case in new_cases)
         teaching["calls"].extend(new_calls)
         working["object_identity_teaching"] = teaching
         working["direct_visual_teaching"] = [
@@ -690,7 +705,10 @@ def _compose_round_teaching(
                 if not isinstance(case, dict):
                     continue
                 subject = str(case.get("subject", ""))
-                if subject.startswith("diagnosis/") or case.get("question_reference") is not None:
+                if (
+                    subject.startswith("diagnosis/")
+                    or case.get("question_reference") is not None
+                ):
                     continue
                 cid = str(case.get("case_id", ""))
                 uid = str(case.get("study_uid", ""))
@@ -708,11 +726,15 @@ def _compose_round_teaching(
                     raise PrepareError(f"condition_carry_{error.code}") from error
                 calls_map = dict(carried["condition_calls"])
                 existing_calls = dict(case.get("condition_calls") or {})
-                new_calls = {q: v for q, v in calls_map.items() if q not in existing_calls}
+                new_calls = {
+                    q: v for q, v in calls_map.items() if q not in existing_calls
+                }
                 if new_calls:
                     case["condition_calls"] = {**existing_calls, **new_calls}
                     scopes = dict(case.get("presentation_scope") or {})
-                    scopes.update({q: carried["presentation_scope"][q] for q in new_calls})
+                    scopes.update(
+                        {q: carried["presentation_scope"][q] for q in new_calls}
+                    )
                     case["presentation_scope"] = scopes
                     case.setdefault("label_attribution", {})
                     case["label_attribution"].update(
@@ -743,18 +765,14 @@ def _compose_round_teaching(
                         working,
                         rebuild_uids,
                         built_by=built_by,
-                        labels={
-                            uid: complete_rows_by_uid[uid] for uid in rebuild_uids
-                        },
+                        labels={uid: complete_rows_by_uid[uid] for uid in rebuild_uids},
                         label_source=label_ref,
                     )
                     working = squint_configurations.apply_rebuilt_configurations(
                         working, rebuilt
                     )
                 except squint_configurations.ConfigurationProfileError as error:
-                    raise PrepareError(
-                        f"configuration_rebuild_{error.code}"
-                    ) from error
+                    raise PrepareError(f"configuration_rebuild_{error.code}") from error
                 rebuilt_configuration_case_ids = [
                     str(c["case_id"]) for c in rebuilt["cases"]
                 ]
@@ -839,7 +857,10 @@ def run_round(
         saved_round, _actual_rr, _rr_sha = _stable_json(
             round_receipt_path, "round_receipt"
         )
-        if not isinstance(saved_round, Mapping) or saved_round.get("schema") != ROUND_RECEIPT_SCHEMA:
+        if (
+            not isinstance(saved_round, Mapping)
+            or saved_round.get("schema") != ROUND_RECEIPT_SCHEMA
+        ):
             raise PrepareError("round_receipt_invalid")
         for uid in ordered_uids:
             expected_pin = _study_pin_payload(
@@ -848,12 +869,17 @@ def run_round(
                 memory_revision=str(memory["revision"]),
                 code_identity=code_identity,
             )
-            if _try_resume_study_record(studies_dir, inference_dir, uid, expected_pin) is None:
+            if (
+                _try_resume_study_record(studies_dir, inference_dir, uid, expected_pin)
+                is None
+            ):
                 raise PrepareError("study_checkpoint_missing_on_completed_round:" + uid)
         if not child_dir.is_dir():
             raise PrepareError("child_memory_missing_on_completed_round")
         child_snapshot = load_memory_snapshot(child_dir)
-        expected_child_sha = _mapping_get(saved_round, "child_memory", "manifest_sha256")
+        expected_child_sha = _mapping_get(
+            saved_round, "child_memory", "manifest_sha256"
+        )
         if (
             child_snapshot.memory is None
             or child_snapshot.sha256 is None
@@ -867,7 +893,9 @@ def run_round(
             labels_path=labels_path,
             output_path=child_training_dir,
         )
-        if _mapping_get(saved_round, "child_training", "receipt_sha256") != _sha256_file(
+        if _mapping_get(
+            saved_round, "child_training", "receipt_sha256"
+        ) != _sha256_file(
             child_training_dir / "receipt.json", "child_training_receipt_missing"
         ):
             raise PrepareError("child_training_receipt_mismatch")
@@ -944,12 +972,21 @@ def run_round(
     }
     inference_receipt_path = inference_dir / "receipt.json"
     if inference_receipt_path.exists():
-        saved_inference, _actual, _sha = _stable_json(inference_receipt_path, "run_receipt")
+        saved_inference, _actual, _sha = _stable_json(
+            inference_receipt_path, "run_receipt"
+        )
         if (
             not isinstance(saved_inference, Mapping)
-            or any(saved_inference.get(key) != run_receipt[key] for key in (
-                "schema", "action", "source_mode", "memory_revision", "memory_manifest_sha256"
-            ))
+            or any(
+                saved_inference.get(key) != run_receipt[key]
+                for key in (
+                    "schema",
+                    "action",
+                    "source_mode",
+                    "memory_revision",
+                    "memory_manifest_sha256",
+                )
+            )
             or _mapping_get(saved_inference, "work", "studies") != study_entries
         ):
             raise PrepareError("inference_checkpoint_mismatch")
@@ -997,7 +1034,9 @@ def run_round(
             or child_snapshot.memory.get("revision") != next_revision
         ):
             raise PrepareError("child_memory_checkpoint_mismatch")
-        if _memory_content_sha256(child_snapshot.memory) != _memory_content_sha256(child_memory):
+        if _memory_content_sha256(child_snapshot.memory) != _memory_content_sha256(
+            child_memory
+        ):
             raise PrepareError("child_memory_checkpoint_content_mismatch")
     else:
         child_prepared = prepare_recall(child_memory)
