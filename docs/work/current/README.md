@@ -81,6 +81,26 @@ checks that no message carries an attribution line.
   22 October** (deadline 23:59 UTC, less the 9 h notebook cap, less about 2 h for packaging, upload and queueing).
   No submission without Rohan's word.
 
+## RECOGNITION CAPACITY: THE BONE ANCHORS (measured 2026-10-22 on `639b962`)
+
+Over the 63 local studies (`data/readings/ai-bootstrap-loop-20261021/anchor-survey-639b962/survey.json`):
+the femur is `conflict` in 54 (51 by the cross-view check), the tibia in 45 (41); the patella is `conflict` in
+28, all because it was named in front of a femur whose views disagree; 30 studies keep no usable bone; 34
+headers name no knee. Pictures (`/tmp/rsna-crossview/`; script `draw_cross_view.py` beside the survey): in
+study `…075652399585` and `…548497591402` the sagittal middle-slice naming takes the posterior thigh soft tissue
+for the femur, the very mistake the M1b negative cases record; the cross-view check catches it, and the producer
+then discards the correct coronal femur as well. The lead's draft repair (rename a contradicted orientation's
+section to the territory the other view's carried section lies in, accepted only if Law 9 then holds both ways)
+is under FULL_BUILD_PLAN §7's review: draft `lead-draft-cross-view-rule.md`, Codex and Fable answers beside it.
+
+## STARTING BUCKETS (M1b inventory)
+
+`data/readings/ai-bootstrap-loop-20261021/bucket-inventory-m1b/inventory.json`, with an example sheet per object
+and call. Every one of the catalogue's 493 candidates was called (43 unsure). Gaps no existing candidate can fill:
+a diagnosed ACL and MCL presentation, a normal bursa (Baker's); thin: patella, fibula, cartilages, fat pads; no
+LCL, popliteus or ITB candidates at all. They come from recognition on labelled studies, called on their
+pictures, with the official labels at their scope.
+
 ## WORKERS
 
 | Task | State | Evidence |
