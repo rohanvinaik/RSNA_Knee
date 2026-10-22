@@ -1,176 +1,132 @@
 # Active task packet
 
-Sole populated current-state record; FULL_BUILD_PLAN §13 owns this pointer. Revision **137**.
-Prior revision 136 is preserved verbatim at `docs/work/history/active-task-packet-revision-136.md`.
+Sole populated current-state record; FULL_BUILD_PLAN §13 owns this pointer. Revision **138**.
+Prior revision 137 is preserved verbatim at `docs/work/history/active-task-packet-revision-137.md`.
 
 ## TASK ID / PACKET REVISION / STATE
 
-`THIN-OBJECT-BOOTSTRAP-20261021` / `137` / **finishing the five handoffs; the demonstration comes next**.
-Rohan asked that the work adhere to two re-centering accounts he sent (author not stated; acted on as his
-request). The deliverable is a usable bootstrap memory and one small, inspectable cycle through the real entry
-point: recognition → admission → diagnosis teaching → child publication → reuse. Four workers are building the
-remaining handoffs in parallel; root integrates.
+`THIN-OBJECT-BOOTSTRAP-20261021` / `138` / **integrating the last handoffs; the demonstration waits on H1**.
+The deliverable (from the re-centering accounts Rohan sent, author not stated, acted on as his request) is a usable
+bootstrap memory and one small, inspectable cycle through the real entry point: recognition → admission → diagnosis
+teaching → child publication → reuse. Rohan's other agent (Codex, outside this session) states the same order in a
+note he pasted (agent text): finish the connections under construction, keep direct teaching going in parallel,
+demonstrate one genuine growth cycle locally, scale over the downloaded studies, then classical agency training.
 
 ## CURRENT REQUEST / AUTHORITATIVE EXCHANGES / ACTUAL AUTHORS
 
-The five handoffs, verbatim from the account Rohan sent:
-1. «Carry established anatomical evidence through preparation, recall, diagnosis and admission.»
-2. «Let negative cases affect decisions where their actual reason and scope apply.»
-3. «Preserve unaffected positive views when another view is corrected.»
-4. «Keep held-out studies outside teaching and its relevant lineage.»
-5. «Join official clinical teaching to warranted object presentations without widening its scope.»
-Then: «demonstrate the bootstrap through the real entry point. Show actual images, recalled precedents and the
-resulting object/condition interpretation. Demonstrate a genuinely new warranted admission, inspect the first
-round, publish its signed child and show the next round using that child.»
+The five handoffs and the demonstration request of revision 137 stand. Since then, Rohan, verbatim:
+- «Send a small sub-agent to read the parts of the "what an <object> is" thesis on object recognition. We shouldn't
+  be fucking up discriminating between anatomical objects» · «Like, this image is pretty clear» (the full/cheap
+  profile figure) · «Yes, continue with your reading task». The reader's report and the lead's own reading of
+  §§1.7, 1.12, 6.2–6.3, 7, 8, 9, 11.1–11.3, 12.2–12.4, 13.2 are done and reported to him.
+- «Look in on what you've done and what the other agent that is building has done, make sure it's aligned with the
+  build plan and stated, explicit goals». Reported: the other agent's work is aligned; the lead's r5 bone rule and
+  lane V's second publisher were not, and both were corrected.
+- A relayed side-agent note on the knee's side (agent text): about half the scans' headers name no knee; decide
+  whether a working side test is worth the time. Decided and built (below).
 
-Rohan, verbatim, on how: «All of this already exists and works in the project» · «You just need to find it and wire
-it properly, define things according to anatomy and visual reasoning» · «I also restarted serena, plus there's
-aider, and the tooling in the CI gate». The identity correction of revision 136 still governs (femur and tibia by
-their observed ordering in the scan's known directions; established information conditions every later question).
-
-Relayed reviews (agent text, verbatim) are kept in `data/readings/ai-bootstrap-loop-20261021/codex-bones-20261021/`,
-the latest as `relayed-review-negatives-holdout-correction-20261021.md` with the lead's checks against the code.
+**Open question put to Rohan (no answer yet):** for growth over his downloaded studies, run the existing
+high-resolution pipeline locally on each study (bootstrap tooling, never Kaggle; about 45 CPU-s a study) so every
+admitted case keeps its full and its cheap description, as in his figure, and admission compares full with full as
+well as cheap with cheap; or grow cheap-only cases through the squint route as the plan describes. The lead
+recommended the full route for scaling; the first demonstration runs through the squint route either way.
 
 ## SOURCE HEAD / DIRTY UNITS / MANIFEST / INPUT IDENTITIES
 
-HEAD `829df83` on `main`, clean and pushed. There is one branch: `squint-upgrade` was deleted locally and on GitHub,
-and `main` holds its work. Since revision 136: `941b29b` production wrapper pinned to the M1b bundle and memory;
-`fdd0df4` held-out refusal; `829df83` knee side read from the series headers.
+`main` at `234883c` plus this packet: `a208a33` reversed-anchor-pair scoping, `ebcbfc1` knee side by position,
+`5a018a2` `5545a22` `234883c` lane C2. 1,451 squint tests passed on `234883c`
+(`tests/test_squint_*.py`, `test_bootstrap_contract_intent.py`, `test_curate_squint_memory.py`). Standing bans as in
+revision 137: no AI attribution or session lines; no text search, no head/tail/sed/awk/cut/wc/jq and no pipes; commit
+to `main` only; push with `.venv/bin/python scripts/push_checks.py scan origin/main..main && git push --no-verify
+origin main`.
 
-**Privacy repair, 2026-10-21 (the lead's error, at Rohan's request).** The repository is public. Commit messages had
-carried session links and co-author lines, and the conversation records had been committed. A message-only history
-rewrite removed those lines from every commit message (file trees unchanged), `docs/conversations/` is now ignored
-and untracked (the files stay on disk), and `main` was force-pushed. Residue Rohan accepted («Whatever, just
-continue with the build»): old commit ids stay reachable on GitHub until GitHub support purges them; PR #1's ref,
-Actions run records, CodSpeed and SonarCloud may hold old messages; old versions of the conversation files remain
-in history.
-
-**Standing bans (Rohan's global rules).** No AI attribution or session lines in any commit or pull request. No text
-search of any kind (grep, rg, git grep, or through another tool or agent) and no head, tail, sed, awk, cut, wc, jq
-or pipes. Commit to `main` only. Push with the scan's own exit status:
-`.venv/bin/python scripts/push_checks.py scan origin/main..main && git push --no-verify origin main`. The long
-local gate is skipped by his instruction; GitHub runs the full gate on every push. Serena indexes the worker
-worktrees under `.claude/worktrees/` too: read main's files by absolute path.
-
-Parent memory **M1b**: `data/readings/ai-bootstrap-loop-20261021/signed-memory-m1b/memory`, manifest sha256
-`e8169d459a9d3a21…`, 792 cases (168 object, 624 whole-condition), 168 confirmed, 335 negative, 30 alternative
-identities, from all 493 calls.
-
-## OWNER / PERMITTED WRITES / WORKER ROUTES
-
-Root (this Claude Code session) owns intent, shared source, integration and acceptance. Workers run in isolated
-worktrees on branches based on main (`941b29b` or `829df83`); root cherry-picks their commits onto main and
-checks that no message carries an attribution line.
+**The memory chain (one lineage; every publication extends the newest child, pinned just before publishing):**
+1. M1b `signed-memory-m1b/memory`, `e8169d45…`, 792 cases (335 negative, 30 alternative identities).
+2. `codex-clinical-seeds-r1/memory`, `4bcc2c29…`, 794: direct-visual ACL and MCL (study `…111973`), the other agent.
+3. `codex-visual-union-r2/memory`, `dcfc6264…`, 797: bursa (Baker's −1), ITB, LCL (same study), the other agent.
+4. `visual-union-r3/memory`, `f500cdb3…`, 806: lane V's nine proof-study seeds (patellar and quadriceps tendons,
+   Hoffa's, suprapatellar fat, patellar cartilage with PF OA +1, both retinacula, popliteal artery and vein), sheets
+   reviewed by root (`visual-union-r3/review.json`), published with the other agent's maintained utility.
+5. **`visual-union-r4-configurations/memory`, `06d28478242441d6…`, 806: the newest parent.** C2's public rebuild of
+   all 24 whole-condition configurations of studies `…111973` and `…520594649149` (ACL, MCL and Baker's gain acl,
+   mcl and the bursa; PF OA gains patellar cartilage); replaced versions kept whole; `configuration_extensions`
+   completes the three "pending_C2" markers. Recall preparation ships with it.
 
 ## WHAT IS DONE IN THIS REVISION
 
-- **Held-out integrity (handoff 4), `fdd0df4`.** A held-out study that already teaches the parent (any object,
-  configuration, negative or alternative record) is refused by name before the round
-  (`held_out_study_teaches_parent`); inherited held-out records are checked too; nothing is dropped to make the
-  hold-out true. The reviewer's reproduction is the regression test. 279 focused tests passed.
-- **Knee side, `829df83`.** Production never set the knee's side, so every medial/lateral relation stayed unknown
-  and every sided dependent (menisci, collaterals, gastrocnemius heads) was proposed on both mirrored sides. The
-  anchors already recorded the knee the series headers name (DICOM Laterality). The locator now uses it unless
-  the caller supplies a side, and the study evidence names the side and its source. 1,326 squint tests passed.
-- **Private Kaggle dry run v6** (M1b, bundle `60c5fb8e…`, 3 public studies, `/tmp/rsna-dryrun-v6-out/`), measured on
-  Kaggle: whole notebook 347.9 s (setup 166 s, of which offline wheel install 90 s and import check about 60 s;
-  inference 182 s); per study 59.5, 75.3 and 106.9 s with 3 workers; peak RSS 5.49 GB; 0 full-anatomy runs; 6 to
-  8 bounded zooms a study; the recall preparation was recomputed (13.9 s) because the bundle did not supply it. 36
-  outcomes: 4 assigned, 2 defeated, 30 open. **Projection, not a measurement:** about 80 s a study on 4 workers
-  puts about 1,300 hidden studies near 7.2 h of the 9 h cap. **Latest safe final launch: about 13:00 UTC on
-  22 October** (deadline 23:59 UTC, less the 9 h notebook cap, less about 2 h for packaging, upload and queueing).
-  No submission without Rohan's word.
-
-## RECOGNITION CAPACITY: THE BONE ANCHORS (measured 2026-10-22 on `639b962`)
-
-Over the 63 local studies (`data/readings/ai-bootstrap-loop-20261021/anchor-survey-639b962/survey.json`):
-the femur is `conflict` in 54 (51 by the cross-view check), the tibia in 45 (41); the patella is `conflict` in
-28, all because it was named in front of a femur whose views disagree; 30 studies keep no usable bone; 34
-headers name no knee. Pictures (`/tmp/rsna-crossview/`; script `draw_cross_view.py` beside the survey): in
-study `…075652399585` and `…548497591402` the sagittal middle-slice naming takes the posterior thigh soft tissue
-for the femur, the very mistake the M1b negative cases record; the cross-view check catches it, and the producer
-then discards the correct coronal femur as well. The lead's draft repair (rename a contradicted orientation's
-section to the territory the other view's carried section lies in, accepted only if Law 9 then holds both ways)
-went through FULL_BUILD_PLAN §7's review. Fable read the pictures the same way (sagittal "femur" = popliteal
-fossa; coronal = femur) and, with Codex, rejected choosing by which view escaped contradiction. The rule being
-built is r4 (`lead-draft-cross-view-rule-r4.md`): a disagreement leaves only that pair unresolved; the one change
-allowed is a swap to the rival when anatomy positively favours it (like the marrow of the other bone's section on
-the same fat-bright slice, a reference with a positive cross-view agreement, on the bone's own side of it); nothing
-is withdrawn for failing; Law 9 confirms; still-contradicting pairs are withheld from anchoring, the rest anchor.
-Codex's answers on r1 and r3, Fable's, and drafts r1–r4 are in the survey folder. A side agent's corrections
-(relayed, agent text) on scope and on marrow as evidence only are taken in r4.
-
-## STARTING BUCKETS (M1b inventory r2, read through the identity reader)
-
-`data/readings/ai-bootstrap-loop-20261021/bucket-inventory-m1b/inventory-r2.json` (script `inventory_r2.py`; the
-first inventory misreported negative scopes and missed alternative facets). Catalogue: 40 anatomical objects; 21
-have a positive seed. No seed: biceps femoris tendon, gracilis, Hoffa's pad, ITB, both gastrocnemius heads, both
-patellar retinacula, LCL, the generic meniscus, patellar cartilage, patellar and quadriceps tendons, popliteal
-artery and vein, popliteus, sartorius, semitendinosus, suprapatellar fat. Conditions: not all twelve polarities
-are covered: ACL and MCL lack a diagnosed presentation of their own tissue, Baker's a normal one; the menisci and
-Synovitis are thin. Every one of the catalogue's 493 candidates was called (43 unsure), so the gaps are filled by
-direct visual teaching (lane V), not by more calls on old candidates.
-
-## ROHAN'S OTHER AGENT (outside this session; keep in mind)
-
-Rohan, 2026-10-22: «I have another agent pulling some weight, note what it's doing and keep it in mind». It is a
-Codex agent working in `data/readings/ai-bootstrap-loop-20261021/` (it does not commit; the relayed reviews come
-from it). Seen at about 01:12 UTC:
-- `codex-clinical-seeds-r1/`: direct visual teaching, a published child of M1b at `codex-clinical-seeds-r1/memory`
-  (manifest `4bcc2c29de1290c7…`, 794 cases = M1b's 792 plus direct-visual ACL and MCL cases from study
-  `…12606657226568558340797193167488111973`); parent verified unchanged; configuration extension "pending_C2";
-  scripts `build_cases.py`, `publish_visual_cases.py`, `test_publish_visual_cases.py` beside it.
-- `codex-normal-bursa-r1/`: the normal gastrocnemius–semimembranosus bursa.
-- `codex-lateral-seeds-r1/`: lateral structures.
-Coordination: lane V takes the other objects (anterior tendons and fat pads, retinacula, patellar cartilage, medial
-gastrocnemius, popliteal vessels, sartorius, gracilis, semitendinosus), matches the other agent's case form and
-publishes onto the latest visual child, so there is one lineage. C2's configuration rebuild is made callable by any
-publication that adds objects to a study; root applies it to the visual children. The demonstration's parent is the
-latest visual child, not M1b.
+- **Reversed anchor pair, `a208a33`.** Lane K found a wrong-side "fibula" (fat) reversing «fibula lateral_to tibia»
+  and setting aside the tibia too. Now, when exactly one member of a reversed pair has a section another view of the
+  same bone agreed with, only the other is set aside and the kept one records the overruled relation; both or
+  neither: both set aside, as before.
+- **Knee side by position, `ebcbfc1`.** The table moves only head to foot, so a right knee lies at negative x of the
+  patient frame and a left knee at positive x. Checked over all 63 local studies
+  (`knee-side-position-r1/side-by-position.json`): 28 of the 29 headers that name a knee agree; the 29th (`…174803`)
+  says left, and its coronal slices show the fibula on the patient's right
+  (`knee-side-position-r1/disagreement-910529174803-coronal.png`), so the header is wrong and the position right.
+  It names 30 of the 34 header-less studies; 4 within half a knee's breadth (50 mm) of the bore's axis stay unknown;
+  header and position disagreeing chooses neither (`knee_position.conflict`). Read from the squint's own tile
+  centres over the leg. This matters for both meniscus conditions, medial and lateral OA, and the MCL.
+- **C2 integrated** (above). Its readings, confirmed by root: an admitted study with a ledger row is rebuilt even
+  without a label file; every configuration of a changed study is rebuilt; carried train.csv rows join the
+  ledger, and a row differing from the parent's is refused. Storage: each rebuild keeps the study's previous
+  configurations (about 2.8 MB per study on a 440 MB manifest); kept in the memory for now, to be looked at again
+  when the competition package is built. Still open from C2: a corrected admission (G3) must call the same rebuild;
+  `memory_view` does not drop excluded studies' superseded records (they never speak).
+- **Alignment review** (Rohan's request). The other agent's two children are aligned: named reviewers, scoped
+  views, official labels at their scope, every parent record kept, no unmeasured full profile claimed. The lead's
+  r5 bone rule decided "is this bone?" by one brightness test borrowed from the fibula (same height as the tibia)
+  and used across the joint, where the scanner's shading makes a real femur read 2–3× the tibia: soft tissue
+  anchored in 6 of 11 pictured cases. Withdrawn. Lane V's second publisher was removed in favour of the other
+  agent's tested one.
+- **Thesis reading** (`what_an_object_is.md`). Recognition is one cosine over a question's named banks against
+  confirmed cases, one at a time, like with like (full with full, cheap with cheap), over every scale a profile
+  carries (3056–3065, 3919–3920, 4182–4185). Look-alikes are told apart by the structure around them, never by
+  which they resemble more; a contest left open settles neither (3940, 3949–3952). A −1 is a confirmed fact and a
+  voice within its trust radius; only a censor from a near miss vetoes (3200, 3247–3249). A disagreement or
+  abstention returns the question to the structure's own word (3780–3782). Two carries can agree on the same
+  wrong neighbour (4027–4031).
 
 ## WORKERS
 
 | Task | State | Evidence |
 |---|---|---|
-| H1: contextual identity through preparation, recall, diagnosis and admission (handoffs 1 and 2) | running. Corrected twice by root: negatives apply where their question is open and their reason holds for the candidate's actual support, judged over object-role banks (a territory's `object` tiles, not its `context` ring); a territory's origin tells a resolved support from a proposal; contested or opposed identities are not admitted and do not decide that identity's questions; under the structural basis the reader's observed ordering is the anatomical support, and the recognition match is heard against every identity outside the structural reader's own bones (femur, tibia, patella, fibula, found in this study or not: a side agent's note, checked against Rohan's «They're BOTH BONES» and «Do not ... tune bone profiles apart»); it measures that on the M1 public readings and reports the numbers; it delivers a branch on main | worktree `agent-a7e32e09526dae3c0` |
-| G3: correctable admissions, scoped (handoff 3) | **integrated** `877d2af`, `603ea10`, `8d85c2c` (337 focused tests on main): a call applies only where it asserts; the untouched facets keep speaking with their diagnosis evidence; `negative_views` and `also_positive` accepted. Open: an admission corrected in part cannot be reviewed again; the corrected case's carry record still lists its admission-time views (the consumer scopes by the rewritten row) | `tests/test_squint_admission_correction.py` |
-| V: direct visual teaching for the empty and thin buckets (the G3 worker, resumed) | running: eligible labelled studies (ACL=1, MCL=1, Baker's=0, and any study for each unseeded object); the reviewer names the lens territory that is the object on the locator's slice; existing writer; existing review, calls and admit; official labels at scope | branch `lane-v` |
-| A2: bone anchors decided by anatomy (rule r4) | running, branch `lane-a2` at `8ac5bbc`; validation is the 63-study survey before/after and pictures of every kind of outcome | isolated worktree |
-| K: knee side from the fibula when the header names none | running, branch `lane-k` at `639b962`; validated against the headers that name the knee | isolated worktree |
-| C2: whole-condition configurations grown from newly admitted objects (handoff 5) | running, branch `lane-c2` at `829df83`; uses the existing builder and lane E's identity-view scoping; parent configurations unchanged | isolated worktree |
-| P: each observation request kind gets its own acting consumer (`locate_object_region`, `profile_object_window`, `repeat_object_recall`; `bounded_zoom` unchanged) | running, branch `lane-p` at `829df83`; new module `squint_procedures.py`, one call changed in `infer_study` | isolated worktree |
+| H1: contextual identity (handoffs 1 and 2) | running on `lane-h1-rebase-trial`. Root's ruling: a 10 mm speaking negative opens the identity question only; the bounded 2 mm look decides; admission waits for it. Refined after the thesis reading: after the look, one cosine over both scales together (10 mm + 2 mm), not 2 mm alone, with trust radii prepared for the bank set compared; a disagreement leaves a structural identity standing as the structure's word with the disagreement kept, and leaves a map/prior-only identity open | worktree `agent-a7e32e09526dae3c0` |
+| A2: bone anchors, cross-view contest | running r7. r5 withdrawn (above). r6 (warrant = agreement with a section outside the pair) stopped by its own condition: 8 of 27 warranted anchors were soft tissue because two views misnamed the same posterior thigh and agreed (the thesis's two-carries warning). r7: no cross-view warrant; members of a contradicted pair are withheld as evidence; sections outside every contested pair anchor and keep the bone usable; stop if any newly anchoring section is soft tissue. Contested tissue is identity recall's job (H1) | `/tmp/a2-lane/`, branch `lane-a2` (last commit `ccb7b35`, r4+r5, not to be merged) |
+| V: direct visual teaching | running: the nine proof-study cases are published (r3); now the remaining buckets in other studies (sartorius, gracilis, semitendinosus, both gastrocnemius heads, biceps femoris, popliteus, more tendons and fat pads), drawing supports from native slices where a product's support is wrong; hands additions to root, never publishes | branch `lane-v` (`140aecc`, `e581a59`) |
+| P: acting consumers for observation requests | delivered on `lane-p` (`30a9a85`, `84667ac` on `829df83`); held until H1 lands, then: drop the consumer's own recall, keep the identity rerun after re-profiling, unlocated objects become `not_observed`, share the per-subject location step | branch `lane-p` |
+| K: knee side from the fibula | closed, not merged: 5 of 19 decided inferences right; the existing fibula picker takes marrow-bright fat; superseded by the position check | `lane-k-fibula-side-evidence/` |
+| C2 | integrated (above) | main `5a018a2` `5545a22` `234883c` |
 
 ## NEXT ACTIONS, IN ORDER
 
-1. Integrate H1, G3, C2 and P as each returns: focused tests, cherry-pick onto main, scan-gated push.
-2. Baseline through the real entry point on `829df83` (running): M1b, the 2 pulled training studies and the 3
-   public studies, `data/readings/ai-bootstrap-loop-20261021/baseline-829df83-r1/`. It checks the knee-side change
-   on real studies and records the state before H1.
-3. The demonstration on the integrated tree: the same 5 local studies inferred against M1b; `grow` with
-   `--labels data/raw/train.csv`; `sheets`; inspect every admission on its picture; correct wrong ones through the
-   admission review; publish the signed child; a second round that reads the child; trace identity into the
-   condition inputs and bounded observations; check that admitted training objects received correctly scoped
-   official teaching. A round that admits nothing names a blocker; it is not growth.
-4. Scale with Rohan's download (the competition zip, still downloading): batches into `data/raw/train_series/`,
-   a declared held-out set kept out of teaching and growth, later rounds spot-checked, identified/abstained/wrong
-   reported per condition.
-5. Final memory, package, private dry run and the latest safe launch; submission only on Rohan's word.
+1. Push main (scan-gated).
+2. Read the pre-H1 shakeout run through the real entry point with the newest parent on the five demonstration
+   studies (`data/readings/ai-bootstrap-loop-20261021/demo-pre-h1-r4/`): knee side and position evidence, anchors
+   after `a208a33`, whether the new visual cases are recalled, and a decisions-only growth round to see what blocks.
+3. Integrate H1, then P; A2 r7 only if its stop condition holds.
+4. The demonstration on the integrated tree, parent = the newest child: infer the five studies; `grow --labels
+   data/raw/train.csv`; `sheets`; inspect every admission on its picture; correct through `export-admissions` /
+   `admit`; publish the signed child; a second round reading it; check identity reaching condition inputs and the
+   official teaching's scope. A round that admits nothing names a blocker.
+5. Scale with Rohan's download (still downloading; `/Volumes/Untitled` empty so far), then the final memory,
+   package, private dry run (latest safe launch about 13:00 UTC on 22 October). No submission without his word.
 
 ## OPEN SEMANTIC CHOICE / PREREQUISITES
 
-None needs Rohan yet. If H1's measurement shows that structural bone cases cannot rise above the non-bone
-identities, that goes to him with its numbers rather than any loosening.
+The full-or-cheap growth question above is Rohan's. Censor and split induction from near misses stays unspecified;
+it goes to him as one concrete worked example when the first corrected admission exists.
 
 ## UNREVIEWED / WITHDRAWN / STALE RESULTS
 
-The worked example's round two stays withdrawn. Lane G3's first delivery is superseded by its corrected one.
+Withdrawn: the worked example's round two; the r5 bone rule (and r4's brightness test); r6's cross-view warrant.
+Superseded: lane G3's first delivery; lane K.
 
 ## VERIFICATION STILL OWED
 
-The four workers' deliveries and their two-sign tests; the baseline's reading; the demonstration cycle and its
-inspection; the identity consumer's effect on real condition inputs at scale; the integrated offline resource
-envelope after the final memory.
+H1's and P's deliveries with their two-sign tests; A2 r7's survey and pictures; the shakeout run's reading; the
+demonstration cycle and its inspection; the integrated offline resource envelope after the final memory.
 
 ## HANDOFF TIME / EVIDENCE LINKS
 
-2026-10-22, about 00:40 UTC. Dry-run output: `/tmp/rsna-dryrun-v6-out/` (receipt, per-study evidence, logs, CSV).
+2026-10-22, about 03:15 UTC. Memory chain receipts: each child's `publication.json` and `HANDOFF.md`. Thesis
+reader's report: in this session (teammate `thesis-recognition-reader`). Dry-run v6: `/tmp/rsna-dryrun-v6-out/`.
