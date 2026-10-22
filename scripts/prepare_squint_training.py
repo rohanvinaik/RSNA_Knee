@@ -34,6 +34,11 @@ from knee.diagnosis.squint_memory import (
 )
 from knee.diagnosis.squint_memory_view import memory_view
 from knee.diagnosis.squint_pipeline import infer_study
+from knee.diagnosis.squint_reports import (
+    ReportCallError,
+    import_report_calls,
+    read_reports,
+)
 from knee.diagnosis.squint_training_pins import (
     archive_study_inventory,
     checkpoint_identity_code,
@@ -235,10 +240,60 @@ def _load_verified_teaching_memory(
     return memory, teaching_identity
 
 
+def _report_call_pins(paths: Sequence[Path]) -> list[dict[str, Any]]:
+    """Pin the exact optional clinical call documents, without interpreting them."""
+    resolved = [path.resolve() for path in paths]
+    if len(set(resolved)) != len(resolved):
+        raise PrepareError("report_call_source_repeated")
+    return [
+        {
+            "path": str(path),
+            "sha256": _sha256_file(path, "report_calls_unreadable"),
+        }
+        for path in resolved
+    ]
+
+
+def _verified_report_calls(
+    labels_file: Path, pins: Sequence[Mapping[str, Any]]
+) -> dict[str, dict[str, list[dict[str, Any]]]]:
+    """Keep verified signed/conflicting calls at their actual study/question scope."""
+    if not pins:
+        return {}
+    try:
+        reports = read_reports(labels_file)
+        calls: dict[str, dict[str, list[dict[str, Any]]]] = {}
+        seen: set[str] = set()
+        for pin in pins:
+            path = Path(str(pin["path"]))
+            entries = import_report_calls(path, reports)
+            if _sha256_file(path, "report_calls_unreadable") != pin["sha256"]:
+                raise PrepareError("report_calls_changed_during_read")
+            for entry in entries:
+                status = entry["status"]
+                if status not in (
+                    "signed", "contradictory", "duplicate", "abstention", "needs_review"
+                ):
+                    raise PrepareError("report_call_refused:" + str(status))
+                if status not in ("signed", "contradictory"):
+                    continue
+                call_id = entry["call_id"]
+                if call_id in seen:
+                    continue
+                seen.add(call_id)
+                calls.setdefault(entry["study_uid"], {}).setdefault(
+                    entry["question"], []
+                ).append({**entry, "call_document": dict(pin)})
+        return calls
+    except ReportCallError as error:
+        raise PrepareError("report_calls_" + error.reason) from error
+
+
 def _load_labels_and_corpus(
     memory: Mapping[str, Any],
     teaching_identity: Mapping[str, Any],
     labels_path: Path,
+    report_call_paths: Sequence[Path] = (),
 ) -> tuple[dict[str, Any], dict[str, Any], dict[str, Any]]:
     labels_file = labels_path.resolve()
     try:
@@ -257,6 +312,10 @@ def _load_labels_and_corpus(
         "bytes": len(labels_bytes),
         "study_count": len(labels["table_uids"]),
     }
+    report_pins = _report_call_pins(report_call_paths)
+    if report_pins:
+        labels_identity["report_calls"] = report_pins
+        labels["report_calls"] = _verified_report_calls(labels_file, report_pins)
     labels["source"] = labels_identity
     labels_by_uid = {
         uid: {question: int(value == 1) for question, value in row.items()}
@@ -376,6 +435,7 @@ def prepare(
     run_paths: Sequence[Path],
     labels_path: Path,
     output_path: Path,
+    report_call_paths: Sequence[Path] = (),
 ) -> dict[str, Any]:
     """Write reviewed buckets, experience rows, and pins into a fresh directory."""
     if output_path.exists() or output_path.is_symlink():
@@ -392,7 +452,7 @@ def prepare(
         memory_path, expected_memory_sha256
     )
     labels, labels_identity, corpus = _load_labels_and_corpus(
-        memory, teaching_identity, labels_path
+        memory, teaching_identity, labels_path, report_call_paths
     )
     call_index = squint_procedure_memory.build_call_index(memory)
     run_identities, indexed_runs = _index_all_runs(run_paths)
@@ -464,6 +524,7 @@ def _training_export(
     inference_dir: Path,
     labels_path: Path,
     output_path: Path,
+    report_call_paths: Sequence[Path] = (),
 ) -> dict[str, Any]:
     """Reuse only a complete export with identical inputs, code and output bytes."""
     if not output_path.exists() and not output_path.is_symlink():
@@ -473,6 +534,7 @@ def _training_export(
             run_paths=[inference_dir],
             labels_path=labels_path,
             output_path=output_path,
+            report_call_paths=report_call_paths,
         )
     if output_path.is_symlink() or not (output_path / "receipt.json").is_file():
         raise PrepareError("training_checkpoint_invalid")
@@ -497,6 +559,8 @@ def _training_export(
         != expected_memory_sha256
         or _mapping_get(receipt, "inputs", "labels", "sha256")
         != _sha256_file(labels_path.resolve(), "labels_unreadable")
+        or (_mapping_get(receipt, "inputs", "labels", "report_calls") or [])
+        != _report_call_pins(report_call_paths)
         or run_headers != runs
         or receipt.get("code") != _code_identity()
     ):
@@ -792,6 +856,7 @@ def run_round(
     infer_fn: Callable[..., Mapping[str, Any]] | None = None,
     source_archive_path: Path | None = None,
     study_inventories: Mapping[str, Mapping[str, Mapping[str, Any]]] | None = None,
+    report_call_paths: Sequence[Path] = (),
 ) -> dict[str, Any]:
     """Run one resumable local round: checkpoint studies, export experiences, and publish child memory."""
     if growth_review_mode not in ("first-round", "spot-check"):
@@ -840,7 +905,7 @@ def run_round(
         memory_path, expected_memory_sha256
     )
     labels, labels_identity, _initial_corpus = _load_labels_and_corpus(
-        memory, teaching_identity, labels_path
+        memory, teaching_identity, labels_path, report_call_paths
     )
     code_identity = _code_identity()
     next_revision = child_revision or f"{memory['revision']}-round-{output.name}"
@@ -940,6 +1005,7 @@ def run_round(
             inference_dir=inference_dir,
             labels_path=labels_path,
             output_path=child_training_dir,
+            report_call_paths=report_call_paths,
         )
         if _mapping_get(
             saved_round, "child_training", "receipt_sha256"
@@ -1058,6 +1124,7 @@ def run_round(
         inference_dir=inference_dir,
         labels_path=labels_path,
         output_path=training_dir,
+        report_call_paths=report_call_paths,
     )
 
     exported_rows = [
@@ -1132,6 +1199,7 @@ def run_round(
         inference_dir=inference_dir,
         labels_path=labels_path,
         output_path=child_training_dir,
+        report_call_paths=report_call_paths,
     )
     retained_rows = (
         child_snapshot.memory.get("procedure_experiences", {}).get("rows", [])
@@ -1214,6 +1282,10 @@ def _parser() -> argparse.ArgumentParser:
     )
     parser.add_argument("--child-revision")
     parser.add_argument("--labels", type=Path, required=True)
+    parser.add_argument(
+        "--report-calls", type=Path, action="append", default=[],
+        help="reviewed report-call document; repeat for additional independent sources",
+    )
     parser.add_argument("--output", type=Path, required=True)
     return parser
 
@@ -1244,6 +1316,7 @@ def main(argv: Sequence[str] | None = None) -> int:
                 visual_additions_path=args.visual_additions,
                 reviewed_growth_memory_path=args.reviewed_growth_memory,
                 growth_review_mode=args.growth_review_mode,
+                report_call_paths=args.report_calls,
             )
             print(
                 json.dumps(
@@ -1264,6 +1337,7 @@ def main(argv: Sequence[str] | None = None) -> int:
             run_paths=args.run or [],
             labels_path=args.labels,
             output_path=args.output,
+            report_call_paths=args.report_calls,
         )
     except (PrepareError, OSError, ValueError) as error:
         print(str(error), file=sys.stderr)

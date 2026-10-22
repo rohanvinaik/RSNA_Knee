@@ -314,6 +314,40 @@ the parent is frozen, and the next run loads the published child with the same c
 withdrawn worked-example round two dropped negatives and supplies no evidence of growth benefit or
 error propagation. Keep its historical outputs for inspection; do not use them as acceptance evidence.
 
+### Check saved procedure experience against reviewed reports
+
+When official numeric labels are blank but an independently read report supplies a call, pass
+the reviewed report-call document to the existing training exporter:
+
+```sh
+.venv/bin/python scripts/prepare_squint_training.py \
+  --memory /absolute/existing/reviewed-memory \
+  --memory-sha256 EXACT_MANIFEST_SHA256 \
+  --run /absolute/existing/completed-run-1 \
+  --run /absolute/existing/completed-run-2 \
+  --labels data/raw/train.csv \
+  --report-calls /absolute/existing/reviewed-report-calls.json \
+  --output /absolute/new/checked-training
+```
+
+Both `--run` and `--report-calls` repeat. The calls use the existing
+`knee.squint-report-calls/v1` format: exact report quotation and digest, actual reader, named
+question and `study_condition` scope. The importer checks attribution and schema; the reviewer
+supplies the clinical interpretation from the complete report and domain knowledge.
+
+This operation reads saved observations, not images. A signed report call can check an actually
+executed condition procedure; it never supplies an identity call. Unmentioned, uncertain or
+review-pending reports cannot fill a blank label. Opposing independent calls remain an unchecked
+conflict with both sources retained. A checked outcome may agree, disagree or leave the action's
+answer open; “checked” does not mean “successful”. Report document digests participate in input
+and resume checks. The same optional input works with `--run-round`.
+
+The export writes training material only. Existing procedure-memory retention admits checked
+experiences into a fresh child; the ordinary contextual recall and request selector consume
+them. Report-backed normal/diagnosed object cases use the separate clinical-teaching operation
+above, with independently established object support. Reports never certify a proposed box's
+tissue identity or manufacture a lesion location.
+
 ## Review saved evidence without rerunning vision
 
 ```sh

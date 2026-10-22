@@ -942,7 +942,12 @@ def condition_outcome(
     question: str | None,
     status: str,
 ) -> dict[str, Any]:
-    """The official label at study scope, only for a request that ran and a known question."""
+    """Independent study-condition teaching for a request that actually ran.
+
+    Report entries are already verified by ``import_report_calls`` at export.
+    Silence/held calls cannot erase a numeric label; opposing independent calls
+    remain an unchecked disagreement rather than silently choosing a source.
+    """
     if status == NOT_RUN:
         return _unchecked("request_did_not_run")
     if question is None:
@@ -950,6 +955,45 @@ def condition_outcome(
     if uid not in labels.get("table_uids", ()):
         return _unchecked("study_not_in_the_label_table")
     call = _mapping(_mapping(labels.get("calls")).get(uid)).get(question)
+    report_calls = [
+        dict(entry)
+        for entry in _sequence(
+            _mapping(_mapping(labels.get("report_calls")).get(uid)).get(question)
+        )
+        if isinstance(entry, Mapping)
+        and entry.get("status") in ("signed", "contradictory")
+        and entry.get("scope") == "study_condition"
+        and entry.get("digit") in (-1, 1)
+    ]
+    if report_calls:
+        digits = {entry["digit"] for entry in report_calls}
+        if call in (-1, 1):
+            digits.add(call)
+        provenance = {
+            "report_calls": report_calls,
+            "report_source": labels.get("source"),
+        }
+        if len(digits) != 1:
+            return {
+                **_unchecked("independent_call_conflict"),
+                "scope": "study_condition",
+                "official_label_call": call,
+                "label_source": labels.get("source"),
+                **provenance,
+            }
+        return {
+            "status": "checked",
+            "source": (
+                "official_label_and_report"
+                if call in (-1, 1)
+                else "independent_report"
+            ),
+            "call": next(iter(digits)),
+            "scope": "study_condition",
+            "reader": "verified report calls",
+            "label_source": labels.get("source") if call in (-1, 1) else None,
+            **provenance,
+        }
     if call is None:
         return _unchecked("label_blank_no_call")
     return {

@@ -128,6 +128,8 @@ def test_reviewed_child_is_the_actual_composition_parent_and_resume_reuses_growt
     assert accepted.snapshot.memory is not None
     assert accepted.snapshot.sha256 == reviewed.sha256
     assert accepted.snapshot.sha256 != growth.sha256
+    assert accepted.snapshot.memory["parent_revision"] == growth.memory["revision"]
+    assert accepted.snapshot.memory["parent_manifest_sha256"] == growth.sha256
     # The human review does not rewrite the observation's generating parent.
     added = next(
         case for case in accepted.snapshot.memory["cases"] if case["study_uid"] == "sx"
@@ -283,6 +285,39 @@ def test_copying_the_review_onto_an_unrelated_valid_memory_does_not_make_a_conti
     ):
         composition.stage_identity_growth(
             parent, [directory], path, reviewed_memory=tmp_path / "foreign"
+        )
+
+
+@pytest.mark.parametrize(
+    "field, replacement",
+    [
+        ("parent_revision", "another-growth-revision"),
+        ("parent_manifest_sha256", "f" * 64),
+        ("parent_revision", None),
+        ("parent_manifest_sha256", None),
+    ],
+)
+def test_reviewed_child_parent_fields_must_name_the_exact_growth_snapshot(
+    tmp_path, field, replacement
+):
+    parent = parent_memory(tmp_path)
+    directory, _ = inference(tmp_path, parent)
+    path = tmp_path / "stage"
+    pending = composition.stage_identity_growth(parent, [directory], path)
+    growth = load_memory_snapshot(path / "identity-growth" / "memory")
+    reviewed = review(growth, pending.receipt, tmp_path / "reviewed")
+    altered = copy.deepcopy(reviewed.memory)
+    if replacement is None:
+        altered.pop(field)
+    else:
+        altered[field] = replacement
+    save_memory(altered, tmp_path / "wrong-parent")
+
+    with pytest.raises(
+        composition.RoundCompositionError, match="reviewed_child_parent_mismatch"
+    ):
+        composition.stage_identity_growth(
+            parent, [directory], path, reviewed_memory=tmp_path / "wrong-parent"
         )
 
 

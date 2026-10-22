@@ -217,6 +217,11 @@ def _review_continuation(growth: MemorySnapshot, reviewed: MemorySnapshot) -> No
         or new_reviews[-1].get("reviewed_manifest_sha256") != growth.sha256
     ):
         raise RoundCompositionError("reviewed_child_not_growth_continuation")
+    if (
+        after.get("parent_revision") != before["revision"]
+        or after.get("parent_manifest_sha256") != growth.sha256
+    ):
+        raise RoundCompositionError("reviewed_child_parent_mismatch")
     review = new_reviews[-1]
     corrected = set(review.get("corrected_case_ids", []))
     cases = {case["case_id"]: case for case in after["cases"]}
@@ -240,6 +245,8 @@ def _review_continuation(growth: MemorySnapshot, reviewed: MemorySnapshot) -> No
             raise RoundCompositionError("reviewed_child_changed_corrected_source")
     allowed = {
         "revision",
+        "parent_revision",
+        "parent_manifest_sha256",
         "cases",
         "object_identity_teaching",
         "object_identity_cases",
